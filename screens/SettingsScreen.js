@@ -111,7 +111,7 @@ export default function SettingsScreen() {
         </Group>
 
         <Group title="Sobre">
-          <View style={[s.row]}>
+          <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
             <Text style={s.rowValue}>v1.0.0 · AE easyJet 2023–2027</Text>
           </View>

@@ -297,7 +297,7 @@ export default function LoginScreen() {
         .start(() => setShowSuccess(false));
     }, 2400);
     return () => clearTimeout(t);
-  }, [showSuccess]);
+  }, [showSuccess, toastY]);
 
   const isAuthView = view === 'login' || view === 'register';
 
@@ -500,8 +500,6 @@ const s = StyleSheet.create({
   stepEyebrow:  { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 6 },
   stepTitle:    { fontSize: 22, fontWeight: '700', letterSpacing: -0.3, color: C.text, marginBottom: 8, textAlign: 'center' },
   stepSub:      { fontSize: 13, color: C.sub, textAlign: 'center', lineHeight: 19 },
-  hintBox:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: 12, padding: 12, marginBottom: 4 },
-  hintTxt:      { flex: 1, fontSize: 12, color: C.sub },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: 13, color: C.sub },
   toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },

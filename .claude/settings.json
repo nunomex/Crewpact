@@ -6,7 +6,9 @@
       "Bash(git pull *)",
       "Bash(git rebase *)",
       "Skill(claude-api)",
-      "Skill(claude-api:*)"
+      "Skill(claude-api:*)",
+      "PowerShell(if \\(Test-Path .\\\\node_modules\\\\expo\\\\package.json\\) { \\(Get-Content .\\\\node_modules\\\\expo\\\\package.json -Raw | ConvertFrom-Json\\).version } else { \"expo not installed\" }; foreach \\($p in @\\('react','react-native','expo-router','react-native-gesture-handler'\\)\\) { $f = \".\\\\node_modules\\\\$p\\\\package.json\"; if \\(Test-Path $f\\) { \"$p = \" + \\(Get-Content $f -Raw | ConvertFrom-Json\\).version } else { \"$p = \\(not installed\\)\" } })",
+      "PowerShell(npm install --legacy-peer-deps 2>&1)"
     ]
   }
 }
