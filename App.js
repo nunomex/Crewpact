@@ -13,6 +13,7 @@ import AgreementHubScreen from './screens/AgreementHubScreen';
 import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
 import FtlScreen          from './screens/FtlScreen';
+import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FavoritesScreen    from './screens/FavoritesScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 
@@ -27,7 +28,8 @@ function AgreementStack() {
       <Stack.Screen name="Hub"    component={AgreementHubScreen} />
       <Stack.Screen name="List"   component={ListScreen} />
       <Stack.Screen name="Detail" component={DetailScreen} />
-      <Stack.Screen name="Ftl"    component={FtlScreen} />
+      <Stack.Screen name="Ftl"       component={FtlScreen} />
+      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
