@@ -5,7 +5,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { C } from './data/constants';
 import { supabase } from './data/supabase';
-import { mapUser } from './data/auth';
 
 import LoginScreen      from './screens/LoginScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -111,17 +110,17 @@ export default function App() {
     setReadNotifIds(new Set());
   };
 
-  // Restore session on startup + listen for auth changes (token refresh, sign out)
+  // Always start at the login screen — clear any persisted session on startup.
+  // The user authenticates each time; only the onboarding profile is remembered
+  // (stored in Supabase user_metadata and read back on login).
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) handleSetUser(mapUser(session.user));
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.signOut();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') return;
       if (suppressAuth.current) return;
-      if (session?.user) {
-        handleSetUser(mapUser(session.user));
-      } else {
+      // Sign-in navigation is handled directly in the login handler so we control
+      // the flow; here we only react to a sign-out (logout / password reset).
+      if (event === 'SIGNED_OUT') {
         setUser(null);
         setOnboarded(false);
       }
