@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Animated,
+  ActivityIndicator, Animated, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C } from '../data/constants';
@@ -140,9 +140,11 @@ const otp = StyleSheet.create({
 export default function LoginScreen() {
   const { setUser, suppressAuth } = useContext(AppContext);
 
-  // views: 'login' | 'register' | 'forgot' | 'code' | 'reset' | 'success'
+  // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
   const [registeredName, setRegisteredName] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successScale = useRef(new Animated.Value(0.8)).current;
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
@@ -244,7 +246,8 @@ export default function LoginScreen() {
     setRegisteredName(rName.split(' ')[0]);
     setLEmail(rEmail);
     setRName(''); setREmail(''); setRPw(''); setRPw2('');
-    navigateTo('success');
+    navigateTo('login', false);
+    setShowSuccess(true);
   };
 
   const handleRequestReset = async () => {
@@ -285,12 +288,14 @@ export default function LoginScreen() {
     navigateTo('login', false);
   };
 
-  // Auto-redirect to login after showing success
+  // Success popup — show for ~2s then dismiss
   useEffect(() => {
-    if (view !== 'success') return;
-    const t = setTimeout(() => navigateTo('login', false), 2800);
+    if (!showSuccess) return;
+    successScale.setValue(0.8);
+    Animated.spring(successScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }).start();
+    const t = setTimeout(() => setShowSuccess(false), 2000);
     return () => clearTimeout(t);
-  }, [view]);
+  }, [showSuccess]);
 
   const isAuthView = view === 'login' || view === 'register';
 
@@ -424,20 +429,6 @@ export default function LoginScreen() {
               </>
             )}
 
-            {/* ── CONTA CRIADA ── */}
-            {view === 'success' && (
-              <View style={s.successWrap}>
-                <View style={s.successIcon}>
-                  <Ionicons name="checkmark" size={36} color="#fff" />
-                </View>
-                <Text style={s.successTitle}>Conta criada!</Text>
-                <Text style={s.successSub}>
-                  Bem-vindo/a, <Text style={{ fontWeight: '700', color: C.text }}>{registeredName}</Text>.{'\n'}
-                  A redirecionar para o login…
-                </Text>
-              </View>
-            )}
-
             {/* ── NOVA PALAVRA-PASSE ── */}
             {view === 'reset' && (
               <>
@@ -467,6 +458,22 @@ export default function LoginScreen() {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── POP-UP CONTA CRIADA ── */}
+      <Modal visible={showSuccess} transparent animationType="fade" onRequestClose={() => setShowSuccess(false)}>
+        <View style={s.modalOverlay}>
+          <Animated.View style={[s.modalCard, { transform: [{ scale: successScale }] }]}>
+            <View style={s.successIcon}>
+              <Ionicons name="checkmark" size={36} color="#fff" />
+            </View>
+            <Text style={s.successTitle}>Conta criada!</Text>
+            <Text style={s.successSub}>
+              Bem-vindo/a, <Text style={{ fontWeight: '700', color: C.text }}>{registeredName}</Text>.{'\n'}
+              Já podes iniciar sessão.
+            </Text>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -498,8 +505,9 @@ const s = StyleSheet.create({
   hintTxt:      { flex: 1, fontSize: 12, color: C.sub },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: 13, color: C.sub },
-  successWrap:  { alignItems: 'center', paddingVertical: 32 },
-  successIcon:  { width: 80, height: 80, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: C.green, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 },
-  successTitle: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, color: C.text, marginBottom: 12 },
-  successSub:   { fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 22 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(20,20,25,0.45)', alignItems: 'center', justifyContent: 'center', padding: 40 },
+  modalCard:    { backgroundColor: C.canvas, borderRadius: 24, paddingVertical: 36, paddingHorizontal: 28, alignItems: 'center', width: '100%', maxWidth: 320, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 12 },
+  successIcon:  { width: 76, height: 76, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20, shadowColor: C.green, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 6 },
+  successTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5, color: C.text, marginBottom: 10 },
+  successSub:   { fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 21 },
 });
