@@ -115,7 +115,8 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) handleSetUser(mapUser(session.user));
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') return;
       if (session?.user) {
         handleSetUser(mapUser(session.user));
       } else {
