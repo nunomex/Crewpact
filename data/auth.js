@@ -76,10 +76,9 @@ export const register = async (name, email, password) => {
 // No dashboard: Authentication → Email Templates → Reset Password → usa {{ .Token }}
 
 export const requestPasswordReset = async (email) => {
-  const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim().toLowerCase(),
-    options: { shouldCreateUser: false },
-  });
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+  );
   if (error) return { ok: false, error: mapError(error) };
   return { ok: true, email: email.trim().toLowerCase() };
 };
@@ -88,7 +87,7 @@ export const verifyResetCode = async (email, token) => {
   const { error } = await supabase.auth.verifyOtp({
     email: email.trim().toLowerCase(),
     token,
-    type: 'email',
+    type: 'recovery',
   });
   if (error) return { ok: false, error: mapError(error) };
   return { ok: true };
