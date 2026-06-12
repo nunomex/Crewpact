@@ -231,23 +231,6 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={goRegister}><Text style={s.switchLink}>Registar</Text></TouchableOpacity>
               </View>
               <SocialRow />
-              {/* Demo accounts */}
-              <View style={s.demoBox}>
-                <Text style={s.demoHdr}>Contas de demonstração</Text>
-                {[
-                  { label: 'Tripulante', email: 'demo@crewpact.app', pw: 'Demo1234!', icon: 'person-outline' },
-                  { label: 'Admin',      email: 'admin@crewpact.app', pw: 'Admin5678!', icon: 'shield-outline' },
-                ].map(d => (
-                  <TouchableOpacity key={d.email} onPress={() => { setLEmail(d.email); setLPw(d.pw); setLErrEmail(''); setLErrPw(''); setGlobalErr(''); }} style={s.demoRow}>
-                    <View style={s.demoIcon}><Ionicons name={d.icon} size={15} color="#6B6B65" /></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.demoName}>{d.label}</Text>
-                      <Text style={s.demoEmail}>{d.email}</Text>
-                    </View>
-                    <Ionicons name="arrow-forward" size={14} color="#AEAEB8" />
-                  </TouchableOpacity>
-                ))}
-              </View>
             </Animated.View>
           )}
 
@@ -259,6 +242,7 @@ export default function LoginScreen() {
                 <Text style={s.backTxt}>Voltar</Text>
               </TouchableOpacity>
               <Brand />
+
               {globalErr ? (
                 <View style={s.errBanner}>
                   <Ionicons name="alert-circle" size={16} color="#C0391C" />
@@ -305,7 +289,7 @@ const s = StyleSheet.create({
   ring: { width: 60, height: 60, borderRadius: 16, backgroundColor: '#1a1a2e', alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
   logoName: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, color: '#1a1a2e' },
   logoSub: { fontSize: 13, color: '#9B9BA8', marginTop: 5, textAlign: 'center' },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 8, paddingBottom: 4, marginBottom: 8 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, position: 'absolute', top: 8, left: 0, zIndex: 1 },
   backTxt: { fontSize: 13, color: '#9B9BA8' },
   errBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF0EE', borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#F8C9C4' },
   errBannerTxt: { flex: 1, fontSize: 13, color: '#C0391C', fontWeight: '500' },
@@ -321,11 +305,5 @@ const s = StyleSheet.create({
   orTxt: { fontSize: 12, color: '#AEAEB8' },
   socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 14 },
   socialBtn: { width: 52, height: 52, borderRadius: 99, borderWidth: 1.5, borderColor: '#EBEBEF', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  demoBox: { marginTop: 24, backgroundColor: '#F5F5F7', borderRadius: 16, overflow: 'hidden' },
-  demoHdr: { fontSize: 9, letterSpacing: 2, color: '#AEAEB8', fontWeight: '600', textTransform: 'uppercase', padding: 10, paddingBottom: 6 },
-  demoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#EBEBEF' },
-  demoIcon: { width: 34, height: 34, borderRadius: 99, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  demoName: { fontSize: 13, fontWeight: '600', color: '#1a1a2e' },
-  demoEmail: { fontSize: 11, color: '#9B9BA8' },
   terms: { fontSize: 10, color: '#AEAEB8', textAlign: 'center', marginTop: 20, lineHeight: 16 },
 });
