@@ -37,7 +37,7 @@ export const CONTRACTS = [
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 export const SECTIONS = [
-  { id: "s0", n: 0, title: "Cláusulas" },
+  { id: "s0", n: 0, title: "Âmbito do AE" },
   { id: "s1", n: 1, title: "Relações entre as partes" },
   { id: "s2", n: 2, title: "Interoperabilidade" },
   { id: "s3", n: 3, title: "Deveres" },

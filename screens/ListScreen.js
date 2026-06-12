@@ -29,7 +29,7 @@ export default function ListScreen({ navigation, route }) {
       if (onlyMine && !isApplicable(cl, profile)) return false;
       if (onlyCalc && !CALC[cl.number]) return false;
       if (!q) return true;
-      const hay = `${cl.number} ${cl.title.pt} ${cl.title.en} ${cl.body.pt} ${cl.tags.join(' ')} ${cl.code}`.toLowerCase();
+      const hay = `${cl.number} ${cl.title.pt} ${cl.title.en || ''} ${cl.body.pt} ${cl.tags.join(' ')} ${cl.code}`.toLowerCase();
       return hay.includes(q);
     });
   }, [query, activeSection, onlyMine, onlyCalc, profile]);

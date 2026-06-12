@@ -221,26 +221,11 @@ export default function DetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={d.scroll}>
         <Text style={d.eyebrow}>Secção {sectionN(c.section)} · {sectionTitle(c.section)}</Text>
         <Text style={d.number}>{c.number}</Text>
-        <Text style={d.title}>{c.title[lang]}</Text>
-
-        <View style={d.langSeg}>
-          {['pt', 'en'].map(l => (
-            <TouchableOpacity key={l} onPress={() => setLang(l)}
-              style={[d.langBtn, { backgroundColor: lang === l ? C.ink : 'transparent' }]}>
-              <Text style={[d.langTxt, { color: lang === l ? '#fff' : C.sub }]}>{l.toUpperCase()}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={d.body}>{c.body[lang]}</Text>
-
-        {c.salaryTable && <ValueTable title="REMUNERAÇÃO BASE ANUAL (€ ILÍQUIDOS · 12/12)" data={SALARY} />}
-        {c.sectorTable && <ValueTable title="SETOR NOMINAL — NS (€)" data={SECTOR_TABLE} />}
-        {c.posTable && <PosTable />}
+        <Text style={d.title}>{c.title[lang] || c.title.pt}</Text>
 
         {c.values && (
           <View style={d.valuesBox}>
-            <Text style={d.valTitle}>VALORES · ANEXO I</Text>
+            <Text style={d.valTitle}>{c.valuesTitle || 'VALORES · ANEXO I'}</Text>
             {c.values.map((v, i) => (
               <View key={i} style={[d.valRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
                 <Text style={d.valLbl}>{v.l}</Text>
@@ -250,7 +235,7 @@ export default function DetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {calc && <Calculator calc={calc} rank={profile.rank} />}
+        <Text style={[d.body, { marginTop: c.values ? 18 : 6 }]}>{c.body[lang] || c.body.pt}</Text>
 
         {related.length > 0 && (
           <View style={{ marginTop: 24 }}>
