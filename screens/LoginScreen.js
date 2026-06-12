@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
@@ -140,8 +140,9 @@ const otp = StyleSheet.create({
 export default function LoginScreen() {
   const { setUser } = useContext(AppContext);
 
-  // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
+  // views: 'login' | 'register' | 'forgot' | 'code' | 'reset' | 'success'
   const [view, setView] = useState('login');
+  const [registeredName, setRegisteredName] = useState('');
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
@@ -238,7 +239,10 @@ export default function LoginScreen() {
     const res = await register(rName, rEmail, rPw);
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-    setUser(res.user);
+    setRegisteredName(rName.split(' ')[0]);
+    setLEmail(rEmail);
+    setRName(''); setREmail(''); setRPw(''); setRPw2('');
+    navigateTo('success');
   };
 
   const handleRequestReset = async () => {
@@ -278,6 +282,13 @@ export default function LoginScreen() {
     setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
     navigateTo('login', false);
   };
+
+  // Auto-redirect to login after showing success
+  useEffect(() => {
+    if (view !== 'success') return;
+    const t = setTimeout(() => navigateTo('login', false), 2800);
+    return () => clearTimeout(t);
+  }, [view]);
 
   const isAuthView = view === 'login' || view === 'register';
 
@@ -411,6 +422,20 @@ export default function LoginScreen() {
               </>
             )}
 
+            {/* ── CONTA CRIADA ── */}
+            {view === 'success' && (
+              <View style={s.successWrap}>
+                <View style={s.successIcon}>
+                  <Ionicons name="checkmark" size={36} color="#fff" />
+                </View>
+                <Text style={s.successTitle}>Conta criada!</Text>
+                <Text style={s.successSub}>
+                  Bem-vindo/a, <Text style={{ fontWeight: '700', color: C.text }}>{registeredName}</Text>.{'\n'}
+                  A redirecionar para o login…
+                </Text>
+              </View>
+            )}
+
             {/* ── NOVA PALAVRA-PASSE ── */}
             {view === 'reset' && (
               <>
@@ -471,4 +496,8 @@ const s = StyleSheet.create({
   hintTxt:      { flex: 1, fontSize: 12, color: C.sub },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: 13, color: C.sub },
+  successWrap:  { alignItems: 'center', paddingVertical: 32 },
+  successIcon:  { width: 80, height: 80, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: C.green, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 },
+  successTitle: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, color: C.text, marginBottom: 12 },
+  successSub:   { fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 22 },
 });
