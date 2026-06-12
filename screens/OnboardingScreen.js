@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { AppContext } from '../App';
+import { updateProfile } from '../data/auth';
 
 const steps = [
   { title: 'Escolha a companhia', sub: 'De que acordo de empresa precisa?' },
@@ -11,9 +12,11 @@ const steps = [
 ];
 
 export default function OnboardingScreen() {
-  const { setProfile, setOnboarded } = useContext(AppContext);
+  const { setProfile, setOnboarded, setUser } = useContext(AppContext);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ company: null, rank: null, contract: null });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const s = steps[step];
   const canNext = (step === 0 && draft.company) || (step === 1 && draft.rank) || (step === 2 && draft.contract);
 
@@ -55,19 +58,32 @@ export default function OnboardingScreen() {
         })}
       </ScrollView>
 
+      {saveError && (
+        <Text style={{ color: C.red, fontSize: 13, textAlign: 'center', paddingHorizontal: 24, paddingBottom: 8 }}>
+          {saveError}
+        </Text>
+      )}
       <View style={styles.footer}>
         {step > 0 && (
           <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.btnBack}>
             <Text style={[styles.btnText, { color: C.ink }]}>Voltar</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity disabled={!canNext} onPress={() => {
-          if (step < 2) setStep(step + 1);
-          else { setProfile(draft); setOnboarded(true); }
-        }} style={[styles.btnNext, { backgroundColor: canNext ? C.ink : C.soft }]}>
-          <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>
-            {step < 2 ? 'Continuar' : 'Entrar'}
-          </Text>
+        <TouchableOpacity disabled={!canNext || saving} onPress={async () => {
+          if (step < 2) { setStep(step + 1); return; }
+          setSaving(true);
+          setSaveError(null);
+          const result = await updateProfile(draft);
+          setSaving(false);
+          if (!result.ok) { setSaveError('Erro ao guardar. Tenta novamente.'); return; }
+          setProfile(draft);
+          if (result.user) setUser(result.user);
+          setOnboarded(true);
+        }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
+          {saving
+            ? <ActivityIndicator color="#fff" size="small" />
+            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{step < 2 ? 'Continuar' : 'Entrar'}</Text>
+          }
         </TouchableOpacity>
       </View>
     </SafeAreaView>
