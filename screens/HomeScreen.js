@@ -83,7 +83,7 @@ export default function HomeScreen({ navigation }) {
                 <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>
                   {page.map(cl => (
                     <TouchableOpacity key={cl.number} style={[s.favCard, { width: FAV_CARD_W }]}
-                      onPress={() => navigation.navigate('Favoritos', { screen: 'Detail', params: { clause: cl } })}>
+                      onPress={() => navigation.navigate('AE/FTL', { screen: 'Detail', params: { clause: cl } })}>
                       <View style={s.favNum}><Text style={s.favNumTxt}>{cl.number}</Text></View>
                       <Text style={s.favCardTitle} numberOfLines={2}>{cl.title[lang]}</Text>
                     </TouchableOpacity>

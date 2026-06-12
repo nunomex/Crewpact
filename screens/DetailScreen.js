@@ -223,8 +223,10 @@ export default function DetailScreen({ route, navigation }) {
         <Text style={d.number}>{c.number}</Text>
         <Text style={d.title}>{c.title[lang] || c.title.pt}</Text>
 
+        {calc && <Calculator calc={calc} rank={profile.rank} />}
+
         {c.values && (
-          <View style={d.valuesBox}>
+          <View style={[d.valuesBox, { marginTop: calc ? 12 : 16 }]}>
             <Text style={d.valTitle}>{c.valuesTitle || 'VALORES · ANEXO I'}</Text>
             {c.values.map((v, i) => (
               <View key={i} style={[d.valRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
@@ -235,7 +237,7 @@ export default function DetailScreen({ route, navigation }) {
           </View>
         )}
 
-        <Text style={[d.body, { marginTop: c.values ? 18 : 6 }]}>{c.body[lang] || c.body.pt}</Text>
+        <Text style={[d.body, { marginTop: (c.values || calc) ? 18 : 6 }]}>{c.body[lang] || c.body.pt}</Text>
 
         {related.length > 0 && (
           <View style={{ marginTop: 24 }}>

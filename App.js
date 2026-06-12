@@ -14,7 +14,7 @@ import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
 import FtlScreen          from './screens/FtlScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
-import FavoritesScreen    from './screens/FavoritesScreen';
+import CategoriesScreen   from './screens/CategoriesScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 
 const Tab   = createBottomTabNavigator();
@@ -30,15 +30,6 @@ function AgreementStack() {
       <Stack.Screen name="Detail" component={DetailScreen} />
       <Stack.Screen name="Ftl"       component={FtlScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function FavoritesStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FavList" component={FavoritesScreen} />
-      <Stack.Screen name="Detail"  component={DetailScreen} />
     </Stack.Navigator>
   );
 }
@@ -61,7 +52,7 @@ function MainTabs() {
           const icons = {
             'Início':         focused ? 'home'          : 'home-outline',
             'AE/FTL':         focused ? 'document-text' : 'document-text-outline',
-            'Favoritos':      focused ? 'star'          : 'star-outline',
+            'Categorias':     focused ? 'people'        : 'people-outline',
             'Definições':     focused ? 'settings'      : 'settings-outline',
           };
           return <Ionicons name={icons[route.name]} size={22} color={color} />;
@@ -70,7 +61,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Início"         component={HomeScreen} />
       <Tab.Screen name="AE/FTL" component={AgreementStack} />
-      <Tab.Screen name="Favoritos"      component={FavoritesStack} />
+      <Tab.Screen name="Categorias"     component={CategoriesScreen} />
       <Tab.Screen name="Definições"     component={SettingsScreen} />
     </Tab.Navigator>
   );
