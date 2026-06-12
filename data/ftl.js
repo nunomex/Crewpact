@@ -14,17 +14,17 @@ export const FTL_SECTIONS = [
 export const FTL_TABLE1 = {
   rowHeader: 'Diferença horária (h) entre a hora de referência e a hora local a que o tripulante inicia o turno seguinte',
   colHeader: 'Tempo decorrido desde a apresentação ao serviço na hora de referência',
-  cols: ['< 48', '48–71:59', '72–95:59', '96–119:59', '≥ 120'],
+  cols: ['≥ 48', '', '≥ 48', '', '≥ 48'],
   rows: [
-    { diff: '< 4',  v: ['B', 'D', 'D', 'D', 'D'] },
-    { diff: '≤ 6',  v: ['B', 'X', 'D', 'D', 'D'] },
-    { diff: '≤ 9',  v: ['B', 'X', 'X', 'D', 'D'] },
-    { diff: '≤ 12', v: ['B', 'X', 'X', 'X', 'D'] },
+    { diff: '< 4',  v: ['B', '< 4', 'B', '< 4', 'B'] },
+    { diff: '≤ 6',  v: ['B', '≤ 6', 'B', '≤ 6', 'B'] },
+    { diff: '≤ 9',  v: ['B', '≤ 9', 'B', '≤ 9', 'B'] },
+    { diff: '≤ 12', v: ['B', '≤ 12', 'B', '≤ 12', 'B'] },
   ],
   legend: [
     '"B": aclimatado à hora local do fuso horário de partida,',
     '"D": aclimatado à hora local do lugar em que o tripulante inicia o turno seguinte, e',
-    '"X": tripulante cujo estado de aclimatação é desconhecido.',
+    '"X": tripulante cujo estado de aclimatação é desconhecido;',
   ],
 };
 
