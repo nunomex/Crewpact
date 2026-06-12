@@ -87,8 +87,13 @@ export default function ListScreen({ navigation, route }) {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.headerBlob}>
-        <Text style={s.eyebrow}>ÍNDICE</Text>
-        <Text style={s.headTitle}>Acordo Empresa</Text>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={18} color="#fff" />
+        </TouchableOpacity>
+        <View>
+          <Text style={s.eyebrow}>ÍNDICE</Text>
+          <Text style={s.headTitle}>Acordo de Empresa</Text>
+        </View>
       </View>
 
       <View style={s.searchWrap}>
@@ -119,7 +124,8 @@ export default function ListScreen({ navigation, route }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 12, padding: 16 },
+  headerBlob: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 12, padding: 16 },
+  backBtn: { width: 36, height: 36, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: 99, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },

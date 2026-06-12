@@ -6,13 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { C } from './data/constants';
 import { supabase } from './data/supabase';
 
-import LoginScreen      from './screens/LoginScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
-import HomeScreen       from './screens/HomeScreen';
-import ListScreen       from './screens/ListScreen';
-import DetailScreen     from './screens/DetailScreen';
-import FavoritesScreen  from './screens/FavoritesScreen';
-import SettingsScreen   from './screens/SettingsScreen';
+import LoginScreen        from './screens/LoginScreen';
+import OnboardingScreen   from './screens/OnboardingScreen';
+import HomeScreen         from './screens/HomeScreen';
+import AgreementHubScreen from './screens/AgreementHubScreen';
+import ListScreen         from './screens/ListScreen';
+import DetailScreen       from './screens/DetailScreen';
+import FtlScreen          from './screens/FtlScreen';
+import FavoritesScreen    from './screens/FavoritesScreen';
+import SettingsScreen     from './screens/SettingsScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -22,8 +24,10 @@ export const AppContext = React.createContext(null);
 function AgreementStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Hub"    component={AgreementHubScreen} />
       <Stack.Screen name="List"   component={ListScreen} />
       <Stack.Screen name="Detail" component={DetailScreen} />
+      <Stack.Screen name="Ftl"    component={FtlScreen} />
     </Stack.Navigator>
   );
 }
