@@ -187,12 +187,10 @@ export default function HomeScreen({ navigation }) {
               <Text style={s.compName}>{company?.name}</Text>
             </View>
           </View>
-          {unread > 0 && (
-            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8}>
-              <Ionicons name="notifications" size={18} color="#fff" />
-              <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8}>
+            <Ionicons name="notifications" size={18} color="#fff" />
+            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+          </TouchableOpacity>
         </View>
 
         {/* Pay card */}
