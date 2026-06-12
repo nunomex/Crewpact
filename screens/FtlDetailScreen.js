@@ -3,10 +3,37 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } fr
 import { Ionicons } from '@expo/vector-icons';
 import { C } from '../data/constants';
 import {
-  FTL_ARTICLES, ftlSectionN, ftlSectionTitle,
+  FTL_ARTICLES, ftlSectionTitle,
   PSV_SECTORS, PSV_ACCLIMATISED, PSV_UNKNOWN_SECTORS, PSV_UNKNOWN, PSV_UNKNOWN_FRM,
-  FTL_LIMITS, FTL_DEFINITIONS,
+  FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
+
+// ─── Quadro 1 · estado de aclimatação ────────────────────────────────────────
+function Table1() {
+  return (
+    <View style={t.block}>
+      <Text style={t.blockTitle}>QUADRO 1 · ESTADO DE ACLIMATAÇÃO</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View>
+          <View style={[t.row, t.headRow]}>
+            <Text style={[t.cell, t.startCell, t.headCell]}>Dif. horária</Text>
+            {FTL_TABLE1.cols.map(h => <Text key={h} style={[t.cell, t.headCell, t.wideCell]}>{h}</Text>)}
+          </View>
+          {FTL_TABLE1.rows.map((r, ri) => (
+            <View key={r.diff} style={[t.row, ri % 2 === 1 && t.zebra]}>
+              <Text style={[t.cell, t.startCell]}>{r.diff}</Text>
+              {r.v.map((v, vi) => <Text key={vi} style={[t.cell, t.wideCell, { fontWeight: '700', color: C.text }]}>{v}</Text>)}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      <View style={t.legend}>
+        <Text style={t.legendHead}>{FTL_TABLE1.colHeader}</Text>
+        {FTL_TABLE1.legend.map((l, i) => <Text key={i} style={t.legendTxt}>{l}</Text>)}
+      </View>
+    </View>
+  );
+}
 
 // ─── Tabela PSV (aclimatados) — scroll horizontal ────────────────────────────
 function PsvTable() {
@@ -66,15 +93,12 @@ export default function FtlDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={d.scroll}>
-        <Text style={d.eyebrow}>Secção {ftlSectionN(a.section)} · {ftlSectionTitle(a.section)}</Text>
+        <Text style={d.eyebrow}>{ftlSectionTitle(a.section)}</Text>
         <Text style={d.code}>{a.code}</Text>
         <Text style={d.title}>{a.title}</Text>
 
         {a.body.map((p, i) => (
-          <View key={i} style={d.para}>
-            <View style={d.bullet} />
-            <Text style={d.paraTxt}>{p}</Text>
-          </View>
+          <Text key={i} style={d.paraTxt}>{p}</Text>
         ))}
 
         {a.psv && (
@@ -112,6 +136,8 @@ export default function FtlDetailScreen({ route, navigation }) {
           </View>
         )}
 
+        {a.defs && <Table1 />}
+
         {a.defs && (
           <View style={{ marginTop: 8 }}>
             {FTL_DEFINITIONS.map((def, i) => (
@@ -134,9 +160,13 @@ const t = StyleSheet.create({
   headRow: { backgroundColor: C.soft },
   zebra: { backgroundColor: C.soft },
   cell: { width: 52, fontSize: 11, fontFamily: 'monospace', color: C.text, textAlign: 'center', paddingVertical: 8, paddingHorizontal: 2 },
+  wideCell: { width: 78 },
   startCell: { width: 92, textAlign: 'left', paddingLeft: 10, color: C.sub },
   headCell: { color: C.sub, fontWeight: '700' },
   note: { fontSize: 10, color: C.sub, padding: 10, borderTopWidth: 1, borderTopColor: C.line },
+  legend: { padding: 10, borderTopWidth: 1, borderTopColor: C.line },
+  legendHead: { fontSize: 10, color: C.text, fontWeight: '600', marginBottom: 6 },
+  legendTxt: { fontSize: 11, color: C.sub, lineHeight: 17 },
 });
 
 const d = StyleSheet.create({
@@ -147,9 +177,7 @@ const d = StyleSheet.create({
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, fontWeight: '300', letterSpacing: -0.5, color: C.text, fontFamily: 'monospace' },
   title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
-  para: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  bullet: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red, marginTop: 8 },
-  paraTxt: { flex: 1, fontSize: 14, lineHeight: 22, color: C.text },
+  paraTxt: { fontSize: 14, lineHeight: 22, color: C.text, marginBottom: 12 },
   box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
   boxTitle: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.8)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
   boxRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11 },

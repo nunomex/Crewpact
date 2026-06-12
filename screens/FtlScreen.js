@@ -49,7 +49,7 @@ export default function FtlScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Artigos por secção (acordeão) */}
-        <Text style={s.sectionLabel}>SUBPARTE FTL</Text>
+        <Text style={s.sectionLabel}>REGULAMENTO (UE) N.º 83/2014</Text>
         {FTL_SECTIONS.map(sec => {
           const open = openSec === sec.id;
           const arts = FTL_ARTICLES.filter(a => a.section === sec.id);
@@ -57,7 +57,7 @@ export default function FtlScreen({ navigation }) {
             <View key={sec.id}>
               <TouchableOpacity style={[s.secHeader, open && s.secHeaderOpen]} activeOpacity={0.7}
                 onPress={() => setOpenSec(open ? null : sec.id)}>
-                <View style={s.secBadge}><Text style={s.secBadgeTxt}>S{sec.n}</Text></View>
+                <View style={s.secBadge}><Text style={s.secBadgeTxt}>{sec.badge}</Text></View>
                 <Text style={s.secTitle} numberOfLines={1}>{sec.title}</Text>
                 <Text style={s.secCount}>{arts.length}</Text>
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
