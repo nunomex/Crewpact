@@ -1,5 +1,5 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, SECTIONS, CALC } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
@@ -103,18 +103,17 @@ export default function ListScreen({ navigation, route }) {
         {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close" size={16} color={C.sub} /></TouchableOpacity>}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chips} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      <View style={s.chips}>
         {[{ id: 'mine', label: 'Aplicáveis a mim', active: onlyMine, onPress: () => setOnlyMine(!onlyMine), tone: 'red' },
-          { id: 'calc', label: 'Calculadoras',     active: onlyCalc, onPress: () => setOnlyCalc(!onlyCalc) },
-          { id: 'all',  label: 'Todas',            active: activeSection === 'all', onPress: () => { setSection('all'); setOpenSec(null); } },
-          ...SECTIONS.map(sec => ({ id: sec.id, label: sec.title, active: activeSection === sec.id, onPress: () => { setSection(sec.id); setOpenSec(sec.id); } })),
+          { id: 'calc', label: 'Calculáveis',      active: onlyCalc, onPress: () => setOnlyCalc(!onlyCalc) },
+          { id: 'all',  label: 'Todas',            active: !onlyMine && !onlyCalc, onPress: () => { setOnlyMine(false); setOnlyCalc(false); setSection('all'); setOpenSec(null); } },
         ].map(chip => (
           <TouchableOpacity key={chip.id} onPress={chip.onPress}
             style={[s.chip, { backgroundColor: chip.active ? (chip.tone === 'red' ? C.red : C.ink) : C.canvas, borderColor: chip.active ? (chip.tone === 'red' ? C.red : C.ink) : C.line }]}>
             <Text style={[s.chipTxt, { color: chip.active ? '#fff' : C.sub }]}>{chip.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }} />
@@ -130,9 +129,9 @@ const s = StyleSheet.create({
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: 99, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
   searchInput: { flex: 1, fontSize: 14, color: C.text },
-  chips: { marginBottom: 8, maxHeight: 44 },
-  chip: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7 },
-  chipTxt: { fontSize: 12, fontWeight: '500', whiteSpace: 'nowrap' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
+  chip: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 8 },
+  chipTxt: { fontSize: 12, fontWeight: '500' },
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
