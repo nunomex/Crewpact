@@ -4,7 +4,9 @@
       "Bash(git remote *)",
       "Bash(git commit -m ' *)",
       "Bash(git pull *)",
-      "Bash(git rebase *)"
+      "Bash(git rebase *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
     ]
   }
 }
