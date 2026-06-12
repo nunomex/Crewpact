@@ -32,6 +32,16 @@ let USERS = [
     contract: '12_12',
     createdAt: '2025-01-01',
   },
+  {
+    id: 'u3',
+    name: 'Teste',
+    email: 'teste@crewpact.app',
+    passwordHash: djb2('Teste123!'),
+    company: 'easyjet-pt',
+    rank: 'fa',
+    contract: '12_12',
+    createdAt: '2026-01-01',
+  },
 ];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
