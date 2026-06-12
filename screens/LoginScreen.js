@@ -102,7 +102,7 @@ const sb = StyleSheet.create({
 /* ─── OTP Input ──────────────────────────────────────────────────────────── */
 function OTPInput({ value, onChange }) {
   const ref = useRef();
-  const digits = Array(6).fill('').map((_, i) => value[i] || '');
+  const digits = Array(8).fill('').map((_, i) => value[i] || '');
   return (
     <TouchableOpacity onPress={() => ref.current?.focus()} activeOpacity={1} style={otp.row}>
       {digits.map((d, i) => (
@@ -117,9 +117,9 @@ function OTPInput({ value, onChange }) {
       <TextInput
         ref={ref}
         value={value}
-        onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, 6))}
+        onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, 8))}
         keyboardType="numeric"
-        maxLength={6}
+        maxLength={8}
         style={otp.hidden}
         autoFocus
         caretHidden
@@ -128,11 +128,11 @@ function OTPInput({ value, onChange }) {
   );
 }
 const otp = StyleSheet.create({
-  row:      { flexDirection: 'row', gap: 8, justifyContent: 'center', marginVertical: 24 },
-  box:      { width: 48, height: 56, borderRadius: 14, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
+  box:      { width: 36, height: 44, borderRadius: 10, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxActive:{ backgroundColor: C.canvas, borderColor: C.ink },
   boxFilled:{ backgroundColor: C.canvas, borderColor: C.line },
-  digit:    { fontSize: 22, fontWeight: '700', color: C.text },
+  digit:    { fontSize: 18, fontWeight: '700', color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });
 
@@ -256,7 +256,7 @@ export default function LoginScreen() {
 
   const handleVerifyCode = async () => {
     setCodeErr('');
-    if (code.length < 6) { setCodeErr('Introduz o código completo de 6 dígitos.'); doShake(); return; }
+    if (code.length < 8) { setCodeErr('Introduz o código completo de 8 dígitos.'); doShake(); return; }
     setLoading(true);
     const res = await verifyResetCode(resetEmail, code);
     setLoading(false);
@@ -401,7 +401,7 @@ export default function LoginScreen() {
                     <Text style={s.errBannerTxt}>{codeErr}</Text>
                   </View>
                 ) : null}
-                <TouchableOpacity onPress={handleVerifyCode} disabled={loading || code.length < 6} style={[s.btnMain, code.length < 6 && { opacity: 0.4 }]}>
+                <TouchableOpacity onPress={handleVerifyCode} disabled={loading || code.length < 8} style={[s.btnMain, code.length < 8 && { opacity: 0.4 }]}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>VERIFICAR</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={s.linkRow} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
