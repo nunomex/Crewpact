@@ -172,12 +172,12 @@ export default function LoginScreen() {
     }, 700);
   };
 
-  const Brand = ({ small }) => (
-    <View style={[s.brand, small && { marginBottom: 20, marginTop: 4 }]}>
-      <View style={[s.ring, small && { width: 50, height: 50, borderRadius: 13 }]}>
-        <Ionicons name="airplane" size={small ? 20 : 24} color="#EA3D2F" style={{ transform: [{ rotate: '45deg' }] }} />
+  const Brand = () => (
+    <View style={s.brand}>
+      <View style={s.ring}>
+        <Ionicons name="airplane" size={24} color="#EA3D2F" style={{ transform: [{ rotate: '45deg' }] }} />
       </View>
-      <Text style={[s.logoName, small && { fontSize: 22 }]}>{view === 'register' ? 'Criar conta' : 'CrewPact'}</Text>
+      <Text style={s.logoName}>CrewPact</Text>
       <Text style={s.logoSub}>{view === 'register' ? 'Acede às 97 cláusulas e calculadoras.' : 'O teu acordo de empresa, sempre contigo.'}</Text>
     </View>
   );
@@ -258,7 +258,7 @@ export default function LoginScreen() {
                 <Ionicons name="arrow-back" size={16} color="#9B9BA8" />
                 <Text style={s.backTxt}>Voltar</Text>
               </TouchableOpacity>
-              <Brand small />
+              <Brand />
               {globalErr ? (
                 <View style={s.errBanner}>
                   <Ionicons name="alert-circle" size={16} color="#C0391C" />
