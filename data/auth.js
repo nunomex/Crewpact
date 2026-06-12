@@ -64,11 +64,12 @@ export const register = async (name, email, password) => {
     options: { data: { name: name.trim() } },
   });
   if (error) return { ok: false, error: mapError(error) };
-  // When email confirmation is disabled, data.session exists immediately
   if (!data.session) {
     return { ok: false, error: 'Confirma o teu e-mail para ativar a conta.' };
   }
-  return { ok: true, user: mapUser(data.user) };
+  // Sign out immediately so onAuthStateChange doesn't auto-login before the success screen
+  await supabase.auth.signOut();
+  return { ok: true };
 };
 
 // ─── Password reset (OTP via e-mail) ─────────────────────────────────────────
