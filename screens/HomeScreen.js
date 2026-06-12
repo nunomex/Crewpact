@@ -180,13 +180,19 @@ export default function HomeScreen({ navigation }) {
       <ScrollView contentContainerStyle={s.scroll}>
         {/* Header blob */}
         <View style={s.headerBlob}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.eyebrow}>ACORDO DE EMPRESA</Text>
             <View style={s.compRow}>
               <View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>
               <Text style={s.compName}>{company?.name}</Text>
             </View>
           </View>
+          {unread > 0 && (
+            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8}>
+              <Ionicons name="notifications" size={18} color="#fff" />
+              <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Pay card */}
@@ -208,24 +214,11 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Notifications bar */}
-        <TouchableOpacity style={s.notifBar} onPress={() => setNotifOpen(true)}>
-          <View style={s.bellWrap}>
-            <View style={s.bell}><Ionicons name="notifications" size={16} color="#fff" /></View>
-            {unread > 0 && <View style={s.badge}><Text style={s.badgeTxt}>{unread}</Text></View>}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.notifTitle}>Notificações</Text>
-            <Text style={s.notifSub} numberOfLines={1}>{NOTIFS[0].title}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={C.line} />
-        </TouchableOpacity>
-
         {/* Simulation */}
         <SimCard rank={profile.rank} />
 
         {/* Calculadoras shortcut */}
-        <TouchableOpacity style={s.shortcut} onPress={() => navigation.navigate('Acordo Empresa', { screen: 'List', params: { onlyCalc: true } })}>
+        <TouchableOpacity style={s.shortcut} onPress={() => navigation.navigate('AE/FTL', { screen: 'List', params: { onlyCalc: true } })}>
           <Ionicons name="calculator" size={16} color={C.red} />
           <Text style={s.shortcutTxt}>Calculadoras</Text>
           <Ionicons name="chevron-forward" size={15} color={C.line} style={{ marginLeft: 'auto' }} />
@@ -278,7 +271,10 @@ export default function HomeScreen({ navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: 20, paddingBottom: 40 },
-  headerBlob: { backgroundColor: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 },
+  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 },
+  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: 99, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
+  headerBadgeTxt: { color: '#fff', fontSize: 9, fontFamily: 'monospace', fontWeight: '700' },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 8 },
   compRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
@@ -293,13 +289,6 @@ const s = StyleSheet.create({
   payFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
   dot: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red },
   payNote: { fontSize: 11, color: C.sub, flex: 1 },
-  notifBar: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 16 },
-  bellWrap: { position: 'relative' },
-  bell: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 99, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  badgeTxt: { color: '#fff', fontSize: 10, fontFamily: 'monospace', fontWeight: '700' },
-  notifTitle: { fontSize: 13, fontWeight: '500', color: C.text },
-  notifSub: { fontSize: 11, color: C.sub, marginTop: 2 },
   shortcut: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 0 },
   shortcutTxt: { fontSize: 13, fontWeight: '500', color: C.text },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },

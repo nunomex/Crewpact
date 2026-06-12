@@ -54,7 +54,7 @@ function MainTabs() {
         tabBarIcon: ({ focused, color }) => {
           const icons = {
             'Início':         focused ? 'home'          : 'home-outline',
-            'Acordo Empresa': focused ? 'document-text' : 'document-text-outline',
+            'AE/FTL':         focused ? 'document-text' : 'document-text-outline',
             'Favoritos':      focused ? 'star'          : 'star-outline',
             'Definições':     focused ? 'settings'      : 'settings-outline',
           };
@@ -63,7 +63,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Início"         component={HomeScreen} />
-      <Tab.Screen name="Acordo Empresa" component={AgreementStack} />
+      <Tab.Screen name="AE/FTL" component={AgreementStack} />
       <Tab.Screen name="Favoritos"      component={FavoritesStack} />
       <Tab.Screen name="Definições"     component={SettingsScreen} />
     </Tab.Navigator>
