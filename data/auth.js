@@ -1,63 +1,43 @@
-// ─── Simple local auth (no server needed for Expo Go) ────────────────────────
-// Passwords are "hashed" with a lightweight djb2 so plain text is never stored.
-// In production replace this with a real backend / Supabase / Firebase Auth.
+import { supabase } from './supabase';
 
-const djb2 = (str) => {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
-  return (h >>> 0).toString(36);
+// ─── Map Supabase user to app user shape ──────────────────────────────────────
+export const mapUser = (u) => ({
+  id:        u.id,
+  email:     u.email,
+  name:      u.user_metadata?.name || u.email?.split('@')[0] || '',
+  company:   u.user_metadata?.company  || null,
+  rank:      u.user_metadata?.rank     || null,
+  contract:  u.user_metadata?.contract || null,
+  createdAt: u.created_at?.slice(0, 10) || '',
+});
+
+// ─── Translate Supabase error messages to Portuguese ─────────────────────────
+const mapError = (error) => {
+  const msg = (error?.message || '').toLowerCase();
+  if (msg.includes('invalid login credentials'))  return 'Email ou palavra-passe incorretos.';
+  if (msg.includes('email not confirmed'))         return 'Confirma o teu e-mail antes de entrar.';
+  if (msg.includes('user already registered'))     return 'Este email já está registado.';
+  if (msg.includes('password should be at least')) return 'A palavra-passe é demasiado curta.';
+  if (msg.includes('token has expired') || msg.includes('expired')) return 'O código expirou. Pede um novo.';
+  if (msg.includes('otp') || msg.includes('token')) return 'Código incorreto ou expirado.';
+  if (msg.includes('rate limit'))                  return 'Demasiadas tentativas. Aguarda uns minutos.';
+  if (msg.includes('network'))                     return 'Sem ligação à internet. Verifica a rede.';
+  return 'Ocorreu um erro. Tenta novamente.';
 };
 
-// Demo accounts pre-loaded (password shown for reference only)
-// email: demo@crewpact.app  password: Demo1234!
-// email: admin@crewpact.app password: Admin5678!
-let USERS = [
-  {
-    id: 'u1',
-    name: 'Demo Tripulante',
-    email: 'demo@crewpact.app',
-    passwordHash: djb2('Demo1234!'),
-    company: 'easyjet-pt',
-    rank: 'fa',
-    contract: '12_12',
-    createdAt: '2025-01-01',
-  },
-  {
-    id: 'u2',
-    name: 'Admin CrewPact',
-    email: 'admin@crewpact.app',
-    passwordHash: djb2('Admin5678!'),
-    company: 'easyjet-pt',
-    rank: 'cm',
-    contract: '12_12',
-    createdAt: '2025-01-01',
-  },
-  {
-    id: 'u3',
-    name: 'Teste',
-    email: 'teste@crewpact.app',
-    passwordHash: djb2('Teste123!'),
-    company: 'easyjet-pt',
-    rank: 'fa',
-    contract: '12_12',
-    createdAt: '2026-01-01',
-  },
-];
-
-// ─── Validation helpers ───────────────────────────────────────────────────────
+// ─── Validators ───────────────────────────────────────────────────────────────
 export const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email) return 'Email é obrigatório.';
-  if (!re.test(email)) return 'Email inválido.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email inválido.';
   return null;
 };
 
 export const validatePassword = (pw, isRegister = false) => {
   if (!pw) return 'Palavra-passe é obrigatória.';
   if (isRegister) {
-    if (pw.length < 8) return 'Mínimo de 8 caracteres.';
-    if (!/[A-Z]/.test(pw)) return 'Necessita de pelo menos uma maiúscula.';
-    if (!/[0-9]/.test(pw)) return 'Necessita de pelo menos um número.';
+    if (pw.length < 8)        return 'Mínimo de 8 caracteres.';
+    if (!/[A-Z]/.test(pw))    return 'Necessita de pelo menos uma maiúscula.';
+    if (!/[0-9]/.test(pw))    return 'Necessita de pelo menos um número.';
   }
   return null;
 };
@@ -67,78 +47,69 @@ export const validateName = (name) => {
   return null;
 };
 
-// ─── Auth actions ─────────────────────────────────────────────────────────────
-export const login = (email, password) => {
-  const e = email.trim().toLowerCase();
-  const user = USERS.find(u => u.email === e);
-  if (!user) return { ok: false, error: 'Email não encontrado.' };
-  if (user.passwordHash !== djb2(password)) return { ok: false, error: 'Palavra-passe incorreta.' };
-  const { passwordHash, ...safe } = user;
-  return { ok: true, user: safe };
+// ─── Auth actions (async, Supabase) ──────────────────────────────────────────
+export const login = async (email, password) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+  if (error) return { ok: false, error: mapError(error) };
+  return { ok: true, user: mapUser(data.user) };
 };
 
-export const register = (name, email, password) => {
-  const e = email.trim().toLowerCase();
-  if (USERS.find(u => u.email === e)) return { ok: false, error: 'Este email já está registado.' };
-  const newUser = {
-    id: 'u' + (USERS.length + 1) + '_' + Date.now(),
-    name: name.trim(),
-    email: e,
-    passwordHash: djb2(password),
-    company: null,
-    rank: null,
-    contract: null,
-    createdAt: new Date().toISOString().slice(0, 10),
-  };
-  USERS.push(newUser);
-  const { passwordHash, ...safe } = newUser;
-  return { ok: true, user: safe };
+export const register = async (name, email, password) => {
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: { data: { name: name.trim() } },
+  });
+  if (error) return { ok: false, error: mapError(error) };
+  // When email confirmation is disabled, data.session exists immediately
+  if (!data.session) {
+    return { ok: false, error: 'Confirma o teu e-mail para ativar a conta.' };
+  }
+  return { ok: true, user: mapUser(data.user) };
 };
 
-export const updateProfile = (userId, patch) => {
-  const idx = USERS.findIndex(u => u.id === userId);
-  if (idx < 0) return { ok: false, error: 'Utilizador não encontrado.' };
-  USERS[idx] = { ...USERS[idx], ...patch };
-  const { passwordHash, ...safe } = USERS[idx];
-  return { ok: true, user: safe };
+// ─── Password reset (OTP via e-mail) ─────────────────────────────────────────
+// Supabase envia um e-mail com o código {{ .Token }} (6 dígitos).
+// No dashboard: Authentication → Email Templates → Reset Password → usa {{ .Token }}
+
+export const requestPasswordReset = async (email) => {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
+    options: { shouldCreateUser: false },
+  });
+  if (error) return { ok: false, error: mapError(error) };
+  return { ok: true, email: email.trim().toLowerCase() };
 };
 
-// ─── Password reset (mock — no real email sent) ───────────────────────────────
-let RESET_CODES = {};
-
-export const requestPasswordReset = (emailOrName) => {
-  const q = emailOrName.trim().toLowerCase();
-  const user = USERS.find(u => u.email === q || u.name.toLowerCase() === q);
-  if (!user) return { ok: false, error: 'Email ou nome de utilizador não encontrado.' };
-  RESET_CODES[user.email] = { code: '123456' };
-  return { ok: true, email: user.email };
-};
-
-export const verifyResetCode = (email, code) => {
-  const r = RESET_CODES[email];
-  if (!r) return { ok: false, error: 'Pedido não encontrado. Tenta novamente.' };
-  if (r.code !== code) return { ok: false, error: 'Código incorreto.' };
+export const verifyResetCode = async (email, token) => {
+  const { error } = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token,
+    type: 'email',
+  });
+  if (error) return { ok: false, error: mapError(error) };
   return { ok: true };
 };
 
-export const resetPassword = (email, code, newPw) => {
-  const r = RESET_CODES[email];
-  if (!r || r.code !== code) return { ok: false, error: 'Código inválido.' };
-  const err = validatePassword(newPw, true);
-  if (err) return { ok: false, error: err };
-  const user = USERS.find(u => u.email === email);
-  if (!user) return { ok: false, error: 'Utilizador não encontrado.' };
-  user.passwordHash = djb2(newPw);
-  delete RESET_CODES[email];
+export const resetPassword = async (_email, _token, newPw) => {
+  // After verifyOtp the user is authenticated — updateUser works directly
+  const { error } = await supabase.auth.updateUser({ password: newPw });
+  if (error) return { ok: false, error: mapError(error) };
+  await supabase.auth.signOut();
   return { ok: true };
 };
 
-export const changePassword = (userId, currentPw, newPw) => {
-  const user = USERS.find(u => u.id === userId);
-  if (!user) return { ok: false, error: 'Utilizador não encontrado.' };
-  if (user.passwordHash !== djb2(currentPw)) return { ok: false, error: 'Palavra-passe atual incorreta.' };
-  const err = validatePassword(newPw, true);
-  if (err) return { ok: false, error: err };
-  user.passwordHash = djb2(newPw);
+export const updateProfile = async (patch) => {
+  const { data, error } = await supabase.auth.updateUser({ data: patch });
+  if (error) return { ok: false, error: mapError(error) };
+  return { ok: true, user: mapUser(data.user) };
+};
+
+export const changePassword = async (newPw) => {
+  const { error } = await supabase.auth.updateUser({ password: newPw });
+  if (error) return { ok: false, error: mapError(error) };
   return { ok: true };
 };

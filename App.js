@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { C } from './data/constants';
+import { supabase } from './data/supabase';
+import { mapUser } from './data/auth';
 
 import LoginScreen      from './screens/LoginScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -99,13 +101,30 @@ export default function App() {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setOnboarded(false);
     setProfile({ company: null, rank: null, contract: null });
     setFavorites(new Set([52]));
     setReadNotifIds(new Set());
   };
+
+  // Restore session on startup + listen for auth changes (token refresh, sign out)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) handleSetUser(mapUser(session.user));
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        handleSetUser(mapUser(session.user));
+      } else {
+        setUser(null);
+        setOnboarded(false);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const ctx = {
     user, setUser: handleSetUser, logout,

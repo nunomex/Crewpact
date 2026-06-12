@@ -212,22 +212,20 @@ export default function LoginScreen() {
   };
 
   /* ── Handlers ── */
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setGlobalErr('');
     const eE = validateEmail(lEmail);
     const ePw = validatePassword(lPw);
     setLErrEmail(eE || ''); setLErrPw(ePw || '');
     if (eE || ePw) { doShake(); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = login(lEmail, lPw);
-      setLoading(false);
-      if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-      setUser(res.user);
-    }, 600);
+    const res = await login(lEmail, lPw);
+    setLoading(false);
+    if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
+    setUser(res.user);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setGlobalErr('');
     const eName  = validateName(rName);
     const eEmail = validateEmail(rEmail);
@@ -237,55 +235,48 @@ export default function LoginScreen() {
     setRErrPw(ePw || '');     setRErrPw2(ePw2 || '');
     if (eName || eEmail || ePw || ePw2) { doShake(); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = register(rName, rEmail, rPw);
-      setLoading(false);
-      if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-      setUser(res.user);
-    }, 700);
+    const res = await register(rName, rEmail, rPw);
+    setLoading(false);
+    if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
+    setUser(res.user);
   };
 
-  const handleRequestReset = () => {
+  const handleRequestReset = async () => {
     setFErr('');
-    if (!fInput.trim()) { setFErr('Introduz o teu e-mail ou nome.'); doShake(); return; }
+    const eE = validateEmail(fInput);
+    if (eE) { setFErr(eE); doShake(); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = requestPasswordReset(fInput);
-      setLoading(false);
-      if (!res.ok) { setFErr(res.error); doShake(); return; }
-      setResetEmail(res.email);
-      setCode('');
-      navigateTo('code');
-    }, 600);
+    const res = await requestPasswordReset(fInput);
+    setLoading(false);
+    if (!res.ok) { setFErr(res.error); doShake(); return; }
+    setResetEmail(res.email);
+    setCode('');
+    navigateTo('code');
   };
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     setCodeErr('');
     if (code.length < 6) { setCodeErr('Introduz o código completo de 6 dígitos.'); doShake(); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = verifyResetCode(resetEmail, code);
-      setLoading(false);
-      if (!res.ok) { setCodeErr(res.error); doShake(); return; }
-      setNewPw(''); setNewPw2('');
-      navigateTo('reset');
-    }, 500);
+    const res = await verifyResetCode(resetEmail, code);
+    setLoading(false);
+    if (!res.ok) { setCodeErr(res.error); doShake(); return; }
+    setNewPw(''); setNewPw2('');
+    navigateTo('reset');
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     setNewPwErr(''); setNewPw2Err('');
     const ePw  = validatePassword(newPw, true);
     const ePw2 = newPw !== newPw2 ? 'As palavras-passe não coincidem.' : null;
     setNewPwErr(ePw || ''); setNewPw2Err(ePw2 || '');
     if (ePw || ePw2) { doShake(); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = resetPassword(resetEmail, code, newPw);
-      setLoading(false);
-      if (!res.ok) { setNewPwErr(res.error); doShake(); return; }
-      setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
-      navigateTo('login', false);
-    }, 600);
+    const res = await resetPassword(resetEmail, code, newPw);
+    setLoading(false);
+    if (!res.ok) { setNewPwErr(res.error); doShake(); return; }
+    setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
+    navigateTo('login', false);
   };
 
   const isAuthView = view === 'login' || view === 'register';
@@ -366,7 +357,7 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={handleRegister} disabled={loading} style={s.btnMain}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>CRIAR CONTA</Text>}
                 </TouchableOpacity>
-                <Text style={s.terms}>Ao registares aceitas os termos de uso da CrewPact.{'\n'}Os dados são guardados localmente no dispositivo.</Text>
+                <Text style={s.terms}>Ao registares aceitas os termos de uso da CrewPact.</Text>
               </Animated.View>
             )}
 
@@ -376,11 +367,11 @@ export default function LoginScreen() {
                 <View style={s.stepHeader}>
                   <Text style={s.stepEyebrow}>RECUPERAR CONTA</Text>
                   <Text style={s.stepTitle}>Esqueceste a palavra-passe?</Text>
-                  <Text style={s.stepSub}>Introduz o teu e-mail ou nome de utilizador. Enviaremos um código de verificação.</Text>
+                  <Text style={s.stepSub}>Introduz o teu e-mail. Enviaremos um código de verificação de 6 dígitos.</Text>
                 </View>
                 <Field value={fInput} onChangeText={v => { setFInput(v); setFErr(''); }}
-                  placeholder="E-mail ou nome de utilizador" error={fErr}
-                  icon="mail-outline" autoFocus returnKeyType="done"
+                  placeholder="E-mail" error={fErr}
+                  icon="mail-outline" keyboardType="email-address" autoFocus returnKeyType="done"
                   onSubmitEditing={handleRequestReset} />
                 <TouchableOpacity onPress={handleRequestReset} disabled={loading} style={s.btnMain}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>ENVIAR CÓDIGO</Text>}
@@ -402,11 +393,6 @@ export default function LoginScreen() {
                   <Text style={s.stepEyebrow}>VERIFICAÇÃO</Text>
                   <Text style={s.stepTitle}>Verifica o teu e-mail</Text>
                   <Text style={s.stepSub}>Enviámos um código de 6 dígitos para{'\n'}<Text style={{ color: C.text, fontWeight: '600' }}>{resetEmail}</Text></Text>
-                </View>
-                {/* Demo hint */}
-                <View style={s.hintBox}>
-                  <Ionicons name="information-circle-outline" size={15} color={C.sub} />
-                  <Text style={s.hintTxt}>Modo demonstração — usa o código <Text style={{ fontWeight: '700', color: C.ink }}>123456</Text></Text>
                 </View>
                 <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); }} />
                 {codeErr ? (
