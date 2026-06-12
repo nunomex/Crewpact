@@ -93,6 +93,36 @@ export const updateProfile = (userId, patch) => {
   return { ok: true, user: safe };
 };
 
+// ─── Password reset (mock — no real email sent) ───────────────────────────────
+let RESET_CODES = {};
+
+export const requestPasswordReset = (emailOrName) => {
+  const q = emailOrName.trim().toLowerCase();
+  const user = USERS.find(u => u.email === q || u.name.toLowerCase() === q);
+  if (!user) return { ok: false, error: 'Email ou nome de utilizador não encontrado.' };
+  RESET_CODES[user.email] = { code: '123456' };
+  return { ok: true, email: user.email };
+};
+
+export const verifyResetCode = (email, code) => {
+  const r = RESET_CODES[email];
+  if (!r) return { ok: false, error: 'Pedido não encontrado. Tenta novamente.' };
+  if (r.code !== code) return { ok: false, error: 'Código incorreto.' };
+  return { ok: true };
+};
+
+export const resetPassword = (email, code, newPw) => {
+  const r = RESET_CODES[email];
+  if (!r || r.code !== code) return { ok: false, error: 'Código inválido.' };
+  const err = validatePassword(newPw, true);
+  if (err) return { ok: false, error: err };
+  const user = USERS.find(u => u.email === email);
+  if (!user) return { ok: false, error: 'Utilizador não encontrado.' };
+  user.passwordHash = djb2(newPw);
+  delete RESET_CODES[email];
+  return { ok: true };
+};
+
 export const changePassword = (userId, currentPw, newPw) => {
   const user = USERS.find(u => u.id === userId);
   if (!user) return { ok: false, error: 'Utilizador não encontrado.' };
