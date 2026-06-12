@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Animated, Modal,
+  ActivityIndicator, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C } from '../data/constants';
@@ -144,7 +144,7 @@ export default function LoginScreen() {
   const [view, setView] = useState('login');
   const [registeredName, setRegisteredName] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const successScale = useRef(new Animated.Value(0.8)).current;
+  const toastY = useRef(new Animated.Value(-120)).current;
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
@@ -288,12 +288,14 @@ export default function LoginScreen() {
     navigateTo('login', false);
   };
 
-  // Success popup — show for ~2s then dismiss
+  // Success toast — slide down, hold ~2.4s, slide back up
   useEffect(() => {
     if (!showSuccess) return;
-    successScale.setValue(0.8);
-    Animated.spring(successScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }).start();
-    const t = setTimeout(() => setShowSuccess(false), 2000);
+    Animated.spring(toastY, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }).start();
+    const t = setTimeout(() => {
+      Animated.timing(toastY, { toValue: -120, duration: 280, useNativeDriver: true })
+        .start(() => setShowSuccess(false));
+    }, 2400);
     return () => clearTimeout(t);
   }, [showSuccess]);
 
@@ -459,21 +461,18 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── POP-UP CONTA CRIADA ── */}
-      <Modal visible={showSuccess} transparent animationType="fade" onRequestClose={() => setShowSuccess(false)}>
-        <View style={s.modalOverlay}>
-          <Animated.View style={[s.modalCard, { transform: [{ scale: successScale }] }]}>
-            <View style={s.successIcon}>
-              <Ionicons name="checkmark" size={36} color="#fff" />
-            </View>
-            <Text style={s.successTitle}>Conta criada!</Text>
-            <Text style={s.successSub}>
-              Bem-vindo/a, <Text style={{ fontWeight: '700', color: C.text }}>{registeredName}</Text>.{'\n'}
-              Já podes iniciar sessão.
-            </Text>
-          </Animated.View>
-        </View>
-      </Modal>
+      {/* ── TOAST CONTA CRIADA ── */}
+      {showSuccess && (
+        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
+          <View style={s.toastIcon}>
+            <Ionicons name="checkmark" size={20} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.toastTitle}>Conta criada com sucesso</Text>
+            <Text style={s.toastSub}>Bem-vindo/a, {registeredName}. Já podes iniciar sessão.</Text>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -505,9 +504,8 @@ const s = StyleSheet.create({
   hintTxt:      { flex: 1, fontSize: 12, color: C.sub },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: 13, color: C.sub },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(20,20,25,0.45)', alignItems: 'center', justifyContent: 'center', padding: 40 },
-  modalCard:    { backgroundColor: C.canvas, borderRadius: 24, paddingVertical: 36, paddingHorizontal: 28, alignItems: 'center', width: '100%', maxWidth: 320, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 12 },
-  successIcon:  { width: 76, height: 76, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20, shadowColor: C.green, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 6 },
-  successTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5, color: C.text, marginBottom: 10 },
-  successSub:   { fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 21 },
+  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
+  toastIcon:    { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  toastTitle:   { fontSize: 14, fontWeight: '700', color: '#fff' },
+  toastSub:     { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 });
