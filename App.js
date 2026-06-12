@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -74,6 +74,7 @@ function MainTabs() {
 export default function App() {
   // Auth state — null = not logged in
   const [user, setUser] = useState(null);
+  const suppressAuth = useRef(false);
 
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null, rank: null, contract: null });
@@ -117,6 +118,7 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') return;
+      if (suppressAuth.current) return;
       if (session?.user) {
         handleSetUser(mapUser(session.user));
       } else {
@@ -129,6 +131,7 @@ export default function App() {
 
   const ctx = {
     user, setUser: handleSetUser, logout,
+    suppressAuth,
     profile, setProfile,
     favorites, toggleFav,
     lang, setLang,

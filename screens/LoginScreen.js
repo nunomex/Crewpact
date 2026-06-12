@@ -138,7 +138,7 @@ const otp = StyleSheet.create({
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
-  const { setUser } = useContext(AppContext);
+  const { setUser, suppressAuth } = useContext(AppContext);
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset' | 'success'
   const [view, setView] = useState('login');
@@ -236,7 +236,9 @@ export default function LoginScreen() {
     setRErrPw(ePw || '');     setRErrPw2(ePw2 || '');
     if (eName || eEmail || ePw || ePw2) { doShake(); return; }
     setLoading(true);
+    suppressAuth.current = true;
     const res = await register(rName, rEmail, rPw);
+    suppressAuth.current = false;
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
     setRegisteredName(rName.split(' ')[0]);
