@@ -99,7 +99,7 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 104 }}>
 
         {/* User card */}
         {user && (

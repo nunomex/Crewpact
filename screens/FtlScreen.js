@@ -91,7 +91,7 @@ const s = StyleSheet.create({
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
   regBadge: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   regTxt: { color: '#fff', fontSize: 9, fontFamily: 'monospace', fontWeight: '700' },
-  scroll: { paddingHorizontal: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 104 },
   quickCard: { borderWidth: 1, borderColor: C.line, borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
   quickTitle: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
   quickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11 },

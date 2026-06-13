@@ -326,7 +326,7 @@ const cs = StyleSheet.create({
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  scroll: { padding: 16, paddingBottom: 40 },
+  scroll: { padding: 16, paddingBottom: 104 },
   headerBlob: { backgroundColor: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },

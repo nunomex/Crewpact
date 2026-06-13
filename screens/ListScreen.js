@@ -116,7 +116,7 @@ export default function ListScreen({ navigation, route }) {
       </View>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }} />
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 104 }} />
     </SafeAreaView>
   );
 }

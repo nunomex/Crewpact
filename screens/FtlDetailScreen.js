@@ -308,7 +308,7 @@ const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
   iconBtn: { width: 38, height: 38, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 24, paddingBottom: 60 },
+  scroll: { paddingHorizontal: 24, paddingBottom: 104 },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, fontWeight: '300', letterSpacing: -0.5, color: C.text, fontFamily: 'monospace' },
   title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
