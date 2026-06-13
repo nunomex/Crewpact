@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
-import { changePassword, validatePassword } from '../data/auth';
+import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { AppContext } from '../App';
 
 function Group({ title, children }) {
@@ -34,6 +34,20 @@ export default function SettingsScreen() {
   const [newPw, setNewPw]   = useState('');
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
+  const [pickerField, setPickerField] = useState(null); // 'company' | 'rank' | 'contract'
+
+  const PICKERS = {
+    company:  { title: 'Companhia', options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
+    rank:     { title: 'Categoria', options: RANKS.map(r => ({ id: r.id, label: r.label })) },
+    contract: { title: 'Contrato',  options: CONTRACTS.map(c => ({ id: c.id, label: c.label })) },
+  };
+
+  const selectOption = (field, id) => {
+    const next = { ...profile, [field]: id };
+    setProfile(next);
+    setPickerField(null);
+    updateProfile(next).catch(() => {}); // persiste no Supabase (user_metadata)
+  };
 
   const company  = COMPANIES.find(c => c.id === profile.company);
   const rankObj  = RANKS.find(r => r.id === profile.rank);
@@ -52,7 +66,21 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.headerBlob}><Text style={s.eyebrow}>PREFERÊNCIAS</Text><Text style={s.headTitle}>Definições</Text></View>
+      <View style={s.headerBlob}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.eyebrow}>PREFERÊNCIAS</Text>
+          <Text style={s.headTitle}>Definições</Text>
+        </View>
+        <View style={s.headLang}>
+          {['pt', 'en'].map((l, i) => (
+            <TouchableOpacity key={l} onPress={() => setLang(l)} hitSlop={8}>
+              <Text style={[s.headLangTxt, { color: lang === l ? C.red : 'rgba(255,255,255,0.55)' }]}>
+                {l.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
 
         {/* User card */}
@@ -69,24 +97,10 @@ export default function SettingsScreen() {
         )}
 
         <Group title="Perfil">
-          <Row label="Companhia" value={company?.name} onPress={() => setOnboarded(false)} />
-          <Row label="Categoria" value={rankObj?.short} onPress={() => setOnboarded(false)} />
-          <Row label="Contrato" value={contract?.label} onPress={() => setOnboarded(false)} last />
+          <Row label="Companhia" value={company?.name} onPress={() => setPickerField('company')} />
+          <Row label="Categoria" value={rankObj?.short} onPress={() => setPickerField('rank')} />
+          <Row label="Contrato" value={contract?.label} onPress={() => setPickerField('contract')} last />
         </Group>
-
-        {/* Idioma — inline, pequeno */}
-        <View style={s.langInline}>
-          <Text style={s.langInlineLbl}>IDIOMA</Text>
-          <View style={s.langInlineBtns}>
-            {['pt', 'en'].map(l => (
-              <TouchableOpacity key={l} onPress={() => setLang(l)} hitSlop={8}>
-                <Text style={[s.langInlineTxt, { color: lang === l ? C.ink : C.sub, fontWeight: lang === l ? '700' : '500' }]}>
-                  {l === 'pt' ? 'PT' : 'ENG'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
         <Group title="Conteúdo">
           <View style={s.syncRow}>
@@ -148,15 +162,47 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Seletor de perfil (companhia / categoria / contrato) */}
+      <Modal visible={!!pickerField} animationType="slide" transparent onRequestClose={() => setPickerField(null)}>
+        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPickerField(null)} />
+        <View style={s.sheet}>
+          <View style={s.sheetHead}>
+            <Text style={s.sheetTitle}>{pickerField ? PICKERS[pickerField].title : ''}</Text>
+            <TouchableOpacity onPress={() => setPickerField(null)} style={s.closeBtn}>
+              <Ionicons name="close" size={18} color={C.ink} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
+            {pickerField && PICKERS[pickerField].options.map((o, i) => {
+              const sel = profile[pickerField] === o.id;
+              return (
+                <TouchableOpacity key={o.id} disabled={o.disabled}
+                  onPress={() => selectOption(pickerField, o.id)}
+                  style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
+                  <Text style={[s.optLabel, sel && { color: C.ink, fontWeight: '700' }]}>{o.label}</Text>
+                  {o.disabled
+                    ? <Text style={s.optSoon}>Em breve</Text>
+                    : sel
+                      ? <Ionicons name="checkmark-circle" size={20} color={C.red} />
+                      : <View style={s.optDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 8, padding: 16 },
+  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 8, padding: 16 },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
+  headLang: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  headLangTxt: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 20 },
   avatar: { width: 48, height: 48, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
@@ -169,10 +215,6 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
   rowLabel: { fontSize: 14, color: C.sub },
   rowValue: { fontSize: 13, fontWeight: '500', color: C.text, maxWidth: 180, textAlign: 'right' },
-  langInline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, marginBottom: 20 },
-  langInlineLbl: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  langInlineBtns: { flexDirection: 'row', gap: 18 },
-  langInlineTxt: { fontSize: 13, letterSpacing: 0.5 },
   syncRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   syncTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
@@ -189,4 +231,9 @@ const s = StyleSheet.create({
   fieldInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.text },
   pwBtn: { backgroundColor: C.ink, borderRadius: 99, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   pwBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
+  optDiv: { borderTopWidth: 1, borderTopColor: C.line },
+  optLabel: { fontSize: 15, color: C.text, flex: 1, paddingRight: 12 },
+  optSoon: { fontSize: 11, color: C.sub },
+  optDot: { width: 20, height: 20, borderRadius: 99, borderWidth: 1.5, borderColor: C.line },
 });
