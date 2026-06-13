@@ -1,11 +1,212 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RANKS, SALARY, SECTOR_TABLE, POSITIONING } from '../data/constants';
-import { CLAUSES } from '../data/clauses';
+import { C, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE } from '../data/constants';
 
-// RANKS, SALARY/SECTOR_TABLE/POSITIONING rows partilham a mesma ordem de categorias.
+// Fração da base anual aplicável por tipo de contrato (12/12 = inteiro).
+const CONTRACT_FACTOR = { '12_12': 1, '10_12': 10 / 12, '8_12': 8 / 12, '9_3': 9.75 / 12, pt: null };
+
+// Modalidades de tempo parcial (Cláusula 80): fração da base anual e dias de férias.
+// Sazonal = N meses a X% + 4 meses (verão) a 100%.
+const PT_MODES = [
+  { id: 'fix50', label: 'Fixo 50%',     factor: 0.5,       leave: 13 },
+  { id: 'fix75', label: 'Fixo 75%',     factor: 0.75,      leave: 19 },
+  { id: 'saz50', label: 'Sazonal 50%',  factor: 8 / 12,    leave: 17 },
+  { id: 'saz75', label: 'Sazonal 75%',  factor: 10 / 12,   leave: 21 },
+];
+import { CLAUSES } from '../data/clauses';
+import { AppContext } from '../App';
+
+const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const num = (s) => parseFloat(String(s).replace(',', '.')) || 0;
+
+// ─── Controlos ───────────────────────────────────────────────────────────────
+function Stepper({ label, value, setValue, min = 0, max = 999 }) {
+  const clamp = (n) => Math.max(min, Math.min(max, n));
+  return (
+    <View style={cs.stepRow}>
+      <Text style={cs.stepLabel}>{label}</Text>
+      <View style={cs.stepControls}>
+        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn}><Text style={cs.stepBtnTxt}>−</Text></TouchableOpacity>
+        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
+          onChangeText={(t) => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
+          style={cs.stepInput} />
+        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]}><Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+function Seg({ options, value, setValue }) {
+  return (
+    <View style={cs.segWrap}>
+      {options.map(o => (
+        <TouchableOpacity key={o.id} onPress={() => setValue(o.id)} style={[cs.segBtn, { backgroundColor: value === o.id ? C.ink : C.soft }]}>
+          <Text style={[cs.segTxt, { color: value === o.id ? '#fff' : C.sub }]}>{o.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+function Calc({ title, children }) {
+  return <View style={cs.calc}><Text style={cs.calcTitle}>{title}</Text>{children}</View>;
+}
+function Result({ value, foot }) {
+  return (
+    <View style={cs.result}>
+      <Text style={cs.resLbl}>TOTAL</Text>
+      <Text style={cs.resVal}>{value}</Text>
+      {foot ? <Text style={cs.resFoot}>{foot}</Text> : null}
+    </View>
+  );
+}
+
+// ─── Calculadoras ────────────────────────────────────────────────────────────
+function CalcSectors({ ns }) {
+  const [q, setQ] = useState({ s: 0, m: 0, l: 0, x: 0 });
+  const m = { s: 0.8, m: 1.2, l: 1.5, x: 2.5 };
+  const total = (q.s * m.s + q.m * m.m + q.l * m.l + q.x * m.x) * ns;
+  return (
+    <Calc title="Setores voados">
+      <Stepper label="Curtos (0,8× NS)"        value={q.s} setValue={(v) => setQ({ ...q, s: v })} />
+      <Stepper label="Médios (1,2× NS)"        value={q.m} setValue={(v) => setQ({ ...q, m: v })} />
+      <Stepper label="Longos (1,5× NS)"        value={q.l} setValue={(v) => setQ({ ...q, l: v })} />
+      <Stepper label="Extra longos (2,5× NS)"  value={q.x} setValue={(v) => setQ({ ...q, x: v })} />
+      <Result value={fmtEur(total)} foot={`Setor nominal (NS) = ${fmtEur(ns)}`} />
+    </Calc>
+  );
+}
+
+function CalcPositioning({ rankRow }) {
+  const OPTS = [{ id: 0, label: 'Curto' }, { id: 1, label: 'Médio' }, { id: 2, label: 'Longo' }, { id: 3, label: 'Extra' }];
+  const [idx, setIdx] = useState(1);
+  const [n, setN] = useState(1);
+  const unit = num(POSITIONING.rows[rankRow].v[idx]);
+  return (
+    <Calc title="Posicionamento">
+      <Seg options={OPTS} value={idx} setValue={setIdx} />
+      <Stepper label="Nº de posicionamentos" value={n} setValue={setN} min={1} />
+      <Result value={fmtEur(unit * n)} foot={`${OPTS[idx].label}: ${fmtEur(unit)} (Nov 2025)`} />
+    </Calc>
+  );
+}
+
+function CalcPerEvent({ title, unitLabel, unit, foot, start = 1 }) {
+  const [n, setN] = useState(start);
+  return (
+    <Calc title={title}>
+      <Stepper label={unitLabel} value={n} setValue={setN} />
+      <Result value={fmtEur(unit * n)} foot={foot || `Unitário: ${fmtEur(unit)}`} />
+    </Calc>
+  );
+}
+
+function CalcStandby({ ns }) {
+  const med = 1.2 * ns;
+  const OPTS = [
+    { id: 'cs', label: 'Chamado ≤3:59', med: 0 },
+    { id: 'cl', label: 'Chamado >4h', med: 1 },
+    { id: 'ns', label: 'Não cham. ≤3:59', med: 1 },
+    { id: 'nl', label: 'Não cham. >4h', med: 2 },
+  ];
+  const [v, setV] = useState('cl');
+  const o = OPTS.find(x => x.id === v);
+  return (
+    <Calc title="Assistência no aeroporto">
+      <Seg options={OPTS} value={v} setValue={setV} />
+      <Result value={o.med ? fmtEur(o.med * med) : '0,00 €'} foot={o.med ? `${o.med} setor médio (1,2× NS). Não inclui per diem.` : 'Só per diem.'} />
+    </Calc>
+  );
+}
+
+function CalcCash({ base, factor, contractLabel }) {
+  if (!base) return <Calc title="Abono para falhas"><Text style={cs.na}>Depende do salário mínimo nacional.</Text></Calc>;
+  const effBase = factor != null ? base * factor : base;
+  const annual = effBase * 0.05;
+  const note = factor != null && factor < 1
+    ? `Base efetiva ${contractLabel}: ${fmtEur(effBase)} (de ${fmtEur(base)}).`
+    : factor == null
+      ? 'Contrato parcial: ajustar à percentagem do teu contrato.'
+      : null;
+  return (
+    <Calc title="Abono para falhas">
+      <View style={cs.line}><Text style={cs.lineLbl}>Anual (5% da base)</Text><Text style={cs.lineVal}>{fmtEur(annual)}</Text></View>
+      <View style={[cs.line, cs.lineDiv]}><Text style={cs.lineLbl}>Mensal (÷12)</Text><Text style={cs.lineVal}>{fmtEur(annual / 12)}</Text></View>
+      {note ? <Text style={cs.cashNote}>{note}</Text> : null}
+    </Calc>
+  );
+}
+
+function CalcLanguage() {
+  const [n, setN] = useState(1);
+  const total = n <= 0 ? 0 : 350 + (n - 1) * 50;
+  return (
+    <Calc title="Domínio de língua estrangeira">
+      <Stepper label="Línguas (além de EN/PT)" value={n} setValue={setN} min={0} max={6} />
+      <Result value={fmtEur(total)} foot="3.ª língua: 350 €; cada adicional: +50 €. Por ano." />
+    </Calc>
+  );
+}
+
+function CalcWfly({ base }) {
+  const [n, setN] = useState(1);
+  if (!base) return <Calc title="Trabalho em dia de descanso (WFLY)"><Text style={cs.na}>Depende do salário mínimo nacional.</Text></Calc>;
+  const unit = base * 0.01;
+  return (
+    <Calc title="Trabalho em dia de descanso (WFLY)">
+      <Stepper label="Dias trabalhados" value={n} setValue={setN} min={1} />
+      <Result value={fmtEur(unit * n)} foot={`1% da base anual = ${fmtEur(unit)} / dia`} />
+    </Calc>
+  );
+}
+
+function CalcCommission() {
+  const [sales, setSales] = useState(0);
+  return (
+    <Calc title="Comissões (Bistro / Boutique)">
+      <View style={cs.stepRow}>
+        <Text style={cs.stepLabel}>Total de vendas (€)</Text>
+        <TextInput value={String(sales)} keyboardType="numeric" selectTextOnFocus
+          onChangeText={(t) => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setSales(isNaN(n) ? 0 : n); }}
+          style={[cs.stepInput, { width: 90 }]} />
+      </View>
+      <Result value={fmtEur(sales * 0.10)} foot="10% do total de vendas do voo (a dividir pela tripulação)." />
+    </Calc>
+  );
+}
+
+function CalcCount() {
+  const [work, setWork] = useState(0);
+  const [off, setOff] = useState(0);
+  return (
+    <Calc title="Dias de trabalho e folga">
+      <Stepper label="Dias de trabalho" value={work} setValue={setWork} />
+      <Stepper label="Dias de folga" value={off} setValue={setOff} />
+      <View style={cs.result}>
+        <Text style={cs.resLbl}>TOTAL DE DIAS</Text>
+        <Text style={cs.resVal}>{work + off}</Text>
+        <Text style={cs.resFoot}>{work} trabalho · {off} folga. (Sem pagamento direto associado.)</Text>
+      </View>
+    </Calc>
+  );
+}
+
+// ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
+  const { profile } = useContext(AppContext);
+  const rank = profile.rank || 'fa';
+  const rankObj = RANKS.find(r => r.id === rank) || RANKS[1];
+  const rankRow = RANK_ROW[rank] ?? 1;
+  const ns = PAY_NUM[rank]?.ns ?? PAY_NUM.fa.ns;
+  const base = PAY_NUM[rank]?.base ?? null;
+  const nsCM = PAY_NUM.cm.ns;
+  const rdpFloor = (rank === 'cm' || rank === 'cm_prob') ? 23 : 18;
+  const contractObj = CONTRACTS.find(c => c.id === profile.contract);
+  const isPT = profile.contract === 'pt';
+  const [ptMode, setPtMode] = useState('fix50');
+  const ptModeObj = PT_MODES.find(m => m.id === ptMode);
+  const factor = isPT ? ptModeObj.factor : (profile.contract != null ? (CONTRACT_FACTOR[profile.contract] ?? 1) : 1);
+  const contractLabel = isPT ? ptModeObj.label : (contractObj?.label || '');
+
   const openClause = (number) => {
     const clause = CLAUSES.find(c => c.number === number);
     if (clause) navigation.navigate('AE/FTL', { screen: 'Detail', params: { clause } });
@@ -13,51 +214,104 @@ export default function CategoriesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.scroll}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.headerBlob}>
           <Text style={s.eyebrow}>CATEGORIAS PROFISSIONAIS</Text>
           <Text style={s.headTitle}>Categorias</Text>
         </View>
 
-        {RANKS.map((r, i) => (
-          <View key={r.id} style={s.card}>
-            <View style={s.cardTop}>
-              <View style={s.numBox}><Text style={s.numTxt}>{i + 1}</Text></View>
-              <Text style={s.cardTitle}>{r.label}</Text>
-            </View>
-            <View style={s.rowsBox}>
-              <View style={s.row}>
-                <Text style={s.rowLbl}>Base anual (Nov 25)</Text>
-                <Text style={s.rowVal}>{SALARY.rows[i].v[2]}</Text>
-              </View>
-              <View style={[s.row, s.rowDiv]}>
-                <Text style={s.rowLbl}>Setor nominal (Nov 25)</Text>
-                <Text style={s.rowVal}>{SECTOR_TABLE.rows[i].v[2]}</Text>
-              </View>
-              <View style={[s.row, s.rowDiv]}>
-                <Text style={s.rowLbl}>Posicionamento (C/M/L/X)</Text>
-                <Text style={s.rowValSm}>{POSITIONING.rows[i].v.join(' / ')} €</Text>
-              </View>
-            </View>
+        {/* A tua categoria */}
+        <View style={s.meCard}>
+          <View style={s.meTop}>
+            <Text style={s.meEyebrow}>A TUA CATEGORIA</Text>
+            {contractObj && <View style={s.contractPill}><Text style={s.contractTxt}>{contractObj.label}</Text></View>}
           </View>
-        ))}
+          <Text style={s.meTitle}>{rankObj.label}</Text>
+          <View style={s.meRow}>
+            <View style={s.meCell}><Text style={s.meLbl}>Setor nominal</Text><Text style={s.meVal}>{SECTOR_TABLE.rows[rankRow].v[2]}</Text></View>
+            <View style={s.meCell}><Text style={s.meLbl}>Base anual</Text><Text style={s.meVal}>{SALARY.rows[rankRow].v[2]}</Text></View>
+          </View>
+          <Text style={s.meNote}>As calculadoras usam os valores da tua categoria{contractObj ? ` · ${CONTRACT_NOTE[profile.contract] || ''}` : ''}</Text>
+        </View>
+
+        {isPT && (
+          <View style={cs.calc}>
+            <Text style={cs.calcTitle}>Modalidade de tempo parcial</Text>
+            <Seg options={PT_MODES.map(m => ({ id: m.id, label: m.label }))} value={ptMode} setValue={setPtMode} />
+            <View style={cs.line}><Text style={cs.lineLbl}>Base anual aplicável</Text><Text style={cs.lineVal}>{Math.round(ptModeObj.factor * 100)}%</Text></View>
+            <View style={[cs.line, cs.lineDiv]}><Text style={cs.lineLbl}>Dias de férias</Text><Text style={cs.lineVal}>{ptModeObj.leave}</Text></View>
+            <Text style={cs.cashNote}>{ptMode.startsWith('saz') ? '8 meses a tempo parcial + 4 meses (verão) a tempo inteiro.' : 'Percentagem aplicada todo o ano.'}</Text>
+          </View>
+        )}
+
+        {/* Setores e deslocações */}
+        <Text style={s.group}>SETORES E DESLOCAÇÕES</Text>
+        <CalcSectors ns={ns} />
+        <CalcPositioning rankRow={rankRow} />
+        <CalcStandby ns={ns} />
+
+        {/* Pagamentos por evento */}
+        <Text style={s.group}>PAGAMENTOS POR EVENTO</Text>
+        <CalcPerEvent title="Pernoitas" unitLabel="Noites fora da base" unit={46} foot="46 € por noite (Anexo I)." />
+        <CalcPerEvent title="Trabalho em terra" unitLabel="Dias em terra" unit={3 * ns} foot={`3 setores nominais = ${fmtEur(3 * ns)} / dia.`} />
+        <CalcPerEvent title="Pagamento por dia de férias" unitLabel="Dias de férias" unit={2 * ns} foot={`2 setores nominais = ${fmtEur(2 * ns)} / dia.`} />
+        <CalcPerEvent title="Alterações de escala — SNC" unitLabel="Eventos SNC" unit={20} foot="20 € por evento qualificável." />
+        <CalcPerEvent title="Irregularidade de escala — RDP" unitLabel="Eventos RDP" unit={Math.max(ns, rdpFloor)} foot={`1 setor nominal (mín. ${rdpFloor} € para a tua categoria).`} />
+        <CalcPerEvent title="Trabalhar num dia de descanso (DDO)" unitLabel="Dias DDO" unit={115} foot="115 € por dia (todas as categorias)." />
+        <CalcPerEvent title="Dia de descanso infringido (IDO)" unitLabel="Dias IDO" unit={140} foot="140 € por dia (todas as categorias)." />
+        <CalcWfly base={base} />
+        <CalcCommission />
+
+        {/* Mensais / anuais */}
+        <Text style={s.group}>MENSAIS / ANUAIS</Text>
+        <CalcCash base={base} factor={factor} contractLabel={contractLabel} />
+        <CalcLanguage />
+
+        {/* Funções adicionais */}
+        <Text style={s.group}>FUNÇÕES ADICIONAIS</Text>
+        <CalcPerEvent title="CCLT — Tripulante Verificador de Linha" unitLabel="Dias de treino" unit={25} foot="25 € por dia de treino." />
+        <CalcPerEvent title="Instrutor CTI-Flexi" unitLabel="Serviços" unit={4 * nsCM} foot={`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`} />
+        <CalcPerEvent title="Pagamento por dias de recrutamento" unitLabel="Dias" unit={4 * nsCM} foot={`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`} />
+
+        {/* Outros */}
+        <Text style={s.group}>OUTROS</Text>
+        <CalcCount />
 
         <TouchableOpacity style={s.link} activeOpacity={0.8} onPress={() => openClause(33)}>
           <Ionicons name="document-text-outline" size={16} color={C.red} />
-          <Text style={s.linkTxt}>Cláusula 33 — Descrição e progressão</Text>
-          <Ionicons name="chevron-forward" size={15} color={C.line} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.link} activeOpacity={0.8} onPress={() => openClause(34)}>
-          <Ionicons name="document-text-outline" size={16} color={C.red} />
-          <Text style={s.linkTxt}>Cláusula 34 — Chefe de Cabine “Upranker”</Text>
+          <Text style={s.linkTxt}>Cláusula 33 — Categorias e progressão</Text>
           <Ionicons name="chevron-forward" size={15} color={C.line} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
-        <Text style={s.foot}>Valores ilíquidos do Anexo I (Nov 2025). Tabela salarial completa nas cláusulas 50 e 53.</Text>
+        <Text style={s.foot}>Valores ilíquidos do Anexo I (Nov 2025). Estimativas para apoio — prevalece sempre o AE e o processamento oficial.</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const cs = StyleSheet.create({
+  calc: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: C.canvas },
+  calcTitle: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 8 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
+  stepLabel: { fontSize: 13, color: C.text, flex: 1, paddingRight: 8 },
+  stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stepBtn: { width: 32, height: 32, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  stepBtnTxt: { fontSize: 18, color: C.ink, lineHeight: 22 },
+  stepInput: { width: 54, textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
+  segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  segBtn: { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
+  segTxt: { fontSize: 12, fontWeight: '600' },
+  result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
+  resLbl: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
+  resVal: { fontSize: 26, color: C.red, fontFamily: 'monospace', marginTop: 2 },
+  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
+  lineDiv: { borderTopWidth: 1, borderTopColor: C.line },
+  lineLbl: { fontSize: 13, color: C.sub },
+  lineVal: { fontSize: 15, fontFamily: 'monospace', fontWeight: '700', color: C.text },
+  na: { fontSize: 13, color: C.sub },
+  cashNote: { fontSize: 11, color: C.sub, marginTop: 10, lineHeight: 16 },
+});
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
@@ -65,18 +319,19 @@ const s = StyleSheet.create({
   headerBlob: { backgroundColor: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
-  card: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: C.canvas },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  numBox: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  numTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
-  cardTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },
-  rowsBox: { borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 },
-  rowDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  rowLbl: { fontSize: 12, color: C.sub, flex: 1 },
-  rowVal: { fontSize: 14, fontFamily: 'monospace', fontWeight: '700', color: C.text },
-  rowValSm: { fontSize: 11, fontFamily: 'monospace', color: C.text },
-  link: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 2, marginBottom: 8 },
+  meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: 16, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
+  meTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  meEyebrow: { fontSize: 9, letterSpacing: 2, color: C.red, fontWeight: '700' },
+  contractPill: { backgroundColor: C.soft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
+  contractTxt: { fontSize: 11, color: C.ink, fontWeight: '600' },
+  meTitle: { fontSize: 18, fontWeight: '700', color: C.text, letterSpacing: -0.3 },
+  meRow: { flexDirection: 'row', gap: 12, marginTop: 14 },
+  meCell: { flex: 1, backgroundColor: C.soft, borderRadius: 12, padding: 12 },
+  meLbl: { fontSize: 10, letterSpacing: 0.5, color: C.sub, textTransform: 'uppercase' },
+  meVal: { fontSize: 16, fontFamily: 'monospace', fontWeight: '700', color: C.text, marginTop: 3 },
+  meNote: { fontSize: 11, color: C.sub, marginTop: 12 },
+  group: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: 10, marginBottom: 8, marginLeft: 2 },
+  link: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 6, marginBottom: 8 },
   linkTxt: { fontSize: 13, fontWeight: '500', color: C.text },
-  foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 12, paddingHorizontal: 2 },
+  foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
 });
