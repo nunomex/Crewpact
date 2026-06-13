@@ -68,29 +68,25 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Group title="Conta">
-          <Row label="Alterar palavra-passe" value="" onPress={() => setPwModal(true)} />
-          <Row label="Terminar sessão" value="" onPress={logout} last danger />
-        </Group>
-
         <Group title="Perfil">
           <Row label="Companhia" value={company?.name} onPress={() => setOnboarded(false)} />
           <Row label="Categoria" value={rankObj?.short} onPress={() => setOnboarded(false)} />
           <Row label="Contrato" value={contract?.label} onPress={() => setOnboarded(false)} last />
         </Group>
 
-        <Group title="Idioma por defeito">
-          <View style={s.langRow}>
+        {/* Idioma — inline, pequeno */}
+        <View style={s.langInline}>
+          <Text style={s.langInlineLbl}>IDIOMA</Text>
+          <View style={s.langInlineBtns}>
             {['pt', 'en'].map(l => (
-              <TouchableOpacity key={l} onPress={() => setLang(l)}
-                style={[s.langBtn, { backgroundColor: lang === l ? C.ink : C.soft }]}>
-                <Text style={[s.langTxt, { color: lang === l ? '#fff' : C.sub }]}>
-                  {l === 'pt' ? 'Português' : 'English'}
+              <TouchableOpacity key={l} onPress={() => setLang(l)} hitSlop={8}>
+                <Text style={[s.langInlineTxt, { color: lang === l ? C.ink : C.sub, fontWeight: lang === l ? '700' : '500' }]}>
+                  {l === 'pt' ? 'PT' : 'ENG'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        </Group>
+        </View>
 
         <Group title="Conteúdo">
           <View style={s.syncRow}>
@@ -108,6 +104,11 @@ export default function SettingsScreen() {
             <Ionicons name="cloud-offline-outline" size={13} color={C.sub} />
             <Text style={s.offlineTxt}>Disponível offline · usa rede só para atualizar</Text>
           </View>
+        </Group>
+
+        <Group title="Conta">
+          <Row label="Alterar palavra-passe" value="" onPress={() => setPwModal(true)} />
+          <Row label="Terminar sessão" value="" onPress={logout} last danger />
         </Group>
 
         <Group title="Sobre">
@@ -168,9 +169,10 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
   rowLabel: { fontSize: 14, color: C.sub },
   rowValue: { fontSize: 13, fontWeight: '500', color: C.text, maxWidth: 180, textAlign: 'right' },
-  langRow: { flexDirection: 'row', gap: 8, padding: 12 },
-  langBtn: { flex: 1, paddingVertical: 10, borderRadius: 99, alignItems: 'center' },
-  langTxt: { fontSize: 13, fontWeight: '600' },
+  langInline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, marginBottom: 20 },
+  langInlineLbl: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600' },
+  langInlineBtns: { flexDirection: 'row', gap: 18 },
+  langInlineTxt: { fontSize: 13, letterSpacing: 0.5 },
   syncRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   syncTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
