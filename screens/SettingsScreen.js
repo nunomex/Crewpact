@@ -11,7 +11,7 @@ import { AppContext } from '../App';
 function Group({ title, children }) {
   return (
     <View style={s.group}>
-      <Text style={s.groupTitle}>{title}</Text>
+      {title ? <Text style={s.groupTitle}>{title}</Text> : null}
       <View style={s.groupBox}>{children}</View>
     </View>
   );
@@ -85,13 +85,14 @@ export default function SettingsScreen() {
     <SafeAreaView style={s.safe}>
       <View style={s.headerBlob}>
         <View style={{ flex: 1 }}>
-          <Text style={s.eyebrow}>PREFERÊNCIAS</Text>
-          <Text style={s.headTitle}>Definições</Text>
+          <Text style={s.eyebrow}>A TUA CONTA</Text>
+          <Text style={s.headTitle}>Perfil</Text>
         </View>
         <View style={s.headLang}>
-          {['pt', 'en'].map((l, i) => (
-            <TouchableOpacity key={l} onPress={() => setLang(l)} hitSlop={8}>
-              <Text style={[s.headLangTxt, { color: lang === l ? C.red : 'rgba(255,255,255,0.55)' }]}>
+          {['pt', 'en'].map((l) => (
+            <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8}
+              style={[s.langDot, { backgroundColor: lang === l ? C.red : 'rgba(255,255,255,0.12)' }]}>
+              <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : 'rgba(255,255,255,0.6)' }]}>
                 {l.toUpperCase()}
               </Text>
             </TouchableOpacity>
@@ -113,7 +114,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Group title="Perfil">
+        <Group>
           <Row label="Companhia" value={company?.name} onPress={() => setPickerField('company')} />
           <Row label="Categoria" value={rankObj?.short} onPress={() => setPickerField('rank')} />
           <Row label="Contrato" value={contract?.label} onPress={() => setPickerField('contract')} last />
@@ -129,10 +130,6 @@ export default function SettingsScreen() {
               <Ionicons name="refresh" size={14} color="#fff" />
               <Text style={s.syncBtnTxt}>Verificar</Text>
             </TouchableOpacity>
-          </View>
-          <View style={s.offlineNote}>
-            <Ionicons name="cloud-offline-outline" size={13} color={C.sub} />
-            <Text style={s.offlineTxt}>Disponível offline · usa rede só para atualizar</Text>
           </View>
         </Group>
 
@@ -217,8 +214,9 @@ const s = StyleSheet.create({
   headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 8, padding: 16 },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
-  headLang: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  headLangTxt: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
+  headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  langDot: { width: 34, height: 34, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+  langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 20 },
   avatar: { width: 48, height: 48, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
@@ -236,8 +234,6 @@ const s = StyleSheet.create({
   syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
   syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 8 },
   syncBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  offlineNote: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 14 },
-  offlineTxt: { fontSize: 11, color: C.sub },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { backgroundColor: C.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: C.line },

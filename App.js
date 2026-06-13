@@ -62,7 +62,7 @@ function MainTabs() {
             'Início':         focused ? 'home'          : 'home-outline',
             'AE/FTL':         focused ? 'document-text' : 'document-text-outline',
             'Categorias':     focused ? 'people'        : 'people-outline',
-            'Definições':     focused ? 'settings'      : 'settings-outline',
+            'Perfil':         focused ? 'person'        : 'person-outline',
           };
           return <Ionicons name={icons[route.name]} size={22} color={color} />;
         },
@@ -71,7 +71,7 @@ function MainTabs() {
       <Tab.Screen name="Início"         component={HomeStack} />
       <Tab.Screen name="AE/FTL" component={AgreementStack} />
       <Tab.Screen name="Categorias"     component={CategoriesScreen} />
-      <Tab.Screen name="Definições"     component={SettingsScreen} />
+      <Tab.Screen name="Perfil"         component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
