@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, NOTIFS } from '../data/constants';
+import { C, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
+import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import { AppContext } from '../App';
 
@@ -17,7 +18,8 @@ export default function HomeScreen({ navigation }) {
   const pay      = PROFILE_PAY[profile.rank] || {};
   const [notifOpen, setNotifOpen] = useState(false);
   const [favPage, setFavPage] = useState(0);
-  const unread = NOTIFS.filter(n => !readNotifIds.has(n.id)).length;
+  const notifs = buildNotifications(profile);
+  const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
   // Up to 8 favorites, shown 4 per page in a swipeable carousel
   const favItems = CLAUSES.filter(c => favorites.has(c.number)).slice(0, 8);
@@ -48,7 +50,7 @@ export default function HomeScreen({ navigation }) {
 
   const closeNotifs = () => {
     setNotifOpen(false);
-    setReadNotifIds(new Set(NOTIFS.map(n => n.id)));
+    setReadNotifIds(new Set(notifs.map(n => n.id)));
   };
 
   return (
@@ -187,7 +189,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <ScrollView style={{ flex: 1 }}>
-            {NOTIFS.map((n, i) => {
+            {notifs.map((n, i) => {
               const isNew = !readNotifIds.has(n.id);
               return (
                 <View key={n.id} style={[s.notifItem, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>

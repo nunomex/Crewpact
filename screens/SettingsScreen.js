@@ -1,6 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+
+const todayPT = () => new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 import { C, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { AppContext } from '../App';
@@ -28,7 +31,21 @@ function Row({ label, value, onPress, last, danger }) {
 export default function SettingsScreen() {
   const { profile, setProfile, setOnboarded, lang, setLang, user, logout } = useContext(AppContext);
   const [syncing, setSyncing] = useState(false);
-  const [syncedAt, setSyncedAt] = useState('09/06/2026');
+  const [syncedAt, setSyncedAt] = useState(todayPT());
+
+  useEffect(() => {
+    AsyncStorage.getItem('ae_lastChecked').then(v => { if (v) setSyncedAt(v); });
+  }, []);
+
+  const checkUpdates = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      const now = todayPT();
+      setSyncedAt(now);
+      AsyncStorage.setItem('ae_lastChecked', now).catch(() => {});
+      setSyncing(false);
+    }, 1200);
+  };
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
   const [newPw, setNewPw]   = useState('');
@@ -108,8 +125,7 @@ export default function SettingsScreen() {
               <Text style={s.syncTitle}>Acordo easyJet 2023–2027</Text>
               <Text style={s.syncSub}>versão 3 · {syncing ? 'a sincronizar…' : `atualizado a ${syncedAt}`}</Text>
             </View>
-            <TouchableOpacity onPress={() => { setSyncing(true); setTimeout(() => { setSyncing(false); setSyncedAt('09/06/2026'); }, 1400); }}
-              style={s.syncBtn}>
+            <TouchableOpacity onPress={checkUpdates} style={s.syncBtn}>
               <Ionicons name="refresh" size={14} color="#fff" />
               <Text style={s.syncBtnTxt}>Verificar</Text>
             </TouchableOpacity>
