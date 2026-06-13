@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from './data/constants';
 import { supabase } from './data/supabase';
 
@@ -44,6 +45,7 @@ function AgreementStack() {
 }
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -52,7 +54,7 @@ function MainTabs() {
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: 22,
+          bottom: Math.max(insets.bottom, 12),
           height: 66,
           borderRadius: 24,
           backgroundColor: 'rgba(255,255,255,0.98)',
