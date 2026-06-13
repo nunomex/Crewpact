@@ -91,8 +91,11 @@ function Table1() {
         </View>
       </ScrollView>
       <View style={t.legend}>
-        <Text style={t.legendHead}>{FTL_TABLE1.colHeader}</Text>
+        <Text style={t.legendHead}>Estado de aclimatação</Text>
         {FTL_TABLE1.legend.map((l, i) => <Text key={i} style={t.legendTxt}>{l}</Text>)}
+        <Text style={t.legendAxis}>
+          Linhas: diferença horária (h) entre a hora de referência e o início do turno seguinte. Colunas: {FTL_TABLE1.colHeader.toLowerCase()}.
+        </Text>
       </View>
     </View>
   );
@@ -239,8 +242,9 @@ const t = StyleSheet.create({
   headCell: { color: C.sub, fontWeight: '700' },
   note: { fontSize: 10, color: C.sub, padding: 10, borderTopWidth: 1, borderTopColor: C.line },
   legend: { padding: 10, borderTopWidth: 1, borderTopColor: C.line },
-  legendHead: { fontSize: 10, color: C.text, fontWeight: '600', marginBottom: 6 },
+  legendHead: { fontSize: 10, color: C.text, fontWeight: '600', marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
   legendTxt: { fontSize: 11, color: C.sub, lineHeight: 17 },
+  legendAxis: { fontSize: 11, color: C.sub, lineHeight: 17, marginTop: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
 });
 
 const d = StyleSheet.create({
