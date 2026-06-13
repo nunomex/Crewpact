@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from './data/constants';
 import { supabase } from './data/supabase';
 
@@ -167,10 +167,12 @@ export default function App() {
   };
 
   return (
-    <AppContext.Provider value={ctx}>
-      <NavigationContainer>
-        {renderScreen()}
-      </NavigationContainer>
-    </AppContext.Provider>
+    <SafeAreaProvider>
+      <AppContext.Provider value={ctx}>
+        <NavigationContainer>
+          {renderScreen()}
+        </NavigationContainer>
+      </AppContext.Provider>
+    </SafeAreaProvider>
   );
 }
