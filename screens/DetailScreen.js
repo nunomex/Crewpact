@@ -197,7 +197,7 @@ const t = StyleSheet.create({
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function DetailScreen({ route, navigation }) {
-  const { profile, favorites, toggleFav, lang, setLang } = useContext(AppContext);
+  const { profile, favorites, toggleFav, lang } = useContext(AppContext);
   const cl  = route.params?.clause;
   const [currentCl, setCurrentCl] = useState(cl);
   const c = currentCl;

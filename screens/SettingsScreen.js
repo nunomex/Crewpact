@@ -53,12 +53,12 @@ export default function SettingsScreen() {
   const rankObj  = RANKS.find(r => r.id === profile.rank);
   const contract = CONTRACTS.find(c => c.id === profile.contract);
 
-  const handleChangePw = () => {
+  const handleChangePw = async () => {
     setPwErr('');
     const err = validatePassword(newPw, true);
     if (err) { setPwErr(err); return; }
     if (newPw !== confPw) { setPwErr('As palavras-passe não coincidem.'); return; }
-    const res = changePassword(user.id, curPw, newPw);
+    const res = await changePassword(newPw);
     if (!res.ok) { setPwErr(res.error); return; }
     setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
     Alert.alert('Sucesso', 'Palavra-passe alterada.');
