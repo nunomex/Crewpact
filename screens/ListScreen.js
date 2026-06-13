@@ -78,7 +78,7 @@ export default function ListScreen({ navigation, route }) {
           <Text style={s.clauseTags} numberOfLines={1}>{cl.tags.join(' · ')}</Text>
         </View>
         {CALC[cl.number] && <Ionicons name="calculator-outline" size={14} color={C.sub} />}
-        {mine && <View style={s.mineDot} />}
+        {mine && <Ionicons name="person-circle" size={16} color={C.red} accessibilityLabel="Aplicável à tua categoria" />}
         <Ionicons name="chevron-forward" size={16} color={C.line} />
       </TouchableOpacity>
     );

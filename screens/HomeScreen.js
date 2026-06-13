@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
@@ -8,10 +8,11 @@ import { getUpcomingFlight } from '../data/calendar';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
-const FAV_PAGE_W = Dimensions.get('window').width - 32; // scroll padding 16 each side
-const FAV_CARD_W = (FAV_PAGE_W - FAV_GAP) / 2;
 
 export default function HomeScreen({ navigation }) {
+  const { width } = useWindowDimensions();
+  const FAV_PAGE_W = width - 32;            // scroll padding 16 de cada lado
+  const FAV_CARD_W = (FAV_PAGE_W - FAV_GAP) / 2;
   const { profile, favorites, lang, readNotifIds, setReadNotifIds } = useContext(AppContext);
   const company = COMPANIES.find(c => c.id === profile.company);
   const rankObj  = RANKS.find(r => r.id === profile.rank);
@@ -65,7 +66,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={s.compName}>{company?.name}</Text>
             </View>
           </View>
-          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8}>
+          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8}>
             <Ionicons name="notifications" size={18} color="#fff" />
             {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
           </TouchableOpacity>
@@ -97,12 +98,12 @@ export default function HomeScreen({ navigation }) {
               <View style={s.flightIcon}><Ionicons name="airplane" size={14} color="#fff" /></View>
               <Text style={s.flightEyebrow}>PRÓXIMO VOO</Text>
             </View>
-            <View style={[s.syncPill, synced && { backgroundColor: C.greenSoft }]}>
+            <View style={[s.syncPill, synced ? { backgroundColor: C.greenSoft } : { backgroundColor: C.ink }]}>
               {syncing
-                ? <ActivityIndicator size="small" color={C.sub} />
+                ? <ActivityIndicator size="small" color="#fff" />
                 : <>
-                    <Ionicons name={synced ? 'checkmark-circle' : 'sync-outline'} size={11} color={synced ? C.green : C.sub} />
-                    <Text style={[s.syncTxt, synced && { color: C.green }]}>{synced ? 'Sincronizado' : 'Exemplo'}</Text>
+                    <Ionicons name={synced ? 'checkmark-circle' : 'sync-outline'} size={12} color={synced ? C.green : '#fff'} />
+                    <Text style={[s.syncTxt, { color: synced ? C.green : '#fff' }]}>{synced ? 'Sincronizado' : 'Sincronizar'}</Text>
                   </>}
             </View>
           </View>

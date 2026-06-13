@@ -15,11 +15,11 @@ function Stepper({ label, value, setValue, min = 0, max = 99 }) {
     <View style={cs.stepRow}>
       <Text style={cs.stepLabel}>{label}</Text>
       <View style={cs.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn}><Text style={cs.stepBtnTxt}>−</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn} hitSlop={6}><Text style={cs.stepBtnTxt}>−</Text></TouchableOpacity>
         <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
           onChangeText={(tx) => { const n = parseInt(tx.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
           style={cs.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]}><Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}><Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
       </View>
     </View>
   );
@@ -195,7 +195,7 @@ export default function FtlDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={d.safe}>
       <View style={d.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn} hitSlop={8}>
           <Ionicons name="arrow-back" size={20} color={C.ink} />
         </TouchableOpacity>
       </View>

@@ -64,6 +64,17 @@ export default function SettingsScreen() {
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
   const [pickerField, setPickerField] = useState(null); // 'company' | 'rank' | 'contract'
+  const [toast, setToast] = useState(null);
+  const toastY = useRef(new Animated.Value(-72)).current;
+
+  useEffect(() => {
+    if (!toast) return;
+    Animated.spring(toastY, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }).start();
+    const t = setTimeout(() => {
+      Animated.timing(toastY, { toValue: -72, duration: 250, useNativeDriver: true }).start(() => setToast(null));
+    }, 1700);
+    return () => clearTimeout(t);
+  }, [toast, toastY]);
 
   const PICKERS = {
     company:  { title: 'Companhia', options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
@@ -75,6 +86,7 @@ export default function SettingsScreen() {
     const next = { ...profile, [field]: id };
     setProfile(next);
     setPickerField(null);
+    setToast(`${PICKERS[field].title} atualizada`);
     updateProfile(next).catch(() => {}); // persiste no Supabase (user_metadata)
   };
 
@@ -95,6 +107,12 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
+      {toast && (
+        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
+          <Ionicons name="checkmark-circle" size={16} color={C.green} />
+          <Text style={s.toastTxt}>{toast}</Text>
+        </Animated.View>
+      )}
       <View style={s.headerBlob}>
         <View style={{ flex: 1 }}>
           <Text style={s.eyebrow}>A TUA CONTA</Text>
@@ -102,7 +120,7 @@ export default function SettingsScreen() {
         </View>
         <View style={s.headLang}>
           {['pt', 'en'].map((l) => (
-            <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8}
+            <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
               style={[s.langDot, { backgroundColor: lang === l ? C.red : 'rgba(255,255,255,0.12)' }]}>
               <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : 'rgba(255,255,255,0.6)' }]}>
                 {l.toUpperCase()}
@@ -225,6 +243,8 @@ export default function SettingsScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
+  toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
+  toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
   headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 8, padding: 16 },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },

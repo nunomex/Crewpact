@@ -8,9 +8,24 @@ export const C = {
   redSoft: "#FBE3E0",
   line: "#E7E6E2",
   text: "#191919",
-  sub: "#9B9B95",
+  sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)
+  subLight: "#9B9B95", // antigo tom claro: usar só em fundos escuros/decorativo
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
+};
+
+// ─── Design tokens ─────────────────────────────────────────────────────────────
+// Adotar progressivamente nos ecrãs para uniformizar raios, espaços e tipos.
+export const RADIUS = { sm: 10, md: 14, lg: 16, xl: 22, pill: 99 };
+export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
+// Escala tipográfica (px). Mínimo 12 para texto informativo (acessibilidade).
+export const TYPE = {
+  eyebrow: 10,   // rótulos discretos (letterSpacing 1.5–2)
+  label: 12,
+  body: 14,
+  value: 15,
+  title: 18,
+  display: 24,
 };
 
 // ─── Companies ───────────────────────────────────────────────────────────────

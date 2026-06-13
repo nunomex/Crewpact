@@ -16,13 +16,13 @@ function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
     <View style={cs.stepRow}>
       <Text style={cs.stepLabel}>{label}</Text>
       <View style={cs.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn}>
+        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn} hitSlop={6}>
           <Text style={cs.stepBtnTxt}>−</Text>
         </TouchableOpacity>
         <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
           onChangeText={t => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
           style={cs.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]}>
+        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}>
           <Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text>
         </TouchableOpacity>
       </View>
@@ -210,10 +210,10 @@ export default function DetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={d.safe}>
       <View style={d.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn} hitSlop={8}>
           <Ionicons name="arrow-back" size={20} color={C.ink} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => toggleFav(c.number)} style={[d.iconBtn, fav && { backgroundColor: C.red }]}>
+        <TouchableOpacity onPress={() => toggleFav(c.number)} style={[d.iconBtn, fav && { backgroundColor: C.red }]} hitSlop={8}>
           <Ionicons name={fav ? 'star' : 'star-outline'} size={18} color={fav ? '#fff' : C.sub} />
         </TouchableOpacity>
       </View>

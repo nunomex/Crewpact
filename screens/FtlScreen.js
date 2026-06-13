@@ -70,7 +70,7 @@ export default function FtlScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.headerBlob}>
-        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="arrow-back" size={18} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
