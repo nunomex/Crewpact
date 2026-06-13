@@ -1,5 +1,5 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert } from 'react-native';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -36,6 +36,18 @@ export default function SettingsScreen() {
   useEffect(() => {
     AsyncStorage.getItem('ae_lastChecked').then(v => { if (v) setSyncedAt(v); });
   }, []);
+
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let loop;
+    if (syncing) {
+      spin.setValue(0);
+      loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 800, easing: Easing.linear, useNativeDriver: true }));
+      loop.start();
+    }
+    return () => loop && loop.stop();
+  }, [syncing]);
+  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   const checkUpdates = () => {
     setSyncing(true);
@@ -126,9 +138,11 @@ export default function SettingsScreen() {
               <Text style={s.syncTitle}>Acordo easyJet 2023–2027</Text>
               <Text style={s.syncSub}>versão 3 · {syncing ? 'a sincronizar…' : `atualizado a ${syncedAt}`}</Text>
             </View>
-            <TouchableOpacity onPress={checkUpdates} style={s.syncBtn}>
-              <Ionicons name="refresh" size={14} color="#fff" />
-              <Text style={s.syncBtnTxt}>Verificar</Text>
+            <TouchableOpacity onPress={checkUpdates} style={s.syncBtn} disabled={syncing}>
+              <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
+                <Ionicons name="refresh" size={14} color="#fff" />
+              </Animated.View>
+              <Text style={s.syncBtnTxt}>{syncing ? 'A verificar…' : 'Verificar'}</Text>
             </TouchableOpacity>
           </View>
         </Group>
