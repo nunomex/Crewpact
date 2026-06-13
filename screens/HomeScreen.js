@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE } from '../data/constants';
+import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
@@ -75,7 +75,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* Pay card */}
         <Card style={{ marginBottom: SPACE.md }}>
-          <Text style={s.payEyebrow}>A TUA REMUNERAÇÃO · NOV 2025</Text>
+          <Text style={s.payEyebrow}>A TUA REMUNERAÇÃO · {DATA_VERSION.payRef.toUpperCase()}</Text>
           <View style={s.payRow}>
             <View>
               <Text style={s.payLbl}>Base anual (ilíquida)</Text>
@@ -154,7 +154,8 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : (
           <>
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}
+              snapToInterval={FAV_PAGE_W} decelerationRate="fast" snapToAlignment="start"
               onMomentumScrollEnd={e => setFavPage(Math.round(e.nativeEvent.contentOffset.x / FAV_PAGE_W))}>
               {favPages.map((page, pi) => (
                 <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>

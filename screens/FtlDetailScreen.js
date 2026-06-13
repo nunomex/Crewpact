@@ -257,7 +257,7 @@ const d = StyleSheet.create({
   boxRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11 },
   boxRowCol: { paddingHorizontal: 12, paddingVertical: 11 },
   boxDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  boxTag: { fontSize: 8, letterSpacing: 1.5, color: C.red, fontWeight: '700' },
+  boxTag: { fontSize: 11, letterSpacing: 1.5, color: C.red, fontWeight: '700' },
   boxLbl: { fontSize: 13, color: C.text, marginTop: 1 },
   boxVal: { fontSize: 16, fontFamily: 'monospace', fontWeight: '700', color: C.text },
   boxValSm: { fontSize: TYPE.label, fontFamily: 'monospace', color: C.sub, marginTop: 3 },

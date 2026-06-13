@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS } from '../data/constants';
+import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
@@ -46,7 +46,7 @@ function Calculator({ calc, rank }) {
     const val = parseFloat(POSITIONING.rows[idx].v[pos].replace(',', '.'));
     inputs = <><Seg options={POS_OPTS} value={pos} setValue={setPos} /><Stepper label="Nº de posicionamentos" value={qty} setValue={setQty} /></>;
     lines = [{ label: `${POS_OPTS[pos].label} × ${qty}`, val: fmtEur(val * qty) }];
-    foot = 'Valores de Nov 2025 para a tua categoria.';
+    foot = `Valores de ${DATA_VERSION.payRef} para a tua categoria.`;
   } else if (calc.kind === 'standby') {
     const o = STANDBY_OPTS.find(x => x.id === sb);
     inputs = <Seg options={STANDBY_OPTS} value={sb} setValue={setSb} />;
@@ -108,7 +108,7 @@ function ValueTable({ title, data }) {
 function PosTable() {
   return (
     <View style={t.wrap}>
-      <Text style={t.title}>Posicionamento · Nov 2025 (€)</Text>
+      <Text style={t.title}>Posicionamento · {DATA_VERSION.payRef} (€)</Text>
       <View style={t.header}>
         <Text style={[t.hcell, { flex: 2 }]}>Categoria</Text>
         {POSITIONING.header.map((h, i) => <Text key={i} style={t.hcell}>{h}</Text>)}
@@ -200,9 +200,6 @@ const d = StyleSheet.create({
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
   title: { fontSize: 20, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
-  langSeg: { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: 4, alignSelf: 'flex-start', marginBottom: 16 },
-  langBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 7 },
-  langTxt: { fontSize: 11, fontWeight: '600', letterSpacing: 1 },
   body: { fontSize: TYPE.value, lineHeight: 24, color: C.text },
   valuesBox: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, overflow: 'hidden' },
   valTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', backgroundColor: C.ink, padding: 10, fontWeight: '600' },

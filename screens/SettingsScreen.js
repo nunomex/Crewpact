@@ -1,10 +1,8 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert, Animated, Easing } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
-const todayPT = () => new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
+import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
 import { AppContext } from '../App';
@@ -30,13 +28,8 @@ function Row({ label, value, onPress, last, danger }) {
 }
 
 export default function SettingsScreen() {
-  const { profile, setProfile, setOnboarded, lang, setLang, user, logout } = useContext(AppContext);
+  const { profile, setProfile, setOnboarded, user, logout } = useContext(AppContext);
   const [syncing, setSyncing] = useState(false);
-  const [syncedAt, setSyncedAt] = useState(todayPT());
-
-  useEffect(() => {
-    AsyncStorage.getItem('ae_lastChecked').then(v => { if (v) setSyncedAt(v); });
-  }, []);
 
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -50,14 +43,14 @@ export default function SettingsScreen() {
   }, [syncing]);
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
+  // Verificação de conteúdo: o acordo está embutido na app. Sem fabricar datas —
+  // confirma honestamente que estamos na versão incluída.
   const checkUpdates = () => {
     setSyncing(true);
     setTimeout(() => {
-      const now = todayPT();
-      setSyncedAt(now);
-      AsyncStorage.setItem('ae_lastChecked', now).catch(() => {});
       setSyncing(false);
-    }, 1200);
+      setToast('Já tens a versão mais recente');
+    }, 1000);
   };
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
@@ -114,19 +107,7 @@ export default function SettingsScreen() {
           <Text style={s.toastTxt}>{toast}</Text>
         </Animated.View>
       )}
-      <ScreenHeader eyebrow="A TUA CONTA" title="Perfil" style={{ marginBottom: 8 }}
-        right={
-          <View style={s.headLang}>
-            {['pt', 'en'].map((l) => (
-              <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
-                style={[s.langDot, { backgroundColor: lang === l ? C.red : 'rgba(255,255,255,0.12)' }]}>
-                <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : 'rgba(255,255,255,0.6)' }]}>
-                  {l.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        } />
+      <ScreenHeader eyebrow="A TUA CONTA" title="Perfil" style={{ marginBottom: 8 }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 104 }}>
 
         {/* User card */}
@@ -151,8 +132,8 @@ export default function SettingsScreen() {
         <Group title="Conteúdo">
           <View style={s.syncRow}>
             <View style={{ flex: 1 }}>
-              <Text style={s.syncTitle}>Acordo easyJet 2023–2027</Text>
-              <Text style={s.syncSub}>versão 3 · {syncing ? 'a sincronizar…' : `atualizado a ${syncedAt}`}</Text>
+              <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
+              <Text style={s.syncSub}>{DATA_VERSION.version} · conteúdo incluído na app (em vigor {DATA_VERSION.effective})</Text>
             </View>
             <TouchableOpacity onPress={checkUpdates} style={s.syncBtn} disabled={syncing}>
               <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
@@ -243,9 +224,6 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
   toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20 },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },

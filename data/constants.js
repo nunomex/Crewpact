@@ -15,9 +15,18 @@ export const C = {
   greenSoft: "#E2F4EC",
 };
 
+// ─── Versão dos dados ────────────────────────────────────────────────────────
+// Fonte única para a proveniência do conteúdo (evita datas soltas pelos ecrãs).
+export const DATA_VERSION = {
+  agreement: 'AE easyJet 2023–2027',
+  version: 'v3',
+  payRef: 'Nov 2025',         // mês de referência das tabelas salariais (Anexo I)
+  effective: '2023–2027',     // vigência do acordo
+};
+
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 // Adotar progressivamente nos ecrãs para uniformizar raios, espaços e tipos.
-export const RADIUS = { sm: 10, md: 14, lg: 16, xl: 22, pill: 99 };
+export const RADIUS = { sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
 export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
 // Escala tipográfica (px). Mínimo 12 para texto informativo (acessibilidade).
 export const TYPE = {

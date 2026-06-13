@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE } from '../data/constants';
+import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION } from '../data/constants';
 
 // Fração da base anual aplicável por tipo de contrato (12/12 = inteiro).
 const CONTRACT_FACTOR = { '12_12': 1, '10_12': 10 / 12, '8_12': 8 / 12, '9_3': 9.75 / 12, pt: null };
@@ -64,7 +64,7 @@ function CalcPositioning({ rankRow }) {
     <Calc title="Posicionamento">
       <Seg options={OPTS} value={idx} setValue={setIdx} />
       <Stepper label="Nº de posicionamentos" value={n} setValue={setN} min={1} />
-      <Result value={fmtEur(unit * n)} foot={`${OPTS[idx].label}: ${fmtEur(unit)} (Nov 2025)`} />
+      <Result value={fmtEur(unit * n)} foot={`${OPTS[idx].label}: ${fmtEur(unit)} (${DATA_VERSION.payRef})`} />
     </Calc>
   );
 }
@@ -191,7 +191,7 @@ export default function CategoriesScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        <ScreenHeader eyebrow="CATEGORIAS PROFISSIONAIS" title="Categorias" style={{ margin: 0, marginBottom: 12 }} />
+        <ScreenHeader eyebrow="CALCULADORAS" title="Cálculos" style={{ margin: 0, marginBottom: 12 }} />
 
         {/* A tua categoria */}
         <View style={s.meCard}>
@@ -256,7 +256,7 @@ export default function CategoriesScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={15} color={C.line} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
-        <Text style={s.foot}>Valores ilíquidos do Anexo I (Nov 2025). Estimativas para apoio — prevalece sempre o AE e o processamento oficial.</Text>
+        <Text style={s.foot}>Valores ilíquidos do Anexo I ({DATA_VERSION.payRef}). Estimativas para apoio — prevalece sempre o AE e o processamento oficial.</Text>
       </ScrollView>
     </SafeAreaView>
   );

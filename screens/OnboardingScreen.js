@@ -6,9 +6,9 @@ import { AppContext } from '../App';
 import { updateProfile } from '../data/auth';
 
 const steps = [
-  { title: 'Escolha a companhia', sub: 'De que acordo de empresa precisa?' },
-  { title: 'A sua categoria',     sub: 'Para destacar o que se aplica a si.' },
-  { title: 'O seu contrato',      sub: 'Tipo de vínculo atual.' },
+  { title: 'Escolhe a companhia', sub: 'De que acordo de empresa precisas?' },
+  { title: 'A tua categoria',     sub: 'Para destacar o que se aplica a ti.' },
+  { title: 'O teu contrato',      sub: 'Tipo de vínculo atual.' },
 ];
 
 export default function OnboardingScreen() {
