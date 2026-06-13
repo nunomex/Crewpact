@@ -104,112 +104,68 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Próximo voo (exemplo · sincronizar com calendário) */}
-        <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={syncFlight}>
-          <View style={s.flightTop}>
-            <Text style={s.flightEyebrow}>PRÓXIMO VOO</Text>
-            <View style={[s.syncPill, synced && { backgroundColor: C.greenSoft }]}>
+        {/* Cartões rápidos — grelha 2×2 (sincronizam com o calendário) */}
+        <View style={s.tileGrid}>
+          {/* Próximo voo */}
+          <TouchableOpacity style={s.tile} activeOpacity={0.85} onPress={syncFlight}>
+            <View style={s.tileHead}>
+              <View style={s.tileIcon}><Ionicons name="airplane" size={13} color="#fff" /></View>
+              <Text style={s.tileEyebrow}>VOO</Text>
               {syncing
-                ? <ActivityIndicator size="small" color={C.sub} />
-                : <>
-                    <Ionicons name={synced ? 'checkmark-circle' : 'sync-outline'} size={11} color={synced ? C.green : C.sub} />
-                    <Text style={[s.syncTxt, synced && { color: C.green }]}>{synced ? 'Sincronizado' : 'Exemplo'}</Text>
-                  </>}
+                ? <ActivityIndicator size="small" color={C.sub} style={{ marginLeft: 'auto' }} />
+                : <View style={[s.syncDot, { backgroundColor: synced ? C.green : C.line }]} />}
+            </View>
+            <View>
+              <Text style={s.tileMain} numberOfLines={1}>{flight.depAirport} → {flight.arrAirport}</Text>
+              <Text style={s.tileSub} numberOfLines={1}>{flight.date} · {flight.depTime}</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Próximas folgas */}
+          <View style={s.tile}>
+            <View style={s.tileHead}>
+              <View style={s.tileIcon}><Ionicons name="cafe" size={13} color="#fff" /></View>
+              <Text style={s.tileEyebrow}>FOLGAS</Text>
+            </View>
+            <View>
+              <Text style={s.tileMain} numberOfLines={1}>{daysOff[0].d} {daysOff[0].m}</Text>
+              <Text style={s.tileSub} numberOfLines={1}>+{daysOff.length - 1} dias · {daysOff[daysOff.length - 1].d} {daysOff[daysOff.length - 1].m}</Text>
             </View>
           </View>
 
-          <View style={s.routeRow}>
-            <View style={s.routeSide}>
-              <Text style={s.routeAir}>{flight.depAirport}</Text>
-              <Text style={s.routeTime}>{flight.depTime}</Text>
+          {/* Horas feitas */}
+          <View style={s.tile}>
+            <View style={s.tileHead}>
+              <View style={s.tileIcon}><Ionicons name="time" size={13} color="#fff" /></View>
+              <Text style={s.tileEyebrow}>HORAS · 28D</Text>
             </View>
-            <View style={s.routeMid}>
-              <View style={s.routeLine} />
-              <Ionicons name="airplane" size={16} color={C.red} />
-              <View style={s.routeLine} />
-            </View>
-            <View style={[s.routeSide, { alignItems: 'flex-end' }]}>
-              <Text style={s.routeAir}>{flight.arrAirport}</Text>
-              <Text style={s.routeTime}>{flight.arrTime}</Text>
-            </View>
-          </View>
-
-          <View style={s.flightGrid}>
-            {[
-              { l: 'Data', v: flight.date },
-              { l: 'Apresentação', v: flight.report },
-              { l: 'Partida', v: flight.depTime },
-              { l: 'Chegada', v: flight.arrTime },
-              { l: 'Aeroporto partida', v: flight.depAirport },
-              { l: 'Aeroporto chegada', v: flight.arrAirport },
-              { l: 'Avião', v: flight.aircraft },
-            ].map((f, i) => (
-              <View key={i} style={s.flightCell}>
-                <Text style={s.flightCellLbl}>{f.l}</Text>
-                <Text style={s.flightCellVal}>{f.v}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={s.flightFooter}>
-            <Ionicons name="calendar-outline" size={13} color={C.sub} />
-            <Text style={s.flightFootTxt}>{synced ? 'Sincronizado com o calendário' : 'Tocar para sincronizar com o calendário'}</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Próximas folgas */}
-        <View style={s.infoCard}>
-          <Text style={s.infoEyebrow}>PRÓXIMAS FOLGAS</Text>
-          <View style={s.dayoffRow}>
-            {daysOff.map((d, i) => (
-              <View key={i} style={s.dayoffChip}>
-                <Text style={s.dayoffNum}>{d.d}</Text>
-                <Text style={s.dayoffMon}>{d.m}</Text>
-                <Text style={[s.dayoffTag, d.tag === 'GDO' && { color: C.red }]}>{d.tag}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Horas feitas */}
-        <View style={s.infoCard}>
-          <Text style={s.infoEyebrow}>HORAS FEITAS · 28 DIAS</Text>
-          {[
-            { l: 'Serviço', ...hours.duty },
-            { l: 'Voo', ...hours.flight },
-          ].map((h, i) => {
-            const pct = Math.min(1, h.done / h.max);
-            const near = pct >= 0.85;
-            return (
-              <View key={i} style={{ marginTop: i ? 12 : 4 }}>
-                <View style={s.hoursTop}>
-                  <Text style={s.hoursLbl}>{h.l}</Text>
-                  <Text style={s.hoursVal}>{h.done} / {h.max} h</Text>
-                </View>
-                <View style={s.hoursTrack}>
-                  <View style={[s.hoursFill, { width: `${pct * 100}%`, backgroundColor: near ? C.red : C.ink }]} />
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Próxima pernoite */}
-        <View style={s.infoCard}>
-          <View style={s.flightTop}>
-            <Text style={s.infoEyebrow}>PRÓXIMA PERNOITE</Text>
-            <View style={s.payPill}><Text style={s.payPillTxt}>{nightStop.pay}</Text></View>
-          </View>
-          <View style={s.nsRow}>
-            <View style={s.nsIcon}><Ionicons name="moon" size={16} color="#fff" /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.nsCity}>{nightStop.city} ({nightStop.airport})</Text>
-              <Text style={s.nsHotel}>{nightStop.hotel}</Text>
+            <View>
+              {[{ l: 'S', ...hours.duty }, { l: 'V', ...hours.flight }].map((h, i) => {
+                const pct = Math.min(1, h.done / h.max);
+                return (
+                  <View key={i} style={s.barRow}>
+                    <Text style={s.barLbl}>{h.l}</Text>
+                    <View style={s.barTrack}>
+                      <View style={[s.barFill, { width: `${pct * 100}%`, backgroundColor: pct >= 0.85 ? C.red : C.ink }]} />
+                    </View>
+                    <Text style={s.barVal}>{h.done}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
-          <View style={s.nsFooter}>
-            <Text style={s.nsFootTxt}>{nightStop.from} → {nightStop.to}</Text>
-            <Text style={s.nsFootTxt}>{nightStop.nights} noite{nightStop.nights > 1 ? 's' : ''}</Text>
+
+          {/* Próxima pernoite */}
+          <View style={s.tile}>
+            <View style={s.tileHead}>
+              <View style={s.tileIcon}><Ionicons name="moon" size={13} color="#fff" /></View>
+              <Text style={s.tileEyebrow}>PERNOITE</Text>
+              <Text style={s.tilePay}>{nightStop.pay}</Text>
+            </View>
+            <View>
+              <Text style={s.tileMain} numberOfLines={1}>{nightStop.airport}</Text>
+              <Text style={s.tileSub} numberOfLines={1}>{nightStop.from}→{nightStop.to} · {nightStop.nights}n</Text>
+            </View>
           </View>
         </View>
 
@@ -308,43 +264,20 @@ const s = StyleSheet.create({
   payFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
   dot: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red },
   payNote: { fontSize: 11, color: C.sub, flex: 1 },
-  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
-  flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  flightEyebrow: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  syncPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.soft, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  syncTxt: { fontSize: 10, color: C.sub, fontWeight: '600' },
-  routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  routeSide: { width: 64 },
-  routeAir: { fontSize: 22, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  routeTime: { fontSize: 12, fontFamily: 'monospace', color: C.sub, marginTop: 2 },
-  routeMid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  routeLine: { flex: 1, height: 1, backgroundColor: C.line },
-  flightGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 },
-  flightCell: { width: '50%', marginBottom: 12 },
-  flightCellLbl: { fontSize: 10, letterSpacing: 0.5, color: C.sub, textTransform: 'uppercase' },
-  flightCellVal: { fontSize: 14, fontWeight: '500', color: C.text, marginTop: 2 },
-  flightFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 },
-  flightFootTxt: { fontSize: 11, color: C.sub },
-  infoCard: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
-  infoEyebrow: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 12 },
-  dayoffRow: { flexDirection: 'row', gap: 10 },
-  dayoffChip: { flex: 1, alignItems: 'center', backgroundColor: C.soft, borderRadius: 14, paddingVertical: 12 },
-  dayoffNum: { fontSize: 24, fontWeight: '300', color: C.text, letterSpacing: -1 },
-  dayoffMon: { fontSize: 10, letterSpacing: 1, color: C.sub, fontWeight: '600', marginTop: 2 },
-  dayoffTag: { fontSize: 10, color: C.sub, marginTop: 4, fontWeight: '500' },
-  hoursTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  hoursLbl: { fontSize: 13, color: C.text, fontWeight: '500' },
-  hoursVal: { fontSize: 12, fontFamily: 'monospace', color: C.sub },
-  hoursTrack: { height: 8, borderRadius: 99, backgroundColor: C.soft, overflow: 'hidden' },
-  hoursFill: { height: 8, borderRadius: 99 },
-  payPill: { backgroundColor: C.greenSoft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
-  payPillTxt: { fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: C.green },
-  nsRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  nsIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  nsCity: { fontSize: 15, fontWeight: '600', color: C.text },
-  nsHotel: { fontSize: 12, color: C.sub, marginTop: 2 },
-  nsFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12, marginTop: 14 },
-  nsFootTxt: { fontSize: 12, fontFamily: 'monospace', color: C.sub },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP, marginBottom: 16 },
+  tile: { width: FAV_CARD_W, height: 96, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 12, backgroundColor: C.canvas, justifyContent: 'space-between' },
+  tileHead: { flexDirection: 'row', alignItems: 'center' },
+  tileIcon: { width: 24, height: 24, borderRadius: 8, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  tileEyebrow: { fontSize: 9, letterSpacing: 1.5, color: C.sub, fontWeight: '700', marginLeft: 8 },
+  tileMain: { fontSize: 17, fontWeight: '700', color: C.text, letterSpacing: -0.3 },
+  tileSub: { fontSize: 11, color: C.sub, marginTop: 2 },
+  tilePay: { marginLeft: 'auto', fontSize: 11, fontFamily: 'monospace', fontWeight: '700', color: C.green },
+  syncDot: { width: 8, height: 8, borderRadius: 99, marginLeft: 'auto' },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
+  barLbl: { width: 10, fontSize: 10, fontFamily: 'monospace', color: C.sub, fontWeight: '700' },
+  barTrack: { flex: 1, height: 6, borderRadius: 99, backgroundColor: C.soft, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 99 },
+  barVal: { width: 24, fontSize: 10, fontFamily: 'monospace', color: C.sub, textAlign: 'right' },
   favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 2 },
   favTitleHd: { fontSize: 16, fontWeight: '600', color: C.text },
   favCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
