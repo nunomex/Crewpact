@@ -3,58 +3,15 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAr
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
+import { Stepper, Seg } from '../components/Stepper';
+import { CalcCard, ResultBlock } from '../components/CalcCard';
 import { AppContext } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
 const sectionN     = (id) => SECTIONS.find(s => s.id === id)?.n ?? 0;
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
-// ─── Shared calculator components ────────────────────────────────────────────
-function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
-  const clamp = n => Math.max(min, Math.min(max, n));
-  return (
-    <View style={cs.stepRow}>
-      <Text style={cs.stepLabel}>{label}</Text>
-      <View style={cs.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn} hitSlop={6}>
-          <Text style={cs.stepBtnTxt}>−</Text>
-        </TouchableOpacity>
-        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
-          onChangeText={t => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
-          style={cs.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}>
-          <Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-function Seg({ options, value, setValue }) {
-  return (
-    <View style={cs.segWrap}>
-      {options.map(o => (
-        <TouchableOpacity key={o.id} onPress={() => setValue(o.id)}
-          style={[cs.segBtn, { backgroundColor: value === o.id ? C.ink : C.soft }]}>
-          <Text style={[cs.segTxt, { color: value === o.id ? '#fff' : C.sub }]}>{o.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-function ResultBlock({ lines, foot }) {
-  return (
-    <View style={cs.result}>
-      {lines.map((ln, i) => (
-        <View key={i} style={{ marginTop: i ? 10 : 0 }}>
-          <Text style={cs.resLabel}>{ln.label}</Text>
-          <Text style={cs.resVal}>{ln.val}</Text>
-        </View>
-      ))}
-      {foot && <Text style={cs.resFoot}>{foot}</Text>}
-    </View>
-  );
-}
-
+// ─── Calculadora (movida a partilhada: CalcCard + ResultBlock) ────────────────
 function Calculator({ calc, rank }) {
   const ns = PAY_NUM[rank]?.ns ?? null;
   const defaultBase = PAY_NUM[rank]?.base ?? null;
@@ -119,36 +76,15 @@ function Calculator({ calc, rank }) {
   }
 
   return (
-    <View style={cs.wrap}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <Ionicons name="calculator-outline" size={13} color={C.red} />
-        <Text style={cs.eyebrow}>CALCULADORA</Text>
-      </View>
-      <View style={cs.inner}>
-        {inputs}
-        <ResultBlock lines={lines} foot={foot} />
-      </View>
-    </View>
+    <CalcCard title="CALCULADORA" style={cs.wrap}>
+      {inputs}
+      <ResultBlock lines={lines} foot={foot} />
+    </CalcCard>
   );
 }
 
 const cs = StyleSheet.create({
   wrap: { marginTop: 20 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
-  stepLabel: { fontSize: 13, color: C.text, flex: 1 },
-  stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { fontSize: TYPE.title, color: C.ink, lineHeight: 22 },
-  stepInput: { width: 50, textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
-  segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  segTxt: { fontSize: TYPE.label, fontWeight: '500' },
-  result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },
-  resVal: { fontSize: TYPE.display, color: C.red, fontFamily: 'monospace', marginTop: 2 },
-  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8 },
 });
 
 // ─── Value / Salary / Sector / Pos Tables ────────────────────────────────────

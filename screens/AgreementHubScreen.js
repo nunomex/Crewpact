@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE } from '../data/constants';
+import ScreenHeader from '../components/ScreenHeader';
 
 const CARDS = [
   { id: 'ae',  route: 'List', code: 'AE', eyebrow: 'ACORDO DE EMPRESA',       title: 'Acordo de Empresa',       sub: 'Cláusulas do acordo coletivo de trabalho', icon: 'document-text-outline' },
@@ -11,10 +12,7 @@ const CARDS = [
 export default function AgreementHubScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.headerBlob}>
-        <Text style={s.eyebrow}>BIBLIOTECA</Text>
-        <Text style={s.headTitle}>O que queres consultar?</Text>
-      </View>
+      <ScreenHeader eyebrow="BIBLIOTECA" title="O que queres consultar?" />
 
       <View style={s.cards}>
         {CARDS.map(c => (
@@ -39,9 +37,6 @@ export default function AgreementHubScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 12, padding: 16 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   cards: { paddingHorizontal: 16, gap: 12, paddingTop: 4 },
   card: { borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 18, backgroundColor: C.canvas },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },

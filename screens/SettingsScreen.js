@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 const todayPT = () => new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
+import ScreenHeader from '../components/ScreenHeader';
 import { AppContext } from '../App';
 
 function Group({ title, children }) {
@@ -113,22 +114,19 @@ export default function SettingsScreen() {
           <Text style={s.toastTxt}>{toast}</Text>
         </Animated.View>
       )}
-      <View style={s.headerBlob}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.eyebrow}>A TUA CONTA</Text>
-          <Text style={s.headTitle}>Perfil</Text>
-        </View>
-        <View style={s.headLang}>
-          {['pt', 'en'].map((l) => (
-            <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
-              style={[s.langDot, { backgroundColor: lang === l ? C.red : 'rgba(255,255,255,0.12)' }]}>
-              <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : 'rgba(255,255,255,0.6)' }]}>
-                {l.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      <ScreenHeader eyebrow="A TUA CONTA" title="Perfil" style={{ marginBottom: 8 }}
+        right={
+          <View style={s.headLang}>
+            {['pt', 'en'].map((l) => (
+              <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
+                style={[s.langDot, { backgroundColor: lang === l ? C.red : 'rgba(255,255,255,0.12)' }]}>
+                <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : 'rgba(255,255,255,0.6)' }]}>
+                  {l.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        } />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 104 }}>
 
         {/* User card */}
@@ -245,9 +243,6 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
   toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 8, padding: 16 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },

@@ -1,7 +1,10 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, SECTIONS, CALC } from '../data/constants';
+import { FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import { C, SECTIONS, CALC } from '../data/constants';
+import ScreenHeader from '../components/ScreenHeader';
+import SearchBar from '../components/SearchBar';
+import { Chip, ChipRow } from '../components/Chip';
+import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordion';
 import { CLAUSES } from '../data/clauses';
 import { AppContext } from '../App';
 
@@ -55,65 +58,30 @@ export default function ListScreen({ navigation, route }) {
 
   const renderItem = ({ item }) => {
     if (item.type === 'header') return (
-      <TouchableOpacity style={[s.secHeader, item.open && s.secHeaderOpen]} activeOpacity={0.7}
-        onPress={() => setOpenSec(openSec === item.secId ? null : item.secId)}>
-        <View style={s.secBadge}><Text style={s.secBadgeTxt}>S{sectionN(item.secId)}</Text></View>
-        <Text style={s.secTitle} numberOfLines={1}>{sectionTitle(item.secId)}</Text>
-        <Text style={s.secCount}>{item.count}</Text>
-        <Ionicons name={item.open ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
-      </TouchableOpacity>
+      <SectionHeader badge={`S${sectionN(item.secId)}`} title={sectionTitle(item.secId)}
+        count={item.count} open={item.open}
+        onPress={() => setOpenSec(openSec === item.secId ? null : item.secId)} />
     );
-    if (item.type === 'empty') return (
-      <View style={s.empty}><Text style={s.emptyTxt}>Nenhuma cláusula encontrada</Text></View>
-    );
+    if (item.type === 'empty') return <EmptyState text="Nenhuma cláusula encontrada" />;
     const cl = item.cl;
-    const mine = isApplicable(cl, profile);
     return (
-      <TouchableOpacity style={s.row} onPress={() => navigation.navigate('Detail', { clause: cl })}>
-        <View style={[s.numBox, { backgroundColor: C.ink }]}>
-          <Text style={s.numTxt}>{cl.number}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={s.clauseTitle} numberOfLines={1}>{cl.title[lang]}</Text>
-          <Text style={s.clauseTags} numberOfLines={1}>{cl.tags.join(' · ')}</Text>
-        </View>
-        {CALC[cl.number] && <Ionicons name="calculator-outline" size={14} color={C.sub} />}
-        {mine && <Ionicons name="person-circle" size={16} color={C.red} accessibilityLabel="Aplicável à tua categoria" />}
-        <Ionicons name="chevron-forward" size={16} color={C.line} />
-      </TouchableOpacity>
+      <ListRow badge={cl.number} title={cl.title[lang]} sub={cl.tags.join(' · ')} subUpper
+        calc={!!CALC[cl.number]} mine={isApplicable(cl, profile)}
+        onPress={() => navigation.navigate('Detail', { clause: cl })} />
     );
   };
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.headerBlob}>
-        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={18} color="#fff" />
-        </TouchableOpacity>
-        <View>
-          <Text style={s.eyebrow}>ÍNDICE</Text>
-          <Text style={s.headTitle}>Acordo de Empresa</Text>
-        </View>
-      </View>
+      <ScreenHeader eyebrow="ÍNDICE" title="Acordo de Empresa" onBack={() => navigation.goBack()} />
 
-      <View style={s.searchWrap}>
-        <Ionicons name="search" size={17} color={C.sub} />
-        <TextInput value={query} onChangeText={setQuery} placeholder="per diem, férias, 9/3…"
-          placeholderTextColor={C.sub} style={s.searchInput} />
-        {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close" size={16} color={C.sub} /></TouchableOpacity>}
-      </View>
+      <SearchBar value={query} onChangeText={setQuery} placeholder="per diem, férias, 9/3…" />
 
-      <View style={s.chips}>
-        {[{ id: 'mine', label: 'Aplicáveis a mim', active: onlyMine, onPress: () => setOnlyMine(!onlyMine), tone: 'red' },
-          { id: 'calc', label: 'Calculáveis',      active: onlyCalc, onPress: () => setOnlyCalc(!onlyCalc) },
-          { id: 'all',  label: 'Todas',            active: !onlyMine && !onlyCalc, onPress: () => { setOnlyMine(false); setOnlyCalc(false); setSection('all'); setOpenSec(null); } },
-        ].map(chip => (
-          <TouchableOpacity key={chip.id} onPress={chip.onPress}
-            style={[s.chip, { backgroundColor: chip.active ? (chip.tone === 'red' ? C.red : C.ink) : C.canvas, borderColor: chip.active ? (chip.tone === 'red' ? C.red : C.ink) : C.line }]}>
-            <Text style={[s.chipTxt, { color: chip.active ? '#fff' : C.sub }]}>{chip.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ChipRow>
+        <Chip label="Aplicáveis a mim" tone="red" active={onlyMine} onPress={() => setOnlyMine(!onlyMine)} />
+        <Chip label="Calculáveis" active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
+        <Chip label="Todas" active={!onlyMine && !onlyCalc} onPress={() => { setOnlyMine(false); setOnlyCalc(false); setSection('all'); setOpenSec(null); }} />
+      </ChipRow>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 104 }} />
@@ -123,27 +91,4 @@ export default function ListScreen({ navigation, route }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 12, padding: 16 },
-  backBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.pill, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
-  searchInput: { flex: 1, fontSize: TYPE.body, color: C.text },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
-  chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  chipTxt: { fontSize: TYPE.label, fontWeight: '500' },
-  secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
-  secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
-  secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  secBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace' },
-  secTitle: { flex: 1, fontSize: 10, fontWeight: '600', letterSpacing: 1.5, color: C.sub, textTransform: 'uppercase' },
-  secCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, marginBottom: 6, backgroundColor: C.canvas },
-  numBox: { width: 40, height: 40, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
-  numTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },
-  clauseTitle: { fontSize: 13, fontWeight: '500', color: C.text },
-  clauseTags: { fontSize: 10, color: C.sub, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
-  mineDot: { width: 7, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyTxt: { color: C.sub, fontSize: TYPE.body },
 });

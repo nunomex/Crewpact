@@ -5,6 +5,7 @@ import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE } 
 import { CLAUSES } from '../data/clauses';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
+import Card from '../components/Card';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
@@ -73,7 +74,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* Pay card */}
-        <View style={s.payCard}>
+        <Card style={{ marginBottom: SPACE.md }}>
           <Text style={s.payEyebrow}>A TUA REMUNERAÇÃO · NOV 2025</Text>
           <View style={s.payRow}>
             <View>
@@ -89,7 +90,7 @@ export default function HomeScreen({ navigation }) {
             <View style={s.dot} />
             <Text style={s.payNote}>{rankObj?.short} · {CONTRACT_NOTE[profile.contract]}</Text>
           </View>
-        </View>
+        </Card>
 
         {/* Próximo voo (sincroniza com o calendário ao tocar) */}
         <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={syncFlight}>
@@ -226,7 +227,6 @@ const s = StyleSheet.create({
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
   compName: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
-  payCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.lg, marginBottom: SPACE.md },
   payEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: SPACE.md - 2 },
   payRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   payLbl: { fontSize: 11, color: C.sub },

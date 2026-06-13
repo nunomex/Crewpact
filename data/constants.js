@@ -10,6 +10,7 @@ export const C = {
   text: "#191919",
   sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)
   subLight: "#9B9B95", // antigo tom claro: usar só em fundos escuros/decorativo
+  onDarkSub: "rgba(255,255,255,0.6)", // texto secundário sobre fundo preto
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
 };

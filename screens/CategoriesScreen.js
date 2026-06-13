@@ -15,38 +15,14 @@ const PT_MODES = [
   { id: 'saz75', label: 'Sazonal 75%',  factor: 10 / 12,   leave: 21 },
 ];
 import { CLAUSES } from '../data/clauses';
+import ScreenHeader from '../components/ScreenHeader';
+import { Stepper, Seg } from '../components/Stepper';
+import { ResultBlock } from '../components/CalcCard';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const num = (s) => parseFloat(String(s).replace(',', '.')) || 0;
 
-// ─── Controlos ───────────────────────────────────────────────────────────────
-function Stepper({ label, value, setValue, min = 0, max = 999 }) {
-  const clamp = (n) => Math.max(min, Math.min(max, n));
-  return (
-    <View style={cs.stepRow}>
-      <Text style={cs.stepLabel}>{label}</Text>
-      <View style={cs.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn} hitSlop={6}><Text style={cs.stepBtnTxt}>−</Text></TouchableOpacity>
-        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
-          onChangeText={(t) => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
-          style={cs.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}><Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-function Seg({ options, value, setValue }) {
-  return (
-    <View style={cs.segWrap}>
-      {options.map(o => (
-        <TouchableOpacity key={o.id} onPress={() => setValue(o.id)} style={[cs.segBtn, { backgroundColor: value === o.id ? C.ink : C.soft }]}>
-          <Text style={[cs.segTxt, { color: value === o.id ? '#fff' : C.sub }]}>{o.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
 function Calc({ title, children }) {
   const [open, setOpen] = useState(false);
   return (
@@ -60,13 +36,7 @@ function Calc({ title, children }) {
   );
 }
 function Result({ value, foot }) {
-  return (
-    <View style={cs.result}>
-      <Text style={cs.resLbl}>TOTAL</Text>
-      <Text style={cs.resVal}>{value}</Text>
-      {foot ? <Text style={cs.resFoot}>{foot}</Text> : null}
-    </View>
-  );
+  return <ResultBlock value={value} foot={foot} valueSize={26} />;
 }
 
 // ─── Calculadoras ────────────────────────────────────────────────────────────
@@ -190,11 +160,8 @@ function CalcCount() {
     <Calc title="Dias de trabalho e folga">
       <Stepper label="Dias de trabalho" value={work} setValue={setWork} />
       <Stepper label="Dias de folga" value={off} setValue={setOff} />
-      <View style={cs.result}>
-        <Text style={cs.resLbl}>TOTAL DE DIAS</Text>
-        <Text style={cs.resVal}>{work + off}</Text>
-        <Text style={cs.resFoot}>{work} trabalho · {off} folga. (Sem pagamento direto associado.)</Text>
-      </View>
+      <ResultBlock label="TOTAL DE DIAS" value={work + off} valueSize={26}
+        foot={`${work} trabalho · ${off} folga. (Sem pagamento direto associado.)`} />
     </Calc>
   );
 }
@@ -224,10 +191,7 @@ export default function CategoriesScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        <View style={s.headerBlob}>
-          <Text style={s.eyebrow}>CATEGORIAS PROFISSIONAIS</Text>
-          <Text style={s.headTitle}>Categorias</Text>
-        </View>
+        <ScreenHeader eyebrow="CATEGORIAS PROFISSIONAIS" title="Categorias" style={{ margin: 0, marginBottom: 12 }} />
 
         {/* A tua categoria */}
         <View style={s.meCard}>
@@ -303,19 +267,6 @@ const cs = StyleSheet.create({
   calcHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   calcTitle: { flex: 1, fontSize: TYPE.body, fontWeight: '600', color: C.text, paddingRight: 8 },
   calcBody: { marginTop: 12 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
-  stepLabel: { fontSize: 13, color: C.text, flex: 1, paddingRight: 8 },
-  stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { fontSize: TYPE.title, color: C.ink, lineHeight: 22 },
-  stepInput: { width: 54, textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
-  segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  segTxt: { fontSize: TYPE.label, fontWeight: '600' },
-  result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLbl: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
-  resVal: { fontSize: 26, color: C.red, fontFamily: 'monospace', marginTop: 2 },
-  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
   lineDiv: { borderTopWidth: 1, borderTopColor: C.line },
   lineLbl: { fontSize: 13, color: C.sub },
@@ -327,9 +278,6 @@ const cs = StyleSheet.create({
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: 16, paddingBottom: 104 },
-  headerBlob: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: 16, marginBottom: 12 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
   meTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   meEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.red, fontWeight: '700' },

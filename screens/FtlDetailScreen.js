@@ -1,50 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE } from '../data/constants';
+import { Stepper, Seg } from '../components/Stepper';
+import { CalcCard, ResultBlock } from '../components/CalcCard';
 import {
   FTL_ARTICLES, ftlSectionTitle,
   PSV_SECTORS, PSV_ACCLIMATISED, PSV_UNKNOWN_SECTORS, PSV_UNKNOWN, PSV_UNKNOWN_FRM,
   FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
-
-// ─── Controlos partilhados ───────────────────────────────────────────────────
-function Stepper({ label, value, setValue, min = 0, max = 99 }) {
-  const clamp = (n) => Math.max(min, Math.min(max, n));
-  return (
-    <View style={cs.stepRow}>
-      <Text style={cs.stepLabel}>{label}</Text>
-      <View style={cs.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={cs.stepBtn} hitSlop={6}><Text style={cs.stepBtnTxt}>−</Text></TouchableOpacity>
-        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
-          onChangeText={(tx) => { const n = parseInt(tx.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
-          style={cs.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[cs.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}><Text style={[cs.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-function Seg({ options, value, setValue }) {
-  return (
-    <View style={cs.segWrap}>
-      {options.map(o => (
-        <TouchableOpacity key={o.id} onPress={() => setValue(o.id)} style={[cs.segBtn, { backgroundColor: value === o.id ? C.ink : C.soft }]}>
-          <Text style={[cs.segTxt, { color: value === o.id ? '#fff' : C.sub }]}>{o.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-function CalcShell({ title, children }) {
-  return (
-    <View style={cs.wrap}>
-      <View style={cs.head}><Ionicons name="calculator-outline" size={13} color={C.red} /><Text style={cs.eyebrow}>{title}</Text></View>
-      <View style={cs.inner}>{children}</View>
-    </View>
-  );
-}
 
 // ─── Calculadora · PSV máximo diário ─────────────────────────────────────────
 function PsvCalc() {
@@ -53,7 +17,7 @@ function PsvCalc() {
   const col = sectors <= 2 ? 0 : Math.min(sectors - 1, 8);
   const result = PSV_ACCLIMATISED[startIdx].v[col];
   return (
-    <CalcShell title="CALCULADORA · PSV MÁXIMO DIÁRIO">
+    <CalcCard title="CALCULADORA · PSV MÁXIMO DIÁRIO" style={cs.wrap}>
       <Text style={cs.fieldLabel}>Hora de início do PSV</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
         {PSV_ACCLIMATISED.map((r, i) => (
@@ -63,12 +27,9 @@ function PsvCalc() {
         ))}
       </ScrollView>
       <Stepper label="Nº de setores" value={sectors} setValue={setSectors} min={1} max={10} />
-      <View style={cs.result}>
-        <Text style={cs.resLabel}>PSV MÁXIMO (ACLIMATADO)</Text>
-        <Text style={cs.resVal}>{result}</Text>
-        <Text style={cs.resFoot}>Início {PSV_ACCLIMATISED[startIdx].start} · {sectors} setor(es). Em aclimatação desconhecida ver Quadros 3 e 4.</Text>
-      </View>
-    </CalcShell>
+      <ResultBlock label="PSV MÁXIMO (ACLIMATADO)" value={result} valueSize={28}
+        foot={`Início ${PSV_ACCLIMATISED[startIdx].start} · ${sectors} setor(es). Em aclimatação desconhecida ver Quadros 3 e 4.`} />
+    </CalcCard>
   );
 }
 
@@ -83,17 +44,14 @@ function LimitsCalc() {
   const opt = opts.find(o => o.id === per) || opts[0];
   const remaining = Math.max(0, opt.v - done);
   return (
-    <CalcShell title="CALCULADORA · LIMITES DE HORAS">
+    <CalcCard title="CALCULADORA · LIMITES DE HORAS" style={cs.wrap}>
       <Seg options={[{ id: 'duty', label: 'Serviço' }, { id: 'flight', label: 'Voo' }]} value={tipo}
         setValue={(v) => { setTipo(v); setPer((v === 'duty' ? LIM_DUTY : LIM_FLIGHT)[0].id); }} />
       <Seg options={opts} value={per} setValue={setPer} />
       <Stepper label="Horas já realizadas" value={done} setValue={setDone} min={0} max={opt.v} />
-      <View style={cs.result}>
-        <Text style={cs.resLabel}>HORAS RESTANTES</Text>
-        <Text style={cs.resVal}>{remaining} h</Text>
-        <Text style={cs.resFoot}>Limite {opt.v} h ({opt.label}) − {done} h realizadas.</Text>
-      </View>
-    </CalcShell>
+      <ResultBlock label="HORAS RESTANTES" value={`${remaining} h`} valueSize={28}
+        foot={`Limite ${opt.v} h (${opt.label}) − ${done} h realizadas.`} />
+    </CalcCard>
   );
 }
 
@@ -104,15 +62,12 @@ function RestCalc() {
   const floor = place === 'base' ? 12 : 10;
   const min = Math.max(prev, floor);
   return (
-    <CalcShell title="CALCULADORA · REPOUSO MÍNIMO">
+    <CalcCard title="CALCULADORA · REPOUSO MÍNIMO" style={cs.wrap}>
       <Seg options={[{ id: 'base', label: 'Na base' }, { id: 'away', label: 'Fora da base' }]} value={place} setValue={setPlace} />
       <Stepper label="Serviço anterior (h)" value={prev} setValue={setPrev} min={0} max={20} />
-      <View style={cs.result}>
-        <Text style={cs.resLabel}>REPOUSO MÍNIMO</Text>
-        <Text style={cs.resVal}>{min} h</Text>
-        <Text style={cs.resFoot}>Maior valor entre serviço anterior ({prev} h) e {floor} h ({place === 'base' ? 'base' : 'fora da base'}).</Text>
-      </View>
-    </CalcShell>
+      <ResultBlock label="REPOUSO MÍNIMO" value={`${min} h`} valueSize={28}
+        foot={`Maior valor entre serviço anterior (${prev} h) e ${floor} h (${place === 'base' ? 'base' : 'fora da base'}).`} />
+    </CalcCard>
   );
 }
 
@@ -267,25 +222,9 @@ export default function FtlDetailScreen({ route, navigation }) {
 
 const cs = StyleSheet.create({
   wrap: { marginTop: 4, marginBottom: 4 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
   chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
   chipTxt: { fontSize: TYPE.label, fontFamily: 'monospace', fontWeight: '600' },
-  segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 7 },
-  segTxt: { fontSize: TYPE.label, fontWeight: '600' },
-  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
-  stepLabel: { fontSize: 13, color: C.text, flex: 1 },
-  stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { fontSize: TYPE.title, color: C.ink, lineHeight: 22 },
-  stepInput: { width: 54, textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
-  result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
-  resVal: { fontSize: 28, color: C.red, fontFamily: 'monospace', marginTop: 2 },
-  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 });
 
 const t = StyleSheet.create({
