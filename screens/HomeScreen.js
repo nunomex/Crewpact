@@ -105,7 +105,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Rota */}
+          {/* Rota (compacta) */}
           <View style={s.routeRow}>
             <View style={s.routeSide}>
               <Text style={s.routeAir}>{flight.depAirport}</Text>
@@ -113,7 +113,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={s.routeMid}>
               <View style={s.routeLine} />
-              <Ionicons name="airplane" size={15} color={C.red} />
+              <Ionicons name="airplane" size={12} color={C.red} />
               <View style={s.routeLine} />
             </View>
             <View style={[s.routeSide, { alignItems: 'flex-end' }]}>
@@ -122,30 +122,18 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Detalhes */}
-          <View style={s.flightGrid}>
+          {/* Detalhes (compacto) */}
+          <View style={s.metaRow}>
             {[
-              { l: 'Data do voo', v: flight.date },
-              { l: 'Apresentação', v: flight.report },
-              { l: 'Hora de partida', v: flight.depTime },
-              { l: 'Hora de chegada', v: flight.arrTime },
-              { l: 'Aeroporto partida', v: flight.depAirport },
-              { l: 'Aeroporto chegada', v: flight.arrAirport },
+              { l: 'Data', v: flight.date },
+              { l: 'Apresent.', v: flight.report },
+              { l: 'Avião', v: flight.aircraft },
             ].map((f, i) => (
-              <View key={i} style={s.flightCell}>
-                <Text style={s.flightCellLbl}>{f.l}</Text>
-                <Text style={s.flightCellVal}>{f.v}</Text>
+              <View key={i} style={s.metaCell}>
+                <Text style={s.metaLbl}>{f.l}</Text>
+                <Text style={s.metaVal} numberOfLines={1}>{f.v}</Text>
               </View>
             ))}
-            <View style={[s.flightCell, { width: '100%' }]}>
-              <Text style={s.flightCellLbl}>Avião</Text>
-              <Text style={s.flightCellVal}>{flight.aircraft}</Text>
-            </View>
-          </View>
-
-          <View style={s.flightFooter}>
-            <Ionicons name="calendar-outline" size={13} color={C.sub} />
-            <Text style={s.flightFootTxt}>{synced ? 'Sincronizado com o calendário' : 'Tocar para sincronizar com o calendário'}</Text>
           </View>
         </TouchableOpacity>
 
@@ -244,25 +232,23 @@ const s = StyleSheet.create({
   payFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
   dot: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red },
   payNote: { fontSize: 11, color: C.sub, flex: 1 },
-  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
-  flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  flightTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  flightIcon: { width: 26, height: 26, borderRadius: 8, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 16, backgroundColor: C.canvas },
+  flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  flightTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  flightIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   flightEyebrow: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '700' },
-  syncPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.soft, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 4, minHeight: 22 },
+  syncPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.soft, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3, minHeight: 20 },
   syncTxt: { fontSize: 10, color: C.sub, fontWeight: '600' },
-  routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  routeSide: { width: 70 },
-  routeAir: { fontSize: 26, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  routeTime: { fontSize: 12, fontFamily: 'monospace', color: C.sub, marginTop: 2 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  routeSide: { width: 56 },
+  routeAir: { fontSize: 19, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
+  routeTime: { fontSize: 11, fontFamily: 'monospace', color: C.sub, marginTop: 1 },
   routeMid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   routeLine: { flex: 1, height: 1, backgroundColor: C.line },
-  flightGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 14 },
-  flightCell: { width: '50%', marginBottom: 14 },
-  flightCellLbl: { fontSize: 10, letterSpacing: 0.5, color: C.sub, textTransform: 'uppercase' },
-  flightCellVal: { fontSize: 15, fontWeight: '600', color: C.text, marginTop: 3 },
-  flightFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 },
-  flightFootTxt: { fontSize: 11, color: C.sub },
+  metaRow: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 },
+  metaCell: { flex: 1 },
+  metaLbl: { fontSize: 9, letterSpacing: 0.5, color: C.sub, textTransform: 'uppercase' },
+  metaVal: { fontSize: 12, fontWeight: '600', color: C.text, marginTop: 2 },
   favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 2 },
   favTitleHd: { fontSize: 16, fontWeight: '600', color: C.text },
   favCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
