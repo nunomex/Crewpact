@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS } from '../data/constants';
+import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { AppContext } from '../App';
 
@@ -134,20 +134,20 @@ function Calculator({ calc, rank }) {
 
 const cs = StyleSheet.create({
   wrap: { marginTop: 20 },
-  eyebrow: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  inner: { borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14 },
+  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600' },
+  inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: 13, color: C.text, flex: 1 },
   stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: { width: 32, height: 32, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { fontSize: 18, color: C.ink, lineHeight: 22 },
+  stepBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  stepBtnTxt: { fontSize: TYPE.title, color: C.ink, lineHeight: 22 },
   stepInput: { width: 50, textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
   segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  segBtn: { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
-  segTxt: { fontSize: 12, fontWeight: '500' },
+  segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6 },
+  segTxt: { fontSize: TYPE.label, fontWeight: '500' },
   result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLabel: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },
-  resVal: { fontSize: 24, color: C.red, fontFamily: 'monospace', marginTop: 2 },
+  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },
+  resVal: { fontSize: TYPE.display, color: C.red, fontFamily: 'monospace', marginTop: 2 },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8 },
 });
 
@@ -188,7 +188,7 @@ function PosTable() {
 }
 const t = StyleSheet.create({
   wrap: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
-  title: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
+  title: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
   header: { flexDirection: 'row', backgroundColor: C.soft, paddingHorizontal: 10, paddingVertical: 6 },
   hcell: { flex: 1, fontSize: 10, color: C.sub, fontWeight: '600', textAlign: 'right' },
   row: { flexDirection: 'row', paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line },
@@ -259,22 +259,22 @@ export default function DetailScreen({ route, navigation }) {
 const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  iconBtn: { width: 38, height: 38, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 24, paddingBottom: 104 },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
   title: { fontSize: 20, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
-  langSeg: { flexDirection: 'row', backgroundColor: C.soft, borderRadius: 99, padding: 4, alignSelf: 'flex-start', marginBottom: 16 },
-  langBtn: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 7 },
+  langSeg: { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: 4, alignSelf: 'flex-start', marginBottom: 16 },
+  langBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 7 },
   langTxt: { fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  body: { fontSize: 15, lineHeight: 24, color: C.text },
-  valuesBox: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: 14, overflow: 'hidden' },
-  valTitle: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', backgroundColor: C.ink, padding: 10, fontWeight: '600' },
+  body: { fontSize: TYPE.value, lineHeight: 24, color: C.text },
+  valuesBox: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, overflow: 'hidden' },
+  valTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', backgroundColor: C.ink, padding: 10, fontWeight: '600' },
   valRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12 },
   valLbl: { fontSize: 13, color: C.sub },
   valAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '600', color: C.text },
-  relTitle: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 8 },
+  relTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 8 },
   relRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6 },
-  relNum: { fontFamily: 'monospace', fontSize: 12, color: C.ink },
+  relNum: { fontFamily: 'monospace', fontSize: TYPE.label, color: C.ink },
   relLabel: { flex: 1, fontSize: 13, color: C.text },
 });

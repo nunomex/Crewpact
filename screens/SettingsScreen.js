@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 const todayPT = () => new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-import { C, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
+import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { AppContext } from '../App';
 
@@ -200,7 +200,7 @@ export default function SettingsScreen() {
                   style={s.fieldInput} placeholderTextColor={C.sub} placeholder="••••••••" />
               </View>
             ))}
-            {pwErr ? <Text style={{ color: C.red, fontSize: 12, marginBottom: 10 }}>{pwErr}</Text> : null}
+            {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
             <TouchableOpacity onPress={handleChangePw} style={s.pwBtn}>
               <Text style={s.pwBtnTxt}>Guardar</Text>
             </TouchableOpacity>
@@ -243,43 +243,43 @@ export default function SettingsScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
+  toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
   toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 8, padding: 16 },
-  eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
+  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 8, padding: 16 },
+  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
+  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  langDot: { width: 34, height: 34, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+  langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 20 },
-  avatar: { width: 48, height: 48, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20 },
+  avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
-  userName: { fontSize: 15, fontWeight: '500', color: C.text },
-  userEmail: { fontSize: 12, color: C.sub, marginTop: 2 },
+  userName: { fontSize: TYPE.value, fontWeight: '500', color: C.text },
+  userEmail: { fontSize: TYPE.label, color: C.sub, marginTop: 2 },
   group: { marginBottom: 20 },
-  groupTitle: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', textTransform: 'uppercase', marginBottom: 6, paddingLeft: 2 },
-  groupBox: { borderWidth: 1, borderColor: C.line, borderRadius: 16, overflow: 'hidden', backgroundColor: C.canvas },
+  groupTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', textTransform: 'uppercase', marginBottom: 6, paddingLeft: 2 },
+  groupBox: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden', backgroundColor: C.canvas },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
-  rowLabel: { fontSize: 14, color: C.sub },
+  rowLabel: { fontSize: TYPE.body, color: C.sub },
   rowValue: { fontSize: 13, fontWeight: '500', color: C.text, maxWidth: 180, textAlign: 'right' },
   syncRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   syncTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
-  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 8 },
-  syncBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8 },
+  syncBtnTxt: { color: '#fff', fontSize: TYPE.label, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { backgroundColor: C.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: C.line },
   sheetTitle: { fontSize: 16, fontWeight: '500', color: C.text },
-  closeBtn: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: C.text, marginBottom: 6 },
-  fieldInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.text },
-  pwBtn: { backgroundColor: C.ink, borderRadius: 99, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  pwBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  closeBtn: { width: 34, height: 34, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
+  fieldInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
+  pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
   optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
   optDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  optLabel: { fontSize: 15, color: C.text, flex: 1, paddingRight: 12 },
+  optLabel: { fontSize: TYPE.value, color: C.text, flex: 1, paddingRight: 12 },
   optSoon: { fontSize: 11, color: C.sub },
-  optDot: { width: 20, height: 20, borderRadius: 99, borderWidth: 1.5, borderColor: C.line },
+  optDot: { width: 20, height: 20, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: C.line },
 });

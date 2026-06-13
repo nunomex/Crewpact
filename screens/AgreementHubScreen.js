@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C } from '../data/constants';
+import { C, RADIUS, TYPE } from '../data/constants';
 
 const CARDS = [
   { id: 'ae',  route: 'List', code: 'AE', eyebrow: 'ACORDO DE EMPRESA',       title: 'Acordo de Empresa',       sub: 'Cláusulas do acordo coletivo de trabalho', icon: 'document-text-outline' },
@@ -39,16 +39,16 @@ export default function AgreementHubScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 12, padding: 16 },
-  eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
+  headerBlob: { backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 12, padding: 16 },
+  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
+  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   cards: { paddingHorizontal: 16, gap: 12, paddingTop: 4 },
   card: { borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 18, backgroundColor: C.canvas },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  cardIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  cardIcon: { width: 48, height: 48, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   codeBadge: { backgroundColor: C.red, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   codeTxt: { color: '#fff', fontSize: 13, fontFamily: 'monospace', fontWeight: '700', letterSpacing: 1 },
-  cardEyebrow: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 4 },
+  cardEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 4 },
   cardTitle: { fontSize: 20, fontWeight: '600', color: C.text, letterSpacing: -0.3 },
   cardSub: { fontSize: 13, color: C.sub, marginTop: 4, lineHeight: 18 },
   cardArrow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: C.line },

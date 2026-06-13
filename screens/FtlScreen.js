@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C } from '../data/constants';
+import { C, RADIUS, TYPE } from '../data/constants';
 import { FTL_SECTIONS, FTL_ARTICLES } from '../data/ftl';
 
 const sectionBadge = (id) => FTL_SECTIONS.find(s => s.id === id)?.badge ?? '';
@@ -106,28 +106,28 @@ export default function FtlScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  headerBlob: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 22, margin: 16, marginBottom: 12, padding: 16 },
-  backBtn: { width: 36, height: 36, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-  eyebrow: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginBottom: 6 },
-  headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
+  headerBlob: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: 16, marginBottom: 12, padding: 16 },
+  backBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 6 },
+  headTitle: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   regBadge: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  regTxt: { color: '#fff', fontSize: 9, fontFamily: 'monospace', fontWeight: '700' },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: 99, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: C.text },
+  regTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.pill, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
+  searchInput: { flex: 1, fontSize: TYPE.body, color: C.text },
   chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
-  chip: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 8 },
-  chipTxt: { fontSize: 12, fontWeight: '500' },
-  secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
+  chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 8 },
+  chipTxt: { fontSize: TYPE.label, fontWeight: '500' },
+  secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  secBadgeTxt: { color: '#fff', fontSize: 9, fontFamily: 'monospace' },
+  secBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace' },
   secTitle: { flex: 1, fontSize: 10, fontWeight: '600', letterSpacing: 1.5, color: C.sub, textTransform: 'uppercase' },
   secCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 12, marginBottom: 6, backgroundColor: C.canvas },
-  codeBox: { width: 44, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ink },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, marginBottom: 6, backgroundColor: C.canvas },
+  codeBox: { width: 44, height: 40, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ink },
   codeBoxTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },
   rowTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   rowSub: { fontSize: 10, color: C.sub, marginTop: 2 },
   empty: { alignItems: 'center', marginTop: 60 },
-  emptyTxt: { color: C.sub, fontSize: 14 },
+  emptyTxt: { color: C.sub, fontSize: TYPE.body },
 });
