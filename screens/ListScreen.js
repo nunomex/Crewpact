@@ -27,7 +27,7 @@ export default function ListScreen({ navigation, route }) {
     return CLAUSES.filter(cl => {
       if (activeSection !== 'all' && cl.section !== activeSection) return false;
       if (onlyMine && !isApplicable(cl, profile)) return false;
-      if (onlyCalc && !CALC[cl.number]) return false;
+      if (onlyCalc && (!CALC[cl.number] || !isApplicable(cl, profile))) return false;
       if (!q) return true;
       const hay = `${cl.number} ${cl.title.pt} ${cl.title.en || ''} ${cl.body.pt} ${cl.tags.join(' ')} ${cl.code}`.toLowerCase();
       return hay.includes(q);
