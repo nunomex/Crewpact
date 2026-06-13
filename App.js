@@ -22,6 +22,15 @@ const Stack = createStackNavigator();
 
 export const AppContext = React.createContext(null);
 
+function HomeStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home"   component={HomeScreen} />
+      <Stack.Screen name="Detail" component={DetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function AgreementStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -59,7 +68,7 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Início"         component={HomeScreen} />
+      <Tab.Screen name="Início"         component={HomeStack} />
       <Tab.Screen name="AE/FTL" component={AgreementStack} />
       <Tab.Screen name="Categorias"     component={CategoriesScreen} />
       <Tab.Screen name="Definições"     component={SettingsScreen} />
