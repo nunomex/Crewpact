@@ -1,11 +1,71 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C } from '../data/constants';
-import { FTL_SECTIONS, FTL_ARTICLES, FTL_LIMITS } from '../data/ftl';
+import { FTL_SECTIONS, FTL_ARTICLES } from '../data/ftl';
+
+const sectionBadge = (id) => FTL_SECTIONS.find(s => s.id === id)?.badge ?? '';
+const sectionTitle = (id) => FTL_SECTIONS.find(s => s.id === id)?.title ?? '';
+const sectionIdx   = (id) => FTL_SECTIONS.findIndex(s => s.id === id);
+const hasCalc = (a) => !!(a.psv || a.limits || a.rest);
 
 export default function FtlScreen({ navigation }) {
+  const [query, setQuery]     = useState('');
+  const [onlyCalc, setOnlyCalc] = useState(false);
   const [openSec, setOpenSec] = useState('gen');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return FTL_ARTICLES.filter(a => {
+      if (onlyCalc && !hasCalc(a)) return false;
+      if (!q) return true;
+      const hay = `${a.code} ${a.title} ${a.sub} ${a.body.join(' ')}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [query, onlyCalc]);
+
+  const flat = useMemo(() => {
+    const map = {};
+    filtered.forEach(a => { (map[a.section] = map[a.section] || []).push(a); });
+    const groups = Object.entries(map).sort((a, b) => sectionIdx(a[0]) - sectionIdx(b[0]));
+    const items = [];
+    const searching = query.trim().length > 0;
+    groups.forEach(([secId, arts]) => {
+      const open = searching || onlyCalc || openSec === secId;
+      items.push({ type: 'header', secId, count: arts.length, open, key: 'h_' + secId });
+      if (open) arts.forEach(a => items.push({ type: 'art', a, key: 'a_' + a.code }));
+    });
+    if (groups.length === 0) items.push({ type: 'empty', key: 'empty' });
+    return items;
+  }, [filtered, openSec, query, onlyCalc]);
+
+  const renderItem = ({ item }) => {
+    if (item.type === 'header') return (
+      <TouchableOpacity style={[s.secHeader, item.open && s.secHeaderOpen]} activeOpacity={0.7}
+        onPress={() => setOpenSec(openSec === item.secId ? null : item.secId)}>
+        <View style={s.secBadge}><Text style={s.secBadgeTxt}>{sectionBadge(item.secId)}</Text></View>
+        <Text style={s.secTitle} numberOfLines={1}>{sectionTitle(item.secId)}</Text>
+        <Text style={s.secCount}>{item.count}</Text>
+        <Ionicons name={item.open ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
+      </TouchableOpacity>
+    );
+    if (item.type === 'empty') return (
+      <View style={s.empty}><Text style={s.emptyTxt}>Nenhum artigo encontrado</Text></View>
+    );
+    const a = item.a;
+    return (
+      <TouchableOpacity style={s.row} activeOpacity={0.7}
+        onPress={() => navigation.navigate('FtlDetail', { code: a.code })}>
+        <View style={s.codeBox}><Text style={s.codeBoxTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.rowTitle} numberOfLines={1}>{a.title}</Text>
+          <Text style={s.rowSub} numberOfLines={1}>{a.sub}</Text>
+        </View>
+        {hasCalc(a) && <Ionicons name="calculator-outline" size={14} color={C.sub} />}
+        <Ionicons name="chevron-forward" size={16} color={C.line} />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -20,65 +80,26 @@ export default function FtlScreen({ navigation }) {
         <View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>
       </View>
 
-      <ScrollView contentContainerStyle={s.scroll}>
-        {/* Referência rápida — limites duros */}
-        <View style={s.quickCard}>
-          <Text style={s.quickTitle}>LIMITES DE SERVIÇO</Text>
-          {FTL_LIMITS.duty.map((l, i) => (
-            <View key={i} style={[s.quickRow, i > 0 && s.quickDiv]}>
-              <Text style={s.quickLbl}>{l.period}</Text>
-              <Text style={s.quickVal}>{l.value}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={s.quickCard}>
-          <Text style={s.quickTitle}>LIMITES DE TEMPO DE VOO</Text>
-          {FTL_LIMITS.flight.map((l, i) => (
-            <View key={i} style={[s.quickRow, i > 0 && s.quickDiv]}>
-              <Text style={s.quickLbl}>{l.period}</Text>
-              <Text style={s.quickVal}>{l.value}</Text>
-            </View>
-          ))}
-        </View>
+      <View style={s.searchWrap}>
+        <Ionicons name="search" size={17} color={C.sub} />
+        <TextInput value={query} onChangeText={setQuery} placeholder="PSV, repouso, setores, reserva…"
+          placeholderTextColor={C.sub} style={s.searchInput} />
+        {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close" size={16} color={C.sub} /></TouchableOpacity>}
+      </View>
 
-        <TouchableOpacity style={s.tablesBtn} activeOpacity={0.85}
-          onPress={() => navigation.navigate('FtlDetail', { code: 'ORO.FTL.205' })}>
-          <Ionicons name="grid-outline" size={18} color={C.red} />
-          <Text style={s.tablesTxt}>Tabelas de PSV máximo diário</Text>
-          <Ionicons name="chevron-forward" size={16} color={C.line} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
+      <View style={s.chips}>
+        {[{ id: 'calc', label: 'Calculáveis', active: onlyCalc, onPress: () => setOnlyCalc(!onlyCalc) },
+          { id: 'all', label: 'Todos', active: !onlyCalc, onPress: () => { setOnlyCalc(false); setOpenSec('gen'); } },
+        ].map(chip => (
+          <TouchableOpacity key={chip.id} onPress={chip.onPress}
+            style={[s.chip, { backgroundColor: chip.active ? C.ink : C.canvas, borderColor: chip.active ? C.ink : C.line }]}>
+            <Text style={[s.chipTxt, { color: chip.active ? '#fff' : C.sub }]}>{chip.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {/* Artigos por secção (acordeão) */}
-        <Text style={s.sectionLabel}>REGULAMENTO (UE) N.º 83/2014</Text>
-        {FTL_SECTIONS.map(sec => {
-          const open = openSec === sec.id;
-          const arts = FTL_ARTICLES.filter(a => a.section === sec.id);
-          return (
-            <View key={sec.id}>
-              <TouchableOpacity style={[s.secHeader, open && s.secHeaderOpen]} activeOpacity={0.7}
-                onPress={() => setOpenSec(open ? null : sec.id)}>
-                <View style={s.secBadge}><Text style={s.secBadgeTxt}>{sec.badge}</Text></View>
-                <Text style={s.secTitle} numberOfLines={1}>{sec.title}</Text>
-                <Text style={s.secCount}>{arts.length}</Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
-              </TouchableOpacity>
-              {open && arts.map(a => (
-                <TouchableOpacity key={a.code} style={s.row} activeOpacity={0.7}
-                  onPress={() => navigation.navigate('FtlDetail', { code: a.code })}>
-                  <View style={s.codeBox}><Text style={s.codeBoxTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.rowTitle} numberOfLines={1}>{a.title}</Text>
-                    <Text style={s.rowSub} numberOfLines={1}>{a.sub}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={C.line} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          );
-        })}
-
-        <Text style={s.foot}>Regulamento (UE) n.º 83/2014 · Subparte FTL (ORO.FTL). Resumo para consulta — em caso de dúvida prevalece o texto oficial.</Text>
-      </ScrollView>
+      <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 104 }} />
     </SafeAreaView>
   );
 }
@@ -91,16 +112,11 @@ const s = StyleSheet.create({
   headTitle: { color: '#fff', fontSize: 18, fontWeight: '500' },
   regBadge: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   regTxt: { color: '#fff', fontSize: 9, fontFamily: 'monospace', fontWeight: '700' },
-  scroll: { paddingHorizontal: 16, paddingBottom: 104 },
-  quickCard: { borderWidth: 1, borderColor: C.line, borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
-  quickTitle: { fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
-  quickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 11 },
-  quickDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  quickLbl: { fontSize: 13, color: C.sub },
-  quickVal: { fontSize: 15, fontFamily: 'monospace', fontWeight: '700', color: C.text },
-  tablesBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 2, marginBottom: 8 },
-  tablesTxt: { fontSize: 13, fontWeight: '500', color: C.text },
-  sectionLabel: { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginTop: 12, marginBottom: 8, marginLeft: 2 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.soft, borderRadius: 99, marginHorizontal: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: C.text },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
+  chip: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 8 },
+  chipTxt: { fontSize: 12, fontWeight: '500' },
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
@@ -112,5 +128,6 @@ const s = StyleSheet.create({
   codeBoxTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },
   rowTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   rowSub: { fontSize: 10, color: C.sub, marginTop: 2 },
-  foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 18, paddingHorizontal: 2 },
+  empty: { alignItems: 'center', marginTop: 60 },
+  emptyTxt: { color: C.sub, fontSize: 14 },
 });
