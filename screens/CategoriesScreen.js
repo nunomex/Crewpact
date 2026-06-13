@@ -48,7 +48,16 @@ function Seg({ options, value, setValue }) {
   );
 }
 function Calc({ title, children }) {
-  return <View style={cs.calc}><Text style={cs.calcTitle}>{title}</Text>{children}</View>;
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={cs.calc}>
+      <TouchableOpacity style={cs.calcHead} activeOpacity={0.7} onPress={() => setOpen(o => !o)}>
+        <Text style={cs.calcTitle}>{title}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={C.sub} />
+      </TouchableOpacity>
+      <View style={[cs.calcBody, { display: open ? 'flex' : 'none' }]}>{children}</View>
+    </View>
+  );
 }
 function Result({ value, foot }) {
   return (
@@ -290,8 +299,10 @@ export default function CategoriesScreen({ navigation }) {
 }
 
 const cs = StyleSheet.create({
-  calc: { borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: C.canvas },
-  calcTitle: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 8 },
+  calc: { borderWidth: 1, borderColor: C.line, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, backgroundColor: C.canvas },
+  calcHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  calcTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text, paddingRight: 8 },
+  calcBody: { marginTop: 12 },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: 13, color: C.text, flex: 1, paddingRight: 8 },
   stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
