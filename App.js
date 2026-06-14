@@ -30,8 +30,9 @@ export const AppContext = React.createContext(null);
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home"   component={HomeScreen} />
-      <Stack.Screen name="Detail" component={DetailScreen} />
+      <Stack.Screen name="Home"      component={HomeScreen} />
+      <Stack.Screen name="Detail"    component={DetailScreen} />
+      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }

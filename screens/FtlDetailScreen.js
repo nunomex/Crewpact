@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } fr
 import { C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
-import DetailTopBar from '../components/DetailTopBar';
+import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
   FTL_ARTICLES, ftlSectionTitle,
@@ -155,17 +155,21 @@ function PsvUnknownTable({ title, values, lang }) {
 }
 
 export default function FtlDetailScreen({ route, navigation }) {
-  const { lang } = useContext(AppContext);
+  const { lang, favorites, toggleFav } = useContext(AppContext);
   const code = route.params?.code;
   const a = FTL_ARTICLES.find(x => x.code === code);
   const tabSpace = useTabBarSpace();
   if (!a) return null;
 
   const body = tx(a.body, lang);
+  const fav = favorites.has(a.code);
 
   return (
     <SafeAreaView style={d.safe}>
-      <DetailTopBar onBack={() => navigation.goBack()} />
+      <DetailTopBar onBack={() => navigation.goBack()}
+        right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
+          onPress={() => toggleFav(a.code)}
+          accessibilityLabel={fav ? t('detail.favRemove', lang) : t('detail.favAdd', lang)} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>

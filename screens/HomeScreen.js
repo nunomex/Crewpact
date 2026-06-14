@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, use
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
+import { FTL_ARTICLES } from '../data/ftl';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import Card from '../components/Card';
@@ -28,8 +29,16 @@ export default function HomeScreen({ navigation }) {
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
-  // Up to 8 favorites, shown 4 per page in a swipeable carousel
-  const favItems = CLAUSES.filter(c => favorites.has(c.number)).slice(0, 8);
+  // Up to 8 favorites (cláusulas AE + artigos FTL), 4 por página num carrossel
+  const favClauses = CLAUSES.filter(c => favorites.has(c.number)).map(c => ({
+    kind: 'ae', key: 'c' + c.number, badge: String(c.number), title: tx(c.title, lang),
+    onPress: () => navigation.navigate('Detail', { clause: c }),
+  }));
+  const favFtl = FTL_ARTICLES.filter(a => favorites.has(a.code)).map(a => ({
+    kind: 'ftl', key: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
+    onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
+  }));
+  const favItems = [...favClauses, ...favFtl].slice(0, 8);
   const favPages = [favItems.slice(0, 4), favItems.slice(4, 8)].filter(p => p.length > 0);
 
   // Próximo voo — exemplo (sincroniza com a app de calendário ao tocar)
@@ -162,11 +171,13 @@ export default function HomeScreen({ navigation }) {
               onMomentumScrollEnd={e => setFavPage(Math.round(e.nativeEvent.contentOffset.x / FAV_PAGE_W))}>
               {favPages.map((page, pi) => (
                 <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>
-                  {page.map(cl => (
-                    <TouchableOpacity key={cl.number} style={[s.favCard, { width: FAV_CARD_W }]}
-                      onPress={() => navigation.navigate('Detail', { clause: cl })}>
-                      <View style={s.favNum}><Text style={s.favNumTxt}>{cl.number}</Text></View>
-                      <Text style={s.favCardTitle} numberOfLines={2}>{tx(cl.title, lang)}</Text>
+                  {page.map(item => (
+                    <TouchableOpacity key={item.key} style={[s.favCard, { width: FAV_CARD_W }]}
+                      onPress={item.onPress}>
+                      <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', paddingHorizontal: 8 }]}>
+                        <Text style={s.favNumTxt}>{item.badge}</Text>
+                      </View>
+                      <Text style={s.favCardTitle} numberOfLines={2}>{item.title}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
