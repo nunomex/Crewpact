@@ -309,7 +309,7 @@ export default function LoginScreen() {
       <View style={[s.langRow, { top: insets.top + 8 }]}>
         {['pt', 'en'].map((lc) => (
           <TouchableOpacity key={lc} onPress={() => setLang(lc)} activeOpacity={0.8} hitSlop={8}
-            style={[s.langDot, { backgroundColor: lang === lc ? C.ink : C.soft }]}
+            style={[s.langDot, { backgroundColor: lang === lc ? C.red : C.soft }]}
             accessibilityLabel={lc === 'pt' ? 'Português' : 'English'}>
             <Text style={[s.langDotTxt, { color: lang === lc ? '#fff' : C.sub }]}>{lc.toUpperCase()}</Text>
           </TouchableOpacity>
