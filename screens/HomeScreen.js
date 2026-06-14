@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
@@ -12,7 +12,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
-import { warning } from '../data/haptics';
+import { warning, success } from '../data/haptics';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
@@ -28,6 +28,8 @@ export default function HomeScreen({ navigation }) {
   const pay      = PROFILE_PAY[profile.rank] || {};
   const [notifOpen, setNotifOpen] = useState(false);
   const [favPage, setFavPage] = useState(0);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState(new Set());
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
@@ -40,12 +42,18 @@ export default function HomeScreen({ navigation }) {
     kind: 'ftl', key: a.code, favKey: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
     onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
   }));
-  const removeFav = (item) => {
-    warning();
-    Alert.alert(item.title, t('home.favRemoveMsg', lang), [
-      { text: t('common.cancel', lang), style: 'cancel' },
-      { text: t('detail.favRemove', lang), style: 'destructive', onPress: () => toggleFav(item.favKey) },
-    ]);
+  const enterSelect = (favKey) => { warning(); setSelectMode(true); setSelected(new Set([favKey])); };
+  const toggleSelect = (favKey) => setSelected(prev => {
+    const n = new Set(prev);
+    n.has(favKey) ? n.delete(favKey) : n.add(favKey);
+    return n;
+  });
+  const cancelSelect = () => { setSelectMode(false); setSelected(new Set()); };
+  const confirmRemove = () => {
+    selected.forEach(k => toggleFav(k));
+    success();
+    setSelectMode(false);
+    setSelected(new Set());
   };
   const favItems = [...favClauses, ...favFtl].slice(0, 16);
   const favPages = [];
@@ -175,7 +183,17 @@ export default function HomeScreen({ navigation }) {
         {/* Favoritos */}
         <View style={s.favHead}>
           <Text style={s.favTitleHd}>{t('home.favorites', lang)}</Text>
-          {favItems.length > 0 && <Text style={s.favCount}>{favItems.length}/16</Text>}
+          {selectMode && (
+            <View style={s.favActions}>
+              <TouchableOpacity onPress={cancelSelect} style={[s.favActBtn, { backgroundColor: C.soft }]} hitSlop={6} accessibilityLabel={t('common.cancel', lang)}>
+                <Ionicons name="close" size={18} color={C.ink} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmRemove} style={[s.favActBtn, { backgroundColor: selected.size ? C.red : C.line }]} hitSlop={6} disabled={!selected.size} accessibilityLabel={t('detail.favRemove', lang)}>
+                <Ionicons name="checkmark" size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {favItems.length > 0 && <Text style={s.favCount}>{selectMode ? selected.size : `${favItems.length}/16`}</Text>}
         </View>
 
         {favItems.length === 0 ? (
@@ -190,15 +208,26 @@ export default function HomeScreen({ navigation }) {
               onMomentumScrollEnd={e => setFavPage(Math.round(e.nativeEvent.contentOffset.x / FAV_PAGE_W))}>
               {favPages.map((page, pi) => (
                 <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>
-                  {page.map(item => (
-                    <TouchableOpacity key={item.key} style={[s.favCard, { width: FAV_CARD_W }]}
-                      onPress={item.onPress} onLongPress={() => removeFav(item)} delayLongPress={350}>
-                      <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', minWidth: 30, paddingHorizontal: 8 }]}>
-                        <Text style={s.favNumTxt}>{item.badge}</Text>
-                      </View>
-                      <Text style={s.favCardTitle} numberOfLines={2}>{item.title}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {page.map(item => {
+                    const isSel = selectMode && selected.has(item.favKey);
+                    return (
+                      <TouchableOpacity key={item.key} style={[s.favCard, { width: FAV_CARD_W }, isSel && s.favCardSel]}
+                        onPress={() => (selectMode ? toggleSelect(item.favKey) : item.onPress())}
+                        onLongPress={() => (selectMode ? toggleSelect(item.favKey) : enterSelect(item.favKey))} delayLongPress={300}>
+                        <View style={s.favTopRow}>
+                          <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', minWidth: 30, paddingHorizontal: 8 }]}>
+                            <Text style={s.favNumTxt}>{item.badge}</Text>
+                          </View>
+                          {selectMode && (
+                            <View style={[s.favCheck, isSel && { backgroundColor: C.red, borderColor: C.red }]}>
+                              {isSel && <Ionicons name="checkmark" size={13} color="#fff" />}
+                            </View>
+                          )}
+                        </View>
+                        <Text style={s.favCardTitle} numberOfLines={2}>{item.title}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ))}
             </ScrollView>
@@ -274,8 +303,13 @@ const s = StyleSheet.create({
   metaVal: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginTop: 2 },
   favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md - 2, paddingHorizontal: 2 },
   favTitleHd: { fontSize: TYPE.value + 1, fontWeight: '600', color: C.text },
-  favCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
+  favCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub, minWidth: 36, textAlign: 'right' },
+  favActions: { flexDirection: 'row', gap: 8 },
+  favActBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   favCard: { height: 96, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: SPACE.md, backgroundColor: C.canvas, justifyContent: 'space-between' },
+  favCardSel: { borderColor: C.red, borderWidth: 1.5, backgroundColor: C.redSoft },
+  favTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  favCheck: { width: 22, height: 22, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', backgroundColor: C.canvas },
   favNum: { width: 30, height: 30, borderRadius: RADIUS.sm - 2, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   favNumTxt: { color: '#fff', fontFamily: 'monospace', fontSize: TYPE.label },
   favCardTitle: { fontSize: TYPE.label, fontWeight: '500', color: C.text, lineHeight: 16 },
