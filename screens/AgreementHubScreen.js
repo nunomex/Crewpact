@@ -8,8 +8,8 @@ import { t } from '../data/i18n';
 import { AppContext } from '../App';
 
 const CARDS = [
-  { id: 'ae',  route: 'List', code: 'AE', eyebrow: 'hub.aeEyebrow', title: 'hub.aeTitle', sub: 'hub.aeSub', icon: 'document-text-outline' },
-  { id: 'ftl', route: 'Ftl',  code: 'FT', eyebrow: 'hub.ftEyebrow', title: 'hub.ftTitle', sub: 'hub.ftSub', icon: 'time-outline' },
+  { id: 'ae',  route: 'List', code: { pt: 'AE', en: 'CLA' }, eyebrow: 'hub.aeEyebrow', title: 'hub.aeTitle', sub: 'hub.aeSub', icon: 'document-text-outline' },
+  { id: 'ftl', route: 'Ftl',  code: { pt: 'FTL', en: 'FTL' }, eyebrow: 'hub.ftEyebrow', title: 'hub.ftTitle', sub: 'hub.ftSub', icon: 'time-outline' },
 ];
 
 export default function AgreementHubScreen({ navigation }) {
@@ -23,7 +23,7 @@ export default function AgreementHubScreen({ navigation }) {
           <TouchableOpacity key={c.id} style={s.card} activeOpacity={0.85} onPress={() => navigation.navigate(c.route)}>
             <View style={s.cardTop}>
               <View style={s.cardIcon}><Ionicons name={c.icon} size={24} color="#fff" /></View>
-              <View style={s.codeBadge}><Text style={s.codeTxt}>{c.code}</Text></View>
+              <View style={s.codeBadge}><Text style={s.codeTxt}>{c.code[lang] ?? c.code.pt}</Text></View>
             </View>
             <Eyebrow style={{ marginBottom: 4 }}>{t(c.eyebrow, lang)}</Eyebrow>
             <Text style={s.cardTitle}>{t(c.title, lang)}</Text>
