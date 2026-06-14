@@ -19,7 +19,7 @@ export default function FtlScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const [query, setQuery]     = useState('');
   const [onlyCalc, setOnlyCalc] = useState(false);
-  const [openSec, setOpenSec] = useState('gen');
+  const [openSec, setOpenSec] = useState(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -70,7 +70,7 @@ export default function FtlScreen({ navigation }) {
 
       <ChipRow>
         <Chip label={t('ftl.filterCalc', lang)} active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
-        <Chip label={t('ftl.filterAll', lang)} active={!onlyCalc} onPress={() => { setOnlyCalc(false); setOpenSec('gen'); }} />
+        <Chip label={t('ftl.filterAll', lang)} active={!onlyCalc} onPress={() => { setOnlyCalc(false); setOpenSec(null); }} />
       </ChipRow>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
