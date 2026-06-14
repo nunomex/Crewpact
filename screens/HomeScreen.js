@@ -38,8 +38,9 @@ export default function HomeScreen({ navigation }) {
     kind: 'ftl', key: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
     onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
   }));
-  const favItems = [...favClauses, ...favFtl].slice(0, 8);
-  const favPages = [favItems.slice(0, 4), favItems.slice(4, 8)].filter(p => p.length > 0);
+  const favItems = [...favClauses, ...favFtl].slice(0, 16);
+  const favPages = [];
+  for (let i = 0; i < favItems.length; i += 4) favPages.push(favItems.slice(i, i + 4));
 
   // Próximo voo — exemplo (sincroniza com a app de calendário ao tocar)
   const [flight, setFlight] = useState({
@@ -156,7 +157,7 @@ export default function HomeScreen({ navigation }) {
         {/* Favoritos */}
         <View style={s.favHead}>
           <Text style={s.favTitleHd}>{t('home.favorites', lang)}</Text>
-          {favItems.length > 0 && <Text style={s.favCount}>{favItems.length}/8</Text>}
+          {favItems.length > 0 && <Text style={s.favCount}>{favItems.length}/16</Text>}
         </View>
 
         {favItems.length === 0 ? (

@@ -208,6 +208,8 @@ export const STRINGS = {
     'detail.calc': 'CALCULADORA',
     'detail.favAdd': 'Adicionar aos favoritos',
     'detail.favRemove': 'Remover dos favoritos',
+    'detail.favFullTitle': 'Favoritos cheios',
+    'detail.favFullMsg': 'Atingiste o limite de 16 favoritos. Remove um para adicionar outro.',
 
     // Cálculos
     'calc.eyebrow': 'CALCULADORAS',
@@ -375,6 +377,8 @@ export const STRINGS = {
     'detail.calc': 'CALCULATOR',
     'detail.favAdd': 'Add to favourites',
     'detail.favRemove': 'Remove from favourites',
+    'detail.favFullTitle': 'Favourites full',
+    'detail.favFullMsg': "You've reached the limit of 16 favourites. Remove one to add another.",
 
     // Calculators
     'calc.eyebrow': 'CALCULATORS',

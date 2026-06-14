@@ -119,12 +119,18 @@ export default function App() {
   const [lang, setLang]                 = useState('pt');
   const [readNotifIds, setReadNotifIds] = useState(new Set());
 
-  const toggleFav = (n) =>
+  // Limite de favoritos. Devolve { ok, full } para o ecrã poder avisar quando cheio.
+  const FAV_LIMIT = 16;
+  const toggleFav = (n) => {
+    const has = favorites.has(n);
+    if (!has && favorites.size >= FAV_LIMIT) return { ok: false, full: true };
     setFavorites(prev => {
       const next = new Set(prev);
       next.has(n) ? next.delete(n) : next.add(n);
       return next;
     });
+    return { ok: true, added: !has };
+  };
 
   // When a user logs in, pre-populate profile if they already have one saved
   const handleSetUser = (u) => {

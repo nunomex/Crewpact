@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
@@ -168,7 +168,7 @@ export default function FtlDetailScreen({ route, navigation }) {
     <SafeAreaView style={d.safe}>
       <DetailTopBar onBack={() => navigation.goBack()}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => toggleFav(a.code)}
+          onPress={() => { const r = toggleFav(a.code); if (r.full) Alert.alert(t('detail.favFullTitle', lang), t('detail.favFullMsg', lang)); }}
           accessibilityLabel={fav ? t('detail.favRemove', lang) : t('detail.favAdd', lang)} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>

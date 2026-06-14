@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
@@ -157,8 +157,8 @@ export default function DetailScreen({ route, navigation }) {
     <SafeAreaView style={d.safe}>
       <DetailTopBar onBack={() => navigation.goBack()}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => toggleFav(c.number)}
-          accessibilityLabel={fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} />} />
+          onPress={() => { const r = toggleFav(c.number); if (r.full) Alert.alert(T('detail.favFullTitle', lang), T('detail.favFullMsg', lang)); }}
+          accessibilityLabel={fav ? T('detail.favRemove', lang) : T('detail.favAdd', lang)} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>{lang === 'en' ? 'Section' : 'Secção'} {sectionN(c.section)} · {tx(sectionTitle(c.section), lang)}</Text>
