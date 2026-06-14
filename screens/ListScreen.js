@@ -5,6 +5,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import SearchBar from '../components/SearchBar';
 import { Chip, ChipRow } from '../components/Chip';
 import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordion';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 import { CLAUSES } from '../data/clauses';
 import { AppContext } from '../App';
 
@@ -19,6 +20,7 @@ const isApplicable = (cl, profile) => {
 
 export default function ListScreen({ navigation, route }) {
   const { profile, lang } = useContext(AppContext);
+  const tabSpace = useTabBarSpace();
   const [query, setQuery]           = useState('');
   const [activeSection, setSection] = useState('all');
   const [openSec, setOpenSec]       = useState(null);
@@ -84,7 +86,7 @@ export default function ListScreen({ navigation, route }) {
       </ChipRow>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 104 }} />
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace }} />
     </SafeAreaView>
   );
 }

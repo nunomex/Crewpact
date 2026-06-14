@@ -1,6 +1,9 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Modal, TextInput, Alert, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Alert, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import BottomSheet from '../components/BottomSheet';
+import Eyebrow from '../components/Eyebrow';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
@@ -10,7 +13,7 @@ import { AppContext } from '../App';
 function Group({ title, children }) {
   return (
     <View style={s.group}>
-      {title ? <Text style={s.groupTitle}>{title}</Text> : null}
+      {title ? <Eyebrow style={s.groupTitle}>{title}</Eyebrow> : null}
       <View style={s.groupBox}>{children}</View>
     </View>
   );
@@ -29,6 +32,7 @@ function Row({ label, value, onPress, last, danger }) {
 
 export default function SettingsScreen() {
   const { profile, setProfile, setOnboarded, user, logout } = useContext(AppContext);
+  const tabSpace = useTabBarSpace();
   const [syncing, setSyncing] = useState(false);
 
   const spin = useRef(new Animated.Value(0)).current;
@@ -108,7 +112,7 @@ export default function SettingsScreen() {
         </Animated.View>
       )}
       <ScreenHeader eyebrow="A TUA CONTA" title="Perfil" style={{ marginBottom: 8 }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 104 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
         {/* User card */}
         {user && (
@@ -158,64 +162,47 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Change password modal */}
-      <Modal visible={pwModal} animationType="slide" transparent onRequestClose={() => setPwModal(false)}>
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPwModal(false)} />
-        <View style={s.sheet}>
-          <View style={s.sheetHead}>
-            <Text style={s.sheetTitle}>Alterar palavra-passe</Text>
-            <TouchableOpacity onPress={() => setPwModal(false)} style={s.closeBtn}>
-              <Ionicons name="close" size={18} color={C.ink} />
-            </TouchableOpacity>
-          </View>
-          <View style={{ padding: 20 }}>
-            {[
-              { label: 'Palavra-passe atual', val: curPw, set: setCurPw },
-              { label: 'Nova palavra-passe',  val: newPw, set: setNewPw },
-              { label: 'Confirmar nova',      val: confPw, set: setConfPw },
-            ].map((f, i) => (
-              <View key={i} style={{ marginBottom: 12 }}>
-                <Text style={s.fieldLabel}>{f.label}</Text>
-                <TextInput value={f.val} onChangeText={f.set} secureTextEntry
-                  style={s.fieldInput} placeholderTextColor={C.sub} placeholder="••••••••" />
-              </View>
-            ))}
-            {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
-            <TouchableOpacity onPress={handleChangePw} style={s.pwBtn}>
-              <Text style={s.pwBtnTxt}>Guardar</Text>
-            </TouchableOpacity>
-          </View>
+      <BottomSheet visible={pwModal} onClose={() => setPwModal(false)} title="Alterar palavra-passe">
+        <View style={{ padding: 20 }}>
+          {[
+            { label: 'Palavra-passe atual', val: curPw, set: setCurPw },
+            { label: 'Nova palavra-passe',  val: newPw, set: setNewPw },
+            { label: 'Confirmar nova',      val: confPw, set: setConfPw },
+          ].map((f, i) => (
+            <View key={i} style={{ marginBottom: 12 }}>
+              <Text style={s.fieldLabel}>{f.label}</Text>
+              <TextInput value={f.val} onChangeText={f.set} secureTextEntry
+                style={s.fieldInput} placeholderTextColor={C.sub} placeholder="••••••••" />
+            </View>
+          ))}
+          {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
+          <TouchableOpacity onPress={handleChangePw} style={s.pwBtn}>
+            <Text style={s.pwBtnTxt}>Guardar</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </BottomSheet>
 
       {/* Seletor de perfil (companhia / categoria / contrato) */}
-      <Modal visible={!!pickerField} animationType="slide" transparent onRequestClose={() => setPickerField(null)}>
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPickerField(null)} />
-        <View style={s.sheet}>
-          <View style={s.sheetHead}>
-            <Text style={s.sheetTitle}>{pickerField ? PICKERS[pickerField].title : ''}</Text>
-            <TouchableOpacity onPress={() => setPickerField(null)} style={s.closeBtn}>
-              <Ionicons name="close" size={18} color={C.ink} />
-            </TouchableOpacity>
-          </View>
-          <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
-            {pickerField && PICKERS[pickerField].options.map((o, i) => {
-              const sel = profile[pickerField] === o.id;
-              return (
-                <TouchableOpacity key={o.id} disabled={o.disabled}
-                  onPress={() => selectOption(pickerField, o.id)}
-                  style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
-                  <Text style={[s.optLabel, sel && { color: C.ink, fontWeight: '700' }]}>{o.label}</Text>
-                  {o.disabled
-                    ? <Text style={s.optSoon}>Em breve</Text>
-                    : sel
-                      ? <Ionicons name="checkmark-circle" size={20} color={C.red} />
-                      : <View style={s.optDot} />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+      <BottomSheet visible={!!pickerField} onClose={() => setPickerField(null)}
+        title={pickerField ? PICKERS[pickerField].title : ''}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
+          {pickerField && PICKERS[pickerField].options.map((o, i) => {
+            const sel = profile[pickerField] === o.id;
+            return (
+              <TouchableOpacity key={o.id} disabled={o.disabled}
+                onPress={() => selectOption(pickerField, o.id)}
+                style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
+                <Text style={[s.optLabel, sel && { color: C.ink, fontWeight: '700' }]}>{o.label}</Text>
+                {o.disabled
+                  ? <Text style={s.optSoon}>Em breve</Text>
+                  : sel
+                    ? <Ionicons name="checkmark-circle" size={20} color={C.red} />
+                    : <View style={s.optDot} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      </Modal>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -230,22 +217,17 @@ const s = StyleSheet.create({
   userName: { fontSize: TYPE.value, fontWeight: '500', color: C.text },
   userEmail: { fontSize: TYPE.label, color: C.sub, marginTop: 2 },
   group: { marginBottom: 20 },
-  groupTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', textTransform: 'uppercase', marginBottom: 6, paddingLeft: 2 },
+  groupTitle: { marginBottom: 6, paddingLeft: 2 },
   groupBox: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden', backgroundColor: C.canvas },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
-  rowLabel: { fontSize: TYPE.body, color: C.sub },
-  rowValue: { fontSize: 13, fontWeight: '500', color: C.text, maxWidth: 180, textAlign: 'right' },
+  rowLabel: { fontSize: TYPE.body, color: C.text },
+  rowValue: { fontSize: TYPE.sub, color: C.sub, maxWidth: 180, textAlign: 'right' },
   syncRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   syncTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
   syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8 },
   syncBtnTxt: { color: '#fff', fontSize: TYPE.label, fontWeight: '600' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: C.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: C.line },
-  sheetTitle: { fontSize: 16, fontWeight: '500', color: C.text },
-  closeBtn: { width: 34, height: 34, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
   fieldInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },

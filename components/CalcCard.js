@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE } from '../data/constants';
+import Eyebrow from './Eyebrow';
 
 // Invólucro de calculadora estático: eyebrow "CALCULADORA · …" + caixa com borda.
 // (AE / FTL — o Categorias usa um acordeão próprio.)
@@ -10,7 +11,7 @@ export function CalcCard({ title = 'CALCULADORA', children, style }) {
     <View style={style}>
       <View style={c.head}>
         <Ionicons name="calculator-outline" size={13} color={C.red} />
-        <Text style={c.eyebrow}>{title}</Text>
+        <Eyebrow>{title}</Eyebrow>
       </View>
       <View style={c.inner}>{children}</View>
     </View>
@@ -36,7 +37,6 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
 
 const c = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600' },
   inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
   resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },

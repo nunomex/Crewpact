@@ -5,6 +5,8 @@ import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY
 import { CLAUSES } from '../data/clauses';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
+import Eyebrow from '../components/Eyebrow';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
@@ -134,6 +136,7 @@ const t = StyleSheet.create({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function DetailScreen({ route, navigation }) {
   const { profile, favorites, toggleFav, lang } = useContext(AppContext);
+  const tabSpace = useTabBarSpace();
   const cl  = route.params?.clause;
   const [currentCl, setCurrentCl] = useState(cl);
   const c = currentCl;
@@ -154,7 +157,7 @@ export default function DetailScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={d.scroll}>
+      <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>Secção {sectionN(c.section)} · {sectionTitle(c.section)}</Text>
         <Text style={d.number}>{c.number}</Text>
         <Text style={d.title}>{c.title[lang] || c.title.pt}</Text>
@@ -177,7 +180,7 @@ export default function DetailScreen({ route, navigation }) {
 
         {related.length > 0 && (
           <View style={{ marginTop: 24 }}>
-            <Text style={d.relTitle}>RELACIONADAS</Text>
+            <Eyebrow style={{ marginBottom: 8 }}>Relacionadas</Eyebrow>
             {related.map(r => (
               <TouchableOpacity key={r.number} onPress={() => setCurrentCl(r)} style={d.relRow}>
                 <Text style={d.relNum}>{r.number}</Text>
@@ -196,7 +199,7 @@ const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
   iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 24, paddingBottom: 104 },
+  scroll: { paddingHorizontal: 24 },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
   title: { fontSize: 20, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
@@ -206,7 +209,6 @@ const d = StyleSheet.create({
   valRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12 },
   valLbl: { fontSize: 13, color: C.sub },
   valAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '600', color: C.text },
-  relTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 8 },
   relRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6 },
   relNum: { fontFamily: 'monospace', fontSize: TYPE.label, color: C.ink },
   relLabel: { flex: 1, fontSize: 13, color: C.text },

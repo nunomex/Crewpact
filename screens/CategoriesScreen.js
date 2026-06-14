@@ -18,6 +18,7 @@ import { CLAUSES } from '../data/clauses';
 import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -169,6 +170,7 @@ function CalcCount() {
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
   const { profile } = useContext(AppContext);
+  const tabSpace = useTabBarSpace();
   const rank = profile.rank || 'fa';
   const rankObj = RANKS.find(r => r.id === rank) || RANKS[1];
   const rankRow = RANK_ROW[rank] ?? 1;
@@ -190,7 +192,7 @@ export default function CategoriesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <ScreenHeader eyebrow="CALCULADORAS" title="Cálculos" style={{ margin: 0, marginBottom: 12 }} />
 
         {/* A tua categoria */}
@@ -277,7 +279,7 @@ const cs = StyleSheet.create({
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  scroll: { padding: 16, paddingBottom: 104 },
+  scroll: { padding: 16 },
   meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
   meTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   meEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.red, fontWeight: '700' },

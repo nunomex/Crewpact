@@ -5,6 +5,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import SearchBar from '../components/SearchBar';
 import { Chip, ChipRow } from '../components/Chip';
 import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordion';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_SECTIONS, FTL_ARTICLES } from '../data/ftl';
 
 const sectionBadge = (id) => FTL_SECTIONS.find(s => s.id === id)?.badge ?? '';
@@ -13,6 +14,7 @@ const sectionIdx   = (id) => FTL_SECTIONS.findIndex(s => s.id === id);
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest);
 
 export default function FtlScreen({ navigation }) {
+  const tabSpace = useTabBarSpace();
   const [query, setQuery]     = useState('');
   const [onlyCalc, setOnlyCalc] = useState(false);
   const [openSec, setOpenSec] = useState('gen');
@@ -70,7 +72,7 @@ export default function FtlScreen({ navigation }) {
       </ChipRow>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 104 }} />
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace }} />
     </SafeAreaView>
   );
 }

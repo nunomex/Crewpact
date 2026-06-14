@@ -1,17 +1,20 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, SafeAreaView, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import Card from '../components/Card';
+import BottomSheet from '../components/BottomSheet';
+import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
 
 export default function HomeScreen({ navigation }) {
   const { width } = useWindowDimensions();
+  const tabSpace = useTabBarSpace();
   const FAV_PAGE_W = width - 32;            // scroll padding 16 de cada lado
   const FAV_CARD_W = (FAV_PAGE_W - FAV_GAP) / 2;
   const { profile, favorites, lang, readNotifIds, setReadNotifIds } = useContext(AppContext);
@@ -57,7 +60,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.scroll}>
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         {/* Header blob */}
         <View style={s.headerBlob}>
           <View style={{ flex: 1 }}>
@@ -179,19 +182,8 @@ export default function HomeScreen({ navigation }) {
       </ScrollView>
 
       {/* Notifications modal */}
-      <Modal visible={notifOpen} animationType="slide" transparent onRequestClose={closeNotifs}>
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={closeNotifs} />
-        <View style={s.sheet}>
-          <View style={s.sheetHead}>
-            <View>
-              <Text style={s.sheetEye}>CENTRO DE MENSAGENS</Text>
-              <Text style={s.sheetTitle}>Notificações</Text>
-            </View>
-            <TouchableOpacity onPress={closeNotifs} style={s.closeBtn}>
-              <Ionicons name="close" size={18} color={C.ink} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={{ flex: 1 }}>
+      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow="CENTRO DE MENSAGENS" title="Notificações" maxHeight="80%">
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
             {notifs.map((n, i) => {
               const isNew = !readNotifIds.has(n.id);
               return (
@@ -210,15 +202,14 @@ export default function HomeScreen({ navigation }) {
             })}
             <Text style={s.noMore}>Sem mais notificações</Text>
           </ScrollView>
-        </View>
-      </Modal>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  scroll: { padding: SPACE.lg, paddingBottom: 104 },
+  scroll: { padding: SPACE.lg },
   headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
   headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginLeft: SPACE.md },
   headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
@@ -264,12 +255,6 @@ const s = StyleSheet.create({
   favDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
   favEmpty: { alignItems: 'center', gap: SPACE.sm, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: SPACE.xl, paddingHorizontal: SPACE.xl },
   favEmptyTxt: { fontSize: TYPE.label, color: C.sub, textAlign: 'center' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: C.canvas, borderTopLeftRadius: RADIUS.xl + 2, borderTopRightRadius: RADIUS.xl + 2, maxHeight: '80%', paddingBottom: SPACE.xl + 8 },
-  sheetHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: SPACE.xl - 4, borderBottomWidth: 1, borderBottomColor: C.line },
-  sheetEye: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600' },
-  sheetTitle: { fontSize: TYPE.title, fontWeight: '500', color: C.text, marginTop: 2 },
-  closeBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 2 },
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },

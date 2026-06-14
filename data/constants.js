@@ -10,7 +10,12 @@ export const C = {
   text: "#191919",
   sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)
   subLight: "#9B9B95", // antigo tom claro: usar só em fundos escuros/decorativo
+  // Tons sobre fundo escuro (ink) — usar em vez de rgba(255,255,255,…) à mão.
+  onDark: "#FFFFFF",
   onDarkSub: "rgba(255,255,255,0.6)", // texto secundário sobre fundo preto
+  onDarkFaint: "rgba(255,255,255,0.5)", // rótulos discretos sobre preto
+  hairlineOnDark: "rgba(255,255,255,0.12)", // separadores/realces sobre preto
+  scrim: "rgba(0,0,0,0.4)", // fundo de overlay de modais
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
 };
@@ -26,16 +31,23 @@ export const DATA_VERSION = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 // Adotar progressivamente nos ecrãs para uniformizar raios, espaços e tipos.
-export const RADIUS = { sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
+export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
 export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
-// Escala tipográfica (px). Mínimo 12 para texto informativo (acessibilidade).
+// Gutter horizontal padrão dos ecrãs de conteúdo.
+export const GUTTER = 16;
+// Escala tipográfica (px). Mínimo 11 para texto informativo (acessibilidade).
 export const TYPE = {
   eyebrow: 10,   // rótulos discretos (letterSpacing 1.5–2)
+  micro: 11,     // dados densos (tabelas, rodapés)
   label: 12,
+  sub: 13,       // subtítulos / valores de linha
   body: 14,
   value: 15,
-  title: 18,
-  display: 24,
+  lg: 16,        // títulos de folha / botões
+  title: 18,     // título de cabeçalho
+  heading: 20,   // título de cartão/ecrã
+  display: 24,   // números grandes
+  hero: 28,      // título de onboarding
 };
 
 // ─── Companies ───────────────────────────────────────────────────────────────
