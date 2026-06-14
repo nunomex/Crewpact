@@ -9,7 +9,7 @@ import Card from '../components/Card';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t, tx } from '../data/i18n';
+import { t, tx, txv } from '../data/i18n';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
@@ -91,7 +91,7 @@ export default function HomeScreen({ navigation }) {
           </View>
           <View style={s.payFooter}>
             <View style={s.dot} />
-            <Text style={s.payNote}>{rankObj?.short} · {CONTRACT_NOTE[profile.contract]}</Text>
+            <Text style={s.payNote}>{txv(rankObj?.short, lang)} · {txv(CONTRACT_NOTE[profile.contract], lang)}</Text>
           </View>
         </Card>
 

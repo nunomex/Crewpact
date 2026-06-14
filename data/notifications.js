@@ -1,6 +1,7 @@
 // Notificações geradas dinamicamente a partir do perfil do utilizador.
 // (Sem dados fixos — refletem a categoria, contrato e valores aplicáveis.)
 import { RANKS, CONTRACTS, CONTRACT_NOTE, PROFILE_PAY, DATA_VERSION } from './constants';
+import { txv } from './i18n';
 
 export function buildNotifications(profile, lang = 'pt') {
   const en = lang === 'en';
@@ -13,7 +14,7 @@ export function buildNotifications(profile, lang = 'pt') {
   if (rank) {
     list.push({
       id: 'profile', tag: en ? 'PROFILE' : 'PERFIL', time: en ? 'now' : 'agora',
-      title: en ? `Your rank: ${rank.short}` : `A tua categoria: ${rank.short}`,
+      title: en ? `Your rank: ${txv(rank.short, lang)}` : `A tua categoria: ${rank.short}`,
       body: en
         ? `Nominal sector ${pay.ns || '—'} · annual base ${pay.base || '—'} (${ref}).`
         : `Setor nominal ${pay.ns || '—'} · base anual ${pay.base || '—'} (${ref}).`,
@@ -22,8 +23,8 @@ export function buildNotifications(profile, lang = 'pt') {
   if (contract) {
     list.push({
       id: 'contract', tag: en ? 'CONTRACT' : 'CONTRATO', time: en ? 'now' : 'agora',
-      title: en ? `${contract.label} contract` : `Contrato ${contract.label}`,
-      body: CONTRACT_NOTE[profile.contract] || (en ? 'Terms according to the contract type.' : 'Condições conforme o tipo de contrato.'),
+      title: en ? `${txv(contract.label, lang)} contract` : `Contrato ${contract.label}`,
+      body: (CONTRACT_NOTE[profile.contract] ? txv(CONTRACT_NOTE[profile.contract], lang) : null) || (en ? 'Terms according to the contract type.' : 'Condições conforme o tipo de contrato.'),
     });
   }
   list.push({

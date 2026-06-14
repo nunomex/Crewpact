@@ -18,7 +18,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t, tx } from '../data/i18n';
+import { t, tx, txv } from '../data/i18n';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -193,7 +193,7 @@ export default function CategoriesScreen({ navigation }) {
   const [ptMode, setPtMode] = useState('fix50');
   const ptModeObj = PT_MODES.find(m => m.id === ptMode);
   const factor = isPT ? ptModeObj.factor : (profile.contract != null ? (CONTRACT_FACTOR[profile.contract] ?? 1) : 1);
-  const contractLabel = isPT ? tx(ptModeObj.label, lang) : (contractObj?.label || '');
+  const contractLabel = isPT ? tx(ptModeObj.label, lang) : (txv(contractObj?.label, lang) || '');
 
   const openClause = (number) => {
     const clause = CLAUSES.find(c => c.number === number);
@@ -209,14 +209,14 @@ export default function CategoriesScreen({ navigation }) {
         <View style={s.meCard}>
           <View style={s.meTop}>
             <Text style={s.meEyebrow}>{t('calc.me', lang)}</Text>
-            {contractObj && <View style={s.contractPill}><Text style={s.contractTxt}>{contractObj.label}</Text></View>}
+            {contractObj && <View style={s.contractPill}><Text style={s.contractTxt}>{txv(contractObj.label, lang)}</Text></View>}
           </View>
-          <Text style={s.meTitle}>{rankObj.label}</Text>
+          <Text style={s.meTitle}>{txv(rankObj.label, lang)}</Text>
           <View style={s.meRow}>
             <View style={s.meCell}><Text style={s.meLbl}>{l('Setor nominal', 'Nominal sector')}</Text><Text style={s.meVal}>{SECTOR_TABLE.rows[rankRow].v[2]}</Text></View>
             <View style={s.meCell}><Text style={s.meLbl}>{l('Base anual', 'Annual base')}</Text><Text style={s.meVal}>{SALARY.rows[rankRow].v[2]}</Text></View>
           </View>
-          <Text style={s.meNote}>{l('As calculadoras usam os valores da tua categoria', 'The calculators use your rank values')}{contractObj && lang === 'pt' ? ` · ${CONTRACT_NOTE[profile.contract] || ''}` : ''}</Text>
+          <Text style={s.meNote}>{l('As calculadoras usam os valores da tua categoria', 'The calculators use your rank values')}{contractObj && CONTRACT_NOTE[profile.contract] ? ` · ${txv(CONTRACT_NOTE[profile.contract], lang)}` : ''}</Text>
         </View>
 
         {isPT && (

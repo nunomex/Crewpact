@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from '../components/BottomSheet';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t } from '../data/i18n';
+import { t, txv } from '../data/i18n';
 
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
@@ -77,8 +77,8 @@ export default function SettingsScreen() {
 
   const PICKERS = {
     company:  { title: t('profile.company', lang), options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
-    rank:     { title: t('profile.rank', lang),    options: RANKS.map(r => ({ id: r.id, label: r.label })) },
-    contract: { title: t('profile.contract', lang), options: CONTRACTS.map(c => ({ id: c.id, label: c.label })) },
+    rank:     { title: t('profile.rank', lang),    options: RANKS.map(r => ({ id: r.id, label: txv(r.label, lang) })) },
+    contract: { title: t('profile.contract', lang), options: CONTRACTS.map(c => ({ id: c.id, label: txv(c.label, lang) })) },
   };
 
   const selectOption = (field, id) => {
@@ -141,8 +141,8 @@ export default function SettingsScreen() {
 
         <Group>
           <Row label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} />
-          <Row label={t('profile.rank', lang)} value={rankObj?.short} onPress={() => setPickerField('rank')} />
-          <Row label={t('profile.contract', lang)} value={contract?.label} onPress={() => setPickerField('contract')} last />
+          <Row label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />
+          <Row label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />
         </Group>
 
         <Group title={t('profile.groupContent', lang)}>

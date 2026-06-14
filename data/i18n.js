@@ -51,6 +51,7 @@ export const VALUE_I18N = {
   'CCLT (Verificador de Linha)': 'CCLT (Line Trainer)', 'CTI-Flexi (Instrutor)': 'CTI-Flexi (Instructor)',
   'Assist./Com. 1.º ano': 'FA 1st year', 'Assistente/Comissário': 'Flight Attendant', 'Chefe Cabine (exp.)': 'Cabin Manager (prob.)', 'Chefe de Cabine': 'Cabin Manager',
   'Curto/Médio/Longo/Extra': 'Short/Medium/Long/Extra',
+  '0,8 / 1,2 / 1,5 / 2,5 × NS': '0.8 / 1.2 / 1.5 / 2.5 × NS',
   'Abono para falhas': 'Cash handling allowance',
   'Bistro e Boutique': 'Bistro & Boutique', 'Produtos de cortesia (atrasos)': 'Courtesy products (delays)',
   'Por noite fora da base': 'Per night away from base',
@@ -92,6 +93,21 @@ export const VALUE_I18N = {
   'Dias DDO (115€)': 'DDO days (€115)', 'Dias IDO (140€)': 'IDO days (€140)',
   'Curto': 'Short', 'Médio': 'Medium', 'Longo': 'Long', 'Extra': 'Extra',
   'Chamado · ≤3:59': 'Called · ≤3:59', 'Chamado · >4h': 'Called · >4h', 'Não cham. · ≤3:59': 'Not called · ≤3:59', 'Não cham. · >4h': 'Not called · >4h',
+  // Categorias (RANKS) — label e short
+  'Assistente/Comissário 1.º ano': 'Flight Attendant 1st year', 'FA 1.º ano': 'FA 1st year',
+  'Assistente/Comissário de Bordo': 'Flight Attendant', 'Assist./Com.': 'Flight Att.',
+  'Chefe de Cabine (período exp.)': 'Cabin Manager (prob.)', 'Chefe (exp.)': 'CM (prob.)',
+  'Chefe de Cabine': 'Cabin Manager',
+  // Tipos de contrato (CONTRACTS)
+  'Tempo inteiro (12/12)': 'Full-time (12/12)', 'Parcial anual 10/12': 'Annual part-time 10/12',
+  'Parcial anual 8/12': 'Annual part-time 8/12', 'Intermitente 9/3': 'Intermittent 9/3',
+  'Tempo parcial (fixo/sazonal)': 'Part-time (fixed/seasonal)',
+  // Notas de contrato (CONTRACT_NOTE)
+  'Valor a tempo inteiro.': 'Full-time amount.',
+  '≈ 10/12 do valor anual, em 14 prestações.': '≈ 10/12 of annual amount, in 14 instalments.',
+  '≈ 8/12 do valor anual.': '≈ 8/12 of annual amount.',
+  '100% na atividade (9 m) · 25% na inatividade (3 m).': '100% during activity (9 m) · 25% during inactivity (3 m).',
+  'Proporcional à percentagem do contrato parcial.': 'Proportional to the part-time contract percentage.',
 };
 
 export const STRINGS = {

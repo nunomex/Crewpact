@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { C, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { AppContext } from '../App';
 import { updateProfile } from '../data/auth';
-import { t } from '../data/i18n';
+import { t, txv } from '../data/i18n';
 
 export default function OnboardingScreen() {
   const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
@@ -47,7 +47,7 @@ export default function OnboardingScreen() {
             <TouchableOpacity key={item.id} disabled={disabled} onPress={() => setDraft({ ...draft, [field]: item.id })}
               style={[styles.row, { borderColor: sel ? C.red : C.line, opacity: disabled ? 0.4 : 1 }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: C.text }]}>{item.label || item.name}</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{txv(item.label || item.name, lang)}</Text>
                 {item.country && <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : t('onb.soon', lang)}</Text>}
               </View>
               <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
