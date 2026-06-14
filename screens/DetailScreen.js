@@ -146,13 +146,10 @@ const t = StyleSheet.create({
 export default function DetailScreen({ route, navigation }) {
   const { profile, favorites, toggleFav, lang } = useContext(AppContext);
   const tabSpace = useTabBarSpace();
-  const cl  = route.params?.clause;
-  const [currentCl, setCurrentCl] = useState(cl);
-  const c = currentCl;
+  const c = route.params?.clause;
   if (!c) return null;
 
   const fav = favorites.has(c.number);
-  const related = CLAUSES.filter(x => x.number !== c.number && x.tags.some(tag => c.tags.includes(tag))).slice(0, 3);
   const calc = CALC[c.number];
 
   return (
@@ -182,19 +179,6 @@ export default function DetailScreen({ route, navigation }) {
         )}
 
         <Text style={[d.body, { marginTop: (c.values || calc) ? 18 : 6 }]}>{tx(c.body, lang)}</Text>
-
-        {related.length > 0 && (
-          <View style={{ marginTop: 24 }}>
-            <Eyebrow style={{ marginBottom: 8 }}>{T('detail.related', lang)}</Eyebrow>
-            {related.map(r => (
-              <TouchableOpacity key={r.number} onPress={() => setCurrentCl(r)} style={d.relRow}>
-                <Text style={d.relNum}>{r.number}</Text>
-                <Text style={d.relLabel}>{tx(r.title, lang)}</Text>
-                <Ionicons name="chevron-forward" size={14} color={C.sub} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
