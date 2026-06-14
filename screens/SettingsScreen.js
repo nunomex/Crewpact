@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Alert, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Alert, Animated, Easing, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from '../components/BottomSheet';
 import Eyebrow from '../components/Eyebrow';
@@ -54,7 +54,7 @@ export default function SettingsScreen() {
     setSyncing(true);
     setTimeout(() => {
       setSyncing(false);
-      setToast(t('profile.upToDate', lang));
+      setToast({ title: t('profile.upToDate', lang) });
     }, 1000);
   };
   const [pwModal, setPwModal] = useState(false);
@@ -64,15 +64,15 @@ export default function SettingsScreen() {
   const [pwErr, setPwErr]   = useState('');
   const [pickerField, setPickerField] = useState(null); // 'company' | 'rank' | 'contract'
   const [toast, setToast] = useState(null);
-  const toastY = useRef(new Animated.Value(-72)).current;
+  const toastY = useRef(new Animated.Value(-120)).current;
 
   useEffect(() => {
     if (!toast) return;
     Animated.spring(toastY, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }).start();
-    const t = setTimeout(() => {
-      Animated.timing(toastY, { toValue: -72, duration: 250, useNativeDriver: true }).start(() => setToast(null));
-    }, 1700);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => {
+      Animated.timing(toastY, { toValue: -120, duration: 280, useNativeDriver: true }).start(() => setToast(null));
+    }, 2000);
+    return () => clearTimeout(timer);
   }, [toast, toastY]);
 
   const PICKERS = {
@@ -83,9 +83,13 @@ export default function SettingsScreen() {
 
   const selectOption = (field, id) => {
     const next = { ...profile, [field]: id };
+    const opt = PICKERS[field].options.find(o => o.id === id);
     setProfile(next);
     setPickerField(null);
-    setToast(lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`);
+    setToast({
+      title: lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`,
+      sub: opt?.label || '',
+    });
     updateProfile(next, lang).catch(() => {}); // persiste no Supabase (user_metadata)
   };
 
@@ -106,12 +110,6 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      {toast && (
-        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
-          <Ionicons name="checkmark-circle" size={16} color={C.green} />
-          <Text style={s.toastTxt}>{toast}</Text>
-        </Animated.View>
-      )}
       <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }}
         right={
           <View style={s.headLang}>
@@ -215,14 +213,29 @@ export default function SettingsScreen() {
           })}
         </View>
       </BottomSheet>
+
+      {/* Toast de confirmação — igual ao do registo; renderizado por último p/ ficar à frente no iOS */}
+      {toast && (
+        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
+          <View style={s.toastIcon}>
+            <Ionicons name="checkmark" size={20} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.toastTitle}>{toast.title}</Text>
+            {toast.sub ? <Text style={s.toastSub}>{toast.sub}</Text> : null}
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
-  toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  toast: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, zIndex: 50, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 20 },
+  toastIcon: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  toastTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  toastSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
