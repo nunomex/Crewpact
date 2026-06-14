@@ -11,61 +11,88 @@ export const mapUser = (u) => ({
   createdAt: u.created_at?.slice(0, 10) || '',
 });
 
-// ─── Translate Supabase error messages to Portuguese ─────────────────────────
-const mapError = (error) => {
+// ─── Mensagens bilingues ──────────────────────────────────────────────────────
+const M = {
+  pt: {
+    invalidCreds: 'Email ou palavra-passe incorretos.', notConfirmed: 'Confirma o teu e-mail antes de entrar.',
+    registered: 'Este email já está registado.', pwShort: 'A palavra-passe é demasiado curta.',
+    expired: 'O código expirou. Pede um novo.', otp: 'Código incorreto ou expirado.',
+    rate: 'Demasiadas tentativas. Aguarda uns minutos.', network: 'Sem ligação à internet. Verifica a rede.',
+    generic: 'Ocorreu um erro. Tenta novamente.', confirmEmail: 'Confirma o teu e-mail para ativar a conta.',
+    emailReq: 'Email é obrigatório.', emailInvalid: 'Email inválido.',
+    pwReq: 'Palavra-passe é obrigatória.', pwMin: 'Mínimo de 8 caracteres.',
+    pwUpper: 'Necessita de pelo menos uma maiúscula.', pwNum: 'Necessita de pelo menos um número.',
+    nameMin: 'Nome deve ter pelo menos 2 caracteres.',
+  },
+  en: {
+    invalidCreds: 'Incorrect email or password.', notConfirmed: 'Confirm your email before signing in.',
+    registered: 'This email is already registered.', pwShort: 'The password is too short.',
+    expired: 'The code has expired. Request a new one.', otp: 'Incorrect or expired code.',
+    rate: 'Too many attempts. Wait a few minutes.', network: 'No internet connection. Check your network.',
+    generic: 'An error occurred. Please try again.', confirmEmail: 'Confirm your email to activate the account.',
+    emailReq: 'Email is required.', emailInvalid: 'Invalid email.',
+    pwReq: 'Password is required.', pwMin: 'Minimum 8 characters.',
+    pwUpper: 'Needs at least one uppercase letter.', pwNum: 'Needs at least one number.',
+    nameMin: 'Name must have at least 2 characters.',
+  },
+};
+const m = (key, lang) => (M[lang] || M.pt)[key];
+
+// ─── Translate Supabase error messages ───────────────────────────────────────
+const mapError = (error, lang = 'pt') => {
   const msg = (error?.message || '').toLowerCase();
-  if (msg.includes('invalid login credentials'))  return 'Email ou palavra-passe incorretos.';
-  if (msg.includes('email not confirmed'))         return 'Confirma o teu e-mail antes de entrar.';
-  if (msg.includes('user already registered'))     return 'Este email já está registado.';
-  if (msg.includes('password should be at least')) return 'A palavra-passe é demasiado curta.';
-  if (msg.includes('token has expired') || msg.includes('expired')) return 'O código expirou. Pede um novo.';
-  if (msg.includes('otp') || msg.includes('token')) return 'Código incorreto ou expirado.';
-  if (msg.includes('rate limit'))                  return 'Demasiadas tentativas. Aguarda uns minutos.';
-  if (msg.includes('network'))                     return 'Sem ligação à internet. Verifica a rede.';
-  return 'Ocorreu um erro. Tenta novamente.';
+  if (msg.includes('invalid login credentials'))  return m('invalidCreds', lang);
+  if (msg.includes('email not confirmed'))         return m('notConfirmed', lang);
+  if (msg.includes('user already registered'))     return m('registered', lang);
+  if (msg.includes('password should be at least')) return m('pwShort', lang);
+  if (msg.includes('token has expired') || msg.includes('expired')) return m('expired', lang);
+  if (msg.includes('otp') || msg.includes('token')) return m('otp', lang);
+  if (msg.includes('rate limit'))                  return m('rate', lang);
+  if (msg.includes('network'))                     return m('network', lang);
+  return m('generic', lang);
 };
 
 // ─── Validators ───────────────────────────────────────────────────────────────
-export const validateEmail = (email) => {
-  if (!email) return 'Email é obrigatório.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email inválido.';
+export const validateEmail = (email, lang = 'pt') => {
+  if (!email) return m('emailReq', lang);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return m('emailInvalid', lang);
   return null;
 };
 
-export const validatePassword = (pw, isRegister = false) => {
-  if (!pw) return 'Palavra-passe é obrigatória.';
+export const validatePassword = (pw, isRegister = false, lang = 'pt') => {
+  if (!pw) return m('pwReq', lang);
   if (isRegister) {
-    if (pw.length < 8)        return 'Mínimo de 8 caracteres.';
-    if (!/[A-Z]/.test(pw))    return 'Necessita de pelo menos uma maiúscula.';
-    if (!/[0-9]/.test(pw))    return 'Necessita de pelo menos um número.';
+    if (pw.length < 8)        return m('pwMin', lang);
+    if (!/[A-Z]/.test(pw))    return m('pwUpper', lang);
+    if (!/[0-9]/.test(pw))    return m('pwNum', lang);
   }
   return null;
 };
 
-export const validateName = (name) => {
-  if (!name || name.trim().length < 2) return 'Nome deve ter pelo menos 2 caracteres.';
+export const validateName = (name, lang = 'pt') => {
+  if (!name || name.trim().length < 2) return m('nameMin', lang);
   return null;
 };
 
 // ─── Auth actions (async, Supabase) ──────────────────────────────────────────
-export const login = async (email, password) => {
+export const login = async (email, password, lang = 'pt') => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
     password,
   });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true, user: mapUser(data.user) };
 };
 
-export const register = async (name, email, password) => {
+export const register = async (name, email, password, lang = 'pt') => {
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
     options: { data: { name: name.trim() } },
   });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   if (!data.session) {
-    return { ok: false, error: 'Confirma o teu e-mail para ativar a conta.' };
+    return { ok: false, error: m('confirmEmail', lang) };
   }
   // Sign out immediately so onAuthStateChange doesn't auto-login before the success screen
   await supabase.auth.signOut();

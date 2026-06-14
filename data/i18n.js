@@ -86,6 +86,12 @@ export const VALUE_I18N = {
   '0 WD/O': '0 WD/O', '2 antes + 2 depois': '2 before + 2 after', '3 antes + 3 depois': '3 before + 3 after',
   'até 24': 'up to 24',
   '2 sem trab / 2 folga · 13 d férias': '2 wk work / 2 off · 13 leave days', '3 sem trab / 1 folga · 19 d férias': '3 wk work / 1 off · 19 leave days', '2/2 + 4 m verão tempo inteiro · 17 d': '2/2 + 4 summer months full-time · 17 d', '3/1 + 4 m verão tempo inteiro · 21 d': '3/1 + 4 summer months full-time · 21 d',
+  // Calculadora dentro das cláusulas (CALC config + opções)
+  'Setores como Upranker': 'Sectors as Upranker', 'Noites fora da base': 'Nights away from base', 'Dias de férias': 'Leave days', 'Eventos SNC': 'SNC events', 'Eventos RDP': 'RDP events', 'Dias em terra': 'Office days',
+  'Floor: 18€ (FA) / 23€ (CM).': 'Floor: €18 (FA) / €23 (CM).',
+  'Dias DDO (115€)': 'DDO days (€115)', 'Dias IDO (140€)': 'IDO days (€140)',
+  'Curto': 'Short', 'Médio': 'Medium', 'Longo': 'Long', 'Extra': 'Extra',
+  'Chamado · ≤3:59': 'Called · ≤3:59', 'Chamado · >4h': 'Called · >4h', 'Não cham. · ≤3:59': 'Not called · ≤3:59', 'Não cham. · >4h': 'Not called · >4h',
 };
 
 export const STRINGS = {

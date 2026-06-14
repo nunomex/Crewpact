@@ -29,54 +29,56 @@ function Calculator({ calc, rank, lang }) {
   const [langs, setLangs]   = useState(1);
   const [baseVal, setBaseVal] = useState(defaultBase ?? 0);
 
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const TOTAL = l('Total', 'Total');
   let inputs = null, lines = [], foot = null;
 
   if (calc.kind === 'count') {
     const per = calc.per.type === 'eur' ? calc.per.value : (ns != null ? ns * calc.per.mult : null);
-    inputs = <Stepper label={calc.unit} value={qty} setValue={setQty} />;
-    if (per == null) { lines = [{ label: 'Total', val: 'depende do SMN' }]; }
-    else { lines = [{ label: 'Total', val: fmtEur(per * qty) }]; foot = `Unitário: ${fmtEur(per)}${calc.per.type === 'ns' ? ` (${calc.per.mult}× NS)` : ''}.${calc.note ? ' ' + calc.note : ''}`; }
+    inputs = <Stepper label={txv(calc.unit, lang)} value={qty} setValue={setQty} />;
+    if (per == null) { lines = [{ label: TOTAL, val: l('depende do SMN', 'depends on NMW') }]; }
+    else { lines = [{ label: TOTAL, val: fmtEur(per * qty) }]; foot = `${l('Unitário', 'Unit')}: ${fmtEur(per)}${calc.per.type === 'ns' ? ` (${calc.per.mult}× NS)` : ''}.${calc.note ? ' ' + txv(calc.note, lang) : ''}`; }
   } else if (calc.kind === 'count2') {
-    inputs = <><Stepper label={calc.items[0].label} value={ddo} setValue={setDdo} /><Stepper label={calc.items[1].label} value={ido} setValue={setIdo} /></>;
-    lines = [{ label: 'Total', val: fmtEur(calc.items[0].value * ddo + calc.items[1].value * ido) }];
+    inputs = <><Stepper label={txv(calc.items[0].label, lang)} value={ddo} setValue={setDdo} /><Stepper label={txv(calc.items[1].label, lang)} value={ido} setValue={setIdo} /></>;
+    lines = [{ label: TOTAL, val: fmtEur(calc.items[0].value * ddo + calc.items[1].value * ido) }];
   } else if (calc.kind === 'sector') {
     const o = SECTOR_OPTS.find(x => x.id === sec);
-    inputs = <><Seg options={SECTOR_OPTS} value={sec} setValue={setSec} /><Stepper label="Nº de setores" value={qty} setValue={setQty} /></>;
-    lines = [{ label: `${o.label} × ${qty}`, val: fmtEur(ns * o.mult * qty) }];
+    inputs = <><Seg options={SECTOR_OPTS.map(x => ({ ...x, label: txv(x.label, lang) }))} value={sec} setValue={setSec} /><Stepper label={l('Nº de setores', 'No. of sectors')} value={qty} setValue={setQty} /></>;
+    lines = [{ label: `${txv(o.label, lang)} × ${qty}`, val: fmtEur(ns * o.mult * qty) }];
     foot = `${o.mult}× NS (${fmtEur(ns)})`;
   } else if (calc.kind === 'positioning') {
-    const POS_OPTS = [{ id: 0, label: 'Curto' }, { id: 1, label: 'Médio' }, { id: 2, label: 'Longo' }, { id: 3, label: 'Extra' }];
+    const POS_OPTS = [{ id: 0, label: l('Curto', 'Short') }, { id: 1, label: l('Médio', 'Medium') }, { id: 2, label: l('Longo', 'Long') }, { id: 3, label: l('Extra', 'Extra') }];
     const idx = RANK_ROW[rank] ?? 1;
     const val = parseFloat(POSITIONING.rows[idx].v[pos].replace(',', '.'));
-    inputs = <><Seg options={POS_OPTS} value={pos} setValue={setPos} /><Stepper label="Nº de posicionamentos" value={qty} setValue={setQty} /></>;
+    inputs = <><Seg options={POS_OPTS} value={pos} setValue={setPos} /><Stepper label={l('Nº de posicionamentos', 'No. of positionings')} value={qty} setValue={setQty} /></>;
     lines = [{ label: `${POS_OPTS[pos].label} × ${qty}`, val: fmtEur(val * qty) }];
-    foot = `Valores de ${DATA_VERSION.payRef} para a tua categoria.`;
+    foot = l(`Valores de ${DATA_VERSION.payRef} para a tua categoria.`, `${DATA_VERSION.payRef} values for your rank.`);
   } else if (calc.kind === 'standby') {
     const o = STANDBY_OPTS.find(x => x.id === sb);
-    inputs = <Seg options={STANDBY_OPTS} value={sb} setValue={setSb} />;
-    lines = [{ label: o.med ? `${o.med} setor médio` : 'Sem pagamento extra', val: o.med ? fmtEur(o.med * ns * 1.2) : '0,00 €' }];
-    foot = 'Setor médio = 1,2× NS. Não inclui per diem.';
+    inputs = <Seg options={STANDBY_OPTS.map(x => ({ ...x, label: txv(x.label, lang) }))} value={sb} setValue={setSb} />;
+    lines = [{ label: o.med ? l(`${o.med} setor médio`, `${o.med} medium sector`) : l('Sem pagamento extra', 'No extra payment'), val: o.med ? fmtEur(o.med * ns * 1.2) : '0,00 €' }];
+    foot = l('Setor médio = 1,2× NS. Não inclui per diem.', 'Medium sector = 1.2× NS. Excludes per diem.');
   } else if (calc.kind === 'bond') {
-    inputs = <Stepper label="Meses completos de serviço" value={months} setValue={setMonths} max={12} />;
-    lines = [{ label: months >= 12 ? 'Nada a reembolsar' : 'A reembolsar', val: fmtEur(BOND_REPAY[months]) }];
-    foot = 'Reembolso decrescente até aos 12 meses.';
+    inputs = <Stepper label={l('Meses completos de serviço', 'Full months of service')} value={months} setValue={setMonths} max={12} />;
+    lines = [{ label: months >= 12 ? l('Nada a reembolsar', 'Nothing to repay') : l('A reembolsar', 'To repay'), val: fmtEur(BOND_REPAY[months]) }];
+    foot = l('Reembolso decrescente até aos 12 meses.', 'Decreasing repayment up to 12 months.');
   } else if (calc.kind === 'base') {
     inputs = (
       <View style={cs.stepRow}>
-        <Text style={cs.stepLabel}>Base anual (€)</Text>
+        <Text style={cs.stepLabel}>{l('Base anual (€)', 'Annual base (€)')}</Text>
         <TextInput value={String(baseVal)} keyboardType="numeric" selectTextOnFocus
-          onChangeText={t => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setBaseVal(isNaN(n) ? 0 : n); }}
+          onChangeText={tval => { const n = parseInt(tval.replace(/[^0-9]/g, ''), 10); setBaseVal(isNaN(n) ? 0 : n); }}
           style={[cs.stepInput, { width: 110 }]} />
       </View>
     );
-    if (calc.compute === 'monthly')     lines = [{ label: 'Salário mensal (1/14)', val: fmtEur(baseVal / 14) }], foot = '14 prestações: 12 base + férias + Natal.';
-    else if (calc.compute === 'bonus')  lines = [{ label: 'Bónus alvo (2 semanas)', val: fmtEur((baseVal / 52) * 2) }], foot = '= base ÷ 52 × 2.';
-    else if (calc.compute === 'cash') { const a = baseVal * 0.05; lines = [{ label: 'Anual (5%)', val: fmtEur(a) }, { label: 'Mensal', val: fmtEur(a / 12) }]; }
+    if (calc.compute === 'monthly')     lines = [{ label: l('Salário mensal (1/14)', 'Monthly salary (1/14)'), val: fmtEur(baseVal / 14) }], foot = l('14 prestações: 12 base + férias + Natal.', '14 instalments: 12 base + summer + Christmas.');
+    else if (calc.compute === 'bonus')  lines = [{ label: l('Bónus alvo (2 semanas)', 'Target bonus (2 weeks)'), val: fmtEur((baseVal / 52) * 2) }], foot = '= base ÷ 52 × 2.';
+    else if (calc.compute === 'cash') { const a = baseVal * 0.05; lines = [{ label: l('Anual (5%)', 'Annual (5%)'), val: fmtEur(a) }, { label: l('Mensal', 'Monthly'), val: fmtEur(a / 12) }]; }
   } else if (calc.kind === 'language') {
     const total = langs <= 0 ? 0 : 350 + (langs - 1) * 50;
-    inputs = <Stepper label="Línguas (além de EN/PT)" value={langs} setValue={setLangs} min={0} max={6} />;
-    lines = [{ label: 'Por ano', val: fmtEur(total) }];
-    foot = '3.ª língua: 350 €; cada adicional: +50 €.';
+    inputs = <Stepper label={l('Línguas (além de EN/PT)', 'Languages (besides EN/PT)')} value={langs} setValue={setLangs} min={0} max={6} />;
+    lines = [{ label: l('Por ano', 'Per year'), val: fmtEur(total) }];
+    foot = l('3.ª língua: 350 €; cada adicional: +50 €.', '3rd language: €350; each additional: +€50.');
   }
 
   return (
@@ -89,6 +91,9 @@ function Calculator({ calc, rank, lang }) {
 
 const cs = StyleSheet.create({
   wrap: { marginTop: 20 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
+  stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
+  stepInput: { textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
 });
 
 // ─── Value / Salary / Sector / Pos Tables ────────────────────────────────────
