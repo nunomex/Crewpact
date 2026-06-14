@@ -321,7 +321,7 @@ export default function LoginScreen() {
           {/* Brand — sempre visível */}
           <View style={s.brand}>
             <View style={s.ring}>
-              <Ionicons name="airplane" size={24} color={C.red} style={{ transform: [{ rotate: '45deg' }] }} />
+              <Ionicons name="airplane" size={24} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
             </View>
             <Text style={s.logoName}>CrewPact</Text>
             <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>
@@ -499,11 +499,11 @@ const s = StyleSheet.create({
   langRow:      { position: 'absolute', right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
   langDot:      { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   langDotTxt:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  scroll:       { padding: 26, paddingBottom: 52 },
-  brand:        { alignItems: 'center', marginBottom: 28, marginTop: 16 },
-  ring:         { width: 60, height: 60, borderRadius: 16, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
+  scroll:       { padding: 26, paddingBottom: 52, flexGrow: 1, justifyContent: 'center' },
+  brand:        { alignItems: 'center', marginBottom: 44, marginTop: 24 },
+  ring:         { width: 64, height: 64, borderRadius: 18, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
   logoName:     { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, color: C.text },
-  logoSub:      { fontSize: 13, color: C.sub, marginTop: 5, textAlign: 'center' },
+  logoSub:      { fontSize: 13, color: C.sub, marginTop: 8, textAlign: 'center', lineHeight: 18 },
   seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: 99, padding: 4, marginBottom: 24 },
   segBtn:       { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: 'center' },
   segTxt:       { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
