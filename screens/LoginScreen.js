@@ -339,8 +339,13 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Conteúdo com animação de transição */}
-          <Animated.View style={{ transform: [{ translateX: isAuthView ? shake : transX }], opacity: isAuthView ? 1 : transOp }}>
+          {/* Conteúdo com animação de transição.
+              Mantemos sempre os mesmos valores Animated (transX/transOp) para não
+              alternar entre Animated.Value e número estático no mesmo nó — isso, com
+              useNativeDriver, deixava a opacidade presa em 0 ao voltar de 'forgot'
+              para 'login' (o formulário desaparecia). O shake fica nos wrappers
+              internos de cada vista de autenticação. */}
+          <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
 
             {globalErr ? (
               <View style={s.errBanner}>
