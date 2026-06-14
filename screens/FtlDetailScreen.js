@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
+import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
   FTL_ARTICLES, ftlSectionTitle,
@@ -154,11 +154,7 @@ export default function FtlDetailScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={d.safe}>
-      <View style={d.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color={C.ink} />
-        </TouchableOpacity>
-      </View>
+      <DetailTopBar onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>{ftlSectionTitle(a.section)}</Text>
@@ -251,9 +247,7 @@ const t = StyleSheet.create({
 
 const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 24 },
+  scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, fontWeight: '300', letterSpacing: -0.5, color: C.text, fontFamily: 'monospace' },
   title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },

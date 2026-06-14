@@ -6,6 +6,7 @@ import { CLAUSES } from '../data/clauses';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import Card from '../components/Card';
+import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../App';
@@ -62,19 +63,17 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         {/* Header blob */}
-        <View style={s.headerBlob}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>ACORDO DE EMPRESA</Text>
-            <View style={s.compRow}>
-              <View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>
-              <Text style={s.compName}>{company?.name}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8}>
-            <Ionicons name="notifications" size={18} color="#fff" />
-            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          eyebrow="ACORDO DE EMPRESA"
+          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
+          title={company?.name}
+          style={{ margin: 0, marginBottom: SPACE.md }}
+          right={
+            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel="Notificações">
+              <Ionicons name="notifications" size={18} color={C.onDark} />
+              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+            </TouchableOpacity>
+          } />
 
         {/* Pay card */}
         <Card style={{ marginBottom: SPACE.md }}>
@@ -210,15 +209,11 @@ export default function HomeScreen({ navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
-  headerBlob: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
-  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginLeft: SPACE.md },
+  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: SPACE.xs + 2 },
-  compRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
-  compName: { color: '#fff', fontSize: TYPE.title, fontWeight: '500' },
   payEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: SPACE.md - 2 },
   payRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   payLbl: { fontSize: 11, color: C.sub },

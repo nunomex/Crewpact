@@ -5,8 +5,9 @@ import { C, RADIUS, SPACE, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
 
 // Cabeçalho "blob" preto reutilizado em todos os ecrãs.
-// Props: eyebrow, title, onBack (mostra seta), right (slot à direita), style.
-export default function ScreenHeader({ eyebrow, title, onBack, right, style }) {
+// Props: eyebrow, title, badge (elemento antes do título), onBack (seta),
+//        right (slot à direita), style.
+export default function ScreenHeader({ eyebrow, title, badge, onBack, right, style }) {
   return (
     <View style={[h.blob, style]}>
       {onBack && (
@@ -16,7 +17,14 @@ export default function ScreenHeader({ eyebrow, title, onBack, right, style }) {
       )}
       <View style={{ flex: 1 }}>
         {eyebrow ? <Eyebrow dark style={{ marginBottom: 6 }}>{eyebrow}</Eyebrow> : null}
-        <Text style={h.title}>{title}</Text>
+        {badge ? (
+          <View style={h.titleRow}>
+            {badge}
+            <Text style={h.title}>{title}</Text>
+          </View>
+        ) : (
+          <Text style={h.title}>{title}</Text>
+        )}
       </View>
       {right}
     </View>
@@ -26,5 +34,6 @@ export default function ScreenHeader({ eyebrow, title, onBack, right, style }) {
 const h = StyleSheet.create({
   blob: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: SPACE.lg, marginBottom: SPACE.md, padding: SPACE.lg },
   back: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
   title: { color: C.onDark, fontSize: TYPE.title, fontWeight: '500' },
 });

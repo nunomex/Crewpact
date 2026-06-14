@@ -1,11 +1,12 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
+import { C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
 import Eyebrow from '../components/Eyebrow';
+import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../App';
 
@@ -148,14 +149,10 @@ export default function DetailScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={d.safe}>
-      <View style={d.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={d.iconBtn} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color={C.ink} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => toggleFav(c.number)} style={[d.iconBtn, fav && { backgroundColor: C.red }]} hitSlop={8}>
-          <Ionicons name={fav ? 'star' : 'star-outline'} size={18} color={fav ? '#fff' : C.sub} />
-        </TouchableOpacity>
-      </View>
+      <DetailTopBar onBack={() => navigation.goBack()}
+        right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
+          onPress={() => toggleFav(c.number)}
+          accessibilityLabel={fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>Secção {sectionN(c.section)} · {sectionTitle(c.section)}</Text>
@@ -197,9 +194,7 @@ export default function DetailScreen({ route, navigation }) {
 
 const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 24 },
+  scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
   title: { fontSize: 20, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
