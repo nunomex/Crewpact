@@ -12,6 +12,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
+import { warning } from '../data/haptics';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
@@ -40,6 +41,7 @@ export default function HomeScreen({ navigation }) {
     onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
   }));
   const removeFav = (item) => {
+    warning();
     Alert.alert(item.title, t('home.favRemoveMsg', lang), [
       { text: t('common.cancel', lang), style: 'cancel' },
       { text: t('detail.favRemove', lang), style: 'destructive', onPress: () => toggleFav(item.favKey) },

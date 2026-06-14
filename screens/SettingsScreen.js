@@ -6,6 +6,7 @@ import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, txv } from '../data/i18n';
+import { success, select } from '../data/haptics';
 
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
     const opt = PICKERS[field].options.find(o => o.id === id);
     setProfile(next);
     setPickerField(null);
+    success();
     setToast({
       title: lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`,
       sub: opt?.label || '',
@@ -92,6 +94,7 @@ export default function SettingsScreen() {
     const res = await changePassword(newPw, lang);
     if (!res.ok) { setPwErr(res.error); return; }
     setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
+    success();
     Alert.alert(t('profile.pwOkTitle', lang), t('profile.pwOkMsg', lang));
   };
 
@@ -101,7 +104,7 @@ export default function SettingsScreen() {
         right={
           <View style={s.headLang}>
             {['pt', 'en'].map((l) => (
-              <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
+              <TouchableOpacity key={l} onPress={() => { select(); setLang(l); }} activeOpacity={0.8} hitSlop={8}
                 style={[s.langDot, { backgroundColor: lang === l ? C.red : C.hairlineOnDark }]}
                 accessibilityLabel={l === 'pt' ? 'Português' : 'English'}>
                 <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : C.onDarkSub }]}>{l.toUpperCase()}</Text>

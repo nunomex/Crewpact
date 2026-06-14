@@ -10,6 +10,7 @@ import Eyebrow from '../components/Eyebrow';
 import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t as T, tx, txv } from '../data/i18n';
+import { success, warning } from '../data/haptics';
 import { AppContext } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
@@ -158,7 +159,7 @@ export default function DetailScreen({ route, navigation }) {
     <SafeAreaView style={d.safe} edges={['top']}>
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={T('common.back', lang)}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => { const r = toggleFav(c.number); if (r.full) Alert.alert(T('detail.favFullTitle', lang), T('detail.favFullMsg', lang)); }}
+          onPress={() => { const r = toggleFav(c.number); if (r.full) { warning(); Alert.alert(T('detail.favFullTitle', lang), T('detail.favFullMsg', lang)); } else { success(); } }}
           accessibilityLabel={fav ? T('detail.favRemove', lang) : T('detail.favAdd', lang)} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>

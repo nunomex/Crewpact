@@ -6,6 +6,7 @@ import { C, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { AppContext } from '../App';
 import { updateProfile } from '../data/auth';
 import { t, txv } from '../data/i18n';
+import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
   const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
@@ -45,7 +46,7 @@ export default function OnboardingScreen() {
           const sel = draft[field] === item.id;
           const disabled = field === 'company' && !item.active;
           return (
-            <TouchableOpacity key={item.id} disabled={disabled} onPress={() => setDraft({ ...draft, [field]: item.id })}
+            <TouchableOpacity key={item.id} disabled={disabled} onPress={() => { select(); setDraft({ ...draft, [field]: item.id }); }}
               style={[styles.row, { borderColor: sel ? C.red : C.line, opacity: disabled ? 0.4 : 1 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{txv(item.label || item.name, lang)}</Text>
@@ -79,6 +80,7 @@ export default function OnboardingScreen() {
           if (!result.ok) { setSaveError(t('onb.saveErr', lang)); return; }
           setProfile(draft);
           if (result.user) setUser(result.user);
+          success();
           setOnboarded(true);
         }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
           {saving

@@ -13,6 +13,7 @@ import {
   FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
 import { t, tx } from '../data/i18n';
+import { success, warning } from '../data/haptics';
 import { AppContext } from '../App';
 
 // ─── Calculadora · PSV máximo diário ─────────────────────────────────────────
@@ -180,7 +181,7 @@ export default function FtlDetailScreen({ route, navigation }) {
     <SafeAreaView style={d.safe} edges={['top']}>
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => { const r = toggleFav(a.code); if (r.full) Alert.alert(t('detail.favFullTitle', lang), t('detail.favFullMsg', lang)); }}
+          onPress={() => { const r = toggleFav(a.code); if (r.full) { warning(); Alert.alert(t('detail.favFullTitle', lang), t('detail.favFullMsg', lang)); } else { success(); } }}
           accessibilityLabel={fav ? t('detail.favRemove', lang) : t('detail.favAdd', lang)} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>

@@ -13,6 +13,7 @@ import {
   validateEmail, validatePassword, validateName,
 } from '../data/auth';
 import { t } from '../data/i18n';
+import { success, warning, select } from '../data/haptics';
 import { AppContext } from '../App';
 
 /* ─── Field ──────────────────────────────────────────────────────────────── */
@@ -187,6 +188,7 @@ export default function LoginScreen() {
   // Shake for validation errors
   const shake = useRef(new Animated.Value(0)).current;
   const doShake = () => {
+    warning();
     Animated.sequence([
       Animated.timing(shake, { toValue: 8,  duration: 55, useNativeDriver: true }),
       Animated.timing(shake, { toValue: -8, duration: 55, useNativeDriver: true }),
@@ -250,6 +252,7 @@ export default function LoginScreen() {
     setLEmail(rEmail);
     setRName(''); setREmail(''); setRPw(''); setRPw2('');
     navigateTo('login', false);
+    success();
     setShowSuccess(true);
   };
 
@@ -308,7 +311,7 @@ export default function LoginScreen() {
     <SafeAreaView style={s.safe}>
       <View style={[s.langRow, { top: insets.top + 8 }]}>
         {['pt', 'en'].map((lc) => (
-          <TouchableOpacity key={lc} onPress={() => setLang(lc)} activeOpacity={0.8} hitSlop={8}
+          <TouchableOpacity key={lc} onPress={() => { select(); setLang(lc); }} activeOpacity={0.8} hitSlop={8}
             style={[s.langDot, { backgroundColor: lang === lc ? C.red : C.soft }]}
             accessibilityLabel={lc === 'pt' ? 'Português' : 'English'}>
             <Text style={[s.langDotTxt, { color: lang === lc ? '#fff' : C.sub }]}>{lc.toUpperCase()}</Text>
