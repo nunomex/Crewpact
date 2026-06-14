@@ -103,40 +103,40 @@ export const register = async (name, email, password, lang = 'pt') => {
 // Supabase envia um e-mail com o código {{ .Token }} (6 dígitos).
 // No dashboard: Authentication → Email Templates → Reset Password → usa {{ .Token }}
 
-export const requestPasswordReset = async (email) => {
+export const requestPasswordReset = async (email, lang = 'pt') => {
   const { error } = await supabase.auth.resetPasswordForEmail(
     email.trim().toLowerCase(),
   );
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true, email: email.trim().toLowerCase() };
 };
 
-export const verifyResetCode = async (email, token) => {
+export const verifyResetCode = async (email, token, lang = 'pt') => {
   const { error } = await supabase.auth.verifyOtp({
     email: email.trim().toLowerCase(),
     token,
     type: 'recovery',
   });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true };
 };
 
-export const resetPassword = async (_email, _token, newPw) => {
+export const resetPassword = async (_email, _token, newPw, lang = 'pt') => {
   // After verifyOtp the user is authenticated — updateUser works directly
   const { error } = await supabase.auth.updateUser({ password: newPw });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   await supabase.auth.signOut();
   return { ok: true };
 };
 
-export const updateProfile = async (patch) => {
+export const updateProfile = async (patch, lang = 'pt') => {
   const { data, error } = await supabase.auth.updateUser({ data: patch });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true, user: mapUser(data.user) };
 };
 
-export const changePassword = async (newPw) => {
+export const changePassword = async (newPw, lang = 'pt') => {
   const { error } = await supabase.auth.updateUser({ password: newPw });
-  if (error) return { ok: false, error: mapError(error) };
+  if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true };
 };

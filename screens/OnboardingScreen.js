@@ -73,7 +73,7 @@ export default function OnboardingScreen() {
           if (step < 2) { setStep(step + 1); return; }
           setSaving(true);
           setSaveError(null);
-          const result = await updateProfile(draft);
+          const result = await updateProfile(draft, lang);
           setSaving(false);
           if (!result.ok) { setSaveError(t('onb.saveErr', lang)); return; }
           setProfile(draft);

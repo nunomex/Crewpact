@@ -218,12 +218,12 @@ export default function LoginScreen() {
   /* ── Handlers ── */
   const handleLogin = async () => {
     setGlobalErr('');
-    const eE = validateEmail(lEmail);
-    const ePw = validatePassword(lPw);
+    const eE = validateEmail(lEmail, lang);
+    const ePw = validatePassword(lPw, false, lang);
     setLErrEmail(eE || ''); setLErrPw(ePw || '');
     if (eE || ePw) { doShake(); return; }
     setLoading(true);
-    const res = await login(lEmail, lPw);
+    const res = await login(lEmail, lPw, lang);
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
     setUser(res.user);
@@ -231,16 +231,16 @@ export default function LoginScreen() {
 
   const handleRegister = async () => {
     setGlobalErr('');
-    const eName  = validateName(rName);
-    const eEmail = validateEmail(rEmail);
-    const ePw    = validatePassword(rPw, true);
+    const eName  = validateName(rName, lang);
+    const eEmail = validateEmail(rEmail, lang);
+    const ePw    = validatePassword(rPw, true, lang);
     const ePw2   = rPw !== rPw2 ? t('login.pwMismatch', lang) : null;
     setRErrName(eName || ''); setRErrEmail(eEmail || '');
     setRErrPw(ePw || '');     setRErrPw2(ePw2 || '');
     if (eName || eEmail || ePw || ePw2) { doShake(); return; }
     setLoading(true);
     suppressAuth.current = true;
-    const res = await register(rName, rEmail, rPw);
+    const res = await register(rName, rEmail, rPw, lang);
     suppressAuth.current = false;
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
@@ -253,10 +253,10 @@ export default function LoginScreen() {
 
   const handleRequestReset = async () => {
     setFErr('');
-    const eE = validateEmail(fInput);
+    const eE = validateEmail(fInput, lang);
     if (eE) { setFErr(eE); doShake(); return; }
     setLoading(true);
-    const res = await requestPasswordReset(fInput);
+    const res = await requestPasswordReset(fInput, lang);
     setLoading(false);
     if (!res.ok) { setFErr(res.error); doShake(); return; }
     setResetEmail(res.email);
@@ -268,7 +268,7 @@ export default function LoginScreen() {
     setCodeErr('');
     if (code.length < 8) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
     setLoading(true);
-    const res = await verifyResetCode(resetEmail, code);
+    const res = await verifyResetCode(resetEmail, code, lang);
     setLoading(false);
     if (!res.ok) { setCodeErr(res.error); doShake(); return; }
     setNewPw(''); setNewPw2('');
@@ -277,12 +277,12 @@ export default function LoginScreen() {
 
   const handleResetPassword = async () => {
     setNewPwErr(''); setNewPw2Err('');
-    const ePw  = validatePassword(newPw, true);
+    const ePw  = validatePassword(newPw, true, lang);
     const ePw2 = newPw !== newPw2 ? t('login.pwMismatch', lang) : null;
     setNewPwErr(ePw || ''); setNewPw2Err(ePw2 || '');
     if (ePw || ePw2) { doShake(); return; }
     setLoading(true);
-    const res = await resetPassword(resetEmail, code, newPw);
+    const res = await resetPassword(resetEmail, code, newPw, lang);
     setLoading(false);
     if (!res.ok) { setNewPwErr(res.error); doShake(); return; }
     setFInput(''); setCode(''); setNewPw(''); setNewPw2('');

@@ -86,7 +86,7 @@ export default function SettingsScreen() {
     setProfile(next);
     setPickerField(null);
     setToast(lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`);
-    updateProfile(next).catch(() => {}); // persiste no Supabase (user_metadata)
+    updateProfile(next, lang).catch(() => {}); // persiste no Supabase (user_metadata)
   };
 
   const company  = COMPANIES.find(c => c.id === profile.company);
@@ -95,10 +95,10 @@ export default function SettingsScreen() {
 
   const handleChangePw = async () => {
     setPwErr('');
-    const err = validatePassword(newPw, true);
+    const err = validatePassword(newPw, true, lang);
     if (err) { setPwErr(err); return; }
     if (newPw !== confPw) { setPwErr(t('profile.pwMismatch', lang)); return; }
-    const res = await changePassword(newPw);
+    const res = await changePassword(newPw, lang);
     if (!res.ok) { setPwErr(res.error); return; }
     setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
     Alert.alert(t('profile.pwOkTitle', lang), t('profile.pwOkMsg', lang));
