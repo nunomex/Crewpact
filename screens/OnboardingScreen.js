@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { AppContext } from '../App';
@@ -24,7 +25,7 @@ export default function OnboardingScreen() {
   const field = step === 0 ? 'company' : step === 1 ? 'rank' : 'contract';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <View style={styles.pill}>
           <Ionicons name="airplane" size={14} color={C.red} />

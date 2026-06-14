@@ -1,5 +1,7 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
@@ -82,11 +84,21 @@ function RestCalc({ lang }) {
   );
 }
 
+// Cabeçalho de tabela com dica de scroll horizontal.
+function TableTitle({ children }) {
+  return (
+    <View style={tb.titleBar}>
+      <Text style={tb.blockTitle}>{children}</Text>
+      <Ionicons name="swap-horizontal" size={14} color="rgba(255,255,255,0.55)" />
+    </View>
+  );
+}
+
 // ─── Quadro 1 · estado de aclimatação ────────────────────────────────────────
 function Table1({ lang }) {
   return (
     <View style={tb.block}>
-      <Text style={tb.blockTitle}>{t('ftl.table1', lang)}</Text>
+      <TableTitle>{t('ftl.table1', lang)}</TableTitle>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
           <View style={[tb.row, tb.headRow]}>
@@ -114,7 +126,7 @@ function Table1({ lang }) {
 function PsvTable({ lang }) {
   return (
     <View style={tb.block}>
-      <Text style={tb.blockTitle}>{t('ftl.table2', lang)}</Text>
+      <TableTitle>{t('ftl.table2', lang)}</TableTitle>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
           <View style={[tb.row, tb.headRow]}>
@@ -137,7 +149,7 @@ function PsvTable({ lang }) {
 function PsvUnknownTable({ title, values, lang }) {
   return (
     <View style={tb.block}>
-      <Text style={tb.blockTitle}>{title}</Text>
+      <TableTitle>{title}</TableTitle>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
           <View style={[tb.row, tb.headRow]}>
@@ -165,8 +177,8 @@ export default function FtlDetailScreen({ route, navigation }) {
   const fav = favorites.has(a.code);
 
   return (
-    <SafeAreaView style={d.safe}>
-      <DetailTopBar onBack={() => navigation.goBack()}
+    <SafeAreaView style={d.safe} edges={['top']}>
+      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
           onPress={() => { const r = toggleFav(a.code); if (r.full) Alert.alert(t('detail.favFullTitle', lang), t('detail.favFullMsg', lang)); }}
           accessibilityLabel={fav ? t('detail.favRemove', lang) : t('detail.favAdd', lang)} />} />
@@ -245,7 +257,8 @@ const cs = StyleSheet.create({
 
 const tb = StyleSheet.create({
   block: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
-  blockTitle: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.8)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
+  titleBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, paddingHorizontal: 10, paddingVertical: 10 },
+  blockTitle: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
   row: { flexDirection: 'row' },
   headRow: { backgroundColor: C.soft },
   zebra: { backgroundColor: C.soft },

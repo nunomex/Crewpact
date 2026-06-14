@@ -7,11 +7,11 @@ import Eyebrow from './Eyebrow';
 // Cabeçalho "blob" preto reutilizado em todos os ecrãs.
 // Props: eyebrow, title, badge (elemento antes do título), onBack (seta),
 //        right (slot à direita), style.
-export default function ScreenHeader({ eyebrow, title, badge, onBack, right, style }) {
+export default function ScreenHeader({ eyebrow, title, badge, onBack, right, style, backLabel = 'Voltar' }) {
   return (
     <View style={[h.blob, style]}>
       {onBack && (
-        <TouchableOpacity style={h.back} onPress={onBack} hitSlop={8} accessibilityLabel="Voltar">
+        <TouchableOpacity style={h.back} onPress={onBack} hitSlop={8} accessibilityLabel={backLabel}>
           <Ionicons name="arrow-back" size={18} color={C.onDark} />
         </TouchableOpacity>
       )}

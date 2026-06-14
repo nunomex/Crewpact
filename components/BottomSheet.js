@@ -6,7 +6,7 @@ import Eyebrow from './Eyebrow';
 
 // Folha inferior partilhada (overlay + cabeçalho com título e fechar).
 // Props: visible, onClose, title, eyebrow?, maxHeight?, children.
-export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeight, children }) {
+export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeight, closeLabel = 'Fechar', children }) {
   const hasEye = !!eyebrow;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -17,7 +17,7 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
             {hasEye ? <Eyebrow>{eyebrow}</Eyebrow> : null}
             <Text style={[s.title, { fontSize: hasEye ? TYPE.title : TYPE.lg, marginTop: hasEye ? 2 : 0 }]}>{title}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={s.close} hitSlop={8} accessibilityLabel="Fechar">
+          <TouchableOpacity onPress={onClose} style={s.close} hitSlop={8} accessibilityLabel={closeLabel}>
             <Ionicons name="close" size={18} color={C.ink} />
           </TouchableOpacity>
         </View>

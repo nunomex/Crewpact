@@ -14,10 +14,10 @@ export function RoundIconButton({ name, size = 18, onPress, active, accessibilit
 }
 
 // Barra superior dos ecrãs de detalhe (voltar à esquerda, slot opcional à direita).
-export default function DetailTopBar({ onBack, right }) {
+export default function DetailTopBar({ onBack, right, backLabel = 'Voltar' }) {
   return (
     <View style={s.bar}>
-      <TouchableOpacity onPress={onBack} style={s.iconBtn} hitSlop={8} accessibilityLabel="Voltar">
+      <TouchableOpacity onPress={onBack} style={s.iconBtn} hitSlop={8} accessibilityLabel={backLabel}>
         <Ionicons name="arrow-back" size={20} color={C.ink} />
       </TouchableOpacity>
       {right || <View />}

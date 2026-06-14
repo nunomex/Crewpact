@@ -16,7 +16,7 @@ export function SectionHeader({ badge, title, count, open, onPress }) {
 }
 
 // Linha de item — badge à esquerda, título + subtítulo, ícones opcionais (calc / aplicável).
-export function ListRow({ badge, badgeWide, title, sub, subUpper, calc, mine, onPress }) {
+export function ListRow({ badge, badgeWide, title, sub, subUpper, calc, mine, mineLabel = 'Aplicável à tua categoria', onPress }) {
   return (
     <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={onPress}>
       <View style={[s.badgeBox, badgeWide && s.badgeBoxWide]}><Text style={s.badgeTxt}>{badge}</Text></View>
@@ -25,7 +25,7 @@ export function ListRow({ badge, badgeWide, title, sub, subUpper, calc, mine, on
         <Text style={[s.rowSub, subUpper && s.rowSubUpper]} numberOfLines={1}>{sub}</Text>
       </View>
       {calc && <Ionicons name="calculator-outline" size={14} color={C.sub} />}
-      {mine && <Ionicons name="person-circle" size={16} color={C.red} accessibilityLabel="Aplicável à tua categoria" />}
+      {mine && <Ionicons name="person-circle" size={16} color={C.info} accessibilityLabel={mineLabel} />}
       <Ionicons name="chevron-forward" size={16} color={C.line} />
     </TouchableOpacity>
   );
@@ -40,14 +40,14 @@ const s = StyleSheet.create({
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   secBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace' },
-  secTitle: { flex: 1, fontSize: 10, fontWeight: '600', letterSpacing: 1.5, color: C.sub, textTransform: 'uppercase' },
+  secTitle: { flex: 1, fontSize: TYPE.sub, fontWeight: '600', letterSpacing: 0.5, color: C.text },
   secCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, marginBottom: 6, backgroundColor: C.canvas },
   badgeBox: { width: 40, height: 40, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ink },
   badgeBoxWide: { width: 44 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },
-  rowTitle: { fontSize: 13, fontWeight: '500', color: C.text },
-  rowSub: { fontSize: 10, color: C.sub, marginTop: 2 },
+  rowTitle: { fontSize: TYPE.sub, fontWeight: '500', color: C.text },
+  rowSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
   rowSubUpper: { textTransform: 'uppercase', letterSpacing: 0.3 },
   empty: { alignItems: 'center', marginTop: 60 },
   emptyTxt: { color: C.sub, fontSize: TYPE.body },

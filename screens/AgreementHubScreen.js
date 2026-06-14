@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
@@ -15,7 +16,7 @@ const CARDS = [
 export default function AgreementHubScreen({ navigation }) {
   const { lang } = useContext(AppContext);
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('hub.eyebrow', lang)} title={t('hub.title', lang)} />
 
       <View style={s.cards}>

@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Alert, Animated, Easing, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
@@ -34,29 +35,7 @@ function Row({ label, value, onPress, last, danger }) {
 export default function SettingsScreen() {
   const { profile, setProfile, setOnboarded, user, logout, lang, setLang } = useContext(AppContext);
   const tabSpace = useTabBarSpace();
-  const [syncing, setSyncing] = useState(false);
 
-  const spin = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    let loop;
-    if (syncing) {
-      spin.setValue(0);
-      loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 800, easing: Easing.linear, useNativeDriver: true }));
-      loop.start();
-    }
-    return () => loop && loop.stop();
-  }, [syncing]);
-  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-
-  // Verificação de conteúdo: o acordo está embutido na app. Sem fabricar datas —
-  // confirma honestamente que estamos na versão incluída.
-  const checkUpdates = () => {
-    setSyncing(true);
-    setTimeout(() => {
-      setSyncing(false);
-      setToast({ title: t('profile.upToDate', lang) });
-    }, 1000);
-  };
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
   const [newPw, setNewPw]   = useState('');
@@ -98,6 +77,13 @@ export default function SettingsScreen() {
   const rankObj  = RANKS.find(r => r.id === profile.rank);
   const contract = CONTRACTS.find(c => c.id === profile.contract);
 
+  const confirmLogout = () => {
+    Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
+      { text: t('common.cancel', lang), style: 'cancel' },
+      { text: t('profile.logoutConfirm', lang), style: 'destructive', onPress: logout },
+    ]);
+  };
+
   const handleChangePw = async () => {
     setPwErr('');
     const err = validatePassword(newPw, true, lang);
@@ -110,7 +96,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }}
         right={
           <View style={s.headLang}>
@@ -146,22 +132,17 @@ export default function SettingsScreen() {
 
         <Group title={t('profile.groupContent', lang)}>
           <View style={s.syncRow}>
+            <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.ink} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
-              <Text style={s.syncSub}>{DATA_VERSION.version} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
+              <Text style={s.syncSub}>{DATA_VERSION.version} · {DATA_VERSION.payRef} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
             </View>
-            <TouchableOpacity onPress={checkUpdates} style={s.syncBtn} disabled={syncing}>
-              <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-                <Ionicons name="refresh" size={14} color="#fff" />
-              </Animated.View>
-              <Text style={s.syncBtnTxt}>{syncing ? t('profile.checking', lang) : t('profile.check', lang)}</Text>
-            </TouchableOpacity>
           </View>
         </Group>
 
         <Group title={t('profile.groupAccount', lang)}>
           <Row label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
-          <Row label={t('profile.logout', lang)} value="" onPress={logout} last danger />
+          <Row label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
         </Group>
 
         <Group title={t('profile.groupAbout', lang)}>
@@ -173,7 +154,7 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Change password modal */}
-      <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)}>
+      <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 20 }}>
           {[
             { label: t('profile.pwCur', lang), val: curPw, set: setCurPw },
@@ -201,7 +182,7 @@ export default function SettingsScreen() {
 
       {/* Seletor de perfil (companhia / categoria / contrato) */}
       <CenterDialog visible={!!pickerField} onClose={() => setPickerField(null)}
-        title={pickerField ? PICKERS[pickerField].title : ''}>
+        title={pickerField ? PICKERS[pickerField].title : ''} closeLabel={t('common.close', lang)}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
           {pickerField && PICKERS[pickerField].options.map((o, i) => {
             const sel = profile[pickerField] === o.id;
@@ -244,8 +225,8 @@ const s = StyleSheet.create({
   toastTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
   toastSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  langDot: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  langDotTxt: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20 },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
@@ -258,11 +239,10 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
   rowLabel: { fontSize: TYPE.body, color: C.text },
   rowValue: { fontSize: TYPE.sub, color: C.sub, maxWidth: 180, textAlign: 'right' },
-  syncRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  syncTitle: { fontSize: 13, fontWeight: '500', color: C.text },
-  syncSub: { fontSize: 11, color: C.sub, marginTop: 2 },
-  syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8 },
-  syncBtnTxt: { color: '#fff', fontSize: TYPE.label, fontWeight: '600' },
+  syncRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  syncIcon: { width: 34, height: 34, borderRadius: RADIUS.sm, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  syncTitle: { fontSize: TYPE.sub, fontWeight: '500', color: C.text },
+  syncSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
   fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },

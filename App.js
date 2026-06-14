@@ -49,6 +49,15 @@ function AgreementStack() {
   );
 }
 
+function CalcStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Calc"   component={CategoriesScreen} />
+      <Stack.Screen name="Detail" component={DetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const { lang } = useContext(AppContext);
@@ -98,7 +107,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Início"   component={HomeStack} />
       <Tab.Screen name="AE/FTL"   component={AgreementStack} />
-      <Tab.Screen name="Cálculos" component={CategoriesScreen} />
+      <Tab.Screen name="Cálculos" component={CalcStack} />
       <Tab.Screen name="Perfil"   component={SettingsScreen} />
     </Tab.Navigator>
   );

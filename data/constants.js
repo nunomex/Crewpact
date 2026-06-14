@@ -6,6 +6,11 @@ export const C = {
   inkSoft: "#2A2A2A",
   red: "#EA3D2F",
   redSoft: "#FBE3E0",
+  // Cores semânticas — evitar reutilizar `red` para tudo.
+  // accent/danger partilham o vermelho da marca; `info` distingue "aplicável a ti".
+  danger: "#EA3D2F",
+  info: "#2E6BE6",       // azul — sinal neutro de relevância (categoria aplicável)
+  infoSoft: "#E4ECFB",
   line: "#E7E6E2",
   text: "#191919",
   sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)

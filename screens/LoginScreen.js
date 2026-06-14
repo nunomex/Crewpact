@@ -497,8 +497,8 @@ export default function LoginScreen() {
 const s = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
   langRow:      { position: 'absolute', right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
-  langDot:      { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  langDot:      { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  langDotTxt:   { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
   ring:         { width: 64, height: 64, borderRadius: 18, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },

@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION } from '../data/constants';
 
@@ -197,11 +198,11 @@ export default function CategoriesScreen({ navigation }) {
 
   const openClause = (number) => {
     const clause = CLAUSES.find(c => c.number === number);
-    if (clause) navigation.navigate('AE/FTL', { screen: 'Detail', params: { clause } });
+    if (clause) navigation.navigate('Detail', { clause }); // local à stack de Cálculos
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 

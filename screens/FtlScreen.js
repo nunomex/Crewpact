@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { C, TYPE } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import SearchBar from '../components/SearchBar';
@@ -61,9 +62,9 @@ export default function FtlScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
-        onBack={() => navigation.goBack()}
+        onBack={() => navigation.goBack()} backLabel={t('common.back', lang)}
         right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
 
       <SearchBar value={query} onChangeText={setQuery} placeholder={t('ftl.search', lang)} />

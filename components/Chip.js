@@ -19,6 +19,6 @@ export function Chip({ label, active, onPress, tone }) {
 
 const s = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, paddingHorizontal: SPACE.lg, marginBottom: 10 },
-  chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  chipTxt: { fontSize: TYPE.label, fontWeight: '500' },
+  chip: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 16, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
+  chipTxt: { fontSize: TYPE.sub, fontWeight: '500' },
 });

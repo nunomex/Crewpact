@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
@@ -154,8 +155,8 @@ export default function DetailScreen({ route, navigation }) {
   const calc = CALC[c.number];
 
   return (
-    <SafeAreaView style={d.safe}>
-      <DetailTopBar onBack={() => navigation.goBack()}
+    <SafeAreaView style={d.safe} edges={['top']}>
+      <DetailTopBar onBack={() => navigation.goBack()} backLabel={T('common.back', lang)}
         right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
           onPress={() => { const r = toggleFav(c.number); if (r.full) Alert.alert(T('detail.favFullTitle', lang), T('detail.favFullMsg', lang)); }}
           accessibilityLabel={fav ? T('detail.favRemove', lang) : T('detail.favAdd', lang)} />} />
@@ -202,8 +203,8 @@ const d = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-  number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
-  title: { fontSize: TYPE.heading, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
+  number: { fontSize: 34, fontWeight: '300', letterSpacing: -1, color: C.sub, lineHeight: 38 },
+  title: { fontSize: TYPE.heading, fontWeight: '700', letterSpacing: -0.3, color: C.text, marginBottom: 14, marginTop: 2 },
   body: { fontSize: TYPE.value, lineHeight: 24, color: C.text },
   valuesBox: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, overflow: 'hidden' },
   valTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', backgroundColor: C.ink, padding: 10, fontWeight: '600' },

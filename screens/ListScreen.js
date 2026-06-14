@@ -1,5 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, TYPE, SECTIONS, CALC } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
@@ -36,10 +37,12 @@ export default function ListScreen({ navigation, route }) {
       if (onlyMine && !isApplicable(cl, profile)) return false;
       if (onlyCalc && (!CALC[cl.number] || !isApplicable(cl, profile))) return false;
       if (!q) return true;
-      const hay = `${cl.number} ${cl.title.pt} ${cl.title.en || ''} ${cl.body.pt} ${cl.tags.join(' ')} ${cl.code}`.toLowerCase();
+      const body = tx(cl.body, lang);
+      const title = tx(cl.title, lang);
+      const hay = `${cl.number} ${cl.title.pt} ${cl.title.en || ''} ${title} ${body} ${cl.tags.join(' ')} ${cl.code}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [query, activeSection, onlyMine, onlyCalc, profile]);
+  }, [query, activeSection, onlyMine, onlyCalc, profile, lang]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -70,14 +73,14 @@ export default function ListScreen({ navigation, route }) {
     const cl = item.cl;
     return (
       <ListRow badge={cl.number} title={tx(cl.title, lang)} sub={cl.tags.join(' · ')} subUpper
-        calc={!!CALC[cl.number]} mine={isApplicable(cl, profile)}
+        calc={!!CALC[cl.number]} mine={isApplicable(cl, profile)} mineLabel={t('list.legendMine', lang)}
         onPress={() => navigation.navigate('Detail', { clause: cl })} />
     );
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)} onBack={() => navigation.goBack()} />
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)} onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
 
       <SearchBar value={query} onChangeText={setQuery} placeholder={t('list.search', lang)} />
 
@@ -88,7 +91,7 @@ export default function ListScreen({ navigation, route }) {
       </ChipRow>
 
       <View style={s.legend}>
-        <Ionicons name="person-circle" size={13} color={C.red} />
+        <Ionicons name="person-circle" size={13} color={C.info} />
         <Text style={s.legendTxt}>{t('list.legendMine', lang)}</Text>
         <Ionicons name="calculator-outline" size={13} color={C.sub} style={{ marginLeft: 12 }} />
         <Text style={s.legendTxt}>{t('list.legendCalc', lang)}</Text>

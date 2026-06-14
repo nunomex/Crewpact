@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
@@ -20,7 +21,7 @@ export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const FAV_PAGE_W = width - 32;            // scroll padding 16 de cada lado
   const FAV_CARD_W = (FAV_PAGE_W - FAV_GAP) / 2;
-  const { profile, favorites, lang, readNotifIds, setReadNotifIds } = useContext(AppContext);
+  const { profile, favorites, toggleFav, lang, readNotifIds, setReadNotifIds } = useContext(AppContext);
   const company = COMPANIES.find(c => c.id === profile.company);
   const rankObj  = RANKS.find(r => r.id === profile.rank);
   const pay      = PROFILE_PAY[profile.rank] || {};
@@ -31,37 +32,41 @@ export default function HomeScreen({ navigation }) {
 
   // Up to 8 favorites (cláusulas AE + artigos FTL), 4 por página num carrossel
   const favClauses = CLAUSES.filter(c => favorites.has(c.number)).map(c => ({
-    kind: 'ae', key: 'c' + c.number, badge: String(c.number), title: tx(c.title, lang),
+    kind: 'ae', key: 'c' + c.number, favKey: c.number, badge: String(c.number), title: tx(c.title, lang),
     onPress: () => navigation.navigate('Detail', { clause: c }),
   }));
   const favFtl = FTL_ARTICLES.filter(a => favorites.has(a.code)).map(a => ({
-    kind: 'ftl', key: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
+    kind: 'ftl', key: a.code, favKey: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
     onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
   }));
+  const removeFav = (item) => {
+    Alert.alert(item.title, t('home.favRemoveMsg', lang), [
+      { text: t('common.cancel', lang), style: 'cancel' },
+      { text: t('detail.favRemove', lang), style: 'destructive', onPress: () => toggleFav(item.favKey) },
+    ]);
+  };
   const favItems = [...favClauses, ...favFtl].slice(0, 16);
   const favPages = [];
   for (let i = 0; i < favItems.length; i += 4) favPages.push(favItems.slice(i, i + 4));
 
-  // Próximo voo — exemplo (sincroniza com a app de calendário ao tocar)
-  const [flight, setFlight] = useState({
-    date: '24 ago 2025',
-    report: '05:40',
-    depTime: '06:40',
-    depAirport: 'LIS',
-    arrAirport: 'FNC',
-    arrTime: '08:15',
-    aircraft: 'A320 · CS-EZW',
-  });
+  // Próximo voo — lido do calendário do dispositivo ao tocar (sem dados falsos).
+  const [flight, setFlight] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
 
   const syncFlight = async () => {
     if (syncing) return;
     setSyncing(true);
     try {
       const next = await getUpcomingFlight();
-      if (next) { setFlight(next); setSynced(true); }
-    } catch (e) { /* permissão negada ou sem eventos — mantém exemplo */ }
+      setFlight(next);          // dados reais ou null (sem permissão / sem voos)
+      setSynced(!!next);
+    } catch (e) {
+      setFlight(null);
+      setSynced(false);
+    }
+    setSyncDone(true);
     setSyncing(false);
   };
 
@@ -71,7 +76,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         {/* Header blob */}
         <ScreenHeader
@@ -122,36 +127,47 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Rota (compacta) */}
-          <View style={s.routeRow}>
-            <View style={s.routeSide}>
-              <Text style={s.routeAir}>{flight.depAirport}</Text>
-              <Text style={s.routeTime}>{flight.depTime}</Text>
-            </View>
-            <View style={s.routeMid}>
-              <View style={s.routeLine} />
-              <Ionicons name="airplane" size={12} color={C.red} />
-              <View style={s.routeLine} />
-            </View>
-            <View style={[s.routeSide, { alignItems: 'flex-end' }]}>
-              <Text style={s.routeAir}>{flight.arrAirport}</Text>
-              <Text style={s.routeTime}>{flight.arrTime}</Text>
-            </View>
-          </View>
-
-          {/* Detalhes (compacto) */}
-          <View style={s.metaRow}>
-            {[
-              { l: t('home.flightDate', lang), v: flight.date },
-              { l: t('home.flightReport', lang), v: flight.report },
-              { l: t('home.flightAircraft', lang), v: flight.aircraft },
-            ].map((f, i) => (
-              <View key={i} style={s.metaCell}>
-                <Text style={s.metaLbl}>{f.l}</Text>
-                <Text style={s.metaVal} numberOfLines={1}>{f.v}</Text>
+          {flight ? (
+            <>
+              {/* Rota (compacta) */}
+              <View style={s.routeRow}>
+                <View style={s.routeSide}>
+                  <Text style={s.routeAir}>{flight.depAirport}</Text>
+                  <Text style={s.routeTime}>{flight.depTime}</Text>
+                </View>
+                <View style={s.routeMid}>
+                  <View style={s.routeLine} />
+                  <Ionicons name="airplane" size={12} color={C.red} />
+                  <View style={s.routeLine} />
+                </View>
+                <View style={[s.routeSide, { alignItems: 'flex-end' }]}>
+                  <Text style={s.routeAir}>{flight.arrAirport}</Text>
+                  <Text style={s.routeTime}>{flight.arrTime}</Text>
+                </View>
               </View>
-            ))}
-          </View>
+
+              {/* Detalhes (compacto) */}
+              <View style={s.metaRow}>
+                {[
+                  { l: t('home.flightDate', lang), v: flight.date },
+                  { l: t('home.flightReport', lang), v: flight.report },
+                  { l: t('home.flightAircraft', lang), v: flight.aircraft },
+                ].map((f, i) => (
+                  <View key={i} style={s.metaCell}>
+                    <Text style={s.metaLbl}>{f.l}</Text>
+                    <Text style={s.metaVal} numberOfLines={1}>{f.v}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <View style={s.flightEmpty}>
+              <Ionicons name="calendar-outline" size={18} color={C.sub} />
+              <Text style={s.flightEmptyTxt}>
+                {syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         {/* Favoritos */}
@@ -174,8 +190,8 @@ export default function HomeScreen({ navigation }) {
                 <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>
                   {page.map(item => (
                     <TouchableOpacity key={item.key} style={[s.favCard, { width: FAV_CARD_W }]}
-                      onPress={item.onPress}>
-                      <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', paddingHorizontal: 8 }]}>
+                      onPress={item.onPress} onLongPress={() => removeFav(item)} delayLongPress={350}>
+                      <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', minWidth: 30, paddingHorizontal: 8 }]}>
                         <Text style={s.favNumTxt}>{item.badge}</Text>
                       </View>
                       <Text style={s.favCardTitle} numberOfLines={2}>{item.title}</Text>
@@ -194,7 +210,7 @@ export default function HomeScreen({ navigation }) {
       </ScrollView>
 
       {/* Notifications modal */}
-      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%">
+      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
             {notifs.map((n, i) => {
               const isNew = !readNotifIds.has(n.id);
@@ -242,6 +258,8 @@ const s = StyleSheet.create({
   flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700' },
   syncPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: 4, minHeight: 22 },
   syncTxt: { fontSize: TYPE.eyebrow, color: C.sub, fontWeight: '600' },
+  flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
+  flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md },
   routeSide: { width: 56 },
   routeAir: { fontSize: 19, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
