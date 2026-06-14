@@ -6,6 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocales } from 'expo-localization';
 import { C, RADIUS } from './data/constants';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
@@ -184,10 +185,20 @@ export default function App() {
   }, []);
 
   // Idioma é uma preferência do dispositivo (global) — hidratar no arranque.
+  // Se nunca foi escolhido, deteta a língua do dispositivo (EN para sistemas em
+  // inglês, caso contrário PT). Uma escolha guardada do utilizador prevalece sempre.
   const langHydrated = useRef(false);
   useEffect(() => {
     (async () => {
-      try { const l = await AsyncStorage.getItem('cp_lang'); if (l) setLang(l); } catch {}
+      try {
+        const saved = await AsyncStorage.getItem('cp_lang');
+        if (saved === 'pt' || saved === 'en') {
+          setLang(saved);
+        } else {
+          const code = getLocales?.()[0]?.languageCode?.toLowerCase();
+          setLang(code === 'en' ? 'en' : 'pt');
+        }
+      } catch { /* storage/locale indisponível — mantém o default 'pt' */ }
       langHydrated.current = true;
     })();
   }, []);
