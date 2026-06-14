@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from '../components/BottomSheet';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import { t } from '../data/i18n';
 
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
@@ -31,7 +32,7 @@ function Row({ label, value, onPress, last, danger }) {
 }
 
 export default function SettingsScreen() {
-  const { profile, setProfile, setOnboarded, user, logout } = useContext(AppContext);
+  const { profile, setProfile, setOnboarded, user, logout, lang, setLang } = useContext(AppContext);
   const tabSpace = useTabBarSpace();
   const [syncing, setSyncing] = useState(false);
 
@@ -53,7 +54,7 @@ export default function SettingsScreen() {
     setSyncing(true);
     setTimeout(() => {
       setSyncing(false);
-      setToast('Já tens a versão mais recente');
+      setToast(t('profile.upToDate', lang));
     }, 1000);
   };
   const [pwModal, setPwModal] = useState(false);
@@ -75,16 +76,16 @@ export default function SettingsScreen() {
   }, [toast, toastY]);
 
   const PICKERS = {
-    company:  { title: 'Companhia', options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
-    rank:     { title: 'Categoria', options: RANKS.map(r => ({ id: r.id, label: r.label })) },
-    contract: { title: 'Contrato',  options: CONTRACTS.map(c => ({ id: c.id, label: c.label })) },
+    company:  { title: t('profile.company', lang), options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
+    rank:     { title: t('profile.rank', lang),    options: RANKS.map(r => ({ id: r.id, label: r.label })) },
+    contract: { title: t('profile.contract', lang), options: CONTRACTS.map(c => ({ id: c.id, label: c.label })) },
   };
 
   const selectOption = (field, id) => {
     const next = { ...profile, [field]: id };
     setProfile(next);
     setPickerField(null);
-    setToast(`${PICKERS[field].title} atualizada`);
+    setToast(lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`);
     updateProfile(next).catch(() => {}); // persiste no Supabase (user_metadata)
   };
 
@@ -96,11 +97,11 @@ export default function SettingsScreen() {
     setPwErr('');
     const err = validatePassword(newPw, true);
     if (err) { setPwErr(err); return; }
-    if (newPw !== confPw) { setPwErr('As palavras-passe não coincidem.'); return; }
+    if (newPw !== confPw) { setPwErr(t('profile.pwMismatch', lang)); return; }
     const res = await changePassword(newPw);
     if (!res.ok) { setPwErr(res.error); return; }
     setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
-    Alert.alert('Sucesso', 'Palavra-passe alterada.');
+    Alert.alert(t('profile.pwOkTitle', lang), t('profile.pwOkMsg', lang));
   };
 
   return (
@@ -111,7 +112,18 @@ export default function SettingsScreen() {
           <Text style={s.toastTxt}>{toast}</Text>
         </Animated.View>
       )}
-      <ScreenHeader eyebrow="A TUA CONTA" title="Perfil" style={{ marginBottom: 8 }} />
+      <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }}
+        right={
+          <View style={s.headLang}>
+            {['pt', 'en'].map((l) => (
+              <TouchableOpacity key={l} onPress={() => setLang(l)} activeOpacity={0.8} hitSlop={8}
+                style={[s.langDot, { backgroundColor: lang === l ? C.red : C.hairlineOnDark }]}
+                accessibilityLabel={l === 'pt' ? 'Português' : 'English'}>
+                <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : C.onDarkSub }]}>{l.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        } />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
         {/* User card */}
@@ -128,32 +140,32 @@ export default function SettingsScreen() {
         )}
 
         <Group>
-          <Row label="Companhia" value={company?.name} onPress={() => setPickerField('company')} />
-          <Row label="Categoria" value={rankObj?.short} onPress={() => setPickerField('rank')} />
-          <Row label="Contrato" value={contract?.label} onPress={() => setPickerField('contract')} last />
+          <Row label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} />
+          <Row label={t('profile.rank', lang)} value={rankObj?.short} onPress={() => setPickerField('rank')} />
+          <Row label={t('profile.contract', lang)} value={contract?.label} onPress={() => setPickerField('contract')} last />
         </Group>
 
-        <Group title="Conteúdo">
+        <Group title={t('profile.groupContent', lang)}>
           <View style={s.syncRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
-              <Text style={s.syncSub}>{DATA_VERSION.version} · conteúdo incluído na app (em vigor {DATA_VERSION.effective})</Text>
+              <Text style={s.syncSub}>{DATA_VERSION.version} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
             </View>
             <TouchableOpacity onPress={checkUpdates} style={s.syncBtn} disabled={syncing}>
               <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
                 <Ionicons name="refresh" size={14} color="#fff" />
               </Animated.View>
-              <Text style={s.syncBtnTxt}>{syncing ? 'A verificar…' : 'Verificar'}</Text>
+              <Text style={s.syncBtnTxt}>{syncing ? t('profile.checking', lang) : t('profile.check', lang)}</Text>
             </TouchableOpacity>
           </View>
         </Group>
 
-        <Group title="Conta">
-          <Row label="Alterar palavra-passe" value="" onPress={() => setPwModal(true)} />
-          <Row label="Terminar sessão" value="" onPress={logout} last danger />
+        <Group title={t('profile.groupAccount', lang)}>
+          <Row label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
+          <Row label={t('profile.logout', lang)} value="" onPress={logout} last danger />
         </Group>
 
-        <Group title="Sobre">
+        <Group title={t('profile.groupAbout', lang)}>
           <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
             <Text style={s.rowValue}>v1.0.0 · AE easyJet 2023–2027</Text>
@@ -162,12 +174,12 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Change password modal */}
-      <BottomSheet visible={pwModal} onClose={() => setPwModal(false)} title="Alterar palavra-passe">
+      <BottomSheet visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)}>
         <View style={{ padding: 20 }}>
           {[
-            { label: 'Palavra-passe atual', val: curPw, set: setCurPw },
-            { label: 'Nova palavra-passe',  val: newPw, set: setNewPw },
-            { label: 'Confirmar nova',      val: confPw, set: setConfPw },
+            { label: t('profile.pwCur', lang), val: curPw, set: setCurPw },
+            { label: t('profile.pwNew', lang), val: newPw, set: setNewPw },
+            { label: t('profile.pwConfirm', lang), val: confPw, set: setConfPw },
           ].map((f, i) => (
             <View key={i} style={{ marginBottom: 12 }}>
               <Text style={s.fieldLabel}>{f.label}</Text>
@@ -177,7 +189,7 @@ export default function SettingsScreen() {
           ))}
           {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
           <TouchableOpacity onPress={handleChangePw} style={s.pwBtn}>
-            <Text style={s.pwBtnTxt}>Guardar</Text>
+            <Text style={s.pwBtnTxt}>{t('common.save', lang)}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -194,7 +206,7 @@ export default function SettingsScreen() {
                 style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
                 <Text style={[s.optLabel, sel && { color: C.ink, fontWeight: '700' }]}>{o.label}</Text>
                 {o.disabled
-                  ? <Text style={s.optSoon}>Em breve</Text>
+                  ? <Text style={s.optSoon}>{t('profile.soon', lang)}</Text>
                   : sel
                     ? <Ionicons name="checkmark-circle" size={20} color={C.red} />
                     : <View style={s.optDot} />}
@@ -211,6 +223,9 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   toast: { position: 'absolute', top: 12, left: 16, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 10 },
   toastTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  langDot: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  langDotTxt: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20 },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },

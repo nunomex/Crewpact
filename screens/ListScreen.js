@@ -1,12 +1,14 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { FlatList, StyleSheet, SafeAreaView } from 'react-native';
-import { C, SECTIONS, CALC } from '../data/constants';
+import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { C, TYPE, SECTIONS, CALC } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import SearchBar from '../components/SearchBar';
 import { Chip, ChipRow } from '../components/Chip';
 import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordion';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { CLAUSES } from '../data/clauses';
+import { t, tx } from '../data/i18n';
 import { AppContext } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
@@ -64,10 +66,10 @@ export default function ListScreen({ navigation, route }) {
         count={item.count} open={item.open}
         onPress={() => setOpenSec(openSec === item.secId ? null : item.secId)} />
     );
-    if (item.type === 'empty') return <EmptyState text="Nenhuma cláusula encontrada" />;
+    if (item.type === 'empty') return <EmptyState text={t('list.empty', lang)} />;
     const cl = item.cl;
     return (
-      <ListRow badge={cl.number} title={cl.title[lang]} sub={cl.tags.join(' · ')} subUpper
+      <ListRow badge={cl.number} title={tx(cl.title, lang)} sub={cl.tags.join(' · ')} subUpper
         calc={!!CALC[cl.number]} mine={isApplicable(cl, profile)}
         onPress={() => navigation.navigate('Detail', { clause: cl })} />
     );
@@ -75,15 +77,22 @@ export default function ListScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenHeader eyebrow="ÍNDICE" title="Acordo de Empresa" onBack={() => navigation.goBack()} />
+      <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)} onBack={() => navigation.goBack()} />
 
-      <SearchBar value={query} onChangeText={setQuery} placeholder="per diem, férias, 9/3…" />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t('list.search', lang)} />
 
       <ChipRow>
-        <Chip label="Aplicáveis a mim" tone="red" active={onlyMine} onPress={() => setOnlyMine(!onlyMine)} />
-        <Chip label="Calculáveis" active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
-        <Chip label="Todas" active={!onlyMine && !onlyCalc} onPress={() => { setOnlyMine(false); setOnlyCalc(false); setSection('all'); setOpenSec(null); }} />
+        <Chip label={t('list.filterMine', lang)} tone="red" active={onlyMine} onPress={() => setOnlyMine(!onlyMine)} />
+        <Chip label={t('list.filterCalc', lang)} active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
+        <Chip label={t('list.filterAll', lang)} active={!onlyMine && !onlyCalc} onPress={() => { setOnlyMine(false); setOnlyCalc(false); setSection('all'); setOpenSec(null); }} />
       </ChipRow>
+
+      <View style={s.legend}>
+        <Ionicons name="person-circle" size={13} color={C.red} />
+        <Text style={s.legendTxt}>{t('list.legendMine', lang)}</Text>
+        <Ionicons name="calculator-outline" size={13} color={C.sub} style={{ marginLeft: 12 }} />
+        <Text style={s.legendTxt}>{t('list.legendCalc', lang)}</Text>
+      </View>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace }} />
@@ -93,4 +102,6 @@ export default function ListScreen({ navigation, route }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
+  legend: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, marginBottom: 8 },
+  legendTxt: { fontSize: TYPE.micro, color: C.sub },
 });

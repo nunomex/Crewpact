@@ -9,6 +9,7 @@ import Card from '../components/Card';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import { t, tx } from '../data/i18n';
 import { AppContext } from '../App';
 
 const FAV_GAP = 10;
@@ -24,7 +25,7 @@ export default function HomeScreen({ navigation }) {
   const pay      = PROFILE_PAY[profile.rank] || {};
   const [notifOpen, setNotifOpen] = useState(false);
   const [favPage, setFavPage] = useState(0);
-  const notifs = buildNotifications(profile);
+  const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
   // Up to 8 favorites, shown 4 per page in a swipeable carousel
@@ -64,12 +65,12 @@ export default function HomeScreen({ navigation }) {
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         {/* Header blob */}
         <ScreenHeader
-          eyebrow="ACORDO DE EMPRESA"
+          eyebrow={t('home.eyebrow', lang)}
           badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
           title={company?.name}
           style={{ margin: 0, marginBottom: SPACE.md }}
           right={
-            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel="Notificações">
+            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
               <Ionicons name="notifications" size={18} color={C.onDark} />
               {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
             </TouchableOpacity>
@@ -77,14 +78,14 @@ export default function HomeScreen({ navigation }) {
 
         {/* Pay card */}
         <Card style={{ marginBottom: SPACE.md }}>
-          <Text style={s.payEyebrow}>A TUA REMUNERAÇÃO · {DATA_VERSION.payRef.toUpperCase()}</Text>
+          <Text style={s.payEyebrow}>{t('home.payEyebrow', lang)} · {DATA_VERSION.payRef.toUpperCase()}</Text>
           <View style={s.payRow}>
             <View>
-              <Text style={s.payLbl}>Base anual (ilíquida)</Text>
+              <Text style={s.payLbl}>{t('home.payBase', lang)}</Text>
               <Text style={s.payVal}>{pay.base}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.payLbl}>Setor nominal</Text>
+              <Text style={s.payLbl}>{t('home.payNS', lang)}</Text>
               <Text style={[s.payNS, { color: C.red }]}>{pay.ns}</Text>
             </View>
           </View>
@@ -99,14 +100,14 @@ export default function HomeScreen({ navigation }) {
           <View style={s.flightTop}>
             <View style={s.flightTitleRow}>
               <View style={s.flightIcon}><Ionicons name="airplane" size={14} color="#fff" /></View>
-              <Text style={s.flightEyebrow}>PRÓXIMO VOO</Text>
+              <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
             </View>
             <View style={[s.syncPill, synced ? { backgroundColor: C.greenSoft } : { backgroundColor: C.ink }]}>
               {syncing
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <>
                     <Ionicons name={synced ? 'checkmark-circle' : 'sync-outline'} size={12} color={synced ? C.green : '#fff'} />
-                    <Text style={[s.syncTxt, { color: synced ? C.green : '#fff' }]}>{synced ? 'Sincronizado' : 'Sincronizar'}</Text>
+                    <Text style={[s.syncTxt, { color: synced ? C.green : '#fff' }]}>{synced ? t('home.synced', lang) : t('home.sync', lang)}</Text>
                   </>}
             </View>
           </View>
@@ -131,9 +132,9 @@ export default function HomeScreen({ navigation }) {
           {/* Detalhes (compacto) */}
           <View style={s.metaRow}>
             {[
-              { l: 'Data', v: flight.date },
-              { l: 'Apresent.', v: flight.report },
-              { l: 'Avião', v: flight.aircraft },
+              { l: t('home.flightDate', lang), v: flight.date },
+              { l: t('home.flightReport', lang), v: flight.report },
+              { l: t('home.flightAircraft', lang), v: flight.aircraft },
             ].map((f, i) => (
               <View key={i} style={s.metaCell}>
                 <Text style={s.metaLbl}>{f.l}</Text>
@@ -145,14 +146,14 @@ export default function HomeScreen({ navigation }) {
 
         {/* Favoritos */}
         <View style={s.favHead}>
-          <Text style={s.favTitleHd}>Favoritos</Text>
+          <Text style={s.favTitleHd}>{t('home.favorites', lang)}</Text>
           {favItems.length > 0 && <Text style={s.favCount}>{favItems.length}/8</Text>}
         </View>
 
         {favItems.length === 0 ? (
           <View style={s.favEmpty}>
             <Ionicons name="star-outline" size={20} color={C.line} />
-            <Text style={s.favEmptyTxt}>Toca na estrela numa cláusula para a guardares aqui.</Text>
+            <Text style={s.favEmptyTxt}>{t('home.favEmpty', lang)}</Text>
           </View>
         ) : (
           <>
@@ -165,7 +166,7 @@ export default function HomeScreen({ navigation }) {
                     <TouchableOpacity key={cl.number} style={[s.favCard, { width: FAV_CARD_W }]}
                       onPress={() => navigation.navigate('Detail', { clause: cl })}>
                       <View style={s.favNum}><Text style={s.favNumTxt}>{cl.number}</Text></View>
-                      <Text style={s.favCardTitle} numberOfLines={2}>{cl.title[lang]}</Text>
+                      <Text style={s.favCardTitle} numberOfLines={2}>{tx(cl.title, lang)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -181,7 +182,7 @@ export default function HomeScreen({ navigation }) {
       </ScrollView>
 
       {/* Notifications modal */}
-      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow="CENTRO DE MENSAGENS" title="Notificações" maxHeight="80%">
+      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%">
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
             {notifs.map((n, i) => {
               const isNew = !readNotifIds.has(n.id);
@@ -199,7 +200,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
               );
             })}
-            <Text style={s.noMore}>Sem mais notificações</Text>
+            <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
           </ScrollView>
       </BottomSheet>
     </SafeAreaView>

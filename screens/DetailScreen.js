@@ -8,6 +8,7 @@ import { CalcCard, ResultBlock } from '../components/CalcCard';
 import Eyebrow from '../components/Eyebrow';
 import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import { t as T, tx, txv } from '../data/i18n';
 import { AppContext } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
@@ -15,7 +16,7 @@ const sectionN     = (id) => SECTIONS.find(s => s.id === id)?.n ?? 0;
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
 // ─── Calculadora (movida a partilhada: CalcCard + ResultBlock) ────────────────
-function Calculator({ calc, rank }) {
+function Calculator({ calc, rank, lang }) {
   const ns = PAY_NUM[rank]?.ns ?? null;
   const defaultBase = PAY_NUM[rank]?.base ?? null;
   const [qty, setQty] = useState(1);
@@ -79,7 +80,7 @@ function Calculator({ calc, rank }) {
   }
 
   return (
-    <CalcCard title="CALCULADORA" style={cs.wrap}>
+    <CalcCard title={T('detail.calc', lang)} style={cs.wrap}>
       {inputs}
       <ResultBlock lines={lines} foot={foot} />
     </CalcCard>
@@ -155,33 +156,33 @@ export default function DetailScreen({ route, navigation }) {
           accessibilityLabel={fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} />} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
-        <Text style={d.eyebrow}>Secção {sectionN(c.section)} · {sectionTitle(c.section)}</Text>
+        <Text style={d.eyebrow}>{lang === 'en' ? 'Section' : 'Secção'} {sectionN(c.section)} · {tx(sectionTitle(c.section), lang)}</Text>
         <Text style={d.number}>{c.number}</Text>
-        <Text style={d.title}>{c.title[lang] || c.title.pt}</Text>
+        <Text style={d.title}>{tx(c.title, lang)}</Text>
 
-        {calc && <Calculator calc={calc} rank={profile.rank} />}
+        {calc && <Calculator calc={calc} rank={profile.rank} lang={lang} />}
 
         {c.values && (
           <View style={[d.valuesBox, { marginTop: calc ? 12 : 16 }]}>
-            <Text style={d.valTitle}>{c.valuesTitle || 'VALORES · ANEXO I'}</Text>
+            <Text style={d.valTitle}>{c.valuesTitle ? txv(c.valuesTitle, lang) : T('detail.values', lang)}</Text>
             {c.values.map((v, i) => (
               <View key={i} style={[d.valRow, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
-                <Text style={d.valLbl}>{v.l}</Text>
-                <Text style={d.valAmt}>{v.a}</Text>
+                <Text style={d.valLbl}>{txv(v.l, lang)}</Text>
+                <Text style={d.valAmt}>{txv(v.a, lang)}</Text>
               </View>
             ))}
           </View>
         )}
 
-        <Text style={[d.body, { marginTop: (c.values || calc) ? 18 : 6 }]}>{c.body[lang] || c.body.pt}</Text>
+        <Text style={[d.body, { marginTop: (c.values || calc) ? 18 : 6 }]}>{tx(c.body, lang)}</Text>
 
         {related.length > 0 && (
           <View style={{ marginTop: 24 }}>
-            <Eyebrow style={{ marginBottom: 8 }}>Relacionadas</Eyebrow>
+            <Eyebrow style={{ marginBottom: 8 }}>{T('detail.related', lang)}</Eyebrow>
             {related.map(r => (
               <TouchableOpacity key={r.number} onPress={() => setCurrentCl(r)} style={d.relRow}>
                 <Text style={d.relNum}>{r.number}</Text>
-                <Text style={d.relLabel}>{r.title[lang]}</Text>
+                <Text style={d.relLabel}>{tx(r.title, lang)}</Text>
                 <Ionicons name="chevron-forward" size={14} color={C.sub} />
               </TouchableOpacity>
             ))}
@@ -197,7 +198,7 @@ const d = StyleSheet.create({
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   number: { fontSize: 64, fontWeight: '200', letterSpacing: -2, color: C.text, lineHeight: 68 },
-  title: { fontSize: 20, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
+  title: { fontSize: TYPE.heading, fontWeight: '500', letterSpacing: -0.3, color: C.text, marginBottom: 14 },
   body: { fontSize: TYPE.value, lineHeight: 24, color: C.text },
   valuesBox: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, overflow: 'hidden' },
   valTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', backgroundColor: C.ink, padding: 10, fontWeight: '600' },

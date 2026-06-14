@@ -9,11 +9,11 @@ export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
     <View style={st.stepRow}>
       <Text style={st.stepLabel}>{label}</Text>
       <View style={st.stepControls}>
-        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={st.stepBtn} hitSlop={6}><Text style={st.stepBtnTxt}>−</Text></TouchableOpacity>
-        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus
+        <TouchableOpacity onPress={() => setValue(clamp(value - 1))} style={st.stepBtn} hitSlop={6} accessibilityLabel={`Diminuir ${label}`}><Text style={st.stepBtnTxt}>−</Text></TouchableOpacity>
+        <TextInput value={String(value)} keyboardType="numeric" selectTextOnFocus accessibilityLabel={label}
           onChangeText={(t) => { const n = parseInt(t.replace(/[^0-9]/g, ''), 10); setValue(clamp(isNaN(n) ? 0 : n)); }}
           style={st.stepInput} />
-        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[st.stepBtn, { backgroundColor: C.ink }]} hitSlop={6}><Text style={[st.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setValue(clamp(value + 1))} style={[st.stepBtn, { backgroundColor: C.ink }]} hitSlop={6} accessibilityLabel={`Aumentar ${label}`}><Text style={[st.stepBtnTxt, { color: '#fff' }]}>+</Text></TouchableOpacity>
       </View>
     </View>
   );

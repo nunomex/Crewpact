@@ -5,12 +5,13 @@ import {
   ActivityIndicator, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C } from '../data/constants';
+import { C, RADIUS } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
   validateEmail, validatePassword, validateName,
 } from '../data/auth';
+import { t } from '../data/i18n';
 import { AppContext } from '../App';
 
 /* ─── Field ──────────────────────────────────────────────────────────────── */
@@ -62,12 +63,12 @@ const f = StyleSheet.create({
 });
 
 /* ─── StrengthBar ────────────────────────────────────────────────────────── */
-function StrengthBar({ password }) {
+function StrengthBar({ password, lang }) {
   const checks = [
-    { label: '8+ caract.', ok: password.length >= 8 },
-    { label: 'Maiúscula',  ok: /[A-Z]/.test(password) },
-    { label: 'Número',     ok: /[0-9]/.test(password) },
-    { label: 'Especial',   ok: /[^A-Za-z0-9]/.test(password) },
+    { label: t('st.8', lang),       ok: password.length >= 8 },
+    { label: t('st.upper', lang),   ok: /[A-Z]/.test(password) },
+    { label: t('st.num', lang),     ok: /[0-9]/.test(password) },
+    { label: t('st.special', lang), ok: /[^A-Za-z0-9]/.test(password) },
   ];
   const score = checks.filter(c => c.ok).length;
   const colors = [C.line, C.red, '#E8932B', '#E8932B', C.green];
@@ -138,7 +139,7 @@ const otp = StyleSheet.create({
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
-  const { setUser, suppressAuth } = useContext(AppContext);
+  const { setUser, suppressAuth, lang, setLang } = useContext(AppContext);
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
@@ -233,7 +234,7 @@ export default function LoginScreen() {
     const eName  = validateName(rName);
     const eEmail = validateEmail(rEmail);
     const ePw    = validatePassword(rPw, true);
-    const ePw2   = rPw !== rPw2 ? 'As palavras-passe não coincidem.' : null;
+    const ePw2   = rPw !== rPw2 ? t('login.pwMismatch', lang) : null;
     setRErrName(eName || ''); setRErrEmail(eEmail || '');
     setRErrPw(ePw || '');     setRErrPw2(ePw2 || '');
     if (eName || eEmail || ePw || ePw2) { doShake(); return; }
@@ -265,7 +266,7 @@ export default function LoginScreen() {
 
   const handleVerifyCode = async () => {
     setCodeErr('');
-    if (code.length < 8) { setCodeErr('Introduz o código completo de 8 dígitos.'); doShake(); return; }
+    if (code.length < 8) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
     setLoading(true);
     const res = await verifyResetCode(resetEmail, code);
     setLoading(false);
@@ -277,7 +278,7 @@ export default function LoginScreen() {
   const handleResetPassword = async () => {
     setNewPwErr(''); setNewPw2Err('');
     const ePw  = validatePassword(newPw, true);
-    const ePw2 = newPw !== newPw2 ? 'As palavras-passe não coincidem.' : null;
+    const ePw2 = newPw !== newPw2 ? t('login.pwMismatch', lang) : null;
     setNewPwErr(ePw || ''); setNewPw2Err(ePw2 || '');
     if (ePw || ePw2) { doShake(); return; }
     setLoading(true);
@@ -303,6 +304,15 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <View style={s.langRow}>
+        {['pt', 'en'].map((lc) => (
+          <TouchableOpacity key={lc} onPress={() => setLang(lc)} activeOpacity={0.8} hitSlop={8}
+            style={[s.langDot, { backgroundColor: lang === lc ? C.ink : C.soft }]}
+            accessibilityLabel={lc === 'pt' ? 'Português' : 'English'}>
+            <Text style={[s.langDotTxt, { color: lang === lc ? '#fff' : C.sub }]}>{lc.toUpperCase()}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
@@ -312,16 +322,16 @@ export default function LoginScreen() {
               <Ionicons name="airplane" size={24} color={C.red} style={{ transform: [{ rotate: '45deg' }] }} />
             </View>
             <Text style={s.logoName}>CrewPact</Text>
-            <Text style={s.logoSub}>O teu acordo de empresa, sempre contigo.</Text>
+            <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>
           </View>
 
           {/* Tab switcher — só no login/register */}
           {isAuthView && (
             <View style={s.seg}>
-              {[{ id: 'login', l: 'Entrar' }, { id: 'register', l: 'Registar' }].map(t => (
-                <TouchableOpacity key={t.id} onPress={() => switchTab(t.id)}
-                  style={[s.segBtn, { backgroundColor: view === t.id ? C.ink : 'transparent' }]}>
-                  <Text style={[s.segTxt, { color: view === t.id ? '#fff' : C.sub }]}>{t.l}</Text>
+              {[{ id: 'login', l: t('login.tabLogin', lang) }, { id: 'register', l: t('login.tabRegister', lang) }].map(tab => (
+                <TouchableOpacity key={tab.id} onPress={() => switchTab(tab.id)}
+                  style={[s.segBtn, { backgroundColor: view === tab.id ? C.ink : 'transparent' }]}>
+                  <Text style={[s.segTxt, { color: view === tab.id ? '#fff' : C.sub }]}>{tab.l}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -341,17 +351,17 @@ export default function LoginScreen() {
             {view === 'login' && (
               <Animated.View style={{ transform: [{ translateX: shake }] }}>
                 <Field value={lEmail} onChangeText={v => { setLEmail(v); setLErrEmail(''); }}
-                  placeholder="Email" error={lErrEmail} icon="mail-outline"
+                  placeholder={t('login.email', lang)} error={lErrEmail} icon="mail-outline"
                   keyboardType="email-address" returnKeyType="next"
                   onSubmitEditing={() => lPwRef.current?.focus()} />
                 <Field value={lPw} onChangeText={v => { setLPw(v); setLErrPw(''); }}
-                  placeholder="Palavra-passe" error={lErrPw} secure icon="lock-closed-outline"
+                  placeholder={t('login.password', lang)} error={lErrPw} secure icon="lock-closed-outline"
                   returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
                 <TouchableOpacity style={s.forgotBtn} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
-                  <Text style={s.forgotTxt}>Esqueci-me da palavra-passe</Text>
+                  <Text style={s.forgotTxt}>{t('login.forgot', lang)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleLogin} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>ENTRAR</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnLogin', lang)}</Text>}
                 </TouchableOpacity>
               </Animated.View>
             )}
@@ -360,24 +370,24 @@ export default function LoginScreen() {
             {view === 'register' && (
               <Animated.View style={{ transform: [{ translateX: shake }] }}>
                 <Field value={rName} onChangeText={v => { setRName(v); setRErrName(''); }}
-                  placeholder="Nome completo" error={rErrName} icon="person-outline"
+                  placeholder={t('login.fullName', lang)} error={rErrName} icon="person-outline"
                   autoCapitalize="words" returnKeyType="next"
                   onSubmitEditing={() => rEmailRef.current?.focus()} />
                 <Field value={rEmail} onChangeText={v => { setREmail(v); setRErrEmail(''); }}
-                  placeholder="Email" error={rErrEmail} icon="mail-outline"
+                  placeholder={t('login.email', lang)} error={rErrEmail} icon="mail-outline"
                   keyboardType="email-address" returnKeyType="next"
                   onSubmitEditing={() => rPwRef.current?.focus()} inputRef={rEmailRef} />
                 <Field value={rPw} onChangeText={v => { setRPw(v); setRErrPw(''); }}
-                  placeholder="Palavra-passe" error={rErrPw} secure icon="lock-closed-outline"
+                  placeholder={t('login.password', lang)} error={rErrPw} secure icon="lock-closed-outline"
                   returnKeyType="next" onSubmitEditing={() => rPw2Ref.current?.focus()} inputRef={rPwRef} />
-                <StrengthBar password={rPw} />
+                <StrengthBar password={rPw} lang={lang} />
                 <Field value={rPw2} onChangeText={v => { setRPw2(v); setRErrPw2(''); }}
-                  placeholder="Confirmar palavra-passe" error={rErrPw2} secure icon="lock-closed-outline"
+                  placeholder={t('login.confirmPw', lang)} error={rErrPw2} secure icon="lock-closed-outline"
                   returnKeyType="done" onSubmitEditing={handleRegister} inputRef={rPw2Ref} />
                 <TouchableOpacity onPress={handleRegister} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>CRIAR CONTA</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnRegister', lang)}</Text>}
                 </TouchableOpacity>
-                <Text style={s.terms}>Ao registares aceitas os termos de uso da CrewPact.</Text>
+                <Text style={s.terms}>{t('login.terms', lang)}</Text>
               </Animated.View>
             )}
 
@@ -385,20 +395,20 @@ export default function LoginScreen() {
             {view === 'forgot' && (
               <>
                 <View style={s.stepHeader}>
-                  <Text style={s.stepEyebrow}>RECUPERAR CONTA</Text>
-                  <Text style={s.stepTitle}>Esqueceste a palavra-passe?</Text>
-                  <Text style={s.stepSub}>Introduz o teu e-mail. Enviaremos um código de verificação de 6 dígitos.</Text>
+                  <Text style={s.stepEyebrow}>{t('login.recoverEyebrow', lang)}</Text>
+                  <Text style={s.stepTitle}>{t('login.forgotTitle', lang)}</Text>
+                  <Text style={s.stepSub}>{t('login.forgotSub', lang)}</Text>
                 </View>
                 <Field value={fInput} onChangeText={v => { setFInput(v); setFErr(''); }}
-                  placeholder="E-mail" error={fErr}
+                  placeholder={t('login.email', lang)} error={fErr}
                   icon="mail-outline" keyboardType="email-address" autoFocus returnKeyType="done"
                   onSubmitEditing={handleRequestReset} />
                 <TouchableOpacity onPress={handleRequestReset} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>ENVIAR CÓDIGO</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnSendCode', lang)}</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={s.linkRow} onPress={() => navigateTo('login', false)}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
-                  <Text style={s.linkTxt}>Voltar ao login</Text>
+                  <Text style={s.linkTxt}>{t('login.backToLogin', lang)}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -410,9 +420,9 @@ export default function LoginScreen() {
                   <View style={s.stepIconWrap}>
                     <Ionicons name="mail-open-outline" size={28} color={C.ink} />
                   </View>
-                  <Text style={s.stepEyebrow}>VERIFICAÇÃO</Text>
-                  <Text style={s.stepTitle}>Verifica o teu e-mail</Text>
-                  <Text style={s.stepSub}>Enviámos um código de 6 dígitos para{'\n'}<Text style={{ color: C.text, fontWeight: '600' }}>{resetEmail}</Text></Text>
+                  <Text style={s.stepEyebrow}>{t('login.verifyEyebrow', lang)}</Text>
+                  <Text style={s.stepTitle}>{t('login.verifyTitle', lang)}</Text>
+                  <Text style={s.stepSub}>{t('login.verifySub', lang)}{'\n'}<Text style={{ color: C.text, fontWeight: '600' }}>{resetEmail}</Text></Text>
                 </View>
                 <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); }} />
                 {codeErr ? (
@@ -422,11 +432,11 @@ export default function LoginScreen() {
                   </View>
                 ) : null}
                 <TouchableOpacity onPress={handleVerifyCode} disabled={loading || code.length < 8} style={[s.btnMain, code.length < 8 && { opacity: 0.4 }]}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>VERIFICAR</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnVerify', lang)}</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity style={s.linkRow} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
-                  <Text style={s.linkTxt}>Reenviar código</Text>
+                  <Text style={s.linkTxt}>{t('login.resend', lang)}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -438,21 +448,21 @@ export default function LoginScreen() {
                   <View style={s.stepIconWrap}>
                     <Ionicons name="lock-open-outline" size={28} color={C.ink} />
                   </View>
-                  <Text style={s.stepEyebrow}>NOVA PALAVRA-PASSE</Text>
-                  <Text style={s.stepTitle}>Cria uma nova palavra-passe</Text>
-                  <Text style={s.stepSub}>Escolhe uma palavra-passe segura para a tua conta.</Text>
+                  <Text style={s.stepEyebrow}>{t('login.newPwEyebrow', lang)}</Text>
+                  <Text style={s.stepTitle}>{t('login.newPwTitle', lang)}</Text>
+                  <Text style={s.stepSub}>{t('login.newPwSub', lang)}</Text>
                 </View>
                 <Field value={newPw} onChangeText={v => { setNewPw(v); setNewPwErr(''); }}
-                  placeholder="Nova palavra-passe" error={newPwErr} secure
+                  placeholder={t('login.newPw', lang)} error={newPwErr} secure
                   icon="lock-closed-outline" returnKeyType="next"
                   onSubmitEditing={() => newPw2Ref.current?.focus()} />
-                <StrengthBar password={newPw} />
+                <StrengthBar password={newPw} lang={lang} />
                 <Field value={newPw2} onChangeText={v => { setNewPw2(v); setNewPw2Err(''); }}
-                  placeholder="Confirmar palavra-passe" error={newPw2Err} secure
+                  placeholder={t('login.confirmPw', lang)} error={newPw2Err} secure
                   icon="lock-closed-outline" returnKeyType="done"
                   onSubmitEditing={handleResetPassword} inputRef={newPw2Ref} />
                 <TouchableOpacity onPress={handleResetPassword} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>CRIAR PALAVRA-PASSE</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnCreatePw', lang)}</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -468,8 +478,8 @@ export default function LoginScreen() {
             <Ionicons name="checkmark" size={20} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.toastTitle}>Conta criada com sucesso</Text>
-            <Text style={s.toastSub}>Bem-vindo/a, {registeredName}. Já podes iniciar sessão.</Text>
+            <Text style={s.toastTitle}>{t('login.toastTitle', lang)}</Text>
+            <Text style={s.toastSub}>{lang === 'en' ? `Welcome, ${registeredName}. You can now sign in.` : `Bem-vindo/a, ${registeredName}. Já podes iniciar sessão.`}</Text>
           </View>
         </Animated.View>
       )}
@@ -479,6 +489,9 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
+  langRow:      { position: 'absolute', top: Platform.OS === 'ios' ? 8 : 12, right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
+  langDot:      { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  langDotTxt:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52 },
   brand:        { alignItems: 'center', marginBottom: 28, marginTop: 16 },
   ring:         { width: 60, height: 60, borderRadius: 16, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },

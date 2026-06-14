@@ -1,18 +1,18 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
+import { C, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
 import { AppContext } from '../App';
 import { updateProfile } from '../data/auth';
-
-const steps = [
-  { title: 'Escolhe a companhia', sub: 'De que acordo de empresa precisas?' },
-  { title: 'A tua categoria',     sub: 'Para destacar o que se aplica a ti.' },
-  { title: 'O teu contrato',      sub: 'Tipo de vínculo atual.' },
-];
+import { t } from '../data/i18n';
 
 export default function OnboardingScreen() {
-  const { setProfile, setOnboarded, setUser } = useContext(AppContext);
+  const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
+  const steps = [
+    { title: t('onb.s0t', lang), sub: t('onb.s0s', lang) },
+    { title: t('onb.s1t', lang), sub: t('onb.s1s', lang) },
+    { title: t('onb.s2t', lang), sub: t('onb.s2s', lang) },
+  ];
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ company: null, rank: null, contract: null });
   const [saving, setSaving] = useState(false);
@@ -28,7 +28,7 @@ export default function OnboardingScreen() {
       <View style={styles.header}>
         <View style={styles.pill}>
           <Ionicons name="airplane" size={14} color={C.red} />
-          <Text style={styles.pillText}>CREWPACT · CONFIGURAR</Text>
+          <Text style={styles.pillText}>{t('onb.eyebrow', lang)}</Text>
         </View>
       </View>
       <View style={styles.top}>
@@ -48,7 +48,7 @@ export default function OnboardingScreen() {
               style={[styles.row, { borderColor: sel ? C.red : C.line, opacity: disabled ? 0.4 : 1 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{item.label || item.name}</Text>
-                {item.country && <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : 'Em breve'}</Text>}
+                {item.country && <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : t('onb.soon', lang)}</Text>}
               </View>
               <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
                 {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -66,7 +66,7 @@ export default function OnboardingScreen() {
       <View style={styles.footer}>
         {step > 0 && (
           <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.btnBack}>
-            <Text style={[styles.btnText, { color: C.ink }]}>Voltar</Text>
+            <Text style={[styles.btnText, { color: C.ink }]}>{t('onb.back', lang)}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity disabled={!canNext || saving} onPress={async () => {
@@ -75,14 +75,14 @@ export default function OnboardingScreen() {
           setSaveError(null);
           const result = await updateProfile(draft);
           setSaving(false);
-          if (!result.ok) { setSaveError('Erro ao guardar. Tenta novamente.'); return; }
+          if (!result.ok) { setSaveError(t('onb.saveErr', lang)); return; }
           setProfile(draft);
           if (result.user) setUser(result.user);
           setOnboarded(true);
         }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
           {saving
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{step < 2 ? 'Continuar' : 'Entrar'}</Text>
+            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{step < 2 ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
           }
         </TouchableOpacity>
       </View>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   top: { paddingHorizontal: 24, paddingTop: 28, paddingBottom: 16 },
   dots: { flexDirection: 'row', gap: 6, marginBottom: 20 },
   dot: { flex: 1, height: 3, borderRadius: 99 },
-  title: { fontSize: 28, fontWeight: '300', letterSpacing: -0.5, color: C.text },
+  title: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -0.5, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6 },
   scroll: { flex: 1, paddingHorizontal: 24 },
   row: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.canvas },

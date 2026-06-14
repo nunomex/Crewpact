@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, RADIUS } from './data/constants';
+import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 
@@ -49,10 +50,18 @@ function AgreementStack() {
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { lang } = useContext(AppContext);
+  const labels = {
+    'Início': t('tab.home', lang),
+    'AE/FTL': t('tab.agreement', lang),
+    'Cálculos': t('tab.calc', lang),
+    'Perfil': t('tab.profile', lang),
+  };
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarLabel: labels[route.name] ?? route.name,
         tabBarStyle: {
           position: 'absolute',
           left: 16,

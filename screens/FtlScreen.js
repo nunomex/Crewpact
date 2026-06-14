@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
 import { C, TYPE } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
@@ -6,14 +6,16 @@ import SearchBar from '../components/SearchBar';
 import { Chip, ChipRow } from '../components/Chip';
 import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordion';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { FTL_SECTIONS, FTL_ARTICLES } from '../data/ftl';
+import { FTL_SECTIONS, FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
+import { t, tx } from '../data/i18n';
+import { AppContext } from '../App';
 
 const sectionBadge = (id) => FTL_SECTIONS.find(s => s.id === id)?.badge ?? '';
-const sectionTitle = (id) => FTL_SECTIONS.find(s => s.id === id)?.title ?? '';
 const sectionIdx   = (id) => FTL_SECTIONS.findIndex(s => s.id === id);
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest);
 
 export default function FtlScreen({ navigation }) {
+  const { lang } = useContext(AppContext);
   const tabSpace = useTabBarSpace();
   const [query, setQuery]     = useState('');
   const [onlyCalc, setOnlyCalc] = useState(false);
@@ -24,10 +26,10 @@ export default function FtlScreen({ navigation }) {
     return FTL_ARTICLES.filter(a => {
       if (onlyCalc && !hasCalc(a)) return false;
       if (!q) return true;
-      const hay = `${a.code} ${a.title} ${a.sub} ${a.body.join(' ')}`.toLowerCase();
+      const hay = `${a.code} ${tx(a.title, lang)} ${tx(a.sub, lang)} ${tx(a.body, lang).join(' ')}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [query, onlyCalc]);
+  }, [query, onlyCalc, lang]);
 
   const flat = useMemo(() => {
     const map = {};
@@ -46,29 +48,29 @@ export default function FtlScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     if (item.type === 'header') return (
-      <SectionHeader badge={sectionBadge(item.secId)} title={sectionTitle(item.secId)}
+      <SectionHeader badge={sectionBadge(item.secId)} title={ftlSectionTitle(item.secId, lang)}
         count={item.count} open={item.open}
         onPress={() => setOpenSec(openSec === item.secId ? null : item.secId)} />
     );
-    if (item.type === 'empty') return <EmptyState text="Nenhum artigo encontrado" />;
+    if (item.type === 'empty') return <EmptyState text={t('ftl.empty', lang)} />;
     const a = item.a;
     return (
-      <ListRow badge={a.code.replace('ORO.FTL.', '')} badgeWide title={a.title} sub={a.sub}
+      <ListRow badge={a.code.replace('ORO.FTL.', '')} badgeWide title={tx(a.title, lang)} sub={tx(a.sub, lang)}
         calc={hasCalc(a)} onPress={() => navigation.navigate('FtlDetail', { code: a.code })} />
     );
   };
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenHeader eyebrow="FLIGHT TIME LIMITATIONS" title="Limites de Tempo de Voo"
+      <ScreenHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
         onBack={() => navigation.goBack()}
         right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
 
-      <SearchBar value={query} onChangeText={setQuery} placeholder="PSV, repouso, setores, reserva…" />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t('ftl.search', lang)} />
 
       <ChipRow>
-        <Chip label="Calculáveis" active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
-        <Chip label="Todos" active={!onlyCalc} onPress={() => { setOnlyCalc(false); setOpenSec('gen'); }} />
+        <Chip label={t('ftl.filterCalc', lang)} active={onlyCalc} onPress={() => setOnlyCalc(!onlyCalc)} />
+        <Chip label={t('ftl.filterAll', lang)} active={!onlyCalc} onPress={() => { setOnlyCalc(false); setOpenSec('gen'); }} />
       </ChipRow>
 
       <FlatList data={flat} keyExtractor={item => item.key} renderItem={renderItem}
@@ -79,6 +81,6 @@ export default function FtlScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  regBadge: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  regBadge: { backgroundColor: C.hairlineOnDark, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   regTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
 });
