@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, TextInput, Alert, Animated, Easing, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet from '../components/BottomSheet';
+import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, txv } from '../data/i18n';
@@ -62,6 +62,7 @@ export default function SettingsScreen() {
   const [newPw, setNewPw]   = useState('');
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
+  const [pwShown, setPwShown] = useState({}); // { [index]: true } — mostrar/esconder por campo
   const [pickerField, setPickerField] = useState(null); // 'company' | 'rank' | 'contract'
   const [toast, setToast] = useState(null);
   const toastY = useRef(new Animated.Value(-120)).current;
@@ -172,7 +173,7 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Change password modal */}
-      <BottomSheet visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)}>
+      <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)}>
         <View style={{ padding: 20 }}>
           {[
             { label: t('profile.pwCur', lang), val: curPw, set: setCurPw },
@@ -181,8 +182,14 @@ export default function SettingsScreen() {
           ].map((f, i) => (
             <View key={i} style={{ marginBottom: 12 }}>
               <Text style={s.fieldLabel}>{f.label}</Text>
-              <TextInput value={f.val} onChangeText={f.set} secureTextEntry
-                style={s.fieldInput} placeholderTextColor={C.sub} placeholder="••••••••" />
+              <View style={s.pwInputRow}>
+                <TextInput value={f.val} onChangeText={f.set} secureTextEntry={!pwShown[i]}
+                  style={s.pwInput} placeholderTextColor={C.sub} placeholder="••••••••" autoCapitalize="none" autoCorrect={false} />
+                <TouchableOpacity onPress={() => setPwShown(p => ({ ...p, [i]: !p[i] }))} hitSlop={8} style={s.pwEye}
+                  accessibilityLabel={pwShown[i] ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'}>
+                  <Ionicons name={pwShown[i] ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
           {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
@@ -190,10 +197,10 @@ export default function SettingsScreen() {
             <Text style={s.pwBtnTxt}>{t('common.save', lang)}</Text>
           </TouchableOpacity>
         </View>
-      </BottomSheet>
+      </CenterDialog>
 
       {/* Seletor de perfil (companhia / categoria / contrato) */}
-      <BottomSheet visible={!!pickerField} onClose={() => setPickerField(null)}
+      <CenterDialog visible={!!pickerField} onClose={() => setPickerField(null)}
         title={pickerField ? PICKERS[pickerField].title : ''}>
         <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
           {pickerField && PICKERS[pickerField].options.map((o, i) => {
@@ -212,7 +219,7 @@ export default function SettingsScreen() {
             );
           })}
         </View>
-      </BottomSheet>
+      </CenterDialog>
 
       {/* Toast de confirmação — igual ao do registo; renderizado por último p/ ficar à frente no iOS */}
       {toast && (
@@ -257,7 +264,9 @@ const s = StyleSheet.create({
   syncBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8 },
   syncBtnTxt: { color: '#fff', fontSize: TYPE.label, fontWeight: '600' },
   fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
-  fieldInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
+  pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
+  pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
+  pwEye: { padding: 4, marginLeft: 6 },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
   optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
