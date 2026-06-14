@@ -11,7 +11,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
-    persistSession: true,
+    // Sessão apenas em memória: ao fechar a app, a sessão desaparece e o
+    // utilizador tem de iniciar sessão novamente.
+    persistSession: false,
     detectSessionInUrl: false,
   },
 });

@@ -141,13 +141,13 @@ export default function App() {
     setUser(null);
     setOnboarded(false);
     setProfile({ company: null, rank: null, contract: null });
-    setFavorites(new Set());
-    setReadNotifIds(new Set());
-    AsyncStorage.multiRemove(['cp_favorites', 'cp_readNotifs']).catch(() => {});
+    // Os favoritos/notificações ficam guardados por utilizador no telemóvel;
+    // limpamos apenas o estado em memória (o efeito de user?.id trata disso).
   };
 
-  // Restore the existing session on launch (persisted via AsyncStorage adapter).
-  // The user only re-authenticates if there is no valid session.
+  // Sessão não é persistida (persistSession: false) — ao abrir a app não há
+  // sessão guardada, por isso o login é sempre exigido. Mantemos o listener
+  // para reagir a logout / recuperação de palavra-passe.
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) handleSetUser(mapUser(session.user));
@@ -167,27 +167,40 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Hidratar preferências locais (favoritos / idioma / notificações lidas).
+  // Idioma é uma preferência do dispositivo (global) — hidratar no arranque.
+  const langHydrated = useRef(false);
   useEffect(() => {
     (async () => {
-      try {
-        const [f, l, r] = await Promise.all([
-          AsyncStorage.getItem('cp_favorites'),
-          AsyncStorage.getItem('cp_lang'),
-          AsyncStorage.getItem('cp_readNotifs'),
-        ]);
-        if (f) setFavorites(new Set(JSON.parse(f)));
-        if (l) setLang(l);
-        if (r) setReadNotifIds(new Set(JSON.parse(r)));
-      } catch { /* primeira execução / storage indisponível */ }
-      hydrated.current = true;
+      try { const l = await AsyncStorage.getItem('cp_lang'); if (l) setLang(l); } catch {}
+      langHydrated.current = true;
     })();
   }, []);
+  useEffect(() => { if (langHydrated.current) AsyncStorage.setItem('cp_lang', lang).catch(() => {}); }, [lang]);
 
-  // Persistir alterações (só depois de hidratar, para não apagar o que está guardado).
-  useEffect(() => { if (hydrated.current) AsyncStorage.setItem('cp_favorites', JSON.stringify([...favorites])).catch(() => {}); }, [favorites]);
-  useEffect(() => { if (hydrated.current) AsyncStorage.setItem('cp_lang', lang).catch(() => {}); }, [lang]);
-  useEffect(() => { if (hydrated.current) AsyncStorage.setItem('cp_readNotifs', JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds]);
+  // Favoritos / notificações lidas são guardados POR UTILIZADOR no telemóvel.
+  // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
+  useEffect(() => {
+    hydrated.current = false;
+    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [f, r] = await Promise.all([
+          AsyncStorage.getItem(`cp_fav_${user.id}`),
+          AsyncStorage.getItem(`cp_read_${user.id}`),
+        ]);
+        if (cancelled) return;
+        setFavorites(f ? new Set(JSON.parse(f)) : new Set());
+        setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
+      } catch { /* primeira execução / storage indisponível */ }
+      finally { if (!cancelled) hydrated.current = true; }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_fav_${user.id}`, JSON.stringify([...favorites])).catch(() => {}); }, [favorites, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
 
   const ctx = {
     user, setUser: handleSetUser, logout,

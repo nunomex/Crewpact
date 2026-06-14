@@ -5,6 +5,7 @@ import {
   ActivityIndicator, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, RADIUS } from '../data/constants';
 import {
   login, register,
@@ -140,6 +141,7 @@ const otp = StyleSheet.create({
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
   const { setUser, suppressAuth, lang, setLang } = useContext(AppContext);
+  const insets = useSafeAreaInsets();
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
@@ -304,7 +306,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.langRow}>
+      <View style={[s.langRow, { top: insets.top + 8 }]}>
         {['pt', 'en'].map((lc) => (
           <TouchableOpacity key={lc} onPress={() => setLang(lc)} activeOpacity={0.8} hitSlop={8}
             style={[s.langDot, { backgroundColor: lang === lc ? C.ink : C.soft }]}
@@ -489,7 +491,7 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
-  langRow:      { position: 'absolute', top: Platform.OS === 'ios' ? 8 : 12, right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
+  langRow:      { position: 'absolute', right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
   langDot:      { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   langDotTxt:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52 },
