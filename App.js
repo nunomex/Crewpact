@@ -133,6 +133,7 @@ export default function App() {
   const [lang, setLang]                 = useState('pt');
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
+  const [ftlSnap, setFtlSnap]           = useState({}); // último cálculo FTL: { psv, rest }
 
   const addExtra = (entry) =>
     setExtras(prev => [{
@@ -142,6 +143,7 @@ export default function App() {
     }, ...prev]);
   const removeExtra = (id) =>
     setExtras(prev => prev.filter(e => e.id !== id));
+  const updateFtlSnap = (key, val) => setFtlSnap(prev => ({ ...prev, [key]: val }));
 
   // Limite de favoritos. Devolve { ok, full } para o ecrã poder avisar quando cheio.
   const FAV_LIMIT = 16;
@@ -222,19 +224,21 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); setExtras([]); return; }
+    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); setExtras([]); setFtlSnap({}); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [f, r, x] = await Promise.all([
+        const [f, r, x, fs] = await Promise.all([
           AsyncStorage.getItem(`cp_fav_${user.id}`),
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_extras_${user.id}`),
+          AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
         ]);
         if (cancelled) return;
         setFavorites(f ? new Set(JSON.parse(f)) : new Set());
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         setExtras(x ? JSON.parse(x) : []);
+        setFtlSnap(fs ? JSON.parse(fs) : {});
       } catch { /* primeira execução / storage indisponível */ }
       finally { if (!cancelled) hydrated.current = true; }
     })();
@@ -245,6 +249,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_fav_${user.id}`, JSON.stringify([...favorites])).catch(() => {}); }, [favorites, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ftlsnap_${user.id}`, JSON.stringify(ftlSnap)).catch(() => {}); }, [ftlSnap, user?.id]);
 
   const ctx = {
     user, setUser: handleSetUser, logout,
@@ -254,6 +259,7 @@ export default function App() {
     lang, setLang,
     readNotifIds, setReadNotifIds,
     extras, addExtra, removeExtra,
+    ftlSnap, updateFtlSnap,
     onboarded, setOnboarded,
   };
 

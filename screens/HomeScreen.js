@@ -6,7 +6,7 @@ import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } fro
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
-  EXTRA_CATEGORIES, extraCategories, catLabel, catUnit, fmtEur, fmtVal,
+  EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur, fmtVal,
   monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
@@ -15,6 +15,13 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { success, select } from '../data/haptics';
 import { AppContext } from '../App';
+
+// "11:30" → 11.5 (horas decimais).
+const hhmmToH = (s) => {
+  const [h, m] = String(s).split(':').map(Number);
+  return (h || 0) + (m || 0) / 60;
+};
+const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
 
 // Barra de progresso (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang }) {
@@ -39,7 +46,7 @@ function ProgressRow({ label, done, limit, lang }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
 
@@ -129,18 +136,37 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
+              {/* PSV máximo diário (205) — último cálculo */}
+              <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
+              {ftlSnap.psv ? (
+                <View style={s.prog}>
+                  <View style={s.progTop}>
+                    <Text style={s.progLbl}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} · {ftlSnap.psv.sectors} {catLabel('setores', lang).toLowerCase()}</Text>
+                    <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
+                  </View>
+                  <View style={s.progTrack}>
+                    <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
+                  </View>
+                  <Text style={s.progFoot}>{t('home.psvMaxLbl', lang)} · máx. 13:00</Text>
+                </View>
+              ) : <Text style={s.restRef}>{t('home.psvEmpty', lang)}</Text>}
+
+              {/* Limites de horas (210) — restantes na janela de 28 dias */}
+              <Text style={[s.secHd, s.secHdGap]}>{t('home.secLimits', lang)}</Text>
               <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
               <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
 
-              <Text style={[s.secHd, s.secHdGap]}>{t('home.secSectors', lang)}</Text>
-              <View style={s.setoresRow}>
-                <Text style={s.bdLbl}>{catLabel('setores', lang)}</Text>
-                <Text style={s.bdVal}>{fmtVal(win.setores, 'n')}</Text>
-              </View>
-
+              {/* Repouso mínimo (235) */}
               <Text style={[s.secHd, s.secHdGap]}>{t('home.secRest', lang)}</Text>
-              <Text style={s.restRef}>{t('home.restRef', lang)}</Text>
+              <View style={s.setoresRow}>
+                <Text style={s.bdLbl}>{t('home.restBase', lang)}</Text>
+                <Text style={s.bdVal}>{ftlSnap.rest?.base ?? 12} h</Text>
+              </View>
+              <View style={[s.setoresRow, { marginTop: 6 }]}>
+                <Text style={s.bdLbl}>{t('home.restAway', lang)}</Text>
+                <Text style={s.bdVal}>{ftlSnap.rest?.away ?? 10} h</Text>
+              </View>
+              <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
 
               <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
             </>

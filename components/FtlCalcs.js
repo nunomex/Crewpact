@@ -72,7 +72,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
       <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} foot={foot} />
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ category: 'setores', amount: sec })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result })} />}
     </CalcCard>
   );
 }
@@ -99,17 +99,19 @@ export function LimitsCalc({ lang, onRegister, collapsible }) {
       <Stepper label={t('ftl.hoursDone', lang)} value={done} setValue={setDone} min={0} max={opt.v} />
       <ResultBlock label={t('ftl.hoursLeft', lang)} value={`${remaining} h`} valueSize={28} foot={foot} />
       {onRegister && <RegisterBtn lang={lang} disabled={done <= 0}
-        onPress={() => onRegister({ category: tipo === 'flight' ? 'voo' : 'servico', amount: done })} />}
+        onPress={() => onRegister({ kind: 'limits', category: tipo === 'flight' ? 'voo' : 'servico', amount: done })} />}
     </CalcCard>
   );
 }
 
 // Repouso mínimo.
-export function RestCalc({ lang, collapsible }) {
+export function RestCalc({ lang, collapsible, onRegister }) {
   const [prev, setPrev] = useState(10);
   const [place, setPlace] = useState('base');
   const floor = place === 'base' ? 12 : 10;
   const min = Math.max(prev, floor);
+  const baseMin = Math.max(prev, 12);
+  const awayMin = Math.max(prev, 10);
   const where = place === 'base' ? t('ftl.atBase', lang).toLowerCase() : t('ftl.awayBase', lang).toLowerCase();
   const foot = lang === 'en'
     ? `Greater of preceding duty (${prev} h) and ${floor} h (${where}).`
@@ -120,6 +122,7 @@ export function RestCalc({ lang, collapsible }) {
       <Stepper label={t('ftl.prevDuty', lang)} value={prev} setValue={setPrev} min={0} max={20} />
       <ResultBlock label={t('ftl.minRest', lang)} value={`${min} h`} valueSize={28} foot={foot} />
       <Text style={cs.note}>{t('ftl.recovery', lang)}</Text>
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', prev, base: baseMin, away: awayMin })} />}
     </CalcCard>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
@@ -19,8 +19,10 @@ import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
+import { monthKey } from '../data/extras';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
+import { success } from '../data/haptics';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -180,7 +182,7 @@ function CalcCount({ lang }) {
 
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
-  const { profile, lang } = useContext(AppContext);
+  const { profile, lang, addExtra, updateFtlSnap } = useContext(AppContext);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
   const rank = profile.rank || 'fa';
@@ -202,8 +204,21 @@ export default function CategoriesScreen({ navigation }) {
     if (clause) navigation.navigate('Detail', { clause }); // local à stack de Cálculos
   };
 
-  // Companhias FTL: o separador Cálculos mostra apenas as calculadoras FTL.
+  // Companhias FTL: o separador Cálculos mostra as calculadoras FTL.
+  // "Confirmar e registar" envia o cálculo para o cartão do Início.
   const isFtl = companyContent(profile.company) === 'ftl';
+  const registerFtl = (p) => {
+    if (p.kind === 'limits') {
+      const today = new Date().toISOString().slice(0, 10);
+      addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
+    } else if (p.kind === 'psv') {
+      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, ts: Date.now() });
+    } else if (p.kind === 'rest') {
+      updateFtlSnap('rest', { prev: p.prev, base: p.base, away: p.away, ts: Date.now() });
+    }
+    success();
+    Alert.alert(t('calc.title', lang), t('ftl.registered', lang));
+  };
 
   if (isFtl) {
     return (
@@ -212,9 +227,9 @@ export default function CategoriesScreen({ navigation }) {
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
           <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-          <PsvCalc lang={lang} collapsible />
-          <LimitsCalc lang={lang} collapsible />
-          <RestCalc lang={lang} collapsible />
+          <PsvCalc lang={lang} collapsible onRegister={registerFtl} />
+          <LimitsCalc lang={lang} collapsible onRegister={registerFtl} />
+          <RestCalc lang={lang} collapsible onRegister={registerFtl} />
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>
