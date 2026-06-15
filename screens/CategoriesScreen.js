@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
@@ -19,10 +19,8 @@ import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
-import { monthKey, extraCategories, catLabel } from '../data/extras';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
-import { success } from '../data/haptics';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -182,12 +180,9 @@ function CalcCount({ lang }) {
 
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
-  const { profile, lang, addExtra } = useContext(AppContext);
+  const { profile, lang } = useContext(AppContext);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
-  const [regCat, setRegCat] = useState('voo');
-  const [regAmount, setRegAmount] = useState('');
-  const [regDate, setRegDate] = useState(new Date().toISOString().slice(0, 10));
   const rank = profile.rank || 'fa';
   const rankObj = RANKS.find(r => r.id === rank) || RANKS[1];
   const rankRow = RANK_ROW[rank] ?? 1;
@@ -207,19 +202,8 @@ export default function CategoriesScreen({ navigation }) {
     if (clause) navigation.navigate('Detail', { clause }); // local à stack de Cálculos
   };
 
-  // Companhias FTL: o separador Cálculos mostra calculadoras FTL (sem salário/AE).
-  // Confirmar/registar envia valores para o cartão "Este mês" do Início.
+  // Companhias FTL: o separador Cálculos mostra apenas as calculadoras FTL.
   const isFtl = companyContent(profile.company) === 'ftl';
-  const ftlCats = extraCategories('ftl');
-  const registerExtra = ({ category, amount }) => {
-    const val = parseFloat(String(amount).replace(',', '.')) || 0;
-    if (val <= 0) return;
-    const dObj = new Date(regDate + 'T00:00:00');
-    addExtra({ month: monthKey(dObj), date: regDate, category, amount: val });
-    success();
-    Alert.alert(t('calc.title', lang), t('ftl.registered', lang));
-  };
-  const saveManual = () => { registerExtra({ category: regCat, amount: regAmount }); setRegAmount(''); };
 
   if (isFtl) {
     return (
@@ -227,40 +211,10 @@ export default function CategoriesScreen({ navigation }) {
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
-          <Text style={s.group}>{t('ftl.dateLabel', lang)}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-            {Array.from({ length: 28 }, (_, i) => {
-              const d = new Date(); d.setDate(d.getDate() - i);
-              const v = d.toISOString().slice(0, 10);
-              const sel = regDate === v;
-              const isToday = i === 0;
-              return (
-                <TouchableOpacity key={v} onPress={() => setRegDate(v)} style={[cs.dateChip, { backgroundColor: sel ? C.ink : C.soft }]}>
-                  <Text style={[cs.dateChipTxt, { color: sel ? '#fff' : C.sub }]}>
-                    {isToday ? t('common.today', lang) : d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: '2-digit', month: '2-digit' })}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
           <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-          <PsvCalc lang={lang} onRegister={registerExtra} collapsible />
-          <LimitsCalc lang={lang} onRegister={registerExtra} collapsible />
+          <PsvCalc lang={lang} collapsible />
+          <LimitsCalc lang={lang} collapsible />
           <RestCalc lang={lang} collapsible />
-
-          <Text style={s.group}>{t('ftl.logTitle', lang)}</Text>
-          <View style={cs.calc}>
-            <Seg options={ftlCats.map(c => ({ id: c.id, label: catLabel(c.id, lang) }))} value={regCat} setValue={setRegCat} />
-            <View style={cs.stepRow}>
-              <Text style={cs.stepLabel}>{regCat === 'setores' ? l('Setores', 'Sectors') : l('Horas', 'Hours')}</Text>
-              <TextInput value={regAmount} onChangeText={setRegAmount} keyboardType="decimal-pad" placeholder="0"
-                placeholderTextColor={C.sub} style={[cs.stepInput, { width: 90 }]} />
-            </View>
-            <TouchableOpacity onPress={saveManual} style={[cs.regBtn, { opacity: (parseFloat(String(regAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
-              <Text style={cs.regBtnTxt}>{t('ftl.logCta', lang)}</Text>
-            </TouchableOpacity>
-          </View>
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>
@@ -356,10 +310,6 @@ const cs = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
   stepInput: { textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
-  regBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
-  regBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '700' },
-  dateChip: { borderRadius: RADIUS.pill, paddingHorizontal: 14, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
-  dateChipTxt: { fontSize: TYPE.sub, fontWeight: '600', fontFamily: 'monospace' },
 });
 
 const s = StyleSheet.create({

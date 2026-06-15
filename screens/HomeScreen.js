@@ -6,36 +6,16 @@ import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } fro
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
-  EXTRA_CATEGORIES, extraCategories, catLabel, catUnit, fmtEur, fmtVal, FTL_PRIMARY,
-  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
+  EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur,
+  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange,
 } from '../data/extras';
+import { FTL_LIMITS } from '../data/ftl';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t } from '../data/i18n';
+import { t, tx } from '../data/i18n';
 import { success, select } from '../data/haptics';
 import { AppContext } from '../App';
-
-// Barra de progresso (FTL) — feito / limite, com horas em falta.
-function ProgressRow({ label, done, limit, lang }) {
-  const fill = limit ? Math.min(1, done / limit) : 0;
-  const over = done > limit;
-  const remaining = Math.max(0, limit - done);
-  return (
-    <View style={s.prog}>
-      <View style={s.progTop}>
-        <Text style={s.progLbl}>{label}</Text>
-        <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
-      </View>
-      <View style={s.progTrack}>
-        <View style={[s.progFill, { width: `${fill * 100}%`, backgroundColor: over ? C.red : C.onDark }]} />
-      </View>
-      <Text style={[s.progFoot, over && { color: C.red }]}>
-        {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
-      </Text>
-    </View>
-  );
-}
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
@@ -45,30 +25,20 @@ export default function HomeScreen({ navigation }) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
-  const [newCat, setNewCat]       = useState(isFtl ? FTL_PRIMARY : EXTRA_CATEGORIES[0].id);
+  const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
   const [newAmount, setNewAmount] = useState('');
 
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
-  // ── Extras / horas do mês ──
-  // FTL: total/barras/variação seguem a métrica primária (horas de voo).
-  const primaryCat = isFtl ? FTL_PRIMARY : undefined;
+  // ── Extras do mês (AE) ──
   const curKey   = monthKey();
-  const total    = monthTotal(extras, curKey, primaryCat);
+  const total    = monthTotal(extras, curKey);
   const breakdown = monthBreakdown(extras, curKey).slice(0, 3);
-  const history  = lastMonths(extras, 6, new Date(), primaryCat);
+  const history  = lastMonths(extras, 6);
   const maxT     = Math.max(1, ...history.map(h => h.total));
-  const pct      = pctChange(extras, curKey, primaryCat);
-  const totalDisplay = isFtl ? fmtVal(total, 'h') : fmtEur(total);
-
-  // FTL — janela móvel de 28 dias de calendário e limites de referência.
-  const FTL_LIMITS = { voo: 100, servico: 190 }; // h em 28 dias
-  const win = {
-    voo: windowTotal(extras, 28, 'voo'),
-    servico: windowTotal(extras, 28, 'servico'),
-    setores: windowTotal(extras, 28, 'setores'),
-  };
+  const pct      = pctChange(extras, curKey);
+  const totalDisplay = fmtEur(total);
 
   const goCalc = () => navigation.navigate('Cálculos');
 
@@ -121,7 +91,7 @@ export default function HomeScreen({ navigation }) {
         {/* Este mês (AE) / Últimos 28 dias (FTL) */}
         <View style={s.monthCard}>
           <View style={s.monthHead}>
-            <Text style={s.monthEyebrow}>{isFtl ? t('home.window28', lang) : `${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
+            <Text style={s.monthEyebrow}>{isFtl ? t('home.ftlRefEyebrow', lang) : `${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
             {!isFtl && (
               <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
                 <Ionicons name="add" size={20} color="#fff" />
@@ -132,19 +102,23 @@ export default function HomeScreen({ navigation }) {
           {isFtl ? (
             <>
               <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
-              <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
-              <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+              <Text style={s.refGroup}>{t('ftl.duty', lang)}</Text>
+              <Text style={s.refLine}>{FTL_LIMITS.duty.map(d => `${d.value} · ${tx(d.period, lang)}`).join('\n')}</Text>
+              <Text style={[s.refGroup, { marginTop: SPACE.sm }]}>{t('ftl.flight', lang)}</Text>
+              <Text style={s.refLine}>{FTL_LIMITS.flight.map(d => `${d.value} · ${tx(d.period, lang)}`).join('\n')}</Text>
 
-              <Text style={[s.secHd, s.secHdGap]}>{t('home.secSectors', lang)}</Text>
-              <View style={s.setoresRow}>
-                <Text style={s.bdLbl}>{catLabel('setores', lang)}</Text>
-                <Text style={s.bdVal}>{fmtVal(win.setores, 'n')}</Text>
-              </View>
+              <Text style={[s.secHd, s.secHdGap]}>{t('home.secPsv', lang)}</Text>
+              <Text style={s.restRef}>{t('home.psvRef', lang)}</Text>
 
               <Text style={[s.secHd, s.secHdGap]}>{t('home.secRest', lang)}</Text>
-              <Text style={s.restRef}>{t('home.restRef', lang)}</Text>
+              {FTL_LIMITS.rest.map((r, i) => (
+                <View key={i} style={s.refRow}>
+                  <Text style={s.refRowLbl}>{tx(r.label, lang)}</Text>
+                  <Text style={s.refRowVal}>{tx(r.value, lang)}</Text>
+                </View>
+              ))}
 
-              <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
+              <Text style={s.ftlHint}>{t('home.ftlRefHint', lang)}</Text>
             </>
           ) : (
             <>
@@ -319,17 +293,14 @@ const s = StyleSheet.create({
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },
   chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
   chartLbl: { fontSize: 9, color: C.onDarkFaint },
-  // Progresso FTL (28 dias)
-  prog: { marginBottom: SPACE.md },
-  progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: '#fff' },
-  progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub },
-  progTrack: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
-  progFill: { height: 8, borderRadius: RADIUS.pill },
-  progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
-  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
+  // Referência FTL (cartão estático)
+  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.sm },
   secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
-  setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  refGroup: { fontSize: TYPE.label, fontWeight: '700', color: '#fff', marginBottom: 3 },
+  refLine: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub, lineHeight: 20 },
+  refRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACE.md, marginBottom: 6 },
+  refRowLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
+  refRowVal: { flex: 1, fontSize: TYPE.micro, color: '#fff', textAlign: 'right', lineHeight: 16 },
   restRef: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18 },
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
