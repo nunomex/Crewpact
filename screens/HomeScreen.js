@@ -126,16 +126,16 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           } />
 
-        {/* Este mês (AE) / Últimos 28 dias (FTL) */}
+        {/* Este mês (AE) / Cartão FTL (carrossel) */}
         <View style={s.monthCard}>
-          <View style={s.monthHead}>
-            <Text style={s.monthEyebrow}>{isFtl ? t('home.window28', lang) : `${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
-            {!isFtl && (
+          {!isFtl && (
+            <View style={s.monthHead}>
+              <Text style={s.monthEyebrow}>{`${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
               <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
                 <Ionicons name="add" size={20} color="#fff" />
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          )}
 
           {isFtl ? (
             <>
@@ -146,16 +146,29 @@ export default function HomeScreen({ navigation }) {
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
                   {ftlSnap.psv ? (
-                    <View style={s.prog}>
-                      <View style={s.progTop}>
-                        <Text style={s.progLbl}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} · {ftlSnap.psv.sectors} {catLabel('setores', lang).toLowerCase()}</Text>
-                        <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
+                    <>
+                      <Text style={s.psvState}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}</Text>
+                      {ftlSnap.psv.start ? (
+                        <View style={s.setoresRow}>
+                          <Text style={s.bdLbl}>{t('ftl.psvStart', lang)}</Text>
+                          <Text style={s.bdVal}>{ftlSnap.psv.start}</Text>
+                        </View>
+                      ) : null}
+                      <View style={[s.setoresRow, { marginTop: 6 }]}>
+                        <Text style={s.bdLbl}>{t('ftl.sectors', lang)}</Text>
+                        <Text style={s.bdVal}>{ftlSnap.psv.sectors}</Text>
                       </View>
-                      <View style={s.progTrack}>
-                        <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
+                      <View style={[s.prog, { marginTop: SPACE.md }]}>
+                        <View style={s.progTop}>
+                          <Text style={s.progLbl}>{t('home.psvMaxLbl', lang)}</Text>
+                          <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
+                        </View>
+                        <View style={s.progTrack}>
+                          <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
+                        </View>
+                        <Text style={s.progFoot}>máx. 13:00</Text>
                       </View>
-                      <Text style={s.progFoot}>{t('home.psvMaxLbl', lang)} · máx. 13:00</Text>
-                    </View>
+                    </>
                   ) : <Text style={s.restRef}>{t('home.psvEmpty', lang)}</Text>}
                 </View>
 
@@ -372,6 +385,7 @@ const s = StyleSheet.create({
   secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
   ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: SPACE.md },
   ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
+  psvState: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff', marginBottom: SPACE.sm },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   restRef: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18 },
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },

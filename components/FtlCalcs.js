@@ -72,7 +72,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
       <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} foot={foot} />
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: isAcc ? PSV_ACCLIMATISED[startIdx].start : null })} />}
     </CalcCard>
   );
 }

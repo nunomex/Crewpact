@@ -212,7 +212,7 @@ export default function CategoriesScreen({ navigation }) {
       const today = new Date().toISOString().slice(0, 10);
       addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
     } else if (p.kind === 'psv') {
-      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, ts: Date.now() });
+      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, ts: Date.now() });
     } else if (p.kind === 'rest') {
       updateFtlSnap('rest', { prev: p.prev, base: p.base, away: p.away, ts: Date.now() });
     }

@@ -205,7 +205,7 @@ export const STRINGS = {
 
     // AE Hub
     'hub.eyebrow': 'BIBLIOTECA',
-    'hub.title': 'O que queres consultar?',
+    'hub.title': 'Consulta',
     'hub.aeEyebrow': 'ACORDO DE EMPRESA',
     'hub.aeTitle': 'Acordo de Empresa',
     'hub.aeSub': 'Cláusulas do acordo coletivo de trabalho',
@@ -455,7 +455,7 @@ export const STRINGS = {
 
     // CLA Hub
     'hub.eyebrow': 'LIBRARY',
-    'hub.title': 'What do you want to check?',
+    'hub.title': 'Reference',
     'hub.aeEyebrow': 'COLLECTIVE LABOUR AGREEMENT',
     'hub.aeTitle': 'Collective Labour Agreement',
     'hub.aeSub': 'Clauses of the collective labour agreement',
