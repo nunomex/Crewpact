@@ -135,7 +135,11 @@ export default function App() {
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
 
   const addExtra = (entry) =>
-    setExtras(prev => [{ id: String(Date.now()), ts: Date.now(), ...entry }, ...prev]);
+    setExtras(prev => [{
+      id: String(Date.now()), ts: Date.now(),
+      date: new Date().toISOString().slice(0, 10), // data do registo (hoje) p/ janela de 28 dias
+      ...entry,
+    }, ...prev]);
   const removeExtra = (id) =>
     setExtras(prev => prev.filter(e => e.id !== id));
 

@@ -187,6 +187,7 @@ export default function CategoriesScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const [regCat, setRegCat] = useState('voo');
   const [regAmount, setRegAmount] = useState('');
+  const [regDate, setRegDate] = useState(new Date().toISOString().slice(0, 10));
   const rank = profile.rank || 'fa';
   const rankObj = RANKS.find(r => r.id === rank) || RANKS[1];
   const rankRow = RANK_ROW[rank] ?? 1;
@@ -213,7 +214,8 @@ export default function CategoriesScreen({ navigation }) {
   const registerExtra = ({ category, amount }) => {
     const val = parseFloat(String(amount).replace(',', '.')) || 0;
     if (val <= 0) return;
-    addExtra({ month: monthKey(), category, amount: val });
+    const dObj = new Date(regDate + 'T00:00:00');
+    addExtra({ month: monthKey(dObj), date: regDate, category, amount: val });
     success();
     Alert.alert(t('calc.title', lang), t('ftl.registered', lang));
   };
@@ -224,6 +226,24 @@ export default function CategoriesScreen({ navigation }) {
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
+
+          <Text style={s.group}>{t('ftl.dateLabel', lang)}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+            {Array.from({ length: 28 }, (_, i) => {
+              const d = new Date(); d.setDate(d.getDate() - i);
+              const v = d.toISOString().slice(0, 10);
+              const sel = regDate === v;
+              const isToday = i === 0;
+              return (
+                <TouchableOpacity key={v} onPress={() => setRegDate(v)} style={[cs.dateChip, { backgroundColor: sel ? C.ink : C.soft }]}>
+                  <Text style={[cs.dateChipTxt, { color: sel ? '#fff' : C.sub }]}>
+                    {isToday ? t('common.today', lang) : d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: '2-digit', month: '2-digit' })}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
           <PsvCalc lang={lang} onRegister={registerExtra} />
           <LimitsCalc lang={lang} onRegister={registerExtra} />
@@ -338,6 +358,8 @@ const cs = StyleSheet.create({
   stepInput: { textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
   regBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
   regBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '700' },
+  dateChip: { borderRadius: RADIUS.pill, paddingHorizontal: 14, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
+  dateChipTxt: { fontSize: TYPE.sub, fontWeight: '600', fontFamily: 'monospace' },
 });
 
 const s = StyleSheet.create({

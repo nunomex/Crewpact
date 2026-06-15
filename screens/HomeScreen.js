@@ -7,7 +7,7 @@ import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
   EXTRA_CATEGORIES, extraCategories, catLabel, catUnit, fmtEur, fmtVal, FTL_PRIMARY,
-  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange,
+  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -15,6 +15,27 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { success, select } from '../data/haptics';
 import { AppContext } from '../App';
+
+// Barra de progresso (FTL) — feito / limite, com horas em falta.
+function ProgressRow({ label, done, limit, lang }) {
+  const fill = limit ? Math.min(1, done / limit) : 0;
+  const over = done > limit;
+  const remaining = Math.max(0, limit - done);
+  return (
+    <View style={s.prog}>
+      <View style={s.progTop}>
+        <Text style={s.progLbl}>{label}</Text>
+        <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
+      </View>
+      <View style={s.progTrack}>
+        <View style={[s.progFill, { width: `${fill * 100}%`, backgroundColor: over ? C.red : C.onDark }]} />
+      </View>
+      <Text style={[s.progFoot, over && { color: C.red }]}>
+        {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
+      </Text>
+    </View>
+  );
+}
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
@@ -41,6 +62,14 @@ export default function HomeScreen({ navigation }) {
   const maxT     = Math.max(1, ...history.map(h => h.total));
   const pct      = pctChange(extras, curKey, primaryCat);
   const totalDisplay = isFtl ? fmtVal(total, 'h') : fmtEur(total);
+
+  // FTL — janela móvel de 28 dias de calendário e limites de referência.
+  const FTL_LIMITS = { voo: 100, servico: 190 }; // h em 28 dias
+  const win = {
+    voo: windowTotal(extras, 28, 'voo'),
+    servico: windowTotal(extras, 28, 'servico'),
+    setores: windowTotal(extras, 28, 'setores'),
+  };
 
   const goCalc = () => navigation.navigate('Cálculos');
 
@@ -90,10 +119,10 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           } />
 
-        {/* Este mês — extras */}
+        {/* Este mês (AE) / Últimos 28 dias (FTL) */}
         <View style={s.monthCard}>
           <View style={s.monthHead}>
-            <Text style={s.monthEyebrow}>{t('home.monthEyebrow', lang)} · {monthLabel(curKey, lang, true)}</Text>
+            <Text style={s.monthEyebrow}>{isFtl ? t('home.window28', lang) : `${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
             {!isFtl && (
               <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
                 <Ionicons name="add" size={20} color="#fff" />
@@ -101,50 +130,64 @@ export default function HomeScreen({ navigation }) {
             )}
           </View>
 
-          <View style={s.monthBody}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.monthLbl}>{isFtl ? t('home.totalFlight', lang) : t('home.totalExtra', lang)}</Text>
-              <Text style={s.monthTotal}>{totalDisplay}</Text>
-              {pct != null && (
-                <View style={s.pctRow}>
-                  <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
-                  <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
-                </View>
-              )}
-            </View>
-            <View style={s.breakdown}>
-              {breakdown.length === 0
-                ? <Text style={s.noExtras}>{isFtl ? t('home.noFtl', lang) : t('home.noExtras', lang)}</Text>
-                : breakdown.map(b => (
-                    <View key={b.category} style={s.bdRow}>
-                      <Text style={s.bdLbl} numberOfLines={1}>{catLabel(b.category, lang)}</Text>
-                      <Text style={s.bdVal}>{isFtl ? fmtVal(b.total, catUnit(b.category)) : fmtEur(b.total)}</Text>
+          {isFtl ? (
+            <>
+              <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
+              <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+              <View style={s.setoresRow}>
+                <Text style={s.bdLbl}>{catLabel('setores', lang)}</Text>
+                <Text style={s.bdVal}>{fmtVal(win.setores, 'n')}</Text>
+              </View>
+              <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
+            </>
+          ) : (
+            <>
+              <View style={s.monthBody}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
+                  <Text style={s.monthTotal}>{totalDisplay}</Text>
+                  {pct != null && (
+                    <View style={s.pctRow}>
+                      <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
+                      <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
                     </View>
-                  ))}
-            </View>
-          </View>
+                  )}
+                </View>
+                <View style={s.breakdown}>
+                  {breakdown.length === 0
+                    ? <Text style={s.noExtras}>{t('home.noExtras', lang)}</Text>
+                    : breakdown.map(b => (
+                        <View key={b.category} style={s.bdRow}>
+                          <Text style={s.bdLbl} numberOfLines={1}>{catLabel(b.category, lang)}</Text>
+                          <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
+                        </View>
+                      ))}
+                </View>
+              </View>
 
-          <View style={s.monthDivider} />
+              <View style={s.monthDivider} />
 
-          <View style={s.chartRow}>
-            <View style={s.chart}>
-              {history.map((h, i) => {
-                const isCur = i === history.length - 1;
-                const hgt = 6 + Math.round((h.total / maxT) * 40);
-                return (
-                  <View key={h.key} style={s.chartCol}>
-                    <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : 'rgba(255,255,255,0.18)' }} />
-                    <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
-                  </View>
-                );
-              })}
-            </View>
-            <TouchableOpacity style={s.monthsBtn} onPress={() => setMonthsOpen(true)} activeOpacity={0.8}>
-              <Ionicons name="bar-chart-outline" size={14} color="#fff" />
-              <Text style={s.monthsBtnTxt}>{t('home.seeAllMonths', lang)}</Text>
-              <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.6)" />
-            </TouchableOpacity>
-          </View>
+              <View style={s.chartRow}>
+                <View style={s.chart}>
+                  {history.map((h, i) => {
+                    const isCur = i === history.length - 1;
+                    const hgt = 6 + Math.round((h.total / maxT) * 40);
+                    return (
+                      <View key={h.key} style={s.chartCol}>
+                        <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : 'rgba(255,255,255,0.18)' }} />
+                        <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <TouchableOpacity style={s.monthsBtn} onPress={() => setMonthsOpen(true)} activeOpacity={0.8}>
+                  <Ionicons name="bar-chart-outline" size={14} color="#fff" />
+                  <Text style={s.monthsBtnTxt}>{t('home.seeAllMonths', lang)}</Text>
+                  <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.6)" />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Próximo voo */}
@@ -289,6 +332,16 @@ const s = StyleSheet.create({
   chartLbl: { fontSize: 9, color: C.onDarkFaint },
   monthsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.hairlineOnDark, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 9 },
   monthsBtnTxt: { fontSize: TYPE.micro, color: '#fff', fontWeight: '600' },
+  // Progresso FTL (28 dias)
+  prog: { marginBottom: SPACE.md },
+  progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: '#fff' },
+  progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub },
+  progTrack: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
+  progFill: { height: 8, borderRadius: RADIUS.pill },
+  progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
+  setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: SPACE.sm, borderTopWidth: 1, borderTopColor: C.hairlineOnDark, marginTop: 2 },
+  ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
   // Próximo voo
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.canvas },

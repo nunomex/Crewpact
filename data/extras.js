@@ -60,6 +60,24 @@ export const monthTotal = (entries, key, category) =>
     .filter(e => e.month === key && (!category || e.category === category))
     .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
+// Data de um registo (ISO 'YYYY-MM-DD' → Date). Fallback: ts ou mês.
+const entryDate = (e) => {
+  if (e.date) return new Date(e.date + 'T00:00:00');
+  if (e.ts) return new Date(e.ts);
+  if (e.month) return new Date(e.month + '-01T00:00:00');
+  return new Date(0);
+};
+
+// Soma numa janela móvel dos últimos `days` dias de calendário (inclui hoje).
+export const windowTotal = (entries, days = 28, category, ref = new Date()) => {
+  const end = new Date(ref); end.setHours(23, 59, 59, 999);
+  const start = new Date(ref); start.setDate(start.getDate() - (days - 1)); start.setHours(0, 0, 0, 0);
+  return entries
+    .filter(e => (!category || e.category === category))
+    .filter(e => { const d = entryDate(e); return d >= start && d <= end; })
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+};
+
 // Reparte o total do mês por categoria, ordenado do maior para o menor.
 export const monthBreakdown = (entries, key) => {
   const map = {};
