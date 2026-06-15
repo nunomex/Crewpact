@@ -27,7 +27,8 @@
           "calendarPermission": "A CrewPact lê a tua escala do calendário para mostrar o próximo voo, folgas e pernoitas."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-asset"
     ]
   }
 }
