@@ -131,12 +131,19 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
+              <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
               <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
               <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+
+              <Text style={[s.secHd, s.secHdGap]}>{t('home.secSectors', lang)}</Text>
               <View style={s.setoresRow}>
                 <Text style={s.bdLbl}>{catLabel('setores', lang)}</Text>
                 <Text style={s.bdVal}>{fmtVal(win.setores, 'n')}</Text>
               </View>
+
+              <Text style={[s.secHd, s.secHdGap]}>{t('home.secRest', lang)}</Text>
+              <Text style={s.restRef}>{t('home.restRef', lang)}</Text>
+
               <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
             </>
           ) : (
@@ -320,7 +327,10 @@ const s = StyleSheet.create({
   progTrack: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
   progFill: { height: 8, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
-  setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: SPACE.sm, borderTopWidth: 1, borderTopColor: C.hairlineOnDark, marginTop: 2 },
+  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
+  secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
+  setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  restRef: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18 },
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
   // Próximo voo

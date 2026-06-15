@@ -245,9 +245,9 @@ export default function CategoriesScreen({ navigation }) {
           </ScrollView>
 
           <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-          <PsvCalc lang={lang} onRegister={registerExtra} />
-          <LimitsCalc lang={lang} onRegister={registerExtra} />
-          <RestCalc lang={lang} />
+          <PsvCalc lang={lang} onRegister={registerExtra} collapsible />
+          <LimitsCalc lang={lang} onRegister={registerExtra} collapsible />
+          <RestCalc lang={lang} collapsible />
 
           <Text style={s.group}>{t('ftl.logTitle', lang)}</Text>
           <View style={cs.calc}>
