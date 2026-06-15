@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
@@ -19,6 +19,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
+import CenterDialog from '../components/CenterDialog';
 import { monthKey } from '../data/extras';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
@@ -205,9 +206,30 @@ export default function CategoriesScreen({ navigation }) {
   };
 
   // Companhias FTL: o separador Cálculos mostra as calculadoras FTL.
-  // "Confirmar e registar" envia o cálculo para o cartão do Início.
+  // "Confirmar" abre um popup; a confirmação envia o cálculo para o cartão do Início.
   const isFtl = companyContent(profile.company) === 'ftl';
-  const registerFtl = (p) => {
+  const [pending, setPending] = useState(null); // payload aguardando confirmação
+
+  // Pedir "Confirmar" → guarda o payload e mostra o popup.
+  const registerFtl = (p) => setPending(p);
+
+  // Resumo legível do que vai ser registado (mostrado no popup).
+  const summary = (p) => {
+    if (!p) return '';
+    if (p.kind === 'limits') return `${p.category === 'voo' ? t('ftl.flight', lang) : t('ftl.duty', lang)} · +${p.amount} h`;
+    if (p.kind === 'psv') {
+      const st = t(p.state === 'unk' ? 'ftl.accUnk' : p.state === 'frm' ? 'ftl.accFrm' : 'ftl.accAcc', lang);
+      const startTxt = p.start ? ` · ${p.start}` : '';
+      return `${st}${startTxt} · ${p.sectors} ${l('setor(es)', 'sector(s)')} · ${l('PSV', 'FDP')} ${p.result}`;
+    }
+    if (p.kind === 'rest') return `${l('Serviço anterior', 'Preceding duty')} ${p.prev} h · ${l('base', 'base')} ${p.base} h · ${l('fora', 'away')} ${p.away} h`;
+    return '';
+  };
+
+  // Confirmar no popup → executa o registo.
+  const confirmRegister = () => {
+    const p = pending;
+    if (!p) return;
     if (p.kind === 'limits') {
       const today = new Date().toISOString().slice(0, 10);
       addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
@@ -217,8 +239,33 @@ export default function CategoriesScreen({ navigation }) {
       updateFtlSnap('rest', { prev: p.prev, base: p.base, away: p.away, ts: Date.now() });
     }
     success();
-    Alert.alert(t('calc.title', lang), t('ftl.registered', lang));
+    setPending(null);
   };
+
+  const ConfirmDialog = (
+    <CenterDialog
+      visible={!!pending}
+      onClose={() => setPending(null)}
+      closeLabel={t('common.cancel', lang)}
+      eyebrow={t('ftl.confirmEyebrow', lang)}
+      title={t('ftl.confirmTitle', lang)}>
+      <View style={s.dlgBody}>
+        <Text style={s.dlgText}>{t('ftl.confirmBody', lang)}</Text>
+        <View style={s.dlgSummary}>
+          <Text style={s.dlgSummaryTxt}>{summary(pending)}</Text>
+        </View>
+        <View style={s.dlgActions}>
+          <TouchableOpacity style={[s.dlgBtn, s.dlgBtnGhost]} activeOpacity={0.8} onPress={() => setPending(null)}>
+            <Text style={s.dlgBtnGhostTxt}>{t('common.cancel', lang)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.dlgBtn, s.dlgBtnPrimary]} activeOpacity={0.85} onPress={confirmRegister}>
+            <Ionicons name="checkmark" size={16} color="#fff" />
+            <Text style={s.dlgBtnPrimaryTxt}>{t('ftl.confirmCta', lang)}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </CenterDialog>
+  );
 
   if (isFtl) {
     return (
@@ -233,6 +280,7 @@ export default function CategoriesScreen({ navigation }) {
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>
+        {ConfirmDialog}
       </SafeAreaView>
     );
   }
@@ -345,4 +393,14 @@ const s = StyleSheet.create({
   link: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14, marginTop: 6, marginBottom: 8 },
   linkTxt: { fontSize: 13, fontWeight: '500', color: C.text },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
+  dlgBody: { padding: 20 },
+  dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },
+  dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
+  dlgSummaryTxt: { fontSize: 13, color: C.text, fontWeight: '600', lineHeight: 19 },
+  dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
+  dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas },
+  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
+  dlgBtnPrimary: { backgroundColor: C.ink },
+  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
 });

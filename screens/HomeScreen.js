@@ -24,6 +24,27 @@ const hhmmToH = (s) => {
 const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
 
 // Barra de progresso (FTL) — feito / limite, com horas em falta.
+// Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
+// repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
+function RestBar({ label, value, floor, lang }) {
+  const over = value > floor;
+  const fill = floor ? Math.min(1, value / floor) : 0;
+  return (
+    <View style={s.prog}>
+      <View style={s.progTop}>
+        <Text style={s.progLbl}>{label}</Text>
+        <Text style={s.progVal}>{fmtVal(value, 'h')}</Text>
+      </View>
+      <View style={s.progTrack}>
+        <View style={[s.progFill, { width: `${fill * 100}%`, backgroundColor: over ? C.red : C.onDark }]} />
+      </View>
+      <Text style={[s.progFoot, over && { color: C.red }]}>
+        {over ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00` : `${t('home.restMin', lang)} ${floor}:00`}
+      </Text>
+    </View>
+  );
+}
+
 function ProgressRow({ label, done, limit, lang }) {
   const fill = limit ? Math.min(1, done / limit) : 0;
   const over = done > limit;
@@ -182,14 +203,8 @@ export default function HomeScreen({ navigation }) {
                 {/* Slide 3 — Repouso mínimo (235) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
-                  <View style={s.setoresRow}>
-                    <Text style={s.bdLbl}>{t('home.restBase', lang)}</Text>
-                    <Text style={s.bdVal}>{ftlSnap.rest?.base ?? 12} h</Text>
-                  </View>
-                  <View style={[s.setoresRow, { marginTop: 6 }]}>
-                    <Text style={s.bdLbl}>{t('home.restAway', lang)}</Text>
-                    <Text style={s.bdVal}>{ftlSnap.rest?.away ?? 10} h</Text>
-                  </View>
+                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base ?? 12} floor={12} lang={lang} />
+                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away ?? 10} floor={10} lang={lang} />
                   <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
                 </View>
               </ScrollView>
