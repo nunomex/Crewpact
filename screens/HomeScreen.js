@@ -91,13 +91,22 @@ export default function HomeScreen({ navigation }) {
   const pct      = pctChange(extras, curKey);
   const totalDisplay = fmtEur(total);
 
-  // FTL — janela móvel de 28 dias e limites de referência (h).
-  const FTL_LIMITS = { voo: 100, servico: 190 };
-  const win = {
-    voo: windowTotal(extras, 28, 'voo'),
-    servico: windowTotal(extras, 28, 'servico'),
-    setores: windowTotal(extras, 28, 'setores'),
-  };
+  // FTL — limites de tempo (ORO.FTL.210). As mesmas horas registadas contam em
+  // várias janelas ao mesmo tempo; cada período faz a sua própria conta.
+  const _now = new Date();
+  const _daysYTD = Math.floor((_now - new Date(_now.getFullYear(), 0, 1)) / 86400000) + 1; // ano civil até hoje
+  const LIMIT_GROUPS = [
+    { cat: 'servico', rows: [
+      { days: 7,  limit: 60,  label: lang === 'en' ? '7 days'  : '7 dias' },
+      { days: 14, limit: 110, label: lang === 'en' ? '14 days' : '14 dias' },
+      { days: 28, limit: 190, label: lang === 'en' ? '28 days' : '28 dias' },
+    ] },
+    { cat: 'voo', rows: [
+      { days: 28,       limit: 100,  label: lang === 'en' ? '28 days'        : '28 dias' },
+      { days: _daysYTD, limit: 900,  label: lang === 'en' ? 'Calendar year'  : 'Ano civil' },
+      { days: 365,      limit: 1000, label: lang === 'en' ? '12 months'      : '12 meses' },
+    ] },
+  ];
 
   const goCalc = () => navigation.navigate('Cálculos');
 
@@ -196,8 +205,15 @@ export default function HomeScreen({ navigation }) {
                 {/* Slide 2 — Limites de horas (210) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
-                  <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
-                  <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+                  {LIMIT_GROUPS.map(g => (
+                    <View key={g.cat}>
+                      <Text style={s.limGroup}>{catLabel(g.cat, lang)}</Text>
+                      {g.rows.map(r => (
+                        <ProgressRow key={`${g.cat}${r.days}`} label={r.label}
+                          done={windowTotal(extras, r.days, g.cat)} limit={r.limit} lang={lang} />
+                      ))}
+                    </View>
+                  ))}
                 </View>
 
                 {/* Slide 3 — Repouso mínimo (235) */}
@@ -397,6 +413,7 @@ const s = StyleSheet.create({
   progFill: { height: 8, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
+  limGroup: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff', marginTop: SPACE.sm, marginBottom: SPACE.sm },
   secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
   ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: SPACE.md },
   ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },

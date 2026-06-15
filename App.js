@@ -143,7 +143,7 @@ export default function App() {
     }, ...prev]);
   const removeExtra = (id) =>
     setExtras(prev => prev.filter(e => e.id !== id));
-  const updateFtlSnap = (key, val) => setFtlSnap(prev => ({ ...prev, [key]: val }));
+  const updateFtlSnap = (key, val) => setFtlSnap(prev => ({ ...prev, [key]: typeof val === 'function' ? val(prev[key]) : val }));
 
   // Limite de favoritos. Devolve { ok, full } para o ecrã poder avisar quando cheio.
   const FAV_LIMIT = 16;

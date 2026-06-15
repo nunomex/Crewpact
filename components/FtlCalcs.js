@@ -104,14 +104,13 @@ export function LimitsCalc({ lang, onRegister, collapsible }) {
   );
 }
 
-// Repouso mínimo.
+// Repouso mínimo. Na base e fora da base são cálculos separados — escolhe o
+// local, introduz o serviço anterior desse turno e regista só esse valor.
 export function RestCalc({ lang, collapsible, onRegister }) {
-  const [prev, setPrev] = useState(10);
   const [place, setPlace] = useState('base');
+  const [prev, setPrev] = useState(10);
   const floor = place === 'base' ? 12 : 10;
   const min = Math.max(prev, floor);
-  const baseMin = Math.max(prev, 12);
-  const awayMin = Math.max(prev, 10);
   const where = place === 'base' ? t('ftl.atBase', lang).toLowerCase() : t('ftl.awayBase', lang).toLowerCase();
   const foot = lang === 'en'
     ? `Greater of preceding duty (${prev} h) and ${floor} h (${where}).`
@@ -122,7 +121,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
       <Stepper label={t('ftl.prevDuty', lang)} value={prev} setValue={setPrev} min={0} max={20} />
       <ResultBlock label={t('ftl.minRest', lang)} value={`${min} h`} valueSize={28} foot={foot} />
       <Text style={cs.note}>{t('ftl.recovery', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', prev, base: baseMin, away: awayMin })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', place, prev, value: min })} />}
     </CalcCard>
   );
 }

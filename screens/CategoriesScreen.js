@@ -222,7 +222,10 @@ export default function CategoriesScreen({ navigation }) {
       const startTxt = p.start ? ` · ${p.start}` : '';
       return `${st}${startTxt} · ${p.sectors} ${l('setor(es)', 'sector(s)')} · ${l('PSV', 'FDP')} ${p.result}`;
     }
-    if (p.kind === 'rest') return `${l('Serviço anterior', 'Preceding duty')} ${p.prev} h · ${l('base', 'base')} ${p.base} h · ${l('fora', 'away')} ${p.away} h`;
+    if (p.kind === 'rest') {
+      const where = p.place === 'base' ? t('ftl.atBase', lang) : t('ftl.awayBase', lang);
+      return `${where} · ${l('serviço anterior', 'preceding duty')} ${p.prev} h · ${l('repouso', 'rest')} ${p.value} h`;
+    }
     return '';
   };
 
@@ -236,7 +239,8 @@ export default function CategoriesScreen({ navigation }) {
     } else if (p.kind === 'psv') {
       updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, ts: Date.now() });
     } else if (p.kind === 'rest') {
-      updateFtlSnap('rest', { prev: p.prev, base: p.base, away: p.away, ts: Date.now() });
+      // Atualiza só o local registado (base OU fora), preservando o outro.
+      updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, ts: Date.now() }));
     }
     success();
     setPending(null);
