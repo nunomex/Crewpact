@@ -6,7 +6,7 @@ import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } fro
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
-  EXTRA_CATEGORIES, catLabel, catIcon, fmtEur,
+  EXTRA_CATEGORIES, extraCategories, catLabel, catUnit, fmtEur, fmtVal, FTL_PRIMARY,
   monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange,
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
@@ -25,19 +25,22 @@ export default function HomeScreen({ navigation }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
   const [monthsOpen, setMonthsOpen] = useState(false);
-  const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
+  const [newCat, setNewCat]       = useState(isFtl ? FTL_PRIMARY : EXTRA_CATEGORIES[0].id);
   const [newAmount, setNewAmount] = useState('');
 
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
-  // ── Extras do mês ──
+  // ── Extras / horas do mês ──
+  // FTL: total/barras/variação seguem a métrica primária (horas de voo).
+  const primaryCat = isFtl ? FTL_PRIMARY : undefined;
   const curKey   = monthKey();
-  const total    = monthTotal(extras, curKey);
+  const total    = monthTotal(extras, curKey, primaryCat);
   const breakdown = monthBreakdown(extras, curKey).slice(0, 3);
-  const history  = lastMonths(extras, 6);
+  const history  = lastMonths(extras, 6, new Date(), primaryCat);
   const maxT     = Math.max(1, ...history.map(h => h.total));
-  const pct      = pctChange(extras, curKey);
+  const pct      = pctChange(extras, curKey, primaryCat);
+  const totalDisplay = isFtl ? fmtVal(total, 'h') : fmtEur(total);
 
   const goCalc = () => navigation.navigate('Cálculos');
 
@@ -98,8 +101,8 @@ export default function HomeScreen({ navigation }) {
 
           <View style={s.monthBody}>
             <View style={{ flex: 1 }}>
-              <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
-              <Text style={s.monthTotal}>{fmtEur(total)}</Text>
+              <Text style={s.monthLbl}>{isFtl ? t('home.totalFlight', lang) : t('home.totalExtra', lang)}</Text>
+              <Text style={s.monthTotal}>{totalDisplay}</Text>
               {pct != null && (
                 <View style={s.pctRow}>
                   <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
@@ -109,11 +112,11 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={s.breakdown}>
               {breakdown.length === 0
-                ? <Text style={s.noExtras}>{t('home.noExtras', lang)}</Text>
+                ? <Text style={s.noExtras}>{isFtl ? t('home.noFtl', lang) : t('home.noExtras', lang)}</Text>
                 : breakdown.map(b => (
                     <View key={b.category} style={s.bdRow}>
                       <Text style={s.bdLbl} numberOfLines={1}>{catLabel(b.category, lang)}</Text>
-                      <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
+                      <Text style={s.bdVal}>{isFtl ? fmtVal(b.total, catUnit(b.category)) : fmtEur(b.total)}</Text>
                     </View>
                   ))}
             </View>
@@ -195,7 +198,7 @@ export default function HomeScreen({ navigation }) {
         <View style={{ padding: 20 }}>
           <Text style={s.fieldLbl}>{t('home.category', lang)}</Text>
           <View style={s.catWrap}>
-            {EXTRA_CATEGORIES.map(c => {
+            {extraCategories(isFtl ? 'ftl' : 'ae').map(c => {
               const sel = newCat === c.id;
               return (
                 <TouchableOpacity key={c.id} onPress={() => setNewCat(c.id)} style={[s.catChip, { backgroundColor: sel ? C.ink : C.soft }]}>
@@ -205,7 +208,7 @@ export default function HomeScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={[s.fieldLbl, { marginTop: 16 }]}>{t('home.amount', lang)}</Text>
+          <Text style={[s.fieldLbl, { marginTop: 16 }]}>{isFtl ? t('home.amountFtl', lang) : t('home.amount', lang)}</Text>
           <TextInput value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholder="0,00"
             placeholderTextColor={C.sub} style={s.amountInput} />
           <TouchableOpacity onPress={saveExtra} style={[s.saveBtn, { opacity: (parseFloat(String(newAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
@@ -217,10 +220,10 @@ export default function HomeScreen({ navigation }) {
       {/* Todos os meses */}
       <BottomSheet visible={monthsOpen} onClose={() => setMonthsOpen(false)} title={t('home.allMonths', lang)} maxHeight="70%" closeLabel={t('common.close', lang)}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
-          {lastMonths(extras, 12).slice().reverse().map(m => (
+          {lastMonths(extras, 12, new Date(), primaryCat).slice().reverse().map(m => (
             <View key={m.key} style={s.monthRow}>
               <Text style={s.monthRowLbl}>{monthLabel(m.key, lang, true)}</Text>
-              <Text style={s.monthRowVal}>{m.total > 0 ? fmtEur(m.total) : t('home.monthNoData', lang)}</Text>
+              <Text style={s.monthRowVal}>{m.total > 0 ? (isFtl ? fmtVal(m.total, 'h') : fmtEur(m.total)) : t('home.monthNoData', lang)}</Text>
             </View>
           ))}
         </ScrollView>
