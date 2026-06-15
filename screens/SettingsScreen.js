@@ -138,8 +138,17 @@ export default function SettingsScreen() {
           <View style={s.syncRow}>
             <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.ink} /></View>
             <View style={{ flex: 1 }}>
-              <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
-              <Text style={s.syncSub}>{DATA_VERSION.version} · {DATA_VERSION.payRef} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
+              {isFtl ? (
+                <>
+                  <Text style={s.syncTitle}>Regulamento (UE) 83/2014</Text>
+                  <Text style={s.syncSub}>{lang === 'en' ? 'Flight time limitations · bundled in the app' : 'Limites de tempo de voo · incluído na app'}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
+                  <Text style={s.syncSub}>{DATA_VERSION.version} · {DATA_VERSION.payRef} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
+                </>
+              )}
             </View>
           </View>
         </Group>
