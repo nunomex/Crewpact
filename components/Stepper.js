@@ -20,14 +20,20 @@ export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
   );
 }
 
-export function Seg({ options, value, setValue }) {
+// `dark` — variante para fundos escuros (ex.: cartão do Início).
+export function Seg({ options, value, setValue, dark }) {
   return (
     <View style={st.segWrap}>
-      {options.map(o => (
-        <TouchableOpacity key={o.id} onPress={() => { select(); setValue(o.id); }} style={[st.segBtn, { backgroundColor: value === o.id ? C.ink : C.soft }]}>
-          <Text style={[st.segTxt, { color: value === o.id ? '#fff' : C.sub }]}>{o.label}</Text>
-        </TouchableOpacity>
-      ))}
+      {options.map(o => {
+        const sel = value === o.id;
+        const bg = dark ? (sel ? '#fff' : C.hairlineOnDark) : (sel ? C.ink : C.soft);
+        const fg = dark ? (sel ? C.ink : C.onDarkSub) : (sel ? '#fff' : C.sub);
+        return (
+          <TouchableOpacity key={o.id} onPress={() => { select(); setValue(o.id); }} style={[st.segBtn, { backgroundColor: bg }]}>
+            <Text style={[st.segTxt, { color: fg }]}>{o.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }

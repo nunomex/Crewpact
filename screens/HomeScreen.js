@@ -11,6 +11,7 @@ import {
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
+import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { success, select } from '../data/haptics';
@@ -74,6 +75,7 @@ export default function HomeScreen({ navigation }) {
   const isFtl    = companyContent(profile.company) === 'ftl';
 
   const [ftlPage, setFtlPage] = useState(0);
+  const [limCat, setLimCat] = useState('servico'); // categoria mostrada no slide Limites
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
   const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
@@ -205,14 +207,12 @@ export default function HomeScreen({ navigation }) {
                 {/* Slide 2 — Limites de horas (210) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
-                  {LIMIT_GROUPS.map(g => (
-                    <View key={g.cat}>
-                      <Text style={s.limGroup}>{catLabel(g.cat, lang)}</Text>
-                      {g.rows.map(r => (
-                        <ProgressRow key={`${g.cat}${r.days}`} label={r.label}
-                          done={windowTotal(extras, r.days, g.cat)} limit={r.limit} lang={lang} />
-                      ))}
-                    </View>
+                  <Seg
+                    options={LIMIT_GROUPS.map(g => ({ id: g.cat, label: catLabel(g.cat, lang) }))}
+                    value={limCat} setValue={setLimCat} dark />
+                  {(LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
+                    <ProgressRow key={`${limCat}${r.days}`} label={r.label}
+                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} />
                   ))}
                 </View>
 
