@@ -31,6 +31,11 @@ export default function FtlScreen({ navigation }) {
         right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace, paddingTop: 4 }}>
+        <View style={s.note}>
+          <Ionicons name="information-circle-outline" size={18} color={C.sub} />
+          <Text style={s.noteTxt}>{t('ftl.support', lang)}</Text>
+        </View>
+
         <Text style={s.group}>{t('ftl.calcsTitle', lang)}</Text>
 
         {calcArticles.map(a => (
@@ -63,6 +68,8 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   regBadge: { backgroundColor: C.hairlineOnDark, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   regTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, backgroundColor: C.soft, borderRadius: RADIUS.md, padding: SPACE.md, marginTop: 4, marginBottom: SPACE.md },
+  noteTxt: { flex: 1, fontSize: TYPE.micro, color: C.sub, lineHeight: 17 },
   group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: 8, marginBottom: 10, marginLeft: 2 },
   card: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.canvas },
   cardIcon: { width: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' },
