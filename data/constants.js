@@ -131,6 +131,15 @@ export const PROFILE_PAY = {
   cm_prob: { base: "18 914 €", ns: "24,00 €" },
   cm: { base: "23 198 €", ns: "32,50 €" },
 };
+// Atalhos de calculadora mostrados em Favoritos (Início + ecrã Favoritos).
+export const CALC_SHORTCUTS = [
+  { id: 'pernoitas',      icon: 'briefcase-outline',       label: { pt: 'Pernoitas', en: 'Night stops' } },
+  { id: 'posicionamento', icon: 'swap-horizontal-outline', label: { pt: 'Posicionamento', en: 'Positioning' } },
+  { id: 'ferias',         icon: 'calendar-outline',        label: { pt: 'Pagamento por dia de férias', en: 'Holiday daily allowance' } },
+  { id: 'irregularidade', icon: 'time-outline',            label: { pt: 'Irregularidade de escala — RDP', en: 'Roster disruption — RDP' } },
+  { id: 'setores',        icon: 'airplane-outline',        label: { pt: 'Setores voados', en: 'Sectors flown' } },
+];
+
 export const NS_PREV = { fa_1ano: 13.45, fa: 19.96, cm_prob: 22.43, cm: 27.41 };
 export const NS_NOW  = { fa_1ano: 13.45, fa: 21.0,  cm_prob: 24.0,  cm: 32.5  };
 export const PAY_NUM = {

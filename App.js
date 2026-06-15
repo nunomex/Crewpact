@@ -15,6 +15,7 @@ import { mapUser } from './data/auth';
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import HomeScreen         from './screens/HomeScreen';
+import FavoritesScreen     from './screens/FavoritesScreen';
 import AgreementHubScreen from './screens/AgreementHubScreen';
 import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
@@ -32,6 +33,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="Detail"    component={DetailScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -128,6 +130,12 @@ export default function App() {
   const [favorites, setFavorites]       = useState(new Set());
   const [lang, setLang]                 = useState('pt');
   const [readNotifIds, setReadNotifIds] = useState(new Set());
+  const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
+
+  const addExtra = (entry) =>
+    setExtras(prev => [{ id: String(Date.now()), ts: Date.now(), ...entry }, ...prev]);
+  const removeExtra = (id) =>
+    setExtras(prev => prev.filter(e => e.id !== id));
 
   // Limite de favoritos. Devolve { ok, full } para o ecrã poder avisar quando cheio.
   const FAV_LIMIT = 16;
@@ -208,17 +216,19 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); return; }
+    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); setExtras([]); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [f, r] = await Promise.all([
+        const [f, r, x] = await Promise.all([
           AsyncStorage.getItem(`cp_fav_${user.id}`),
           AsyncStorage.getItem(`cp_read_${user.id}`),
+          AsyncStorage.getItem(`cp_extras_${user.id}`),
         ]);
         if (cancelled) return;
         setFavorites(f ? new Set(JSON.parse(f)) : new Set());
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
+        setExtras(x ? JSON.parse(x) : []);
       } catch { /* primeira execução / storage indisponível */ }
       finally { if (!cancelled) hydrated.current = true; }
     })();
@@ -228,6 +238,7 @@ export default function App() {
   // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_fav_${user.id}`, JSON.stringify([...favorites])).catch(() => {}); }, [favorites, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
 
   const ctx = {
     user, setUser: handleSetUser, logout,
@@ -236,6 +247,7 @@ export default function App() {
     favorites, toggleFav,
     lang, setLang,
     readNotifIds, setReadNotifIds,
+    extras, addExtra, removeExtra,
     onboarded, setOnboarded,
   };
 

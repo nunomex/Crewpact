@@ -1,83 +1,60 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, COMPANIES, RANKS, PROFILE_PAY, CONTRACT_NOTE, DATA_VERSION } from '../data/constants';
-import { CLAUSES } from '../data/clauses';
-import { FTL_ARTICLES } from '../data/ftl';
+import { C, RADIUS, SPACE, TYPE, RANKS, CONTRACTS, PROFILE_PAY, CALC_SHORTCUTS } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
+import {
+  EXTRA_CATEGORIES, catLabel, catIcon, fmtEur,
+  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange,
+} from '../data/extras';
 import Card from '../components/Card';
-import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t, tx, txv } from '../data/i18n';
-import { warning, success } from '../data/haptics';
+import { t, txv } from '../data/i18n';
+import { success, select } from '../data/haptics';
 import { AppContext } from '../App';
 
-const FAV_GAP = 10;
-
 export default function HomeScreen({ navigation }) {
-  const { width } = useWindowDimensions();
   const tabSpace = useTabBarSpace();
-  const FAV_PAGE_W = width - 32;            // scroll padding 16 de cada lado
-  const FAV_CARD_W = (FAV_PAGE_W - FAV_GAP) / 2;
-  const { profile, favorites, toggleFav, lang, readNotifIds, setReadNotifIds } = useContext(AppContext);
-  const company = COMPANIES.find(c => c.id === profile.company);
+  const { user, profile, lang, readNotifIds, setReadNotifIds, extras, addExtra } = useContext(AppContext);
   const rankObj  = RANKS.find(r => r.id === profile.rank);
+  const contract = CONTRACTS.find(c => c.id === profile.contract);
   const pay      = PROFILE_PAY[profile.rank] || {};
+
   const [notifOpen, setNotifOpen] = useState(false);
-  const [favPage, setFavPage] = useState(0);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selected, setSelected] = useState(new Set());
+  const [addOpen, setAddOpen]     = useState(false);
+  const [monthsOpen, setMonthsOpen] = useState(false);
+  const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
+  const [newAmount, setNewAmount] = useState('');
+
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
+  const firstName = (user?.name || '').trim().split(' ')[0];
 
-  // Up to 8 favorites (cláusulas AE + artigos FTL), 4 por página num carrossel
-  const favClauses = CLAUSES.filter(c => favorites.has(c.number)).map(c => ({
-    kind: 'ae', key: 'c' + c.number, favKey: c.number, badge: String(c.number), title: tx(c.title, lang),
-    onPress: () => navigation.navigate('Detail', { clause: c }),
-  }));
-  const favFtl = FTL_ARTICLES.filter(a => favorites.has(a.code)).map(a => ({
-    kind: 'ftl', key: a.code, favKey: a.code, badge: a.code.replace('ORO.FTL.', ''), title: tx(a.title, lang),
-    onPress: () => navigation.navigate('FtlDetail', { code: a.code }),
-  }));
-  const enterSelect = (favKey) => { warning(); setSelectMode(true); setSelected(new Set([favKey])); };
-  const toggleSelect = (favKey) => setSelected(prev => {
-    const n = new Set(prev);
-    n.has(favKey) ? n.delete(favKey) : n.add(favKey);
-    return n;
-  });
-  const cancelSelect = () => { setSelectMode(false); setSelected(new Set()); };
-  const confirmRemove = () => {
-    selected.forEach(k => toggleFav(k));
+  // Pílula de contrato (código + tipo).
+  const ccode = profile.contract && profile.contract.includes('_') ? profile.contract.replace('_', '/') : '';
+  const clabelFull = txv(contract?.label, lang) || '';
+  const ctype = clabelFull.replace(/\s*\(.*\)\s*/, '').trim();
+
+  // ── Extras do mês ──
+  const curKey   = monthKey();
+  const total    = monthTotal(extras, curKey);
+  const breakdown = monthBreakdown(extras, curKey).slice(0, 3);
+  const history  = lastMonths(extras, 6);
+  const maxT     = Math.max(1, ...history.map(h => h.total));
+  const pct      = pctChange(extras, curKey);
+
+  const goCalc = () => navigation.navigate('Cálculos');
+
+  const saveExtra = () => {
+    const amount = parseFloat(String(newAmount).replace(',', '.')) || 0;
+    if (amount <= 0) return;
+    addExtra({ month: curKey, category: newCat, amount });
     success();
-    setSelectMode(false);
-    setSelected(new Set());
-  };
-  const favItems = [...favClauses, ...favFtl].slice(0, 16);
-  const favPages = [];
-  for (let i = 0; i < favItems.length; i += 4) favPages.push(favItems.slice(i, i + 4));
-
-  // Próximo voo — lido do calendário do dispositivo ao tocar (sem dados falsos).
-  const [flight, setFlight] = useState(null);
-  const [syncing, setSyncing] = useState(false);
-  const [synced, setSynced] = useState(false);
-  const [syncDone, setSyncDone] = useState(false);
-
-  const syncFlight = async () => {
-    if (syncing) return;
-    setSyncing(true);
-    try {
-      const next = await getUpcomingFlight();
-      setFlight(next);          // dados reais ou null (sem permissão / sem voos)
-      setSynced(!!next);
-    } catch (e) {
-      setFlight(null);
-      setSynced(false);
-    }
-    setSyncDone(true);
-    setSyncing(false);
+    setNewAmount('');
+    setAddOpen(false);
   };
 
   const closeNotifs = () => {
@@ -85,182 +62,216 @@ export default function HomeScreen({ navigation }) {
     setReadNotifIds(new Set(notifs.map(n => n.id)));
   };
 
+  // ── Próximo voo (calendário) ──
+  const [flight, setFlight] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
+  const syncFlight = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const next = await getUpcomingFlight();
+      setFlight(next); setSynced(!!next);
+    } catch { setFlight(null); setSynced(false); }
+    setSyncDone(true); setSyncing(false);
+  };
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
-        {/* Header blob */}
-        <ScreenHeader
-          eyebrow={t('home.eyebrow', lang)}
-          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
-          title={company?.name}
-          style={{ margin: 0, marginBottom: SPACE.md }}
-          right={
-            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-              <Ionicons name="notifications" size={18} color={C.onDark} />
-              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-            </TouchableOpacity>
-          } />
 
-        {/* Pay card */}
+        {/* Cabeçalho */}
+        <View style={s.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.brand}>CrewPact</Text>
+            <Text style={s.greeting}>{t('home.greeting', lang)}{firstName ? `, ${firstName}` : ''} 👋</Text>
+          </View>
+          <TouchableOpacity style={s.bell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+            <Ionicons name="notifications-outline" size={24} color={C.ink} />
+            {unread > 0 && <View style={s.bellDot} />}
+          </TouchableOpacity>
+        </View>
+
+        {/* Remuneração base */}
         <Card style={{ marginBottom: SPACE.md }}>
-          <Text style={s.payEyebrow}>{t('home.payEyebrow', lang)} · {DATA_VERSION.payRef.toUpperCase()}</Text>
-          <View style={s.payRow}>
-            <View>
-              <Text style={s.payLbl}>{t('home.payBase', lang)}</Text>
-              <Text style={s.payVal}>{pay.base}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.payLbl}>{t('home.payNS', lang)}</Text>
-              <Text style={[s.payNS, { color: C.red }]}>{pay.ns}</Text>
-            </View>
+          <View style={s.baseTop}>
+            <Text style={s.baseEyebrow}>{t('home.baseEyebrow', lang)}</Text>
+            {contract && (
+              <View style={s.contractPill}>
+                {ccode ? <Text style={s.contractCode}>{ccode}</Text> : null}
+                <Text style={s.contractType}>{ctype}</Text>
+              </View>
+            )}
           </View>
-          <View style={s.payFooter}>
-            <View style={s.dot} />
-            <Text style={s.payNote}>{txv(rankObj?.short, lang)} · {txv(CONTRACT_NOTE[profile.contract], lang)}</Text>
-          </View>
+          <Text style={s.baseValue}>{pay.base || '—'}</Text>
+          <Text style={s.baseRank}>{txv(rankObj?.label, lang)}</Text>
+          <TouchableOpacity style={s.detailsBtn} onPress={goCalc} activeOpacity={0.8}>
+            <Text style={s.detailsTxt}>{t('home.seeDetails', lang)}</Text>
+            <Ionicons name="chevron-forward" size={14} color={C.ink} />
+          </TouchableOpacity>
         </Card>
 
-        {/* Próximo voo (sincroniza com o calendário ao tocar) */}
+        {/* Este mês — extras */}
+        <View style={s.monthCard}>
+          <View style={s.monthHead}>
+            <Text style={s.monthEyebrow}>{t('home.monthEyebrow', lang)} · {monthLabel(curKey, lang, true)}</Text>
+            <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={s.monthBody}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
+              <Text style={s.monthTotal}>{fmtEur(total)}</Text>
+              {pct != null && (
+                <View style={s.pctRow}>
+                  <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
+                  <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
+                </View>
+              )}
+            </View>
+            <View style={s.breakdown}>
+              {breakdown.length === 0
+                ? <Text style={s.noExtras}>{t('home.noExtras', lang)}</Text>
+                : breakdown.map(b => (
+                    <View key={b.category} style={s.bdRow}>
+                      <Text style={s.bdLbl} numberOfLines={1}>{catLabel(b.category, lang)}</Text>
+                      <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
+                    </View>
+                  ))}
+            </View>
+          </View>
+
+          <View style={s.monthDivider} />
+
+          <View style={s.chartRow}>
+            <View style={s.chart}>
+              {history.map((h, i) => {
+                const isCur = i === history.length - 1;
+                const hgt = 6 + Math.round((h.total / maxT) * 40);
+                return (
+                  <View key={h.key} style={s.chartCol}>
+                    <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : 'rgba(255,255,255,0.18)' }} />
+                    <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+            <TouchableOpacity style={s.monthsBtn} onPress={() => setMonthsOpen(true)} activeOpacity={0.8}>
+              <Ionicons name="bar-chart-outline" size={14} color="#fff" />
+              <Text style={s.monthsBtnTxt}>{t('home.seeAllMonths', lang)}</Text>
+              <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Próximo voo */}
         <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={syncFlight}>
           <View style={s.flightTop}>
-            <View style={s.flightTitleRow}>
-              <View style={s.flightIcon}><Ionicons name="airplane" size={14} color="#fff" /></View>
-              <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
-            </View>
-            <View style={[s.syncPill, synced ? { backgroundColor: C.greenSoft } : { backgroundColor: C.ink }]}>
+            <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
+            <View style={[s.flightBadge, { backgroundColor: synced ? C.greenSoft : C.soft }]}>
               {syncing
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <>
-                    <Ionicons name={synced ? 'checkmark-circle' : 'sync-outline'} size={12} color={synced ? C.green : '#fff'} />
-                    <Text style={[s.syncTxt, { color: synced ? C.green : '#fff' }]}>{synced ? t('home.synced', lang) : t('home.sync', lang)}</Text>
-                  </>}
+                ? <ActivityIndicator size="small" color={C.sub} />
+                : <Text style={[s.flightBadgeTxt, { color: synced ? C.green : C.sub }]}>{synced ? t('home.flightOnTime', lang) : t('home.sync', lang)}</Text>}
             </View>
           </View>
 
           {flight ? (
             <>
-              {/* Rota (compacta) */}
               <View style={s.routeRow}>
-                <View style={s.routeSide}>
-                  <Text style={s.routeAir}>{flight.depAirport}</Text>
-                  <Text style={s.routeTime}>{flight.depTime}</Text>
-                </View>
-                <View style={s.routeMid}>
-                  <View style={s.routeLine} />
-                  <Ionicons name="airplane" size={12} color={C.red} />
-                  <View style={s.routeLine} />
-                </View>
-                <View style={[s.routeSide, { alignItems: 'flex-end' }]}>
-                  <Text style={s.routeAir}>{flight.arrAirport}</Text>
+                <Text style={s.routeAir}>{flight.depAirport}</Text>
+                <Ionicons name="arrow-forward" size={20} color={C.ink} style={{ marginHorizontal: 12 }} />
+                <Text style={s.routeAir}>{flight.arrAirport}</Text>
+                <View style={{ flex: 1 }} />
+                <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.routeTime}>{flight.arrTime}</Text>
+                  <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.report}</Text>
                 </View>
               </View>
-
-              {/* Detalhes (compacto) */}
-              <View style={s.metaRow}>
-                {[
-                  { l: t('home.flightDate', lang), v: flight.date },
-                  { l: t('home.flightReport', lang), v: flight.report },
-                  { l: t('home.flightAircraft', lang), v: flight.aircraft },
-                ].map((f, i) => (
-                  <View key={i} style={s.metaCell}>
-                    <Text style={s.metaLbl}>{f.l}</Text>
-                    <Text style={s.metaVal} numberOfLines={1}>{f.v}</Text>
-                  </View>
-                ))}
-              </View>
+              <Text style={s.flightMeta}>{flight.aircraft !== '—' ? `${flight.aircraft} · ` : ''}{flight.date}</Text>
             </>
           ) : (
             <View style={s.flightEmpty}>
               <Ionicons name="calendar-outline" size={18} color={C.sub} />
-              <Text style={s.flightEmptyTxt}>
-                {syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}
-              </Text>
+              <Text style={s.flightEmptyTxt}>{syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}</Text>
             </View>
           )}
         </TouchableOpacity>
 
-        {/* Favoritos */}
+        {/* Favoritos — atalhos de calculadora */}
         <View style={s.favHead}>
           <Text style={s.favTitleHd}>{t('home.favorites', lang)}</Text>
-          {selectMode && (
-            <View style={s.favActions}>
-              <TouchableOpacity onPress={cancelSelect} style={[s.favActBtn, { backgroundColor: C.soft }]} hitSlop={6} accessibilityLabel={t('common.cancel', lang)}>
-                <Ionicons name="close" size={18} color={C.ink} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmRemove} style={[s.favActBtn, { backgroundColor: selected.size ? C.red : C.line }]} hitSlop={6} disabled={!selected.size} accessibilityLabel={t('detail.favRemove', lang)}>
-                <Ionicons name="checkmark" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          )}
-          {favItems.length > 0 && <Text style={s.favCount}>{selectMode ? selected.size : `${favItems.length}/16`}</Text>}
+          <TouchableOpacity onPress={() => navigation.navigate('Favorites')} hitSlop={8}><Text style={s.seeAll}>{t('home.seeAll', lang)}</Text></TouchableOpacity>
         </View>
-
-        {favItems.length === 0 ? (
-          <View style={s.favEmpty}>
-            <Ionicons name="star-outline" size={20} color={C.line} />
-            <Text style={s.favEmptyTxt}>{t('home.favEmpty', lang)}</Text>
-          </View>
-        ) : (
-          <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}
-              snapToInterval={FAV_PAGE_W} decelerationRate="fast" snapToAlignment="start"
-              onMomentumScrollEnd={e => setFavPage(Math.round(e.nativeEvent.contentOffset.x / FAV_PAGE_W))}>
-              {favPages.map((page, pi) => (
-                <View key={pi} style={{ width: FAV_PAGE_W, flexDirection: 'row', flexWrap: 'wrap', gap: FAV_GAP }}>
-                  {page.map(item => {
-                    const isSel = selectMode && selected.has(item.favKey);
-                    return (
-                      <TouchableOpacity key={item.key} style={[s.favCard, { width: FAV_CARD_W }, isSel && s.favCardSel]}
-                        onPress={() => (selectMode ? toggleSelect(item.favKey) : item.onPress())}
-                        onLongPress={() => (selectMode ? toggleSelect(item.favKey) : enterSelect(item.favKey))} delayLongPress={300}>
-                        <View style={s.favTopRow}>
-                          <View style={[s.favNum, item.kind === 'ftl' && { backgroundColor: C.red, width: 'auto', minWidth: 30, paddingHorizontal: 8 }]}>
-                            <Text style={s.favNumTxt}>{item.badge}</Text>
-                          </View>
-                          {selectMode && (
-                            <View style={[s.favCheck, isSel && { backgroundColor: C.red, borderColor: C.red }]}>
-                              {isSel && <Ionicons name="checkmark" size={13} color="#fff" />}
-                            </View>
-                          )}
-                        </View>
-                        <Text style={s.favCardTitle} numberOfLines={2}>{item.title}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ))}
-            </ScrollView>
-            {favPages.length > 1 && (
-              <View style={s.favDots}>
-                {favPages.map((_, i) => <View key={i} style={[s.favDot, { backgroundColor: i === favPage ? C.ink : C.line }]} />)}
-              </View>
-            )}
-          </>
-        )}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
+          {CALC_SHORTCUTS.map(c => (
+            <TouchableOpacity key={c.id} style={s.tile} activeOpacity={0.85} onPress={() => { select(); goCalc(); }}>
+              <View style={s.tileIcon}><Ionicons name={c.icon} size={24} color={C.ink} /></View>
+              <Text style={s.tileLbl} numberOfLines={2}>{c.label[lang] ?? c.label.pt}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </ScrollView>
 
-      {/* Notifications modal */}
-      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
-            {notifs.map((n, i) => {
-              const isNew = !readNotifIds.has(n.id);
+      {/* Registar extra */}
+      <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)} title={t('home.logExtra', lang)} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          <Text style={s.fieldLbl}>{t('home.category', lang)}</Text>
+          <View style={s.catWrap}>
+            {EXTRA_CATEGORIES.map(c => {
+              const sel = newCat === c.id;
               return (
-                <View key={n.id} style={[s.notifItem, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
-                  <View style={[s.notifDot, { backgroundColor: isNew ? C.red : C.line }]} />
-                  <View style={{ flex: 1 }}>
-                    <View style={s.notifMeta}>
-                      <View style={s.tagBadge}><Text style={s.tagTxt}>{n.tag}</Text></View>
-                      <Text style={s.notifTime}>{n.time}</Text>
-                    </View>
-                    <Text style={s.notifItemTitle}>{n.title}</Text>
-                    <Text style={s.notifItemBody}>{n.body}</Text>
-                  </View>
-                </View>
+                <TouchableOpacity key={c.id} onPress={() => setNewCat(c.id)} style={[s.catChip, { backgroundColor: sel ? C.ink : C.soft }]}>
+                  <Ionicons name={c.icon} size={14} color={sel ? '#fff' : C.sub} />
+                  <Text style={[s.catChipTxt, { color: sel ? '#fff' : C.sub }]}>{catLabel(c.id, lang)}</Text>
+                </TouchableOpacity>
               );
             })}
-            <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
-          </ScrollView>
+          </View>
+          <Text style={[s.fieldLbl, { marginTop: 16 }]}>{t('home.amount', lang)}</Text>
+          <TextInput value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholder="0,00"
+            placeholderTextColor={C.sub} style={s.amountInput} />
+          <TouchableOpacity onPress={saveExtra} style={[s.saveBtn, { opacity: (parseFloat(String(newAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
+            <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Todos os meses */}
+      <BottomSheet visible={monthsOpen} onClose={() => setMonthsOpen(false)} title={t('home.allMonths', lang)} maxHeight="70%" closeLabel={t('common.close', lang)}>
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          {lastMonths(extras, 12).slice().reverse().map(m => (
+            <View key={m.key} style={s.monthRow}>
+              <Text style={s.monthRowLbl}>{monthLabel(m.key, lang, true)}</Text>
+              <Text style={s.monthRowVal}>{m.total > 0 ? fmtEur(m.total) : t('home.monthNoData', lang)}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </BottomSheet>
+
+      {/* Notificações */}
+      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
+          {notifs.map((n, i) => {
+            const isNew = !readNotifIds.has(n.id);
+            return (
+              <View key={n.id} style={[s.notifItem, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
+                <View style={[s.notifDot, { backgroundColor: isNew ? C.red : C.line }]} />
+                <View style={{ flex: 1 }}>
+                  <View style={s.notifMeta}>
+                    <View style={s.tagBadge}><Text style={s.tagTxt}>{n.tag}</Text></View>
+                    <Text style={s.notifTime}>{n.time}</Text>
+                  </View>
+                  <Text style={s.notifItemTitle}>{n.title}</Text>
+                  <Text style={s.notifItemBody}>{n.body}</Text>
+                </View>
+              </View>
+            );
+          })}
+          <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
+        </ScrollView>
       </BottomSheet>
     </SafeAreaView>
   );
@@ -269,54 +280,85 @@ export default function HomeScreen({ navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
-  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
-  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
-  codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
-  payEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: SPACE.md - 2 },
-  payRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  payLbl: { fontSize: 11, color: C.sub },
-  payVal: { fontSize: 32, fontWeight: '300', letterSpacing: -1, color: C.text, marginTop: 2 },
-  payNS:  { fontSize: TYPE.display, fontFamily: 'monospace', marginTop: 2 },
-  payFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACE.md - 2, paddingTop: SPACE.md - 2, borderTopWidth: 1, borderTopColor: C.line },
-  dot: { width: 6, height: 6, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  payNote: { fontSize: 11, color: C.sub, flex: 1 },
+
+  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACE.lg, marginTop: 4 },
+  brand: { fontSize: TYPE.hero, fontWeight: '700', letterSpacing: -0.5, color: C.text },
+  greeting: { fontSize: TYPE.value, color: C.sub, marginTop: 2 },
+  bell: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  bellDot: { position: 'absolute', top: 8, right: 9, width: 9, height: 9, borderRadius: 99, backgroundColor: C.red, borderWidth: 1.5, borderColor: C.canvas },
+
+  // Remuneração base
+  baseTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  baseEyebrow: { flex: 1, fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginTop: 4 },
+  contractPill: { backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center' },
+  contractCode: { fontSize: TYPE.value, fontWeight: '700', color: C.text },
+  contractType: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
+  baseValue: { fontSize: 32, fontWeight: '300', letterSpacing: -1, color: C.text, marginTop: 10 },
+  baseRank: { fontSize: TYPE.value, fontWeight: '500', color: C.text, marginTop: 4 },
+  detailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9, marginTop: 14 },
+  detailsTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
+
+  // Este mês (extras)
+  monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
+  monthHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
+  monthEyebrow: { flex: 1, fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '600' },
+  addBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  monthBody: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.lg },
+  monthLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  monthTotal: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2 },
+  pctRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  pctTxt: { fontSize: TYPE.micro, fontWeight: '600' },
+  breakdown: { flex: 1, justifyContent: 'center', gap: 8, paddingTop: 4 },
+  bdRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
+  bdVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', fontWeight: '600' },
+  noExtras: { fontSize: TYPE.micro, color: C.onDarkFaint, lineHeight: 17 },
+  monthDivider: { height: 1, backgroundColor: C.hairlineOnDark, marginVertical: SPACE.md },
+  chartRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.md },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },
+  chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
+  chartLbl: { fontSize: 9, color: C.onDarkFaint },
+  monthsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.hairlineOnDark, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 9 },
+  monthsBtnTxt: { fontSize: TYPE.micro, color: '#fff', fontWeight: '600' },
+
+  // Próximo voo
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.canvas },
   flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
-  flightTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  flightIcon: { width: 22, height: 22, borderRadius: 7, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700' },
-  syncPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: 4, minHeight: 22 },
-  syncTxt: { fontSize: TYPE.eyebrow, color: C.sub, fontWeight: '600' },
+  flightBadge: { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, minHeight: 24, justifyContent: 'center' },
+  flightBadgeTxt: { fontSize: TYPE.micro, fontWeight: '700' },
+  routeRow: { flexDirection: 'row', alignItems: 'center' },
+  routeAir: { fontSize: 24, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
+  routeTime: { fontSize: TYPE.lg, fontWeight: '700', color: C.text },
+  routeBoard: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
+  flightMeta: { fontSize: TYPE.sub, color: C.sub, marginTop: 8 },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-  routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md },
-  routeSide: { width: 56 },
-  routeAir: { fontSize: 19, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  routeTime: { fontSize: 11, fontFamily: 'monospace', color: C.sub, marginTop: 1 },
-  routeMid: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  routeLine: { flex: 1, height: 1, backgroundColor: C.line },
-  metaRow: { flexDirection: 'row', gap: SPACE.sm, borderTopWidth: 1, borderTopColor: C.line, paddingTop: SPACE.md - 2 },
-  metaCell: { flex: 1 },
-  metaLbl: { fontSize: TYPE.eyebrow, letterSpacing: 0.5, color: C.sub, textTransform: 'uppercase' },
-  metaVal: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginTop: 2 },
-  favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md - 2, paddingHorizontal: 2 },
+
+  // Favoritos (atalhos)
+  favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md, paddingHorizontal: 2 },
   favTitleHd: { fontSize: TYPE.value + 1, fontWeight: '600', color: C.text },
-  favCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub, minWidth: 36, textAlign: 'right' },
-  favActions: { flexDirection: 'row', gap: 8 },
-  favActBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  favCard: { height: 96, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: SPACE.md, backgroundColor: C.canvas, justifyContent: 'space-between' },
-  favCardSel: { borderColor: C.red, borderWidth: 1.5, backgroundColor: C.redSoft },
-  favTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  favCheck: { width: 22, height: 22, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', backgroundColor: C.canvas },
-  favNum: { width: 30, height: 30, borderRadius: RADIUS.sm - 2, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  favNumTxt: { color: '#fff', fontFamily: 'monospace', fontSize: TYPE.label },
-  favCardTitle: { fontSize: TYPE.label, fontWeight: '500', color: C.text, lineHeight: 16 },
-  favDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: SPACE.md },
-  favDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
-  favEmpty: { alignItems: 'center', gap: SPACE.sm, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: SPACE.xl, paddingHorizontal: SPACE.xl },
-  favEmptyTxt: { fontSize: TYPE.label, color: C.sub, textAlign: 'center' },
+  seeAll: { fontSize: TYPE.sub, fontWeight: '600', color: C.red },
+  tilesRow: { gap: SPACE.md, paddingHorizontal: 2, paddingBottom: 4 },
+  tile: { width: 88, alignItems: 'center', gap: 8 },
+  tileIcon: { width: 72, height: 72, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' },
+  tileLbl: { fontSize: TYPE.micro, color: C.text, textAlign: 'center', lineHeight: 15 },
+
+  // Registar extra
+  fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
+  catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.pill, paddingHorizontal: 12, minHeight: 38 },
+  catChipTxt: { fontSize: TYPE.label, fontWeight: '600' },
+  amountInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.heading, fontFamily: 'monospace', color: C.text },
+  saveBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
+
+  // Todos os meses
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.line },
+  monthRowLbl: { fontSize: TYPE.body, color: C.text },
+  monthRowVal: { fontSize: TYPE.value, fontFamily: 'monospace', fontWeight: '700', color: C.text },
+
+  // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 2 },
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },

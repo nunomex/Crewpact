@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
@@ -10,6 +10,7 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
   const hasEye = !!eyebrow;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose} />
       <View style={[s.sheet, maxHeight ? { maxHeight } : null]}>
         <View style={[s.head, { alignItems: hasEye ? 'flex-start' : 'center' }]}>
@@ -23,6 +24,7 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
         </View>
         {children}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
