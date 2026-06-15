@@ -335,13 +335,9 @@ export default function HomeScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Atalhos de calculadora — favoritos reais via link "Favoritos" */}
+        {/* Atalhos de calculadora */}
         <View style={s.favHead}>
           <Text style={s.favTitleHd}>{t('home.shortcuts', lang)}</Text>
-          <TouchableOpacity style={s.favLink} onPress={() => navigation.navigate('Favorites')} hitSlop={8}>
-            <Text style={s.seeAll}>{t('home.favorites', lang)}</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.red} />
-          </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
           {CALC_SHORTCUTS.map(c => (
@@ -470,8 +466,6 @@ const makeStyles = (C) => StyleSheet.create({
   // Favoritos (atalhos)
   favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md, paddingHorizontal: 2 },
   favTitleHd: { fontSize: TYPE.value + 1, fontWeight: '600', color: C.text },
-  favLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  seeAll: { fontSize: TYPE.sub, fontWeight: '600', color: C.red },
   tilesRow: { gap: SPACE.md, paddingHorizontal: 2, paddingBottom: 4 },
   tile: { width: 88, alignItems: 'center', gap: 8 },
   tileIcon: { width: 72, height: 72, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' },

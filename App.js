@@ -23,7 +23,6 @@ import { mapUser } from './data/auth';
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import HomeScreen         from './screens/HomeScreen';
-import FavoritesScreen     from './screens/FavoritesScreen';
 import AgreementHubScreen from './screens/AgreementHubScreen';
 import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
@@ -47,7 +46,6 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
-      <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="Detail"    component={DetailScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -145,7 +143,6 @@ export default function App() {
   const [profile, setProfile] = useState({ company: null, rank: null, contract: null });
   const [onboarded, setOnboarded] = useState(false);
 
-  const [favorites, setFavorites]       = useState(new Set());
   const [lang, setLang]                 = useState('pt');
   const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
   const [readNotifIds, setReadNotifIds] = useState(new Set());
@@ -161,19 +158,6 @@ export default function App() {
   const removeExtra = (id) =>
     setExtras(prev => prev.filter(e => e.id !== id));
   const updateFtlSnap = (key, val) => setFtlSnap(prev => ({ ...prev, [key]: typeof val === 'function' ? val(prev[key]) : val }));
-
-  // Limite de favoritos. Devolve { ok, full } para o ecrã poder avisar quando cheio.
-  const FAV_LIMIT = 16;
-  const toggleFav = (n) => {
-    const has = favorites.has(n);
-    if (!has && favorites.size >= FAV_LIMIT) return { ok: false, full: true };
-    setFavorites(prev => {
-      const next = new Set(prev);
-      next.has(n) ? next.delete(n) : next.add(n);
-      return next;
-    });
-    return { ok: true, added: !has };
-  };
 
   // When a user logs in, pre-populate profile if they already have one saved
   const handleSetUser = (u) => {
@@ -254,18 +238,16 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setFavorites(new Set()); setReadNotifIds(new Set()); setExtras([]); setFtlSnap({}); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setFtlSnap({}); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [f, r, x, fs] = await Promise.all([
-          AsyncStorage.getItem(`cp_fav_${user.id}`),
+        const [r, x, fs] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_extras_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
         ]);
         if (cancelled) return;
-        setFavorites(f ? new Set(JSON.parse(f)) : new Set());
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         setExtras(x ? JSON.parse(x) : []);
         setFtlSnap(fs ? JSON.parse(fs) : {});
@@ -276,7 +258,6 @@ export default function App() {
   }, [user?.id]);
 
   // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
-  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_fav_${user.id}`, JSON.stringify([...favorites])).catch(() => {}); }, [favorites, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ftlsnap_${user.id}`, JSON.stringify(ftlSnap)).catch(() => {}); }, [ftlSnap, user?.id]);
@@ -285,7 +266,6 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    favorites, toggleFav,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,

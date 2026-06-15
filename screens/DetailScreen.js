@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
@@ -7,10 +7,9 @@ import { CLAUSES } from '../data/clauses';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
 import Eyebrow from '../components/Eyebrow';
-import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
+import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t as T, tx, txv } from '../data/i18n';
-import { success, warning } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
@@ -150,22 +149,18 @@ const makeT = (C) => StyleSheet.create({
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function DetailScreen({ route, navigation }) {
-  const { profile, favorites, toggleFav, lang } = useContext(AppContext);
+  const { profile, lang } = useContext(AppContext);
   const C = useTheme();
   const d = makeD(C);
   const tabSpace = useTabBarSpace();
   const c = route.params?.clause;
   if (!c) return null;
 
-  const fav = favorites.has(c.number);
   const calc = CALC[c.number];
 
   return (
     <SafeAreaView style={d.safe} edges={['top']}>
-      <DetailTopBar onBack={() => navigation.goBack()} backLabel={T('common.back', lang)}
-        right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => { const r = toggleFav(c.number); if (r.full) { warning(); Alert.alert(T('detail.favFullTitle', lang), T('detail.favFullMsg', lang)); } else { success(); } }}
-          accessibilityLabel={fav ? T('detail.favRemove', lang) : T('detail.favAdd', lang)} />} />
+      <DetailTopBar onBack={() => navigation.goBack()} backLabel={T('common.back', lang)} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>{lang === 'en' ? 'Section' : 'Secção'} {sectionN(c.section)} · {tx(sectionTitle(c.section), lang)}</Text>

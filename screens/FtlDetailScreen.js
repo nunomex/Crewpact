@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, TYPE, GUTTER } from '../data/constants';
-import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
+import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
   FTL_ARTICLES, ftlSectionTitle,
@@ -11,7 +11,6 @@ import {
   FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
 import { t, tx } from '../data/i18n';
-import { success, warning } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
 // Cabeçalho de tabela com dica de scroll horizontal.
@@ -102,7 +101,7 @@ function PsvUnknownTable({ title, values, lang }) {
 }
 
 export default function FtlDetailScreen({ route, navigation }) {
-  const { lang, favorites, toggleFav } = useContext(AppContext);
+  const { lang } = useContext(AppContext);
   const C = useTheme();
   const d = makeD(C);
   const code = route.params?.code;
@@ -111,14 +110,10 @@ export default function FtlDetailScreen({ route, navigation }) {
   if (!a) return null;
 
   const body = tx(a.body, lang);
-  const fav = favorites.has(a.code);
 
   return (
     <SafeAreaView style={d.safe} edges={['top']}>
-      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)}
-        right={<RoundIconButton name={fav ? 'star' : 'star-outline'} active={fav}
-          onPress={() => { const r = toggleFav(a.code); if (r.full) { warning(); Alert.alert(t('detail.favFullTitle', lang), t('detail.favFullMsg', lang)); } else { success(); } }}
-          accessibilityLabel={fav ? t('detail.favRemove', lang) : t('detail.favAdd', lang)} />} />
+      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
         <Text style={d.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>
