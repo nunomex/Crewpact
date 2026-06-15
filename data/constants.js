@@ -1,5 +1,7 @@
 // ─── Palette ─────────────────────────────────────────────────────────────────
-export const C = {
+// Paleta clara (default). As superfícies escuras (ink) usam os tokens onDark*,
+// que são iguais nas duas paletas — por isso os cartões pretos não mudam.
+export const PALETTE_LIGHT = {
   canvas: "#FFFFFF",
   soft: "#F3F2EF",
   ink: "#191919",
@@ -26,6 +28,40 @@ export const C = {
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
 };
+
+// Paleta escura — superfícies elevadas sobre canvas, texto quase branco,
+// acentos ligeiramente mais claros para contraste. onDark* mantêm-se (as
+// superfícies ink continuam escuras nos dois modos).
+export const PALETTE_DARK = {
+  canvas: "#141414",
+  soft: "#232323",
+  ink: "#242424",
+  inkSoft: "#2E2E2E",
+  red: "#FF5547",
+  redSoft: "#3A1F1C",
+  danger: "#FF5547",
+  info: "#5B8DEF",
+  infoSoft: "#1B2A4A",
+  warn: "#F0A949",
+  warnSoft: "#3A2E1A",
+  line: "#2C2C2C",
+  text: "#F2F2F2",
+  sub: "#9A9A94",
+  subLight: "#6F6F6A",
+  onDark: "#FFFFFF",
+  onDarkSub: "rgba(255,255,255,0.6)",
+  onDarkFaint: "rgba(255,255,255,0.5)",
+  hairlineOnDark: "rgba(255,255,255,0.12)",
+  scrim: "rgba(0,0,0,0.6)",
+  green: "#2BB587",
+  greenSoft: "#14302A",
+};
+
+export const PALETTES = { light: PALETTE_LIGHT, dark: PALETTE_DARK };
+
+// Default exportado — usado por ecrãs ainda não convertidos (modo claro) e por
+// código a nível de módulo. Os ecrãs convertidos usam o hook useTheme().
+export const C = PALETTE_LIGHT;
 
 // ─── Versão dos dados ────────────────────────────────────────────────────────
 // Fonte única para a proveniência do conteúdo (evita datas soltas pelos ecrãs).

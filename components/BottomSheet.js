@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import { useTheme } from '../App';
 
 // Folha inferior partilhada (overlay + cabeçalho com título e fechar).
 // Props: visible, onClose, title, eyebrow?, maxHeight?, children.
 export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeight, closeLabel = 'Fechar', children }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   const hasEye = !!eyebrow;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -29,7 +32,7 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim },
   sheet: { backgroundColor: C.canvas, borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: SPACE.lg + 4, borderBottomWidth: 1, borderBottomColor: C.line },

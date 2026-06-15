@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
+import { C as _C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
 
 // Fração da base anual aplicável por tipo de contrato (12/12 = inteiro).
 const CONTRACT_FACTOR = { '12_12': 1, '10_12': 10 / 12, '8_12': 8 / 12, '9_3': 9.75 / 12, pt: null };
@@ -24,13 +24,15 @@ import { FTL_ARTICLES } from '../data/ftl';
 const FTL_CALC_ARTICLES = FTL_ARTICLES.filter(a => a.psv || a.limits || a.rest);
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const num = (s) => parseFloat(String(s).replace(',', '.')) || 0;
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 
 function Calc({ title, children }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   const [open, setOpen] = useState(false);
   return (
     <View style={cs.calc}>
@@ -108,6 +110,7 @@ function CalcStandby({ ns, lang }) {
 }
 
 function CalcCash({ base, factor, contractLabel, lang }) {
+  const cs = makeCs(useTheme());
   const l = L(lang);
   if (!base) return <Calc title={l('Abono para falhas', 'Cash handling allowance')}><Text style={cs.na}>{l('Depende do salário mínimo nacional.', 'Depends on the national minimum wage.')}</Text></Calc>;
   const effBase = factor != null ? base * factor : base;
@@ -139,6 +142,7 @@ function CalcLanguage({ lang }) {
 }
 
 function CalcWfly({ base, lang }) {
+  const cs = makeCs(useTheme());
   const l = L(lang);
   const [n, setN] = useState(1);
   if (!base) return <Calc title={l('Trabalho em dia de descanso (WFLY)', 'Working on a day off (WFLY)')}><Text style={cs.na}>{l('Depende do salário mínimo nacional.', 'Depends on the national minimum wage.')}</Text></Calc>;
@@ -152,6 +156,7 @@ function CalcWfly({ base, lang }) {
 }
 
 function CalcCommission({ lang }) {
+  const cs = makeCs(useTheme());
   const l = L(lang);
   const [sales, setSales] = useState(0);
   return (
@@ -184,6 +189,9 @@ function CalcCount({ lang }) {
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
   const { profile, lang } = useContext(AppContext);
+  const C = useTheme();
+  const cs = makeCs(C);
+  const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
   const rank = profile.rank || 'fa';
@@ -307,7 +315,7 @@ export default function CategoriesScreen({ navigation }) {
   );
 }
 
-const cs = StyleSheet.create({
+const makeCs = (C) => StyleSheet.create({
   calc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, backgroundColor: C.canvas },
   calcHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   calcTitle: { flex: 1, fontSize: TYPE.body, fontWeight: '600', color: C.text, paddingRight: 8 },
@@ -323,7 +331,7 @@ const cs = StyleSheet.create({
   stepInput: { textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
 });
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: 16 },
   meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.canvas },

@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
+import { C as _C, RADIUS, TYPE, GUTTER, SECTIONS, CALC, SALARY, SECTOR_TABLE, POSITIONING, PAY_NUM, RANK_ROW, BOND_REPAY, SECTOR_OPTS, STANDBY_OPTS, RANKS, DATA_VERSION } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { Stepper, Seg } from '../components/Stepper';
 import { CalcCard, ResultBlock } from '../components/CalcCard';
@@ -11,7 +11,7 @@ import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t as T, tx, txv } from '../data/i18n';
 import { success, warning } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
 const sectionN     = (id) => SECTIONS.find(s => s.id === id)?.n ?? 0;
@@ -19,6 +19,8 @@ const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maxi
 
 // ─── Calculadora (movida a partilhada: CalcCard + ResultBlock) ────────────────
 function Calculator({ calc, rank, lang }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   const ns = PAY_NUM[rank]?.ns ?? null;
   const defaultBase = PAY_NUM[rank]?.base ?? null;
   const [qty, setQty] = useState(1);
@@ -91,7 +93,7 @@ function Calculator({ calc, rank, lang }) {
   );
 }
 
-const cs = StyleSheet.create({
+const makeCs = (C) => StyleSheet.create({
   wrap: { marginTop: 20 },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
@@ -100,6 +102,8 @@ const cs = StyleSheet.create({
 
 // ─── Value / Salary / Sector / Pos Tables ────────────────────────────────────
 function ValueTable({ title, data }) {
+  const C = useTheme();
+  const t = makeT(C);
   return (
     <View style={t.wrap}>
       <Text style={t.title}>{title}</Text>
@@ -117,6 +121,8 @@ function ValueTable({ title, data }) {
   );
 }
 function PosTable() {
+  const C = useTheme();
+  const t = makeT(C);
   return (
     <View style={t.wrap}>
       <Text style={t.title}>Posicionamento · {DATA_VERSION.payRef} (€)</Text>
@@ -133,7 +139,7 @@ function PosTable() {
     </View>
   );
 }
-const t = StyleSheet.create({
+const makeT = (C) => StyleSheet.create({
   wrap: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
   title: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
   header: { flexDirection: 'row', backgroundColor: C.soft, paddingHorizontal: 10, paddingVertical: 6 },
@@ -145,6 +151,8 @@ const t = StyleSheet.create({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function DetailScreen({ route, navigation }) {
   const { profile, favorites, toggleFav, lang } = useContext(AppContext);
+  const C = useTheme();
+  const d = makeD(C);
   const tabSpace = useTabBarSpace();
   const c = route.params?.clause;
   if (!c) return null;
@@ -184,7 +192,7 @@ export default function DetailScreen({ route, navigation }) {
   );
 }
 
-const d = StyleSheet.create({
+const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },

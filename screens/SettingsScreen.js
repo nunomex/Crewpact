@@ -11,9 +11,10 @@ import { success, select } from '../data/haptics';
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION, companyContent } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
-import { AppContext } from '../App';
+import { Seg } from '../components/Stepper';
+import { AppContext, useTheme } from '../App';
 
-function Group({ title, children }) {
+function Group({ title, children, s }) {
   return (
     <View style={s.group}>
       {title ? <Eyebrow style={s.groupTitle}>{title}</Eyebrow> : null}
@@ -21,7 +22,7 @@ function Group({ title, children }) {
     </View>
   );
 }
-function Row({ label, value, onPress, last, danger }) {
+function Row({ label, value, onPress, last, danger, s, C }) {
   return (
     <TouchableOpacity onPress={onPress} style={[s.row, !last && s.rowBorder]}>
       <Text style={[s.rowLabel, danger && { color: C.red }]}>{label}</Text>
@@ -34,7 +35,9 @@ function Row({ label, value, onPress, last, danger }) {
 }
 
 export default function SettingsScreen() {
-  const { profile, setProfile, setOnboarded, user, logout, lang, setLang } = useContext(AppContext);
+  const { profile, setProfile, setOnboarded, user, logout, lang, setLang, theme, setTheme } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
 
   const [pwModal, setPwModal] = useState(false);
@@ -128,13 +131,21 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Group>
-          <Row label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} last={isFtl} />
-          {!isFtl && <Row label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />}
-          {!isFtl && <Row label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />}
+        <Group s={s}>
+          <Row s={s} C={C} label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} last={isFtl} />
+          {!isFtl && <Row s={s} C={C} label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />}
+          {!isFtl && <Row s={s} C={C} label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />}
         </Group>
 
-        <Group title={t('profile.groupContent', lang)}>
+        <Group title={t('profile.appearance', lang)} s={s}>
+          <View style={s.appearanceRow}>
+            <Seg
+              options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]}
+              value={theme} setValue={setTheme} />
+          </View>
+        </Group>
+
+        <Group title={t('profile.groupContent', lang)} s={s}>
           <View style={s.syncRow}>
             <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.ink} /></View>
             <View style={{ flex: 1 }}>
@@ -153,12 +164,12 @@ export default function SettingsScreen() {
           </View>
         </Group>
 
-        <Group title={t('profile.groupAccount', lang)}>
-          <Row label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
-          <Row label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
+        <Group title={t('profile.groupAccount', lang)} s={s}>
+          <Row s={s} C={C} label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
+          <Row s={s} C={C} label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
         </Group>
 
-        <Group title={t('profile.groupAbout', lang)}>
+        <Group title={t('profile.groupAbout', lang)} s={s}>
           <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
             <Text style={s.rowValue}>v1.0.0 · {isFtl ? 'Regulamento (UE) 83/2014' : DATA_VERSION.agreement}</Text>
@@ -231,8 +242,9 @@ export default function SettingsScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
+  appearanceRow: { padding: 12 },
   toast: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, zIndex: 50, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 20 },
   toastIcon: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
   toastTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },

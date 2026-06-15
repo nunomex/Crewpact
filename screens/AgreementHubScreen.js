@@ -2,11 +2,11 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, companyContent } from '../data/constants';
+import { C as _C, RADIUS, TYPE, companyContent } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import Eyebrow from '../components/Eyebrow';
 import { t } from '../data/i18n';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const CARDS = [
   { id: 'ae',  route: 'List', code: { pt: 'AE', en: 'CLA' }, eyebrow: 'hub.aeEyebrow', title: 'hub.aeTitle', sub: 'hub.aeSub', icon: 'document-text-outline' },
@@ -15,6 +15,8 @@ const CARDS = [
 
 export default function AgreementHubScreen({ navigation }) {
   const { lang, profile } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   // Mostra só o conteúdo disponível para a companhia (AE ou FTL).
   const content = companyContent(profile.company);
   const cards = CARDS.filter(c => (content === 'ftl' ? c.id === 'ftl' : c.id === 'ae'));
@@ -43,7 +45,7 @@ export default function AgreementHubScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   cards: { paddingHorizontal: 16, gap: 12, paddingTop: 4 },
   card: { borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 18, backgroundColor: C.canvas },

@@ -2,14 +2,14 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES } from '../data/ftl';
 import { openFtlPdf } from '../data/ftlPdf';
 import { t, tx } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest);
 
@@ -17,6 +17,8 @@ const hasCalc = (a) => !!(a.psv || a.limits || a.rest);
 // As calculadoras interativas vivem no separador Cálculos.
 export default function FtlScreen({ navigation }) {
   const { lang } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const articles = FTL_ARTICLES.filter(hasCalc);
 
@@ -65,7 +67,7 @@ export default function FtlScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   regBadge: { backgroundColor: C.hairlineOnDark, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   regTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },

@@ -8,14 +8,14 @@ Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.maxFontSizeMultiplier = 1.3;
 TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import { C, RADIUS, companyContent } from './data/constants';
+import { C, RADIUS, companyContent, PALETTES } from './data/constants';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
@@ -37,6 +37,11 @@ const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 export const AppContext = React.createContext(null);
+
+// Paleta ativa (modo claro/escuro). Ecrãs convertidos fazem `const C = useTheme()`
+// — isso ensombra o import estático `C`, por isso tanto os estilos como as cores
+// inline passam a usar a paleta do tema.
+export const useTheme = () => useContext(AppContext)?.palette || PALETTES.light;
 
 function HomeStack() {
   return (
@@ -74,6 +79,7 @@ function CalcStack() {
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const { lang, profile } = useContext(AppContext);
+  const C = useTheme();
   const content = companyContent(profile.company); // 'ae' | 'ftl'
   const isFtl = content === 'ftl';
   const labels = {
@@ -94,7 +100,7 @@ function MainTabs() {
           bottom: Math.max(insets.bottom, 12),
           height: 66,
           borderRadius: RADIUS.xxl,
-          backgroundColor: 'rgba(255,255,255,0.98)',
+          backgroundColor: C.canvas,
           borderTopWidth: 0,
           borderWidth: 1,
           borderColor: C.line,
@@ -141,6 +147,7 @@ export default function App() {
 
   const [favorites, setFavorites]       = useState(new Set());
   const [lang, setLang]                 = useState('pt');
+  const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
   const [ftlSnap, setFtlSnap]           = useState({}); // último cálculo FTL: { psv, rest }
@@ -230,6 +237,19 @@ export default function App() {
   }, []);
   useEffect(() => { if (langHydrated.current) AsyncStorage.setItem('cp_lang', lang).catch(() => {}); }, [lang]);
 
+  // Tema (claro/escuro) — preferência global do dispositivo, como o idioma.
+  const themeHydrated = useRef(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem('cp_theme');
+        if (saved === 'light' || saved === 'dark') setTheme(saved);
+      } catch { /* mantém o default 'light' */ }
+      themeHydrated.current = true;
+    })();
+  }, []);
+  useEffect(() => { if (themeHydrated.current) AsyncStorage.setItem('cp_theme', theme).catch(() => {}); }, [theme]);
+
   // Favoritos / notificações lidas são guardados POR UTILIZADOR no telemóvel.
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
@@ -267,6 +287,7 @@ export default function App() {
     profile, setProfile,
     favorites, toggleFav,
     lang, setLang,
+    theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,
     extras, addExtra, removeExtra,
     ftlSnap, updateFtlSnap,
@@ -285,10 +306,17 @@ export default function App() {
     return <MainTabs />;
   };
 
+  const palette = PALETTES[theme] || PALETTES.light;
+  const navTheme = {
+    ...DefaultTheme,
+    dark: theme === 'dark',
+    colors: { ...DefaultTheme.colors, background: palette.canvas, card: palette.canvas, text: palette.text, border: palette.line, primary: palette.ink },
+  };
+
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
-        <NavigationContainer>
+        <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
       </AppContext.Provider>

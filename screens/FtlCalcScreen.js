@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, GUTTER } from '../data/constants';
+import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
 import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
@@ -11,7 +11,7 @@ import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { monthKey } from '../data/extras';
 import { t, tx } from '../data/i18n';
 import { success } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 
@@ -20,6 +20,8 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 // cartões na aba Cálculos. "Confirmar" envia o cálculo para o cartão do Início.
 export default function FtlCalcScreen({ route, navigation }) {
   const { lang, addExtra, updateFtlSnap } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
   const a = FTL_ARTICLES.find(x => x.code === route.params?.code);
@@ -99,7 +101,7 @@ export default function FtlCalcScreen({ route, navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },

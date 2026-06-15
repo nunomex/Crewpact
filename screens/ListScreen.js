@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, TYPE, SECTIONS, CALC } from '../data/constants';
+import { C as _C, TYPE, SECTIONS, CALC } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import SearchBar from '../components/SearchBar';
 import { Chip, ChipRow } from '../components/Chip';
@@ -10,7 +10,7 @@ import { SectionHeader, ListRow, EmptyState } from '../components/SectionAccordi
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { CLAUSES } from '../data/clauses';
 import { t, tx } from '../data/i18n';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
 const sectionN     = (id) => SECTIONS.find(s => s.id === id)?.n ?? 0;
@@ -23,6 +23,8 @@ const isApplicable = (cl, profile) => {
 
 export default function ListScreen({ navigation, route }) {
   const { profile, lang } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const [query, setQuery]           = useState('');
   const [activeSection, setSection] = useState('all');
@@ -103,7 +105,7 @@ export default function ListScreen({ navigation, route }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, marginBottom: 8 },
   legendTxt: { fontSize: TYPE.micro, color: C.sub },

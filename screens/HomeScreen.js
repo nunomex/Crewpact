@@ -15,7 +15,7 @@ import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { success, select } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 // "11:30" → 11.5 (horas decimais).
 const hhmmToH = (s) => {
@@ -29,7 +29,7 @@ const barColor = (ratio) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.gr
 
 // Barra com preenchimento animado (0 → valor) sempre que o rácio muda — dá a
 // sensação de "encher" ao abrir o Início depois de registar nos Cálculos.
-function AnimatedBar({ ratio, color }) {
+function AnimatedBar({ ratio, color, s }) {
   const w = useRef(new Animated.Value(0)).current;
   const target = Math.max(0, Math.min(1, ratio || 0));
   useEffect(() => {
@@ -45,7 +45,7 @@ function AnimatedBar({ ratio, color }) {
 
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
-function RestBar({ label, value, floor, lang }) {
+function RestBar({ label, value, floor, lang, s }) {
   const over = value > floor;
   const fill = floor ? Math.min(1, value / floor) : 0;
   return (
@@ -54,7 +54,7 @@ function RestBar({ label, value, floor, lang }) {
         <Text style={s.progLbl}>{label}</Text>
         <Text style={s.progVal}>{fmtVal(value, 'h')}</Text>
       </View>
-      <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} />
+      <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00` : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
@@ -63,7 +63,7 @@ function RestBar({ label, value, floor, lang }) {
 }
 
 // Barra de limite (FTL) — feito / limite, com horas em falta.
-function ProgressRow({ label, done, limit, lang }) {
+function ProgressRow({ label, done, limit, lang, s }) {
   const ratio = limit ? done / limit : 0;
   const fill = Math.min(1, ratio);
   const over = done > limit;
@@ -74,7 +74,7 @@ function ProgressRow({ label, done, limit, lang }) {
         <Text style={s.progLbl}>{label}</Text>
         <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
       </View>
-      <AnimatedBar ratio={fill} color={barColor(ratio)} />
+      <AnimatedBar ratio={fill} color={barColor(ratio)} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
       </Text>
@@ -87,6 +87,8 @@ export default function HomeScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const slideW = width - 64; // largura interna do cartão (scroll 16 + card 16, cada lado)
   const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
 
@@ -211,7 +213,7 @@ export default function HomeScreen({ navigation }) {
                           <Text style={s.progLbl}>{t('home.psvMaxLbl', lang)}</Text>
                           <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
                         </View>
-                        <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} />
+                        <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} s={s} />
                         <Text style={s.progFoot}>máx. 13:00</Text>
                       </View>
                     </>
@@ -231,15 +233,15 @@ export default function HomeScreen({ navigation }) {
                     value={limCat} setValue={setLimCat} dark />
                   {(LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
                     <ProgressRow key={`${limCat}${r.days}`} label={r.label}
-                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} />
+                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} />
                   ))}
                 </View>
 
                 {/* Slide 3 — Repouso mínimo (235) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
-                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base ?? 12} floor={12} lang={lang} />
-                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away ?? 10} floor={10} lang={lang} />
+                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base ?? 12} floor={12} lang={lang} s={s} />
+                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away ?? 10} floor={10} lang={lang} s={s} />
                   <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
                 </View>
               </ScrollView>
@@ -401,7 +403,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 

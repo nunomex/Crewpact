@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { RADIUS, TYPE } from '../data/constants';
+import { useTheme } from '../App';
 
 // Cabeçalho de secção (acordeão) — AE e FTL.
 export function SectionHeader({ badge, title, count, open, onPress }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   return (
     <TouchableOpacity style={[s.secHeader, open && s.secHeaderOpen]} activeOpacity={0.7} onPress={onPress}>
       <View style={s.secBadge}><Text style={s.secBadgeTxt}>{badge}</Text></View>
@@ -17,6 +20,8 @@ export function SectionHeader({ badge, title, count, open, onPress }) {
 
 // Linha de item — badge à esquerda, título + subtítulo, ícones opcionais (calc / aplicável).
 export function ListRow({ badge, badgeWide, title, sub, subUpper, calc, mine, mineLabel = 'Aplicável à tua categoria', onPress }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   return (
     <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={onPress}>
       <View style={[s.badgeBox, badgeWide && s.badgeBoxWide]}><Text style={s.badgeTxt}>{badge}</Text></View>
@@ -26,16 +31,18 @@ export function ListRow({ badge, badgeWide, title, sub, subUpper, calc, mine, mi
       </View>
       {calc && <Ionicons name="calculator-outline" size={14} color={C.sub} />}
       {mine && <Ionicons name="person-circle" size={16} color={C.info} accessibilityLabel={mineLabel} />}
-      <Ionicons name="chevron-forward" size={16} color={C.line} />
+      <Ionicons name="chevron-forward" size={16} color={C.sub} />
     </TouchableOpacity>
   );
 }
 
 export function EmptyState({ text }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   return <View style={s.empty}><Text style={s.emptyTxt}>{text}</Text></View>;
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },

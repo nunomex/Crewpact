@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { tap, select } from '../data/haptics';
+import { useTheme } from '../App';
 
 // Stepper numérico (− valor +) e seletor segmentado, partilhados pelas calculadoras.
 export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
+  const C = useTheme();
+  const st = makeSt(C);
   const clamp = (n) => Math.max(min, Math.min(max, n));
   return (
     <View style={st.stepRow}>
@@ -22,6 +25,8 @@ export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
 
 // `dark` — variante para fundos escuros (ex.: cartão do Início).
 export function Seg({ options, value, setValue, dark }) {
+  const C = useTheme();
+  const st = makeSt(C);
   return (
     <View style={st.segWrap}>
       {options.map(o => {
@@ -38,7 +43,7 @@ export function Seg({ options, value, setValue, dark }) {
   );
 }
 
-const st = StyleSheet.create({
+const makeSt = (C) => StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
   stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },

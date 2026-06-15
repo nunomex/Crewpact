@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -14,12 +14,14 @@ import {
 } from '../data/auth';
 import { t } from '../data/i18n';
 import { success, warning, select } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 /* ─── Field ──────────────────────────────────────────────────────────────── */
 function Field({ value, onChangeText, placeholder, error, secure,
   autoCapitalize = 'none', keyboardType = 'default',
   returnKeyType = 'next', onSubmitEditing, inputRef, icon, autoFocus }) {
+  const C = useTheme();
+  const f = makeF(C);
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   return (
@@ -53,7 +55,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
     </View>
   );
 }
-const f = StyleSheet.create({
+const makeF = (C) => StyleSheet.create({
   wrap:       { marginBottom: SPACE.md },
   box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
   boxFocused: { backgroundColor: C.canvas, borderColor: C.ink },
@@ -66,6 +68,8 @@ const f = StyleSheet.create({
 
 /* ─── StrengthBar ────────────────────────────────────────────────────────── */
 function StrengthBar({ password, lang }) {
+  const C = useTheme();
+  const sb = makeSb(C);
   const checks = [
     { label: t('st.8', lang),       ok: password.length >= 8 },
     { label: t('st.upper', lang),   ok: /[A-Z]/.test(password) },
@@ -93,7 +97,7 @@ function StrengthBar({ password, lang }) {
     </View>
   );
 }
-const sb = StyleSheet.create({
+const makeSb = (C) => StyleSheet.create({
   wrap:    { marginBottom: SPACE.md, marginTop: -4 },
   bars:    { flexDirection: 'row', gap: SPACE.xs, marginBottom: 6 },
   bar:     { flex: 1, height: 3, borderRadius: RADIUS.pill },
@@ -104,6 +108,8 @@ const sb = StyleSheet.create({
 
 /* ─── OTP Input ──────────────────────────────────────────────────────────── */
 function OTPInput({ value, onChange }) {
+  const C = useTheme();
+  const otp = makeOtp(C);
   const ref = useRef();
   const digits = Array(8).fill('').map((_, i) => value[i] || '');
   return (
@@ -130,7 +136,7 @@ function OTPInput({ value, onChange }) {
     </TouchableOpacity>
   );
 }
-const otp = StyleSheet.create({
+const makeOtp = (C) => StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxActive:{ backgroundColor: C.canvas, borderColor: C.ink },
@@ -142,6 +148,8 @@ const otp = StyleSheet.create({
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
   const { setUser, suppressAuth, lang, setLang } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeS(C);
   const insets = useSafeAreaInsets();
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
@@ -497,7 +505,7 @@ export default function LoginScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (C) => StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
   langRow:      { position: 'absolute', right: SPACE.lg, zIndex: 20, flexDirection: 'row', gap: SPACE.sm },
   langDot:      { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },

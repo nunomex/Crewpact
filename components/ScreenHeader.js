@@ -1,13 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import { useTheme } from '../App';
 
 // Cabeçalho "blob" preto reutilizado em todos os ecrãs.
 // Props: eyebrow, title, badge (elemento antes do título), onBack (seta),
 //        right (slot à direita), style.
 export default function ScreenHeader({ eyebrow, title, badge, onBack, right, style, backLabel = 'Voltar' }) {
+  const C = useTheme();
+  const h = makeH(C);
   return (
     <View style={[h.blob, style]}>
       {onBack && (
@@ -31,7 +34,7 @@ export default function ScreenHeader({ eyebrow, title, badge, onBack, right, sty
   );
 }
 
-const h = StyleSheet.create({
+const makeH = (C) => StyleSheet.create({
   blob: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: SPACE.lg, marginBottom: SPACE.md, padding: SPACE.lg },
   back: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },

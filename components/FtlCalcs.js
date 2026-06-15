@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM } from '../data/ftl';
 import { t } from '../data/i18n';
+import { useTheme } from '../App';
 
 // Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
 function RegisterBtn({ lang, disabled, onPress }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled} style={[cs.regBtn, disabled && { opacity: 0.4 }]} activeOpacity={0.85}>
       <Ionicons name="add-circle-outline" size={16} color="#fff" />
@@ -23,6 +26,8 @@ function RegisterBtn({ lang, disabled, onPress }) {
 // e Quadro 4 (desconhecido com SGRF/FRM). A 1.ª coluna cobre "1–2" setores, por
 // isso a coluna = setores − 2 (com mínimo 0).
 export function PsvCalc({ lang, onRegister, collapsible }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);
   const [sectors, setSectors] = useState(2);
@@ -79,6 +84,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
 
 // Limites de serviço / voo.
 export function LimitsCalc({ lang, onRegister, collapsible }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   const days = t('ftl.days', lang);
   const LIM_DUTY = [{ id: '7', label: `7 ${days}`, v: 60 }, { id: '14', label: `14 ${days}`, v: 110 }, { id: '28', label: `28 ${days}`, v: 190 }];
   const LIM_FLIGHT = [{ id: '28', label: `28 ${days}`, v: 100 }, { id: 'ano', label: t('ftl.year', lang), v: 900 }, { id: '12m', label: `12 ${t('ftl.months', lang)}`, v: 1000 }];
@@ -107,6 +114,8 @@ export function LimitsCalc({ lang, onRegister, collapsible }) {
 // Repouso mínimo. Na base e fora da base são cálculos separados — escolhe o
 // local, introduz o serviço anterior desse turno e regista só esse valor.
 export function RestCalc({ lang, collapsible, onRegister }) {
+  const C = useTheme();
+  const cs = makeCs(C);
   const [place, setPlace] = useState('base');
   const [prev, setPrev] = useState(10);
   const floor = place === 'base' ? 12 : 10;
@@ -126,7 +135,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   );
 }
 
-const cs = StyleSheet.create({
+const makeCs = (C) => StyleSheet.create({
   wrap: { marginBottom: 10 },
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
   chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },

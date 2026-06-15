@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS } from '../data/constants';
+import { C as _C, RADIUS } from '../data/constants';
+import { useTheme } from '../App';
 
 // Botão circular de ícone (voltar / favorito) reutilizável.
 export function RoundIconButton({ name, size = 18, onPress, active, accessibilityLabel }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   return (
     <TouchableOpacity onPress={onPress} hitSlop={8} accessibilityLabel={accessibilityLabel}
       style={[s.iconBtn, active && { backgroundColor: C.red }]}>
@@ -15,6 +18,8 @@ export function RoundIconButton({ name, size = 18, onPress, active, accessibilit
 
 // Barra superior dos ecrãs de detalhe (voltar à esquerda, slot opcional à direita).
 export default function DetailTopBar({ onBack, right, backLabel = 'Voltar' }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   return (
     <View style={s.bar}>
       <TouchableOpacity onPress={onBack} style={s.iconBtn} hitSlop={8} accessibilityLabel={backLabel}>
@@ -25,7 +30,7 @@ export default function DetailTopBar({ onBack, right, backLabel = 'Voltar' }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   bar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
   iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
 });

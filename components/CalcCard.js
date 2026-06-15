@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C as _C, RADIUS, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import { useTheme } from '../App';
 
 // Invólucro de calculadora. Por defeito estático (eyebrow + caixa).
 // Com `collapsible`, vira acordeão (fechado se `defaultOpen={false}`).
 export function CalcCard({ title = 'CALCULADORA', children, style, collapsible = false, defaultOpen = true }) {
+  const C = useTheme();
+  const c = makeC(C);
   const [open, setOpen] = useState(defaultOpen);
   if (collapsible) {
     return (
@@ -34,6 +37,8 @@ export function CalcCard({ title = 'CALCULADORA', children, style, collapsible =
 // Bloco de resultado (caixa preta, número a vermelho).
 // API flexível: `lines` (multi-linha [{label,val}]) OU `label`+`value` (linha única).
 export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = TYPE.display }) {
+  const C = useTheme();
+  const c = makeC(C);
   const data = lines || [{ label, val: value }];
   return (
     <View style={c.result}>
@@ -48,7 +53,7 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
   );
 }
 
-const c = StyleSheet.create({
+const makeC = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   acc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: C.canvas },

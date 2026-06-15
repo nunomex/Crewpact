@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import { useTheme } from '../App';
 
 // Diálogo centrado (popup) — visual de alerta. API igual ao BottomSheet:
 // Props: visible, onClose, title, eyebrow?, closeLabel?, children.
 // Envolto em KeyboardAvoidingView para que formulários (ex.: palavra-passe)
 // não fiquem por baixo do teclado.
 export default function CenterDialog({ visible, onClose, title, eyebrow, closeLabel = 'Fechar', children }) {
+  const C = useTheme();
+  const s = makeStyles(C);
   const hasEye = !!eyebrow;
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -31,7 +34,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 4 },
   card: { width: '100%', maxWidth: 420, maxHeight: '80%', backgroundColor: C.canvas, borderRadius: RADIUS.xxl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 16 },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: SPACE.lg + 4, borderBottomWidth: 1, borderBottomColor: C.line },

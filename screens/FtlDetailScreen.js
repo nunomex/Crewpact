@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, TYPE, GUTTER } from '../data/constants';
+import { C as _C, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
@@ -12,10 +12,11 @@ import {
 } from '../data/ftl';
 import { t, tx } from '../data/i18n';
 import { success, warning } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 // Cabeçalho de tabela com dica de scroll horizontal.
 function TableTitle({ children }) {
+  const tb = makeTb(useTheme());
   return (
     <View style={tb.titleBar}>
       <Text style={tb.blockTitle}>{children}</Text>
@@ -26,6 +27,8 @@ function TableTitle({ children }) {
 
 // ─── Quadro 1 · estado de aclimatação ────────────────────────────────────────
 function Table1({ lang }) {
+  const C = useTheme();
+  const tb = makeTb(C);
   return (
     <View style={tb.block}>
       <TableTitle>{t('ftl.table1', lang)}</TableTitle>
@@ -54,6 +57,7 @@ function Table1({ lang }) {
 
 // ─── Tabela PSV (aclimatados) — scroll horizontal ────────────────────────────
 function PsvTable({ lang }) {
+  const tb = makeTb(useTheme());
   return (
     <View style={tb.block}>
       <TableTitle>{t('ftl.table2', lang)}</TableTitle>
@@ -77,6 +81,7 @@ function PsvTable({ lang }) {
 }
 
 function PsvUnknownTable({ title, values, lang }) {
+  const tb = makeTb(useTheme());
   return (
     <View style={tb.block}>
       <TableTitle>{title}</TableTitle>
@@ -98,6 +103,8 @@ function PsvUnknownTable({ title, values, lang }) {
 
 export default function FtlDetailScreen({ route, navigation }) {
   const { lang, favorites, toggleFav } = useContext(AppContext);
+  const C = useTheme();
+  const d = makeD(C);
   const code = route.params?.code;
   const a = FTL_ARTICLES.find(x => x.code === code);
   const tabSpace = useTabBarSpace();
@@ -174,7 +181,7 @@ export default function FtlDetailScreen({ route, navigation }) {
   );
 }
 
-const tb = StyleSheet.create({
+const makeTb = (C) => StyleSheet.create({
   block: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
   titleBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, paddingHorizontal: 10, paddingVertical: 10 },
   blockTitle: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
@@ -192,7 +199,7 @@ const tb = StyleSheet.create({
   legendAxis: { fontSize: 11, color: C.sub, lineHeight: 17, marginTop: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
 });
 
-const d = StyleSheet.create({
+const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },

@@ -2,14 +2,16 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, TYPE, COMPANIES, RANKS, CONTRACTS, companyContent } from '../data/constants';
-import { AppContext } from '../App';
+import { C as _C, TYPE, COMPANIES, RANKS, CONTRACTS, companyContent } from '../data/constants';
+import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { t, txv } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
   const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
+  const C = useTheme();
+  const styles = makeStyles(C);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ company: null, rank: null, contract: null });
   const [saving, setSaving] = useState(false);
@@ -99,7 +101,7 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   header: { paddingHorizontal: 24, paddingTop: 16 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 },

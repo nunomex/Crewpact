@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, CALC_SHORTCUTS, SECTIONS } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, CALC_SHORTCUTS, SECTIONS } from '../data/constants';
 import { CLAUSES } from '../data/clauses';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import SearchBar from '../components/SearchBar';
@@ -10,12 +10,14 @@ import { Chip, ChipRow } from '../components/Chip';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx } from '../data/i18n';
 import { warning } from '../data/haptics';
-import { AppContext } from '../App';
+import { AppContext, useTheme } from '../App';
 
 const sectionTitle = (id) => SECTIONS.find(s => s.id === id)?.title ?? '';
 
 export default function FavoritesScreen({ navigation }) {
   const { favorites, toggleFav, lang } = useContext(AppContext);
+  const C = useTheme();
+  const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const [query, setQuery]   = useState('');
   const [filter, setFilter] = useState('all'); // all | calc | art | ae | ftl
@@ -122,7 +124,7 @@ export default function FavoritesScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ paddingHorizontal: SPACE.lg, paddingBottom: tabSpace }}>
         {list.length === 0 ? (
           <View style={s.empty}>
-            <Ionicons name="star-outline" size={22} color={C.line} />
+            <Ionicons name="star-outline" size={22} color={C.sub} />
             <Text style={s.emptyTxt}>{t('fav.empty', lang)}</Text>
           </View>
         ) : list.map(item => (
@@ -140,7 +142,7 @@ export default function FavoritesScreen({ navigation }) {
             ) : (
               <>
                 <Ionicons name="star" size={18} color={C.red} />
-                <Ionicons name="chevron-forward" size={16} color={C.line} />
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
               </>
             )}
           </TouchableOpacity>
@@ -150,7 +152,7 @@ export default function FavoritesScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   header: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingTop: 4, paddingBottom: SPACE.md },
   iconBtn: { width: 38, height: 38, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
