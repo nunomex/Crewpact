@@ -2,26 +2,24 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, RANKS, CONTRACTS, PROFILE_PAY, CALC_SHORTCUTS } from '../data/constants';
+import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
   EXTRA_CATEGORIES, catLabel, catIcon, fmtEur,
   monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange,
 } from '../data/extras';
-import Card from '../components/Card';
+import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t, txv } from '../data/i18n';
+import { t } from '../data/i18n';
 import { success, select } from '../data/haptics';
 import { AppContext } from '../App';
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { user, profile, lang, readNotifIds, setReadNotifIds, extras, addExtra } = useContext(AppContext);
-  const rankObj  = RANKS.find(r => r.id === profile.rank);
-  const contract = CONTRACTS.find(c => c.id === profile.contract);
-  const pay      = PROFILE_PAY[profile.rank] || {};
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra } = useContext(AppContext);
+  const company  = COMPANIES.find(c => c.id === profile.company);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
@@ -31,12 +29,6 @@ export default function HomeScreen({ navigation }) {
 
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
-  const firstName = (user?.name || '').trim().split(' ')[0];
-
-  // Pílula de contrato (código + tipo).
-  const ccode = profile.contract && profile.contract.includes('_') ? profile.contract.replace('_', '/') : '';
-  const clabelFull = txv(contract?.label, lang) || '';
-  const ctype = clabelFull.replace(/\s*\(.*\)\s*/, '').trim();
 
   // ── Extras do mês ──
   const curKey   = monthKey();
@@ -81,36 +73,18 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Cabeçalho */}
-        <View style={s.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.brand}>CrewPact</Text>
-            <Text style={s.greeting}>{t('home.greeting', lang)}{firstName ? `, ${firstName}` : ''} 👋</Text>
-          </View>
-          <TouchableOpacity style={s.bell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-            <Ionicons name="notifications-outline" size={24} color={C.ink} />
-            {unread > 0 && <View style={s.bellDot} />}
-          </TouchableOpacity>
-        </View>
-
-        {/* Remuneração base */}
-        <Card style={{ marginBottom: SPACE.md }}>
-          <View style={s.baseTop}>
-            <Text style={s.baseEyebrow}>{t('home.baseEyebrow', lang)}</Text>
-            {contract && (
-              <View style={s.contractPill}>
-                {ccode ? <Text style={s.contractCode}>{ccode}</Text> : null}
-                <Text style={s.contractType}>{ctype}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={s.baseValue}>{pay.base || '—'}</Text>
-          <Text style={s.baseRank}>{txv(rankObj?.label, lang)}</Text>
-          <TouchableOpacity style={s.detailsBtn} onPress={goCalc} activeOpacity={0.8}>
-            <Text style={s.detailsTxt}>{t('home.seeDetails', lang)}</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.ink} />
-          </TouchableOpacity>
-        </Card>
+        {/* Cabeçalho (blob preto) */}
+        <ScreenHeader
+          eyebrow={t('home.eyebrow', lang)}
+          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
+          title={company?.name}
+          style={{ margin: 0, marginBottom: SPACE.md }}
+          right={
+            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+              <Ionicons name="notifications" size={18} color={C.onDark} />
+              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+            </TouchableOpacity>
+          } />
 
         {/* Este mês — extras */}
         <View style={s.monthCard}>
@@ -281,22 +255,11 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACE.lg, marginTop: 4 },
-  brand: { fontSize: TYPE.hero, fontWeight: '700', letterSpacing: -0.5, color: C.text },
-  greeting: { fontSize: TYPE.value, color: C.sub, marginTop: 2 },
-  bell: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  bellDot: { position: 'absolute', top: 8, right: 9, width: 9, height: 9, borderRadius: 99, backgroundColor: C.red, borderWidth: 1.5, borderColor: C.canvas },
-
-  // Remuneração base
-  baseTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  baseEyebrow: { flex: 1, fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginTop: 4 },
-  contractPill: { backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center' },
-  contractCode: { fontSize: TYPE.value, fontWeight: '700', color: C.text },
-  contractType: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
-  baseValue: { fontSize: 32, fontWeight: '300', letterSpacing: -1, color: C.text, marginTop: 10 },
-  baseRank: { fontSize: TYPE.value, fontWeight: '500', color: C.text, marginTop: 4 },
-  detailsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9, marginTop: 14 },
-  detailsTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
+  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
+  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
+  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
 
   // Este mês (extras)
   monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },

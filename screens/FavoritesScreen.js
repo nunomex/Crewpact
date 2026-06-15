@@ -19,7 +19,15 @@ export default function FavoritesScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const [query, setQuery]   = useState('');
   const [filter, setFilter] = useState('all'); // all | calc | art | ae | ftl
+  const [sort, setSort]     = useState('recent'); // recent | name
   const [editing, setEditing] = useState(false);
+
+  // Ordem de inserção do Set = ordem em que foram adicionados (o último é o mais recente).
+  const favRank = useMemo(() => {
+    const m = new Map();
+    [...favorites].forEach((k, i) => m.set(k, i));
+    return m;
+  }, [favorites]);
 
   const items = useMemo(() => {
     const clausePrefix = lang === 'en' ? 'Clause' : 'Cláusula';
@@ -44,16 +52,29 @@ export default function FavoritesScreen({ navigation }) {
   }, [favorites, lang, navigation]);
 
   const list = useMemo(() => {
-    let arr;
-    if (filter === 'calc') arr = items.calc;
-    else if (filter === 'ae') arr = items.ae;
-    else if (filter === 'ftl') arr = items.ftl;
-    else if (filter === 'art') arr = [...items.ae, ...items.ftl];
-    else arr = [...items.calc, ...items.ae, ...items.ftl];
+    const showCalc = filter === 'all' || filter === 'calc';
+    const showAe   = filter === 'all' || filter === 'art' || filter === 'ae';
+    const showFtl  = filter === 'all' || filter === 'art' || filter === 'ftl';
+
+    let calc = showCalc ? [...items.calc] : [];
+    let law = [];
+    if (showAe) law.push(...items.ae);
+    if (showFtl) law.push(...items.ftl);
+
+    if (sort === 'name') {
+      const byName = (a, b) => a.title.localeCompare(b.title);
+      calc.sort(byName); law.sort(byName);
+    } else {
+      // Recentes: cláusulas/artigos por ordem de adição (mais recente primeiro);
+      // atalhos de calculadora ficam à frente, na sua ordem fixa.
+      law.sort((a, b) => (favRank.get(b.favKey) ?? -1) - (favRank.get(a.favKey) ?? -1));
+    }
+
+    let arr = [...calc, ...law];
     const q = query.trim().toLowerCase();
-    if (!q) return arr;
-    return arr.filter(i => `${i.title} ${i.sub}`.toLowerCase().includes(q));
-  }, [items, filter, query]);
+    if (q) arr = arr.filter(i => `${i.title} ${i.sub}`.toLowerCase().includes(q));
+    return arr;
+  }, [items, filter, query, sort, favRank]);
 
   const remove = (item) => { warning(); toggleFav(item.favKey); };
 
@@ -89,7 +110,14 @@ export default function FavoritesScreen({ navigation }) {
         ))}
       </ChipRow>
 
-      <Text style={s.count}>{list.length} {t('fav.count', lang)}</Text>
+      <View style={s.countRow}>
+        <Text style={s.count}>{list.length} {t('fav.count', lang)}</Text>
+        <TouchableOpacity style={s.sortBtn} onPress={() => setSort(p => (p === 'recent' ? 'name' : 'recent'))} hitSlop={8}>
+          <Text style={s.sortLbl}>{t('fav.sort', lang)}: </Text>
+          <Text style={s.sortVal}>{sort === 'recent' ? t('fav.sortRecent', lang) : t('fav.sortName', lang)}</Text>
+          <Ionicons name="chevron-down" size={13} color={C.ink} />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: SPACE.lg, paddingBottom: tabSpace }}>
         {list.length === 0 ? (
@@ -130,7 +158,11 @@ const s = StyleSheet.create({
   subtitle: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
   editBtn: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 14, height: 38, justifyContent: 'center' },
   editTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
-  count: { fontSize: TYPE.label, color: C.sub, paddingHorizontal: SPACE.lg, marginBottom: SPACE.sm },
+  countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACE.lg, marginBottom: SPACE.sm },
+  count: { fontSize: TYPE.label, color: C.sub },
+  sortBtn: { flexDirection: 'row', alignItems: 'center' },
+  sortLbl: { fontSize: TYPE.label, color: C.sub },
+  sortVal: { fontSize: TYPE.label, fontWeight: '700', color: C.ink, marginRight: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.canvas },
   rowIcon: { width: 48, height: 48, borderRadius: RADIUS.md, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
