@@ -1,24 +1,15 @@
-// PDF do Regulamento (UE) 83/2014 incluído na app para acesso offline.
-// Para atualizar, substitui o ficheiro em assets/ftl/ mantendo o mesmo nome
-// (a verificação de conteúdo no Perfil cobre estas atualizações da app).
-import { Asset } from 'expo-asset';
-import * as Sharing from 'expo-sharing';
+// PDF do Regulamento (UE) 83/2014 — aberto por URL (compatível com Expo Snack;
+// não embutimos o binário no repositório). Troca o URL abaixo pelo link que
+// preferires (EUR-Lex ou um PDF teu alojado).
 import { Linking } from 'react-native';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const FTL_PDF = require('../assets/ftl/regulamento-ue-83-2014.pdf');
+export const FTL_PDF_URL =
+  'https://eur-lex.europa.eu/legal-content/PT/TXT/PDF/?uri=CELEX:32014R0083';
 
-// Abre o PDF localmente (offline). Devolve true se conseguiu abrir.
+// Abre o PDF no navegador/visualizador do dispositivo. Devolve true se abriu.
 export async function openFtlPdf() {
   try {
-    const asset = Asset.fromModule(FTL_PDF);
-    await asset.downloadAsync(); // copia do bundle para o cache local (offline)
-    const uri = asset.localUri || asset.uri;
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
-    } else {
-      await Linking.openURL(uri);
-    }
+    await Linking.openURL(FTL_PDF_URL);
     return true;
   } catch (e) {
     return false;
