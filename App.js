@@ -21,6 +21,7 @@ import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
 import FtlScreen          from './screens/FtlScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
+import FtlCalcScreen      from './screens/FtlCalcScreen';
 import CategoriesScreen   from './screens/CategoriesScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 
@@ -55,8 +56,9 @@ function AgreementStack() {
 function CalcStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Calc"   component={CategoriesScreen} />
-      <Stack.Screen name="Detail" component={DetailScreen} />
+      <Stack.Screen name="Calc"    component={CategoriesScreen} />
+      <Stack.Screen name="FtlCalc" component={FtlCalcScreen} />
+      <Stack.Screen name="Detail"  component={DetailScreen} />
     </Stack.Navigator>
   );
 }

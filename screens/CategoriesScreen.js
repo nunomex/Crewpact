@@ -18,16 +18,12 @@ import { CLAUSES } from '../data/clauses';
 import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
-import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
-import CenterDialog from '../components/CenterDialog';
 import { FTL_ARTICLES } from '../data/ftl';
-import { monthKey } from '../data/extras';
 
 // Artigos calculáveis (205/210/235) → calculadora respetiva.
 const FTL_CALC_ARTICLES = FTL_ARTICLES.filter(a => a.psv || a.limits || a.rest);
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
-import { success } from '../data/haptics';
 import { AppContext } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -187,7 +183,7 @@ function CalcCount({ lang }) {
 
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
-  const { profile, lang, addExtra, updateFtlSnap } = useContext(AppContext);
+  const { profile, lang } = useContext(AppContext);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
   const rank = profile.rank || 'fa';
@@ -209,80 +205,9 @@ export default function CategoriesScreen({ navigation }) {
     if (clause) navigation.navigate('Detail', { clause }); // local à stack de Cálculos
   };
 
-  // Companhias FTL: o separador Cálculos mostra as calculadoras FTL.
-  // "Confirmar" abre um popup; a confirmação envia o cálculo para o cartão do Início.
+  // Companhias FTL: o separador Cálculos lista os artigos calculáveis como
+  // cartões de consulta; tocar abre a calculadora (ecrã FtlCalc).
   const isFtl = companyContent(profile.company) === 'ftl';
-  const [pending, setPending] = useState(null); // payload aguardando confirmação
-  const [openCalc, setOpenCalc] = useState(null); // artigo cuja calculadora está aberta
-
-  // Calculadora correspondente ao artigo selecionado.
-  const renderCalc = (a) => {
-    if (a.psv) return <PsvCalc lang={lang} onRegister={registerFtl} />;
-    if (a.limits) return <LimitsCalc lang={lang} onRegister={registerFtl} />;
-    if (a.rest) return <RestCalc lang={lang} onRegister={registerFtl} />;
-    return null;
-  };
-
-  // Pedir "Confirmar" → guarda o payload e mostra o popup.
-  const registerFtl = (p) => setPending(p);
-
-  // Resumo legível do que vai ser registado (mostrado no popup).
-  const summary = (p) => {
-    if (!p) return '';
-    if (p.kind === 'limits') return `${p.category === 'voo' ? t('ftl.flight', lang) : t('ftl.duty', lang)} · +${p.amount} h`;
-    if (p.kind === 'psv') {
-      const st = t(p.state === 'unk' ? 'ftl.accUnk' : p.state === 'frm' ? 'ftl.accFrm' : 'ftl.accAcc', lang);
-      const startTxt = p.start ? ` · ${p.start}` : '';
-      return `${st}${startTxt} · ${p.sectors} ${l('setor(es)', 'sector(s)')} · ${l('PSV', 'FDP')} ${p.result}`;
-    }
-    if (p.kind === 'rest') {
-      const where = p.place === 'base' ? t('ftl.atBase', lang) : t('ftl.awayBase', lang);
-      return `${where} · ${l('serviço anterior', 'preceding duty')} ${p.prev} h · ${l('repouso', 'rest')} ${p.value} h`;
-    }
-    return '';
-  };
-
-  // Confirmar no popup → executa o registo.
-  const confirmRegister = () => {
-    const p = pending;
-    if (!p) return;
-    if (p.kind === 'limits') {
-      const today = new Date().toISOString().slice(0, 10);
-      addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
-    } else if (p.kind === 'psv') {
-      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, ts: Date.now() });
-    } else if (p.kind === 'rest') {
-      // Atualiza só o local registado (base OU fora), preservando o outro.
-      updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, ts: Date.now() }));
-    }
-    success();
-    setPending(null);
-  };
-
-  const ConfirmDialog = (
-    <CenterDialog
-      visible={!!pending}
-      onClose={() => setPending(null)}
-      closeLabel={t('common.cancel', lang)}
-      eyebrow={t('ftl.confirmEyebrow', lang)}
-      title={t('ftl.confirmTitle', lang)}>
-      <View style={s.dlgBody}>
-        <Text style={s.dlgText}>{t('ftl.confirmBody', lang)}</Text>
-        <View style={s.dlgSummary}>
-          <Text style={s.dlgSummaryTxt}>{summary(pending)}</Text>
-        </View>
-        <View style={s.dlgActions}>
-          <TouchableOpacity style={[s.dlgBtn, s.dlgBtnGhost]} activeOpacity={0.8} onPress={() => setPending(null)}>
-            <Text style={s.dlgBtnGhostTxt}>{t('common.cancel', lang)}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.dlgBtn, s.dlgBtnPrimary]} activeOpacity={0.85} onPress={confirmRegister}>
-            <Ionicons name="checkmark" size={16} color="#fff" />
-            <Text style={s.dlgBtnPrimaryTxt}>{t('ftl.confirmCta', lang)}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </CenterDialog>
-  );
 
   if (isFtl) {
     return (
@@ -290,37 +215,20 @@ export default function CategoriesScreen({ navigation }) {
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
-          {openCalc ? (
-            <>
-              <TouchableOpacity style={s.backRow} activeOpacity={0.7} onPress={() => setOpenCalc(null)}>
-                <Ionicons name="chevron-back" size={18} color={C.ink} />
-                <Text style={s.backTxt}>{l('Calculadoras', 'Calculators')}</Text>
-              </TouchableOpacity>
-              <View style={s.openHead}>
-                <View style={s.badge}><Text style={s.badgeTxt}>{openCalc.code.replace('ORO.FTL.', '')}</Text></View>
-                <Text style={s.openTitle} numberOfLines={2}>{tx(openCalc.title, lang)}</Text>
+          <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
+          {FTL_CALC_ARTICLES.map(a => (
+            <TouchableOpacity key={a.code} style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: a.code })}>
+              <View style={s.badge}><Text style={s.badgeTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.fcardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
+                <Text style={s.fcardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
               </View>
-              {renderCalc(openCalc)}
-            </>
-          ) : (
-            <>
-              <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-              {FTL_CALC_ARTICLES.map(a => (
-                <TouchableOpacity key={a.code} style={s.fcard} activeOpacity={0.8} onPress={() => setOpenCalc(a)}>
-                  <View style={s.badge}><Text style={s.badgeTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.fcardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
-                    <Text style={s.fcardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={C.line} />
-                </TouchableOpacity>
-              ))}
-            </>
-          )}
+              <Ionicons name="chevron-forward" size={16} color={C.line} />
+            </TouchableOpacity>
+          ))}
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>
-        {ConfirmDialog}
       </SafeAreaView>
     );
   }
@@ -438,18 +346,4 @@ const s = StyleSheet.create({
   fcardSub: { fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 16 },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 12, alignSelf: 'flex-start' },
-  backTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
-  openHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  openTitle: { flex: 1, fontSize: TYPE.body, fontWeight: '700', color: C.text, lineHeight: 20 },
-  dlgBody: { padding: 20 },
-  dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },
-  dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
-  dlgSummaryTxt: { fontSize: 13, color: C.text, fontWeight: '600', lineHeight: 19 },
-  dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
-  dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
-  dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas },
-  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
-  dlgBtnPrimary: { backgroundColor: C.ink },
-  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
 });
