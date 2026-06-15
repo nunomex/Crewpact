@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput } from 'react-native';
+
+// Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
+// ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
+// altura fixa (inputs, badges, cartões).
+Text.defaultProps = Text.defaultProps || {};
+Text.defaultProps.maxFontSizeMultiplier = 1.3;
+TextInput.defaultProps = TextInput.defaultProps || {};
+TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';

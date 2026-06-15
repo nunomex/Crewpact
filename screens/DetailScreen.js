@@ -103,16 +103,16 @@ function ValueTable({ title, data }) {
   return (
     <View style={t.wrap}>
       <Text style={t.title}>{title}</Text>
+      <View style={t.header}>
+        <Text style={[t.hcell, { flex: 2 }]}>Categoria</Text>
+        {data.periods.map((p, i) => <Text key={i} style={[t.hcell, i === data.periods.length - 1 && { color: C.red }]}>{p}</Text>)}
+      </View>
       {data.rows.map((r, ri) => (
         <View key={ri} style={t.row}>
           <Text style={[t.cell, { flex: 2, color: C.text }]}>{r.rank}</Text>
           {r.v.map((v, vi) => <Text key={vi} style={[t.cell, vi === data.periods.length - 1 && { color: C.red, fontWeight: '700' }]}>{v}</Text>)}
         </View>
       ))}
-      <View style={t.header}>
-        <Text style={[t.hcell, { flex: 2 }]}>Categoria</Text>
-        {data.periods.map((p, i) => <Text key={i} style={[t.hcell, i === data.periods.length - 1 && { color: C.red }]}>{p}</Text>)}
-      </View>
     </View>
   );
 }
@@ -137,7 +137,7 @@ const t = StyleSheet.create({
   wrap: { marginTop: 16, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
   title: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontWeight: '600', backgroundColor: C.ink, padding: 10 },
   header: { flexDirection: 'row', backgroundColor: C.soft, paddingHorizontal: 10, paddingVertical: 6 },
-  hcell: { flex: 1, fontSize: 10, color: C.sub, fontWeight: '600', textAlign: 'right' },
+  hcell: { flex: 1, fontSize: 11, color: C.sub, fontWeight: '600', textAlign: 'right' },
   row: { flexDirection: 'row', paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line },
   cell: { flex: 1, fontSize: 11, fontFamily: 'monospace', color: C.sub, textAlign: 'right' },
 });

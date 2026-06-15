@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, RADIUS } from '../data/constants';
+import { C, RADIUS, SPACE, TYPE } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -54,14 +54,14 @@ function Field({ value, onChangeText, placeholder, error, secure,
   );
 }
 const f = StyleSheet.create({
-  wrap:       { marginBottom: 12 },
-  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
+  wrap:       { marginBottom: SPACE.md },
+  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
   boxFocused: { backgroundColor: C.canvas, borderColor: C.ink },
   boxErr:     { backgroundColor: C.redSoft, borderColor: C.red },
   icon:       { marginRight: 10 },
-  input:      { flex: 1, fontSize: 15, color: C.text, backgroundColor: 'transparent' },
-  eyeBtn:     { padding: 4 },
-  err:        { fontSize: 11, color: C.red, marginTop: 4, marginLeft: 2 },
+  input:      { flex: 1, fontSize: TYPE.value, color: C.text, backgroundColor: 'transparent' },
+  eyeBtn:     { padding: SPACE.xs },
+  err:        { fontSize: TYPE.micro, color: C.red, marginTop: SPACE.xs, marginLeft: 2 },
 });
 
 /* ─── StrengthBar ────────────────────────────────────────────────────────── */
@@ -73,7 +73,7 @@ function StrengthBar({ password, lang }) {
     { label: t('st.special', lang), ok: /[^A-Za-z0-9]/.test(password) },
   ];
   const score = checks.filter(c => c.ok).length;
-  const colors = [C.line, C.red, '#E8932B', '#E8932B', C.green];
+  const colors = [C.line, C.red, C.warn, C.warn, C.green];
   if (!password) return null;
   return (
     <View style={sb.wrap}>
@@ -94,12 +94,12 @@ function StrengthBar({ password, lang }) {
   );
 }
 const sb = StyleSheet.create({
-  wrap:    { marginBottom: 12, marginTop: -4 },
-  bars:    { flexDirection: 'row', gap: 4, marginBottom: 6 },
-  bar:     { flex: 1, height: 3, borderRadius: 99 },
-  chips:   { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  chip:    { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3 },
-  chipTxt: { fontSize: 10, fontWeight: '500' },
+  wrap:    { marginBottom: SPACE.md, marginTop: -4 },
+  bars:    { flexDirection: 'row', gap: SPACE.xs, marginBottom: 6 },
+  bar:     { flex: 1, height: 3, borderRadius: RADIUS.pill },
+  chips:   { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
+  chip:    { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 3 },
+  chipTxt: { fontSize: TYPE.micro, fontWeight: '500' },
 });
 
 /* ─── OTP Input ──────────────────────────────────────────────────────────── */
@@ -132,10 +132,10 @@ function OTPInput({ value, onChange }) {
 }
 const otp = StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
-  box:      { width: 36, height: 44, borderRadius: 10, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxActive:{ backgroundColor: C.canvas, borderColor: C.ink },
   boxFilled:{ backgroundColor: C.canvas, borderColor: C.line },
-  digit:    { fontSize: 18, fontWeight: '700', color: C.text },
+  digit:    { fontSize: TYPE.title, fontWeight: '700', color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });
 
@@ -499,34 +499,34 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
-  langRow:      { position: 'absolute', right: 16, zIndex: 20, flexDirection: 'row', gap: 8 },
+  langRow:      { position: 'absolute', right: SPACE.lg, zIndex: 20, flexDirection: 'row', gap: SPACE.sm },
   langDot:      { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt:   { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  langDotTxt:   { fontSize: TYPE.label, fontWeight: '700', letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
-  ring:         { width: 64, height: 64, borderRadius: 18, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
-  logoName:     { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, color: C.text },
-  logoSub:      { fontSize: 13, color: C.sub, marginTop: 8, textAlign: 'center', lineHeight: 18 },
-  seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: 99, padding: 4, marginBottom: 24 },
-  segBtn:       { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: 'center' },
-  segTxt:       { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
-  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#F8C9C4' },
-  errBannerTxt: { flex: 1, fontSize: 13, color: C.red, fontWeight: '500' },
+  ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
+  logoName:     { fontSize: TYPE.hero, fontWeight: '700', letterSpacing: -0.5, color: C.text },
+  logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
+  seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: SPACE.xs, marginBottom: SPACE.xl },
+  segBtn:       { flex: 1, borderRadius: RADIUS.pill, paddingVertical: 10, alignItems: 'center' },
+  segTxt:       { fontSize: TYPE.sub, fontWeight: '600', letterSpacing: 0.3 },
+  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.redSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.redSoft },
+  errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontWeight: '500' },
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
-  forgotTxt:    { fontSize: 13, color: C.sub },
-  btnMain:      { backgroundColor: C.ink, borderRadius: 99, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  btnMainTxt:   { color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.8 },
-  terms:        { fontSize: 10, color: C.sub, textAlign: 'center', marginTop: 20, lineHeight: 16 },
+  forgotTxt:    { fontSize: TYPE.sub, color: C.sub },
+  btnMain:      { backgroundColor: C.ink, borderRadius: RADIUS.pill, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: SPACE.xs },
+  btnMainTxt:   { color: '#fff', fontSize: TYPE.value, fontWeight: '700', letterSpacing: 0.8 },
+  terms:        { fontSize: TYPE.micro, color: C.sub, textAlign: 'center', marginTop: 20, lineHeight: 16 },
   // Forgot/code/reset shared
-  stepHeader:   { alignItems: 'center', marginBottom: 24 },
-  stepIconWrap: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  stepEyebrow:  { fontSize: 9, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 6 },
-  stepTitle:    { fontSize: 22, fontWeight: '700', letterSpacing: -0.3, color: C.text, marginBottom: 8, textAlign: 'center' },
-  stepSub:      { fontSize: 13, color: C.sub, textAlign: 'center', lineHeight: 19 },
+  stepHeader:   { alignItems: 'center', marginBottom: SPACE.xl },
+  stepIconWrap: { width: 60, height: 60, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  stepEyebrow:  { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 6 },
+  stepTitle:    { fontSize: 22, fontWeight: '700', letterSpacing: -0.3, color: C.text, marginBottom: SPACE.sm, textAlign: 'center' },
+  stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
-  linkTxt:      { fontSize: 13, color: C.sub },
-  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
-  toastIcon:    { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  toastTitle:   { fontSize: 14, fontWeight: '700', color: '#fff' },
-  toastSub:     { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
+  linkTxt:      { fontSize: TYPE.sub, color: C.sub },
+  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
+  toastIcon:    { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  toastTitle:   { fontSize: TYPE.body, fontWeight: '700', color: '#fff' },
+  toastSub:     { fontSize: TYPE.label, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 });

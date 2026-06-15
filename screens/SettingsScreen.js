@@ -27,7 +27,7 @@ function Row({ label, value, onPress, last, danger }) {
       <Text style={[s.rowLabel, danger && { color: C.red }]}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {value ? <Text style={s.rowValue} numberOfLines={1}>{value}</Text> : null}
-        <Ionicons name={danger ? 'log-out-outline' : 'chevron-forward'} size={14} color={danger ? C.red : C.line} />
+        <Ionicons name={danger ? 'log-out-outline' : 'chevron-forward'} size={14} color={danger ? C.red : C.sub} />
       </View>
     </TouchableOpacity>
   );
@@ -161,7 +161,7 @@ export default function SettingsScreen() {
         <Group title={t('profile.groupAbout', lang)}>
           <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
-            <Text style={s.rowValue}>v1.0.0 · AE easyJet 2023–2027</Text>
+            <Text style={s.rowValue}>v1.0.0 · {isFtl ? 'Regulamento (UE) 83/2014' : DATA_VERSION.agreement}</Text>
           </View>
         </Group>
       </ScrollView>

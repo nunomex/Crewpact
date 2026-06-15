@@ -223,7 +223,7 @@ export default function CategoriesScreen({ navigation }) {
                 <Text style={s.fcardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
                 <Text style={s.fcardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={C.line} />
+              <Ionicons name="chevron-forward" size={16} color={C.sub} />
             </TouchableOpacity>
           ))}
 

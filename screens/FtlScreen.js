@@ -57,7 +57,7 @@ export default function FtlScreen({ navigation }) {
               <Text style={s.cardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
               <Text style={s.cardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={C.line} />
+            <Ionicons name="chevron-forward" size={16} color={C.sub} />
           </TouchableOpacity>
         ))}
       </ScrollView>

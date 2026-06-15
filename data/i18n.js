@@ -184,6 +184,7 @@ export const STRINGS = {
     'home.favRemoveMsg': 'Remover dos favoritos?',
     'home.favorites': 'Favoritos',
     'home.seeAll': 'Ver todos',
+    'home.shortcuts': 'Atalhos',
     'home.favEmpty': 'Toca na estrela numa cláusula para a guardares aqui.',
     // Ecrã Favoritos
     'fav.title': 'Favoritos',
@@ -440,6 +441,7 @@ export const STRINGS = {
     'home.favRemoveMsg': 'Remove from favourites?',
     'home.favorites': 'Favourites',
     'home.seeAll': 'See all',
+    'home.shortcuts': 'Shortcuts',
     'home.favEmpty': 'Tap the star on a clause to save it here.',
     // Favourites screen
     'fav.title': 'Favourites',

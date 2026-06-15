@@ -1,5 +1,5 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions } from 'react-native';
+import React, { useContext, useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } from '../data/constants';
@@ -24,7 +24,25 @@ const hhmmToH = (s) => {
 };
 const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
 
-// Barra de progresso (FTL) — feito / limite, com horas em falta.
+// Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
+const barColor = (ratio) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
+
+// Barra com preenchimento animado (0 → valor) sempre que o rácio muda — dá a
+// sensação de "encher" ao abrir o Início depois de registar nos Cálculos.
+function AnimatedBar({ ratio, color }) {
+  const w = useRef(new Animated.Value(0)).current;
+  const target = Math.max(0, Math.min(1, ratio || 0));
+  useEffect(() => {
+    Animated.timing(w, { toValue: target, duration: 550, useNativeDriver: false }).start();
+  }, [target, w]);
+  const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View style={s.progTrack}>
+      <Animated.View style={[s.progFill, { width, backgroundColor: color }]} />
+    </View>
+  );
+}
+
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
 function RestBar({ label, value, floor, lang }) {
@@ -36,9 +54,7 @@ function RestBar({ label, value, floor, lang }) {
         <Text style={s.progLbl}>{label}</Text>
         <Text style={s.progVal}>{fmtVal(value, 'h')}</Text>
       </View>
-      <View style={s.progTrack}>
-        <View style={[s.progFill, { width: `${fill * 100}%`, backgroundColor: over ? C.red : C.onDark }]} />
-      </View>
+      <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00` : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
@@ -46,8 +62,10 @@ function RestBar({ label, value, floor, lang }) {
   );
 }
 
+// Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang }) {
-  const fill = limit ? Math.min(1, done / limit) : 0;
+  const ratio = limit ? done / limit : 0;
+  const fill = Math.min(1, ratio);
   const over = done > limit;
   const remaining = Math.max(0, limit - done);
   return (
@@ -56,9 +74,7 @@ function ProgressRow({ label, done, limit, lang }) {
         <Text style={s.progLbl}>{label}</Text>
         <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
       </View>
-      <View style={s.progTrack}>
-        <View style={[s.progFill, { width: `${fill * 100}%`, backgroundColor: over ? C.red : C.onDark }]} />
-      </View>
+      <AnimatedBar ratio={fill} color={barColor(ratio)} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
       </Text>
@@ -195,13 +211,16 @@ export default function HomeScreen({ navigation }) {
                           <Text style={s.progLbl}>{t('home.psvMaxLbl', lang)}</Text>
                           <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
                         </View>
-                        <View style={s.progTrack}>
-                          <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
-                        </View>
+                        <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} />
                         <Text style={s.progFoot}>máx. 13:00</Text>
                       </View>
                     </>
-                  ) : <Text style={s.restRef}>{t('home.psvEmpty', lang)}</Text>}
+                  ) : (
+                    <View style={s.psvEmpty}>
+                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
+                      <Text style={s.psvEmptyTxt}>{t('home.psvEmpty', lang)}</Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Slide 2 — Limites de horas (210) */}
@@ -225,8 +244,13 @@ export default function HomeScreen({ navigation }) {
                 </View>
               </ScrollView>
 
-              <View style={s.ftlDots}>
-                {[0, 1, 2].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === ftlPage ? C.onDark : C.hairlineOnDark }]} />)}
+              <View style={s.ftlNav}>
+                <Text style={s.ftlNavLbl}>
+                  {`${ftlPage + 1}/3 · ${(lang === 'en' ? ['FDP', 'Limits', 'Rest'] : ['PSV', 'Limites', 'Repouso'])[ftlPage]}`}
+                </Text>
+                <View style={s.ftlDots}>
+                  {[0, 1, 2].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === ftlPage ? C.onDark : C.hairlineOnDark }]} />)}
+                </View>
               </View>
 
               <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
@@ -265,7 +289,7 @@ export default function HomeScreen({ navigation }) {
                     const hgt = 6 + Math.round((h.total / maxT) * 40);
                     return (
                       <View key={h.key} style={s.chartCol}>
-                        <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : 'rgba(255,255,255,0.18)' }} />
+                        <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : C.hairlineOnDark }} />
                         <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
                       </View>
                     );
@@ -309,10 +333,13 @@ export default function HomeScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Favoritos — atalhos de calculadora */}
+        {/* Atalhos de calculadora — favoritos reais via link "Favoritos" */}
         <View style={s.favHead}>
-          <Text style={s.favTitleHd}>{t('home.favorites', lang)}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Favorites')} hitSlop={8}><Text style={s.seeAll}>{t('home.seeAll', lang)}</Text></TouchableOpacity>
+          <Text style={s.favTitleHd}>{t('home.shortcuts', lang)}</Text>
+          <TouchableOpacity style={s.favLink} onPress={() => navigation.navigate('Favorites')} hitSlop={8}>
+            <Text style={s.seeAll}>{t('home.favorites', lang)}</Text>
+            <Ionicons name="chevron-forward" size={14} color={C.red} />
+          </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
           {CALC_SHORTCUTS.map(c => (
@@ -403,8 +430,8 @@ const s = StyleSheet.create({
   chartRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.md },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },
   chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
-  chartLbl: { fontSize: 9, color: C.onDarkFaint },
-  // Progresso FTL (28 dias)
+  chartLbl: { fontSize: 10, color: C.onDarkFaint },
+  // Barras de progresso FTL (PSV / limites / repouso)
   prog: { marginBottom: SPACE.md },
   progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: '#fff' },
@@ -413,13 +440,15 @@ const s = StyleSheet.create({
   progFill: { height: 8, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
-  limGroup: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff', marginTop: SPACE.sm, marginBottom: SPACE.sm },
-  secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
-  ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: SPACE.md },
+  ftlNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md },
+  ftlNavLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', letterSpacing: 0.3 },
+  ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
   psvState: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff', marginBottom: SPACE.sm },
+  psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
+  psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
+  psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  restRef: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18 },
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
   // Próximo voo
@@ -439,6 +468,7 @@ const s = StyleSheet.create({
   // Favoritos (atalhos)
   favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md, paddingHorizontal: 2 },
   favTitleHd: { fontSize: TYPE.value + 1, fontWeight: '600', color: C.text },
+  favLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   seeAll: { fontSize: TYPE.sub, fontWeight: '600', color: C.red },
   tilesRow: { gap: SPACE.md, paddingHorizontal: 2, paddingBottom: 4 },
   tile: { width: 88, alignItems: 'center', gap: 8 },
@@ -461,7 +491,7 @@ const s = StyleSheet.create({
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 9, fontFamily: 'monospace', fontWeight: '600', color: C.inkSoft, letterSpacing: 0.5 },
+  tagTxt: { fontSize: 10, fontFamily: 'monospace', fontWeight: '600', color: C.inkSoft, letterSpacing: 0.5 },
   notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
   notifItemTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },
