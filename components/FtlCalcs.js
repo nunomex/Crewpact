@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED } from '../data/ftl';
 import { t } from '../data/i18n';
 
+// Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
+function RegisterBtn({ lang, disabled, onPress }) {
+  return (
+    <TouchableOpacity onPress={onPress} disabled={disabled} style={[cs.regBtn, disabled && { opacity: 0.4 }]} activeOpacity={0.85}>
+      <Ionicons name="add-circle-outline" size={16} color="#fff" />
+      <Text style={cs.regBtnTxt}>{t('ftl.register', lang)}</Text>
+    </TouchableOpacity>
+  );
+}
+
 // Calculadoras FTL partilhadas (detalhe FTL + separador Cálculos das companhias FTL).
 
 // PSV máximo diário (aclimatizado).
-export function PsvCalc({ lang }) {
+export function PsvCalc({ lang, onRegister }) {
   const [startIdx, setStartIdx] = useState(0);
   const [sectors, setSectors] = useState(2);
   const col = sectors <= 2 ? 0 : Math.min(sectors - 1, 8);
@@ -29,12 +40,13 @@ export function PsvCalc({ lang }) {
       </ScrollView>
       <Stepper label={t('ftl.sectors', lang)} value={sectors} setValue={setSectors} min={1} max={10} />
       <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} foot={foot} />
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ category: 'setores', amount: sectors })} />}
     </CalcCard>
   );
 }
 
 // Limites de serviço / voo.
-export function LimitsCalc({ lang }) {
+export function LimitsCalc({ lang, onRegister }) {
   const days = t('ftl.days', lang);
   const LIM_DUTY = [{ id: '7', label: `7 ${days}`, v: 60 }, { id: '14', label: `14 ${days}`, v: 110 }, { id: '28', label: `28 ${days}`, v: 190 }];
   const LIM_FLIGHT = [{ id: '28', label: `28 ${days}`, v: 100 }, { id: 'ano', label: t('ftl.year', lang), v: 900 }, { id: '12m', label: `12 ${t('ftl.months', lang)}`, v: 1000 }];
@@ -54,6 +66,8 @@ export function LimitsCalc({ lang }) {
       <Seg options={opts} value={per} setValue={setPer} />
       <Stepper label={t('ftl.hoursDone', lang)} value={done} setValue={setDone} min={0} max={opt.v} />
       <ResultBlock label={t('ftl.hoursLeft', lang)} value={`${remaining} h`} valueSize={28} foot={foot} />
+      {onRegister && <RegisterBtn lang={lang} disabled={done <= 0}
+        onPress={() => onRegister({ category: tipo === 'flight' ? 'voo' : 'servico', amount: done })} />}
     </CalcCard>
   );
 }
@@ -82,4 +96,6 @@ const cs = StyleSheet.create({
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
   chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
   chipTxt: { fontSize: TYPE.label, fontFamily: 'monospace', fontWeight: '600' },
+  regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
+  regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
 });

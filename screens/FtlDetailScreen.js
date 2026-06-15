@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, TYPE, GUTTER } from '../data/constants';
-import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
 import DetailTopBar, { RoundIconButton } from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
@@ -119,12 +118,8 @@ export default function FtlDetailScreen({ route, navigation }) {
         <Text style={d.code}>{a.code}</Text>
         <Text style={d.title}>{tx(a.title, lang)}</Text>
 
-        {a.psv && <PsvCalc lang={lang} />}
-        {a.limits && <LimitsCalc lang={lang} />}
-        {a.rest && <RestCalc lang={lang} />}
-
         {body.map((p, i) => (
-          <Text key={i} style={[d.paraTxt, i === 0 && (a.psv || a.limits || a.rest) && { marginTop: 18 }]}>{p}</Text>
+          <Text key={i} style={d.paraTxt}>{p}</Text>
         ))}
 
         {a.psv && (

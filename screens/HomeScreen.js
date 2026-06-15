@@ -94,9 +94,11 @@ export default function HomeScreen({ navigation }) {
         <View style={s.monthCard}>
           <View style={s.monthHead}>
             <Text style={s.monthEyebrow}>{t('home.monthEyebrow', lang)} · {monthLabel(curKey, lang, true)}</Text>
-            <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
-              <Ionicons name="add" size={20} color="#fff" />
-            </TouchableOpacity>
+            {!isFtl && (
+              <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
+                <Ionicons name="add" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={s.monthBody}>
