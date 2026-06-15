@@ -45,7 +45,6 @@ export default function HomeScreen({ navigation }) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
-  const [monthsOpen, setMonthsOpen] = useState(false);
   const [newCat, setNewCat]       = useState(isFtl ? FTL_PRIMARY : EXTRA_CATEGORIES[0].id);
   const [newAmount, setNewAmount] = useState('');
 
@@ -180,11 +179,6 @@ export default function HomeScreen({ navigation }) {
                     );
                   })}
                 </View>
-                <TouchableOpacity style={s.monthsBtn} onPress={() => setMonthsOpen(true)} activeOpacity={0.8}>
-                  <Ionicons name="bar-chart-outline" size={14} color="#fff" />
-                  <Text style={s.monthsBtnTxt}>{t('home.seeAllMonths', lang)}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.6)" />
-                </TouchableOpacity>
               </View>
             </>
           )}
@@ -262,18 +256,6 @@ export default function HomeScreen({ navigation }) {
         </View>
       </BottomSheet>
 
-      {/* Todos os meses */}
-      <BottomSheet visible={monthsOpen} onClose={() => setMonthsOpen(false)} title={t('home.allMonths', lang)} maxHeight="70%" closeLabel={t('common.close', lang)}>
-        <ScrollView contentContainerStyle={{ padding: 20 }}>
-          {lastMonths(extras, 12, new Date(), primaryCat).slice().reverse().map(m => (
-            <View key={m.key} style={s.monthRow}>
-              <Text style={s.monthRowLbl}>{monthLabel(m.key, lang, true)}</Text>
-              <Text style={s.monthRowVal}>{m.total > 0 ? (isFtl ? fmtVal(m.total, 'h') : fmtEur(m.total)) : t('home.monthNoData', lang)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </BottomSheet>
-
       {/* Notificações */}
       <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
@@ -330,8 +312,6 @@ const s = StyleSheet.create({
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },
   chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
   chartLbl: { fontSize: 9, color: C.onDarkFaint },
-  monthsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.hairlineOnDark, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 9 },
-  monthsBtnTxt: { fontSize: TYPE.micro, color: '#fff', fontWeight: '600' },
   // Progresso FTL (28 dias)
   prog: { marginBottom: SPACE.md },
   progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
@@ -376,9 +356,6 @@ const s = StyleSheet.create({
   saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
 
   // Todos os meses
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.line },
-  monthRowLbl: { fontSize: TYPE.body, color: C.text },
-  monthRowVal: { fontSize: TYPE.value, fontFamily: 'monospace', fontWeight: '700', color: C.text },
 
   // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 2 },
