@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } from '../data/constants';
@@ -46,10 +46,13 @@ function ProgressRow({ label, done, limit, lang }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
+  const { width } = useWindowDimensions();
+  const slideW = width - 64; // largura interna do cartão (scroll 16 + card 16, cada lado)
   const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
 
+  const [ftlPage, setFtlPage] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
   const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
@@ -136,37 +139,51 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              {/* PSV máximo diário (205) — último cálculo */}
-              <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
-              {ftlSnap.psv ? (
-                <View style={s.prog}>
-                  <View style={s.progTop}>
-                    <Text style={s.progLbl}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} · {ftlSnap.psv.sectors} {catLabel('setores', lang).toLowerCase()}</Text>
-                    <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
-                  </View>
-                  <View style={s.progTrack}>
-                    <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
-                  </View>
-                  <Text style={s.progFoot}>{t('home.psvMaxLbl', lang)} · máx. 13:00</Text>
+              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={e => setFtlPage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
+
+                {/* Slide 1 — PSV máximo diário (205) */}
+                <View style={{ width: slideW }}>
+                  <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
+                  {ftlSnap.psv ? (
+                    <View style={s.prog}>
+                      <View style={s.progTop}>
+                        <Text style={s.progLbl}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} · {ftlSnap.psv.sectors} {catLabel('setores', lang).toLowerCase()}</Text>
+                        <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
+                      </View>
+                      <View style={s.progTrack}>
+                        <View style={[s.progFill, { width: `${Math.min(1, hhmmToH(ftlSnap.psv.result) / 13) * 100}%`, backgroundColor: C.onDark }]} />
+                      </View>
+                      <Text style={s.progFoot}>{t('home.psvMaxLbl', lang)} · máx. 13:00</Text>
+                    </View>
+                  ) : <Text style={s.restRef}>{t('home.psvEmpty', lang)}</Text>}
                 </View>
-              ) : <Text style={s.restRef}>{t('home.psvEmpty', lang)}</Text>}
 
-              {/* Limites de horas (210) — restantes na janela de 28 dias */}
-              <Text style={[s.secHd, s.secHdGap]}>{t('home.secLimits', lang)}</Text>
-              <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
-              <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+                {/* Slide 2 — Limites de horas (210) */}
+                <View style={{ width: slideW }}>
+                  <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
+                  <ProgressRow label={catLabel('voo', lang)} done={win.voo} limit={FTL_LIMITS.voo} lang={lang} />
+                  <ProgressRow label={catLabel('servico', lang)} done={win.servico} limit={FTL_LIMITS.servico} lang={lang} />
+                </View>
 
-              {/* Repouso mínimo (235) */}
-              <Text style={[s.secHd, s.secHdGap]}>{t('home.secRest', lang)}</Text>
-              <View style={s.setoresRow}>
-                <Text style={s.bdLbl}>{t('home.restBase', lang)}</Text>
-                <Text style={s.bdVal}>{ftlSnap.rest?.base ?? 12} h</Text>
+                {/* Slide 3 — Repouso mínimo (235) */}
+                <View style={{ width: slideW }}>
+                  <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
+                  <View style={s.setoresRow}>
+                    <Text style={s.bdLbl}>{t('home.restBase', lang)}</Text>
+                    <Text style={s.bdVal}>{ftlSnap.rest?.base ?? 12} h</Text>
+                  </View>
+                  <View style={[s.setoresRow, { marginTop: 6 }]}>
+                    <Text style={s.bdLbl}>{t('home.restAway', lang)}</Text>
+                    <Text style={s.bdVal}>{ftlSnap.rest?.away ?? 10} h</Text>
+                  </View>
+                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+                </View>
+              </ScrollView>
+
+              <View style={s.ftlDots}>
+                {[0, 1, 2].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === ftlPage ? C.onDark : C.hairlineOnDark }]} />)}
               </View>
-              <View style={[s.setoresRow, { marginTop: 6 }]}>
-                <Text style={s.bdLbl}>{t('home.restAway', lang)}</Text>
-                <Text style={s.bdVal}>{ftlSnap.rest?.away ?? 10} h</Text>
-              </View>
-              <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
 
               <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
             </>
@@ -353,6 +370,8 @@ const s = StyleSheet.create({
   progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
   secHdGap: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.hairlineOnDark },
+  ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: SPACE.md },
+  ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   restRef: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18 },
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
