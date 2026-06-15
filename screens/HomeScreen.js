@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS } from '../data/constants';
+import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
@@ -20,6 +20,7 @@ export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra } = useContext(AppContext);
   const company  = COMPANIES.find(c => c.id === profile.company);
+  const isFtl    = companyContent(profile.company) === 'ftl';
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
@@ -75,7 +76,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* Cabeçalho (blob preto) */}
         <ScreenHeader
-          eyebrow={t('home.eyebrow', lang)}
+          eyebrow={isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}
           badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
           title={company?.name}
           style={{ margin: 0, marginBottom: SPACE.md }}

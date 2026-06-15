@@ -131,6 +131,7 @@ export const STRINGS = {
     // Início
     'home.greeting': 'Bem-vindo/a',
     'home.eyebrow': 'ACORDO DE EMPRESA',
+    'home.eyebrowFtl': 'LIMITES DE TEMPO DE VOO',
     'home.payEyebrow': 'A TUA REMUNERAÇÃO',
     'home.baseEyebrow': 'A TUA REMUNERAÇÃO BASE',
     'home.payBase': 'Base anual (ilíquida)',
@@ -343,6 +344,7 @@ export const STRINGS = {
     // Home
     'home.greeting': 'Welcome',
     'home.eyebrow': 'COLLECTIVE LABOUR AGREEMENT',
+    'home.eyebrowFtl': 'FLIGHT TIME LIMITATIONS',
     'home.payEyebrow': 'YOUR PAY',
     'home.baseEyebrow': 'YOUR BASE PAY',
     'home.payBase': 'Annual base (gross)',
