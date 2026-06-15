@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION } from '../data/constants';
+import { C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
 
 // Fração da base anual aplicável por tipo de contrato (12/12 = inteiro).
 const CONTRACT_FACTOR = { '12_12': 1, '10_12': 10 / 12, '8_12': 8 / 12, '9_3': 9.75 / 12, pt: null };
@@ -18,6 +18,7 @@ import { CLAUSES } from '../data/clauses';
 import ScreenHeader from '../components/ScreenHeader';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
+import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
 import { AppContext } from '../App';
@@ -200,6 +201,23 @@ export default function CategoriesScreen({ navigation }) {
     const clause = CLAUSES.find(c => c.number === number);
     if (clause) navigation.navigate('Detail', { clause }); // local à stack de Cálculos
   };
+
+  // Companhias FTL: o separador Cálculos mostra calculadoras FTL (sem salário/AE).
+  const isFtl = companyContent(profile.company) === 'ftl';
+  if (isFtl) {
+    return (
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
+          <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
+          <Text style={s.group}>{l('LIMITES DE TEMPO DE VOO', 'FLIGHT TIME LIMITATIONS')}</Text>
+          <PsvCalc lang={lang} />
+          <LimitsCalc lang={lang} />
+          <RestCalc lang={lang} />
+          <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>

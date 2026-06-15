@@ -56,11 +56,17 @@ export const TYPE = {
 };
 
 // ─── Companies ───────────────────────────────────────────────────────────────
+// `content`: tipo de conteúdo disponível para a companhia — 'ae' (Acordo de
+// Empresa) ou 'ftl' (Limites de Tempo de Voo). O separador adapta o nome/ícone.
 export const COMPANIES = [
-  { id: "easyjet-pt", name: "easyJet", code: "EZY", country: "Portugal", active: true },
-  { id: "tap-pt", name: "TAP Air Portugal", code: "TAP", country: "Portugal", active: false },
-  { id: "ryanair", name: "Ryanair", code: "RYR", country: "Europa", active: false },
+  { id: "easyjet-pt", name: "easyJet", code: "EZY", country: "Portugal", active: true,  content: "ae" },
+  { id: "tap-pt", name: "TAP Air Portugal", code: "TAP", country: "Portugal", active: true,  content: "ftl" },
+  { id: "ryanair", name: "Ryanair", code: "RYR", country: "Europa", active: false, content: "ftl" },
 ];
+
+// Tipo de conteúdo da companhia do perfil (default 'ae').
+export const companyContent = (companyId) =>
+  COMPANIES.find(c => c.id === companyId)?.content || 'ae';
 
 // ─── Ranks & Contracts ───────────────────────────────────────────────────────
 export const RANKS = [

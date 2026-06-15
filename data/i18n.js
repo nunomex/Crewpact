@@ -115,6 +115,8 @@ export const STRINGS = {
     // Tabs
     'tab.home': 'Início',
     'tab.agreement': 'AE/FTL',
+    'tab.ae': 'AE',
+    'tab.ftl': 'FTL',
     'tab.calc': 'Cálculos',
     'tab.profile': 'Perfil',
 
@@ -325,6 +327,8 @@ export const STRINGS = {
     // Tabs
     'tab.home': 'Home',
     'tab.agreement': 'CLA/FTL',
+    'tab.ae': 'CLA',
+    'tab.ftl': 'FTL',
     'tab.calc': 'Calculators',
     'tab.profile': 'Profile',
 

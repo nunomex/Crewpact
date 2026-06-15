@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C, RADIUS, TYPE, companyContent } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import Eyebrow from '../components/Eyebrow';
 import { t } from '../data/i18n';
@@ -14,13 +14,16 @@ const CARDS = [
 ];
 
 export default function AgreementHubScreen({ navigation }) {
-  const { lang } = useContext(AppContext);
+  const { lang, profile } = useContext(AppContext);
+  // Mostra só o conteúdo disponível para a companhia (AE ou FTL).
+  const content = companyContent(profile.company);
+  const cards = CARDS.filter(c => (content === 'ftl' ? c.id === 'ftl' : c.id === 'ae'));
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('hub.eyebrow', lang)} title={t('hub.title', lang)} />
 
       <View style={s.cards}>
-        {CARDS.map(c => (
+        {cards.map(c => (
           <TouchableOpacity key={c.id} style={s.card} activeOpacity={0.85} onPress={() => navigation.navigate(c.route)}>
             <View style={s.cardTop}>
               <View style={s.cardIcon}><Ionicons name={c.icon} size={24} color="#fff" /></View>

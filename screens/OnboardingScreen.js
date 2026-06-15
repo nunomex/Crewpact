@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, TYPE, COMPANIES, RANKS, CONTRACTS } from '../data/constants';
+import { C, TYPE, COMPANIES, RANKS, CONTRACTS, companyContent } from '../data/constants';
 import { AppContext } from '../App';
 import { updateProfile } from '../data/auth';
 import { t, txv } from '../data/i18n';
@@ -10,20 +10,25 @@ import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
   const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
-  const steps = [
-    { title: t('onb.s0t', lang), sub: t('onb.s0s', lang) },
-    { title: t('onb.s1t', lang), sub: t('onb.s1s', lang) },
-    { title: t('onb.s2t', lang), sub: t('onb.s2s', lang) },
-  ];
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ company: null, rank: null, contract: null });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const s = steps[step];
-  const canNext = (step === 0 && draft.company) || (step === 1 && draft.rank) || (step === 2 && draft.contract);
 
-  const items = step === 0 ? COMPANIES : step === 1 ? RANKS : CONTRACTS;
-  const field = step === 0 ? 'company' : step === 1 ? 'rank' : 'contract';
+  // FTL não tem categorias nem contrato — esses passos desaparecem.
+  const isFtl = draft.company && companyContent(draft.company) === 'ftl';
+  const STEP_DEFS = {
+    company:  { title: t('onb.s0t', lang), sub: t('onb.s0s', lang), items: COMPANIES, field: 'company' },
+    rank:     { title: t('onb.s1t', lang), sub: t('onb.s1s', lang), items: RANKS,     field: 'rank' },
+    contract: { title: t('onb.s2t', lang), sub: t('onb.s2s', lang), items: CONTRACTS, field: 'contract' },
+  };
+  const flow = isFtl ? ['company'] : ['company', 'rank', 'contract'];
+  const idx = Math.min(step, flow.length - 1);
+  const s = STEP_DEFS[flow[idx]];
+  const items = s.items;
+  const field = s.field;
+  const isLast = idx >= flow.length - 1;
+  const canNext = !!draft[field];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -35,7 +40,7 @@ export default function OnboardingScreen() {
       </View>
       <View style={styles.top}>
         <View style={styles.dots}>
-          {steps.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= step ? C.red : C.line }]} />)}
+          {flow.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= idx ? C.red : C.line }]} />)}
         </View>
         <Text style={styles.title}>{s.title}</Text>
         <Text style={styles.sub}>{s.sub}</Text>
@@ -72,20 +77,21 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
         <TouchableOpacity disabled={!canNext || saving} onPress={async () => {
-          if (step < 2) { setStep(step + 1); return; }
+          if (!isLast) { setStep(step + 1); return; }
           setSaving(true);
           setSaveError(null);
-          const result = await updateProfile(draft, lang);
+          const payload = isFtl ? { company: draft.company, rank: null, contract: null } : draft;
+          const result = await updateProfile(payload, lang);
           setSaving(false);
           if (!result.ok) { setSaveError(t('onb.saveErr', lang)); return; }
-          setProfile(draft);
+          setProfile(payload);
           if (result.user) setUser(result.user);
           success();
           setOnboarded(true);
         }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
           {saving
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{step < 2 ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
+            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{!isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
           }
         </TouchableOpacity>
       </View>

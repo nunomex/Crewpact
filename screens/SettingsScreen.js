@@ -8,7 +8,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, txv } from '../data/i18n';
 import { success, select } from '../data/haptics';
 
-import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION } from '../data/constants';
+import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION, companyContent } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
 import { AppContext } from '../App';
@@ -78,6 +78,7 @@ export default function SettingsScreen() {
   const company  = COMPANIES.find(c => c.id === profile.company);
   const rankObj  = RANKS.find(r => r.id === profile.rank);
   const contract = CONTRACTS.find(c => c.id === profile.contract);
+  const isFtl    = companyContent(profile.company) === 'ftl';
 
   const confirmLogout = () => {
     Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
@@ -128,9 +129,9 @@ export default function SettingsScreen() {
         )}
 
         <Group>
-          <Row label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} />
-          <Row label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />
-          <Row label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />
+          <Row label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} last={isFtl} />
+          {!isFtl && <Row label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />}
+          {!isFtl && <Row label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />}
         </Group>
 
         <Group title={t('profile.groupContent', lang)}>

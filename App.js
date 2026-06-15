@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import { C, RADIUS } from './data/constants';
+import { C, RADIUS, companyContent } from './data/constants';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
@@ -63,10 +63,12 @@ function CalcStack() {
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
-  const { lang } = useContext(AppContext);
+  const { lang, profile } = useContext(AppContext);
+  const content = companyContent(profile.company); // 'ae' | 'ftl'
+  const isFtl = content === 'ftl';
   const labels = {
     'Início': t('tab.home', lang),
-    'AE/FTL': t('tab.agreement', lang),
+    'AE/FTL': isFtl ? t('tab.ftl', lang) : t('tab.ae', lang),
     'Cálculos': t('tab.calc', lang),
     'Perfil': t('tab.profile', lang),
   };
@@ -100,7 +102,7 @@ function MainTabs() {
         tabBarIcon: ({ focused, color }) => {
           const icons = {
             'Início':   focused ? 'home'             : 'home-outline',
-            'AE/FTL':   focused ? 'document-text'    : 'document-text-outline',
+            'AE/FTL':   isFtl ? (focused ? 'time' : 'time-outline') : (focused ? 'document-text' : 'document-text-outline'),
             'Cálculos': focused ? 'calculator'       : 'calculator-outline',
             'Perfil':   focused ? 'person'           : 'person-outline',
           };
