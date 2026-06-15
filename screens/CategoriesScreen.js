@@ -20,7 +20,11 @@ import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
 import CenterDialog from '../components/CenterDialog';
+import { FTL_ARTICLES } from '../data/ftl';
 import { monthKey } from '../data/extras';
+
+// Artigos calculáveis (205/210/235) → calculadora respetiva.
+const FTL_CALC_ARTICLES = FTL_ARTICLES.filter(a => a.psv || a.limits || a.rest);
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -209,6 +213,15 @@ export default function CategoriesScreen({ navigation }) {
   // "Confirmar" abre um popup; a confirmação envia o cálculo para o cartão do Início.
   const isFtl = companyContent(profile.company) === 'ftl';
   const [pending, setPending] = useState(null); // payload aguardando confirmação
+  const [openCalc, setOpenCalc] = useState(null); // artigo cuja calculadora está aberta
+
+  // Calculadora correspondente ao artigo selecionado.
+  const renderCalc = (a) => {
+    if (a.psv) return <PsvCalc lang={lang} onRegister={registerFtl} />;
+    if (a.limits) return <LimitsCalc lang={lang} onRegister={registerFtl} />;
+    if (a.rest) return <RestCalc lang={lang} onRegister={registerFtl} />;
+    return null;
+  };
 
   // Pedir "Confirmar" → guarda o payload e mostra o popup.
   const registerFtl = (p) => setPending(p);
@@ -277,10 +290,33 @@ export default function CategoriesScreen({ navigation }) {
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
-          <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-          <PsvCalc lang={lang} collapsible onRegister={registerFtl} />
-          <LimitsCalc lang={lang} collapsible onRegister={registerFtl} />
-          <RestCalc lang={lang} collapsible onRegister={registerFtl} />
+          {openCalc ? (
+            <>
+              <TouchableOpacity style={s.backRow} activeOpacity={0.7} onPress={() => setOpenCalc(null)}>
+                <Ionicons name="chevron-back" size={18} color={C.ink} />
+                <Text style={s.backTxt}>{l('Calculadoras', 'Calculators')}</Text>
+              </TouchableOpacity>
+              <View style={s.openHead}>
+                <View style={s.badge}><Text style={s.badgeTxt}>{openCalc.code.replace('ORO.FTL.', '')}</Text></View>
+                <Text style={s.openTitle} numberOfLines={2}>{tx(openCalc.title, lang)}</Text>
+              </View>
+              {renderCalc(openCalc)}
+            </>
+          ) : (
+            <>
+              <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
+              {FTL_CALC_ARTICLES.map(a => (
+                <TouchableOpacity key={a.code} style={s.fcard} activeOpacity={0.8} onPress={() => setOpenCalc(a)}>
+                  <View style={s.badge}><Text style={s.badgeTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.fcardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
+                    <Text style={s.fcardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={C.line} />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>
@@ -397,6 +433,15 @@ const s = StyleSheet.create({
   link: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14, marginTop: 6, marginBottom: 8 },
   linkTxt: { fontSize: 13, fontWeight: '500', color: C.text },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
+  fcard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8, backgroundColor: C.canvas },
+  fcardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
+  fcardSub: { fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 16 },
+  badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 12, alignSelf: 'flex-start' },
+  backTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
+  openHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  openTitle: { flex: 1, fontSize: TYPE.body, fontWeight: '700', color: C.text, lineHeight: 20 },
   dlgBody: { padding: 20 },
   dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },
   dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
