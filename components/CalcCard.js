@@ -56,7 +56,7 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
 const makeC = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
-  acc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: C.canvas },
+  acc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: C.card },
   accHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   accBody: { marginTop: 12 },
   result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },

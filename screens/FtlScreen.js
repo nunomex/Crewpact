@@ -31,7 +31,7 @@ export default function FtlScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
-        onBack={() => navigation.goBack()} backLabel={t('common.back', lang)}
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} backLabel={t('common.back', lang)}
         right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace, paddingTop: 4 }}>
@@ -78,7 +78,7 @@ const makeStyles = (C) => StyleSheet.create({
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingHorizontal: 2, marginTop: SPACE.md },
   noteTxt: { flex: 1, fontSize: TYPE.micro, color: C.sub, lineHeight: 17 },
   group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.lg, marginBottom: 10, marginLeft: 2 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.canvas },
+  card: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
   cardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },

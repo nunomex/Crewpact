@@ -34,7 +34,7 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
 
 const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim },
-  sheet: { backgroundColor: C.canvas, borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl },
+  sheet: { backgroundColor: C.card, borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: SPACE.lg + 4, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontWeight: '500', color: C.text },
   close: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

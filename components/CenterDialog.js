@@ -36,7 +36,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
 
 const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 4 },
-  card: { width: '100%', maxWidth: 420, maxHeight: '80%', backgroundColor: C.canvas, borderRadius: RADIUS.xxl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 16 },
+  card: { width: '100%', maxWidth: 420, maxHeight: '80%', backgroundColor: C.card, borderRadius: RADIUS.xxl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 16 },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: SPACE.lg + 4, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontWeight: '500', color: C.text },
   close: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

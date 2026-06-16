@@ -3,6 +3,7 @@
 // que são iguais nas duas paletas — por isso os cartões pretos não mudam.
 export const PALETTE_LIGHT = {
   canvas: "#FFFFFF",
+  card: "#FFFFFF",   // superfície de cartão (= canvas no claro; elevada no escuro)
   soft: "#F3F2EF",
   ink: "#191919",
   inkSoft: "#2A2A2A",
@@ -34,6 +35,7 @@ export const PALETTE_LIGHT = {
 // superfícies ink continuam escuras nos dois modos).
 export const PALETTE_DARK = {
   canvas: "#141414",
+  card: "#1E1E1E",   // cartões elevam-se acima do canvas (#141414)
   soft: "#232323",
   ink: "#242424",
   inkSoft: "#2E2E2E",
@@ -176,14 +178,6 @@ export const PROFILE_PAY = {
   cm: { base: "23 198 €", ns: "32,50 €" },
 };
 // Atalhos de calculadora mostrados em Favoritos (Início + ecrã Favoritos).
-export const CALC_SHORTCUTS = [
-  { id: 'pernoitas',      icon: 'briefcase-outline',       label: { pt: 'Pernoitas', en: 'Night stops' } },
-  { id: 'posicionamento', icon: 'swap-horizontal-outline', label: { pt: 'Posicionamento', en: 'Positioning' } },
-  { id: 'ferias',         icon: 'calendar-outline',        label: { pt: 'Pagamento por dia de férias', en: 'Holiday daily allowance' } },
-  { id: 'irregularidade', icon: 'time-outline',            label: { pt: 'Irregularidade de escala — RDP', en: 'Roster disruption — RDP' } },
-  { id: 'setores',        icon: 'airplane-outline',        label: { pt: 'Setores voados', en: 'Sectors flown' } },
-];
-
 export const NS_PREV = { fa_1ano: 13.45, fa: 19.96, cm_prob: 22.43, cm: 27.41 };
 export const NS_NOW  = { fa_1ano: 13.45, fa: 21.0,  cm_prob: 24.0,  cm: 32.5  };
 export const PAY_NUM = {

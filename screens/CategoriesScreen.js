@@ -316,7 +316,7 @@ export default function CategoriesScreen({ navigation }) {
 }
 
 const makeCs = (C) => StyleSheet.create({
-  calc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, backgroundColor: C.canvas },
+  calc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, backgroundColor: C.card },
   calcHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   calcTitle: { flex: 1, fontSize: TYPE.body, fontWeight: '600', color: C.text, paddingRight: 8 },
   calcBody: { marginTop: 12 },
@@ -334,7 +334,7 @@ const makeCs = (C) => StyleSheet.create({
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: 16 },
-  meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.canvas },
+  meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.card },
   meTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   meEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.red, fontWeight: '700' },
   contractPill: { backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 4 },
@@ -349,7 +349,7 @@ const makeStyles = (C) => StyleSheet.create({
   link: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14, marginTop: 6, marginBottom: 8 },
   linkTxt: { fontSize: 13, fontWeight: '500', color: C.text },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
-  fcard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8, backgroundColor: C.canvas },
+  fcard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8, backgroundColor: C.card },
   fcardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
   fcardSub: { fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 16 },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },

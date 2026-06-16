@@ -82,7 +82,8 @@ export default function ListScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)} onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
+      <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)}
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} backLabel={t('common.back', lang)} />
 
       <SearchBar value={query} onChangeText={setQuery} placeholder={t('list.search', lang)} />
 

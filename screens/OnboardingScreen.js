@@ -112,7 +112,7 @@ const makeStyles = (C) => StyleSheet.create({
   title: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -0.5, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6 },
   scroll: { flex: 1, paddingHorizontal: 24 },
-  row: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.canvas },
+  row: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.card },
   rowLabel: { fontSize: 14, fontWeight: '500' },
   rowSub: { fontSize: 12, marginTop: 2 },
   check: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },

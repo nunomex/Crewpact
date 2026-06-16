@@ -58,7 +58,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
 const makeF = (C) => StyleSheet.create({
   wrap:       { marginBottom: SPACE.md },
   box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
-  boxFocused: { backgroundColor: C.canvas, borderColor: C.ink },
+  boxFocused: { backgroundColor: C.card, borderColor: C.text },
   boxErr:     { backgroundColor: C.redSoft, borderColor: C.red },
   icon:       { marginRight: 10 },
   input:      { flex: 1, fontSize: TYPE.value, color: C.text, backgroundColor: 'transparent' },
@@ -139,8 +139,8 @@ function OTPInput({ value, onChange }) {
 const makeOtp = (C) => StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: C.canvas, borderColor: C.ink },
-  boxFilled:{ backgroundColor: C.canvas, borderColor: C.line },
+  boxActive:{ backgroundColor: C.card, borderColor: C.text },
+  boxFilled:{ backgroundColor: C.card, borderColor: C.line },
   digit:    { fontSize: TYPE.title, fontWeight: '700', color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });

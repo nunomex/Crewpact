@@ -43,13 +43,13 @@ export function EmptyState({ text }) {
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.canvas },
+  secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.card },
   secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   secBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace' },
   secTitle: { flex: 1, fontSize: TYPE.sub, fontWeight: '600', letterSpacing: 0.5, color: C.text },
   secCount: { fontSize: 11, fontFamily: 'monospace', color: C.sub },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, marginBottom: 6, backgroundColor: C.canvas },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, marginBottom: 6, backgroundColor: C.card },
   badgeBox: { width: 40, height: 40, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ink },
   badgeBoxWide: { width: 44 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },

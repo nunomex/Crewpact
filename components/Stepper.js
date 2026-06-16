@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { C as _C, RADIUS, TYPE } from '../data/constants';
+import { C as _C, RADIUS, TYPE, PALETTE_DARK } from '../data/constants';
 import { tap, select } from '../data/haptics';
 import { useTheme } from '../App';
 
@@ -27,12 +27,15 @@ export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {
 export function Seg({ options, value, setValue, dark }) {
   const C = useTheme();
   const st = makeSt(C);
+  // Em tema escuro (ou sobre superfície escura), o selecionado é uma pílula clara
+  // com texto escuro — caso contrário, no escuro, selecionado ≈ não-selecionado.
+  const onDark = dark || C === PALETTE_DARK;
   return (
     <View style={st.segWrap}>
       {options.map(o => {
         const sel = value === o.id;
-        const bg = dark ? (sel ? '#fff' : C.hairlineOnDark) : (sel ? C.ink : C.soft);
-        const fg = dark ? (sel ? C.ink : C.onDarkSub) : (sel ? '#fff' : C.sub);
+        const bg = onDark ? (sel ? '#fff' : C.hairlineOnDark) : (sel ? C.ink : C.soft);
+        const fg = onDark ? (sel ? C.ink : C.onDarkSub) : (sel ? '#fff' : C.sub);
         return (
           <TouchableOpacity key={o.id} onPress={() => { select(); setValue(o.id); }} style={[st.segBtn, { backgroundColor: bg }]}>
             <Text style={[st.segTxt, { color: fg }]}>{o.label}</Text>

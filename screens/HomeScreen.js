@@ -2,14 +2,13 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, COMPANIES, CALC_SHORTCUTS, companyContent } from '../data/constants';
+import { C, RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
   EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur, fmtVal,
   monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
 } from '../data/extras';
-import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -46,17 +45,22 @@ function AnimatedBar({ ratio, color, s }) {
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
 function RestBar({ label, value, floor, lang, s }) {
-  const over = value > floor;
-  const fill = floor ? Math.min(1, value / floor) : 0;
+  const empty = value == null;
+  const over = !empty && value > floor;
+  const fill = empty ? 0 : Math.min(1, value / floor);
   return (
     <View style={s.prog}>
       <View style={s.progTop}>
         <Text style={s.progLbl}>{label}</Text>
-        <Text style={s.progVal}>{fmtVal(value, 'h')}</Text>
+        <Text style={s.progVal}>{empty ? '—' : fmtVal(value, 'h')}</Text>
       </View>
       <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
-        {over ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00` : `${t('home.restMin', lang)} ${floor}:00`}
+        {empty
+          ? `${t('home.restNoLog', lang)} · ${t('home.restMin', lang)} ${floor}:00`
+          : over
+            ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00`
+            : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
     </View>
   );
@@ -86,11 +90,9 @@ export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const { width } = useWindowDimensions();
   const slideW = width - 64; // largura interna do cartão (scroll 16 + card 16, cada lado)
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, hiddenShortcuts, removeShortcut, resetShortcuts } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
-  const [editShortcuts, setEditShortcuts] = useState(false);
-  const visibleShortcuts = CALC_SHORTCUTS.filter(c => !hiddenShortcuts.has(c.id));
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
 
@@ -130,7 +132,6 @@ export default function HomeScreen({ navigation }) {
     ] },
   ];
 
-  const goCalc = () => navigation.navigate('Cálculos');
 
   const saveExtra = () => {
     const amount = parseFloat(String(newAmount).replace(',', '.')) || 0;
@@ -146,37 +147,42 @@ export default function HomeScreen({ navigation }) {
     setReadNotifIds(new Set(notifs.map(n => n.id)));
   };
 
-  // ── Próximo voo (calendário) ──
+  // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
   const [flight, setFlight] = useState(null);
-  const [syncing, setSyncing] = useState(false);
-  const [synced, setSynced] = useState(false);
+  const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
+  const syncingRef = useRef(false);
   const syncFlight = async () => {
-    if (syncing) return;
+    if (syncingRef.current) return;
+    syncingRef.current = true;
     setSyncing(true);
     try {
       const next = await getUpcomingFlight();
-      setFlight(next); setSynced(!!next);
-    } catch { setFlight(null); setSynced(false); }
+      setFlight(next);
+    } catch { setFlight(null); }
     setSyncDone(true); setSyncing(false);
+    syncingRef.current = false;
   };
+  useEffect(() => { syncFlight(); }, []);
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Cabeçalho (blob preto) */}
-        <ScreenHeader
-          eyebrow={isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}
-          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
-          title={company?.name}
-          style={{ margin: 0, marginBottom: SPACE.md }}
-          right={
-            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-              <Ionicons name="notifications" size={18} color={C.onDark} />
-              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-            </TouchableOpacity>
-          } />
+        {/* Cabeçalho plano — o cartão preto abaixo é o único "herói" */}
+        <View style={s.homeHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.homeEyebrow}>{isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}</Text>
+            <View style={s.homeTitleRow}>
+              <View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>
+              <Text style={s.homeTitle} numberOfLines={1}>{company?.name}</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+            <Ionicons name="notifications" size={18} color={C.ink} />
+            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+          </TouchableOpacity>
+        </View>
 
         {/* Este mês (AE) / Cartão FTL (carrossel) */}
         <View style={s.monthCard}>
@@ -242,9 +248,18 @@ export default function HomeScreen({ navigation }) {
                 {/* Slide 3 — Repouso mínimo (235) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
-                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base ?? 12} floor={12} lang={lang} s={s} />
-                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away ?? 10} floor={10} lang={lang} s={s} />
-                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+                  {ftlSnap.rest ? (
+                    <>
+                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s} />
+                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s} />
+                      <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+                    </>
+                  ) : (
+                    <View style={s.psvEmpty}>
+                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
+                      <Text style={s.psvEmptyTxt}>{t('home.psvEmpty', lang)}</Text>
+                    </View>
+                  )}
                 </View>
               </ScrollView>
 
@@ -308,10 +323,12 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={syncFlight}>
           <View style={s.flightTop}>
             <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
-            <View style={[s.flightBadge, { backgroundColor: synced ? C.greenSoft : C.soft }]}>
+            <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
               {syncing
                 ? <ActivityIndicator size="small" color={C.sub} />
-                : <Text style={[s.flightBadgeTxt, { color: synced ? C.green : C.sub }]}>{synced ? t('home.flightOnTime', lang) : t('home.sync', lang)}</Text>}
+                : flight
+                  ? <Text style={[s.flightBadgeTxt, { color: C.green }]}>{t('home.flightOnTime', lang)}</Text>
+                  : <Ionicons name="refresh" size={14} color={C.sub} />}
             </View>
           </View>
 
@@ -336,40 +353,6 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
         </TouchableOpacity>
-
-        {/* Atalhos de calculadora — long-press para remover */}
-        <View style={s.favHead}>
-          <Text style={s.favTitleHd}>{t('home.shortcuts', lang)}</Text>
-          {editShortcuts && visibleShortcuts.length > 0 && (
-            <TouchableOpacity onPress={() => setEditShortcuts(false)} hitSlop={8}>
-              <Text style={s.editDone}>{t('home.done', lang)}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {visibleShortcuts.length === 0 ? (
-          <TouchableOpacity style={s.tilesEmptyRow} onPress={() => { select(); resetShortcuts(); setEditShortcuts(false); }}>
-            <Text style={s.tilesEmpty}>{t('home.shortcutsEmpty', lang)}</Text>
-            <View style={s.resetBtn}><Ionicons name="refresh" size={14} color={C.ink} /><Text style={s.resetTxt}>{t('home.shortcutsReset', lang)}</Text></View>
-          </TouchableOpacity>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
-            {visibleShortcuts.map(c => (
-              <TouchableOpacity key={c.id} style={s.tile} activeOpacity={0.85}
-                onPress={() => { if (editShortcuts) return; select(); goCalc(); }}
-                onLongPress={() => { select(); setEditShortcuts(true); }} delayLongPress={300}>
-                <View style={s.tileIcon}><Ionicons name={c.icon} size={24} color={C.ink} /></View>
-                <Text style={s.tileLbl} numberOfLines={2}>{c.label[lang] ?? c.label.pt}</Text>
-                {editShortcuts && (
-                  <TouchableOpacity style={s.tileRemove} hitSlop={8}
-                    onPress={() => { success(); removeShortcut(c.id); }}
-                    accessibilityLabel={t('home.removeShortcut', lang)}>
-                    <Ionicons name="close" size={14} color="#fff" />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
       </ScrollView>
 
       {/* Registar extra */}
@@ -426,8 +409,12 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
+  homeHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.lg },
+  homeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', marginBottom: 6 },
+  homeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  homeTitle: { flex: 1, fontSize: TYPE.title, fontWeight: '600', color: C.text, letterSpacing: -0.3 },
+  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
@@ -473,7 +460,7 @@ const makeStyles = (C) => StyleSheet.create({
   ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
   // Próximo voo
-  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.canvas },
+  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },
   flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700' },
   flightBadge: { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, minHeight: 24, justifyContent: 'center' },
@@ -485,20 +472,6 @@ const makeStyles = (C) => StyleSheet.create({
   flightMeta: { fontSize: TYPE.sub, color: C.sub, marginTop: 8 },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-
-  // Favoritos (atalhos)
-  favHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md, paddingHorizontal: 2 },
-  favTitleHd: { fontSize: TYPE.value + 1, fontWeight: '600', color: C.text },
-  tilesRow: { gap: SPACE.md, paddingHorizontal: 2, paddingBottom: 4 },
-  tile: { width: 88, alignItems: 'center', gap: 8 },
-  tileIcon: { width: 72, height: 72, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' },
-  tileLbl: { fontSize: TYPE.micro, color: C.text, textAlign: 'center', lineHeight: 15 },
-  tileRemove: { position: 'absolute', top: -4, right: 6, width: 22, height: 22, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.canvas },
-  editDone: { fontSize: TYPE.sub, fontWeight: '700', color: C.red },
-  tilesEmptyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, paddingHorizontal: 2 },
-  tilesEmpty: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-  resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  resetTxt: { fontSize: TYPE.label, fontWeight: '600', color: C.ink },
 
   // Registar extra
   fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
