@@ -38,5 +38,5 @@ const makeH = (C) => StyleSheet.create({
   blob: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, margin: SPACE.lg, marginBottom: SPACE.md, padding: SPACE.lg },
   back: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  title: { color: C.onDark, fontSize: TYPE.title, fontWeight: '500' },
+  title: { color: C.onDark, fontSize: TYPE.title, fontWeight: '600' },
 });

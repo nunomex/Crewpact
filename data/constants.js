@@ -82,17 +82,17 @@ export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
 export const GUTTER = 16;
 // Escala tipográfica (px). Mínimo 11 para texto informativo (acessibilidade).
 export const TYPE = {
-  eyebrow: 10,   // rótulos discretos (letterSpacing 1.5–2)
-  micro: 11,     // dados densos (tabelas, rodapés)
-  label: 12,
-  sub: 13,       // subtítulos / valores de linha
-  body: 14,
-  value: 15,
-  lg: 16,        // títulos de folha / botões
-  title: 18,     // título de cabeçalho
-  heading: 20,   // título de cartão/ecrã
-  display: 24,   // números grandes
-  hero: 28,      // título de onboarding
+  eyebrow: 11,   // rótulos discretos (letterSpacing 1.5–2)
+  micro: 12,     // dados densos (tabelas, rodapés)
+  label: 13,
+  sub: 14,       // subtítulos / valores de linha
+  body: 15,
+  value: 16,
+  lg: 17,        // títulos de folha / botões
+  title: 20,     // título de cabeçalho
+  heading: 22,   // título de cartão/ecrã
+  display: 26,   // números grandes
+  hero: 30,      // título de onboarding
 };
 
 // ─── Companies ───────────────────────────────────────────────────────────────
