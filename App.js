@@ -136,6 +136,14 @@ function MainTabs() {
   );
 }
 
+const tbar = StyleSheet.create({
+  wrap: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 99, borderWidth: 1, paddingHorizontal: 6 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 99 },
+  label: { fontSize: 14, fontWeight: '600' },
+  circle: { width: 64, height: 64, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+});
+
 export default function App() {
   // Auth state — null = not logged in
   const [user, setUser] = useState(null);
