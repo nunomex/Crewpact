@@ -449,13 +449,13 @@ const makeStyles = (C) => StyleSheet.create({
   chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
   chartLbl: { fontSize: 10, color: C.onDarkFaint },
   // Barras de progresso FTL (PSV / limites / repouso)
-  prog: { marginBottom: SPACE.md },
-  progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  prog: { marginBottom: SPACE.md + 4 },
+  progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
   progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: '#fff' },
   progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub },
-  progTrack: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
-  progFill: { height: 8, borderRadius: RADIUS.pill },
-  progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 5 },
+  progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
+  progFill: { height: 10, borderRadius: RADIUS.pill },
+  progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 6 },
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
   ftlNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md },
   ftlNavLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', letterSpacing: 0.3 },
@@ -493,7 +493,7 @@ const makeStyles = (C) => StyleSheet.create({
   // Todos os meses
 
   // Notificações
-  notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 2 },
+  notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
