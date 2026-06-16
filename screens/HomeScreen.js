@@ -50,11 +50,9 @@ function RestBar({ label, value, floor, lang, s, at, atDir, atDay }) {
   const over = !empty && value > floor;
   const fill = empty ? 0 : Math.min(1, value / floor);
   return (
-    <View style={s.prog}>
-      <View style={s.progTop}>
-        <Text style={s.progLbl}>{label}</Text>
-        <Text style={s.progVal}>{empty ? '—' : fmtVal(value, 'h')}</Text>
-      </View>
+    <View style={s.restItem}>
+      <Text style={s.restItemLbl}>{label}</Text>
+      <Text style={[s.restHero, over && { color: C.red }]}>{empty ? '—' : fmtVal(value, 'h')}</Text>
       <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {empty
@@ -64,7 +62,7 @@ function RestBar({ label, value, floor, lang, s, at, atDir, atDay }) {
             : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
       {at ? (
-        <View style={[s.setoresRow, { marginTop: 4 }]}>
+        <View style={[s.setoresRow, { marginTop: 6 }]}>
           <Text style={s.bdLbl}>{t(atDir === 'before' ? 'ftl.latestOff' : 'ftl.earliestReport', lang)}</Text>
           <Text style={s.bdVal}>{at}{atDay || ''}</Text>
         </View>
@@ -267,6 +265,7 @@ export default function HomeScreen({ navigation }) {
                     <>
                       <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s}
                         at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
+                      <View style={s.monthDivider} />
                       <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s}
                         at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
                       <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
@@ -465,6 +464,9 @@ const makeStyles = (C) => StyleSheet.create({
   ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
   psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
   psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
+  restItem: { marginBottom: SPACE.md },
+  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
   psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
