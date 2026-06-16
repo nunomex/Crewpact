@@ -1,7 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
@@ -88,11 +87,10 @@ export default function FtlCalcScreen({ route, navigation }) {
           <View style={s.dlgSummary}><Text style={s.dlgSummaryTxt}>{summary(pending)}</Text></View>
           <View style={s.dlgActions}>
             <TouchableOpacity style={[s.dlgBtn, s.dlgBtnGhost]} activeOpacity={0.8} onPress={() => setPending(null)}>
-              <Text style={s.dlgBtnGhostTxt}>{t('common.cancel', lang)}</Text>
+              <Text style={s.dlgBtnGhostTxt}>{t('common.no', lang)}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.dlgBtn, s.dlgBtnPrimary]} activeOpacity={0.85} onPress={confirmRegister}>
-              <Ionicons name="checkmark" size={16} color="#fff" />
-              <Text style={s.dlgBtnPrimaryTxt}>{t('ftl.confirmCta', lang)}</Text>
+              <Text style={s.dlgBtnPrimaryTxt}>{t('common.yes', lang)}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -31,7 +31,6 @@ export default function FtlScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
-        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} backLabel={t('common.back', lang)}
         right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace, paddingTop: 4 }}>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
@@ -27,7 +26,6 @@ function RegisterBtn({ lang, disabled, onPress }) {
   const cs = makeCs(C);
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled} style={[cs.regBtn, disabled && { opacity: 0.4 }]} activeOpacity={0.85}>
-      <Ionicons name="add-circle-outline" size={16} color="#fff" />
       <Text style={cs.regBtnTxt}>{t('ftl.register', lang)}</Text>
     </TouchableOpacity>
   );

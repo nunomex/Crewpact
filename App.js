@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { View, ActivityIndicator, Text, TextInput } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
@@ -77,56 +77,57 @@ function CalcStack() {
   );
 }
 
-function MainTabs() {
+// Tab bar flutuante: pílula com as abas de conteúdo (ativa = ícone + label numa
+// pílula clara; inativas = só ícone) + um círculo destacado para o Perfil.
+function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const { lang, profile } = useContext(AppContext);
   const C = useTheme();
-  const content = companyContent(profile.company); // 'ae' | 'ftl'
-  const isFtl = content === 'ftl';
-  const labels = {
-    'Início': t('tab.home', lang),
-    'AE/FTL': isFtl ? t('tab.ftl', lang) : t('tab.ae', lang),
-    'Cálculos': t('tab.calc', lang),
-    'Perfil': t('tab.profile', lang),
+  const isFtl = companyContent(profile.company) === 'ftl';
+  const META = {
+    'Início':   { label: t('tab.home', lang),    icon: ['home', 'home-outline'] },
+    'AE/FTL':   { label: isFtl ? t('tab.ftl', lang) : t('tab.ae', lang), icon: isFtl ? ['time', 'time-outline'] : ['document-text', 'document-text-outline'] },
+    'Cálculos': { label: t('tab.calc', lang),    icon: ['calculator', 'calculator-outline'] },
+    'Perfil':   { label: t('tab.profile', lang), icon: ['person', 'person-outline'] },
   };
+  const go = (route, focused) => {
+    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+    if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+  };
+  const activeKey = state.routes[state.index].key;
+  const content = state.routes.slice(0, 3);
+  const perfil = state.routes[3];
+  const perfilFocused = activeKey === perfil.key;
+  const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 18, elevation: 10 };
+
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarLabel: labels[route.name] ?? route.name,
-        tabBarStyle: {
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: Math.max(insets.bottom, 12),
-          height: 66,
-          borderRadius: RADIUS.xxl,
-          backgroundColor: C.card,
-          borderTopWidth: 0,
-          borderWidth: 1,
-          borderColor: C.line,
-          paddingTop: 8,
-          paddingBottom: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.12,
-          shadowRadius: 18,
-          elevation: 10,
-        },
-        tabBarActiveTintColor: C.ink,
-        tabBarInactiveTintColor: C.sub,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '500', marginTop: -2 },
-        tabBarIcon: ({ focused, color }) => {
-          const icons = {
-            'Início':   focused ? 'home'             : 'home-outline',
-            'AE/FTL':   isFtl ? (focused ? 'time' : 'time-outline') : (focused ? 'document-text' : 'document-text-outline'),
-            'Cálculos': focused ? 'calculator'       : 'calculator-outline',
-            'Perfil':   focused ? 'person'           : 'person-outline',
-          };
-          return <Ionicons name={icons[route.name]} size={22} color={color} />;
-        },
-      })}
-    >
+    <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 12) }]} pointerEvents="box-none">
+      <View style={[tbar.pill, shadow, { backgroundColor: C.card, borderColor: C.line }]}>
+        {content.map(route => {
+          const focused = activeKey === route.key;
+          const m = META[route.name];
+          return (
+            <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
+              accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={m.label}
+              style={[tbar.item, focused && { backgroundColor: C.soft }]}>
+              <Ionicons name={m.icon[focused ? 0 : 1]} size={22} color={focused ? C.text : C.sub} />
+              {focused && <Text style={[tbar.label, { color: C.text }]} numberOfLines={1}>{m.label}</Text>}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <TouchableOpacity onPress={() => go(perfil, perfilFocused)} activeOpacity={0.85}
+        accessibilityRole="button" accessibilityState={{ selected: perfilFocused }} accessibilityLabel={META['Perfil'].label}
+        style={[tbar.circle, shadow, { backgroundColor: C.card, borderColor: perfilFocused ? C.ink : C.line }]}>
+        <Ionicons name={META['Perfil'].icon[perfilFocused ? 0 : 1]} size={22} color={perfilFocused ? C.text : C.sub} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
       <Tab.Screen name="Início"   component={HomeStack} />
       <Tab.Screen name="AE/FTL"   component={AgreementStack} />
       <Tab.Screen name="Cálculos" component={CalcStack} />

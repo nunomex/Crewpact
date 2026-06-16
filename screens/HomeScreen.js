@@ -9,6 +9,7 @@ import {
   EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur, fmtVal,
   monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
 } from '../data/extras';
+import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -177,20 +178,18 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Cabeçalho plano — o cartão preto abaixo é o único "herói" */}
-        <View style={s.homeHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.homeEyebrow}>{isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}</Text>
-            <View style={s.homeTitleRow}>
-              <View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>
-              <Text style={s.homeTitle} numberOfLines={1}>{company?.name}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-            <Ionicons name="notifications" size={18} color={C.ink} />
-            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-          </TouchableOpacity>
-        </View>
+        {/* Cabeçalho (cartão preto) */}
+        <ScreenHeader
+          eyebrow={isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}
+          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
+          title={company?.name}
+          style={{ margin: 0, marginBottom: SPACE.md }}
+          right={
+            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+              <Ionicons name="notifications" size={18} color={C.onDark} />
+              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+            </TouchableOpacity>
+          } />
 
         {/* Este mês (AE) / Cartão FTL (carrossel) */}
         <View style={s.monthCard}>
@@ -425,12 +424,8 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  homeHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.lg },
-  homeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', marginBottom: 6 },
-  homeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
-  homeTitle: { flex: 1, fontSize: TYPE.title, fontWeight: '600', color: C.text, letterSpacing: -0.3 },
-  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
+  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
+  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
