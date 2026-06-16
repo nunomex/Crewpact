@@ -54,7 +54,7 @@ export default function FtlCalcScreen({ route, navigation }) {
     } else if (p.kind === 'psv') {
       updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
-      updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, ts: Date.now() }));
+      updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
     }
     success();
     setPending(null);

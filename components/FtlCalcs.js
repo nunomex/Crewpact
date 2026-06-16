@@ -167,6 +167,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
     if (dir === 'after') { const e = t0 + min * 60; resNextDay = e >= 1440; resClock = minToHhmm(e % 1440); }
     else { let e = t0 - min * 60; resPrevDay = e < 0; if (e < 0) e += 1440 * Math.ceil(-e / 1440); resClock = minToHhmm(e % 1440); }
   }
+  const atDay = resNextDay ? ' (+1)' : resPrevDay ? ' (−1)' : '';
 
   return (
     <CalcCard title={t('ftl.calcRest', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
@@ -189,7 +190,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
       )}
 
       <Text style={cs.note}>{t('ftl.recovery', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', place, prev, value: min })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', place, prev, value: min, at: resClock, atDir: dir, atDay })} />}
     </CalcCard>
   );
 }

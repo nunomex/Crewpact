@@ -44,7 +44,7 @@ function AnimatedBar({ ratio, color, s }) {
 
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
-function RestBar({ label, value, floor, lang, s }) {
+function RestBar({ label, value, floor, lang, s, at, atDir, atDay }) {
   const empty = value == null;
   const over = !empty && value > floor;
   const fill = empty ? 0 : Math.min(1, value / floor);
@@ -62,6 +62,12 @@ function RestBar({ label, value, floor, lang, s }) {
             ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00`
             : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
+      {at ? (
+        <View style={[s.setoresRow, { marginTop: 4 }]}>
+          <Text style={s.bdLbl}>{t(atDir === 'before' ? 'ftl.latestOff' : 'ftl.earliestReport', lang)}</Text>
+          <Text style={s.bdVal}>{at}{atDay || ''}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -119,6 +125,8 @@ export default function HomeScreen({ navigation }) {
   // várias janelas ao mesmo tempo; cada período faz a sua própria conta.
   const _now = new Date();
   const _daysYTD = Math.floor((_now - new Date(_now.getFullYear(), 0, 1)) / 86400000) + 1; // ano civil até hoje
+  // 12 meses civis consecutivos: da mesma data há 12 meses até hoje (não 365 fixos).
+  const _days12m = Math.floor((_now - new Date(_now.getFullYear() - 1, _now.getMonth(), _now.getDate())) / 86400000) + 1;
   const LIMIT_GROUPS = [
     { cat: 'servico', rows: [
       { days: 7,  limit: 60,  label: lang === 'en' ? '7 days'  : '7 dias' },
@@ -128,7 +136,7 @@ export default function HomeScreen({ navigation }) {
     { cat: 'voo', rows: [
       { days: 28,       limit: 100,  label: lang === 'en' ? '28 days'        : '28 dias' },
       { days: _daysYTD, limit: 900,  label: lang === 'en' ? 'Calendar year'  : 'Ano civil' },
-      { days: 365,      limit: 1000, label: lang === 'en' ? '12 months'      : '12 meses' },
+      { days: _days12m, limit: 1000, label: lang === 'en' ? '12 months'      : '12 meses' },
     ] },
   ];
 
@@ -256,8 +264,10 @@ export default function HomeScreen({ navigation }) {
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
                   {ftlSnap.rest ? (
                     <>
-                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s} />
-                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s} />
+                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s}
+                        at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
+                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s}
+                        at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
                       <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
                     </>
                   ) : (
