@@ -110,7 +110,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       )}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startStr })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startStr, end: endClock, endNextDay })} />}
     </CalcCard>
   );
 }

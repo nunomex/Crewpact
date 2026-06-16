@@ -216,6 +216,12 @@ export default function HomeScreen({ navigation }) {
                         <Text style={s.bdLbl}>{t('ftl.sectors', lang)}</Text>
                         <Text style={s.bdVal}>{ftlSnap.psv.sectors}</Text>
                       </View>
+                      {ftlSnap.psv.end ? (
+                        <View style={[s.setoresRow, { marginTop: 6 }]}>
+                          <Text style={s.bdLbl}>{t('ftl.latestEnd', lang)}</Text>
+                          <Text style={s.bdVal}>{ftlSnap.psv.end}{ftlSnap.psv.endNextDay ? ' (+1)' : ''}</Text>
+                        </View>
+                      ) : null}
                       <View style={[s.prog, { marginTop: SPACE.md }]}>
                         <View style={s.progTop}>
                           <Text style={s.progLbl}>{t('home.psvMaxLbl', lang)}</Text>

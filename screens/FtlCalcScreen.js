@@ -52,7 +52,7 @@ export default function FtlCalcScreen({ route, navigation }) {
       const today = new Date().toISOString().slice(0, 10);
       addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
     } else if (p.kind === 'psv') {
-      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, ts: Date.now() });
+      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
       updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, ts: Date.now() }));
     }
