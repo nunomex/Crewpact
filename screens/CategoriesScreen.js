@@ -334,11 +334,11 @@ const makeCs = (C) => StyleSheet.create({
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: 16 },
-  meCard: { borderWidth: 1.5, borderColor: C.ink, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.card },
+  meCard: { borderWidth: 1.5, borderColor: C.text, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, backgroundColor: C.card },
   meTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   meEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.red, fontWeight: '700' },
   contractPill: { backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  contractTxt: { fontSize: 11, color: C.ink, fontWeight: '600' },
+  contractTxt: { fontSize: 11, color: C.text, fontWeight: '600' },
   meTitle: { fontSize: TYPE.title, fontWeight: '700', color: C.text, letterSpacing: -0.3 },
   meRow: { flexDirection: 'row', gap: 12, marginTop: 14 },
   meCell: { flex: 1, backgroundColor: C.soft, borderRadius: 12, padding: 12 },

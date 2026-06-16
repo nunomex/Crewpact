@@ -35,7 +35,7 @@ export default function FtlScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace, paddingTop: 4 }}>
         <TouchableOpacity style={s.pdfRow} activeOpacity={0.8} onPress={openPdf}>
-          <View style={s.pdfIcon}><Ionicons name="document-text-outline" size={22} color={C.ink} /></View>
+          <View style={s.pdfIcon}><Ionicons name="document-text-outline" size={22} color={C.text} /></View>
           <View style={{ flex: 1 }}>
             <Text style={s.pdfTitle}>{t('ftl.pdfTitle', lang)}</Text>
             <Text style={s.pdfSub}>{t('ftl.pdfSub', lang)}</Text>

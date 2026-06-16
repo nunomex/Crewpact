@@ -290,8 +290,8 @@ export default function App() {
   // ── Render flow: Splash → Login → Onboarding → Main ──
   const renderScreen = () => {
     if (authLoading) return (
-      <View style={{ flex: 1, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={C.ink} />
+      <View style={{ flex: 1, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={palette.text} />
       </View>
     );
     if (!user)       return <LoginScreen />;

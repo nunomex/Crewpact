@@ -24,7 +24,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
               <Text style={[s.title, { fontSize: hasEye ? TYPE.title : TYPE.lg, marginTop: hasEye ? 2 : 0 }]}>{title}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={s.close} hitSlop={8} accessibilityLabel={closeLabel}>
-              <Ionicons name="close" size={18} color={C.ink} />
+              <Ionicons name="close" size={18} color={C.text} />
             </TouchableOpacity>
           </View>
           {children}

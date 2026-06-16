@@ -147,7 +147,7 @@ export default function SettingsScreen() {
 
         <Group title={t('profile.groupContent', lang)} s={s}>
           <View style={s.syncRow}>
-            <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.ink} /></View>
+            <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.text} /></View>
             <View style={{ flex: 1 }}>
               {isFtl ? (
                 <>
@@ -214,7 +214,7 @@ export default function SettingsScreen() {
               <TouchableOpacity key={o.id} disabled={o.disabled}
                 onPress={() => selectOption(pickerField, o.id)}
                 style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
-                <Text style={[s.optLabel, sel && { color: C.ink, fontWeight: '700' }]}>{o.label}</Text>
+                <Text style={[s.optLabel, sel && { color: C.text, fontWeight: '700' }]}>{o.label}</Text>
                 {o.disabled
                   ? <Text style={s.optSoon}>{t('profile.soon', lang)}</Text>
                   : sel

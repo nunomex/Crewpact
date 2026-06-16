@@ -114,7 +114,7 @@ const makeStyles = (C) => StyleSheet.create({
   dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
   dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
-  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.ink },
+  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
   dlgBtnPrimary: { backgroundColor: C.ink },
   dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
 });

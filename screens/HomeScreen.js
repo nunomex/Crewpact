@@ -351,7 +351,7 @@ export default function HomeScreen({ navigation }) {
             <>
               <View style={s.routeRow}>
                 <Text style={s.routeAir}>{flight.depAirport}</Text>
-                <Ionicons name="arrow-forward" size={20} color={C.ink} style={{ marginHorizontal: 12 }} />
+                <Ionicons name="arrow-forward" size={20} color={C.text} style={{ marginHorizontal: 12 }} />
                 <Text style={s.routeAir}>{flight.arrAirport}</Text>
                 <View style={{ flex: 1 }} />
                 <View style={{ alignItems: 'flex-end' }}>
@@ -503,7 +503,7 @@ const makeStyles = (C) => StyleSheet.create({
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 10, fontFamily: 'monospace', fontWeight: '600', color: C.inkSoft, letterSpacing: 0.5 },
+  tagTxt: { fontSize: 10, fontFamily: 'monospace', fontWeight: '600', color: C.text, letterSpacing: 0.5 },
   notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
   notifItemTitle: { fontSize: 13, fontWeight: '500', color: C.text },
   notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },

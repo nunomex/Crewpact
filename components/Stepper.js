@@ -51,7 +51,7 @@ const makeSt = (C) => StyleSheet.create({
   stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
   stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { fontSize: 20, color: C.ink, lineHeight: 24 },
+  stepBtnTxt: { fontSize: 20, color: C.text, lineHeight: 24 },
   stepInput: { width: 56, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
   segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 0, minHeight: 44, alignItems: 'center', justifyContent: 'center' },

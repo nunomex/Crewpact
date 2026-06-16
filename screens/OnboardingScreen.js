@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
       <View style={styles.footer}>
         {step > 0 && (
           <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.btnBack}>
-            <Text style={[styles.btnText, { color: C.ink }]}>{t('onb.back', lang)}</Text>
+            <Text style={[styles.btnText, { color: C.text }]}>{t('onb.back', lang)}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity disabled={!canNext || saving} onPress={async () => {

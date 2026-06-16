@@ -11,7 +11,7 @@ export default function DetailTopBar({ onBack, right, backLabel = 'Voltar' }) {
   return (
     <View style={s.bar}>
       <TouchableOpacity onPress={onBack} style={s.iconBtn} hitSlop={8} accessibilityLabel={backLabel}>
-        <Ionicons name="arrow-back" size={20} color={C.ink} />
+        <Ionicons name="arrow-back" size={20} color={C.text} />
       </TouchableOpacity>
       {right || <View />}
     </View>

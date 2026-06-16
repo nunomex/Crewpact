@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C as _C, RADIUS, SPACE, TYPE } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -27,7 +27,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
   return (
     <View style={f.wrap}>
       <View style={[f.box, focused && f.boxFocused, error && f.boxErr]}>
-        {icon && <Ionicons name={icon} size={18} color={focused ? C.ink : C.sub} style={f.icon} />}
+        {icon && <Ionicons name={icon} size={18} color={focused ? C.text : C.sub} style={f.icon} />}
         <TextInput
           ref={inputRef}
           value={value}
@@ -58,7 +58,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
 const makeF = (C) => StyleSheet.create({
   wrap:       { marginBottom: SPACE.md },
   box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
-  boxFocused: { backgroundColor: C.card, borderColor: C.text },
+  boxFocused: { backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.text },
   boxErr:     { backgroundColor: C.redSoft, borderColor: C.red },
   icon:       { marginRight: 10 },
   input:      { flex: 1, fontSize: TYPE.value, color: C.text, backgroundColor: 'transparent' },
@@ -139,8 +139,8 @@ function OTPInput({ value, onChange }) {
 const makeOtp = (C) => StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: C.card, borderColor: C.text },
-  boxFilled:{ backgroundColor: C.card, borderColor: C.line },
+  boxActive:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.text },
+  boxFilled:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.line },
   digit:    { fontSize: TYPE.title, fontWeight: '700', color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });
@@ -151,6 +151,11 @@ export default function LoginScreen() {
   const C = useTheme();
   const s = makeS(C);
   const insets = useSafeAreaInsets();
+  // No escuro, a pílula da aba ativa fica clara (texto escuro) — caso contrário
+  // a pílula `C.ink` confunde-se com o trilho `C.soft`. Igual ao componente Seg.
+  const dark = C === PALETTE_DARK;
+  const segActiveBg = dark ? C.onDark : C.ink;
+  const segActiveFg = dark ? C.ink : C.onDark;
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
@@ -343,8 +348,8 @@ export default function LoginScreen() {
             <View style={s.seg}>
               {[{ id: 'login', l: t('login.tabLogin', lang) }, { id: 'register', l: t('login.tabRegister', lang) }].map(tab => (
                 <TouchableOpacity key={tab.id} onPress={() => switchTab(tab.id)}
-                  style={[s.segBtn, { backgroundColor: view === tab.id ? C.ink : 'transparent' }]}>
-                  <Text style={[s.segTxt, { color: view === tab.id ? '#fff' : C.sub }]}>{tab.l}</Text>
+                  style={[s.segBtn, { backgroundColor: view === tab.id ? segActiveBg : 'transparent' }]}>
+                  <Text style={[s.segTxt, { color: view === tab.id ? segActiveFg : C.sub }]}>{tab.l}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -436,7 +441,7 @@ export default function LoginScreen() {
               <>
                 <View style={s.stepHeader}>
                   <View style={s.stepIconWrap}>
-                    <Ionicons name="mail-open-outline" size={28} color={C.ink} />
+                    <Ionicons name="mail-open-outline" size={28} color={C.text} />
                   </View>
                   <Text style={s.stepEyebrow}>{t('login.verifyEyebrow', lang)}</Text>
                   <Text style={s.stepTitle}>{t('login.verifyTitle', lang)}</Text>
@@ -464,7 +469,7 @@ export default function LoginScreen() {
               <>
                 <View style={s.stepHeader}>
                   <View style={s.stepIconWrap}>
-                    <Ionicons name="lock-open-outline" size={28} color={C.ink} />
+                    <Ionicons name="lock-open-outline" size={28} color={C.text} />
                   </View>
                   <Text style={s.stepEyebrow}>{t('login.newPwEyebrow', lang)}</Text>
                   <Text style={s.stepTitle}>{t('login.newPwTitle', lang)}</Text>

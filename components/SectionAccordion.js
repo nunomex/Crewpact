@@ -44,7 +44,7 @@ export function EmptyState({ text }) {
 
 const makeStyles = (C) => StyleSheet.create({
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 12, marginTop: 8, backgroundColor: C.card },
-  secHeaderOpen: { borderColor: C.ink, marginBottom: 6 },
+  secHeaderOpen: { borderColor: C.text, marginBottom: 6 },
   secBadge: { backgroundColor: C.ink, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   secBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace' },
   secTitle: { flex: 1, fontSize: TYPE.sub, fontWeight: '600', letterSpacing: 0.5, color: C.text },

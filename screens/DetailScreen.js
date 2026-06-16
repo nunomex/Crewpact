@@ -200,6 +200,6 @@ const makeD = (C) => StyleSheet.create({
   valLbl: { fontSize: 13, color: C.sub },
   valAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '600', color: C.text },
   relRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6 },
-  relNum: { fontFamily: 'monospace', fontSize: TYPE.label, color: C.ink },
+  relNum: { fontFamily: 'monospace', fontSize: TYPE.label, color: C.text },
   relLabel: { flex: 1, fontSize: 13, color: C.text },
 });
