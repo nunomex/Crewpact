@@ -86,9 +86,11 @@ export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const { width } = useWindowDimensions();
   const slideW = width - 64; // largura interna do cartão (scroll 16 + card 16, cada lado)
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, hiddenShortcuts, removeShortcut, resetShortcuts } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
+  const [editShortcuts, setEditShortcuts] = useState(false);
+  const visibleShortcuts = CALC_SHORTCUTS.filter(c => !hiddenShortcuts.has(c.id));
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
 
@@ -335,18 +337,39 @@ export default function HomeScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Atalhos de calculadora */}
+        {/* Atalhos de calculadora — long-press para remover */}
         <View style={s.favHead}>
           <Text style={s.favTitleHd}>{t('home.shortcuts', lang)}</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
-          {CALC_SHORTCUTS.map(c => (
-            <TouchableOpacity key={c.id} style={s.tile} activeOpacity={0.85} onPress={() => { select(); goCalc(); }}>
-              <View style={s.tileIcon}><Ionicons name={c.icon} size={24} color={C.ink} /></View>
-              <Text style={s.tileLbl} numberOfLines={2}>{c.label[lang] ?? c.label.pt}</Text>
+          {editShortcuts && visibleShortcuts.length > 0 && (
+            <TouchableOpacity onPress={() => setEditShortcuts(false)} hitSlop={8}>
+              <Text style={s.editDone}>{t('home.done', lang)}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        </View>
+        {visibleShortcuts.length === 0 ? (
+          <TouchableOpacity style={s.tilesEmptyRow} onPress={() => { select(); resetShortcuts(); setEditShortcuts(false); }}>
+            <Text style={s.tilesEmpty}>{t('home.shortcutsEmpty', lang)}</Text>
+            <View style={s.resetBtn}><Ionicons name="refresh" size={14} color={C.ink} /><Text style={s.resetTxt}>{t('home.shortcutsReset', lang)}</Text></View>
+          </TouchableOpacity>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tilesRow}>
+            {visibleShortcuts.map(c => (
+              <TouchableOpacity key={c.id} style={s.tile} activeOpacity={0.85}
+                onPress={() => { if (editShortcuts) return; select(); goCalc(); }}
+                onLongPress={() => { select(); setEditShortcuts(true); }} delayLongPress={300}>
+                <View style={s.tileIcon}><Ionicons name={c.icon} size={24} color={C.ink} /></View>
+                <Text style={s.tileLbl} numberOfLines={2}>{c.label[lang] ?? c.label.pt}</Text>
+                {editShortcuts && (
+                  <TouchableOpacity style={s.tileRemove} hitSlop={8}
+                    onPress={() => { success(); removeShortcut(c.id); }}
+                    accessibilityLabel={t('home.removeShortcut', lang)}>
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </ScrollView>
 
       {/* Registar extra */}
@@ -470,6 +493,12 @@ const makeStyles = (C) => StyleSheet.create({
   tile: { width: 88, alignItems: 'center', gap: 8 },
   tileIcon: { width: 72, height: 72, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.line, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' },
   tileLbl: { fontSize: TYPE.micro, color: C.text, textAlign: 'center', lineHeight: 15 },
+  tileRemove: { position: 'absolute', top: -4, right: 6, width: 22, height: 22, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.canvas },
+  editDone: { fontSize: TYPE.sub, fontWeight: '700', color: C.red },
+  tilesEmptyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, paddingHorizontal: 2 },
+  tilesEmpty: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  resetTxt: { fontSize: TYPE.label, fontWeight: '600', color: C.ink },
 
   // Registar extra
   fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
