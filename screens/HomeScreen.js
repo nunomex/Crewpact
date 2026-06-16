@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C, RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
+import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
@@ -25,7 +25,8 @@ const hhmmToH = (s) => {
 const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
-const barColor = (ratio) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
+// Recebe a paleta ativa (C) para acompanhar o tema (claro/escuro).
+const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
 
 // Barra com preenchimento animado (0 → valor) sempre que o rácio muda — dá a
 // sensação de "encher" ao abrir o Início depois de registar nos Cálculos.
@@ -45,7 +46,7 @@ function AnimatedBar({ ratio, color, s }) {
 
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
-function RestBar({ label, value, floor, lang, s, at, atDir, atDay }) {
+function RestBar({ label, value, floor, lang, s, C, at, atDir, atDay }) {
   const empty = value == null;
   const over = !empty && value > floor;
   const fill = empty ? 0 : Math.min(1, value / floor);
@@ -72,7 +73,7 @@ function RestBar({ label, value, floor, lang, s, at, atDir, atDay }) {
 }
 
 // Barra de limite (FTL) — feito / limite, com horas em falta.
-function ProgressRow({ label, done, limit, lang, s }) {
+function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
   const fill = Math.min(1, ratio);
   const over = done > limit;
@@ -83,7 +84,7 @@ function ProgressRow({ label, done, limit, lang, s }) {
         <Text style={s.progLbl}>{label}</Text>
         <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
       </View>
-      <AnimatedBar ratio={fill} color={barColor(ratio)} s={s} />
+      <AnimatedBar ratio={fill} color={barColor(ratio, C)} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
       </Text>
@@ -212,7 +213,7 @@ export default function HomeScreen({ navigation }) {
                     <>
                       <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
                       <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
-                      <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} s={s} />
+                      <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13, C)} s={s} />
                       <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{t('home.psvMaxFoot', lang)}</Text>
 
                       <View style={s.monthDivider} />
@@ -254,7 +255,7 @@ export default function HomeScreen({ navigation }) {
                     value={limCat} setValue={setLimCat} dark />
                   {(LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
                     <ProgressRow key={`${limCat}${r.days}`} label={r.label}
-                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} />
+                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} C={C} />
                   ))}
                 </View>
 
@@ -263,10 +264,10 @@ export default function HomeScreen({ navigation }) {
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
                   {ftlSnap.rest ? (
                     <>
-                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s}
+                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
                       <View style={s.monthDivider} />
-                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s}
+                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
                       <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
                     </>

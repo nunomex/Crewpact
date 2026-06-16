@@ -13,6 +13,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, companyContent, PALETTES } from './data/constants';
@@ -308,6 +309,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
