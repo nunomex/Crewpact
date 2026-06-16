@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
@@ -7,6 +7,19 @@ import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM } from '../data/ftl';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
+
+// Conversões de hora ("HH:MM" ↔ minutos).
+const hhmmToMin = (s) => { const [h, m] = String(s).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+const minToHhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const parseHhmm = (s) => {
+  const str = String(s).trim();
+  if (!str) return null;
+  let h, m;
+  if (str.includes(':')) { const [a, b] = str.split(':'); h = parseInt(a, 10); m = parseInt(b || '0', 10); }
+  else { const d = str.replace(/[^0-9]/g, ''); if (!d) return null; h = parseInt(d.length <= 2 ? d : d.slice(0, d.length - 2), 10); m = d.length <= 2 ? 0 : parseInt(d.slice(-2), 10); }
+  if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return null;
+  return h * 60 + m;
+};
 
 // Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
 function RegisterBtn({ lang, disabled, onPress }) {
@@ -31,24 +44,36 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);
   const [sectors, setSectors] = useState(2);
+  const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
   const isAcc = accState === 'acc';
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
   const changeState = (st) => { setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
 
-  let result;
+  let base;
   if (isAcc) {
     const col = sec <= 2 ? 0 : Math.min(sec - 2, 8);          // Quadro 2: 9 colunas
-    result = PSV_ACCLIMATISED[startIdx].v[col];
+    base = PSV_ACCLIMATISED[startIdx].v[col];
   } else {
     const col = sec <= 2 ? 0 : Math.min(sec - 2, 6);          // Quadros 3/4: 7 colunas
-    result = (accState === 'unk' ? PSV_UNKNOWN : PSV_UNKNOWN_FRM)[col];
+    base = (accState === 'unk' ? PSV_UNKNOWN : PSV_UNKNOWN_FRM)[col];
   }
 
+  // #4 Split duty (ORO.FTL.220): pausa ≥ 3 h estende o PSV em 50% da pausa.
+  const extMin = brk >= 3 ? brk * 30 : 0;
+  const fdpMin = hhmmToMin(base) + extMin;
+  const result = minToHhmm(fdpMin);
+
+  // #1 Fim-limite (até calços) = início + PSV, quando a hora de início é conhecida.
+  const startStr = isAcc ? PSV_ACCLIMATISED[startIdx].start : null;
+  const endMin = startStr != null ? hhmmToMin(startStr) + fdpMin : null;
+  const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
+  const endNextDay = endMin != null && endMin >= 1440;
+
   const foot = isAcc
-    ? (lang === 'en' ? `Start ${PSV_ACCLIMATISED[startIdx].start} · ${sec} sector(s).` : `Início ${PSV_ACCLIMATISED[startIdx].start} · ${sec} setor(es).`)
-    : (lang === 'en' ? `${sec} sector(s) · acclimatisation unknown.` : `${sec} setor(es) · aclimatação desconhecida.`);
+    ? (lang === 'en' ? `Start ${startStr} · ${sec} sector(s)${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.` : `Início ${startStr} · ${sec} setor(es)${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.`)
+    : (lang === 'en' ? `${sec} sector(s) · acclimatisation unknown${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.` : `${sec} setor(es) · aclimatação desconhecida${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.`);
 
   return (
     <CalcCard title={t('ftl.calcPsv', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
@@ -75,9 +100,17 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       )}
 
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
+      <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
       <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} foot={foot} />
+      {endClock != null && (
+        <View style={cs.extRow}>
+          <Text style={cs.extLbl}>{t('ftl.latestEnd', lang)}</Text>
+          <Text style={cs.extVal}>{endClock}{endNextDay ? ' (+1)' : ''}</Text>
+        </View>
+      )}
+      {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: isAcc ? PSV_ACCLIMATISED[startIdx].start : null })} />}
+      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startStr })} />}
     </CalcCard>
   );
 }
@@ -118,17 +151,43 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const cs = makeCs(C);
   const [place, setPlace] = useState('base');
   const [prev, setPrev] = useState(10);
+  const [dir, setDir] = useState('after'); // 'after' = off-block→apresentação · 'before' = apresentação→off-block
+  const [timeStr, setTimeStr] = useState('');
   const floor = place === 'base' ? 12 : 10;
   const min = Math.max(prev, floor);
   const where = place === 'base' ? t('ftl.atBase', lang).toLowerCase() : t('ftl.awayBase', lang).toLowerCase();
   const foot = lang === 'en'
     ? `Greater of preceding duty (${prev} h) and ${floor} h (${where}).`
     : `Maior valor entre serviço anterior (${prev} h) e ${floor} h (${where}).`;
+
+  // #2 Repouso bidirecional: a partir de uma hora, calcula a outra ponta.
+  const t0 = parseHhmm(timeStr);
+  let resClock = null, resNextDay = false, resPrevDay = false;
+  if (t0 != null) {
+    if (dir === 'after') { const e = t0 + min * 60; resNextDay = e >= 1440; resClock = minToHhmm(e % 1440); }
+    else { let e = t0 - min * 60; resPrevDay = e < 0; if (e < 0) e += 1440 * Math.ceil(-e / 1440); resClock = minToHhmm(e % 1440); }
+  }
+
   return (
     <CalcCard title={t('ftl.calcRest', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
       <Seg options={[{ id: 'base', label: t('ftl.atBase', lang) }, { id: 'away', label: t('ftl.awayBase', lang) }]} value={place} setValue={setPlace} />
       <Stepper label={t('ftl.prevDuty', lang)} value={prev} setValue={setPrev} min={0} max={20} />
       <ResultBlock label={t('ftl.minRest', lang)} value={`${min} h`} valueSize={28} foot={foot} />
+
+      <Text style={[cs.fieldLabel, { marginTop: 14 }]}>{t('ftl.restPlan', lang)}</Text>
+      <Seg options={[{ id: 'after', label: t('ftl.restDirAfter', lang) }, { id: 'before', label: t('ftl.restDirBefore', lang) }]} value={dir} setValue={setDir} />
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{dir === 'after' ? t('ftl.offBlock', lang) : t('ftl.reportTime', lang)}</Text>
+        <TextInput value={timeStr} onChangeText={setTimeStr} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+      {resClock != null && (
+        <View style={cs.extRow}>
+          <Text style={cs.extLbl}>{dir === 'after' ? t('ftl.earliestReport', lang) : t('ftl.latestOff', lang)}</Text>
+          <Text style={cs.extVal}>{resClock}{resNextDay ? ' (+1)' : resPrevDay ? ' (−1)' : ''}</Text>
+        </View>
+      )}
+
       <Text style={cs.note}>{t('ftl.recovery', lang)}</Text>
       {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', place, prev, value: min })} />}
     </CalcCard>
@@ -143,4 +202,10 @@ const makeCs = (C) => StyleSheet.create({
   regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
   regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 10, lineHeight: 16 },
+  extRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
+  extLbl: { fontSize: TYPE.sub, color: C.text, fontWeight: '500' },
+  extVal: { fontSize: TYPE.value, fontFamily: 'monospace', fontWeight: '700', color: C.text },
+  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginTop: 4 },
+  timeLbl: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
+  timeInput: { width: 84, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
 });
