@@ -286,8 +286,6 @@ export default function HomeScreen({ navigation }) {
                   {[0, 1, 2].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === ftlPage ? C.onDark : C.hairlineOnDark }]} />)}
                 </View>
               </View>
-
-              <Text style={s.ftlHint}>{t('home.ftlHint', lang)}</Text>
             </>
           ) : (
             <>
@@ -468,7 +466,6 @@ const makeStyles = (C) => StyleSheet.create({
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ftlHint: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: SPACE.md, lineHeight: 16 },
 
   // Próximo voo
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },
