@@ -118,7 +118,7 @@ function FloatingTabBar({ state, navigation }) {
       </View>
       <TouchableOpacity onPress={() => go(perfil, perfilFocused)} activeOpacity={0.85}
         accessibilityRole="button" accessibilityState={{ selected: perfilFocused }} accessibilityLabel={META['Perfil'].label}
-        style={[tbar.circle, shadow, { backgroundColor: C.card, borderColor: perfilFocused ? C.ink : C.line }]}>
+        style={[tbar.circle, shadow, { backgroundColor: C.card, borderColor: C.line }]}>
         <Ionicons name={META['Perfil'].icon[perfilFocused ? 0 : 1]} size={22} color={perfilFocused ? C.text : C.sub} />
       </TouchableOpacity>
     </View>
@@ -138,10 +138,10 @@ function MainTabs() {
 
 const tbar = StyleSheet.create({
   wrap: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 99, borderWidth: 1, paddingHorizontal: 6 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 99 },
+  pill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: RADIUS.xl, borderWidth: 1, paddingHorizontal: 6 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 11, borderRadius: RADIUS.lg },
   label: { fontSize: 14, fontWeight: '600' },
-  circle: { width: 64, height: 64, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  circle: { width: 64, height: 64, borderRadius: RADIUS.xl, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default function App() {
