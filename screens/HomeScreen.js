@@ -212,9 +212,19 @@ export default function HomeScreen({ navigation }) {
                   <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
                   {ftlSnap.psv ? (
                     <>
-                      <Text style={s.psvState}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}</Text>
+                      <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
+                      <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
+                      <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} s={s} />
+                      <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{t('home.psvMaxFoot', lang)}</Text>
+
+                      <View style={s.monthDivider} />
+
+                      <View style={s.setoresRow}>
+                        <Text style={s.bdLbl}>{t('home.psvStateLbl', lang)}</Text>
+                        <Text style={s.bdVal}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}</Text>
+                      </View>
                       {ftlSnap.psv.start ? (
-                        <View style={s.setoresRow}>
+                        <View style={[s.setoresRow, { marginTop: 6 }]}>
                           <Text style={s.bdLbl}>{t('ftl.psvStart', lang)}</Text>
                           <Text style={s.bdVal}>{ftlSnap.psv.start}</Text>
                         </View>
@@ -229,14 +239,6 @@ export default function HomeScreen({ navigation }) {
                           <Text style={s.bdVal}>{ftlSnap.psv.end}{ftlSnap.psv.endNextDay ? ' (+1)' : ''}</Text>
                         </View>
                       ) : null}
-                      <View style={[s.prog, { marginTop: SPACE.md }]}>
-                        <View style={s.progTop}>
-                          <Text style={s.progLbl}>{t('home.psvMaxLbl', lang)}</Text>
-                          <Text style={s.progVal}>{ftlSnap.psv.result}</Text>
-                        </View>
-                        <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13)} s={s} />
-                        <Text style={s.progFoot}>máx. 13:00</Text>
-                      </View>
                     </>
                   ) : (
                     <View style={s.psvEmpty}>
@@ -272,7 +274,7 @@ export default function HomeScreen({ navigation }) {
                   ) : (
                     <View style={s.psvEmpty}>
                       <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                      <Text style={s.psvEmptyTxt}>{t('home.psvEmpty', lang)}</Text>
+                      <Text style={s.psvEmptyTxt}>{t('home.restEmpty', lang)}</Text>
                     </View>
                   )}
                 </View>
@@ -461,7 +463,8 @@ const makeStyles = (C) => StyleSheet.create({
   ftlNavLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', letterSpacing: 0.3 },
   ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
-  psvState: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff', marginBottom: SPACE.sm },
+  psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
   psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
