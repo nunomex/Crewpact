@@ -129,8 +129,8 @@ function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
       <Tab.Screen name="Início"   component={HomeStack} />
-      <Tab.Screen name="AE/FTL"   component={AgreementStack} />
       <Tab.Screen name="Cálculos" component={CalcStack} />
+      <Tab.Screen name="AE/FTL"   component={AgreementStack} />
       <Tab.Screen name="Perfil"   component={SettingsScreen} />
     </Tab.Navigator>
   );
