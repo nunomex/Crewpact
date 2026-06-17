@@ -105,32 +105,24 @@ function FloatingTabBar({ state, navigation }) {
     if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
   };
   const activeKey = state.routes[state.index].key;
-  const content = state.routes.slice(0, 3);
-  const perfil = state.routes[3];
-  const perfilFocused = activeKey === perfil.key;
   const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 18, elevation: 10 };
 
   return (
     <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 12) }]} pointerEvents="box-none">
       <View style={[tbar.pill, shadow, { backgroundColor: C.card, borderColor: C.line }]}>
-        {content.map(route => {
+        {state.routes.map(route => {
           const focused = activeKey === route.key;
           const m = META[route.name];
           return (
             <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
               accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={m.label}
-              style={[tbar.item, focused && { backgroundColor: C.soft }]}>
+              style={[tbar.item, focused && [tbar.itemActive, { backgroundColor: C.soft }]]}>
               <Ionicons name={m.icon[focused ? 0 : 1]} size={22} color={focused ? C.text : C.sub} />
               {focused && <Text style={[tbar.label, { color: C.text }]} numberOfLines={1}>{m.label}</Text>}
             </TouchableOpacity>
           );
         })}
       </View>
-      <TouchableOpacity onPress={() => go(perfil, perfilFocused)} activeOpacity={0.85}
-        accessibilityRole="button" accessibilityState={{ selected: perfilFocused }} accessibilityLabel={META['Perfil'].label}
-        style={[tbar.circle, shadow, { backgroundColor: C.card, borderColor: C.line }]}>
-        <Ionicons name={META['Perfil'].icon[perfilFocused ? 0 : 1]} size={22} color={perfilFocused ? C.text : C.sub} />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -147,11 +139,11 @@ function MainTabs() {
 }
 
 const tbar = StyleSheet.create({
-  wrap: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  wrap: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center' },
   pill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: RADIUS.xl, borderWidth: 1, paddingHorizontal: 6 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 11, borderRadius: RADIUS.lg },
+  itemActive: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
   label: { fontSize: 14, fontWeight: '600' },
-  circle: { width: 64, height: 64, borderRadius: RADIUS.xl, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default function App() {
