@@ -153,6 +153,8 @@ export default function HomeScreen({ navigation }) {
   const curKey   = monthKey();
   const total    = monthTotal(extras, curKey);
   const aeSections = monthBySection(extras, curKey); // registos do mês agrupados por secção (carrossel AE)
+  const aeEventSec = aeSections.find(sec => sec.id === 'perEvent'); // pagamentos por evento → vão para o slide 1
+  const aeRestSecs = aeSections.filter(sec => sec.id !== 'perEvent'); // restantes → slide 2 (Registos)
   const pct      = pctChange(extras, curKey);
   const totalDisplay = fmtEur(total);
 
@@ -325,7 +327,7 @@ export default function HomeScreen({ navigation }) {
               <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={e => setAePage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
 
-                {/* Slide 1 — Resumo (total + variação) */}
+                {/* Slide 1 — Resumo (total + variação + pagamentos por evento) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
                   <Text style={s.monthTotal}>{totalDisplay}</Text>
@@ -335,18 +337,32 @@ export default function HomeScreen({ navigation }) {
                       <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
                     </View>
                   )}
+                  {aeEventSec && (
+                    <View style={[s.recSection, { marginTop: SPACE.lg }]}>
+                      <View style={s.recSecHead}>
+                        <Text style={s.recSecTitle}>{aeSectionLabel(aeEventSec.id, lang)}</Text>
+                        <Text style={s.recSecTotal}>{fmtEur(aeEventSec.total)}</Text>
+                      </View>
+                      {aeEventSec.items.map(it => (
+                        <View key={it.key} style={s.recItem}>
+                          <Text style={s.bdLbl} numberOfLines={1}>{it.label || catLabel(it.category, lang)}</Text>
+                          <Text style={s.bdVal}>{fmtEur(it.total)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
-                {/* Slide 2 — Registos do mês, agrupados por secção (como a aba Cálculos) */}
+                {/* Slide 2 — Registos do mês, agrupados por secção (sem pagamentos por evento) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.recordsTitle', lang)}</Text>
-                  {aeSections.length === 0 ? (
+                  {aeRestSecs.length === 0 ? (
                     <View style={s.psvEmpty}>
                       <View style={s.psvEmptyIcon}><Ionicons name="receipt-outline" size={22} color={C.onDarkSub} /></View>
                       <Text style={s.psvEmptyTxt}>{t('home.noExtras', lang)}</Text>
                     </View>
                   ) : (
-                    aeSections.map(sec => (
+                    aeRestSecs.map(sec => (
                       <View key={sec.id} style={s.recSection}>
                         <View style={s.recSecHead}>
                           <Text style={s.recSecTitle}>{aeSectionLabel(sec.id, lang)}</Text>
