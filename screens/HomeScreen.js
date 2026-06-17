@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Activi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
+import { PSV_ACCLIMATISED, PSV_SECTORS, PSV_UNKNOWN_SECTORS, psvBandIdx } from '../data/ftl';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
@@ -23,6 +24,37 @@ const hhmmToH = (s) => {
   return (h || 0) + (m || 0) / 60;
 };
 const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
+
+// Formata uma faixa de hora '0530–0544' → '05:30–05:44' (legibilidade no cartão).
+const fmtBand = (b) => String(b).split('–').map(p => (p.length === 4 ? `${p.slice(0, 2)}:${p.slice(2)}` : p)).join('–');
+
+// "Base do cálculo" compacta (dentro do cartão preto): origem regulamentar +
+// linha/coluna da tabela (PSV) ou comparação (repouso). Tipografia secundária.
+function CalcBasis({ s, refTxt, detail, lang }) {
+  return (
+    <View style={s.basis}>
+      <Text style={s.basisHd}>{t('home.calcBasis', lang)}</Text>
+      <Text style={s.basisDetail}>{refTxt} · {detail}</Text>
+    </View>
+  );
+}
+
+// Origem regulamentar do PSV: linha (faixa de início) × coluna (setores) do
+// Quadro 2 quando aclimatado, ou Quadro 3/4 no estado desconhecido. A faixa é
+// derivada da hora de apresentação guardada (a mesma lógica da calculadora).
+function psvBasisFor(psv, lang) {
+  if (!psv) return null;
+  const sct = lang === 'en' ? 'sectors' : 'setores';
+  if (psv.state === 'acc' && psv.start) {
+    const [h, m] = String(psv.start).split(':').map(Number);
+    const idx = psvBandIdx((h || 0) * 60 + (m || 0));
+    const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 8);
+    return { ref: 'ORO.FTL.205', detail: `${fmtBand(PSV_ACCLIMATISED[idx].start)} × ${PSV_SECTORS[col]} ${sct}` };
+  }
+  const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 6);
+  const quad = lang === 'en' ? `Table ${psv.state === 'unk' ? 3 : 4}` : `Quadro ${psv.state === 'unk' ? 3 : 4}`;
+  return { ref: 'ORO.FTL.205', detail: `${quad} · ${PSV_UNKNOWN_SECTORS[col]} ${sct}` };
+}
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 // Recebe a paleta ativa (C) para acompanhar o tema (claro/escuro).
@@ -46,7 +78,7 @@ function AnimatedBar({ ratio, color, s }) {
 
 // Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
 // repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
-function RestBar({ label, value, floor, lang, s, C, at, atDir, atDay }) {
+function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
   const empty = value == null;
   const over = !empty && value > floor;
   const fill = empty ? 0 : Math.min(1, value / floor);
@@ -62,6 +94,9 @@ function RestBar({ label, value, floor, lang, s, C, at, atDir, atDay }) {
             ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00`
             : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
+      {!empty && prev != null ? (
+        <CalcBasis s={s} refTxt="ORO.FTL.235" detail={`max(${fmtVal(prev, 'h')}, ${floor} h)`} lang={lang} />
+      ) : null}
       {at ? (
         <View style={[s.setoresRow, { marginTop: 6 }]}>
           <Text style={s.bdLbl}>{t(atDir === 'before' ? 'ftl.latestOff' : 'ftl.earliestReport', lang)}</Text>
@@ -85,8 +120,11 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
         <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
       </View>
       <AnimatedBar ratio={fill} color={barColor(ratio, C)} s={s} />
+      <Text style={s.progBasis}>{t('home.basisShort', lang)} ORO.FTL.210 · {limit} h / {label}</Text>
       <Text style={[s.progFoot, over && { color: C.red }]}>
-        {over ? t('home.over', lang) : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
+        {over
+          ? `${t('home.excess', lang)} ${fmtVal(done - limit, 'h')}`
+          : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
       </Text>
     </View>
   );
@@ -101,6 +139,7 @@ export default function HomeScreen({ navigation }) {
   const s = makeStyles(C);
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
+  const psvBasis = psvBasisFor(ftlSnap.psv, lang); // origem regulamentar p/ o cartão PSV
 
   const [ftlPage, setFtlPage] = useState(0);
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no slide Limites
@@ -232,6 +271,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={s.bdLbl}>{t('ftl.sectors', lang)}</Text>
                         <Text style={s.bdVal}>{ftlSnap.psv.sectors}</Text>
                       </View>
+                      {psvBasis ? <CalcBasis s={s} refTxt={psvBasis.ref} detail={psvBasis.detail} lang={lang} /> : null}
                       {ftlSnap.psv.end ? (
                         <View style={[s.setoresRow, { marginTop: 6 }]}>
                           <Text style={s.bdLbl}>{t('ftl.latestEnd', lang)}</Text>
@@ -264,10 +304,10 @@ export default function HomeScreen({ navigation }) {
                   <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
                   {ftlSnap.rest ? (
                     <>
-                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} lang={lang} s={s} C={C}
+                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
                       <View style={s.monthDivider} />
-                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} lang={lang} s={s} C={C}
+                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
                       <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
                     </>
@@ -458,6 +498,11 @@ const makeStyles = (C) => StyleSheet.create({
   progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 6 },
+  progBasis: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 6 },
+  // "Base do cálculo" — origem regulamentar, tipografia secundária sobre o cartão preto.
+  basis: { marginTop: 8 },
+  basisHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.2, color: C.onDarkFaint, fontWeight: '700', textTransform: 'uppercase' },
+  basisDetail: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 2 },
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
   ftlNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md },
   ftlNavLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', letterSpacing: 0.3 },

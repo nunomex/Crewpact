@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import { t } from '../data/i18n';
 import { useTheme } from '../App';
 
 // Invólucro de calculadora. Por defeito estático (eyebrow + caixa).
@@ -36,10 +37,14 @@ export function CalcCard({ title = 'CALCULADORA', children, style, collapsible =
 
 // Bloco de resultado (caixa preta, número a vermelho).
 // API flexível: `lines` (multi-linha [{label,val}]) OU `label`+`value` (linha única).
-export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = TYPE.display }) {
+// `audit` (opcional) torna o resultado auditável: estado + secção expansível
+// "Como foi calculado" (regra, entradas, fórmula/passos, resultado, justificação).
+export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = TYPE.display, audit, lang = 'pt' }) {
   const C = useTheme();
   const c = makeC(C);
+  const [open, setOpen] = useState(false);
   const data = lines || [{ label, val: value }];
+  const valid = audit?.valid;
   return (
     <View style={c.result}>
       {data.map((ln, i) => (
@@ -48,7 +53,55 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
           <Text style={[c.resVal, { fontSize: valueSize }]}>{ln.val}</Text>
         </View>
       ))}
+
+      {valid ? (
+        <View style={c.validRow}>
+          <View style={[c.validDot, { backgroundColor: valid.ok ? C.green : C.red }]} />
+          <Text style={[c.validTxt, { color: valid.ok ? C.green : C.red }]}>{valid.label}</Text>
+        </View>
+      ) : null}
+
       {foot ? <Text style={c.resFoot}>{foot}</Text> : null}
+
+      {audit ? (
+        <>
+          <TouchableOpacity style={c.auditToggle} activeOpacity={0.7} onPress={() => setOpen(o => !o)}>
+            <Text style={c.auditToggleTxt}>{t('audit.how', lang)}</Text>
+            <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+          {open ? (
+            <View style={c.auditBody}>
+              <Text style={c.auditHd}>{t('audit.rule', lang)}</Text>
+              <Text style={c.auditRule}>{audit.rule.ref} · {audit.rule.name}</Text>
+              <Text style={c.auditText}>{audit.rule.summary}</Text>
+
+              <Text style={c.auditHd}>{t('audit.inputs', lang)}</Text>
+              {audit.inputs.map((it, i) => (
+                <View key={i} style={c.auditKv}>
+                  <Text style={c.auditK}>{it.label}</Text>
+                  <Text style={c.auditV}>{it.value}</Text>
+                </View>
+              ))}
+
+              <Text style={c.auditHd}>{t('audit.calc', lang)}</Text>
+              {audit.formula ? <Text style={c.auditFormula}>{audit.formula}</Text> : null}
+              {(audit.steps || []).map((st, i) => <Text key={i} style={c.auditStep}>· {st}</Text>)}
+
+              <View style={[c.auditKv, c.auditResult]}>
+                <Text style={c.auditK}>{t('audit.result', lang)}</Text>
+                <Text style={[c.auditV, { color: C.red }]}>{audit.result}</Text>
+              </View>
+
+              {audit.why ? (
+                <>
+                  <Text style={c.auditHd}>{t('audit.why', lang)}</Text>
+                  <Text style={c.auditText}>{audit.why}</Text>
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -63,4 +116,21 @@ const makeC = (C) => StyleSheet.create({
   resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },
   resVal: { color: C.red, fontFamily: 'monospace', marginTop: 2 },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
+
+  validRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  validDot: { width: 7, height: 7, borderRadius: 4 },
+  validTxt: { fontSize: TYPE.micro, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase' },
+
+  auditToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 10 },
+  auditToggleTxt: { fontSize: TYPE.sub, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  auditBody: { marginTop: 4 },
+  auditHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.45)', fontWeight: '700', textTransform: 'uppercase', marginTop: 14, marginBottom: 5 },
+  auditRule: { fontSize: TYPE.sub, fontFamily: 'monospace', fontWeight: '700', color: '#fff' },
+  auditText: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 17, marginTop: 3 },
+  auditKv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 3 },
+  auditK: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.6)', flex: 1 },
+  auditV: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '600', color: '#fff' },
+  auditFormula: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  auditStep: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginTop: 4 },
+  auditResult: { marginTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8 },
 });

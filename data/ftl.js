@@ -58,6 +58,25 @@ export const PSV_UNKNOWN_SECTORS = ['1–2', '3', '4', '5', '6', '7', '8'];
 export const PSV_UNKNOWN     = ['11:00', '10:30', '10:00', '9:30', '9:00', '9:00', '9:00']; // Quadro 3
 export const PSV_UNKNOWN_FRM = ['12:00', '11:30', '11:00', '10:30', '10:00', '9:30', '9:00']; // Quadro 4 (SGRF)
 
+// Faixa de hora de início do Quadro 2 (índice da linha de PSV_ACCLIMATISED) a
+// partir da hora de apresentação em minutos. A faixa 1700–0459 cobre a noite,
+// incluindo a passagem da meia-noite, e é o valor por omissão.
+export const psvBandIdx = (m) => {
+  if (m >= 360 && m <= 809) return 0;   // 0600–1329
+  if (m >= 810 && m <= 839) return 1;   // 1330–1359
+  if (m >= 840 && m <= 869) return 2;   // 1400–1429
+  if (m >= 870 && m <= 899) return 3;   // 1430–1459
+  if (m >= 900 && m <= 929) return 4;   // 1500–1529
+  if (m >= 930 && m <= 959) return 5;   // 1530–1559
+  if (m >= 960 && m <= 989) return 6;   // 1600–1629
+  if (m >= 990 && m <= 1019) return 7;  // 1630–1659
+  if (m >= 300 && m <= 314) return 9;   // 0500–0514
+  if (m >= 315 && m <= 329) return 10;  // 0515–0529
+  if (m >= 330 && m <= 344) return 11;  // 0530–0544
+  if (m >= 345 && m <= 359) return 12;  // 0545–0559
+  return 8;                             // 1700–0459
+};
+
 // ─── Referência rápida (ORO.FTL.210 / 235) ───────────────────────────────────
 export const FTL_LIMITS = {
   duty: [
