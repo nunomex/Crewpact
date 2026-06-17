@@ -11,7 +11,6 @@ TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -117,8 +116,7 @@ function FloatingTabBar({ state, navigation }) {
             <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
               accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={m.label}
               style={[tbar.item, focused && [tbar.itemActive, { backgroundColor: C.soft }]]}>
-              <Ionicons name={m.icon[focused ? 0 : 1]} size={22} color={focused ? C.text : C.sub} />
-              {focused && <Text style={[tbar.label, { color: C.text }]} numberOfLines={1}>{m.label}</Text>}
+              <Text style={[tbar.label, { color: focused ? C.text : C.sub }]} numberOfLines={1}>{m.label}</Text>
             </TouchableOpacity>
           );
         })}
