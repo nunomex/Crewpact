@@ -293,10 +293,17 @@ export default function HomeScreen({ navigation }) {
                   <Seg
                     options={LIMIT_GROUPS.map(g => ({ id: g.cat, label: catLabel(g.cat, lang) }))}
                     value={limCat} setValue={setLimCat} dark />
-                  {(LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
-                    <ProgressRow key={`${limCat}${r.days}`} label={r.label}
-                      done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} C={C} />
-                  ))}
+                  {extras.some(e => e.category === limCat) ? (
+                    (LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
+                      <ProgressRow key={`${limCat}${r.days}`} label={r.label}
+                        done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} C={C} />
+                    ))
+                  ) : (
+                    <View style={s.psvEmpty}>
+                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
+                      <Text style={s.psvEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Slide 3 — Repouso mínimo (235) */}
