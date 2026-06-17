@@ -109,9 +109,11 @@ export default function CalendarScreen({ navigation }) {
   const selDate = new Date(`${selISO}T00:00:00`);
   const selFlights = flightsByDay[selISO] || [];
   const selDay = dayLog[selISO] || {};
-  const selExtras = extras.filter(e => e.date === selISO);
+  // Extras do dia filtrados pela companhia: FTL (horas voo/serviço) vs AE (extras €).
+  // O armazém de extras é partilhado (por utilizador), por isso filtramos pela categoria.
+  const selExtras = extras.filter(e => e.date === selISO && (isFtl ? FTL_CATS.has(e.category) : !FTL_CATS.has(e.category)));
   const hasFtlRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null);
-  const hasRecords = isFtl ? (hasFtlRecords || selExtras.length > 0) : selExtras.length > 0;
+  const hasRecords = (isFtl && hasFtlRecords) || selExtras.length > 0;
 
   // Abrir a calculadora (PSV/limites/repouso) ligada ao dia selecionado (só FTL).
   const openCalc = (code) => { setAddOpen(false); navigation.navigate('FtlCalc', { code, date: selISO }); };
