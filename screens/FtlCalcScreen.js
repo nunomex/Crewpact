@@ -55,7 +55,7 @@ export default function FtlCalcScreen({ route, navigation }) {
     if (p.kind === 'limits') {
       addExtra({ month: monthKey(new Date(logDate + 'T00:00:00')), date: logDate, category: p.category, amount: p.amount });
     } else if (p.kind === 'psv') {
-      updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
+      updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, band: p.band, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
     }

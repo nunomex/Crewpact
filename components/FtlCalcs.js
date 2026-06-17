@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
@@ -40,7 +40,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const C = useTheme();
   const cs = makeCs(C);
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
-  const [report, setReport] = useState('');        // hora de apresentação (HH:MM)
+  const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
+  const [report, setReport] = useState('');         // hora de apresentação (opcional, p/ fim-limite exato)
   const [sectors, setSectors] = useState(2);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
@@ -49,11 +50,12 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const sec = Math.min(sectors, maxSectors);
   const changeState = (st) => { setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
 
-  // A hora de apresentação comanda tudo: deriva a faixa do Quadro 2 (linha) e o
-  // fim-limite até calços. Em estado desconhecido o PSV não depende da hora.
-  const reportMin = parseHhmm(report);
-  const startIdx = reportMin != null ? psvBandIdx(reportMin) : 0;
   const bandStr = PSV_ACCLIMATISED[startIdx].start;
+  // Seletor de faixa e hora de apresentação ficam sincronizados: escolher a faixa
+  // preenche a hora (início da faixa); afinar a hora realça a faixa correspondente.
+  const bandStart = (b) => { const p = String(b).split('–')[0]; return `${p.slice(0, 2)}:${p.slice(2)}`; };
+  const pickBand = (i) => { setStartIdx(i); setReport(bandStart(PSV_ACCLIMATISED[i].start)); };
+  const onReport = (v) => { setReport(v); const m = parseHhmm(v); if (m != null) setStartIdx(psvBandIdx(m)); };
 
   let base;
   if (isAcc) {
@@ -69,9 +71,10 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const fdpMin = hhmmToMin(base) + extMin;
   const result = minToHhmm(fdpMin);
 
-  // #1 Fim-limite (até calços) = hora de apresentação + PSV. Exato.
+  // #1 Fim-limite (até calços) = hora de apresentação + PSV (só aclimatado, com hora).
+  const reportMin = parseHhmm(report);
   const startClock = reportMin != null ? minToHhmm(reportMin) : null;
-  const endMin = reportMin != null ? reportMin + fdpMin : null;
+  const endMin = (isAcc && reportMin != null) ? reportMin + fdpMin : null;
   const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
   const endNextDay = endMin != null && endMin >= 1440;
 
@@ -83,25 +86,25 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
     rule: {
       ref: extMin ? 'ORO.FTL.205 + 220' : 'ORO.FTL.205',
       name: l('PSV máximo diário', 'Maximum daily FDP'),
-      summary: l('Lê-se o PSV base da tabela do estado de aclimatação (hora de início × setores). Uma pausa em terra ≥ 3 h estende-o em 50% da pausa (ORO.FTL.220).',
-                 'The base FDP is read from the acclimatisation-state table (start time × sectors). A ground break ≥ 3 h extends it by 50% of the break (ORO.FTL.220).'),
+      summary: l('Lê-se o PSV base da tabela do estado de aclimatação (faixa de início × setores). Uma pausa em terra ≥ 3 h estende-o em 50% da pausa (ORO.FTL.220).',
+                 'The base FDP is read from the acclimatisation-state table (start band × sectors). A ground break ≥ 3 h extends it by 50% of the break (ORO.FTL.220).'),
     },
     inputs: [
       { label: t('ftl.psvState', lang), value: stateLabel },
-      ...(isAcc ? [{ label: t('ftl.reportTime', lang), value: startClock ? `${startClock} · ${bandStr}` : bandStr }] : []),
+      ...(isAcc ? [{ label: t('ftl.psvStart', lang), value: startClock ? `${bandStr} · ${startClock}` : bandStr }] : []),
       { label: t('ftl.sectors', lang), value: String(sec) },
       ...(brk > 0 ? [{ label: t('ftl.split', lang), value: `${brk} h` }] : []),
     ],
     formula: extMin ? `${base} + 50% × ${brk} h = ${result}` : `${tableName} → ${base}`,
     steps: [
-      l(`${tableName}: ${isAcc ? `início ${bandStr}, ` : ''}${sec} setor(es) → ${base}`,
-        `${tableName}: ${isAcc ? `start ${bandStr}, ` : ''}${sec} sector(s) → ${base}`),
+      l(`${tableName}: ${isAcc ? `faixa ${bandStr}, ` : ''}${sec} setor(es) → ${base}`,
+        `${tableName}: ${isAcc ? `band ${bandStr}, ` : ''}${sec} sector(s) → ${base}`),
       ...(extMin ? [l(`Split duty: 50% × ${brk} h = +${minToHhmm(extMin)}`, `Split duty: 50% × ${brk} h = +${minToHhmm(extMin)}`)] : []),
       ...(extMin ? [`${base} + ${minToHhmm(extMin)} = ${result}`] : []),
     ],
     result,
-    why: l(`Valor base ${base} do ${tableName}${isAcc ? ` (início ${bandStr}, ${sec} setor(es))` : ` (${sec} setor(es))`}${extMin ? `, estendido em ${minToHhmm(extMin)} pela pausa em terra ≥ 3 h.` : '.'}`,
-          `Base value ${base} from ${tableName}${isAcc ? ` (start ${bandStr}, ${sec} sector(s))` : ` (${sec} sector(s))`}${extMin ? `, extended by ${minToHhmm(extMin)} for the ground break ≥ 3 h.` : '.'}`),
+    why: l(`Valor base ${base} do ${tableName}${isAcc ? ` (faixa ${bandStr}, ${sec} setor(es))` : ` (${sec} setor(es))`}${extMin ? `, estendido em ${minToHhmm(extMin)} pela pausa em terra ≥ 3 h.` : '.'}`,
+          `Base value ${base} from ${tableName}${isAcc ? ` (band ${bandStr}, ${sec} sector(s))` : ` (${sec} sector(s))`}${extMin ? `, extended by ${minToHhmm(extMin)} for the ground break ≥ 3 h.` : '.'}`),
   };
 
   return (
@@ -115,11 +118,23 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
         ]}
         value={accState} setValue={changeState} />
 
-      <View style={cs.timeRow}>
-        <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
-        <TextInput value={report} onChangeText={setReport} placeholder="HH:MM" placeholderTextColor={C.sub}
-          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
-      </View>
+      {isAcc && (
+        <>
+          <Text style={cs.fieldLabel}>{t('ftl.psvStart', lang)}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
+            {PSV_ACCLIMATISED.map((r, i) => (
+              <TouchableOpacity key={r.start} onPress={() => pickBand(i)} style={[cs.chip, { backgroundColor: startIdx === i ? C.ink : C.soft }]}>
+                <Text style={[cs.chipTxt, { color: startIdx === i ? '#fff' : C.sub }]}>{r.start}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={cs.timeRow}>
+            <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
+            <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={C.sub}
+              keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+          </View>
+        </>
+      )}
 
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
       <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
@@ -132,8 +147,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       )}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} disabled={isAcc && reportMin == null}
-        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startClock, end: endClock, endNextDay })} />}
+      {onRegister && <RegisterBtn lang={lang}
+        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
     </CalcCard>
   );
 }
@@ -253,6 +268,8 @@ export function RestCalc({ lang, collapsible, onRegister }) {
 const makeCs = (C) => StyleSheet.create({
   wrap: { marginBottom: 10 },
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
+  chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  chipTxt: { fontSize: TYPE.label, fontFamily: 'monospace', fontWeight: '600' },
   regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
   regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 10, lineHeight: 16 },

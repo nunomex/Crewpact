@@ -45,11 +45,12 @@ function CalcBasis({ s, refTxt, detail, lang }) {
 function psvBasisFor(psv, lang) {
   if (!psv) return null;
   const sct = lang === 'en' ? 'sectors' : 'setores';
-  if (psv.state === 'acc' && psv.start) {
-    const [h, m] = String(psv.start).split(':').map(Number);
-    const idx = psvBandIdx((h || 0) * 60 + (m || 0));
+  if (psv.state === 'acc' && (psv.band || psv.start)) {
+    // Faixa guardada (seletor) ou, em registos antigos, derivada da hora.
+    let band = psv.band;
+    if (!band) { const [h, m] = String(psv.start).split(':').map(Number); band = PSV_ACCLIMATISED[psvBandIdx((h || 0) * 60 + (m || 0))].start; }
     const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 8);
-    return { ref: 'ORO.FTL.205', detail: `${fmtBand(PSV_ACCLIMATISED[idx].start)} × ${PSV_SECTORS[col]} ${sct}` };
+    return { ref: 'ORO.FTL.205', detail: `${fmtBand(band)} × ${PSV_SECTORS[col]} ${sct}` };
   }
   const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 6);
   const quad = lang === 'en' ? `Table ${psv.state === 'unk' ? 3 : 4}` : `Quadro ${psv.state === 'unk' ? 3 : 4}`;
