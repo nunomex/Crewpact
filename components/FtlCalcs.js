@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
@@ -18,6 +18,25 @@ const parseHhmm = (s) => {
   else { const d = str.replace(/[^0-9]/g, ''); if (!d) return null; h = parseInt(d.length <= 2 ? d : d.slice(0, d.length - 2), 10); m = d.length <= 2 ? 0 : parseInt(d.slice(-2), 10); }
   if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return null;
   return h * 60 + m;
+};
+
+// Faixa de hora de início do Quadro 2 (índice da linha de PSV_ACCLIMATISED) a
+// partir da hora de apresentação em minutos. A faixa 1700–0459 cobre a noite,
+// incluindo a passagem da meia-noite, e é o valor por omissão.
+const psvBandIdx = (m) => {
+  if (m >= 360 && m <= 809) return 0;   // 0600–1329
+  if (m >= 810 && m <= 839) return 1;   // 1330–1359
+  if (m >= 840 && m <= 869) return 2;   // 1400–1429
+  if (m >= 870 && m <= 899) return 3;   // 1430–1459
+  if (m >= 900 && m <= 929) return 4;   // 1500–1529
+  if (m >= 930 && m <= 959) return 5;   // 1530–1559
+  if (m >= 960 && m <= 989) return 6;   // 1600–1629
+  if (m >= 990 && m <= 1019) return 7;  // 1630–1659
+  if (m >= 300 && m <= 314) return 9;   // 0500–0514
+  if (m >= 315 && m <= 329) return 10;  // 0515–0529
+  if (m >= 330 && m <= 344) return 11;  // 0530–0544
+  if (m >= 345 && m <= 359) return 12;  // 0545–0559
+  return 8;                             // 1700–0459
 };
 
 // Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
@@ -40,7 +59,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const C = useTheme();
   const cs = makeCs(C);
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
-  const [startIdx, setStartIdx] = useState(0);
+  const [report, setReport] = useState('');        // hora de apresentação (HH:MM)
   const [sectors, setSectors] = useState(2);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
@@ -48,6 +67,12 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
   const changeState = (st) => { setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
+
+  // A hora de apresentação comanda tudo: deriva a faixa do Quadro 2 (linha) e o
+  // fim-limite até calços. Em estado desconhecido o PSV não depende da hora.
+  const reportMin = parseHhmm(report);
+  const startIdx = reportMin != null ? psvBandIdx(reportMin) : 0;
+  const bandStr = PSV_ACCLIMATISED[startIdx].start;
 
   let base;
   if (isAcc) {
@@ -63,15 +88,20 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const fdpMin = hhmmToMin(base) + extMin;
   const result = minToHhmm(fdpMin);
 
-  // #1 Fim-limite (até calços) = início + PSV, quando a hora de início é conhecida.
-  const startStr = isAcc ? PSV_ACCLIMATISED[startIdx].start : null;
-  const endMin = startStr != null ? hhmmToMin(startStr) + fdpMin : null;
+  // #1 Fim-limite (até calços) = hora de apresentação + PSV. Exato.
+  const startClock = reportMin != null ? minToHhmm(reportMin) : null;
+  const endMin = reportMin != null ? reportMin + fdpMin : null;
   const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
   const endNextDay = endMin != null && endMin >= 1440;
 
+  const split = extMin ? ` · +${minToHhmm(extMin)} split duty` : '';
   const foot = isAcc
-    ? (lang === 'en' ? `Start ${startStr} · ${sec} sector(s)${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.` : `Início ${startStr} · ${sec} setor(es)${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.`)
-    : (lang === 'en' ? `${sec} sector(s) · acclimatisation unknown${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.` : `${sec} setor(es) · aclimatação desconhecida${extMin ? ` · +${minToHhmm(extMin)} split duty` : ''}.`);
+    ? (lang === 'en'
+        ? `${startClock ? `Report ${startClock} · band ${bandStr}` : `Band ${bandStr} (default)`} · ${sec} sector(s)${split}.`
+        : `${startClock ? `Apresentação ${startClock} · faixa ${bandStr}` : `Faixa ${bandStr} (predefinida)`} · ${sec} setor(es)${split}.`)
+    : (lang === 'en'
+        ? `${sec} sector(s) · acclimatisation unknown${split}.`
+        : `${sec} setor(es) · aclimatação desconhecida${split}.`);
 
   return (
     <CalcCard title={t('ftl.calcPsv', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
@@ -84,18 +114,11 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
         ]}
         value={accState} setValue={changeState} />
 
-      {isAcc && (
-        <>
-          <Text style={cs.fieldLabel}>{t('ftl.psvStart', lang)}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
-            {PSV_ACCLIMATISED.map((r, i) => (
-              <TouchableOpacity key={r.start} onPress={() => setStartIdx(i)} style={[cs.chip, { backgroundColor: startIdx === i ? C.ink : C.soft }]}>
-                <Text style={[cs.chipTxt, { color: startIdx === i ? '#fff' : C.sub }]}>{r.start}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </>
-      )}
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
+        <TextInput value={report} onChangeText={setReport} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
 
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
       <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
@@ -108,7 +131,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       )}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startStr, end: endClock, endNextDay })} />}
+      {onRegister && <RegisterBtn lang={lang} disabled={isAcc && reportMin == null}
+        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, start: startClock, end: endClock, endNextDay })} />}
     </CalcCard>
   );
 }
@@ -196,8 +220,6 @@ export function RestCalc({ lang, collapsible, onRegister }) {
 const makeCs = (C) => StyleSheet.create({
   wrap: { marginBottom: 10 },
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
-  chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  chipTxt: { fontSize: TYPE.label, fontFamily: 'monospace', fontWeight: '600' },
   regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
   regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 10, lineHeight: 16 },
