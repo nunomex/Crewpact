@@ -220,6 +220,11 @@ export const STRINGS = {
     // Lista AE
     'list.eyebrow': 'ÍNDICE',
     'list.title': 'Acordo de Empresa',
+    'list.pdfTitle': 'Acordo de Empresa easyJet',
+    'list.pdfSub': 'Texto completo (PDF)',
+    'list.pdfError': 'Não foi possível abrir o PDF.',
+    'list.support': 'Serve apenas como consulta e apoio. Prevalece sempre o AE e o processamento oficial.',
+    'list.consultTitle': 'CLÁUSULAS · CONSULTA',
     'list.search': 'per diem, férias, 9/3…',
     'list.filterMine': 'Aplicáveis a mim',
     'list.filterCalc': 'Calculáveis',
@@ -499,6 +504,11 @@ export const STRINGS = {
     // CLA list
     'list.eyebrow': 'INDEX',
     'list.title': 'Collective Labour Agreement',
+    'list.pdfTitle': 'easyJet Collective Agreement',
+    'list.pdfSub': 'Full text (PDF)',
+    'list.pdfError': 'Could not open the PDF.',
+    'list.support': 'For reference and guidance only. The CLA and official payroll always prevail.',
+    'list.consultTitle': 'CLAUSES · REFERENCE',
     'list.search': 'per diem, leave, 9/3…',
     'list.filterMine': 'Applies to me',
     'list.filterCalc': 'With calculator',

@@ -1,16 +1,19 @@
 import React, { useContext, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, CALC } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { CLAUSES } from '../data/clauses';
+import { openAePdf } from '../data/aePdf';
 import { t, tx } from '../data/i18n';
+import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
-// Índice do Acordo de Empresa — lista, como na aba FTL, só as cláusulas com
-// cálculo (consulta). Tocar abre a cláusula (cópia 1:1, sem calculadora).
+// Índice do Acordo de Empresa — igual à aba FTL: link para o PDF do Acordo +
+// nota de apoio + cláusulas com cálculo em cartões de consulta. Tocar num cartão
+// abre a cláusula (cópia 1:1, sem calculadora).
 export default function ListScreen({ navigation }) {
   const { lang } = useContext(AppContext);
   const C = useTheme();
@@ -18,12 +21,34 @@ export default function ListScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const items = useMemo(() => CLAUSES.filter(cl => CALC[cl.number]).sort((a, b) => a.number - b.number), []);
 
+  const openPdf = async () => {
+    select();
+    const ok = await openAePdf();
+    if (!ok) Alert.alert(t('list.pdfTitle', lang), t('list.pdfError', lang));
+  };
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader eyebrow={t('list.eyebrow', lang)} title={t('list.title', lang)}
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} backLabel={t('common.back', lang)} />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: tabSpace, paddingTop: 4 }}>
+        <TouchableOpacity style={s.pdfRow} activeOpacity={0.8} onPress={openPdf}>
+          <View style={s.pdfIcon}><Ionicons name="document-text-outline" size={22} color={C.text} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pdfTitle}>{t('list.pdfTitle', lang)}</Text>
+            <Text style={s.pdfSub}>{t('list.pdfSub', lang)}</Text>
+          </View>
+          <Ionicons name="open-outline" size={16} color={C.sub} />
+        </TouchableOpacity>
+
+        <View style={s.note}>
+          <Ionicons name="information-circle-outline" size={16} color={C.sub} />
+          <Text style={s.noteTxt}>{t('list.support', lang)}</Text>
+        </View>
+
+        <Text style={s.group}>{t('list.consultTitle', lang)}</Text>
+
         {items.map(cl => (
           <TouchableOpacity key={cl.number} style={s.card} activeOpacity={0.8}
             onPress={() => navigation.navigate('Detail', { clause: cl })}>
@@ -42,6 +67,13 @@ export default function ListScreen({ navigation }) {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
+  pdfRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, backgroundColor: C.soft },
+  pdfIcon: { width: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line },
+  pdfTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text },
+  pdfSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 3 },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingHorizontal: 2, marginTop: SPACE.md },
+  noteTxt: { flex: 1, fontSize: TYPE.micro, color: C.sub, lineHeight: 17 },
+  group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.lg, marginBottom: 10, marginLeft: 2 },
   card: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
