@@ -78,6 +78,41 @@ export const windowTotal = (entries, days = 28, category, ref = new Date()) => {
     .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 };
 
+// Secções da aba Cálculos (AE) — usadas para agrupar os registos no cartão Início.
+export const AE_SECTIONS = [
+  { id: 'sectors',  label: { pt: 'Setores e deslocações', en: 'Sectors & travel' } },
+  { id: 'perEvent', label: { pt: 'Pagamentos por evento',  en: 'Per-event payments' } },
+  { id: 'monthly',  label: { pt: 'Mensais / anuais',       en: 'Monthly / annual' } },
+  { id: 'roles',    label: { pt: 'Funções adicionais',     en: 'Additional roles' } },
+  { id: 'other',    label: { pt: 'Outros',                 en: 'Other' } },
+];
+export const aeSectionLabel = (id, lang) => {
+  const sct = AE_SECTIONS.find(x => x.id === id);
+  return sct ? (sct.label[lang] ?? sct.label.pt) : id;
+};
+// Secção por omissão para registos sem `section` (ex.: "+" do mês / calendário).
+const CAT_SECTION = { posicionamento: 'sectors', pernoitas: 'perEvent', irregularidades: 'perEvent', ddo: 'perEvent', ferias: 'perEvent', outros: 'other' };
+
+// Agrupa os registos do mês por secção (ordem de AE_SECTIONS) e, dentro de cada
+// secção, por cálculo (label). Só inclui secções com registos.
+// → [{ id, total, items: [{ key, label, category, total }] }]
+export const monthBySection = (entries, key) => {
+  const map = {};
+  entries.filter(e => e.month === key).forEach(e => {
+    const sid = e.section || CAT_SECTION[e.category] || 'other';
+    const amt = Number(e.amount) || 0;
+    if (!map[sid]) map[sid] = { id: sid, total: 0, items: {} };
+    map[sid].total += amt;
+    const lkey = e.label || e.category;
+    if (!map[sid].items[lkey]) map[sid].items[lkey] = { key: lkey, label: e.label || null, category: e.category, total: 0 };
+    map[sid].items[lkey].total += amt;
+  });
+  const order = AE_SECTIONS.map(sct => sct.id);
+  return Object.values(map)
+    .map(sct => ({ ...sct, items: Object.values(sct.items).sort((a, b) => b.total - a.total) }))
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+};
+
 // Reparte o total do mês, ordenado do maior para o menor. Agrupa por `label`
 // (cálculo específico, ex.: "Posicionamento") quando existe, senão por categoria.
 export const monthBreakdown = (entries, key) => {

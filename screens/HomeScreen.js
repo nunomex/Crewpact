@@ -8,7 +8,7 @@ import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
   EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur, fmtVal,
-  monthKey, monthLabel, monthTotal, monthBreakdown, lastMonths, pctChange, windowTotal,
+  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, lastMonths, pctChange, windowTotal,
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -156,7 +156,7 @@ export default function HomeScreen({ navigation }) {
   // ── Extras do mês (AE) ──
   const curKey   = monthKey();
   const total    = monthTotal(extras, curKey);
-  const breakdown = monthBreakdown(extras, curKey); // todos os registos do mês (carrossel AE)
+  const aeSections = monthBySection(extras, curKey); // registos do mês agrupados por secção (carrossel AE)
   const history  = lastMonths(extras, 6);
   const maxT     = Math.max(1, ...history.map(h => h.total));
   const pct      = pctChange(extras, curKey);
@@ -370,23 +370,29 @@ export default function HomeScreen({ navigation }) {
                   </View>
                 </View>
 
-                {/* Slide 2 — Registos do mês (todos) */}
+                {/* Slide 2 — Registos do mês, agrupados por secção (como a aba Cálculos) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.secHd}>{t('home.recordsTitle', lang)}</Text>
-                  {breakdown.length === 0 ? (
+                  {aeSections.length === 0 ? (
                     <View style={s.psvEmpty}>
                       <View style={s.psvEmptyIcon}><Ionicons name="receipt-outline" size={22} color={C.onDarkSub} /></View>
                       <Text style={s.psvEmptyTxt}>{t('home.noExtras', lang)}</Text>
                     </View>
                   ) : (
-                    <View style={{ gap: 10 }}>
-                      {breakdown.map(b => (
-                        <View key={b.key} style={s.bdRow}>
-                          <Text style={s.bdLbl} numberOfLines={1}>{b.label || catLabel(b.category, lang)}</Text>
-                          <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
+                    aeSections.map(sec => (
+                      <View key={sec.id} style={s.recSection}>
+                        <View style={s.recSecHead}>
+                          <Text style={s.recSecTitle}>{aeSectionLabel(sec.id, lang)}</Text>
+                          <Text style={s.recSecTotal}>{fmtEur(sec.total)}</Text>
                         </View>
-                      ))}
-                    </View>
+                        {sec.items.map(it => (
+                          <View key={it.key} style={s.recItem}>
+                            <Text style={s.bdLbl} numberOfLines={1}>{it.label || catLabel(it.category, lang)}</Text>
+                            <Text style={s.bdVal}>{fmtEur(it.total)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))
                   )}
                 </View>
               </ScrollView>
@@ -514,6 +520,12 @@ const makeStyles = (C) => StyleSheet.create({
   bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
   bdVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', fontWeight: '600' },
   noExtras: { fontSize: TYPE.micro, color: C.onDarkFaint, lineHeight: 17 },
+  // Registos do mês agrupados por secção (slide 2 do cartão AE)
+  recSection: { marginBottom: SPACE.md },
+  recSecHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  recSecTitle: { fontSize: TYPE.micro, fontWeight: '700', color: C.onDark, letterSpacing: 0.5, textTransform: 'uppercase' },
+  recSecTotal: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '700', color: C.onDarkSub },
+  recItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingVertical: 3 },
   monthDivider: { height: 1, backgroundColor: C.hairlineOnDark, marginVertical: SPACE.md },
   chartRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.md },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },

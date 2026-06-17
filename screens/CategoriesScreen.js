@@ -20,6 +20,7 @@ import CenterDialog from '../components/CenterDialog';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
 import { success } from '../data/haptics';
+import { aeSectionLabel } from '../data/extras';
 import { FTL_ARTICLES } from '../data/ftl';
 
 // Artigos calculáveis (205/210/235) → calculadora respetiva.
@@ -36,6 +37,7 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 // popup de confirmação) via RegCtx; o título do cálculo vem do <Calc> via TitleCtx.
 const RegCtx = createContext(null);
 const TitleCtx = createContext('');
+const SectionCtx = createContext('other'); // secção da calculadora (p/ agrupar no Início)
 
 function Calc({ title, children }) {
   const C = useTheme();
@@ -59,14 +61,28 @@ function Result({ value, foot, amount, reset }) {
   const cs = makeCs(useTheme());
   const reg = useContext(RegCtx);
   const title = useContext(TitleCtx);
+  const section = useContext(SectionCtx);
   return (
     <>
       <ResultBlock value={value} foot={foot} valueSize={26} />
       {reg && amount > 0 ? (
-        <TouchableOpacity style={cs.regBtn} activeOpacity={0.85} onPress={() => reg.ask(title, amount, reset)}>
+        <TouchableOpacity style={cs.regBtn} activeOpacity={0.85} onPress={() => reg.ask(title, amount, reset, section)}>
           <Text style={cs.regBtnTxt}>{t('ftl.register', reg.lang)}</Text>
         </TouchableOpacity>
       ) : null}
+    </>
+  );
+}
+
+// Cabeçalho de secção (igual ao da aba Cálculos) + indica a secção aos registos
+// das calculadoras lá dentro, para o Início os agrupar por secção.
+function Section({ id, children }) {
+  const { lang } = useContext(AppContext);
+  const s = makeStyles(useTheme());
+  return (
+    <>
+      <Text style={s.group}>{aeSectionLabel(id, lang).toUpperCase()}</Text>
+      <SectionCtx.Provider value={id}>{children}</SectionCtx.Provider>
     </>
   );
 }
@@ -223,13 +239,13 @@ export default function CategoriesScreen({ navigation }) {
   const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
-  const [pendingReg, setPendingReg] = useState(null); // { label, amount, reset } — registo AE pendente
-  const askRegister = (label, amount, reset) => setPendingReg({ label, amount, reset });
+  const [pendingReg, setPendingReg] = useState(null); // { label, amount, reset, section } — registo AE pendente
+  const askRegister = (label, amount, reset, section) => setPendingReg({ label, amount, reset, section });
   const confirmReg = () => {
     const p = pendingReg;
     if (!p) return;
     const today = isoDay();
-    addExtra({ month: today.slice(0, 7), date: today, category: 'outros', label: p.label, amount: p.amount });
+    addExtra({ month: today.slice(0, 7), date: today, category: 'outros', label: p.label, section: p.section, amount: p.amount });
     success();
     p.reset?.();
     setPendingReg(null);
@@ -312,37 +328,42 @@ export default function CategoriesScreen({ navigation }) {
         )}
 
         {/* Setores e deslocações */}
-        <Text style={s.group}>{l('SETORES E DESLOCAÇÕES', 'SECTORS & TRAVEL')}</Text>
-        <CalcSectors ns={ns} lang={lang} />
-        <CalcPositioning rankRow={rankRow} lang={lang} />
-        <CalcStandby ns={ns} lang={lang} />
+        <Section id="sectors">
+          <CalcSectors ns={ns} lang={lang} />
+          <CalcPositioning rankRow={rankRow} lang={lang} />
+          <CalcStandby ns={ns} lang={lang} />
+        </Section>
 
         {/* Pagamentos por evento */}
-        <Text style={s.group}>{l('PAGAMENTOS POR EVENTO', 'PER-EVENT PAYMENTS')}</Text>
-        <CalcPerEvent title={l('Pernoitas', 'Night stops')} unitLabel={l('Noites fora da base', 'Nights away from base')} unit={46} foot={l('46 € por noite (Anexo I).', '€46 per night (Appendix I).')} />
-        <CalcPerEvent title={l('Trabalho em terra', 'Office work')} unitLabel={l('Dias em terra', 'Office days')} unit={3 * ns} foot={l(`3 setores nominais = ${fmtEur(3 * ns)} / dia.`, `3 nominal sectors = ${fmtEur(3 * ns)} / day.`)} />
-        <CalcPerEvent title={l('Pagamento por dia de férias', 'Holiday daily allowance')} unitLabel={l('Dias de férias', 'Leave days')} unit={2 * ns} foot={l(`2 setores nominais = ${fmtEur(2 * ns)} / dia.`, `2 nominal sectors = ${fmtEur(2 * ns)} / day.`)} />
-        <CalcPerEvent title={l('Alterações de escala — SNC', 'Roster change — SNC')} unitLabel={l('Eventos SNC', 'SNC events')} unit={20} foot={l('20 € por evento qualificável.', '€20 per qualifying event.')} />
-        <CalcPerEvent title={l('Irregularidade de escala — RDP', 'Roster disruption — RDP')} unitLabel={l('Eventos RDP', 'RDP events')} unit={Math.max(ns, rdpFloor)} foot={l(`1 setor nominal (mín. ${rdpFloor} € para a tua categoria).`, `1 nominal sector (min €${rdpFloor} for your rank).`)} />
-        <CalcPerEvent title={l('Trabalhar num dia de descanso (DDO)', 'Working on a day off (DDO)')} unitLabel={l('Dias DDO', 'DDO days')} unit={115} foot={l('115 € por dia (todas as categorias).', '€115 per day (all ranks).')} />
-        <CalcPerEvent title={l('Dia de descanso infringido (IDO)', 'Infringed day off (IDO)')} unitLabel={l('Dias IDO', 'IDO days')} unit={140} foot={l('140 € por dia (todas as categorias).', '€140 per day (all ranks).')} />
-        <CalcWfly base={base} lang={lang} />
-        <CalcCommission lang={lang} />
+        <Section id="perEvent">
+          <CalcPerEvent title={l('Pernoitas', 'Night stops')} unitLabel={l('Noites fora da base', 'Nights away from base')} unit={46} foot={l('46 € por noite (Anexo I).', '€46 per night (Appendix I).')} />
+          <CalcPerEvent title={l('Trabalho em terra', 'Office work')} unitLabel={l('Dias em terra', 'Office days')} unit={3 * ns} foot={l(`3 setores nominais = ${fmtEur(3 * ns)} / dia.`, `3 nominal sectors = ${fmtEur(3 * ns)} / day.`)} />
+          <CalcPerEvent title={l('Pagamento por dia de férias', 'Holiday daily allowance')} unitLabel={l('Dias de férias', 'Leave days')} unit={2 * ns} foot={l(`2 setores nominais = ${fmtEur(2 * ns)} / dia.`, `2 nominal sectors = ${fmtEur(2 * ns)} / day.`)} />
+          <CalcPerEvent title={l('Alterações de escala — SNC', 'Roster change — SNC')} unitLabel={l('Eventos SNC', 'SNC events')} unit={20} foot={l('20 € por evento qualificável.', '€20 per qualifying event.')} />
+          <CalcPerEvent title={l('Irregularidade de escala — RDP', 'Roster disruption — RDP')} unitLabel={l('Eventos RDP', 'RDP events')} unit={Math.max(ns, rdpFloor)} foot={l(`1 setor nominal (mín. ${rdpFloor} € para a tua categoria).`, `1 nominal sector (min €${rdpFloor} for your rank).`)} />
+          <CalcPerEvent title={l('Trabalhar num dia de descanso (DDO)', 'Working on a day off (DDO)')} unitLabel={l('Dias DDO', 'DDO days')} unit={115} foot={l('115 € por dia (todas as categorias).', '€115 per day (all ranks).')} />
+          <CalcPerEvent title={l('Dia de descanso infringido (IDO)', 'Infringed day off (IDO)')} unitLabel={l('Dias IDO', 'IDO days')} unit={140} foot={l('140 € por dia (todas as categorias).', '€140 per day (all ranks).')} />
+          <CalcWfly base={base} lang={lang} />
+          <CalcCommission lang={lang} />
+        </Section>
 
         {/* Mensais / anuais */}
-        <Text style={s.group}>{l('MENSAIS / ANUAIS', 'MONTHLY / ANNUAL')}</Text>
-        <CalcCash base={base} factor={factor} contractLabel={contractLabel} lang={lang} />
-        <CalcLanguage lang={lang} />
+        <Section id="monthly">
+          <CalcCash base={base} factor={factor} contractLabel={contractLabel} lang={lang} />
+          <CalcLanguage lang={lang} />
+        </Section>
 
         {/* Funções adicionais */}
-        <Text style={s.group}>{l('FUNÇÕES ADICIONAIS', 'ADDITIONAL ROLES')}</Text>
-        <CalcPerEvent title={l('CCLT — Tripulante Verificador de Linha', 'CCLT — Cabin Crew Line Trainer')} unitLabel={l('Dias de treino', 'Training days')} unit={25} foot={l('25 € por dia de treino.', '€25 per training day.')} />
-        <CalcPerEvent title={l('Instrutor CTI-Flexi', 'CTI-Flexi Instructor')} unitLabel={l('Serviços', 'Duties')} unit={4 * nsCM} foot={l(`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`, `4 nominal sectors (Cabin Manager) = ${fmtEur(4 * nsCM)}.`)} />
-        <CalcPerEvent title={l('Pagamento por dias de recrutamento', 'Recruitment days payment')} unitLabel={l('Dias', 'Days')} unit={4 * nsCM} foot={l(`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`, `4 nominal sectors (Cabin Manager) = ${fmtEur(4 * nsCM)}.`)} />
+        <Section id="roles">
+          <CalcPerEvent title={l('CCLT — Tripulante Verificador de Linha', 'CCLT — Cabin Crew Line Trainer')} unitLabel={l('Dias de treino', 'Training days')} unit={25} foot={l('25 € por dia de treino.', '€25 per training day.')} />
+          <CalcPerEvent title={l('Instrutor CTI-Flexi', 'CTI-Flexi Instructor')} unitLabel={l('Serviços', 'Duties')} unit={4 * nsCM} foot={l(`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`, `4 nominal sectors (Cabin Manager) = ${fmtEur(4 * nsCM)}.`)} />
+          <CalcPerEvent title={l('Pagamento por dias de recrutamento', 'Recruitment days payment')} unitLabel={l('Dias', 'Days')} unit={4 * nsCM} foot={l(`4 setores nominais (Chefe de Cabine) = ${fmtEur(4 * nsCM)}.`, `4 nominal sectors (Cabin Manager) = ${fmtEur(4 * nsCM)}.`)} />
+        </Section>
 
         {/* Outros */}
-        <Text style={s.group}>{l('OUTROS', 'OTHER')}</Text>
-        <CalcCount lang={lang} />
+        <Section id="other">
+          <CalcCount lang={lang} />
+        </Section>
 
         <TouchableOpacity style={s.link} activeOpacity={0.8} onPress={() => openClause(33)}>
           <Ionicons name="document-text-outline" size={16} color={C.red} />
