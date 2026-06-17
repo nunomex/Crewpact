@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, createContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,19 +16,26 @@ const PT_MODES = [
 ];
 import { CLAUSES } from '../data/clauses';
 import ScreenHeader from '../components/ScreenHeader';
+import CenterDialog from '../components/CenterDialog';
 import { Stepper, Seg } from '../components/Stepper';
 import { ResultBlock } from '../components/CalcCard';
+import { success } from '../data/haptics';
 import { FTL_ARTICLES } from '../data/ftl';
 
 // Artigos calculáveis (205/210/235) → calculadora respetiva.
 const FTL_CALC_ARTICLES = FTL_ARTICLES.filter(a => a.psv || a.limits || a.rest);
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, tx, txv } from '../data/i18n';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme, isoDay } from '../App';
 
 const fmtEur = (n) => n.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const num = (s) => parseFloat(String(s).replace(',', '.')) || 0;
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
+
+// Registo dos cálculos AE no cartão do Início: o ecrã fornece `ask` (abre o
+// popup de confirmação) via RegCtx; o título do cálculo vem do <Calc> via TitleCtx.
+const RegCtx = createContext(null);
+const TitleCtx = createContext('');
 
 function Calc({ title, children }) {
   const C = useTheme();
@@ -40,12 +47,28 @@ function Calc({ title, children }) {
         <Text style={cs.calcTitle}>{title}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={C.sub} />
       </TouchableOpacity>
-      <View style={[cs.calcBody, { display: open ? 'flex' : 'none' }]}>{children}</View>
+      <View style={[cs.calcBody, { display: open ? 'flex' : 'none' }]}>
+        <TitleCtx.Provider value={title}>{children}</TitleCtx.Provider>
+      </View>
     </View>
   );
 }
-function Result({ value, foot }) {
-  return <ResultBlock value={value} foot={foot} valueSize={26} />;
+// `amount` (€) + `reset` ativam o botão "Confirmar e registar" (regista no cartão
+// do Início, com popup de confirmação, e limpa os campos ao confirmar).
+function Result({ value, foot, amount, reset }) {
+  const cs = makeCs(useTheme());
+  const reg = useContext(RegCtx);
+  const title = useContext(TitleCtx);
+  return (
+    <>
+      <ResultBlock value={value} foot={foot} valueSize={26} />
+      {reg && amount > 0 ? (
+        <TouchableOpacity style={cs.regBtn} activeOpacity={0.85} onPress={() => reg.ask(title, amount, reset)}>
+          <Text style={cs.regBtnTxt}>{t('ftl.register', reg.lang)}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </>
+  );
 }
 
 // ─── Calculadoras ────────────────────────────────────────────────────────────
@@ -60,7 +83,8 @@ function CalcSectors({ ns, lang }) {
       <Stepper label={l('Médios (1,2× NS)', 'Medium (1.2× NS)')}       value={q.m} setValue={(v) => setQ({ ...q, m: v })} />
       <Stepper label={l('Longos (1,5× NS)', 'Long (1.5× NS)')}         value={q.l} setValue={(v) => setQ({ ...q, l: v })} />
       <Stepper label={l('Extra longos (2,5× NS)', 'Extra long (2.5× NS)')} value={q.x} setValue={(v) => setQ({ ...q, x: v })} />
-      <Result value={fmtEur(total)} foot={l(`Setor nominal (NS) = ${fmtEur(ns)}`, `Nominal sector (NS) = ${fmtEur(ns)}`)} />
+      <Result value={fmtEur(total)} foot={l(`Setor nominal (NS) = ${fmtEur(ns)}`, `Nominal sector (NS) = ${fmtEur(ns)}`)}
+        amount={total} reset={() => setQ({ s: 0, m: 0, l: 0, x: 0 })} />
     </Calc>
   );
 }
@@ -69,23 +93,24 @@ function CalcPositioning({ rankRow, lang }) {
   const l = L(lang);
   const OPTS = [{ id: 0, label: l('Curto', 'Short') }, { id: 1, label: l('Médio', 'Medium') }, { id: 2, label: l('Longo', 'Long') }, { id: 3, label: l('Extra', 'Extra') }];
   const [idx, setIdx] = useState(1);
-  const [n, setN] = useState(1);
+  const [n, setN] = useState(0);
   const unit = num(POSITIONING.rows[rankRow].v[idx]);
   return (
     <Calc title={l('Posicionamento', 'Positioning')}>
       <Seg options={OPTS} value={idx} setValue={setIdx} />
-      <Stepper label={l('Nº de posicionamentos', 'No. of positionings')} value={n} setValue={setN} min={1} />
-      <Result value={fmtEur(unit * n)} foot={`${OPTS[idx].label}: ${fmtEur(unit)} (${DATA_VERSION.payRef})`} />
+      <Stepper label={l('Nº de posicionamentos', 'No. of positionings')} value={n} setValue={setN} min={0} />
+      <Result value={fmtEur(unit * n)} foot={`${OPTS[idx].label}: ${fmtEur(unit)} (${DATA_VERSION.payRef})`}
+        amount={unit * n} reset={() => setN(0)} />
     </Calc>
   );
 }
 
-function CalcPerEvent({ title, unitLabel, unit, foot, start = 1 }) {
+function CalcPerEvent({ title, unitLabel, unit, foot, start = 0 }) {
   const [n, setN] = useState(start);
   return (
     <Calc title={title}>
       <Stepper label={unitLabel} value={n} setValue={setN} />
-      <Result value={fmtEur(unit * n)} foot={foot} />
+      <Result value={fmtEur(unit * n)} foot={foot} amount={unit * n} reset={() => setN(0)} />
     </Calc>
   );
 }
@@ -104,7 +129,8 @@ function CalcStandby({ ns, lang }) {
   return (
     <Calc title={l('Assistência no aeroporto', 'Airport standby')}>
       <Seg options={OPTS} value={v} setValue={setV} />
-      <Result value={o.med ? fmtEur(o.med * med) : '0,00 €'} foot={o.med ? l(`${o.med} setor médio (1,2× NS). Não inclui per diem.`, `${o.med} medium sector (1.2× NS). Excludes per diem.`) : l('Só per diem.', 'Per diem only.')} />
+      <Result value={o.med ? fmtEur(o.med * med) : '0,00 €'} foot={o.med ? l(`${o.med} setor médio (1,2× NS). Não inclui per diem.`, `${o.med} medium sector (1.2× NS). Excludes per diem.`) : l('Só per diem.', 'Per diem only.')}
+        amount={o.med ? o.med * med : 0} reset={() => setV('cs')} />
     </Calc>
   );
 }
@@ -131,12 +157,13 @@ function CalcCash({ base, factor, contractLabel, lang }) {
 
 function CalcLanguage({ lang }) {
   const l = L(lang);
-  const [n, setN] = useState(1);
+  const [n, setN] = useState(0);
   const total = n <= 0 ? 0 : 350 + (n - 1) * 50;
   return (
     <Calc title={l('Domínio de língua estrangeira', 'Foreign language proficiency')}>
       <Stepper label={l('Línguas (além de EN/PT)', 'Languages (besides EN/PT)')} value={n} setValue={setN} min={0} max={6} />
-      <Result value={fmtEur(total)} foot={l('3.ª língua: 350 €; cada adicional: +50 €. Por ano.', '3rd language: €350; each additional: +€50. Per year.')} />
+      <Result value={fmtEur(total)} foot={l('3.ª língua: 350 €; cada adicional: +50 €. Por ano.', '3rd language: €350; each additional: +€50. Per year.')}
+        amount={total} reset={() => setN(0)} />
     </Calc>
   );
 }
@@ -144,13 +171,14 @@ function CalcLanguage({ lang }) {
 function CalcWfly({ base, lang }) {
   const cs = makeCs(useTheme());
   const l = L(lang);
-  const [n, setN] = useState(1);
+  const [n, setN] = useState(0);
   if (!base) return <Calc title={l('Trabalho em dia de descanso (WFLY)', 'Working on a day off (WFLY)')}><Text style={cs.na}>{l('Depende do salário mínimo nacional.', 'Depends on the national minimum wage.')}</Text></Calc>;
   const unit = base * 0.01;
   return (
     <Calc title={l('Trabalho em dia de descanso (WFLY)', 'Working on a day off (WFLY)')}>
-      <Stepper label={l('Dias trabalhados', 'Days worked')} value={n} setValue={setN} min={1} />
-      <Result value={fmtEur(unit * n)} foot={l(`1% da base anual = ${fmtEur(unit)} / dia`, `1% of annual base = ${fmtEur(unit)} / day`)} />
+      <Stepper label={l('Dias trabalhados', 'Days worked')} value={n} setValue={setN} min={0} />
+      <Result value={fmtEur(unit * n)} foot={l(`1% da base anual = ${fmtEur(unit)} / dia`, `1% of annual base = ${fmtEur(unit)} / day`)}
+        amount={unit * n} reset={() => setN(0)} />
     </Calc>
   );
 }
@@ -167,7 +195,8 @@ function CalcCommission({ lang }) {
           onChangeText={(tval) => { const n = parseInt(tval.replace(/[^0-9]/g, ''), 10); setSales(isNaN(n) ? 0 : n); }}
           style={[cs.stepInput, { width: 90 }]} />
       </View>
-      <Result value={fmtEur(sales * 0.10)} foot={l('10% do total de vendas do voo (a dividir pela tripulação).', '10% of the flight sales total (shared among the crew).')} />
+      <Result value={fmtEur(sales * 0.10)} foot={l('10% do total de vendas do voo (a dividir pela tripulação).', '10% of the flight sales total (shared among the crew).')}
+        amount={sales * 0.10} reset={() => setSales(0)} />
     </Calc>
   );
 }
@@ -188,12 +217,23 @@ function CalcCount({ lang }) {
 
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
-  const { profile, lang } = useContext(AppContext);
+  const { profile, lang, addExtra } = useContext(AppContext);
   const C = useTheme();
   const cs = makeCs(C);
   const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
+  const [pendingReg, setPendingReg] = useState(null); // { label, amount, reset } — registo AE pendente
+  const askRegister = (label, amount, reset) => setPendingReg({ label, amount, reset });
+  const confirmReg = () => {
+    const p = pendingReg;
+    if (!p) return;
+    const today = isoDay();
+    addExtra({ month: today.slice(0, 7), date: today, category: 'outros', label: p.label, amount: p.amount });
+    success();
+    p.reset?.();
+    setPendingReg(null);
+  };
   const rank = profile.rank || 'fa';
   const rankObj = RANKS.find(r => r.id === rank) || RANKS[1];
   const rankRow = RANK_ROW[rank] ?? 1;
@@ -243,6 +283,7 @@ export default function CategoriesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      <RegCtx.Provider value={{ ask: askRegister, lang }}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
@@ -311,6 +352,23 @@ export default function CategoriesScreen({ navigation }) {
 
         <Text style={s.foot}>{l(`Valores ilíquidos do Anexo I (${DATA_VERSION.payRef}). Estimativas para apoio — prevalece sempre o AE e o processamento oficial.`, `Gross values from Appendix I (${DATA_VERSION.payRef}). Estimates for guidance — the CLA and official payroll always prevail.`)}</Text>
       </ScrollView>
+      </RegCtx.Provider>
+
+      <CenterDialog visible={!!pendingReg} onClose={() => setPendingReg(null)} closeLabel={t('common.cancel', lang)}
+        eyebrow={t('ftl.confirmEyebrow', lang)} title={t('ftl.confirmTitle', lang)}>
+        <View style={s.dlgBody}>
+          <Text style={s.dlgText}>{t('ftl.confirmBody', lang)}</Text>
+          <View style={s.dlgSummary}><Text style={s.dlgSummaryTxt}>{pendingReg ? `${pendingReg.label} · ${fmtEur(pendingReg.amount)}` : ''}</Text></View>
+          <View style={s.dlgActions}>
+            <TouchableOpacity style={[s.dlgBtn, s.dlgBtnGhost]} activeOpacity={0.8} onPress={() => setPendingReg(null)}>
+              <Text style={s.dlgBtnGhostTxt}>{t('common.no', lang)}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.dlgBtn, s.dlgBtnPrimary]} activeOpacity={0.85} onPress={confirmReg}>
+              <Text style={s.dlgBtnPrimaryTxt}>{t('common.yes', lang)}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CenterDialog>
     </SafeAreaView>
   );
 }
@@ -329,6 +387,8 @@ const makeCs = (C) => StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   stepLabel: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
   stepInput: { textAlign: 'center', fontFamily: 'monospace', fontSize: 13, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 6, borderWidth: 1, borderColor: C.line, color: C.text },
+  regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
+  regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
 });
 
 const makeStyles = (C) => StyleSheet.create({
@@ -354,4 +414,15 @@ const makeStyles = (C) => StyleSheet.create({
   fcardSub: { fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 16 },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
+  // Popup de confirmação de registo (igual ao FTL).
+  dlgBody: { padding: 20 },
+  dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },
+  dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
+  dlgSummaryTxt: { fontSize: 13, color: C.text, fontWeight: '600', lineHeight: 19 },
+  dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
+  dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
+  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
+  dlgBtnPrimary: { backgroundColor: C.ink },
+  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
 });

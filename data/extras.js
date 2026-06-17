@@ -78,14 +78,16 @@ export const windowTotal = (entries, days = 28, category, ref = new Date()) => {
     .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 };
 
-// Reparte o total do mês por categoria, ordenado do maior para o menor.
+// Reparte o total do mês, ordenado do maior para o menor. Agrupa por `label`
+// (cálculo específico, ex.: "Posicionamento") quando existe, senão por categoria.
 export const monthBreakdown = (entries, key) => {
   const map = {};
   entries.filter(e => e.month === key).forEach(e => {
-    map[e.category] = (map[e.category] || 0) + (Number(e.amount) || 0);
+    const k = e.label || e.category;
+    if (!map[k]) map[k] = { key: k, label: e.label || null, category: e.category, total: 0 };
+    map[k].total += Number(e.amount) || 0;
   });
-  return Object.entries(map).map(([category, total]) => ({ category, total }))
-    .sort((a, b) => b.total - a.total);
+  return Object.values(map).sort((a, b) => b.total - a.total);
 };
 
 // Últimos n meses (incluindo o atual), do mais antigo para o mais recente.

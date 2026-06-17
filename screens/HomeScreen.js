@@ -354,8 +354,8 @@ export default function HomeScreen({ navigation }) {
                   {breakdown.length === 0
                     ? <Text style={s.noExtras}>{t('home.noExtras', lang)}</Text>
                     : breakdown.map(b => (
-                        <View key={b.category} style={s.bdRow}>
-                          <Text style={s.bdLbl} numberOfLines={1}>{catLabel(b.category, lang)}</Text>
+                        <View key={b.key} style={s.bdRow}>
+                          <Text style={s.bdLbl} numberOfLines={1}>{b.label || catLabel(b.category, lang)}</Text>
                           <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
                         </View>
                       ))}

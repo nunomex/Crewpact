@@ -27,6 +27,7 @@ export default function FtlCalcScreen({ route, navigation }) {
   const tabSpace = useTabBarSpace();
   const a = FTL_ARTICLES.find(x => x.code === route.params?.code);
   const [pending, setPending] = useState(null);
+  const [resetKey, setResetKey] = useState(0); // remonta a calculadora após registar (limpa os campos)
   // Dia-alvo do registo: o que vem do Calendário, senão hoje.
   const fromDate = route.params?.date;
   const logDate = fromDate || isoDay();
@@ -62,7 +63,9 @@ export default function FtlCalcScreen({ route, navigation }) {
     success();
     setPending(null);
     // Veio do Calendário (com data) → volta a esse dia para ver o registo.
+    // Senão (aba Cálculos), limpa os campos remontando a calculadora.
     if (fromDate) navigation.goBack();
+    else setResetKey(k => k + 1);
   };
 
   const Calc = a.psv ? PsvCalc : a.limits ? LimitsCalc : RestCalc;
@@ -84,7 +87,7 @@ export default function FtlCalcScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        <Calc lang={lang} onRegister={registerFtl} />
+        <Calc key={resetKey} lang={lang} onRegister={registerFtl} />
 
         <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
       </ScrollView>

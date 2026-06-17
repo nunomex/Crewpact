@@ -235,7 +235,7 @@ export default function CalendarScreen({ navigation }) {
                 onPress={() => openCalc(CALC_CODES.rest)} onDelete={() => delRest('away')} />
             ) : null}
             {selExtras.map(e => (
-              <RecRow key={e.id} s={s} C={C} label={catLabel(e.category, lang)}
+              <RecRow key={e.id} s={s} C={C} label={e.label || catLabel(e.category, lang)}
                 value={FTL_CATS.has(e.category) ? fmtVal(e.amount, 'h') : fmtEur(e.amount)}
                 onPress={isFtl ? () => openCalc(CALC_CODES.limits) : undefined} onDelete={() => delExtra(e.id)} />
             ))}

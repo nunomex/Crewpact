@@ -42,7 +42,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
   const [report, setReport] = useState('');         // hora de apresentação (opcional, p/ fim-limite exato)
-  const [sectors, setSectors] = useState(2);
+  const [sectors, setSectors] = useState(0);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
   const isAcc = accState === 'acc';
@@ -136,7 +136,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
         </>
       )}
 
-      <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={1} max={maxSectors} />
+      <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={0} max={maxSectors} />
       <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
       <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} audit={psvAudit} lang={lang} />
       {endClock != null && (
@@ -206,7 +206,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const C = useTheme();
   const cs = makeCs(C);
   const [place, setPlace] = useState('base');
-  const [prev, setPrev] = useState(10);
+  const [prev, setPrev] = useState(0);
   const [dir, setDir] = useState('after'); // 'after' = off-block→apresentação · 'before' = apresentação→off-block
   const [timeStr, setTimeStr] = useState('');
   const floor = place === 'base' ? 12 : 10;
