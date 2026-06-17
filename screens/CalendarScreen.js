@@ -1,15 +1,15 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, GUTTER } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, GUTTER, companyContent } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { catLabel, fmtVal, fmtEur } from '../data/extras';
+import { catLabel, extraCategories, fmtVal, fmtEur } from '../data/extras';
 import { getFlightsInRange } from '../data/calendar';
 import { t } from '../data/i18n';
-import { select } from '../data/haptics';
+import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../App';
 
 const WEEKDAYS = {
@@ -44,26 +44,30 @@ function buildGrid(monthDate) {
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-// Linha de registo FTL: toca para editar (reabre a calculadora desse dia),
-// caixote para apagar. Só mexe nos dados da app — nunca no calendário real.
+// Linha de registo: toca para editar (reabre a calculadora desse dia, quando
+// aplicável), caixote para apagar. Só mexe nos dados da app — nunca no calendário
+// real. Sem `onPress` (ex.: extras AE), a linha é estática.
 function RecRow({ s, C, label, value, onPress, onDelete }) {
+  const Body = onPress ? TouchableOpacity : View;
   return (
-    <TouchableOpacity style={s.recRow} activeOpacity={0.7} onPress={onPress}>
+    <Body style={s.recRow} {...(onPress ? { activeOpacity: 0.7, onPress } : {})}>
       <Text style={s.recLbl}>{label}</Text>
       <Text style={s.recVal} numberOfLines={1}>{value}</Text>
       <TouchableOpacity onPress={onDelete} hitSlop={8} style={s.delBtn} accessibilityLabel="delete">
         <Ionicons name="trash-outline" size={16} color={C.sub} />
       </TouchableOpacity>
-    </TouchableOpacity>
+    </Body>
   );
 }
 
 export default function CalendarScreen({ navigation }) {
-  const { lang, dayLog, extras, updateDayLog, removeDayLog, removeExtra } = useContext(AppContext);
+  const { lang, profile, dayLog, extras, addExtra, updateDayLog, removeDayLog, removeExtra } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  // Companhia FTL (TAP) regista cálculos FTL; AE (easyJet) regista extras AE (€).
+  const isFtl = companyContent(profile.company) === 'ftl';
 
   const today = isoDay();
   const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
@@ -72,6 +76,8 @@ export default function CalendarScreen({ navigation }) {
   const [calOk, setCalOk] = useState(true);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [newCat, setNewCat] = useState(() => extraCategories('ae')[0].id); // categoria do extra AE
+  const [newAmount, setNewAmount] = useState('');
 
   const monthKeyNum = viewMonth.getFullYear() * 12 + viewMonth.getMonth();
   const grid = useMemo(() => buildGrid(viewMonth), [monthKeyNum]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,11 +110,21 @@ export default function CalendarScreen({ navigation }) {
   const selFlights = flightsByDay[selISO] || [];
   const selDay = dayLog[selISO] || {};
   const selExtras = extras.filter(e => e.date === selISO);
-  const hasRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null) || selExtras.length > 0;
+  const hasFtlRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null);
+  const hasRecords = isFtl ? (hasFtlRecords || selExtras.length > 0) : selExtras.length > 0;
 
-  // Abrir a calculadora (PSV/limites/repouso) ligada ao dia selecionado.
+  // Abrir a calculadora (PSV/limites/repouso) ligada ao dia selecionado (só FTL).
   const openCalc = (code) => { setAddOpen(false); navigation.navigate('FtlCalc', { code, date: selISO }); };
-  // Apagar registos FTL do dia (só os nossos dados — nunca o calendário real).
+  // Registar um extra AE (categoria + €) no dia selecionado.
+  const saveAeExtra = () => {
+    const amount = parseFloat(String(newAmount).replace(',', '.')) || 0;
+    if (amount <= 0) return;
+    addExtra({ month: selISO.slice(0, 7), date: selISO, category: newCat, amount });
+    success();
+    setNewAmount('');
+    setAddOpen(false);
+  };
+  // Apagar registos do dia (só os nossos dados — nunca o calendário real).
   const delPsv = () => { select(); removeDayLog(selISO, 'psv'); };
   const delExtra = (id) => { select(); removeExtra(id); };
   const delRest = (place) => {
@@ -195,9 +211,9 @@ export default function CalendarScreen({ navigation }) {
           ))
         )}
 
-        {/* Registos FTL do dia */}
+        {/* Registos do dia — FTL (PSV/repouso/horas) ou AE (extras em €) */}
         <View style={s.recHead}>
-          <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{t('cal.records', lang)}</Text>
+          <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{isFtl ? t('cal.records', lang) : t('cal.recordsAe', lang)}</Text>
           <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('cal.addRecord', lang)}>
             <Ionicons name="add" size={20} color={C.onDark} />
           </TouchableOpacity>
@@ -206,42 +222,65 @@ export default function CalendarScreen({ navigation }) {
           <Text style={s.empty}>{t('cal.noRecords', lang)}</Text>
         ) : (
           <>
-            {selDay.psv ? (
+            {isFtl && selDay.psv ? (
               <RecRow s={s} C={C} label={t('home.psvMaxLbl', lang)} value={selDay.psv.result}
                 onPress={() => openCalc(CALC_CODES.psv)} onDelete={delPsv} />
             ) : null}
-            {selDay.rest?.base != null ? (
+            {isFtl && selDay.rest?.base != null ? (
               <RecRow s={s} C={C} label={t('home.restBase', lang)} value={fmtVal(selDay.rest.base, 'h')}
                 onPress={() => openCalc(CALC_CODES.rest)} onDelete={() => delRest('base')} />
             ) : null}
-            {selDay.rest?.away != null ? (
+            {isFtl && selDay.rest?.away != null ? (
               <RecRow s={s} C={C} label={t('home.restAway', lang)} value={fmtVal(selDay.rest.away, 'h')}
                 onPress={() => openCalc(CALC_CODES.rest)} onDelete={() => delRest('away')} />
             ) : null}
             {selExtras.map(e => (
               <RecRow key={e.id} s={s} C={C} label={catLabel(e.category, lang)}
                 value={FTL_CATS.has(e.category) ? fmtVal(e.amount, 'h') : fmtEur(e.amount)}
-                onPress={() => openCalc(CALC_CODES.limits)} onDelete={() => delExtra(e.id)} />
+                onPress={isFtl ? () => openCalc(CALC_CODES.limits) : undefined} onDelete={() => delExtra(e.id)} />
             ))}
           </>
         )}
       </ScrollView>
 
-      {/* Escolher que calculadora registar nesse dia */}
+      {/* FTL: escolher calculadora · AE: registar extra (categoria + €) no dia */}
       <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)} title={t('cal.addRecord', lang)} closeLabel={t('common.close', lang)}>
-        <View style={s.chooseWrap}>
-          {[
-            { code: CALC_CODES.psv, label: t('cal.optPsv', lang), icon: 'time-outline' },
-            { code: CALC_CODES.limits, label: t('cal.optLimits', lang), icon: 'layers-outline' },
-            { code: CALC_CODES.rest, label: t('cal.optRest', lang), icon: 'bed-outline' },
-          ].map(o => (
-            <TouchableOpacity key={o.code} style={s.chooseRow} activeOpacity={0.8} onPress={() => openCalc(o.code)}>
-              <View style={s.chooseIcon}><Ionicons name={o.icon} size={18} color={C.text} /></View>
-              <Text style={s.chooseTxt}>{o.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={C.sub} />
+        {isFtl ? (
+          <View style={s.chooseWrap}>
+            {[
+              { code: CALC_CODES.psv, label: t('cal.optPsv', lang), icon: 'time-outline' },
+              { code: CALC_CODES.limits, label: t('cal.optLimits', lang), icon: 'layers-outline' },
+              { code: CALC_CODES.rest, label: t('cal.optRest', lang), icon: 'bed-outline' },
+            ].map(o => (
+              <TouchableOpacity key={o.code} style={s.chooseRow} activeOpacity={0.8} onPress={() => openCalc(o.code)}>
+                <View style={s.chooseIcon}><Ionicons name={o.icon} size={18} color={C.text} /></View>
+                <Text style={s.chooseTxt}>{o.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View style={s.aeForm}>
+            <Text style={s.fieldLbl}>{t('home.category', lang)}</Text>
+            <View style={s.catWrap}>
+              {extraCategories('ae').map(c => {
+                const sel = newCat === c.id;
+                return (
+                  <TouchableOpacity key={c.id} onPress={() => setNewCat(c.id)} style={[s.catChip, { backgroundColor: sel ? C.ink : C.soft }]}>
+                    <Ionicons name={c.icon} size={14} color={sel ? '#fff' : C.sub} />
+                    <Text style={[s.catChipTxt, { color: sel ? '#fff' : C.sub }]}>{catLabel(c.id, lang)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={[s.fieldLbl, { marginTop: 16 }]}>{t('home.amount', lang)}</Text>
+            <TextInput value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholder="0,00"
+              placeholderTextColor={C.sub} style={s.amountInput} />
+            <TouchableOpacity onPress={saveAeExtra} style={[s.saveBtn, { opacity: (parseFloat(String(newAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
+              <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
+        )}
       </BottomSheet>
     </SafeAreaView>
   );
@@ -292,4 +331,13 @@ const makeStyles = (C) => StyleSheet.create({
   chooseRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, backgroundColor: C.card },
   chooseIcon: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   chooseTxt: { flex: 1, fontSize: TYPE.body, fontWeight: '600', color: C.text },
+  // Formulário de registo AE (categoria + €) — espelha o cartão do mês no Início.
+  aeForm: { padding: 20 },
+  fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
+  catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.pill, paddingHorizontal: 12, minHeight: 38 },
+  catChipTxt: { fontSize: TYPE.label, fontWeight: '600' },
+  amountInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.heading, fontFamily: 'monospace', color: C.text },
+  saveBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
 });
