@@ -6,7 +6,7 @@ import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t, txv } from '../data/i18n';
-import { success, select } from '../data/haptics';
+import { success } from '../data/haptics';
 
 import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION, companyContent } from '../data/constants';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
@@ -104,18 +104,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }}
-        right={
-          <View style={s.headLang}>
-            {['pt', 'en'].map((l) => (
-              <TouchableOpacity key={l} onPress={() => { select(); setLang(l); }} activeOpacity={0.8} hitSlop={8}
-                style={[s.langDot, { backgroundColor: lang === l ? C.red : C.hairlineOnDark }]}
-                accessibilityLabel={l === 'pt' ? 'Português' : 'English'}>
-                <Text style={[s.langDotTxt, { color: lang === l ? '#fff' : C.onDarkSub }]}>{l.toUpperCase()}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        } />
+      <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
         {/* User card */}
@@ -131,18 +120,27 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Group s={s}>
+        <Group title={t('profile.groupProfile', lang)} s={s}>
           <Row s={s} C={C} label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} last={isFtl} />
           {!isFtl && <Row s={s} C={C} label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />}
           {!isFtl && <Row s={s} C={C} label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />}
         </Group>
 
-        <Group title={t('profile.appearance', lang)} s={s}>
-          <View style={s.appearanceRow}>
-            <Seg
-              options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]}
+        <Group title={t('profile.groupPrefs', lang)} s={s}>
+          <View style={s.prefBlock}>
+            <Text style={s.prefLabel}>{t('profile.language', lang)}</Text>
+            <Seg options={[{ id: 'pt', label: 'Português' }, { id: 'en', label: 'English' }]} value={lang} setValue={setLang} />
+          </View>
+          <View style={[s.prefBlock, s.prefDivider]}>
+            <Text style={s.prefLabel}>{t('profile.theme', lang)}</Text>
+            <Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]}
               value={theme} setValue={setTheme} />
           </View>
+        </Group>
+
+        <Group title={t('profile.groupAccount', lang)} s={s}>
+          <Row s={s} C={C} label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
+          <Row s={s} C={C} label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
         </Group>
 
         <Group title={t('profile.groupContent', lang)} s={s}>
@@ -164,15 +162,10 @@ export default function SettingsScreen() {
           </View>
         </Group>
 
-        <Group title={t('profile.groupAccount', lang)} s={s}>
-          <Row s={s} C={C} label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
-          <Row s={s} C={C} label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
-        </Group>
-
         <Group title={t('profile.groupAbout', lang)} s={s}>
           <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
-            <Text style={s.rowValue}>v1.0.0 · {isFtl ? 'Regulamento (UE) 83/2014' : DATA_VERSION.agreement}</Text>
+            <Text style={s.rowValue}>v1.0.0</Text>
           </View>
         </Group>
       </ScrollView>
@@ -191,7 +184,7 @@ export default function SettingsScreen() {
                 <TextInput value={f.val} onChangeText={f.set} secureTextEntry={!pwShown[i]}
                   style={s.pwInput} placeholderTextColor={C.sub} placeholder="••••••••" autoCapitalize="none" autoCorrect={false} />
                 <TouchableOpacity onPress={() => setPwShown(p => ({ ...p, [i]: !p[i] }))} hitSlop={8} style={s.pwEye}
-                  accessibilityLabel={pwShown[i] ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'}>
+                  accessibilityLabel={pwShown[i] ? t('profile.pwHide', lang) : t('profile.pwShow', lang)}>
                   <Ionicons name={pwShown[i] ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
                 </TouchableOpacity>
               </View>
@@ -244,14 +237,13 @@ export default function SettingsScreen() {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  appearanceRow: { padding: 12 },
+  prefBlock: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6 },
+  prefLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 10 },
+  prefDivider: { borderTopWidth: 1, borderTopColor: C.line },
   toast: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, zIndex: 50, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 20 },
   toastIcon: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
   toastTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
   toastSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
-  headLang: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  langDot: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20, backgroundColor: C.card },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
