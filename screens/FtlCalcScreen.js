@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
@@ -10,21 +11,25 @@ import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { monthKey } from '../data/extras';
 import { t, tx } from '../data/i18n';
 import { success } from '../data/haptics';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme, isoDay } from '../App';
 
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 
 // Detalhe de uma calculadora FTL — mesmo layout dos artigos de consulta
 // (eyebrow + código + título), sem cartão preto. Aberto a partir da lista de
-// cartões na aba Cálculos. "Confirmar" envia o cálculo para o cartão do Início.
+// cartões na aba Cálculos ou de um dia no Calendário. "Confirmar" regista o
+// cálculo no dia indicado (param `date`) ou, por omissão, em hoje.
 export default function FtlCalcScreen({ route, navigation }) {
-  const { lang, addExtra, updateFtlSnap } = useContext(AppContext);
+  const { lang, addExtra, updateDayLog } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
   const a = FTL_ARTICLES.find(x => x.code === route.params?.code);
   const [pending, setPending] = useState(null);
+  // Dia-alvo do registo: o que vem do Calendário, senão hoje.
+  const fromDate = route.params?.date;
+  const logDate = fromDate || isoDay();
   if (!a) return null;
 
   const registerFtl = (p) => setPending(p);
@@ -48,15 +53,16 @@ export default function FtlCalcScreen({ route, navigation }) {
     const p = pending;
     if (!p) return;
     if (p.kind === 'limits') {
-      const today = new Date().toISOString().slice(0, 10);
-      addExtra({ month: monthKey(new Date(today + 'T00:00:00')), date: today, category: p.category, amount: p.amount });
+      addExtra({ month: monthKey(new Date(logDate + 'T00:00:00')), date: logDate, category: p.category, amount: p.amount });
     } else if (p.kind === 'psv') {
-      updateFtlSnap('psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
+      updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
-      updateFtlSnap('rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
+      updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
     }
     success();
     setPending(null);
+    // Veio do Calendário (com data) → volta a esse dia para ver o registo.
+    if (fromDate) navigation.goBack();
   };
 
   const Calc = a.psv ? PsvCalc : a.limits ? LimitsCalc : RestCalc;
@@ -70,6 +76,13 @@ export default function FtlCalcScreen({ route, navigation }) {
         <Text style={s.code}>{a.code}</Text>
         <Text style={s.title}>{tx(a.title, lang)}</Text>
         <Text style={s.sub}>{tx(a.sub, lang)}</Text>
+
+        {fromDate ? (
+          <View style={s.logForRow}>
+            <Ionicons name="calendar-outline" size={14} color={C.text} />
+            <Text style={s.logForTxt}>{t('ftl.logFor', lang)} {new Date(logDate + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'long' })}</Text>
+          </View>
+        ) : null}
 
         <Calc lang={lang} onRegister={registerFtl} />
 
@@ -105,7 +118,9 @@ const makeStyles = (C) => StyleSheet.create({
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, fontWeight: '300', letterSpacing: -0.5, color: C.text, fontFamily: 'monospace' },
   title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4 },
-  sub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 20 },
+  sub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 14 },
+  logForRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 18 },
+  logForTxt: { fontSize: TYPE.sub, color: C.text, fontWeight: '600' },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
   dlgBody: { padding: 20 },
   dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },

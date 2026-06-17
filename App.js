@@ -31,11 +31,18 @@ import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import CategoriesScreen   from './screens/CategoriesScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import CalendarScreen     from './screens/CalendarScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 export const AppContext = React.createContext(null);
+
+// Data local no formato 'YYYY-MM-DD' (chave do registo FTL por dia). Usa as
+// componentes locais — não o UTC do toISOString() — para não trocar de dia
+// perto da meia-noite consoante o fuso.
+export const isoDay = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // Paleta ativa (modo claro/escuro). Ecrãs convertidos fazem `const C = useTheme()`
 // — isso ensombra o import estático `C`, por isso tanto os estilos como as cores
@@ -46,6 +53,8 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
+      <Stack.Screen name="Calendar"  component={CalendarScreen} />
+      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="Detail"    component={DetailScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -160,7 +169,7 @@ export default function App() {
   const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
-  const [ftlSnap, setFtlSnap]           = useState({}); // último cálculo FTL: { psv, rest }
+  const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
 
   const addExtra = (entry) =>
     setExtras(prev => [{
@@ -170,7 +179,27 @@ export default function App() {
     }, ...prev]);
   const removeExtra = (id) =>
     setExtras(prev => prev.filter(e => e.id !== id));
-  const updateFtlSnap = (key, val) => setFtlSnap(prev => ({ ...prev, [key]: typeof val === 'function' ? val(prev[key]) : val }));
+  // ── Registo FTL por dia ──
+  // dayLog: { 'YYYY-MM-DD': { psv, rest, … } }. As calculadoras registam num dia
+  // (a data selecionada no calendário ou, por omissão, hoje).
+  const updateDayLog = (date, key, val) =>
+    setDayLog(prev => {
+      const day = prev[date] || {};
+      return { ...prev, [date]: { ...day, [key]: typeof val === 'function' ? val(day[key]) : val } };
+    });
+  const removeDayLog = (date, key) =>
+    setDayLog(prev => {
+      if (!prev[date]) return prev;
+      const day = { ...prev[date] };
+      delete day[key];
+      const next = { ...prev };
+      if (Object.keys(day).length) next[date] = day; else delete next[date];
+      return next;
+    });
+  // Compat: o cartão do Início e as calculadoras ainda falam em "ftlSnap" = hoje.
+  // (Fases seguintes ligam estes consumidores diretamente ao dia selecionado.)
+  const ftlSnap = dayLog[isoDay()] || {};
+  const updateFtlSnap = (key, val) => updateDayLog(isoDay(), key, val);
 
   // When a user logs in, pre-populate profile if they already have one saved
   const handleSetUser = (u) => {
@@ -251,19 +280,28 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setFtlSnap({}); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setDayLog({}); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, x, fs] = await Promise.all([
+        const [r, x, dl, fs] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_extras_${user.id}`),
+          AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         setExtras(x ? JSON.parse(x) : []);
-        setFtlSnap(fs ? JSON.parse(fs) : {});
+        if (dl) {
+          setDayLog(JSON.parse(dl));
+        } else if (fs) {
+          // Migração one-time: o snapshot único antigo passa para o dia de hoje.
+          const old = JSON.parse(fs);
+          setDayLog(old && Object.keys(old).length ? { [isoDay()]: old } : {});
+        } else {
+          setDayLog({});
+        }
       } catch { /* primeira execução / storage indisponível */ }
       finally { if (!cancelled) hydrated.current = true; }
     })();
@@ -273,7 +311,7 @@ export default function App() {
   // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
-  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ftlsnap_${user.id}`, JSON.stringify(ftlSnap)).catch(() => {}); }, [ftlSnap, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
 
   const ctx = {
     user, setUser: handleSetUser, logout,
@@ -284,6 +322,7 @@ export default function App() {
     readNotifIds, setReadNotifIds,
     extras, addExtra, removeExtra,
     ftlSnap, updateFtlSnap,
+    dayLog, updateDayLog, removeDayLog,
     onboarded, setOnboarded,
   };
 

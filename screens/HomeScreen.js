@@ -335,7 +335,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* Próximo voo */}
-        <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={syncFlight}>
+        <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={() => navigation.navigate('Calendar')}>
           <View style={s.flightTop}>
             <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
             <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
