@@ -140,6 +140,7 @@ export const STRINGS = {
     // Cartão "Este mês" (extras)
     'home.monthEyebrow': 'ESTE MÊS',
     'home.totalExtra': 'TOTAL EXTRA',
+    'home.recordsTitle': 'REGISTOS DO MÊS',
     'home.totalFlight': 'HORAS DE VOO',
     'home.amountFtl': 'Valor (horas / setores)',
     'home.noFtl': 'Sem horas registadas este mês. Toca em + para adicionar.',
@@ -418,6 +419,7 @@ export const STRINGS = {
     'home.seeDetails': 'See details',
     'home.monthEyebrow': 'THIS MONTH',
     'home.totalExtra': 'TOTAL EXTRA',
+    'home.recordsTitle': 'THIS MONTH’S RECORDS',
     'home.totalFlight': 'FLIGHT HOURS',
     'home.amountFtl': 'Value (hours / sectors)',
     'home.noFtl': 'No hours logged this month. Tap + to add.',

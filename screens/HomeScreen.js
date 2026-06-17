@@ -143,6 +143,7 @@ export default function HomeScreen({ navigation }) {
   const psvBasis = psvBasisFor(ftlSnap.psv, lang); // origem regulamentar p/ o cartão PSV
 
   const [ftlPage, setFtlPage] = useState(0);
+  const [aePage, setAePage] = useState(0); // página do carrossel AE (Resumo / Registos)
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no slide Limites
   const [notifOpen, setNotifOpen] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
@@ -155,7 +156,7 @@ export default function HomeScreen({ navigation }) {
   // ── Extras do mês (AE) ──
   const curKey   = monthKey();
   const total    = monthTotal(extras, curKey);
-  const breakdown = monthBreakdown(extras, curKey).slice(0, 3);
+  const breakdown = monthBreakdown(extras, curKey); // todos os registos do mês (carrossel AE)
   const history  = lastMonths(extras, 6);
   const maxT     = Math.max(1, ...history.map(h => h.total));
   const pct      = pctChange(extras, curKey);
@@ -339,8 +340,11 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : (
             <>
-              <View style={s.monthBody}>
-                <View style={{ flex: 1 }}>
+              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={e => setAePage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
+
+                {/* Slide 1 — Resumo (total + variação + gráfico de 6 meses) */}
+                <View style={{ width: slideW }}>
                   <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
                   <Text style={s.monthTotal}>{totalDisplay}</Text>
                   {pct != null && (
@@ -349,33 +353,50 @@ export default function HomeScreen({ navigation }) {
                       <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
                     </View>
                   )}
+                  <View style={s.monthDivider} />
+                  <View style={s.chartRow}>
+                    <View style={s.chart}>
+                      {history.map((h, i) => {
+                        const isCur = i === history.length - 1;
+                        const hgt = 6 + Math.round((h.total / maxT) * 40);
+                        return (
+                          <View key={h.key} style={s.chartCol}>
+                            <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : C.hairlineOnDark }} />
+                            <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
                 </View>
-                <View style={s.breakdown}>
-                  {breakdown.length === 0
-                    ? <Text style={s.noExtras}>{t('home.noExtras', lang)}</Text>
-                    : breakdown.map(b => (
+
+                {/* Slide 2 — Registos do mês (todos) */}
+                <View style={{ width: slideW }}>
+                  <Text style={s.secHd}>{t('home.recordsTitle', lang)}</Text>
+                  {breakdown.length === 0 ? (
+                    <View style={s.psvEmpty}>
+                      <View style={s.psvEmptyIcon}><Ionicons name="receipt-outline" size={22} color={C.onDarkSub} /></View>
+                      <Text style={s.psvEmptyTxt}>{t('home.noExtras', lang)}</Text>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 10 }}>
+                      {breakdown.map(b => (
                         <View key={b.key} style={s.bdRow}>
                           <Text style={s.bdLbl} numberOfLines={1}>{b.label || catLabel(b.category, lang)}</Text>
                           <Text style={s.bdVal}>{fmtEur(b.total)}</Text>
                         </View>
                       ))}
+                    </View>
+                  )}
                 </View>
-              </View>
+              </ScrollView>
 
-              <View style={s.monthDivider} />
-
-              <View style={s.chartRow}>
-                <View style={s.chart}>
-                  {history.map((h, i) => {
-                    const isCur = i === history.length - 1;
-                    const hgt = 6 + Math.round((h.total / maxT) * 40);
-                    return (
-                      <View key={h.key} style={s.chartCol}>
-                        <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : C.hairlineOnDark }} />
-                        <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
-                      </View>
-                    );
-                  })}
+              <View style={s.ftlNav}>
+                <Text style={s.ftlNavLbl}>
+                  {`${aePage + 1}/2 · ${(lang === 'en' ? ['Summary', 'Records'] : ['Resumo', 'Registos'])[aePage]}`}
+                </Text>
+                <View style={s.ftlDots}>
+                  {[0, 1].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === aePage ? C.onDark : C.hairlineOnDark }]} />)}
                 </View>
               </View>
             </>
