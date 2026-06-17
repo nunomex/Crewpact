@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
@@ -7,15 +7,14 @@ import { PSV_ACCLIMATISED, PSV_SECTORS, PSV_UNKNOWN_SECTORS, psvBandIdx } from '
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
-  EXTRA_CATEGORIES, extraCategories, catLabel, fmtEur, fmtVal,
-  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, lastMonths, pctChange, windowTotal,
+  catLabel, fmtEur, fmtVal,
+  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, pctChange, windowTotal,
 } from '../data/extras';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
-import { success, select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
 // "11:30" → 11.5 (horas decimais).
@@ -146,9 +145,6 @@ export default function HomeScreen({ navigation }) {
   const [aePage, setAePage] = useState(0); // página do carrossel AE (Resumo / Registos)
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no slide Limites
   const [notifOpen, setNotifOpen] = useState(false);
-  const [addOpen, setAddOpen]     = useState(false);
-  const [newCat, setNewCat]       = useState(EXTRA_CATEGORIES[0].id);
-  const [newAmount, setNewAmount] = useState('');
 
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
@@ -157,8 +153,6 @@ export default function HomeScreen({ navigation }) {
   const curKey   = monthKey();
   const total    = monthTotal(extras, curKey);
   const aeSections = monthBySection(extras, curKey); // registos do mês agrupados por secção (carrossel AE)
-  const history  = lastMonths(extras, 6);
-  const maxT     = Math.max(1, ...history.map(h => h.total));
   const pct      = pctChange(extras, curKey);
   const totalDisplay = fmtEur(total);
 
@@ -181,15 +175,6 @@ export default function HomeScreen({ navigation }) {
     ] },
   ];
 
-
-  const saveExtra = () => {
-    const amount = parseFloat(String(newAmount).replace(',', '.')) || 0;
-    if (amount <= 0) return;
-    addExtra({ month: curKey, category: newCat, amount });
-    success();
-    setNewAmount('');
-    setAddOpen(false);
-  };
 
   const closeNotifs = () => {
     setNotifOpen(false);
@@ -236,9 +221,6 @@ export default function HomeScreen({ navigation }) {
           {!isFtl && (
             <View style={s.monthHead}>
               <Text style={s.monthEyebrow}>{`${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
-              <TouchableOpacity style={s.addBtn} onPress={() => { select(); setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('home.logExtra', lang)}>
-                <Ionicons name="add" size={20} color="#fff" />
-              </TouchableOpacity>
             </View>
           )}
 
@@ -343,7 +325,7 @@ export default function HomeScreen({ navigation }) {
               <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={e => setAePage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
 
-                {/* Slide 1 — Resumo (total + variação + gráfico de 6 meses) */}
+                {/* Slide 1 — Resumo (total + variação) */}
                 <View style={{ width: slideW }}>
                   <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
                   <Text style={s.monthTotal}>{totalDisplay}</Text>
@@ -353,21 +335,6 @@ export default function HomeScreen({ navigation }) {
                       <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
                     </View>
                   )}
-                  <View style={s.monthDivider} />
-                  <View style={s.chartRow}>
-                    <View style={s.chart}>
-                      {history.map((h, i) => {
-                        const isCur = i === history.length - 1;
-                        const hgt = 6 + Math.round((h.total / maxT) * 40);
-                        return (
-                          <View key={h.key} style={s.chartCol}>
-                            <View style={{ width: 9, height: hgt, borderRadius: 4, backgroundColor: isCur ? C.red : C.hairlineOnDark }} />
-                            <Text style={[s.chartLbl, isCur && { color: '#fff', fontWeight: '700' }]}>{monthLabel(h.key, lang)}</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </View>
                 </View>
 
                 {/* Slide 2 — Registos do mês, agrupados por secção (como a aba Cálculos) */}
@@ -444,30 +411,6 @@ export default function HomeScreen({ navigation }) {
           )}
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Registar extra */}
-      <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)} title={t('home.logExtra', lang)} closeLabel={t('common.close', lang)}>
-        <View style={{ padding: 20 }}>
-          <Text style={s.fieldLbl}>{t('home.category', lang)}</Text>
-          <View style={s.catWrap}>
-            {extraCategories(isFtl ? 'ftl' : 'ae').map(c => {
-              const sel = newCat === c.id;
-              return (
-                <TouchableOpacity key={c.id} onPress={() => setNewCat(c.id)} style={[s.catChip, { backgroundColor: sel ? C.ink : C.soft }]}>
-                  <Ionicons name={c.icon} size={14} color={sel ? '#fff' : C.sub} />
-                  <Text style={[s.catChipTxt, { color: sel ? '#fff' : C.sub }]}>{catLabel(c.id, lang)}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={[s.fieldLbl, { marginTop: 16 }]}>{isFtl ? t('home.amountFtl', lang) : t('home.amount', lang)}</Text>
-          <TextInput value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholder="0,00"
-            placeholderTextColor={C.sub} style={s.amountInput} />
-          <TouchableOpacity onPress={saveExtra} style={[s.saveBtn, { opacity: (parseFloat(String(newAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
-            <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
 
       {/* Notificações */}
       <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
