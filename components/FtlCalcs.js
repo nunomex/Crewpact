@@ -92,7 +92,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const reportMin = parseHhmm(report);
   const inBand = isAcc && reportMin != null && withinBand(reportMin, bandStr);
   const reportOutOfBand = isAcc && reportMin != null && !withinBand(reportMin, bandStr); // escrita fora da faixa → vermelho
-  const registerDisabled = isAcc && !inBand;              // vazia / incompleta / fora da faixa
+  // Botão Confirmar só aparece com tudo preenchido: apresentação válida (em acc) + ≥ 1 setor.
+  const stepsComplete = (!isAcc || inBand) && sec >= 1;
   // #1 Fim-limite (até calços) = apresentação + PSV (só aclimatado, hora válida).
   const startClock = inBand ? minToHhmm(reportMin) : null;
   const endMin = inBand ? reportMin + fdpMin : null;
@@ -169,7 +170,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       )}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang} disabled={registerDisabled}
+      {onRegister && <RegisterBtn lang={lang} disabled={!stepsComplete}
         onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
     </CalcCard>
   );
