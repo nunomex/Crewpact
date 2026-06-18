@@ -8,7 +8,6 @@ import CenterDialog from '../components/CenterDialog';
 import { PsvCalc, LimitsCalc, RestCalc, DutyCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
-import { monthKey } from '../data/extras';
 import { t, tx } from '../data/i18n';
 import { success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../App';
@@ -20,7 +19,7 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 // cartões na aba Cálculos ou de um dia no Calendário. "Confirmar" regista o
 // cálculo no dia indicado (param `date`) ou, por omissão, em hoje.
 export default function FtlCalcScreen({ route, navigation }) {
-  const { lang, addExtra, updateDayLog } = useContext(AppContext);
+  const { lang, updateDayLog } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = L(lang);
@@ -60,17 +59,17 @@ export default function FtlCalcScreen({ route, navigation }) {
   const confirmRegister = () => {
     const p = pending;
     if (!p) return;
+    // Persistência FTL própria: tudo no dayLog (store FTL). Nada vai para o `extras` (AE).
     if (p.kind === 'limits') {
-      addExtra({ month: monthKey(new Date(logDate + 'T00:00:00')), date: logDate, category: p.category, amount: p.amount });
+      updateDayLog(logDate, p.category, prev => (prev || 0) + p.amount); // 'voo' | 'servico'
     } else if (p.kind === 'psv') {
       updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, band: p.band, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
     } else if (p.kind === 'duty') {
-      const mk = monthKey(new Date(logDate + 'T00:00:00'));
       updateDayLog(logDate, 'psv', { state: p.psv.state, sectors: p.psv.sectors, result: p.psv.result, max: p.psv.max, band: p.psv.band, start: p.psv.start, over: p.psv.over, excess: p.psv.excess, ts: Date.now() });
-      if (p.limits.servico > 0) addExtra({ month: mk, date: logDate, category: 'servico', amount: p.limits.servico });
-      if (p.limits.voo > 0) addExtra({ month: mk, date: logDate, category: 'voo', amount: p.limits.voo });
+      if (p.limits.servico > 0) updateDayLog(logDate, 'servico', prev => (prev || 0) + p.limits.servico);
+      if (p.limits.voo > 0) updateDayLog(logDate, 'voo', prev => (prev || 0) + p.limits.voo);
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.rest.place]: p.rest.value, [`${p.rest.place}Prev`]: p.rest.prev, ts: Date.now() }));
     }
     success();

@@ -126,11 +126,10 @@ export default function CalendarScreen({ navigation }) {
   const selDate = new Date(`${selISO}T00:00:00`);
   const selFlights = flightsByDay[selISO] || [];
   const selDay = dayLog[selISO] || {};
-  // Extras do dia filtrados pela companhia: FTL (horas voo/serviço) vs AE (extras €).
-  // O armazém de extras é partilhado (por utilizador), por isso filtramos pela categoria.
-  const selExtras = extras.filter(e => e.date === selISO && (isFtl ? FTL_CATS.has(e.category) : !FTL_CATS.has(e.category)));
-  const hasFtlRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null);
-  const hasRecords = (isFtl && hasFtlRecords) || selExtras.length > 0;
+  // AE: extras do dia (€). FTL: as horas voo/serviço vivem no dayLog (store FTL próprio).
+  const selExtras = extras.filter(e => e.date === selISO && !FTL_CATS.has(e.category)); // só AE
+  const hasFtlRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null || selDay.voo > 0 || selDay.servico > 0);
+  const hasRecords = isFtl ? hasFtlRecords : selExtras.length > 0;
 
   // Abrir a calculadora (PSV/limites/repouso) ligada ao dia selecionado (só FTL).
   const openCalc = (code) => { setAddOpen(false); navigation.navigate('FtlCalc', { code, date: selISO }); };
@@ -145,6 +144,7 @@ export default function CalendarScreen({ navigation }) {
   };
   // Apagar registos do dia (só os nossos dados — nunca o calendário real).
   const delPsv = () => { select(); removeDayLog(selISO, 'psv'); };
+  const delHours = (key) => { select(); removeDayLog(selISO, key); }; // 'voo' | 'servico'
   const delExtra = (id) => { select(); removeExtra(id); };
   const delRest = (place) => {
     select();
@@ -258,6 +258,14 @@ export default function CalendarScreen({ navigation }) {
             {isFtl && selDay.rest?.away != null ? (
               <RecRow s={s} C={C} label={t('home.restAway', lang)} value={fmtVal(selDay.rest.away, 'h')}
                 onPress={() => openCalc(CALC_CODES.rest)} onDelete={() => delRest('away')} />
+            ) : null}
+            {isFtl && selDay.servico > 0 ? (
+              <RecRow s={s} C={C} label={t('ftl.duty', lang)} value={fmtVal(selDay.servico, 'h')}
+                onPress={() => openCalc(CALC_CODES.limits)} onDelete={() => delHours('servico')} />
+            ) : null}
+            {isFtl && selDay.voo > 0 ? (
+              <RecRow s={s} C={C} label={t('ftl.flight', lang)} value={fmtVal(selDay.voo, 'h')}
+                onPress={() => openCalc(CALC_CODES.limits)} onDelete={() => delHours('voo')} />
             ) : null}
             {selExtras.map(e => (
               <RecRow key={e.id} s={s} C={C} label={e.label || catLabel(e.category, lang)}

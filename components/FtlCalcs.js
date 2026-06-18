@@ -1,41 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { C as _C, RADIUS, TYPE } from '../data/constants';
+import { RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
-import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM, psvBandIdx } from '../data/ftl';
+import { PSV_ACCLIMATISED } from '../data/ftl'; // só a lista de faixas (UI)
+import {
+  parseHhmm, minToHhmm, maskClock,
+  computeFdpByBand, computeDuty, computeRest,
+  withinBand, fmtBandRange, DUTY_WINDOWS, FLIGHT_WINDOWS,
+} from '../ftl';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
 
-// Conversões de hora ("HH:MM" ↔ minutos).
-const hhmmToMin = (s) => { const [h, m] = String(s).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
-const minToHhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-const parseHhmm = (s) => {
-  const str = String(s).trim();
-  if (!str) return null;
-  let h, m;
-  if (str.includes(':')) { const [a, b] = str.split(':'); h = parseInt(a, 10); m = parseInt(b || '0', 10); }
-  else { const d = str.replace(/[^0-9]/g, ''); if (!d) return null; h = parseInt(d.length <= 2 ? d : d.slice(0, d.length - 2), 10); m = d.length <= 2 ? 0 : parseInt(d.slice(-2), 10); }
-  if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return null;
-  return h * 60 + m;
-};
-
-// Limites (min) de uma faixa do Quadro 2, p.ex. '0600–1329' → [360, 829]. A faixa
-// '1700–0459' cruza a meia-noite (lo > hi) — daí o ramo "ou" em withinBand.
-const _bandMins = (b) => String(b).split('–').map(s => (+s.slice(0, 2)) * 60 + (+s.slice(2)));
-const withinBand = (m, b) => { const [lo, hi] = _bandMins(b); return lo <= hi ? (m >= lo && m <= hi) : (m >= lo || m <= hi); };
-const fmtBandRange = (b) => String(b).split('–').map(s => `${s.slice(0, 2)}:${s.slice(2)}`).join('–');
-
-// Máscara de hora de relógio (00:00–23:59) com ":" automático. Devolve a string
-// formatada, ou null se a tecla tornar a hora inválida (para a ignorar).
-const maskClock = (v) => {
-  let d = String(v).replace(/\D/g, '').slice(0, 4);
-  if (d.length === 1 && +d > 2) d = '0' + d;            // 1º dígito > 2 → hora de um dígito ('8' → '08')
-  if (d.length >= 2 && +d.slice(0, 2) > 23) return null; // horas > 23
-  if (d.length >= 3 && +d[2] > 5) return null;           // dezena dos minutos > 5
-  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
-};
-
+// Toda a matemática FTL vem do motor `ftl/` — os componentes só tratam de UI.
 // Transição suave ao mostrar/esconder (ex.: fim-limite, troca de estado).
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -79,19 +56,9 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   // Máscara HH:MM (00:00–23:59), com os ":" automáticos. Recusa horas inválidas.
   const onReport = (v) => { const m = maskClock(v); if (m == null) return; anim(); setReport(m); };
 
-  let base;
-  if (isAcc) {
-    const col = sec <= 2 ? 0 : Math.min(sec - 2, 8);          // Quadro 2: 9 colunas
-    base = PSV_ACCLIMATISED[startIdx].v[col];
-  } else {
-    const col = sec <= 2 ? 0 : Math.min(sec - 2, 6);          // Quadros 3/4: 7 colunas
-    base = (accState === 'unk' ? PSV_UNKNOWN : PSV_UNKNOWN_FRM)[col];
-  }
-
-  // #4 Split duty (ORO.FTL.220): pausa ≥ 3 h estende o PSV em 50% da pausa.
-  const extMin = brk >= 3 ? brk * 30 : 0;
-  const fdpMin = hhmmToMin(base) + extMin;
-  const result = minToHhmm(fdpMin);
+  // Motor FTL: PSV máximo a partir da faixa selecionada (+ split duty 220).
+  const { baseStr: base, extMin, maxFdpMin: fdpMin, maxFdpStr: result } =
+    computeFdpByBand({ state: accState, bandIdx: startIdx, sectors: sec, splitBreakH: brk });
 
   // Apresentação obrigatória e dentro da faixa (só em acc). Tudo aparece sempre;
   // só o botão Confirmar fica desativado até a apresentação ser válida.
@@ -204,42 +171,19 @@ export function DutyCalc({ lang, onRegister }) {
   const onEnd = (v) => { const m = maskClock(v); if (m == null) return; anim(); setEnd(m); };
   const onFlight = (v) => { const m = maskClock(v); if (m == null) return; setFlight(m); };
 
-  const reportMin = parseHhmm(report);
-  const endMin = parseHhmm(end);
-
-  // PSV máximo (tabela) — faixa derivada do report.
-  let bandStr = null, psvBaseStr = null;
-  if (reportMin != null) {
-    if (isAcc) {
-      const bi = psvBandIdx(reportMin);
-      bandStr = PSV_ACCLIMATISED[bi].start;
-      psvBaseStr = PSV_ACCLIMATISED[bi].v[sec <= 2 ? 0 : Math.min(sec - 2, 8)];
-    } else {
-      psvBaseStr = (accState === 'unk' ? PSV_UNKNOWN : PSV_UNKNOWN_FRM)[sec <= 2 ? 0 : Math.min(sec - 2, 6)];
-    }
-  }
-  const extMin = brk >= 3 ? brk * 30 : 0;
-  const psvMaxMin = psvBaseStr != null ? hhmmToMin(psvBaseStr) + extMin : null;
-  const psvMaxDisp = psvMaxMin != null ? minToHhmm(psvMaxMin) : null;
-
-  // FDP real = calços − apresentação (com a volta da meia-noite).
-  const fdpMin = (reportMin != null && endMin != null)
-    ? (endMin >= reportMin ? endMin - reportMin : endMin + 1440 - reportMin) : null;
-  const fdpDisp = fdpMin != null ? minToHhmm(fdpMin) : null;
-  const psvOver = fdpMin != null && psvMaxMin != null && fdpMin > psvMaxMin;
-  const psvExcess = psvOver ? minToHhmm(fdpMin - psvMaxMin) : null;
-
-  // Limites (210): serviço = FDP; voo = input opcional. Em horas decimais (1 casa).
+  // Motor FTL: uma atividade → PSV (real vs máx), repouso e legalidade.
+  const { reportMin, endMin, fdp, rest } = computeDuty({ state: accState, report, end, sectors: sec, splitBreakH: brk, inBase });
+  const bandStr = fdp.band;
+  const psvMaxDisp = fdp.maxFdpStr;
+  const fdpDisp = fdp.actualFdpStr;
+  const psvOver = fdp.over;
+  const psvExcess = fdp.excessStr;
   const toH = (min) => +(min / 60).toFixed(1);
-  const servicoH = fdpMin != null ? toH(fdpMin) : 0;
+  const servicoH = fdp.actualFdpMin != null ? toH(fdp.actualFdpMin) : 0;
   const flightMin = parseHhmm(flight);
   const vooH = flightMin != null ? toH(flightMin) : 0;
-
-  // Repouso (235): mínimo = máx(FDP, piso) — 12 h em base, 10 h fora.
-  const floor = inBase ? 12 : 10;
-  const restMin = fdpMin != null ? Math.max(fdpMin, floor * 60) : null;
-  const restDisp = restMin != null ? minToHhmm(restMin) : null;
-
+  const restMin = rest.restMin; // minutos
+  const restDisp = (reportMin != null && endMin != null) ? rest.restStr : null;
   const complete = reportMin != null && endMin != null && sec >= 1;
 
   return (
@@ -311,8 +255,9 @@ export function LimitsCalc({ lang, onRegister, collapsible }) {
   const C = useTheme();
   const cs = makeCs(C);
   const days = t('ftl.days', lang);
-  const LIM_DUTY = [{ id: '7', label: `7 ${days}`, v: 60 }, { id: '14', label: `14 ${days}`, v: 110 }, { id: '28', label: `28 ${days}`, v: 190 }];
-  const LIM_FLIGHT = [{ id: '28', label: `28 ${days}`, v: 100 }, { id: 'ano', label: t('ftl.year', lang), v: 900 }, { id: '12m', label: `12 ${t('ftl.months', lang)}`, v: 1000 }];
+  // Janelas vindas do motor (ORO.FTL.210) — sem constantes duplicadas.
+  const LIM_DUTY = DUTY_WINDOWS.map((w) => ({ id: w.id, label: `${w.days} ${days}`, v: w.limit }));
+  const LIM_FLIGHT = FLIGHT_WINDOWS.map((w) => ({ id: w.id, label: w.kind === 'calendarYear' ? t('ftl.year', lang) : w.kind === 'months12' ? `12 ${t('ftl.months', lang)}` : `${w.days} ${days}`, v: w.limit }));
   const [tipo, setTipo] = useState('duty');
   const opts = tipo === 'duty' ? LIM_DUTY : LIM_FLIGHT;
   const [per, setPer] = useState(opts[0].id);
@@ -362,8 +307,10 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const [prev, setPrev] = useState(0);
   const [dir, setDir] = useState('after'); // 'after' = off-block→apresentação · 'before' = apresentação→off-block
   const [timeStr, setTimeStr] = useState('');
-  const floor = place === 'base' ? 12 : 10;
-  const min = Math.max(prev, floor);
+  // Motor FTL (235): repouso mínimo = máx(serviço anterior, piso). Em horas.
+  const { floorMin, restMin } = computeRest({ prevDutyMin: prev * 60, inBase: place === 'base' });
+  const floor = floorMin / 60;
+  const min = restMin / 60;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const restAudit = {
     valid: { ok: true, label: t('audit.valid', lang) },

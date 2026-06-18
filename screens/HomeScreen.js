@@ -8,8 +8,9 @@ import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import {
   catLabel, fmtEur, fmtVal,
-  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, pctChange, windowTotal,
+  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, pctChange,
 } from '../data/extras';
+import { computeDutyTime, computeFlightTime } from '../ftl';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
@@ -162,7 +163,7 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, dayLog } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const company  = COMPANIES.find(c => c.id === profile.company);
@@ -196,37 +197,21 @@ export default function HomeScreen({ navigation }) {
   })();
   const hasSpark = sparkVals.some(v => v > 0);
 
-  // FTL — limites de tempo (ORO.FTL.210). As mesmas horas registadas contam em
-  // várias janelas ao mesmo tempo; cada período faz a sua própria conta.
-  const _now = new Date();
-  const _daysYTD = Math.floor((_now - new Date(_now.getFullYear(), 0, 1)) / 86400000) + 1; // ano civil até hoje
-  // 12 meses civis consecutivos: da mesma data há 12 meses até hoje (não 365 fixos).
-  const _days12m = Math.floor((_now - new Date(_now.getFullYear() - 1, _now.getMonth(), _now.getDate())) / 86400000) + 1;
-  const LIMIT_GROUPS = [
-    { cat: 'servico', rows: [
-      { days: 7,  limit: 60,  label: lang === 'en' ? '7 days'  : '7 dias' },
-      { days: 14, limit: 110, label: lang === 'en' ? '14 days' : '14 dias' },
-      { days: 28, limit: 190, label: lang === 'en' ? '28 days' : '28 dias' },
-    ] },
-    { cat: 'voo', rows: [
-      { days: 28,       limit: 100,  label: lang === 'en' ? '28 days'        : '28 dias' },
-      { days: _daysYTD, limit: 900,  label: lang === 'en' ? 'Calendar year'  : 'Ano civil' },
-      { days: _days12m, limit: 1000, label: lang === 'en' ? '12 months'      : '12 meses' },
-    ] },
-  ];
+  // FTL — limites de tempo (ORO.FTL.210), calculados pelo MOTOR a partir do dayLog (store FTL).
+  const dutyLimits = computeDutyTime(dayLog);     // serviço: 60/110/190 h em 7/14/28 dias
+  const flightLimits = computeFlightTime(dayLog); // voo: 100/900/1000 h em 28 d / ano civil / 12 m
+  const limLabel = (w) =>
+    w.id === 'year' ? (lang === 'en' ? 'Calendar year' : 'Ano civil') :
+    w.id === '12m'  ? (lang === 'en' ? '12 months' : '12 meses') :
+                      `${w.days} ${lang === 'en' ? 'days' : 'dias'}`;
+  const hasLimitData = Object.values(dayLog).some(d => (d?.voo > 0) || (d?.servico > 0));
 
-  // Estado global dos limites (210): a pior janela de qualquer categoria define o
-  // chip. Só aparece quando há horas registadas (caso contrário "dentro" enganaria).
-  const hasLimitData = extras.some(e => e.category === 'voo' || e.category === 'servico');
-  let limWorst = { ratio: -1, row: null, cat: null, done: 0 };
-  for (const g of LIMIT_GROUPS) for (const r of g.rows) {
-    const done = windowTotal(extras, r.days, g.cat);
-    const ratio = r.limit ? done / r.limit : 0;
-    if (ratio > limWorst.ratio) limWorst = { ratio, row: r, cat: g.cat, done };
-  }
-  const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok'; // estado GLOBAL → mosaico
+  // Estado global (pior janela de tudo) → mosaico Limites.
+  const worstOf = (arr) => arr.reduce((w, x) => (x.ratio > w.ratio ? x : w), { ratio: -1, limit: null, done: 0 });
+  const limWorst = worstOf([...dutyLimits, ...flightLimits]);
+  const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
 
-  // Mosaicos da faixa FTL (valor compacto por aba). O mosaico Limites usa o estado global.
+  // Mosaicos da faixa FTL.
   const psvTileVal  = ftlSnap.psv?.result || '—';
   // PSV calculado acima do teto diário de 13:00 → ilegal + diferença a mais.
   const psvOver = !!ftlSnap.psv && hhmmToH(ftlSnap.psv.result) > 13;
@@ -235,23 +220,17 @@ export default function HomeScreen({ navigation }) {
   const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
   const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
 
-  // Anel + folga: pior janela DENTRO da categoria selecionada (coerente com as
-  // barras por baixo, que também são da categoria do Seg). Trocar o Seg atualiza tudo.
-  const catGroup = LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0];
-  let catWorst = { ratio: -1, row: null, done: 0 };
-  for (const r of catGroup.rows) {
-    const done = windowTotal(extras, r.days, limCat);
-    const ratio = r.limit ? done / r.limit : 0;
-    if (ratio > catWorst.ratio) catWorst = { ratio, row: r, done };
-  }
+  // Anel + folga: pior janela DENTRO da categoria selecionada (coerente com as barras).
+  const catLimits = limCat === 'voo' ? flightLimits : dutyLimits;
+  const catWorst = worstOf(catLimits);
   const catLevel = catWorst.ratio >= 1 ? 'over' : catWorst.ratio >= 0.85 ? 'warn' : 'ok';
   const catColor = catLevel === 'over' ? C.red : catLevel === 'warn' ? C.warn : C.green;
   const catPct   = `${Math.round(Math.max(0, catWorst.ratio) * 100)}%`;
-  const catFolga = catWorst.row ? catWorst.row.limit - catWorst.done : 0;
+  const catFolga = catWorst.limit != null ? catWorst.limit - catWorst.done : 0; // horas
   const catOver  = catFolga < 0;
   const folgaNum   = (catOver ? '−' : '') + fmtVal(Math.abs(catFolga), 'h');
   const folgaLabel = catOver ? t('home.statusOver', lang) : t('home.headroom', lang);
-  const folgaCtx   = `${catLabel(limCat, lang)} · ${catWorst.row ? catWorst.row.label : ''}`;
+  const folgaCtx   = `${catLabel(limCat, lang)} · ${catWorst.limit != null ? limLabel(catWorst) : ''}`;
 
   // Arranque inteligente: na 1ª vez que houver dados de limites, se algum estiver
   // âmbar/vermelho, abrir já na aba Limites (lidera o aviso). Não volta a mexer
@@ -463,12 +442,12 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   )}
                   <Seg
-                    options={LIMIT_GROUPS.map(g => ({ id: g.cat, label: catLabel(g.cat, lang) }))}
+                    options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]}
                     value={limCat} setValue={setLimCat} dark />
-                  {extras.some(e => e.category === limCat) ? (
-                    (LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0]).rows.map(r => (
-                      <ProgressRow key={`${limCat}${r.days}`} label={r.label}
-                        done={windowTotal(extras, r.days, limCat)} limit={r.limit} lang={lang} s={s} C={C} />
+                  {catLimits.some(w => w.done > 0) ? (
+                    catLimits.map(w => (
+                      <ProgressRow key={w.id} label={limLabel(w)}
+                        done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
                     ))
                   ) : (
                     <View style={s.psvEmpty}>
