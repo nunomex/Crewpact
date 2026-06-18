@@ -261,20 +261,30 @@ export default function HomeScreen({ navigation }) {
     const ratio = r.limit ? done / r.limit : 0;
     if (ratio > limWorst.ratio) limWorst = { ratio, row: r, cat: g.cat, done };
   }
-  const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
-  const limColor = limLevel === 'over' ? C.red : limLevel === 'warn' ? C.warn : C.green;
+  const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok'; // estado GLOBAL → mosaico
 
-  // Mosaicos da faixa FTL (valor compacto por aba).
+  // Mosaicos da faixa FTL (valor compacto por aba). O mosaico Limites usa o estado global.
   const psvTileVal  = ftlSnap.psv?.result || '—';
   const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
   const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
 
-  // Manchete de "folga" da janela mais apertada (substitui o anel na Fase 1).
-  const limFolga  = limWorst.row ? limWorst.row.limit - limWorst.done : 0;
-  const limOver   = limFolga < 0;
-  const folgaNum  = (limOver ? '−' : '') + fmtVal(Math.abs(limFolga), 'h');
-  const folgaLabel = limOver ? t('home.statusOver', lang) : t('home.headroom', lang);
-  const folgaCtx   = `${catLabel(limWorst.cat, lang)} · ${limWorst.row ? limWorst.row.label : ''}`;
+  // Anel + folga: pior janela DENTRO da categoria selecionada (coerente com as
+  // barras por baixo, que também são da categoria do Seg). Trocar o Seg atualiza tudo.
+  const catGroup = LIMIT_GROUPS.find(g => g.cat === limCat) || LIMIT_GROUPS[0];
+  let catWorst = { ratio: -1, row: null, done: 0 };
+  for (const r of catGroup.rows) {
+    const done = windowTotal(extras, r.days, limCat);
+    const ratio = r.limit ? done / r.limit : 0;
+    if (ratio > catWorst.ratio) catWorst = { ratio, row: r, done };
+  }
+  const catLevel = catWorst.ratio >= 1 ? 'over' : catWorst.ratio >= 0.85 ? 'warn' : 'ok';
+  const catColor = catLevel === 'over' ? C.red : catLevel === 'warn' ? C.warn : C.green;
+  const catPct   = `${Math.round(Math.max(0, catWorst.ratio) * 100)}%`;
+  const catFolga = catWorst.row ? catWorst.row.limit - catWorst.done : 0;
+  const catOver  = catFolga < 0;
+  const folgaNum   = (catOver ? '−' : '') + fmtVal(Math.abs(catFolga), 'h');
+  const folgaLabel = catOver ? t('home.statusOver', lang) : t('home.headroom', lang);
+  const folgaCtx   = `${catLabel(limCat, lang)} · ${catWorst.row ? catWorst.row.label : ''}`;
 
   // Arranque inteligente: na 1ª vez que houver dados de limites, se algum estiver
   // âmbar/vermelho, abrir já na aba Limites (lidera o aviso). Não volta a mexer
@@ -391,11 +401,11 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {hasLimitData && (
                     <View style={s.ringWrap}>
-                      <Ring ratio={limWorst.ratio} color={limColor} size={84} stroke={9} C={C}>
-                        <Text style={[s.ringPct, { color: limColor }]}>{limTileVal}</Text>
+                      <Ring ratio={catWorst.ratio} color={catColor} size={84} stroke={9} C={C}>
+                        <Text style={[s.ringPct, { color: catColor }]}>{catPct}</Text>
                       </Ring>
                       <View style={s.ringText}>
-                        <Text style={[s.ringNum, { color: limColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
+                        <Text style={[s.ringNum, { color: catColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
                         <Text style={s.ringCtx}>{folgaLabel} · {folgaCtx}</Text>
                       </View>
                     </View>
@@ -599,7 +609,7 @@ const makeStyles = (C) => StyleSheet.create({
   tileVal: { flex: 1, fontSize: TYPE.value, fontWeight: '700', color: C.onDark },
   // Anel de folga (aba Limites) — pequeno, à esquerda, com a folga em texto ao lado.
   ringWrap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.md },
-  ringPct: { fontSize: TYPE.label, fontWeight: '700' },
+  ringPct: { fontSize: TYPE.body, fontWeight: '700' },
   ringText: { flex: 1 },
   ringNum: { fontSize: TYPE.display, fontWeight: '400', letterSpacing: -0.5 },
   ringCtx: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 3, fontWeight: '600', lineHeight: 16 },
