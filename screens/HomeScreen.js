@@ -213,10 +213,14 @@ export default function HomeScreen({ navigation }) {
 
   // Mosaicos da faixa FTL.
   const psvTileVal  = ftlSnap.psv?.result || '—';
-  // PSV calculado acima do teto diário de 13:00 → ilegal + diferença a mais.
-  const psvOver = !!ftlSnap.psv && hhmmToH(ftlSnap.psv.result) > 13;
-  const psvExcessMin = psvOver ? Math.round((hhmmToH(ftlSnap.psv.result) - 13) * 60) : 0;
-  const psvExcess = `${Math.floor(psvExcessMin / 60)}:${String(psvExcessMin % 60).padStart(2, '0')}`;
+  // PSV: usa os dados reais do registo. O DutyCalc guarda o máximo da tabela
+  // (psv.max) e o excesso (psv.over/psv.excess). Registos antigos (só PSV, sem
+  // 'over') não têm excesso → sem badge (são o próprio máximo).
+  const psvMax = ftlSnap.psv?.max || null;
+  const psvOver = !!(ftlSnap.psv && ftlSnap.psv.over);
+  const psvExcess = ftlSnap.psv?.excess || null;
+  const psvRatio = ftlSnap.psv ? hhmmToH(ftlSnap.psv.result) / (psvMax ? hhmmToH(psvMax) : 13) : 0;
+  const psvFoot = psvMax ? `${lang === 'en' ? 'max' : 'máx'} ${psvMax}` : t('home.psvMaxFoot', lang);
   const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
   const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
 
@@ -396,8 +400,8 @@ export default function HomeScreen({ navigation }) {
                         <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
                         {psvOver && <Text style={s.psvIllegal}>{t('home.illegal', lang)} · +{psvExcess}</Text>}
                       </View>
-                      <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13, C)} s={s} />
-                      <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{t('home.psvMaxFoot', lang)}</Text>
+                      <AnimatedBar ratio={psvRatio} color={barColor(psvRatio, C)} s={s} />
+                      <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{psvFoot}</Text>
 
                       <View style={s.monthDivider} />
 
