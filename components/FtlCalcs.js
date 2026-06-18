@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Layout
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
-import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM } from '../data/ftl';
+import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM, psvBandIdx } from '../data/ftl';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
 
@@ -64,7 +64,6 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
   const [report, setReport] = useState(''); // apresentação (obrigatória) — começa vazia, a inserir
-  const [realEnd, setRealEnd] = useState(''); // fim real (calços) — opcional, p/ detetar excesso ao máximo
   const [sectors, setSectors] = useState(0);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
@@ -79,7 +78,6 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const pickBand = (i) => { anim(); setStartIdx(i); };
   // Máscara HH:MM (00:00–23:59), com os ":" automáticos. Recusa horas inválidas.
   const onReport = (v) => { const m = maskClock(v); if (m == null) return; anim(); setReport(m); };
-  const onRealEnd = (v) => { const m = maskClock(v); if (m == null) return; setRealEnd(m); };
 
   let base;
   if (isAcc) {
@@ -107,16 +105,6 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const endMin = inBand ? reportMin + fdpMin : null;
   const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
   const endNextDay = endMin != null && endMin >= 1440;
-
-  // PSV realizado (opcional) = fim real (calços) − apresentação. Se exceder o
-  // máximo → ilegal; guarda-se o excesso para o cartão do Início.
-  const realEndMin = parseHhmm(realEnd);
-  const actualMin = (inBand && realEndMin != null)
-    ? (realEndMin >= reportMin ? realEndMin - reportMin : realEndMin + 1440 - reportMin)
-    : null;
-  const over = actualMin != null && actualMin > fdpMin;
-  const actualStr = actualMin != null ? minToHhmm(actualMin) : null;
-  const excessStr = over ? minToHhmm(actualMin - fdpMin) : null;
 
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tableName = isAcc ? l('Quadro 2', 'Table 2') : accState === 'unk' ? l('Quadro 3', 'Table 3') : l('Quadro 4', 'Table 4');
@@ -186,18 +174,134 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
           <Text style={cs.extVal}>{endClock}{endNextDay ? ' (+1)' : ''}</Text>
         </View>
       )}
-      {isAcc && (
-        <View style={cs.timeRow}>
-          <Text style={cs.timeLbl}>{t('ftl.realEnd', lang)}</Text>
-          <TextInput value={realEnd} onChangeText={onRealEnd} placeholder="HH:MM" placeholderTextColor={C.sub}
-            keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, over && cs.timeInputErr]} />
-        </View>
-      )}
-      {over && <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {excessStr}</Text>}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
       {onRegister && <RegisterBtn lang={lang} disabled={!stepsComplete}
-        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay, actual: actualStr, over, excess: excessStr })} />}
+        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
+    </CalcCard>
+  );
+}
+
+// Calculadora de ATIVIDADE (manual) — uma atividade dá os três de uma vez:
+// PSV máximo (205) vs FDP real, horas para os Limites (210) e repouso mínimo (235).
+export function DutyCalc({ lang, onRegister }) {
+  const C = useTheme();
+  const cs = makeCs(C);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const [accState, setAccState] = useState('acc');
+  const [report, setReport] = useState('');  // apresentação
+  const [end, setEnd] = useState('');         // calços (fim)
+  const [sectors, setSectors] = useState(0);
+  const [inBase, setInBase] = useState(true); // termina em base?
+  const [brk, setBrk] = useState(0);          // split duty (h)
+  const [flight, setFlight] = useState('');   // horas de voo (bloco), opcional
+
+  const isAcc = accState === 'acc';
+  const maxSectors = isAcc ? 10 : 8;
+  const sec = Math.min(sectors, maxSectors);
+  const changeState = (st) => { anim(); setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
+  const onReport = (v) => { const m = maskClock(v); if (m == null) return; anim(); setReport(m); };
+  const onEnd = (v) => { const m = maskClock(v); if (m == null) return; anim(); setEnd(m); };
+  const onFlight = (v) => { const m = maskClock(v); if (m == null) return; setFlight(m); };
+
+  const reportMin = parseHhmm(report);
+  const endMin = parseHhmm(end);
+
+  // PSV máximo (tabela) — faixa derivada do report.
+  let bandStr = null, psvBaseStr = null;
+  if (reportMin != null) {
+    if (isAcc) {
+      const bi = psvBandIdx(reportMin);
+      bandStr = PSV_ACCLIMATISED[bi].start;
+      psvBaseStr = PSV_ACCLIMATISED[bi].v[sec <= 2 ? 0 : Math.min(sec - 2, 8)];
+    } else {
+      psvBaseStr = (accState === 'unk' ? PSV_UNKNOWN : PSV_UNKNOWN_FRM)[sec <= 2 ? 0 : Math.min(sec - 2, 6)];
+    }
+  }
+  const extMin = brk >= 3 ? brk * 30 : 0;
+  const psvMaxMin = psvBaseStr != null ? hhmmToMin(psvBaseStr) + extMin : null;
+  const psvMaxDisp = psvMaxMin != null ? minToHhmm(psvMaxMin) : null;
+
+  // FDP real = calços − apresentação (com a volta da meia-noite).
+  const fdpMin = (reportMin != null && endMin != null)
+    ? (endMin >= reportMin ? endMin - reportMin : endMin + 1440 - reportMin) : null;
+  const fdpDisp = fdpMin != null ? minToHhmm(fdpMin) : null;
+  const psvOver = fdpMin != null && psvMaxMin != null && fdpMin > psvMaxMin;
+  const psvExcess = psvOver ? minToHhmm(fdpMin - psvMaxMin) : null;
+
+  // Limites (210): serviço = FDP; voo = input opcional. Em horas decimais (1 casa).
+  const toH = (min) => +(min / 60).toFixed(1);
+  const servicoH = fdpMin != null ? toH(fdpMin) : 0;
+  const flightMin = parseHhmm(flight);
+  const vooH = flightMin != null ? toH(flightMin) : 0;
+
+  // Repouso (235): mínimo = máx(FDP, piso) — 12 h em base, 10 h fora.
+  const floor = inBase ? 12 : 10;
+  const restMin = fdpMin != null ? Math.max(fdpMin, floor * 60) : null;
+  const restDisp = restMin != null ? minToHhmm(restMin) : null;
+
+  const complete = reportMin != null && endMin != null && sec >= 1;
+
+  return (
+    <CalcCard title={t('ftl.calcDuty', lang)} style={cs.wrap}>
+      <Text style={cs.fieldLabel}>{t('ftl.psvState', lang)}</Text>
+      <Seg options={[{ id: 'acc', label: t('ftl.accAcc', lang) }, { id: 'unk', label: t('ftl.accUnk', lang) }, { id: 'frm', label: t('ftl.accFrm', lang) }]}
+        value={accState} setValue={changeState} />
+
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
+        <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.endTime', lang)}</Text>
+        <TextInput value={end} onChangeText={onEnd} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+      {isAcc && bandStr ? <Text style={cs.note}>{t('ftl.psvStart', lang)}: {fmtBandRange(bandStr)}</Text> : null}
+
+      <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={0} max={maxSectors} />
+      <View style={cs.segRow}>
+        <Text style={cs.fieldLabel}>{t('ftl.endBase', lang)}</Text>
+        <Seg options={[{ id: 'base', label: t('ftl.atBase', lang) }, { id: 'away', label: t('ftl.awayBase', lang) }]}
+          value={inBase ? 'base' : 'away'} setValue={(v) => setInBase(v === 'base')} />
+      </View>
+      <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.flightTime', lang)}</Text>
+        <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+
+      {complete && (
+        <View style={cs.dutyResult}>
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{l('PSV (205)', 'FDP (205)')}</Text>
+            <Text style={[cs.dutyVal, psvOver && { color: C.red }]}>{fdpDisp} / {psvMaxDisp}</Text>
+          </View>
+          {psvOver
+            ? <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {psvExcess}</Text>
+            : <Text style={cs.okNote}>{l('Dentro do PSV máximo', 'Within max FDP')}</Text>}
+
+          <View style={[cs.dutyRow, cs.dutyDivider]}>
+            <Text style={cs.dutyLbl}>{l('Limites (210)', 'Limits (210)')}</Text>
+            <Text style={cs.dutyVal}>{l('Serviço', 'Duty')} +{servicoH} h{vooH ? ` · ${l('Voo', 'Flight')} +${vooH} h` : ''}</Text>
+          </View>
+
+          <View style={[cs.dutyRow, cs.dutyDivider]}>
+            <Text style={cs.dutyLbl}>{l('Repouso (235)', 'Rest (235)')}</Text>
+            <Text style={cs.dutyVal}>{l('mín.', 'min.')} {restDisp}</Text>
+          </View>
+        </View>
+      )}
+
+      {onRegister && <RegisterBtn lang={lang} disabled={!complete}
+        onPress={() => onRegister({
+          kind: 'duty',
+          psv: { state: accState, sectors: sec, result: fdpDisp, max: psvMaxDisp, band: isAcc ? bandStr : null, start: report, over: psvOver, excess: psvExcess },
+          limits: { servico: servicoH, voo: vooH },
+          rest: { place: inBase ? 'base' : 'away', value: restMin != null ? toH(restMin) : 0, prev: servicoH },
+        })} />}
     </CalcCard>
   );
 }
@@ -330,4 +434,12 @@ const makeCs = (C) => StyleSheet.create({
   timeInput: { width: 84, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
   timeInputErr: { borderColor: C.red, color: C.red, backgroundColor: C.redSoft },
   errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontWeight: '600' },
+  okNote: { fontSize: TYPE.micro, color: C.green, marginTop: 4, fontWeight: '600' },
+  // Calculadora de atividade (DutyCalc)
+  segRow: { marginTop: 8, marginBottom: 4 },
+  dutyResult: { marginTop: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
+  dutyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  dutyDivider: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
+  dutyLbl: { fontSize: TYPE.sub, color: C.sub, fontWeight: '600' },
+  dutyVal: { fontSize: TYPE.body, fontFamily: 'monospace', fontWeight: '700', color: C.text },
 });

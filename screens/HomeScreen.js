@@ -228,6 +228,10 @@ export default function HomeScreen({ navigation }) {
 
   // Mosaicos da faixa FTL (valor compacto por aba). O mosaico Limites usa o estado global.
   const psvTileVal  = ftlSnap.psv?.result || '—';
+  // PSV calculado acima do teto diário de 13:00 → ilegal + diferença a mais.
+  const psvOver = !!ftlSnap.psv && hhmmToH(ftlSnap.psv.result) > 13;
+  const psvExcessMin = psvOver ? Math.round((hhmmToH(ftlSnap.psv.result) - 13) * 60) : 0;
+  const psvExcess = `${Math.floor(psvExcessMin / 60)}:${String(psvExcessMin % 60).padStart(2, '0')}`;
   const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
   const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
 
@@ -394,7 +398,7 @@ export default function HomeScreen({ navigation }) {
           {isFtl ? (
             <>
               <View style={s.stripRow}>
-                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level={ftlSnap.psv?.over ? 'over' : 'neutral'}
+                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level="neutral"
                   active={ftlTab === 'psv'} onPress={() => { select(); setFtlTab('psv'); }} s={s} C={C} />
                 <StatTile eyebrow={lang === 'en' ? 'LIMITS' : 'LIMITES'} value={limTileVal} level={hasLimitData ? limLevel : 'neutral'}
                   active={ftlTab === 'limits'} onPress={() => { select(); setFtlTab('limits'); }} s={s} C={C} />
@@ -407,14 +411,12 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {ftlSnap.psv ? (
                     <>
-                      <StatusChip
-                        level={ftlSnap.psv.over ? 'over' : 'neutral'}
-                        label={ftlSnap.psv.over
-                          ? `${t('home.illegal', lang)} · +${ftlSnap.psv.excess}`
-                          : t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}
-                        s={s} C={C} />
+                      <StatusChip level="neutral" label={t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} s={s} C={C} />
                       <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
-                      <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
+                      <View style={s.psvHeroRow}>
+                        <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
+                        {psvOver && <Text style={s.psvIllegal}>{t('home.illegal', lang)} · +{psvExcess}</Text>}
+                      </View>
                       <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13, C)} s={s} />
                       <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{t('home.psvMaxFoot', lang)}</Text>
 
@@ -673,7 +675,9 @@ const makeStyles = (C) => StyleSheet.create({
   progFill: { height: 10, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 6 },
   psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
-  psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
+  psvHeroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm, marginTop: 2, marginBottom: SPACE.sm },
+  psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff' },
+  psvIllegal: { color: C.red, fontSize: TYPE.sub, fontWeight: '700', marginBottom: 6 },
   restItem: { marginBottom: SPACE.md },
   restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },

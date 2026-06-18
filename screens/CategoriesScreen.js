@@ -279,17 +279,15 @@ export default function CategoriesScreen({ navigation }) {
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <ScreenHeader eyebrow={t('calc.eyebrow', lang)} title={t('calc.title', lang)} style={{ margin: 0, marginBottom: 12 }} />
 
-          <Text style={s.group}>{l('CALCULADORAS', 'CALCULATORS')}</Text>
-          {FTL_CALC_ARTICLES.map(a => (
-            <TouchableOpacity key={a.code} style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: a.code })}>
-              <View style={s.badge}><Text style={s.badgeTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.fcardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
-                <Text style={s.fcardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={C.sub} />
-            </TouchableOpacity>
-          ))}
+          <Text style={s.group}>{l('CALCULADORA', 'CALCULATOR')}</Text>
+          <TouchableOpacity style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>
+            <View style={s.badge}><Text style={s.badgeTxt}>FTL</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.fcardTitle} numberOfLines={2}>{t('ftl.dutyCardTitle', lang)}</Text>
+              <Text style={s.fcardSub} numberOfLines={2}>{t('ftl.dutyCardSub', lang)}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.sub} />
+          </TouchableOpacity>
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>

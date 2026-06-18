@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
-import { PsvCalc, LimitsCalc, RestCalc } from '../components/FtlCalcs';
+import { PsvCalc, LimitsCalc, RestCalc, DutyCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { monthKey } from '../data/extras';
@@ -25,13 +25,14 @@ export default function FtlCalcScreen({ route, navigation }) {
   const s = makeStyles(C);
   const l = L(lang);
   const tabSpace = useTabBarSpace();
+  const isDuty = !!route.params?.duty; // calculadora unificada de "atividade"
   const a = FTL_ARTICLES.find(x => x.code === route.params?.code);
   const [pending, setPending] = useState(null);
   const [resetKey, setResetKey] = useState(0); // remonta a calculadora após registar (limpa os campos)
   // Dia-alvo do registo: o que vem do Calendário, senão hoje.
   const fromDate = route.params?.date;
   const logDate = fromDate || isoDay();
-  if (!a) return null;
+  if (!isDuty && !a) return null;
 
   const registerFtl = (p) => setPending(p);
 
@@ -47,6 +48,12 @@ export default function FtlCalcScreen({ route, navigation }) {
       const where = p.place === 'base' ? t('ftl.atBase', lang) : t('ftl.awayBase', lang);
       return `${where} · ${l('serviço anterior', 'preceding duty')} ${p.prev} h · ${l('repouso', 'rest')} ${p.value} h`;
     }
+    if (p.kind === 'duty') {
+      const psvTxt = `${l('PSV', 'FDP')} ${p.psv.result}/${p.psv.max}${p.psv.over ? ` (${l('ilegal', 'illegal')} +${p.psv.excess})` : ''}`;
+      const limTxt = `${l('serviço', 'duty')} +${p.limits.servico} h${p.limits.voo ? ` · ${l('voo', 'flight')} +${p.limits.voo} h` : ''}`;
+      const restTxt = `${l('repouso', 'rest')} ${p.rest.value} h`;
+      return `${psvTxt} · ${limTxt} · ${restTxt}`;
+    }
     return '';
   };
 
@@ -56,9 +63,15 @@ export default function FtlCalcScreen({ route, navigation }) {
     if (p.kind === 'limits') {
       addExtra({ month: monthKey(new Date(logDate + 'T00:00:00')), date: logDate, category: p.category, amount: p.amount });
     } else if (p.kind === 'psv') {
-      updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, band: p.band, start: p.start, end: p.end, endNextDay: p.endNextDay, actual: p.actual, over: p.over, excess: p.excess, ts: Date.now() });
+      updateDayLog(logDate, 'psv', { state: p.state, sectors: p.sectors, result: p.result, band: p.band, start: p.start, end: p.end, endNextDay: p.endNextDay, ts: Date.now() });
     } else if (p.kind === 'rest') {
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
+    } else if (p.kind === 'duty') {
+      const mk = monthKey(new Date(logDate + 'T00:00:00'));
+      updateDayLog(logDate, 'psv', { state: p.psv.state, sectors: p.psv.sectors, result: p.psv.result, max: p.psv.max, band: p.psv.band, start: p.psv.start, over: p.psv.over, excess: p.psv.excess, ts: Date.now() });
+      if (p.limits.servico > 0) addExtra({ month: mk, date: logDate, category: 'servico', amount: p.limits.servico });
+      if (p.limits.voo > 0) addExtra({ month: mk, date: logDate, category: 'voo', amount: p.limits.voo });
+      updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.rest.place]: p.rest.value, [`${p.rest.place}Prev`]: p.rest.prev, ts: Date.now() }));
     }
     success();
     setPending(null);
@@ -68,17 +81,27 @@ export default function FtlCalcScreen({ route, navigation }) {
     else setResetKey(k => k + 1);
   };
 
-  const Calc = a.psv ? PsvCalc : a.limits ? LimitsCalc : RestCalc;
+  const Calc = isDuty ? DutyCalc : a.psv ? PsvCalc : a.limits ? LimitsCalc : RestCalc;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
 
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
-        <Text style={s.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>
-        <Text style={s.code}>{a.code}</Text>
-        <Text style={s.title}>{tx(a.title, lang)}</Text>
-        <Text style={s.sub}>{tx(a.sub, lang)}</Text>
+        {isDuty ? (
+          <>
+            <Text style={s.eyebrow}>{l('REGULAMENTO UE 83/2014', 'REGULATION EU 83/2014')}</Text>
+            <Text style={s.title}>{t('ftl.calcDuty', lang)}</Text>
+            <Text style={s.sub}>{t('ftl.dutyCardSub', lang)}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={s.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>
+            <Text style={s.code}>{a.code}</Text>
+            <Text style={s.title}>{tx(a.title, lang)}</Text>
+            <Text style={s.sub}>{tx(a.sub, lang)}</Text>
+          </>
+        )}
 
         {fromDate ? (
           <View style={s.logForRow}>
