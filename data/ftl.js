@@ -77,6 +77,50 @@ export const psvBandIdx = (m) => {
   return 8;                             // 1700–0459
 };
 
+// ─── CS FTL.1.205(b) · PSV máximo diário COM prolongamento (sem repouso a bordo, 205d) ──
+// Tabela "Maximum daily FDP with extension" (1–5 setores). null = "Não permitido".
+export const PSV_EXT_SECTORS = ['1–2', '3', '4', '5'];
+export const PSV_EXTENSION = [
+  { start: '0600–0614', v: [null, null, null, null] },
+  { start: '0615–0629', v: ['13:15', '12:45', '12:15', '11:45'] },
+  { start: '0630–0644', v: ['13:30', '13:00', '12:30', '12:00'] },
+  { start: '0645–0659', v: ['13:45', '13:15', '12:45', '12:15'] },
+  { start: '0700–1329', v: ['14:00', '13:30', '13:00', '12:30'] },
+  { start: '1330–1359', v: ['13:45', '13:15', '12:45', null] },
+  { start: '1400–1429', v: ['13:30', '13:00', '12:30', null] },
+  { start: '1430–1459', v: ['13:15', '12:45', '12:15', null] },
+  { start: '1500–1529', v: ['13:00', '12:30', '12:00', null] },
+  { start: '1530–1559', v: ['12:45', null, null, null] },
+  { start: '1600–1629', v: ['12:30', null, null, null] },
+  { start: '1630–1659', v: ['12:15', null, null, null] },
+  { start: '1700–1729', v: ['12:00', null, null, null] },
+  { start: '1730–1759', v: ['11:45', null, null, null] },
+  { start: '1800–1829', v: ['11:30', null, null, null] },
+  { start: '1830–1859', v: ['11:15', null, null, null] },
+];
+
+// Índice da linha da tabela de prolongamento por hora de report (min). -1 quando
+// o prolongamento não é permitido (1900–0359 e 0400–0559).
+export const extBandIdx = (m) => {
+  if (m >= 360 && m <= 374) return 0;
+  if (m >= 375 && m <= 389) return 1;
+  if (m >= 390 && m <= 404) return 2;
+  if (m >= 405 && m <= 419) return 3;
+  if (m >= 420 && m <= 809) return 4;   // 0700–1329
+  if (m >= 810 && m <= 839) return 5;
+  if (m >= 840 && m <= 869) return 6;
+  if (m >= 870 && m <= 899) return 7;
+  if (m >= 900 && m <= 929) return 8;
+  if (m >= 930 && m <= 959) return 9;
+  if (m >= 960 && m <= 989) return 10;
+  if (m >= 990 && m <= 1019) return 11;
+  if (m >= 1020 && m <= 1049) return 12;
+  if (m >= 1050 && m <= 1079) return 13;
+  if (m >= 1080 && m <= 1109) return 14;
+  if (m >= 1110 && m <= 1139) return 15;
+  return -1; // 1900–0359 e 0400–0559 → prolongamento não permitido
+};
+
 // ─── Referência rápida (ORO.FTL.210 / 235) ───────────────────────────────────
 export const FTL_LIMITS = {
   duty: [

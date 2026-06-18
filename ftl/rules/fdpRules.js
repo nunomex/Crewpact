@@ -1,5 +1,5 @@
 // Regras de PSV/FDP (ORO.FTL.205 + CS FTL.1.205 + ORO.FTL.220 split duty).
-import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM, psvBandIdx } from '../constants/tables';
+import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM, psvBandIdx, PSV_EXTENSION, extBandIdx } from '../constants/tables';
 import { hhmmToMin } from '../utils/time';
 
 export const NIGHT_SECTOR_LIMIT = 4; // CS FTL.1.205(a)(1): noites consecutivas ≤ 4 setores
@@ -41,3 +41,15 @@ export const fmtBandRange = (b) => String(b).split('–').map((s) => `${s.slice(
 // Extensão por serviço de voo repartido (ORO.FTL.220) — minutos.
 export const splitExtensionMin = (breakH) =>
   breakH >= SPLIT_MIN_BREAK_H ? Math.round(breakH * 60 * SPLIT_EXT_FACTOR) : 0;
+
+// PSV máximo COM prolongamento sem repouso a bordo (CS FTL.1.205(b)/205(d)) — minutos.
+// Devolve null quando o prolongamento não é permitido (hora/setores fora da tabela).
+// Só 1–5 setores; > 5 → não permitido.
+export const maxFdpWithExtensionMin = (reportMin, sectors) => {
+  const idx = extBandIdx(reportMin);
+  if (idx < 0) return null;
+  const s = Math.max(1, sectors | 0);
+  if (s > 5) return null;
+  const v = PSV_EXTENSION[idx].v[s <= 2 ? 0 : s - 2]; // 1–2→0, 3→1, 4→2, 5→3
+  return v == null ? null : hhmmToMin(v);
+};

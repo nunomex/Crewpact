@@ -161,23 +161,27 @@ export function DutyCalc({ lang, onRegister }) {
   const [sectors, setSectors] = useState(0);
   const [inBase, setInBase] = useState(true); // termina em base?
   const [brk, setBrk] = useState(0);          // split duty (h)
+  const [extended, setExtended] = useState(false); // prolongamento 205(d) — só acc, não combina com split
   const [flight, setFlight] = useState('');   // horas de voo (bloco), opcional
 
   const isAcc = accState === 'acc';
+  const ext = isAcc && extended; // prolongamento só se aclimatado
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
-  const changeState = (st) => { anim(); setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
+  const changeState = (st) => { anim(); setAccState(st); if (st !== 'acc') setExtended(false); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
+  const toggleExt = (v) => { anim(); const on = v === 'yes'; setExtended(on); if (on) setBrk(0); }; // 205(d4): não combina com split
   const onReport = (v) => { const m = maskClock(v); if (m == null) return; anim(); setReport(m); };
   const onEnd = (v) => { const m = maskClock(v); if (m == null) return; anim(); setEnd(m); };
   const onFlight = (v) => { const m = maskClock(v); if (m == null) return; setFlight(m); };
 
   // Motor FTL: uma atividade → PSV (real vs máx), repouso e legalidade.
-  const { reportMin, endMin, fdp, rest } = computeDuty({ state: accState, report, end, sectors: sec, splitBreakH: brk, inBase });
+  const { reportMin, endMin, fdp, rest } = computeDuty({ state: accState, report, end, sectors: sec, splitBreakH: brk, inBase, extended: ext });
   const bandStr = fdp.band;
   const psvMaxDisp = fdp.maxFdpStr;
   const fdpDisp = fdp.actualFdpStr;
   const psvOver = fdp.over;
   const psvExcess = fdp.excessStr;
+  const notAllowed = fdp.notAllowed; // prolongamento não permitido nesta hora/setores
   const toH = (min) => +(min / 60).toFixed(1);
   const servicoH = fdp.actualFdpMin != null ? toH(fdp.actualFdpMin) : 0;
   const flightMin = parseHhmm(flight);

@@ -20,10 +20,10 @@ import { parseHhmm } from './utils/time';
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase? }
-export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, inBase = true }) => {
+export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, inBase = true, extended = false }) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
-  const fdp = computeFdp({ state, reportMin, endMin, sectors, splitBreakH });
+  const fdp = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, extended });
   const rest = computeRest({ prevDutyMin: fdp.actualFdpMin || 0, inBase });
   const duty = validateDuty({ fdp, reportMin, endMin, sectors });
   return { reportMin, endMin, sectors, state, inBase, fdp, rest, ...duty };

@@ -5,6 +5,9 @@ import { NIGHT_SECTOR_LIMIT } from '../rules/fdpRules';
 // input: { fdp (de computeFdp), reportMin, endMin, sectors }
 export const validateDuty = ({ fdp, reportMin = null, endMin = null, sectors = 1 }) => {
   const issues = [];
+  if (fdp && fdp.notAllowed) {
+    issues.push({ rule: 'CS FTL.1.205(b)', type: 'extension_not_allowed' });
+  }
   if (fdp && fdp.over) {
     issues.push({ rule: 'ORO.FTL.205', type: 'fdp_exceeded', excessMin: fdp.excessMin });
   }
