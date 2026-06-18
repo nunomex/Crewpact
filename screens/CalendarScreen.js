@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, GUTTER, companyContent } from '../data/constants';
@@ -99,9 +99,14 @@ export default function CalendarScreen({ navigation }) {
     if (token === reqRef.current) setLoading(false);
   }, [grid]);
 
-  // Sincroniza ao mudar de mês e sempre que o ecrã ganha foco (ao entrar).
+  // Sincroniza ao mudar de mês, ao ganhar foco (ao entrar) e quando a app volta
+  // de segundo plano (apanha voos que a eCrew tenha posto no calendário entretanto).
   useEffect(() => { loadFlights(); }, [loadFlights]);
   useFocusEffect(useCallback(() => { loadFlights(); }, [loadFlights]));
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') loadFlights(); });
+    return () => sub.remove();
+  }, [loadFlights]);
 
   const shiftMonth = (delta) => { select(); setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1)); };
   const pickDay = (cell) => {

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Polyline } from 'react-native-svg';
@@ -284,6 +284,13 @@ export default function HomeScreen({ navigation }) {
   // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
   // para o cartão refletir alterações da escala sem reabrir a app.
   useFocusEffect(useCallback(() => { syncFlight(); }, []));
+
+  // E também quando a app volta de segundo plano (ex.: a eCrew atualizou o calendário
+  // enquanto estava minimizada) → o voo novo aparece sem reabrir a app.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') syncFlight(); });
+    return () => sub.remove();
+  }, []);
 
   // Cartão "Próximo voo" — definido como elemento para poder ir ao topo quando há
   // voo (mais relevante) ou ficar por baixo do cartão AE/FTL quando não há.
