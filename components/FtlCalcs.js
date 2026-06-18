@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { C as _C, RADIUS, TYPE } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
-import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM, psvBandIdx } from '../data/ftl';
+import { PSV_ACCLIMATISED, PSV_UNKNOWN, PSV_UNKNOWN_FRM } from '../data/ftl';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
 
@@ -19,6 +19,19 @@ const parseHhmm = (s) => {
   if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return null;
   return h * 60 + m;
 };
+
+// Limites (min) de uma faixa do Quadro 2, p.ex. '0600–1329' → [360, 829]. A faixa
+// '1700–0459' cruza a meia-noite (lo > hi) — daí o ramo "ou" em withinBand.
+const _bandMins = (b) => String(b).split('–').map(s => (+s.slice(0, 2)) * 60 + (+s.slice(2)));
+const withinBand = (m, b) => { const [lo, hi] = _bandMins(b); return lo <= hi ? (m >= lo && m <= hi) : (m >= lo || m <= hi); };
+const fmtBandRange = (b) => String(b).split('–').map(s => `${s.slice(0, 2)}:${s.slice(2)}`).join('–');
+const bandStartStr = (b) => { const p = String(b).split('–')[0]; return `${p.slice(0, 2)}:${p.slice(2)}`; }; // '0600–1329' → '06:00'
+
+// Revelação passo-a-passo com transição suave.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+const anim = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
 // Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
 function RegisterBtn({ lang, disabled, onPress }) {
@@ -41,21 +54,25 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const cs = makeCs(C);
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
-  const [report, setReport] = useState('');         // hora de apresentação (opcional, p/ fim-limite exato)
+  const [report, setReport] = useState(() => bandStartStr(PSV_ACCLIMATISED[0].start)); // apresentação (obrigatória) — começa no início da faixa
   const [sectors, setSectors] = useState(0);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
   const isAcc = accState === 'acc';
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
-  const changeState = (st) => { setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
+  const changeState = (st) => { anim(); setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
 
   const bandStr = PSV_ACCLIMATISED[startIdx].start;
-  // Seletor de faixa e hora de apresentação ficam sincronizados: escolher a faixa
-  // preenche a hora (início da faixa); afinar a hora realça a faixa correspondente.
-  const bandStart = (b) => { const p = String(b).split('–')[0]; return `${p.slice(0, 2)}:${p.slice(2)}`; };
-  const pickBand = (i) => { setStartIdx(i); setReport(bandStart(PSV_ACCLIMATISED[i].start)); };
-  const onReport = (v) => { setReport(v); const m = parseHhmm(v); if (m != null) setStartIdx(psvBandIdx(m)); };
+  // A faixa manda: escolher a faixa preenche a hora (início da faixa). Afinar a
+  // hora NÃO muda a faixa — tem de ficar dentro do intervalo da faixa escolhida.
+  const pickBand = (i) => { anim(); setStartIdx(i); setReport(bandStartStr(PSV_ACCLIMATISED[i].start)); };
+  // Máscara HH:MM: só dígitos (máx. 4), com os ":" inseridos automaticamente.
+  const onReport = (v) => {
+    const d = v.replace(/\D/g, '').slice(0, 4);
+    anim();
+    setReport(d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`);
+  };
 
   let base;
   if (isAcc) {
@@ -71,10 +88,17 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const fdpMin = hhmmToMin(base) + extMin;
   const result = minToHhmm(fdpMin);
 
-  // #1 Fim-limite (até calços) = hora de apresentação + PSV (só aclimatado, com hora).
+  // Apresentação obrigatória e dentro da faixa (só em acc). Passo-a-passo: os
+  // setores só aparecem quando a apresentação é válida; o resultado/registo só
+  // aparecem quando há setores (≥ 1).
   const reportMin = parseHhmm(report);
-  const startClock = reportMin != null ? minToHhmm(reportMin) : null;
-  const endMin = (isAcc && reportMin != null) ? reportMin + fdpMin : null;
+  const inBand = isAcc && reportMin != null && withinBand(reportMin, bandStr);
+  const reportInvalid = isAcc && !inBand;                 // vazio, incompleto ou fora da faixa
+  const showSectors = !isAcc || inBand;                   // unk/frm: setores logo a seguir ao estado
+  const showResult = showSectors && sec >= 1;
+  // #1 Fim-limite (até calços) = apresentação + PSV (só aclimatado, hora válida).
+  const startClock = inBand ? minToHhmm(reportMin) : null;
+  const endMin = inBand ? reportMin + fdpMin : null;
   const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
   const endNextDay = endMin != null && endMin >= 1440;
 
@@ -131,24 +155,38 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
           <View style={cs.timeRow}>
             <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
             <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={C.sub}
-              keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+              keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, reportInvalid && cs.timeInputErr]} />
           </View>
+          {reportInvalid && (
+            <Text style={cs.errNote}>
+              {reportMin == null ? t('ftl.reportRequired', lang) : `${t('ftl.reportBand', lang)} ${fmtBandRange(bandStr)}`}
+            </Text>
+          )}
         </>
       )}
 
-      <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={0} max={maxSectors} />
-      <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
-      <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} audit={psvAudit} lang={lang} />
-      {endClock != null && (
-        <View style={cs.extRow}>
-          <Text style={cs.extLbl}>{t('ftl.latestEnd', lang)}</Text>
-          <Text style={cs.extVal}>{endClock}{endNextDay ? ' (+1)' : ''}</Text>
-        </View>
+      {showSectors && (
+        <>
+          <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={(v) => { anim(); setSectors(v); }} min={0} max={maxSectors} />
+          <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
+        </>
       )}
-      {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
-      <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
-      {onRegister && <RegisterBtn lang={lang}
-        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
+
+      {showResult && (
+        <>
+          <ResultBlock label={t('ftl.psvResult', lang)} value={result} valueSize={28} audit={psvAudit} lang={lang} />
+          {endClock != null && (
+            <View style={cs.extRow}>
+              <Text style={cs.extLbl}>{t('ftl.latestEnd', lang)}</Text>
+              <Text style={cs.extVal}>{endClock}{endNextDay ? ' (+1)' : ''}</Text>
+            </View>
+          )}
+          {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
+          <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
+          {onRegister && <RegisterBtn lang={lang}
+            onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
+        </>
+      )}
     </CalcCard>
   );
 }
@@ -279,4 +317,6 @@ const makeCs = (C) => StyleSheet.create({
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginTop: 4 },
   timeLbl: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
   timeInput: { width: 84, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
+  timeInputErr: { borderColor: C.red, color: C.red, backgroundColor: C.redSoft },
+  errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontWeight: '600' },
 });
