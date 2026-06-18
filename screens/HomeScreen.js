@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect } from 'react';
+import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
@@ -280,12 +281,14 @@ export default function HomeScreen({ navigation }) {
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
   };
-  useEffect(() => { syncFlight(); }, []);
+  // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
+  // para o cartão refletir alterações da escala sem reabrir a app.
+  useFocusEffect(useCallback(() => { syncFlight(); }, []));
 
   // Cartão "Próximo voo" — definido como elemento para poder ir ao topo quando há
   // voo (mais relevante) ou ficar por baixo do cartão AE/FTL quando não há.
   const flightCardEl = (
-    <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={() => navigation.navigate('Calendar')}>
+    <View style={s.flightCard}>
       <View style={s.flightTop}>
         <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
         <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
@@ -317,6 +320,18 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.flightEmptyTxt}>{syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}</Text>
         </View>
       )}
+    </View>
+  );
+
+  // Cartão "Calendário" — entrada dedicada para o ecrã do calendário (escala + registos).
+  const calendarCardEl = (
+    <TouchableOpacity style={s.calCard} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
+      <View style={s.calIcon}><Ionicons name="calendar-outline" size={20} color={C.text} /></View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.calTitle}>{t('home.calTitle', lang)}</Text>
+        <Text style={s.calSub}>{t('home.calSub', lang)}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.sub} />
     </TouchableOpacity>
   );
 
@@ -527,6 +542,9 @@ export default function HomeScreen({ navigation }) {
 
         {/* Próximo voo fica por baixo quando não há voo (evita liderar com cartão vazio) */}
         {!flight ? flightCardEl : null}
+
+        {/* Calendário — entrada dedicada (escala + registos) */}
+        {calendarCardEl}
       </ScrollView>
 
       {/* Notificações */}
@@ -644,6 +662,12 @@ const makeStyles = (C) => StyleSheet.create({
   flightMeta: { fontSize: TYPE.sub, color: C.sub, marginTop: 8 },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
+
+  // Cartão Calendário (entrada dedicada)
+  calCard: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },
+  calIcon: { width: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  calTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text },
+  calSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
 
   // Registar extra
   fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },

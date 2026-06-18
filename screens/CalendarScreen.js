@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useMemo } from 'react';
+import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { catLabel, extraCategories, fmtVal, fmtEur } from '../data/extras';
 import { getFlightsInRange } from '../data/calendar';
+import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../App';
@@ -82,22 +83,25 @@ export default function CalendarScreen({ navigation }) {
   const monthKeyNum = viewMonth.getFullYear() * 12 + viewMonth.getMonth();
   const grid = useMemo(() => buildGrid(viewMonth), [monthKeyNum]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Voos do mês visível (intervalo da grelha). Só de leitura.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const { ok, flights } = await getFlightsInRange(grid.gridStart, grid.gridEnd);
-        if (cancelled) return;
-        const map = {};
-        for (const f of flights) (map[f.dateISO] = map[f.dateISO] || []).push(f);
-        setFlightsByDay(map); setCalOk(ok);
-      } catch { if (!cancelled) { setFlightsByDay({}); setCalOk(false); } }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => { cancelled = true; };
+  // Voos do mês visível (intervalo da grelha). Só de leitura. Um token por pedido
+  // descarta resultados obsoletos (ex.: troca de mês a meio de uma leitura).
+  const reqRef = useRef(0);
+  const loadFlights = useCallback(async () => {
+    const token = ++reqRef.current;
+    setLoading(true);
+    try {
+      const { ok, flights } = await getFlightsInRange(grid.gridStart, grid.gridEnd);
+      if (token !== reqRef.current) return;
+      const map = {};
+      for (const f of flights) (map[f.dateISO] = map[f.dateISO] || []).push(f);
+      setFlightsByDay(map); setCalOk(ok);
+    } catch { if (token === reqRef.current) { setFlightsByDay({}); setCalOk(false); } }
+    if (token === reqRef.current) setLoading(false);
   }, [grid]);
+
+  // Sincroniza ao mudar de mês e sempre que o ecrã ganha foco (ao entrar).
+  useEffect(() => { loadFlights(); }, [loadFlights]);
+  useFocusEffect(useCallback(() => { loadFlights(); }, [loadFlights]));
 
   const shiftMonth = (delta) => { select(); setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1)); };
   const pickDay = (cell) => {
