@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
@@ -107,6 +107,18 @@ function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
   );
 }
 
+// Chip de estado dos limites (210): verde (dentro) / âmbar (a aproximar-se) /
+// vermelho (excedido). Só faz sentido onde há consumo real vs. teto regulamentar.
+function StatusChip({ level, label, s, C }) {
+  const col = level === 'over' ? C.red : level === 'warn' ? C.warn : C.green;
+  return (
+    <View style={s.chip}>
+      <View style={[s.chipDot, { backgroundColor: col }]} />
+      <Text style={[s.chipTxt, { color: col }]} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
 // Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
@@ -132,8 +144,6 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { width } = useWindowDimensions();
-  const slideW = width - 64; // largura interna do cartão (scroll 16 + card 16, cada lado)
   const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -141,9 +151,9 @@ export default function HomeScreen({ navigation }) {
   const isFtl    = companyContent(profile.company) === 'ftl';
   const psvBasis = psvBasisFor(ftlSnap.psv, lang); // origem regulamentar p/ o cartão PSV
 
-  const [ftlPage, setFtlPage] = useState(0);
-  const [aePage, setAePage] = useState(0); // página do carrossel AE (Resumo / Registos)
-  const [limCat, setLimCat] = useState('servico'); // categoria mostrada no slide Limites
+  const [ftlTab, setFtlTab] = useState('psv'); // aba do cartão FTL: psv | limits | rest
+  const [aeTab, setAeTab] = useState('summary'); // aba do cartão AE: summary | records
+  const [limCat, setLimCat] = useState('servico'); // categoria mostrada no separador Limites
   const [notifOpen, setNotifOpen] = useState(false);
 
   const notifs = buildNotifications(profile, lang);
@@ -176,6 +186,20 @@ export default function HomeScreen({ navigation }) {
       { days: _days12m, limit: 1000, label: lang === 'en' ? '12 months'      : '12 meses' },
     ] },
   ];
+
+  // Estado global dos limites (210): a pior janela de qualquer categoria define o
+  // chip. Só aparece quando há horas registadas (caso contrário "dentro" enganaria).
+  const hasLimitData = extras.some(e => e.category === 'voo' || e.category === 'servico');
+  let limWorst = { ratio: -1, row: null, cat: null };
+  for (const g of LIMIT_GROUPS) for (const r of g.rows) {
+    const done = windowTotal(extras, r.days, g.cat);
+    const ratio = r.limit ? done / r.limit : 0;
+    if (ratio > limWorst.ratio) limWorst = { ratio, row: r, cat: g.cat };
+  }
+  const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
+  const limChipLabel = limLevel === 'ok'
+    ? t('home.statusOk', lang)
+    : `${t(limLevel === 'over' ? 'home.statusOver' : 'home.statusWarn', lang)} · ${catLabel(limWorst.cat, lang)} ${limWorst.row.label}`;
 
 
   const closeNotifs = () => {
@@ -218,7 +242,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           } />
 
-        {/* Este mês (AE) / Cartão FTL (carrossel) */}
+        {/* Cartão preto: FTL (PSV · Limites · Repouso) ou AE (Resumo · Registos), em abas */}
         <View style={s.monthCard}>
           {!isFtl && (
             <View style={s.monthHead}>
@@ -228,12 +252,19 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={e => setFtlPage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
+              <View style={s.cardTabs}>
+                <Seg
+                  options={[
+                    { id: 'psv',    label: lang === 'en' ? 'FDP'    : 'PSV' },
+                    { id: 'limits', label: lang === 'en' ? 'Limits' : 'Limites' },
+                    { id: 'rest',   label: lang === 'en' ? 'Rest'   : 'Repouso' },
+                  ]}
+                  value={ftlTab} setValue={setFtlTab} dark />
+              </View>
 
-                {/* Slide 1 — PSV máximo diário (205) */}
-                <View style={{ width: slideW }}>
-                  <Text style={s.secHd}>{t('home.secPsv', lang)}</Text>
+              {/* PSV máximo diário (205) */}
+              {ftlTab === 'psv' && (
+                <View>
                   {ftlSnap.psv ? (
                     <>
                       <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
@@ -257,13 +288,13 @@ export default function HomeScreen({ navigation }) {
                         <Text style={s.bdLbl}>{t('ftl.sectors', lang)}</Text>
                         <Text style={s.bdVal}>{ftlSnap.psv.sectors}</Text>
                       </View>
-                      {psvBasis ? <CalcBasis s={s} refTxt={psvBasis.ref} detail={psvBasis.detail} lang={lang} /> : null}
                       {ftlSnap.psv.end ? (
                         <View style={[s.setoresRow, { marginTop: 6 }]}>
                           <Text style={s.bdLbl}>{t('ftl.latestEnd', lang)}</Text>
                           <Text style={s.bdVal}>{ftlSnap.psv.end}{ftlSnap.psv.endNextDay ? ' (+1)' : ''}</Text>
                         </View>
                       ) : null}
+                      {psvBasis ? <CalcBasis s={s} refTxt={psvBasis.ref} detail={psvBasis.detail} lang={lang} /> : null}
                     </>
                   ) : (
                     <View style={s.psvEmpty}>
@@ -272,10 +303,12 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   )}
                 </View>
+              )}
 
-                {/* Slide 2 — Limites de horas (210) */}
-                <View style={{ width: slideW }}>
-                  <Text style={s.secHd}>{t('home.secLimits', lang)}</Text>
+              {/* Limites de horas (210) */}
+              {ftlTab === 'limits' && (
+                <View>
+                  {hasLimitData ? <StatusChip level={limLevel} label={limChipLabel} s={s} C={C} /> : null}
                   <Seg
                     options={LIMIT_GROUPS.map(g => ({ id: g.cat, label: catLabel(g.cat, lang) }))}
                     value={limCat} setValue={setLimCat} dark />
@@ -291,10 +324,11 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   )}
                 </View>
+              )}
 
-                {/* Slide 3 — Repouso mínimo (235) */}
-                <View style={{ width: slideW }}>
-                  <Text style={s.secHd}>{t('home.secRest', lang)}</Text>
+              {/* Repouso mínimo (235) */}
+              {ftlTab === 'rest' && (
+                <View>
                   {ftlSnap.rest ? (
                     <>
                       <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
@@ -311,24 +345,22 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   )}
                 </View>
-              </ScrollView>
-
-              <View style={s.ftlNav}>
-                <Text style={s.ftlNavLbl}>
-                  {`${ftlPage + 1}/3 · ${(lang === 'en' ? ['FDP', 'Limits', 'Rest'] : ['PSV', 'Limites', 'Repouso'])[ftlPage]}`}
-                </Text>
-                <View style={s.ftlDots}>
-                  {[0, 1, 2].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === ftlPage ? C.onDark : C.hairlineOnDark }]} />)}
-                </View>
-              </View>
+              )}
             </>
           ) : (
             <>
-              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={e => setAePage(Math.round(e.nativeEvent.contentOffset.x / slideW))}>
+              <View style={s.cardTabs}>
+                <Seg
+                  options={[
+                    { id: 'summary', label: lang === 'en' ? 'Summary' : 'Resumo' },
+                    { id: 'records', label: lang === 'en' ? 'Records' : 'Registos' },
+                  ]}
+                  value={aeTab} setValue={setAeTab} dark />
+              </View>
 
-                {/* Slide 1 — Resumo (total + variação + pagamentos por evento) */}
-                <View style={{ width: slideW }}>
+              {/* Resumo — total + variação + pagamentos por evento */}
+              {aeTab === 'summary' && (
+                <View>
                   <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
                   <Text style={s.monthTotal}>{totalDisplay}</Text>
                   {pct != null && (
@@ -352,10 +384,11 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   )}
                 </View>
+              )}
 
-                {/* Slide 2 — Registos do mês, agrupados por secção (sem pagamentos por evento) */}
-                <View style={{ width: slideW }}>
-                  <Text style={s.secHd}>{t('home.recordsTitle', lang)}</Text>
+              {/* Registos do mês, agrupados por secção (sem pagamentos por evento) */}
+              {aeTab === 'records' && (
+                <View>
                   {aeRestSecs.length === 0 ? (
                     <View style={s.psvEmpty}>
                       <View style={s.psvEmptyIcon}><Ionicons name="receipt-outline" size={22} color={C.onDarkSub} /></View>
@@ -378,16 +411,7 @@ export default function HomeScreen({ navigation }) {
                     ))
                   )}
                 </View>
-              </ScrollView>
-
-              <View style={s.ftlNav}>
-                <Text style={s.ftlNavLbl}>
-                  {`${aePage + 1}/2 · ${(lang === 'en' ? ['Summary', 'Records'] : ['Resumo', 'Registos'])[aePage]}`}
-                </Text>
-                <View style={s.ftlDots}>
-                  {[0, 1].map(i => <View key={i} style={[s.ftlDot, { backgroundColor: i === aePage ? C.onDark : C.hairlineOnDark }]} />)}
-                </View>
-              </View>
+              )}
             </>
           )}
         </View>
@@ -466,11 +490,16 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Este mês (extras)
   monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
+  cardTabs: { marginBottom: SPACE.md },
+  // Chip de estado dos limites (verde/âmbar/vermelho) sobre o cartão preto.
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: 11, paddingVertical: 6, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, marginBottom: SPACE.md },
+  chipDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
+  chipTxt: { fontSize: TYPE.micro, fontWeight: '700', letterSpacing: 0.3 },
   monthHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   monthEyebrow: { flex: 1, fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '600' },
   addBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   monthBody: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.lg },
-  monthLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  monthLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   monthTotal: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2 },
   pctRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
   pctTxt: { fontSize: TYPE.micro, fontWeight: '600' },
@@ -497,21 +526,16 @@ const makeStyles = (C) => StyleSheet.create({
   progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub },
   progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
-  progFoot: { fontSize: TYPE.micro, color: C.onDarkFaint, marginTop: 6 },
+  progFoot: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 6 },
   progBasis: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 6 },
   // "Base do cálculo" — origem regulamentar, tipografia secundária sobre o cartão preto.
   basis: { marginTop: 8 },
-  basisHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.2, color: C.onDarkFaint, fontWeight: '700', textTransform: 'uppercase' },
+  basisHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.2, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase' },
   basisDetail: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 2 },
-  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkFaint, fontWeight: '700', marginBottom: SPACE.md },
-  ftlNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md },
-  ftlNavLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', letterSpacing: 0.3 },
-  ftlDots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  ftlDot: { width: 6, height: 6, borderRadius: RADIUS.pill },
-  psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
   restItem: { marginBottom: SPACE.md },
-  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkFaint, fontWeight: '600' },
+  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
   psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
