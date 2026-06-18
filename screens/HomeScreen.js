@@ -394,7 +394,7 @@ export default function HomeScreen({ navigation }) {
           {isFtl ? (
             <>
               <View style={s.stripRow}>
-                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level="neutral"
+                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level={ftlSnap.psv?.over ? 'over' : 'neutral'}
                   active={ftlTab === 'psv'} onPress={() => { select(); setFtlTab('psv'); }} s={s} C={C} />
                 <StatTile eyebrow={lang === 'en' ? 'LIMITS' : 'LIMITES'} value={limTileVal} level={hasLimitData ? limLevel : 'neutral'}
                   active={ftlTab === 'limits'} onPress={() => { select(); setFtlTab('limits'); }} s={s} C={C} />
@@ -407,7 +407,12 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {ftlSnap.psv ? (
                     <>
-                      <StatusChip level="neutral" label={t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} s={s} C={C} />
+                      <StatusChip
+                        level={ftlSnap.psv.over ? 'over' : 'neutral'}
+                        label={ftlSnap.psv.over
+                          ? `${t('home.illegal', lang)} · +${ftlSnap.psv.excess}`
+                          : t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}
+                        s={s} C={C} />
                       <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
                       <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
                       <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13, C)} s={s} />

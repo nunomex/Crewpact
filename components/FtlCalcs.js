@@ -26,6 +26,16 @@ const _bandMins = (b) => String(b).split('–').map(s => (+s.slice(0, 2)) * 60 +
 const withinBand = (m, b) => { const [lo, hi] = _bandMins(b); return lo <= hi ? (m >= lo && m <= hi) : (m >= lo || m <= hi); };
 const fmtBandRange = (b) => String(b).split('–').map(s => `${s.slice(0, 2)}:${s.slice(2)}`).join('–');
 
+// Máscara de hora de relógio (00:00–23:59) com ":" automático. Devolve a string
+// formatada, ou null se a tecla tornar a hora inválida (para a ignorar).
+const maskClock = (v) => {
+  let d = String(v).replace(/\D/g, '').slice(0, 4);
+  if (d.length === 1 && +d > 2) d = '0' + d;            // 1º dígito > 2 → hora de um dígito ('8' → '08')
+  if (d.length >= 2 && +d.slice(0, 2) > 23) return null; // horas > 23
+  if (d.length >= 3 && +d[2] > 5) return null;           // dezena dos minutos > 5
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+};
+
 // Transição suave ao mostrar/esconder (ex.: fim-limite, troca de estado).
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -54,6 +64,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
   const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
   const [report, setReport] = useState(''); // apresentação (obrigatória) — começa vazia, a inserir
+  const [realEnd, setRealEnd] = useState(''); // fim real (calços) — opcional, p/ detetar excesso ao máximo
   const [sectors, setSectors] = useState(0);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
@@ -66,15 +77,9 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   // A faixa manda (define o intervalo válido), mas NÃO preenche a hora — a
   // apresentação fica vazia para o utilizador inserir, dentro dessa faixa.
   const pickBand = (i) => { anim(); setStartIdx(i); };
-  // Máscara HH:MM de uma hora de relógio (00:00–23:59), com os ":" automáticos.
-  const onReport = (v) => {
-    let d = v.replace(/\D/g, '').slice(0, 4);
-    if (d.length === 1 && +d > 2) d = '0' + d;            // 1º dígito > 2 → hora de um dígito ('8' → '08')
-    if (d.length >= 2 && +d.slice(0, 2) > 23) return;     // horas > 23 → recusa a tecla
-    if (d.length >= 3 && +d[2] > 5) return;               // dezena dos minutos > 5 → recusa
-    anim();
-    setReport(d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`);
-  };
+  // Máscara HH:MM (00:00–23:59), com os ":" automáticos. Recusa horas inválidas.
+  const onReport = (v) => { const m = maskClock(v); if (m == null) return; anim(); setReport(m); };
+  const onRealEnd = (v) => { const m = maskClock(v); if (m == null) return; setRealEnd(m); };
 
   let base;
   if (isAcc) {
@@ -102,6 +107,16 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const endMin = inBand ? reportMin + fdpMin : null;
   const endClock = endMin != null ? minToHhmm(endMin % 1440) : null;
   const endNextDay = endMin != null && endMin >= 1440;
+
+  // PSV realizado (opcional) = fim real (calços) − apresentação. Se exceder o
+  // máximo → ilegal; guarda-se o excesso para o cartão do Início.
+  const realEndMin = parseHhmm(realEnd);
+  const actualMin = (inBand && realEndMin != null)
+    ? (realEndMin >= reportMin ? realEndMin - reportMin : realEndMin + 1440 - reportMin)
+    : null;
+  const over = actualMin != null && actualMin > fdpMin;
+  const actualStr = actualMin != null ? minToHhmm(actualMin) : null;
+  const excessStr = over ? minToHhmm(actualMin - fdpMin) : null;
 
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tableName = isAcc ? l('Quadro 2', 'Table 2') : accState === 'unk' ? l('Quadro 3', 'Table 3') : l('Quadro 4', 'Table 4');
@@ -171,10 +186,18 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
           <Text style={cs.extVal}>{endClock}{endNextDay ? ' (+1)' : ''}</Text>
         </View>
       )}
+      {isAcc && (
+        <View style={cs.timeRow}>
+          <Text style={cs.timeLbl}>{t('ftl.realEnd', lang)}</Text>
+          <TextInput value={realEnd} onChangeText={onRealEnd} placeholder="HH:MM" placeholderTextColor={C.sub}
+            keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, over && cs.timeInputErr]} />
+        </View>
+      )}
+      {over && <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {excessStr}</Text>}
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
       {onRegister && <RegisterBtn lang={lang} disabled={!stepsComplete}
-        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
+        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay, actual: actualStr, over, excess: excessStr })} />}
     </CalcCard>
   );
 }
