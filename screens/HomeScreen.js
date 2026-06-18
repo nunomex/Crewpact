@@ -391,11 +391,13 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {hasLimitData && (
                     <View style={s.ringWrap}>
-                      <Ring ratio={limWorst.ratio} color={limColor} C={C}>
-                        <Text style={[s.ringNum, { color: limColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{folgaNum}</Text>
-                        <Text style={s.ringLabel}>{folgaLabel}</Text>
+                      <Ring ratio={limWorst.ratio} color={limColor} size={84} stroke={9} C={C}>
+                        <Text style={[s.ringPct, { color: limColor }]}>{limTileVal}</Text>
                       </Ring>
-                      <Text style={s.ringCtx}>{folgaCtx}</Text>
+                      <View style={s.ringText}>
+                        <Text style={[s.ringNum, { color: limColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
+                        <Text style={s.ringCtx}>{folgaLabel} · {folgaCtx}</Text>
+                      </View>
                     </View>
                   )}
                   <Seg
@@ -595,11 +597,12 @@ const makeStyles = (C) => StyleSheet.create({
   tileValRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
   tileDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
   tileVal: { flex: 1, fontSize: TYPE.value, fontWeight: '700', color: C.onDark },
-  // Anel de folga (aba Limites) + legenda por baixo.
-  ringWrap: { alignItems: 'center', marginBottom: SPACE.md },
-  ringNum: { fontSize: TYPE.heading, fontWeight: '700', letterSpacing: -0.5, maxWidth: 104, textAlign: 'center' },
-  ringLabel: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginTop: 1 },
-  ringCtx: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 8, fontWeight: '600' },
+  // Anel de folga (aba Limites) — pequeno, à esquerda, com a folga em texto ao lado.
+  ringWrap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.md },
+  ringPct: { fontSize: TYPE.label, fontWeight: '700' },
+  ringText: { flex: 1 },
+  ringNum: { fontSize: TYPE.display, fontWeight: '400', letterSpacing: -0.5 },
+  ringCtx: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 3, fontWeight: '600', lineHeight: 16 },
   // Sparkline AE (mini-tendência).
   sparkWrap: { marginTop: SPACE.md, alignItems: 'flex-start' },
   sparkLbl: { fontSize: TYPE.eyebrow, color: C.onDarkFaint, fontWeight: '600', marginTop: 4, letterSpacing: 0.5 },
