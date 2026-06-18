@@ -66,9 +66,12 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   // A faixa manda (define o intervalo válido), mas NÃO preenche a hora — a
   // apresentação fica vazia para o utilizador inserir, dentro dessa faixa.
   const pickBand = (i) => { anim(); setStartIdx(i); };
-  // Máscara HH:MM: só dígitos (máx. 4), com os ":" inseridos automaticamente.
+  // Máscara HH:MM de uma hora de relógio (00:00–23:59), com os ":" automáticos.
   const onReport = (v) => {
-    const d = v.replace(/\D/g, '').slice(0, 4);
+    let d = v.replace(/\D/g, '').slice(0, 4);
+    if (d.length === 1 && +d > 2) d = '0' + d;            // 1º dígito > 2 → hora de um dígito ('8' → '08')
+    if (d.length >= 2 && +d.slice(0, 2) > 23) return;     // horas > 23 → recusa a tecla
+    if (d.length >= 3 && +d[2] > 5) return;               // dezena dos minutos > 5 → recusa
     anim();
     setReport(d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`);
   };
