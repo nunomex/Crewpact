@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
-import { PSV_ACCLIMATISED, PSV_SECTORS, PSV_UNKNOWN_SECTORS, psvBandIdx } from '../data/ftl';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight } from '../data/calendar';
 import {
@@ -25,38 +24,6 @@ const hhmmToH = (s) => {
   return (h || 0) + (m || 0) / 60;
 };
 const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
-
-// Formata uma faixa de hora '0530–0544' → '05:30–05:44' (legibilidade no cartão).
-const fmtBand = (b) => String(b).split('–').map(p => (p.length === 4 ? `${p.slice(0, 2)}:${p.slice(2)}` : p)).join('–');
-
-// "Base do cálculo" compacta (dentro do cartão preto): origem regulamentar +
-// linha/coluna da tabela (PSV) ou comparação (repouso). Tipografia secundária.
-function CalcBasis({ s, refTxt, detail, lang }) {
-  return (
-    <View style={s.basis}>
-      <Text style={s.basisHd}>{t('home.calcBasis', lang)}</Text>
-      <Text style={s.basisDetail}>{refTxt} · {detail}</Text>
-    </View>
-  );
-}
-
-// Origem regulamentar do PSV: linha (faixa de início) × coluna (setores) do
-// Quadro 2 quando aclimatado, ou Quadro 3/4 no estado desconhecido. A faixa é
-// derivada da hora de apresentação guardada (a mesma lógica da calculadora).
-function psvBasisFor(psv, lang) {
-  if (!psv) return null;
-  const sct = lang === 'en' ? 'sectors' : 'setores';
-  if (psv.state === 'acc' && (psv.band || psv.start)) {
-    // Faixa guardada (seletor) ou, em registos antigos, derivada da hora.
-    let band = psv.band;
-    if (!band) { const [h, m] = String(psv.start).split(':').map(Number); band = PSV_ACCLIMATISED[psvBandIdx((h || 0) * 60 + (m || 0))].start; }
-    const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 8);
-    return { ref: 'ORO.FTL.205', detail: `${fmtBand(band)} × ${PSV_SECTORS[col]} ${sct}` };
-  }
-  const col = psv.sectors <= 2 ? 0 : Math.min(psv.sectors - 2, 6);
-  const quad = lang === 'en' ? `Table ${psv.state === 'unk' ? 3 : 4}` : `Quadro ${psv.state === 'unk' ? 3 : 4}`;
-  return { ref: 'ORO.FTL.205', detail: `${quad} · ${PSV_UNKNOWN_SECTORS[col]} ${sct}` };
-}
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 // Recebe a paleta ativa (C) para acompanhar o tema (claro/escuro).
@@ -96,9 +63,6 @@ function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
             ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00`
             : `${t('home.restMin', lang)} ${floor}:00`}
       </Text>
-      {!empty && prev != null ? (
-        <CalcBasis s={s} refTxt="ORO.FTL.235" detail={`max(${fmtVal(prev, 'h')}, ${floor} h)`} lang={lang} />
-      ) : null}
       {at ? (
         <View style={[s.setoresRow, { marginTop: 6 }]}>
           <Text style={s.bdLbl}>{t(atDir === 'before' ? 'ftl.latestOff' : 'ftl.earliestReport', lang)}</Text>
@@ -186,7 +150,6 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
         <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
       </View>
       <AnimatedBar ratio={fill} color={barColor(ratio, C)} s={s} />
-      <Text style={s.progBasis}>{t('home.basisShort', lang)} ORO.FTL.210 · {limit} h / {label}</Text>
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {over
           ? `${t('home.excess', lang)} ${fmtVal(done - limit, 'h')}`
@@ -203,7 +166,6 @@ export default function HomeScreen({ navigation }) {
   const s = makeStyles(C);
   const company  = COMPANIES.find(c => c.id === profile.company);
   const isFtl    = companyContent(profile.company) === 'ftl';
-  const psvBasis = psvBasisFor(ftlSnap.psv, lang); // origem regulamentar p/ o cartão PSV
 
   const [ftlTab, setFtlTab] = useState('psv'); // aba do cartão FTL: psv | limits | rest
   const [aeTab, setAeTab] = useState('summary'); // aba do cartão AE: summary | records
@@ -320,6 +282,44 @@ export default function HomeScreen({ navigation }) {
   };
   useEffect(() => { syncFlight(); }, []);
 
+  // Cartão "Próximo voo" — definido como elemento para poder ir ao topo quando há
+  // voo (mais relevante) ou ficar por baixo do cartão AE/FTL quando não há.
+  const flightCardEl = (
+    <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={() => navigation.navigate('Calendar')}>
+      <View style={s.flightTop}>
+        <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
+        <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
+          {syncing
+            ? <ActivityIndicator size="small" color={C.sub} />
+            : flight
+              ? <Text style={[s.flightBadgeTxt, { color: C.green }]}>{t('home.flightOnTime', lang)}</Text>
+              : <Ionicons name="refresh" size={14} color={C.sub} />}
+        </View>
+      </View>
+
+      {flight ? (
+        <>
+          <View style={s.routeRow}>
+            <Text style={s.routeAir}>{flight.depAirport}</Text>
+            <Ionicons name="arrow-forward" size={20} color={C.text} style={{ marginHorizontal: 12 }} />
+            <Text style={s.routeAir}>{flight.arrAirport}</Text>
+            <View style={{ flex: 1 }} />
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={s.routeTime}>{flight.arrTime}</Text>
+              <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.report}</Text>
+            </View>
+          </View>
+          <Text style={s.flightMeta}>{flight.aircraft !== '—' ? `${flight.aircraft} · ` : ''}{flight.date}</Text>
+        </>
+      ) : (
+        <View style={s.flightEmpty}>
+          <Ionicons name="calendar-outline" size={18} color={C.sub} />
+          <Text style={s.flightEmptyTxt}>{syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
@@ -336,6 +336,9 @@ export default function HomeScreen({ navigation }) {
               {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
             </TouchableOpacity>
           } />
+
+        {/* Próximo voo no topo quando há voo (mais relevante nesse momento) */}
+        {flight ? flightCardEl : null}
 
         {/* Cartão preto: FTL (PSV · Limites · Repouso) ou AE (Resumo · Registos), em abas */}
         <View style={s.monthCard}>
@@ -385,7 +388,6 @@ export default function HomeScreen({ navigation }) {
                           <Text style={s.bdVal}>{ftlSnap.psv.end}{ftlSnap.psv.endNextDay ? ' (+1)' : ''}</Text>
                         </View>
                       ) : null}
-                      {psvBasis ? <CalcBasis s={s} refTxt={psvBasis.ref} detail={psvBasis.detail} lang={lang} /> : null}
                     </>
                   ) : (
                     <View style={s.psvEmpty}>
@@ -432,7 +434,6 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {ftlSnap.rest ? (
                     <>
-                      <StatusChip level="neutral" label="ORO.FTL.235" s={s} C={C} />
                       <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
                       <View style={s.monthDivider} />
@@ -524,40 +525,8 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {/* Próximo voo */}
-        <TouchableOpacity style={s.flightCard} activeOpacity={0.9} onPress={() => navigation.navigate('Calendar')}>
-          <View style={s.flightTop}>
-            <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
-            <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
-              {syncing
-                ? <ActivityIndicator size="small" color={C.sub} />
-                : flight
-                  ? <Text style={[s.flightBadgeTxt, { color: C.green }]}>{t('home.flightOnTime', lang)}</Text>
-                  : <Ionicons name="refresh" size={14} color={C.sub} />}
-            </View>
-          </View>
-
-          {flight ? (
-            <>
-              <View style={s.routeRow}>
-                <Text style={s.routeAir}>{flight.depAirport}</Text>
-                <Ionicons name="arrow-forward" size={20} color={C.text} style={{ marginHorizontal: 12 }} />
-                <Text style={s.routeAir}>{flight.arrAirport}</Text>
-                <View style={{ flex: 1 }} />
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={s.routeTime}>{flight.arrTime}</Text>
-                  <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.report}</Text>
-                </View>
-              </View>
-              <Text style={s.flightMeta}>{flight.aircraft !== '—' ? `${flight.aircraft} · ` : ''}{flight.date}</Text>
-            </>
-          ) : (
-            <View style={s.flightEmpty}>
-              <Ionicons name="calendar-outline" size={18} color={C.sub} />
-              <Text style={s.flightEmptyTxt}>{syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        {/* Próximo voo fica por baixo quando não há voo (evita liderar com cartão vazio) */}
+        {!flight ? flightCardEl : null}
       </ScrollView>
 
       {/* Notificações */}
@@ -652,11 +621,6 @@ const makeStyles = (C) => StyleSheet.create({
   progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 6 },
-  progBasis: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 6 },
-  // "Base do cálculo" — origem regulamentar, tipografia secundária sobre o cartão preto.
-  basis: { marginTop: 8 },
-  basisHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.2, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase' },
-  basisDetail: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.onDarkSub, marginTop: 2 },
   psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
   restItem: { marginBottom: SPACE.md },
