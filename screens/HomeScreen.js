@@ -107,10 +107,11 @@ function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
   );
 }
 
-// Chip de estado dos limites (210): verde (dentro) / âmbar (a aproximar-se) /
-// vermelho (excedido). Só faz sentido onde há consumo real vs. teto regulamentar.
+// Chip de cartão. Estado (Limites): verde (dentro) / âmbar (a aproximar-se) /
+// vermelho (excedido) — só onde há consumo real vs. teto regulamentar.
+// Neutro (PSV/Repouso): cinza — só informa (ex.: aclimatação), não avalia.
 function StatusChip({ level, label, s, C }) {
-  const col = level === 'over' ? C.red : level === 'warn' ? C.warn : C.green;
+  const col = level === 'over' ? C.red : level === 'warn' ? C.warn : level === 'neutral' ? C.onDarkSub : C.green;
   return (
     <View style={s.chip}>
       <View style={[s.chipDot, { backgroundColor: col }]} />
@@ -267,6 +268,7 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {ftlSnap.psv ? (
                     <>
+                      <StatusChip level="neutral" label={t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} s={s} C={C} />
                       <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
                       <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
                       <AnimatedBar ratio={hhmmToH(ftlSnap.psv.result) / 13} color={barColor(hhmmToH(ftlSnap.psv.result) / 13, C)} s={s} />
@@ -274,10 +276,6 @@ export default function HomeScreen({ navigation }) {
 
                       <View style={s.monthDivider} />
 
-                      <View style={s.setoresRow}>
-                        <Text style={s.bdLbl}>{t('home.psvStateLbl', lang)}</Text>
-                        <Text style={s.bdVal}>{t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)}</Text>
-                      </View>
                       {ftlSnap.psv.start ? (
                         <View style={[s.setoresRow, { marginTop: 6 }]}>
                           <Text style={s.bdLbl}>{t('ftl.psvStart', lang)}</Text>
@@ -331,6 +329,7 @@ export default function HomeScreen({ navigation }) {
                 <View>
                   {ftlSnap.rest ? (
                     <>
+                      <StatusChip level="neutral" label="ORO.FTL.235" s={s} C={C} />
                       <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
                         at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
                       <View style={s.monthDivider} />
