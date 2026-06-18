@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Animated,
+  ActivityIndicator, Animated, Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -164,6 +164,15 @@ export default function LoginScreen() {
   const toastY = useRef(new Animated.Value(-120)).current;
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
+
+  // Teclado aberto → compactar o topo (marca/padding) para o botão de ação caber
+  // sempre acima do teclado, qualquer que seja o campo em foco.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // Login
   const [lEmail, setLEmail]     = useState('');
@@ -331,16 +340,20 @@ export default function LoginScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[s.scroll, { flexGrow: 1 }, keyboardOpen && { paddingTop: 40 }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}>
 
-          {/* Brand — sempre visível */}
-          <View style={s.brand}>
+          {/* Brand — compacta-se quando o teclado está aberto */}
+          <View style={[s.brand, keyboardOpen && { marginBottom: 20 }]}>
             <View style={s.ring}>
               <Ionicons name="airplane" size={24} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
             </View>
             <Text style={s.logoName}>CrewPact</Text>
-            <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>
+            {!keyboardOpen && <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>}
           </View>
 
           {/* Tab switcher — só no login/register */}
