@@ -15,6 +15,7 @@ import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
+import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
 // "11:30" → 11.5 (horas decimais).
@@ -120,6 +121,23 @@ function StatusChip({ level, label, s, C }) {
   );
 }
 
+// Mosaico de estado (faixa do cartão FTL): rótulo + ponto colorido + valor.
+// É ao mesmo tempo o seletor de aba e a leitura de relance dos 3 estados.
+// `level`: 'ok'|'warn'|'over' (semáforo, Limites) ou 'neutral' (cinza, PSV/Repouso).
+function StatTile({ eyebrow, value, level, active, onPress, s, C }) {
+  const dotCol = level === 'over' ? C.red : level === 'warn' ? C.warn : level === 'ok' ? C.green : C.onDarkSub;
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.tile, active && s.tileActive]}
+      accessibilityRole="button" accessibilityState={{ selected: active }}>
+      <Text style={s.tileEyebrow} numberOfLines={1}>{eyebrow}</Text>
+      <View style={s.tileValRow}>
+        <View style={[s.tileDot, { backgroundColor: dotCol }]} />
+        <Text style={s.tileVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
@@ -191,16 +209,25 @@ export default function HomeScreen({ navigation }) {
   // Estado global dos limites (210): a pior janela de qualquer categoria define o
   // chip. Só aparece quando há horas registadas (caso contrário "dentro" enganaria).
   const hasLimitData = extras.some(e => e.category === 'voo' || e.category === 'servico');
-  let limWorst = { ratio: -1, row: null, cat: null };
+  let limWorst = { ratio: -1, row: null, cat: null, done: 0 };
   for (const g of LIMIT_GROUPS) for (const r of g.rows) {
     const done = windowTotal(extras, r.days, g.cat);
     const ratio = r.limit ? done / r.limit : 0;
-    if (ratio > limWorst.ratio) limWorst = { ratio, row: r, cat: g.cat };
+    if (ratio > limWorst.ratio) limWorst = { ratio, row: r, cat: g.cat, done };
   }
   const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
-  const limChipLabel = limLevel === 'ok'
-    ? t('home.statusOk', lang)
-    : `${t(limLevel === 'over' ? 'home.statusOver' : 'home.statusWarn', lang)} · ${catLabel(limWorst.cat, lang)} ${limWorst.row.label}`;
+  const limColor = limLevel === 'over' ? C.red : limLevel === 'warn' ? C.warn : C.green;
+
+  // Mosaicos da faixa FTL (valor compacto por aba).
+  const psvTileVal  = ftlSnap.psv?.result || '—';
+  const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
+  const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
+
+  // Manchete de "folga" da janela mais apertada (substitui o anel na Fase 1).
+  const limFolga  = limWorst.row ? limWorst.row.limit - limWorst.done : 0;
+  const limOver   = limFolga < 0;
+  const folgaNum  = (limOver ? '−' : '') + fmtVal(Math.abs(limFolga), 'h');
+  const folgaSub  = `${limOver ? t('home.statusOver', lang) : t('home.headroom', lang)} · ${catLabel(limWorst.cat, lang)} · ${limWorst.row ? limWorst.row.label : ''}`;
 
 
   const closeNotifs = () => {
@@ -253,14 +280,13 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              <View style={s.cardTabs}>
-                <Seg
-                  options={[
-                    { id: 'psv',    label: lang === 'en' ? 'FDP'    : 'PSV' },
-                    { id: 'limits', label: lang === 'en' ? 'Limits' : 'Limites' },
-                    { id: 'rest',   label: lang === 'en' ? 'Rest'   : 'Repouso' },
-                  ]}
-                  value={ftlTab} setValue={setFtlTab} dark />
+              <View style={s.stripRow}>
+                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level="neutral"
+                  active={ftlTab === 'psv'} onPress={() => { select(); setFtlTab('psv'); }} s={s} C={C} />
+                <StatTile eyebrow={lang === 'en' ? 'LIMITS' : 'LIMITES'} value={limTileVal} level={hasLimitData ? limLevel : 'neutral'}
+                  active={ftlTab === 'limits'} onPress={() => { select(); setFtlTab('limits'); }} s={s} C={C} />
+                <StatTile eyebrow={lang === 'en' ? 'REST' : 'REPOUSO'} value={restTileVal} level="neutral"
+                  active={ftlTab === 'rest'} onPress={() => { select(); setFtlTab('rest'); }} s={s} C={C} />
               </View>
 
               {/* PSV máximo diário (205) */}
@@ -306,7 +332,12 @@ export default function HomeScreen({ navigation }) {
               {/* Limites de horas (210) */}
               {ftlTab === 'limits' && (
                 <View>
-                  {hasLimitData ? <StatusChip level={limLevel} label={limChipLabel} s={s} C={C} /> : null}
+                  {hasLimitData && (
+                    <View style={s.folga}>
+                      <Text style={[s.folgaNum, { color: limColor }]}>{folgaNum}</Text>
+                      <Text style={s.folgaSub}>{folgaSub}</Text>
+                    </View>
+                  )}
                   <Seg
                     options={LIMIT_GROUPS.map(g => ({ id: g.cat, label: catLabel(g.cat, lang) }))}
                     value={limCat} setValue={setLimCat} dark />
@@ -489,7 +520,19 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Este mês (extras)
   monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
-  cardTabs: { marginBottom: SPACE.md },
+  cardTabs: { marginBottom: SPACE.md }, // wrapper das abas AE (Seg)
+  // Faixa de mosaicos de estado (FTL) — seletor de aba + leitura de relance.
+  stripRow: { flexDirection: 'row', gap: SPACE.sm, marginBottom: SPACE.md },
+  tile: { flex: 1, borderRadius: RADIUS.md, borderWidth: 1, borderColor: C.hairlineOnDark, paddingVertical: 9, paddingHorizontal: 10 },
+  tileActive: { backgroundColor: C.hairlineOnDark, borderColor: C.onDarkSub },
+  tileEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 0.8, color: C.onDarkFaint, fontWeight: '700' },
+  tileValRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
+  tileDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  tileVal: { flex: 1, fontSize: TYPE.value, fontWeight: '700', color: C.onDark },
+  // Manchete de "folga" da janela mais apertada (aba Limites).
+  folga: { marginBottom: SPACE.md },
+  folgaNum: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -1 },
+  folgaSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2, fontWeight: '600' },
   // Chip de estado dos limites (verde/âmbar/vermelho) sobre o cartão preto.
   chip: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: 11, paddingVertical: 6, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, marginBottom: SPACE.md },
   chipDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
