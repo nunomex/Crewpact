@@ -2,6 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
 import { PSV_ACCLIMATISED, PSV_SECTORS, PSV_UNKNOWN_SECTORS, psvBandIdx } from '../data/ftl';
 import { buildNotifications } from '../data/notifications';
@@ -138,6 +139,40 @@ function StatTile({ eyebrow, value, level, active, onPress, s, C }) {
   );
 }
 
+// Anel de progresso (aba Limites): preenchido = % consumido da janela mais
+// apertada; cor = nível; o centro mostra a folga em horas. Começa no topo.
+function Ring({ ratio, color, size = 132, stroke = 12, children, C }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const fill = Math.max(0, Math.min(1, ratio || 0));
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.hairlineOnDark} strokeWidth={stroke} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - fill)} strokeLinecap="round" />
+      </Svg>
+      <View style={{ alignItems: 'center' }}>{children}</View>
+    </View>
+  );
+}
+
+// Mini-tendência (sparkline) dos últimos meses — usado no resumo AE.
+function Sparkline({ values, color, width = 130, height = 30 }) {
+  const max = Math.max(...values, 1);
+  const n = values.length;
+  const pts = values.map((v, i) => {
+    const x = n > 1 ? (i / (n - 1)) * width : 0;
+    const y = height - 2 - (v / max) * (height - 4);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return (
+    <Svg width={width} height={height}>
+      <Polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 // Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
@@ -186,6 +221,17 @@ export default function HomeScreen({ navigation }) {
   const aeRestSecs = aeSections.filter(sec => sec.id !== 'perEvent'); // restantes → slide 2 (Registos)
   const pct      = pctChange(extras, curKey);
   const totalDisplay = fmtEur(total);
+  // Sparkline AE — totais dos últimos 6 meses (antigo → recente).
+  const sparkVals = (() => {
+    const now = new Date();
+    const arr = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      arr.push(monthTotal(extras, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`));
+    }
+    return arr;
+  })();
+  const hasSpark = sparkVals.some(v => v > 0);
 
   // FTL — limites de tempo (ORO.FTL.210). As mesmas horas registadas contam em
   // várias janelas ao mesmo tempo; cada período faz a sua própria conta.
@@ -227,7 +273,18 @@ export default function HomeScreen({ navigation }) {
   const limFolga  = limWorst.row ? limWorst.row.limit - limWorst.done : 0;
   const limOver   = limFolga < 0;
   const folgaNum  = (limOver ? '−' : '') + fmtVal(Math.abs(limFolga), 'h');
-  const folgaSub  = `${limOver ? t('home.statusOver', lang) : t('home.headroom', lang)} · ${catLabel(limWorst.cat, lang)} · ${limWorst.row ? limWorst.row.label : ''}`;
+  const folgaLabel = limOver ? t('home.statusOver', lang) : t('home.headroom', lang);
+  const folgaCtx   = `${catLabel(limWorst.cat, lang)} · ${limWorst.row ? limWorst.row.label : ''}`;
+
+  // Arranque inteligente: na 1ª vez que houver dados de limites, se algum estiver
+  // âmbar/vermelho, abrir já na aba Limites (lidera o aviso). Não volta a mexer
+  // depois — respeita a navegação do utilizador.
+  const autoTabRef = useRef(false);
+  useEffect(() => {
+    if (autoTabRef.current || !isFtl || !hasLimitData) return;
+    autoTabRef.current = true;
+    if (limLevel !== 'ok') setFtlTab('limits');
+  }, [isFtl, hasLimitData, limLevel]);
 
 
   const closeNotifs = () => {
@@ -333,9 +390,12 @@ export default function HomeScreen({ navigation }) {
               {ftlTab === 'limits' && (
                 <View>
                   {hasLimitData && (
-                    <View style={s.folga}>
-                      <Text style={[s.folgaNum, { color: limColor }]}>{folgaNum}</Text>
-                      <Text style={s.folgaSub}>{folgaSub}</Text>
+                    <View style={s.ringWrap}>
+                      <Ring ratio={limWorst.ratio} color={limColor} C={C}>
+                        <Text style={[s.ringNum, { color: limColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{folgaNum}</Text>
+                        <Text style={s.ringLabel}>{folgaLabel}</Text>
+                      </Ring>
+                      <Text style={s.ringCtx}>{folgaCtx}</Text>
                     </View>
                   )}
                   <Seg
@@ -397,6 +457,12 @@ export default function HomeScreen({ navigation }) {
                     <View style={s.pctRow}>
                       <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
                       <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
+                    </View>
+                  )}
+                  {hasSpark && (
+                    <View style={s.sparkWrap}>
+                      <Sparkline values={sparkVals} color={C.onDarkSub} />
+                      <Text style={s.sparkLbl}>{t('home.last6m', lang)}</Text>
                     </View>
                   )}
                   {aeEventSec && (
@@ -529,10 +595,14 @@ const makeStyles = (C) => StyleSheet.create({
   tileValRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
   tileDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
   tileVal: { flex: 1, fontSize: TYPE.value, fontWeight: '700', color: C.onDark },
-  // Manchete de "folga" da janela mais apertada (aba Limites).
-  folga: { marginBottom: SPACE.md },
-  folgaNum: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -1 },
-  folgaSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2, fontWeight: '600' },
+  // Anel de folga (aba Limites) + legenda por baixo.
+  ringWrap: { alignItems: 'center', marginBottom: SPACE.md },
+  ringNum: { fontSize: TYPE.heading, fontWeight: '700', letterSpacing: -0.5, maxWidth: 104, textAlign: 'center' },
+  ringLabel: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginTop: 1 },
+  ringCtx: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 8, fontWeight: '600' },
+  // Sparkline AE (mini-tendência).
+  sparkWrap: { marginTop: SPACE.md, alignItems: 'flex-start' },
+  sparkLbl: { fontSize: TYPE.eyebrow, color: C.onDarkFaint, fontWeight: '600', marginTop: 4, letterSpacing: 0.5 },
   // Chip de estado dos limites (verde/âmbar/vermelho) sobre o cartão preto.
   chip: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: 11, paddingVertical: 6, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, marginBottom: SPACE.md },
   chipDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
