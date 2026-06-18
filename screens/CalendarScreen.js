@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, GUTTER, companyContent } from '../data/constants';
@@ -7,7 +7,7 @@ import DetailTopBar from '../components/DetailTopBar';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { catLabel, extraCategories, fmtVal, fmtEur } from '../data/extras';
-import { getFlightsInRange } from '../data/calendar';
+import { getFlightsInRange, requestCalendarAccess } from '../data/calendar';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -108,6 +108,14 @@ export default function CalendarScreen({ navigation }) {
     return () => sub.remove();
   }, [loadFlights]);
 
+  // Pede acesso ao calendário; se já tiver sido recusado de vez, abre as Definições.
+  const requestAccess = async () => {
+    select();
+    const res = await requestCalendarAccess();
+    if (res?.granted) loadFlights();
+    else if (res && res.canAskAgain === false) Linking.openSettings();
+  };
+
   const shiftMonth = (delta) => { select(); setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1)); };
   const pickDay = (cell) => {
     select();
@@ -205,7 +213,13 @@ export default function CalendarScreen({ navigation }) {
         {!calOk ? (
           <View style={s.note}>
             <Ionicons name="information-circle-outline" size={16} color={C.sub} />
-            <Text style={s.noteTxt}>{t('cal.permission', lang)}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.noteTxt}>{t('cal.permission', lang)}</Text>
+              <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn}>
+                <Ionicons name="calendar-outline" size={15} color="#fff" />
+                <Text style={s.grantBtnTxt}>{t('cal.grant', lang)}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : selFlights.length === 0 ? (
           <Text style={s.empty}>{loading ? t('cal.loading', lang) : t('cal.noFlights', lang)}</Text>
@@ -324,7 +338,9 @@ const makeStyles = (C) => StyleSheet.create({
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.md, marginBottom: SPACE.sm },
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm },
-  noteTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
+  noteTxt: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
+  grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
+  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '600' },
 
   flightRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   flightIcon: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

@@ -1,11 +1,11 @@
 import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
-import { getUpcomingFlight } from '../data/calendar';
+import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import {
   catLabel, fmtEur, fmtVal,
   monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, pctChange, windowTotal,
@@ -267,6 +267,7 @@ export default function HomeScreen({ navigation }) {
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
   const [flight, setFlight] = useState(null);
+  const [calOk, setCalOk] = useState(true); // acesso ao calendário do telemóvel
   const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
   const syncingRef = useRef(false);
@@ -275,11 +276,19 @@ export default function HomeScreen({ navigation }) {
     syncingRef.current = true;
     setSyncing(true);
     try {
-      const next = await getUpcomingFlight();
-      setFlight(next);
+      const res = await getUpcomingFlight();
+      setCalOk(res.ok);
+      setFlight(res.flight);
     } catch { setFlight(null); }
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
+  };
+  // Pede acesso ao calendário; se já recusado de vez, abre as Definições.
+  const requestAccess = async () => {
+    select();
+    const res = await requestCalendarAccess();
+    if (res?.granted) syncFlight();
+    else if (res && res.canAskAgain === false) Linking.openSettings();
   };
   // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
   // para o cartão refletir alterações da escala sem reabrir a app.
@@ -315,12 +324,24 @@ export default function HomeScreen({ navigation }) {
             <Text style={s.routeAir}>{flight.arrAirport}</Text>
             <View style={{ flex: 1 }} />
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.routeTime}>{flight.arrTime}</Text>
-              <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.report}</Text>
+              <Text style={s.routeTime}>{flight.arrTimeZ}Z</Text>
+              <Text style={s.routeTimeLocal}>{flight.arrTime}L</Text>
             </View>
           </View>
+          <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.reportZ}Z · {flight.report}L</Text>
           <Text style={s.flightMeta}>{flight.aircraft !== '—' ? `${flight.aircraft} · ` : ''}{flight.date}</Text>
         </>
+      ) : !calOk ? (
+        <View style={s.flightEmpty}>
+          <Ionicons name="calendar-outline" size={18} color={C.sub} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.flightEmptyTxt}>{t('cal.permission', lang)}</Text>
+            <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn}>
+              <Ionicons name="calendar-outline" size={15} color="#fff" />
+              <Text style={s.grantBtnTxt}>{t('cal.grant', lang)}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       ) : (
         <View style={s.flightEmpty}>
           <Ionicons name="calendar-outline" size={18} color={C.sub} />
@@ -665,10 +686,13 @@ const makeStyles = (C) => StyleSheet.create({
   routeRow: { flexDirection: 'row', alignItems: 'center' },
   routeAir: { fontSize: 24, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
   routeTime: { fontSize: TYPE.lg, fontWeight: '700', color: C.text },
-  routeBoard: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
+  routeTimeLocal: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.sub, marginTop: 1 },
+  routeBoard: { fontSize: TYPE.micro, color: C.sub, marginTop: 8 },
   flightMeta: { fontSize: TYPE.sub, color: C.sub, marginTop: 8 },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
+  grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
+  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '600' },
 
   // Cartão Calendário (entrada dedicada)
   calCard: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },

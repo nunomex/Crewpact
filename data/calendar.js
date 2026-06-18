@@ -13,6 +13,12 @@ export async function ensureCalendarPermission() {
   return status === 'granted';
 }
 
+// Pede acesso ao calendário e devolve o resultado completo ({ granted, canAskAgain }),
+// para a UI decidir entre voltar a pedir ou encaminhar para as Definições.
+export async function requestCalendarAccess() {
+  return Calendar.requestCalendarPermissionsAsync();
+}
+
 // ── Parsers ──────────────────────────────────────────────────────────────────
 const RE_ROUTE  = /\b([A-Z]{3})\s*[-/→]\s*([A-Z]{3})\b/;                 // LIS-FNC, LIS/FNC, LIS→FNC
 const RE_FLIGHT = /\b(?:EZY|EJU|U2|TP|TAP)\s?\d{2,4}[A-Z]?\b/i;          // nº de voo easyJet (EZY/EJU/U2) + TAP (TP/TAP)
@@ -21,7 +27,8 @@ const RE_AC     = /\b(A3\d{2}|A2\d{2}|A\d{2}N|B7\d{2})\b/;               // A320
 const RE_REG    = /\b(CS-[A-Z]{3})\b/;                                   // matrícula CS-EZW (easyJet) / CS-TVA (TAP)
 
 const pad = (n) => String(n).padStart(2, '0');
-const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;       // hora local do dispositivo
+const hhmmZ = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; // hora UTC (Zulu)
 // Data local 'YYYY-MM-DD' (componentes locais, não UTC) — chave por dia.
 const isoLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const fmtDate = (d) => d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -77,6 +84,10 @@ function mapFlight(ev) {
     report: hhmm(report),
     depTime,
     arrTime,
+    // Variantes em UTC/Zulu (derivadas do instante absoluto), para mostrar ambas.
+    depTimeZ: hhmmZ(start),
+    arrTimeZ: hhmmZ(finish),
+    reportZ: hhmmZ(report),
     depAirport: route ? route[1] : '—',
     arrAirport: route ? route[2] : '—',
     aircraft: [ac && ac[1], reg && reg[1]].filter(Boolean).join(' · ') || '—',
@@ -103,16 +114,17 @@ function mapStandby(ev) {
   };
 }
 
-// Devolve o próximo voo (ou null) mapeado para os campos do cartão "Próximo voo".
+// Próximo voo + estado da permissão: { ok, flight }. `ok:false` = sem acesso ao
+// calendário (para o cartão distinguir "sem permissão" de "sem voo").
 export async function getUpcomingFlight() {
   const now = new Date();
   const { ok, events } = await fetchEvents(now, new Date(now.getTime() + 21 * 24 * 3600 * 1000));
-  if (!ok) return null;
+  if (!ok) return { ok: false, flight: null };
   for (const ev of events) {
     const f = mapFlight(ev);
-    if (f) return f;
+    if (f) return { ok: true, flight: f };
   }
-  return null;
+  return { ok: true, flight: null };
 }
 
 // Devolve todos os voos no intervalo [start, end] (para a grelha mensal e a lista
