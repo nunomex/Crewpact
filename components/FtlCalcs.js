@@ -214,7 +214,14 @@ export function DutyCalc({ lang, onRegister }) {
         <Seg options={[{ id: 'base', label: t('ftl.atBase', lang) }, { id: 'away', label: t('ftl.awayBase', lang) }]}
           value={inBase ? 'base' : 'away'} setValue={(v) => setInBase(v === 'base')} />
       </View>
-      <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />
+      {isAcc && (
+        <View style={cs.segRow}>
+          <Text style={cs.fieldLabel}>{t('ftl.extension', lang)}</Text>
+          <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
+            value={ext ? 'yes' : 'no'} setValue={toggleExt} />
+        </View>
+      )}
+      {!ext && <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.flightTime', lang)}</Text>
         <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={C.sub}
@@ -224,12 +231,14 @@ export function DutyCalc({ lang, onRegister }) {
       {complete && (
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
-            <Text style={cs.dutyLbl}>{l('PSV (205)', 'FDP (205)')}</Text>
-            <Text style={[cs.dutyVal, psvOver && { color: C.red }]}>{fdpDisp} / {psvMaxDisp}</Text>
+            <Text style={cs.dutyLbl}>{l('PSV (205)', 'FDP (205)')}{ext ? ' +205(d)' : ''}</Text>
+            <Text style={[cs.dutyVal, (psvOver || notAllowed) && { color: C.red }]}>{notAllowed ? '—' : `${fdpDisp} / ${psvMaxDisp}`}</Text>
           </View>
-          {psvOver
-            ? <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {psvExcess}</Text>
-            : <Text style={cs.okNote}>{l('Dentro do PSV máximo', 'Within max FDP')}</Text>}
+          {notAllowed
+            ? <Text style={cs.errNote}>{t('ftl.extNotAllowed', lang)}</Text>
+            : psvOver
+              ? <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {psvExcess}</Text>
+              : <Text style={cs.okNote}>{l('Dentro do PSV máximo', 'Within max FDP')}</Text>}
 
           <View style={[cs.dutyRow, cs.dutyDivider]}>
             <Text style={cs.dutyLbl}>{l('Limites (210)', 'Limits (210)')}</Text>
@@ -243,10 +252,10 @@ export function DutyCalc({ lang, onRegister }) {
         </View>
       )}
 
-      {onRegister && <RegisterBtn lang={lang} disabled={!complete}
+      {onRegister && <RegisterBtn lang={lang} disabled={!complete || notAllowed}
         onPress={() => onRegister({
           kind: 'duty',
-          psv: { state: accState, sectors: sec, result: fdpDisp, max: psvMaxDisp, band: isAcc ? bandStr : null, start: report, over: psvOver, excess: psvExcess },
+          psv: { state: accState, sectors: sec, result: fdpDisp, max: psvMaxDisp, band: isAcc ? bandStr : null, start: report, over: psvOver, excess: psvExcess, extended: ext },
           limits: { servico: servicoH, voo: vooH },
           rest: { place: inBase ? 'base' : 'away', value: restMin != null ? toH(restMin) : 0, prev: servicoH },
         })} />}
