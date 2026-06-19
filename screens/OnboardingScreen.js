@@ -2,29 +2,31 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, COMPANIES, RANKS, CONTRACTS, companyContent } from '../data/constants';
+import { C as _C, TYPE, COMPANIES, RANKS, CONTRACTS, CREW_TYPES, companyContent } from '../data/constants';
 import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
+import { upsertProfile } from '../data/db';
 import { t, txv } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
-  const { setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
+  const { user, setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null, rank: null, contract: null });
+  const [draft, setDraft] = useState({ company: null, crewType: null, rank: null, contract: null });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   // FTL não tem categorias nem contrato — esses passos desaparecem.
   const isFtl = draft.company && companyContent(draft.company) === 'ftl';
   const STEP_DEFS = {
-    company:  { title: t('onb.s0t', lang), sub: t('onb.s0s', lang), items: COMPANIES, field: 'company' },
-    rank:     { title: t('onb.s1t', lang), sub: t('onb.s1s', lang), items: RANKS,     field: 'rank' },
-    contract: { title: t('onb.s2t', lang), sub: t('onb.s2s', lang), items: CONTRACTS, field: 'contract' },
+    company:  { title: t('onb.s0t', lang),    sub: t('onb.s0s', lang),    items: COMPANIES,  field: 'company' },
+    crewType: { title: t('onb.sCrewT', lang), sub: t('onb.sCrewS', lang), items: CREW_TYPES, field: 'crewType' },
+    rank:     { title: t('onb.s1t', lang),    sub: t('onb.s1s', lang),    items: RANKS,      field: 'rank' },
+    contract: { title: t('onb.s2t', lang),    sub: t('onb.s2s', lang),    items: CONTRACTS,  field: 'contract' },
   };
-  const flow = isFtl ? ['company'] : ['company', 'rank', 'contract'];
+  const flow = isFtl ? ['company', 'crewType'] : ['company', 'crewType', 'rank', 'contract'];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
   const items = s.items;
@@ -51,13 +53,17 @@ export default function OnboardingScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }}>
         {items.map((item) => {
           const sel = draft[field] === item.id;
-          const disabled = field === 'company' && !item.active;
+          const disabled = (field === 'company' || field === 'crewType') && item.active === false;
           return (
             <TouchableOpacity key={item.id} disabled={disabled} onPress={() => { select(); setDraft({ ...draft, [field]: item.id }); }}
               style={[styles.row, { borderColor: sel ? C.red : C.line, opacity: disabled ? 0.4 : 1 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{txv(item.label || item.name, lang)}</Text>
-                {item.country && <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : t('onb.soon', lang)}</Text>}
+                {item.country
+                  ? <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : t('onb.soon', lang)}</Text>
+                  : (field === 'crewType' && item.active === false
+                      ? <Text style={[styles.rowSub, { color: C.sub }]}>{t('onb.soon', lang)}</Text>
+                      : null)}
               </View>
               <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
                 {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -82,10 +88,13 @@ export default function OnboardingScreen() {
           if (!isLast) { setStep(step + 1); return; }
           setSaving(true);
           setSaveError(null);
-          const payload = isFtl ? { company: draft.company, rank: null, contract: null } : draft;
+          const payload = isFtl ? { company: draft.company, crewType: draft.crewType, rank: null, contract: null } : draft;
           const result = await updateProfile(payload, lang);
+          if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
+          // Cria/atualiza o perfil na tabela `profiles` (best-effort; metadata +
+          // AsyncStorage já garantem o fluxo, por isso uma falha aqui não bloqueia).
+          await upsertProfile(user?.id, payload);
           setSaving(false);
-          if (!result.ok) { setSaveError(t('onb.saveErr', lang)); return; }
           setProfile(payload);
           if (result.user) setUser(result.user);
           success();

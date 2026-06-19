@@ -98,15 +98,10 @@ export const TYPE = {
 // ─── Companies ───────────────────────────────────────────────────────────────
 // `content`: tipo de conteúdo disponível para a companhia — 'ae' (Acordo de
 // Empresa) ou 'ftl' (Limites de Tempo de Voo). O separador adapta o nome/ícone.
-export const COMPANIES = [
-  { id: "easyjet-pt", name: "easyJet", code: "EZY", country: "Portugal", active: true,  content: "ae" },
-  { id: "tap-pt", name: "TAP Air Portugal", code: "TAP", country: "Portugal", active: true,  content: "ftl" },
-  { id: "ryanair", name: "Ryanair", code: "RYR", country: "Europa", active: false, content: "ftl" },
-];
-
-// Tipo de conteúdo da companhia do perfil (default 'ae').
-export const companyContent = (companyId) =>
-  COMPANIES.find(c => c.id === companyId)?.content || 'ae';
+// As companhias deixaram de ser hardcoded: vêm da tabela `airlines` (Supabase),
+// carregadas no AppContext. O motor (FTL/AE) deriva do `engine_code` da linha
+// correspondente e o perfil guarda o `airlines.id` real. Ver data/db.js (fetchAirlines)
+// e App.js (estado `airlines` + `company`/`isFtl` no contexto).
 
 // ─── Ranks & Contracts ───────────────────────────────────────────────────────
 export const RANKS = [
@@ -121,6 +116,13 @@ export const CONTRACTS = [
   { id: "8_12", label: "Parcial anual 8/12" },
   { id: "9_3", label: "Intermitente 9/3" },
   { id: "pt", label: "Tempo parcial (fixo/sazonal)" },
+];
+
+// Tipo de tripulação (crew_type). Cabina ativa; voo (piloto) fica suspenso por
+// enquanto — capturado mas sem motor próprio (mostra-se "Em breve").
+export const CREW_TYPES = [
+  { id: "cabin",  label: "Tripulação de cabina",     active: true  },
+  { id: "flight", label: "Tripulação de voo (piloto)", active: false },
 ];
 
 // ─── Sections ────────────────────────────────────────────────────────────────

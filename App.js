@@ -15,10 +15,11 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import { C, RADIUS, companyContent, PALETTES } from './data/constants';
+import { C, RADIUS, PALETTES } from './data/constants';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
+import { fetchProfile, fetchAirlines } from './data/db';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -63,8 +64,7 @@ function HomeStack() {
 function AgreementStack() {
   // Cada companhia só tem um tipo de conteúdo (AE ou FTL), por isso a aba abre
   // diretamente a Lista ou o FTL — sem ecrã-hub intermédio de um só cartão.
-  const { profile } = useContext(AppContext);
-  const isFtl = companyContent(profile.company) === 'ftl';
+  const { isFtl } = useContext(AppContext);
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Reference">
@@ -90,9 +90,8 @@ function CalcStack() {
 // pílula clara; inativas = só ícone) + um círculo destacado para o Perfil.
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const { lang, profile } = useContext(AppContext);
+  const { lang, isFtl } = useContext(AppContext);
   const C = useTheme();
-  const isFtl = companyContent(profile.company) === 'ftl';
   const META = {
     'Início':   { label: t('tab.home', lang),    icon: ['home', 'home-outline'] },
     'AE/FTL':   { label: isFtl ? t('tab.ftl', lang) : t('tab.ae', lang), icon: isFtl ? ['time', 'time-outline'] : ['document-text', 'document-text-outline'] },
@@ -160,6 +159,7 @@ export default function App() {
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
+  const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
 
   const addExtra = (entry) =>
     setExtras(prev => [{
@@ -270,15 +270,16 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setDayLog({}); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setDayLog({}); setLoadedUserId(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, x, dl, fs] = await Promise.all([
+        const [r, x, dl, fs, pf] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_extras_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
+          AsyncStorage.getItem(`cp_profile_${user.id}`),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
@@ -292,8 +293,20 @@ export default function App() {
         } else {
           setDayLog({});
         }
+        // Perfil: tabela `profiles` (servidor) → cache local → metadata do Auth.
+        const localProfile = pf ? JSON.parse(pf) : null;
+        let resolved = await fetchProfile(user.id);
+        if (cancelled) return;
+        if (!resolved) resolved = localProfile;
+        if (!resolved && user.company) resolved = { company: user.company, crewType: user.crewType || null, rank: user.rank || null, contract: user.contract || null };
+        if (resolved && resolved.company) {
+          setProfile({ company: resolved.company, crewType: resolved.crewType || null, rank: resolved.rank || null, contract: resolved.contract || null });
+          setOnboarded(true);
+        } else {
+          setOnboarded(false);
+        }
       } catch { /* primeira execução / storage indisponível */ }
-      finally { if (!cancelled) hydrated.current = true; }
+      finally { if (!cancelled) { hydrated.current = true; setLoadedUserId(user.id); } }
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
@@ -302,6 +315,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
   const ctx = {
     user, setUser: handleSetUser, logout,
@@ -324,6 +338,13 @@ export default function App() {
       </View>
     );
     if (!user)       return <LoginScreen />;
+    // Espera a resolução do perfil (profiles → cache → metadata) antes de decidir
+    // entre onboarding e app — evita "flash" do onboarding a quem já tem perfil.
+    if (loadedUserId !== user.id) return (
+      <View style={{ flex: 1, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={palette.text} />
+      </View>
+    );
     if (!onboarded)  return <OnboardingScreen />;
     return <MainTabs />;
   };

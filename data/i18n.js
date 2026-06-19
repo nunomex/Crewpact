@@ -19,6 +19,8 @@ export const t = (key, lang = 'pt') => {
 export const txv = (str, lang) => (lang === 'en' ? (VALUE_I18N[str] ?? str) : str);
 
 export const VALUE_I18N = {
+  'Tripulação de cabina': 'Cabin crew',
+  'Tripulação de voo (piloto)': 'Flight crew (pilot)',
   // valuesTitle
   'REEMBOLSO POR MÊS COMPLETO DE SERVIÇO': 'REPAYMENT PER FULL MONTH OF SERVICE',
   'PAGAMENTO UPRANKER (POR SETOR) · ANEXO I': 'UPRANKER PAYMENT (PER SECTOR) · APPENDIX I',
@@ -473,6 +475,7 @@ export const STRINGS = {
     // Onboarding
     'onb.eyebrow': 'CREWPACT · CONFIGURAR',
     'onb.s0t': 'Escolhe a companhia', 'onb.s0s': 'De que acordo de empresa precisas?',
+    'onb.sCrewT': 'Tipo de tripulação', 'onb.sCrewS': 'Em que função operas?',
     'onb.s1t': 'A tua categoria', 'onb.s1s': 'Para destacar o que se aplica a ti.',
     'onb.s2t': 'O teu contrato', 'onb.s2s': 'Tipo de vínculo atual.',
     'onb.soon': 'Em breve', 'onb.back': 'Voltar', 'onb.continue': 'Continuar', 'onb.enter': 'Entrar',
@@ -839,6 +842,7 @@ export const STRINGS = {
     // Onboarding
     'onb.eyebrow': 'CREWPACT · SETUP',
     'onb.s0t': 'Choose the company', 'onb.s0s': 'Which collective agreement do you need?',
+    'onb.sCrewT': 'Crew type', 'onb.sCrewS': 'In which role do you operate?',
     'onb.s1t': 'Your rank', 'onb.s1s': 'To highlight what applies to you.',
     'onb.s2t': 'Your contract', 'onb.s2s': 'Current contract type.',
     'onb.soon': 'Soon', 'onb.back': 'Back', 'onb.continue': 'Continue', 'onb.enter': 'Enter',
