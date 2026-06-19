@@ -22,7 +22,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 const anim = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
-// Botão "Confirmar e registar" — envia o valor para o cartão "Este mês".
+// Botão "Confirmar e registar" — grava o cálculo no dia-alvo (hoje ou dia do Calendário).
 function RegisterBtn({ lang, disabled, onPress }) {
   const C = useTheme();
   const cs = makeCs(C);
