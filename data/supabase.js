@@ -11,9 +11,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
-    // Sessão apenas em memória: ao fechar a app, a sessão desaparece e o
-    // utilizador tem de iniciar sessão novamente.
-    persistSession: false,
+    // Offline-first: a sessão é guardada no AsyncStorage e restaurada ao abrir a
+    // app — não exige novo login a cada arranque. O token renova-se quando há rede
+    // (autoRefreshToken); sem rede, a sessão mantém-se (só pede login de novo
+    // quando o refresh token expira/é revogado → evento SIGNED_OUT).
+    persistSession: true,
     detectSessionInUrl: false,
   },
 });

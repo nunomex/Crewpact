@@ -212,9 +212,10 @@ export default function App() {
     // limpamos apenas o estado em memória (o efeito de user?.id trata disso).
   };
 
-  // Sessão não é persistida (persistSession: false) — ao abrir a app não há
-  // sessão guardada, por isso o login é sempre exigido. Mantemos o listener
-  // para reagir a logout / recuperação de palavra-passe.
+  // Offline-first: a sessão é persistida (persistSession: true). No arranque,
+  // getSession() lê a sessão guardada localmente (sem rede) e restaura-a — sem
+  // novo login. O listener reage a logout / expiração (SIGNED_OUT) e à recuperação
+  // de palavra-passe.
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) handleSetUser(mapUser(session.user));
