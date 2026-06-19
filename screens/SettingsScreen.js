@@ -1,5 +1,5 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Platform } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -10,6 +10,7 @@ import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
 import { C, RADIUS, TYPE } from '../data/constants';
+import appJson from '../app.json';
 import { changePassword, validatePassword } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
 import { Seg } from '../components/Stepper';
@@ -91,18 +92,21 @@ export default function SettingsScreen() {
       <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
-        {/* User card */}
-        {user && (
-          <View style={s.userCard}>
-            <View style={s.avatar}>
-              <Text style={s.avatarTxt}>{user.name?.[0]?.toUpperCase() ?? '?'}</Text>
+        {/* User card — nome do auth ou, em falta, a parte local do email */}
+        {user && (() => {
+          const displayName = user.name || user.email?.split('@')[0] || '—';
+          return (
+            <View style={s.userCard}>
+              <View style={s.avatar}>
+                <Text style={s.avatarTxt}>{displayName[0]?.toUpperCase() ?? '?'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.userName} numberOfLines={1}>{displayName}</Text>
+                <Text style={s.userEmail} numberOfLines={1}>{user.email}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.userName}>{user.name}</Text>
-              <Text style={s.userEmail}>{user.email}</Text>
-            </View>
-          </View>
-        )}
+          );
+        })()}
 
         <Group title={t('profile.groupPrefs', lang)} s={s}>
           <View style={s.prefBlock}>
@@ -140,7 +144,7 @@ export default function SettingsScreen() {
         <Group title={t('profile.groupAbout', lang)} s={s}>
           <View style={s.row}>
             <Text style={s.rowLabel}>CrewPact</Text>
-            <Text style={s.rowValue}>v1.0.0</Text>
+            <Text style={s.rowValue}>v{appJson.expo.version}</Text>
           </View>
         </Group>
       </ScrollView>
@@ -182,10 +186,6 @@ const makeStyles = (C) => StyleSheet.create({
   prefLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 10 },
   prefHint: { fontSize: TYPE.micro, color: C.sub, marginTop: 8 },
   prefDivider: { borderTopWidth: 1, borderTopColor: C.line },
-  toast: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, zIndex: 50, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 20 },
-  toastIcon: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  toastTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  toastSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20, backgroundColor: C.card },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
@@ -208,9 +208,4 @@ const makeStyles = (C) => StyleSheet.create({
   pwEye: { padding: 4, marginLeft: 6 },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
-  optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
-  optDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  optLabel: { fontSize: TYPE.value, color: C.text, flex: 1, paddingRight: 12 },
-  optSoon: { fontSize: 11, color: C.sub },
-  optDot: { width: 20, height: 20, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: C.line },
 });

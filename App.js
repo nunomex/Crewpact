@@ -26,14 +26,12 @@ import { dutyToFtlDay } from './ftl';
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
-import DutiesScreen       from './screens/DutiesScreen';
 import HomeScreen         from './screens/HomeScreen';
-import FtlScreen          from './screens/FtlScreen';
+import EscalaScreen       from './screens/EscalaScreen';
+import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
-import CategoriesScreen   from './screens/CategoriesScreen';
 import SettingsScreen     from './screens/SettingsScreen';
-import CalendarScreen     from './screens/CalendarScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -59,30 +57,32 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
-      <Stack.Screen name="Calendar"  component={CalendarScreen} />
-      <Stack.Screen name="Duties"    component={DutiesScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
 
-function AgreementStack() {
-  // CrewPact = FTL/cabine: esta aba abre sempre a consulta FTL (o conteúdo AE foi
-  // desativado no refoco da app).
+// Escala — Lista (duties) ⇄ Mês (calendário) num só ecrã + a calculadora para
+// registar/editar um dia a partir do calendário.
+function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Reference" component={FtlScreen} />
+      <Stack.Screen name="Escala"    component={EscalaScreen} />
+      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
 
-function CalcStack() {
+// FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) fundidos
+// numa só aba (substitui as antigas Cálculos e AE/FTL).
+function FtlStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Calc"    component={CategoriesScreen} />
-      <Stack.Screen name="FtlCalc" component={FtlCalcScreen} />
+      <Stack.Screen name="FtlHub"    component={FtlHubScreen} />
+      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
+      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
@@ -94,10 +94,10 @@ function FloatingTabBar({ state, navigation }) {
   const { lang } = useContext(AppContext);
   const C = useTheme();
   const META = {
-    'Início':   { label: t('tab.home', lang),    icon: ['home', 'home-outline'] },
-    'AE/FTL':   { label: t('tab.ftl', lang),     icon: ['time', 'time-outline'] },
-    'Cálculos': { label: t('tab.calc', lang),    icon: ['calculator', 'calculator-outline'] },
-    'Perfil':   { label: t('tab.profile', lang), icon: ['person', 'person-outline'] },
+    'Início': { label: t('tab.home', lang),     icon: ['home', 'home-outline'] },
+    'Escala': { label: t('tab.schedule', lang), icon: ['calendar', 'calendar-outline'] },
+    'FTL':    { label: t('tab.ftl', lang),      icon: ['time', 'time-outline'] },
+    'Perfil': { label: t('tab.profile', lang),  icon: ['person', 'person-outline'] },
   };
   const go = (route, focused) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -128,10 +128,10 @@ function FloatingTabBar({ state, navigation }) {
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
-      <Tab.Screen name="Início"   component={HomeStack} />
-      <Tab.Screen name="Cálculos" component={CalcStack} />
-      <Tab.Screen name="AE/FTL"   component={AgreementStack} />
-      <Tab.Screen name="Perfil"   component={SettingsScreen} />
+      <Tab.Screen name="Início" component={HomeStack} />
+      <Tab.Screen name="Escala" component={EscalaStack} />
+      <Tab.Screen name="FTL"    component={FtlStack} />
+      <Tab.Screen name="Perfil" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }

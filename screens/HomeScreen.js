@@ -6,8 +6,7 @@ import { RADIUS, SPACE, TYPE } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel, fmtVal } from '../data/extras';
-import { computeDutyTime, computeFlightTime, computeRestSequence } from '../ftl';
-import ScreenHeader from '../components/ScreenHeader';
+import { computeDutyTime, computeFlightTime, computeRestSequence, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -70,19 +69,6 @@ function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
   );
 }
 
-// Chip de cartão. Estado (Limites): verde (dentro) / âmbar (a aproximar-se) /
-// vermelho (excedido) — só onde há consumo real vs. teto regulamentar.
-// Neutro (PSV/Repouso): cinza — só informa (ex.: aclimatação), não avalia.
-function StatusChip({ level, label, s, C }) {
-  const col = level === 'over' ? C.red : level === 'warn' ? C.warn : level === 'neutral' ? C.onDarkSub : C.green;
-  return (
-    <View style={s.chip}>
-      <View style={[s.chipDot, { backgroundColor: col }]} />
-      <Text style={[s.chipTxt, { color: col }]} numberOfLines={1}>{label}</Text>
-    </View>
-  );
-}
-
 // Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
@@ -110,8 +96,10 @@ export default function HomeScreen({ navigation }) {
   const { profile, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
+  const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no separador Limites
+  const [limExpanded, setLimExpanded] = useState(false); // Limites: pior janela vs. todas
   const [notifOpen, setNotifOpen] = useState(false);
 
   const notifs = buildNotifications(profile, lang);
@@ -225,37 +213,76 @@ export default function HomeScreen({ navigation }) {
     return () => sub.remove();
   }, []);
 
-  // Cartão "Próximo voo" — definido como elemento para poder ir ao topo quando há
-  // voo (mais relevante) ou ficar por baixo do cartão AE/FTL quando não há.
-  const flightCardEl = (
+  // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
+  const now = Date.now();
+  const reportMs = flight ? flight.startDate.getTime() - 60 * 60 * 1000 : null; // apresentação ≈ partida − 1 h
+  const cdMin = reportMs != null ? Math.round((reportMs - now) / 60000) : null;
+  const countdownStr = cdMin == null ? null
+    : cdMin <= 0 ? t('home.dutyNow', lang)
+    : cdMin >= 2880 ? `${t('home.in', lang)} ${Math.round(cdMin / 1440)} ${t('home.days', lang)}` // ≥ 48 h → dias
+    : `${t('home.in', lang)} ${Math.floor(cdMin / 60) > 0 ? `${Math.floor(cdMin / 60)} h ` : ''}${cdMin % 60} min`;
+  const fatColor = (b) => b === 'high' ? C.red : b === 'elevated' ? C.warn : b === 'low' ? C.green : C.onDarkSub;
+  const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
+  // PSV máx + fadiga: se houver duty registada nesse dia, usa-a (exata); senão estima pelo voo (1 setor).
+  let ndPsvMax = null, ndFat = null, ndSectors = null;
+  if (flight) {
+    const reg = duties[flight.dateISO];
+    if (reg && !reg.deleted && reg.report_time && reg.block_on) {
+      const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0 });
+      ndPsvMax = d.fdp.maxFdpStr; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
+    } else {
+      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1 });
+      ndPsvMax = d.fdp.maxFdpStr;
+    }
+  }
+  const dutyDateLabel = flight ? (() => {
+    const str = new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  })() : null;
+
+  const nextDutyEl = flight ? (
+    <View style={s.nextDuty}>
+      <View style={s.ndTop}>
+        <Text style={s.ndEyebrow}>{t('home.nextDuty', lang)}</Text>
+        {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
+      </View>
+      <Text style={s.ndDate}>{dutyDateLabel}</Text>
+      <View style={s.ndRouteRow}>
+        <Text style={s.ndAir}>{flight.depAirport}</Text>
+        <Ionicons name="airplane" size={15} color={C.onDarkSub} />
+        <Text style={s.ndAir}>{flight.arrAirport}</Text>
+        {ndSectors ? <Text style={s.ndSectors}>{ndSectors} {t('duties.sectorsShort', lang)}</Text> : null}
+      </View>
+      <Text style={s.ndReport}>{t('home.flightBoarding', lang)} {flight.reportZ}Z · {flight.report}L</Text>
+      {(ndPsvMax || ndFat) ? (
+        <>
+          <View style={s.ndDivider} />
+          <View style={s.ndFtlRow}>
+            {ndPsvMax ? (
+              <View style={s.ndFtlItem}>
+                <Text style={s.ndFtlLbl}>{t('home.fdpMax', lang)}</Text>
+                <Text style={s.ndFtlVal}>{ndPsvMax}</Text>
+              </View>
+            ) : null}
+            {ndFat ? (
+              <View style={s.ndFtlItem}>
+                <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
+                <Text style={s.ndFtlLbl}>{t('duties.fatigueLbl', lang)}: {fatLabel(ndFat.band)}</Text>
+              </View>
+            ) : null}
+          </View>
+        </>
+      ) : null}
+    </View>
+  ) : (
     <View style={s.flightCard}>
       <View style={s.flightTop}>
-        <Text style={s.flightEyebrow}>{t('home.flightEyebrow', lang)}</Text>
-        <View style={[s.flightBadge, { backgroundColor: flight ? C.greenSoft : C.soft }]}>
-          {syncing
-            ? <ActivityIndicator size="small" color={C.sub} />
-            : flight
-              ? <Text style={[s.flightBadgeTxt, { color: C.green }]}>{t('home.flightOnTime', lang)}</Text>
-              : <Ionicons name="refresh" size={14} color={C.sub} />}
+        <Text style={s.flightEyebrow}>{t('home.nextDuty', lang)}</Text>
+        <View style={[s.flightBadge, { backgroundColor: C.soft }]}>
+          {syncing ? <ActivityIndicator size="small" color={C.sub} /> : <Ionicons name="refresh" size={14} color={C.sub} />}
         </View>
       </View>
-
-      {flight ? (
-        <>
-          <View style={s.routeRow}>
-            <Text style={s.routeAir}>{flight.depAirport}</Text>
-            <Ionicons name="arrow-forward" size={20} color={C.text} style={{ marginHorizontal: 12 }} />
-            <Text style={s.routeAir}>{flight.arrAirport}</Text>
-            <View style={{ flex: 1 }} />
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.routeTime}>{flight.arrTimeZ}Z</Text>
-              <Text style={s.routeTimeLocal}>{flight.arrTime}L</Text>
-            </View>
-          </View>
-          <Text style={s.routeBoard}>{t('home.flightBoarding', lang)} {flight.reportZ}Z · {flight.report}L</Text>
-          <Text style={s.flightMeta}>{flight.aircraft !== '—' ? `${flight.aircraft} · ` : ''}{flight.date}</Text>
-        </>
-      ) : !calOk ? (
+      {!calOk ? (
         <View style={s.flightEmpty}>
           <Ionicons name="calendar-outline" size={18} color={C.sub} />
           <View style={{ flex: 1 }}>
@@ -279,39 +306,61 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Cabeçalho (cartão preto) */}
-        <ScreenHeader
-          eyebrow={t('home.eyebrowFtl', lang)}
-          badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
-          title={company?.name}
-          style={{ margin: 0, marginBottom: SPACE.md }}
-          right={
-            <TouchableOpacity style={s.headerBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-              <Ionicons name="notifications" size={18} color={C.onDark} />
-              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-            </TouchableOpacity>
-          } />
-
-        {/* Herói — estado operacional (cartão preto): semáforo + janela que o causa */}
-        <View style={s.monthCard}>
-          <Text style={s.heroEyebrow}>{t('home.dashState', lang)}</Text>
-          <View style={s.heroStatusRow}>
-            <View style={[s.heroDot, { backgroundColor: stateColor }]} />
-            <Text style={[s.heroStatus, { color: stateColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stateLabel}</Text>
+        {/* Identidade — faixa compacta (operador + sino) */}
+        <View style={s.idStrip}>
+          <View style={s.idLeft}>
+            {company?.code ? <View style={s.codeBadge}><Text style={s.codeText}>{company.code}</Text></View> : null}
+            <View style={{ flex: 1 }}>
+              <Text style={s.idEyebrow}>{t('home.eyebrowFtl', lang)}</Text>
+              <Text style={s.idTitle} numberOfLines={1}>{company?.name}</Text>
+            </View>
           </View>
-          {stateReason ? <Text style={s.dashReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
+          <TouchableOpacity style={s.idBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+            <Ionicons name="notifications-outline" size={19} color={C.text} />
+            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+          </TouchableOpacity>
         </View>
 
-        {/* Próximo voo (sempre nesta posição — não salta) */}
-        {flightCardEl}
+        {/* Estado FTL — banda semáforo (acento colorido à esquerda) */}
+        <View style={[s.stateBand, { borderLeftColor: stateColor }]}>
+          <View style={[s.stateDot, { backgroundColor: stateColor }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.stateLabel, { color: stateColor }]} numberOfLines={1}>{stateLabel}</Text>
+            {stateReason ? <Text style={s.stateReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
+          </View>
+        </View>
 
-        {/* Limites acumulados — cartão claro */}
+        {/* Próximo duty — herói (cartão escuro único) */}
+        {nextDutyEl}
+
+        {/* Alertas — só quando existem (urgente → acima dos limites) */}
+        {ftlAlerts.length > 0 ? (
+          <View style={s.alertCard}>
+            <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
+            {ftlAlerts.slice(0, 5).map((al, i) => (
+              <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
+                <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
+                <Text style={s.alertTxt}>{al.text}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Limites acumulados — pior janela em destaque + expandir */}
         <View style={s.panel}>
           <Text style={s.secTitle}>{t('home.dashLimits', lang)}</Text>
           <Seg options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]} value={limCat} setValue={setLimCat} />
-          {catLimits.some(w => w.done > 0)
-            ? catLimits.map(w => <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />)
-            : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
+          {catLimits.some(w => w.done > 0) ? (
+            <>
+              <ProgressRow key={catWorst.id} label={limLabel(catWorst)} done={catWorst.done} limit={catWorst.limit} lang={lang} s={s} C={C} />
+              {limExpanded ? catLimits.filter(w => w !== catWorst).map(w => (
+                <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
+              )) : null}
+              <TouchableOpacity onPress={() => { select(); setLimExpanded(e => !e); }} hitSlop={6} activeOpacity={0.7}>
+                <Text style={s.limToggle}>{limExpanded ? t('home.showLess', lang) : t('home.showAll', lang)}</Text>
+              </TouchableOpacity>
+            </>
+          ) : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
         </View>
 
         {/* Repouso — cartão claro */}
@@ -326,19 +375,6 @@ export default function HomeScreen({ navigation }) {
           ) : <Text style={s.panelEmptyTxt}>{t('home.restEmpty', lang)}</Text>}
         </View>
 
-        {/* Alertas — só quando existem (o estado verde já vive no herói) */}
-        {ftlAlerts.length > 0 ? (
-          <View style={s.alertCard}>
-            <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
-            {ftlAlerts.slice(0, 5).map((al, i) => (
-              <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
-                <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
-                <Text style={s.alertTxt}>{al.text}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
         {/* Simulador — CTA primário */}
         <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
           <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
@@ -351,11 +387,11 @@ export default function HomeScreen({ navigation }) {
 
         {/* Atalhos — 2 colunas */}
         <View style={s.shortcutsRow}>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'month' } }); }}>
             <Ionicons name="calendar-outline" size={20} color={C.text} />
             <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'list' } }); }}>
             <Ionicons name="time-outline" size={20} color={C.text} />
             <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
           </TouchableOpacity>
@@ -392,87 +428,62 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  headerBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
+  // Faixa de identidade (compacta) + sino
+  idStrip: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.md },
+  idLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, flex: 1 },
+  idEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', textTransform: 'uppercase' },
+  idTitle: { fontSize: TYPE.value, fontWeight: '700', color: C.text, marginTop: 1 },
+  idBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
   codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
 
-  // Este mês (extras)
-  monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
-  cardTabs: { marginBottom: SPACE.md }, // wrapper das abas AE (Seg)
-  // Anel de folga (aba Limites) — pequeno, à esquerda, com a folga em texto ao lado.
-  ringWrap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.md },
-  ringPct: { fontSize: TYPE.body, fontWeight: '700' },
-  ringText: { flex: 1 },
-  ringNum: { fontSize: TYPE.display, fontWeight: '400', letterSpacing: -0.5 },
-  ringCtx: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 3, fontWeight: '600', lineHeight: 16 },
-  // Sparkline AE (mini-tendência).
-  sparkWrap: { marginTop: SPACE.md, alignItems: 'flex-start' },
-  sparkLbl: { fontSize: TYPE.eyebrow, color: C.onDarkFaint, fontWeight: '600', marginTop: 4, letterSpacing: 0.5 },
-  // Chip de estado dos limites (verde/âmbar/vermelho) sobre o cartão preto.
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: 11, paddingVertical: 6, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, marginBottom: SPACE.md },
-  chipDot: { width: 8, height: 8, borderRadius: RADIUS.pill },
-  chipTxt: { fontSize: TYPE.micro, fontWeight: '700', letterSpacing: 0.3 },
-  monthHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
-  monthEyebrow: { flex: 1, fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '600' },
-  addBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
-  monthBody: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.lg },
-  monthLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
-  monthTotal: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff', marginTop: 2 },
-  pctRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  pctTxt: { fontSize: TYPE.micro, fontWeight: '600' },
-  breakdown: { flex: 1, justifyContent: 'center', gap: 8, paddingTop: 4 },
-  bdRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  // Estado FTL — banda semáforo (acento colorido à esquerda)
+  stateBand: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderLeftWidth: 3, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.md, backgroundColor: C.card },
+  stateDot: { width: 10, height: 10, borderRadius: RADIUS.pill },
+  stateLabel: { fontSize: TYPE.body, fontWeight: '700', letterSpacing: -0.2 },
+  stateReason: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
+
+  // Próximo duty — herói (cartão escuro único)
+  nextDuty: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
+  ndTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.sm },
+  ndEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase' },
+  ndCountdown: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
+  ndDate: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginBottom: SPACE.sm },
+  ndRouteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  ndAir: { fontSize: 24, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+  ndSectors: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginLeft: 'auto' },
+  ndReport: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 8 },
+  ndDivider: { height: 1, backgroundColor: C.hairlineOnDark, marginVertical: SPACE.md },
+  ndFtlRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, flexWrap: 'wrap' },
+  ndFtlItem: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  ndFtlLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600' },
+  ndFtlVal: { fontSize: TYPE.sub, color: '#fff', fontWeight: '700', fontFamily: 'monospace' },
+  ndFatDot: { width: 8, height: 8, borderRadius: 99 },
   bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
   bdVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', fontWeight: '600' },
-  noExtras: { fontSize: TYPE.micro, color: C.onDarkFaint, lineHeight: 17 },
-  // Registos do mês agrupados por secção (slide 2 do cartão AE)
-  recSection: { marginBottom: SPACE.md },
-  recSecHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  recSecTitle: { fontSize: TYPE.micro, fontWeight: '700', color: C.onDark, letterSpacing: 0.5, textTransform: 'uppercase' },
-  recSecTotal: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '700', color: C.onDarkSub },
-  recItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingVertical: 3 },
-  monthDivider: { height: 1, backgroundColor: C.hairlineOnDark, marginVertical: SPACE.md },
-  chartRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACE.md },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, flex: 1 },
-  chartCol: { alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
-  chartLbl: { fontSize: 10, color: C.onDarkFaint },
-  // Barras de progresso FTL (PSV / limites / repouso)
+  // Barras de progresso (limites · repouso)
   prog: { marginBottom: SPACE.md + 4 },
   progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
-  // FTL agora vive em cartões CLAROS → texto/track em tons claros (AE usa estilos próprios).
   progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
   progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.sub },
   progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.line, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
-  psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
-  psvHeroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm, marginTop: 2, marginBottom: SPACE.sm },
-  psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff' },
-  psvIllegal: { color: C.red, fontSize: TYPE.sub, fontWeight: '700', marginBottom: 6 },
   restItem: { marginBottom: SPACE.md },
   restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '700' },
   restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
-  psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
-  psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
-  psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
-  // Dashboard FTL — herói (cartão preto = estado), painéis claros e atalhos.
-  heroEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase', marginBottom: SPACE.sm },
-  heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heroDot: { width: 12, height: 12, borderRadius: RADIUS.pill },
-  heroStatus: { flex: 1, fontSize: TYPE.heading, fontWeight: '700', letterSpacing: -0.3 },
+  // Painéis claros (limites · repouso · alertas) + atalhos
   panel: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
   secTitle: { fontSize: TYPE.label, fontWeight: '700', color: C.text, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: SPACE.md },
   panelEmptyTxt: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
+  limToggle: { fontSize: TYPE.micro, color: C.sub, fontWeight: '700', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   shortcutsRow: { flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.md },
   shortcut: { flex: 1, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: SPACE.md + 4, backgroundColor: C.card },
   shortcutTxt: { fontSize: TYPE.label, fontWeight: '600', color: C.text },
-  dashSecLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase', marginBottom: SPACE.sm },
-  dashReason: { fontSize: TYPE.micro, color: C.onDarkSub, marginBottom: SPACE.md },
-  dashHint: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18, marginBottom: SPACE.sm },
   alertCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
   alertHead: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginBottom: SPACE.sm },
   alertRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
@@ -483,39 +494,15 @@ const makeStyles = (C) => StyleSheet.create({
   simTitle: { fontSize: TYPE.body, fontWeight: '700', color: '#fff' },
   simSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2 },
 
-  // Próximo voo
-  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },
+  // Próximo duty — estado vazio / sem permissão (cartão claro)
+  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
   flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700' },
   flightBadge: { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, minHeight: 24, justifyContent: 'center' },
-  flightBadgeTxt: { fontSize: TYPE.micro, fontWeight: '700' },
-  routeRow: { flexDirection: 'row', alignItems: 'center' },
-  routeAir: { fontSize: 24, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  routeTime: { fontSize: TYPE.lg, fontWeight: '700', color: C.text },
-  routeTimeLocal: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.sub, marginTop: 1 },
-  routeBoard: { fontSize: TYPE.micro, color: C.sub, marginTop: 8 },
-  flightMeta: { fontSize: TYPE.sub, color: C.sub, marginTop: 8 },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '600' },
-
-  // Cartão Calendário (entrada dedicada)
-  calCard: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },
-  calIcon: { width: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  calTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text },
-  calSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
-
-  // Registar extra
-  fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
-  catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.pill, paddingHorizontal: 12, minHeight: 38 },
-  catChipTxt: { fontSize: TYPE.label, fontWeight: '600' },
-  amountInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.heading, fontFamily: 'monospace', color: C.text },
-  saveBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
-  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
-
-  // Todos os meses
 
   // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },

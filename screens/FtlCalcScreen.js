@@ -111,7 +111,7 @@ export default function FtlCalcScreen({ route, navigation }) {
 
         <Calc key={resetKey} lang={lang} onRegister={registerFtl} dayLog={dayLog} refISO={logDate} />
 
-        <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
+        <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
       </ScrollView>
 
       <CenterDialog

@@ -51,7 +51,7 @@ function ClockField({ label, value, onChange, C, s }) {
   );
 }
 
-export default function DutiesScreen({ navigation }) {
+export default function DutiesScreen({ navigation, embedded }) {
   const { lang, duties, saveDuty, removeDuty, dayLog, user, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -157,8 +157,8 @@ export default function DutiesScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
+    <SafeAreaView style={s.safe} edges={embedded ? [] : ['top']}>
+      {embedded ? null : <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />}
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         <Text style={s.eyebrow}>{t('duties.eyebrow', lang)}</Text>
         <View style={s.titleRow}>

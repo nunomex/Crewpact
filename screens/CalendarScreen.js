@@ -57,7 +57,7 @@ function RecRow({ s, C, label, value, onPress, onDelete }) {
   );
 }
 
-export default function CalendarScreen({ navigation }) {
+export default function CalendarScreen({ navigation, embedded }) {
   const { lang, dayLog, updateDayLog, removeDayLog, saveDuty } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -159,8 +159,8 @@ export default function CalendarScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
+    <SafeAreaView style={s.safe} edges={embedded ? [] : ['top']}>
+      {embedded ? null : <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />}
 
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         {/* Navegação de mês */}
