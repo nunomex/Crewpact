@@ -234,6 +234,30 @@ export default function HomeScreen({ navigation }) {
   const folgaLabel = catOver ? t('home.statusOver', lang) : t('home.headroom', lang);
   const folgaCtx   = `${catLabel(limCat, lang)} · ${catWorst.limit != null ? limLabel(catWorst) : ''}`;
 
+  // ── Dashboard FTL: estado global + alertas (derivados dos cálculos existentes,
+  // sem novas fórmulas) ──
+  const stateLevel = psvOver ? 'over' : (hasLimitData ? limLevel : 'neutral');
+  const worstCat = dutyLimits.indexOf(limWorst) >= 0 ? 'servico' : flightLimits.indexOf(limWorst) >= 0 ? 'voo' : null;
+  const stateReason = hasLimitData && limWorst.limit != null
+    ? `${worstCat ? catLabel(worstCat, lang) + ' ' : ''}${limLabel(limWorst)} · ${Math.round(limWorst.ratio * 100)}%`
+    : null;
+  const stateLabel = stateLevel === 'over' ? t('home.statusOver', lang)
+    : stateLevel === 'warn' ? t('home.statusWarn', lang)
+    : stateLevel === 'ok' ? t('home.statusOk', lang)
+    : t('home.dashNoData', lang);
+  const ftlAlerts = [];
+  if (isFtl) {
+    const pushLim = (arr, cat) => arr.forEach(w => {
+      if (!(w.done > 0)) return;
+      const lbl = `${catLabel(cat, lang)} ${limLabel(w)}`;
+      if (w.ratio >= 1) ftlAlerts.push({ id: `${cat}-${w.id}`, level: 'over', text: `${lbl} · ${t('home.excess', lang)} ${fmtVal(w.done - w.limit, 'h')}` });
+      else if (w.ratio >= 0.85) ftlAlerts.push({ id: `${cat}-${w.id}`, level: 'warn', text: `${lbl} · ${Math.round(w.ratio * 100)}%` });
+    });
+    pushLim(dutyLimits, 'servico');
+    pushLim(flightLimits, 'voo');
+    if (psvOver) ftlAlerts.push({ id: 'psv', level: 'over', text: `${t('home.psvMaxLbl', lang)} · ${t('home.illegal', lang)} +${psvExcess}` });
+  }
+
   // Arranque inteligente: na 1ª vez que houver dados de limites, se algum estiver
   // âmbar/vermelho, abrir já na aba Limites (lidera o aviso). Não volta a mexer
   // depois — respeita a navegação do utilizador.
@@ -390,106 +414,70 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              <View style={s.stripRow}>
-                <StatTile eyebrow={lang === 'en' ? 'FDP' : 'PSV'} value={psvTileVal} level="neutral"
-                  active={ftlTab === 'psv'} onPress={() => { select(); setFtlTab('psv'); }} s={s} C={C} />
-                <StatTile eyebrow={lang === 'en' ? 'LIMITS' : 'LIMITES'} value={limTileVal} level={hasLimitData ? limLevel : 'neutral'}
-                  active={ftlTab === 'limits'} onPress={() => { select(); setFtlTab('limits'); }} s={s} C={C} />
-                <StatTile eyebrow={lang === 'en' ? 'REST' : 'REPOUSO'} value={restTileVal} level="neutral"
-                  active={ftlTab === 'rest'} onPress={() => { select(); setFtlTab('rest'); }} s={s} C={C} />
-              </View>
+              {/* 1. Estado FTL — semáforo global + PSV de hoje */}
+              <Text style={s.dashSecLbl}>{t('home.dashState', lang)}</Text>
+              <StatusChip level={stateLevel} label={stateLabel} s={s} C={C} />
+              {stateReason ? <Text style={s.dashReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
+              {ftlSnap.psv ? (
+                <>
+                  <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
+                  <View style={s.psvHeroRow}>
+                    <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
+                    {psvOver && <Text style={s.psvIllegal}>{t('home.illegal', lang)} · +{psvExcess}</Text>}
+                  </View>
+                  <AnimatedBar ratio={psvRatio} color={barColor(psvRatio, C)} s={s} />
+                  <Text style={s.progFoot}>{psvFoot}</Text>
+                </>
+              ) : (
+                <Text style={s.dashHint}>{t('home.psvEmpty', lang)}</Text>
+              )}
 
-              {/* PSV máximo diário (205) */}
-              {ftlTab === 'psv' && (
-                <View>
-                  {ftlSnap.psv ? (
-                    <>
-                      <StatusChip level="neutral" label={t(ACC_LABEL[ftlSnap.psv.state] || 'ftl.accAcc', lang)} s={s} C={C} />
-                      <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
-                      <View style={s.psvHeroRow}>
-                        <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
-                        {psvOver && <Text style={s.psvIllegal}>{t('home.illegal', lang)} · +{psvExcess}</Text>}
-                      </View>
-                      <AnimatedBar ratio={psvRatio} color={barColor(psvRatio, C)} s={s} />
-                      <Text style={[s.progFoot, { marginBottom: SPACE.md }]}>{psvFoot}</Text>
+              <View style={s.monthDivider} />
 
-                      <View style={s.monthDivider} />
-
-                      {ftlSnap.psv.start ? (
-                        <View style={[s.setoresRow, { marginTop: 6 }]}>
-                          <Text style={s.bdLbl}>{t('ftl.psvStart', lang)}</Text>
-                          <Text style={s.bdVal}>{ftlSnap.psv.start}</Text>
-                        </View>
-                      ) : null}
-                      <View style={[s.setoresRow, { marginTop: 6 }]}>
-                        <Text style={s.bdLbl}>{t('ftl.sectors', lang)}</Text>
-                        <Text style={s.bdVal}>{ftlSnap.psv.sectors}</Text>
-                      </View>
-                      {ftlSnap.psv.end ? (
-                        <View style={[s.setoresRow, { marginTop: 6 }]}>
-                          <Text style={s.bdLbl}>{t('ftl.latestEnd', lang)}</Text>
-                          <Text style={s.bdVal}>{ftlSnap.psv.end}{ftlSnap.psv.endNextDay ? ' (+1)' : ''}</Text>
-                        </View>
-                      ) : null}
-                    </>
-                  ) : (
-                    <View style={s.psvEmpty}>
-                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                      <Text style={s.psvEmptyTxt}>{t('home.psvEmpty', lang)}</Text>
-                    </View>
-                  )}
+              {/* 2. Limites acumulados (210) */}
+              <Text style={s.dashSecLbl}>{t('home.dashLimits', lang)}</Text>
+              {hasLimitData && (
+                <View style={s.ringWrap}>
+                  <Ring ratio={catWorst.ratio} color={catColor} size={84} stroke={9} C={C}>
+                    <Text style={[s.ringPct, { color: catColor }]}>{catPct}</Text>
+                  </Ring>
+                  <View style={s.ringText}>
+                    <Text style={[s.ringNum, { color: catColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
+                    <Text style={s.ringCtx}>{folgaLabel} · {folgaCtx}</Text>
+                  </View>
+                </View>
+              )}
+              <Seg
+                options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]}
+                value={limCat} setValue={setLimCat} dark />
+              {catLimits.some(w => w.done > 0) ? (
+                catLimits.map(w => (
+                  <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
+                ))
+              ) : (
+                <View style={s.psvEmpty}>
+                  <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
+                  <Text style={s.psvEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>
                 </View>
               )}
 
-              {/* Limites de horas (210) */}
-              {ftlTab === 'limits' && (
-                <View>
-                  {hasLimitData && (
-                    <View style={s.ringWrap}>
-                      <Ring ratio={catWorst.ratio} color={catColor} size={84} stroke={9} C={C}>
-                        <Text style={[s.ringPct, { color: catColor }]}>{catPct}</Text>
-                      </Ring>
-                      <View style={s.ringText}>
-                        <Text style={[s.ringNum, { color: catColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
-                        <Text style={s.ringCtx}>{folgaLabel} · {folgaCtx}</Text>
-                      </View>
-                    </View>
-                  )}
-                  <Seg
-                    options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]}
-                    value={limCat} setValue={setLimCat} dark />
-                  {catLimits.some(w => w.done > 0) ? (
-                    catLimits.map(w => (
-                      <ProgressRow key={w.id} label={limLabel(w)}
-                        done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
-                    ))
-                  ) : (
-                    <View style={s.psvEmpty}>
-                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                      <Text style={s.psvEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>
-                    </View>
-                  )}
-                </View>
-              )}
+              <View style={s.monthDivider} />
 
-              {/* Repouso mínimo (235) */}
-              {ftlTab === 'rest' && (
-                <View>
-                  {ftlSnap.rest ? (
-                    <>
-                      <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
-                        at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
-                      <View style={s.monthDivider} />
-                      <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C}
-                        at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
-                      <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
-                    </>
-                  ) : (
-                    <View style={s.psvEmpty}>
-                      <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                      <Text style={s.psvEmptyTxt}>{t('home.restEmpty', lang)}</Text>
-                    </View>
-                  )}
+              {/* 3. Repouso (235) */}
+              <Text style={s.dashSecLbl}>{t('home.dashRest', lang)}</Text>
+              {ftlSnap.rest ? (
+                <>
+                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
+                    at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
+                  <View style={s.monthDivider} />
+                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C}
+                    at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
+                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+                </>
+              ) : (
+                <View style={s.psvEmpty}>
+                  <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
+                  <Text style={s.psvEmptyTxt}>{t('home.restEmpty', lang)}</Text>
                 </View>
               )}
             </>
@@ -567,6 +555,42 @@ export default function HomeScreen({ navigation }) {
             </>
           )}
         </View>
+
+        {/* 4. Alertas + 5. Acesso rápido ao simulador (dashboard FTL) */}
+        {isFtl ? (
+          <>
+            <View style={s.alertCard}>
+              <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
+              {ftlAlerts.length === 0 ? (
+                <View style={s.alertRow}>
+                  <Ionicons name="checkmark-circle" size={18} color={C.green} />
+                  <Text style={s.alertTxt}>{t('home.dashNoAlerts', lang)}</Text>
+                </View>
+              ) : ftlAlerts.slice(0, 5).map((al, i) => (
+                <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
+                  <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
+                  <Text style={s.alertTxt}>{al.text}</Text>
+                </View>
+              ))}
+              {notifs.length > 0 ? (
+                <TouchableOpacity style={[s.alertRow, s.alertRowDiv]} activeOpacity={0.7} onPress={() => setNotifOpen(true)}>
+                  <Ionicons name="notifications-outline" size={18} color={C.sub} />
+                  <Text style={s.alertTxt}>{(unread || notifs.length)} {t('home.notifsTitle', lang)}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={C.sub} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
+              <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.simTitle}>{t('home.dashSim', lang)}</Text>
+                <Text style={s.simSub}>{t('home.dashSimSub', lang)}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.onDarkSub} />
+            </TouchableOpacity>
+          </>
+        ) : null}
 
         {/* Próximo voo fica por baixo quando não há voo (evita liderar com cartão vazio) */}
         {!flight ? flightCardEl : null}
@@ -680,6 +704,20 @@ const makeStyles = (C) => StyleSheet.create({
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+
+  // Dashboard FTL — rótulos de secção (cartão preto), estado, alertas e CTA simulador.
+  dashSecLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase', marginBottom: SPACE.sm },
+  dashReason: { fontSize: TYPE.micro, color: C.onDarkSub, marginBottom: SPACE.md },
+  dashHint: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18, marginBottom: SPACE.sm },
+  alertCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
+  alertHead: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginBottom: SPACE.sm },
+  alertRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
+  alertRowDiv: { borderTopWidth: 1, borderTopColor: C.line },
+  alertTxt: { flex: 1, fontSize: TYPE.sub, color: C.text },
+  simCta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.md + 2, marginBottom: SPACE.md },
+  simIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  simTitle: { fontSize: TYPE.body, fontWeight: '700', color: '#fff' },
+  simSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2 },
 
   // Próximo voo
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.lg, backgroundColor: C.card },

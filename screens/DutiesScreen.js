@@ -22,7 +22,10 @@ const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); retu
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
 
-const EMPTY = { date: isoDay(), report: '', off: '', on: '', sectors: 0, flight: '' };
+// Nota: não chamar isoDay() aqui (tempo de avaliação do módulo) — App.js importa
+// este ecrã antes de exportar isoDay (import circular). A data é preenchida ao
+// abrir o formulário (openNew/openEdit).
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '' };
 
 // Campo "HH:MM" — nível de módulo (definir dentro do ecrã faria o input perder o
 // foco a cada tecla, por remontar o componente a cada render).
@@ -79,7 +82,9 @@ export default function DutiesScreen({ navigation }) {
   };
 
   const fmtDate = (iso) => {
+    if (!iso) return '';
     const d = new Date(`${iso}T00:00:00`);
+    if (isNaN(d)) return '';
     const str = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
     return str.charAt(0).toUpperCase() + str.slice(1);
   };

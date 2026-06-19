@@ -214,6 +214,16 @@ export const STRINGS = {
     'home.notifsTitle': 'Notificações',
     'home.noMore': 'Sem mais notificações',
     'home.notifsAria': 'Notificações',
+    // Dashboard FTL
+    'home.dashState': 'ESTADO FTL',
+    'home.dashLimits': 'LIMITES ACUMULADOS',
+    'home.dashRest': 'REPOUSO',
+    'home.dashAlerts': 'ALERTAS',
+    'home.dashSim': 'Simulador de atividade',
+    'home.dashSimSub': 'PSV · Limites · Repouso',
+    'home.dashNoAlerts': 'Tudo dentro dos limites.',
+    'home.dashNoData': 'Sem dados',
+    'home.dashWorst': 'Pior janela',
 
     // AE Hub
     'hub.eyebrow': 'BIBLIOTECA',
@@ -616,6 +626,16 @@ export const STRINGS = {
     'home.notifsTitle': 'Notifications',
     'home.noMore': 'No more notifications',
     'home.notifsAria': 'Notifications',
+    // FTL dashboard
+    'home.dashState': 'FTL STATUS',
+    'home.dashLimits': 'CUMULATIVE LIMITS',
+    'home.dashRest': 'REST',
+    'home.dashAlerts': 'ALERTS',
+    'home.dashSim': 'Activity simulator',
+    'home.dashSimSub': 'FDP · Limits · Rest',
+    'home.dashNoAlerts': 'All within limits.',
+    'home.dashNoData': 'No data',
+    'home.dashWorst': 'Worst window',
 
     // CLA Hub
     'hub.eyebrow': 'LIBRARY',
