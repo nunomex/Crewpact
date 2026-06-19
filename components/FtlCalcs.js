@@ -6,8 +6,10 @@ import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED } from '../data/ftl'; // só a lista de faixas (UI)
 import {
   parseHhmm, minToHhmm, maskClock,
-  computeFdpByBand, computeDuty, computeRest,
+  computeFdpByBand, computeDuty, computeRest, computeAcclimatisation,
+  computeInflightRest, computeStandby, computeReducedRest, computeTimeZoneRest,
   withinBand, fmtBandRange, DUTY_WINDOWS, FLIGHT_WINDOWS,
+  QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 } from '../ftl';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
@@ -30,6 +32,21 @@ function RegisterBtn({ lang, disabled, onPress }) {
   );
 }
 
+// Seletor de faixa em chips com scroll horizontal (rótulos longos, ex.: Quadro 1).
+function ChipRow({ items, value, onChange }) {
+  const C = useTheme();
+  const cs = makeCs(C);
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
+      {items.map((label, i) => (
+        <TouchableOpacity key={label} onPress={() => onChange(i)} style={[cs.chip, { backgroundColor: value === i ? C.ink : C.soft }]}>
+          <Text style={[cs.chipTxt, { color: value === i ? '#fff' : C.sub }]}>{label}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
 // Calculadoras FTL partilhadas (detalhe FTL + separador Cálculos das companhias FTL).
 
 // PSV máximo diário (ORO.FTL.205) — Quadro 2 (aclimatado), Quadro 3 (desconhecido)
@@ -38,13 +55,19 @@ function RegisterBtn({ lang, disabled, onPress }) {
 export function PsvCalc({ lang, onRegister, collapsible }) {
   const C = useTheme();
   const cs = makeCs(C);
-  const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm'
+  const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm' (manual)
+  const [autoAcc, setAutoAcc] = useState(false);   // modo Auto (Quadro 1)
+  const [diffIdx, setDiffIdx] = useState(0);       // faixa de diferença de fuso (Quadro 1)
+  const [elapIdx, setElapIdx] = useState(0);       // faixa de tempo decorrido (Quadro 1)
   const [startIdx, setStartIdx] = useState(0);      // faixa de início (linha do Quadro 2)
   const [report, setReport] = useState(''); // apresentação (obrigatória) — começa vazia, a inserir
   const [sectors, setSectors] = useState(0);
   const [brk, setBrk] = useState(0); // pausa em terra (split duty), horas
 
-  const isAcc = accState === 'acc';
+  // Quadro 1 (Auto): diferença de fuso + tempo decorrido → estado (B/D→acc, X→unk).
+  const auto = autoAcc ? computeAcclimatisation({ diffIdx, elapsedIdx: elapIdx }) : null;
+  const accEff = auto ? auto.state : accState; // estado efetivo (Auto sobrepõe-se ao manual)
+  const isAcc = accEff === 'acc';
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
   const changeState = (st) => { anim(); setAccState(st); setSectors(s => Math.min(s, st === 'acc' ? 10 : 8)); };
@@ -58,7 +81,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
 
   // Motor FTL: PSV máximo a partir da faixa selecionada (+ split duty 220).
   const { baseStr: base, extMin, maxFdpMin: fdpMin, maxFdpStr: result } =
-    computeFdpByBand({ state: accState, bandIdx: startIdx, sectors: sec, splitBreakH: brk });
+    computeFdpByBand({ state: accEff, bandIdx: startIdx, sectors: sec, splitBreakH: brk });
 
   // Apresentação obrigatória e dentro da faixa (só em acc). Tudo aparece sempre;
   // só o botão Confirmar fica desativado até a apresentação ser válida.
@@ -74,8 +97,8 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
   const endNextDay = endMin != null && endMin >= 1440;
 
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const tableName = isAcc ? l('Quadro 2', 'Table 2') : accState === 'unk' ? l('Quadro 3', 'Table 3') : l('Quadro 4', 'Table 4');
-  const stateLabel = t(accState === 'unk' ? 'ftl.accUnk' : accState === 'frm' ? 'ftl.accFrm' : 'ftl.accAcc', lang);
+  const tableName = isAcc ? l('Quadro 2', 'Table 2') : accEff === 'unk' ? l('Quadro 3', 'Table 3') : l('Quadro 4', 'Table 4');
+  const stateLabel = t(accEff === 'unk' ? 'ftl.accUnk' : accEff === 'frm' ? 'ftl.accFrm' : 'ftl.accAcc', lang);
   const psvAudit = {
     valid: { ok: true, label: t('audit.valid', lang) },
     rule: {
@@ -104,14 +127,36 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
 
   return (
     <CalcCard title={t('ftl.calcPsv', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
-      <Text style={cs.fieldLabel}>{t('ftl.psvState', lang)}</Text>
-      <Seg
-        options={[
-          { id: 'acc', label: t('ftl.accAcc', lang) },
-          { id: 'unk', label: t('ftl.accUnk', lang) },
-          { id: 'frm', label: t('ftl.accFrm', lang) },
-        ]}
-        value={accState} setValue={changeState} />
+      <View style={cs.segRow}>
+        <Text style={cs.fieldLabel}>{t('ftl.acclim', lang)}</Text>
+        <Seg options={[{ id: 'man', label: t('ftl.acclimManual', lang) }, { id: 'auto', label: t('ftl.acclimAuto', lang) }]}
+          value={autoAcc ? 'auto' : 'man'} setValue={(v) => { anim(); setAutoAcc(v === 'auto'); }} />
+      </View>
+
+      {autoAcc ? (
+        <>
+          <Text style={cs.fieldLabel}>{t('ftl.tzDiff', lang)}</Text>
+          <ChipRow items={QUADRO1_DIFF} value={diffIdx} onChange={(i) => { anim(); setDiffIdx(i); }} />
+          <Text style={cs.fieldLabel}>{t('ftl.tzElapsed', lang)}</Text>
+          <ChipRow items={QUADRO1_ELAPSED} value={elapIdx} onChange={(i) => { anim(); setElapIdx(i); }} />
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{t('ftl.psvState', lang)}</Text>
+            <Text style={cs.dutyVal}>{auto.letter} · {stateLabel}</Text>
+          </View>
+          {auto.ref === 'arrival' && <Text style={cs.note}>{t('ftl.acclimRefNote', lang)}</Text>}
+        </>
+      ) : (
+        <>
+          <Text style={cs.fieldLabel}>{t('ftl.psvState', lang)}</Text>
+          <Seg
+            options={[
+              { id: 'acc', label: t('ftl.accAcc', lang) },
+              { id: 'unk', label: t('ftl.accUnk', lang) },
+              { id: 'frm', label: t('ftl.accFrm', lang) },
+            ]}
+            value={accState} setValue={changeState} />
+        </>
+      )}
 
       {isAcc && (
         <>
@@ -144,7 +189,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
       {extMin > 0 && <Text style={cs.note}>{t('ftl.splitNote', lang)}</Text>}
       <Text style={cs.note}>{t('ftl.psvExt', lang)}</Text>
       {onRegister && <RegisterBtn lang={lang} disabled={!stepsComplete}
-        onPress={() => onRegister({ kind: 'psv', state: accState, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
+        onPress={() => onRegister({ kind: 'psv', state: accEff, sectors: sec, result, band: isAcc ? bandStr : null, start: startClock, end: endClock, endNextDay })} />}
     </CalcCard>
   );
 }
@@ -155,16 +200,23 @@ export function DutyCalc({ lang, onRegister }) {
   const C = useTheme();
   const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const [accState, setAccState] = useState('acc');
+  const [accState, setAccState] = useState('acc'); // manual
+  const [autoAcc, setAutoAcc] = useState(false);   // modo Auto (Quadro 1)
+  const [diffIdx, setDiffIdx] = useState(0);       // diferença de fuso (Quadro 1)
+  const [elapIdx, setElapIdx] = useState(0);       // tempo decorrido (Quadro 1)
   const [report, setReport] = useState('');  // apresentação
   const [end, setEnd] = useState('');         // calços (fim)
   const [sectors, setSectors] = useState(0);
   const [inBase, setInBase] = useState(true); // termina em base?
   const [brk, setBrk] = useState(0);          // split duty (h)
   const [extended, setExtended] = useState(false); // prolongamento 205(d) — só acc, não combina com split
+  const [discr, setDiscr] = useState(false); // discrição do comandante (205f)
   const [flight, setFlight] = useState('');   // horas de voo (bloco), opcional
 
-  const isAcc = accState === 'acc';
+  // Quadro 1 (Auto): diferença de fuso + tempo decorrido → estado (B/D→acc, X→unk).
+  const auto = autoAcc ? computeAcclimatisation({ diffIdx, elapsedIdx: elapIdx }) : null;
+  const accEff = auto ? auto.state : accState; // estado efetivo (Auto sobrepõe-se ao manual)
+  const isAcc = accEff === 'acc';
   const ext = isAcc && extended; // prolongamento só se aclimatado
   const maxSectors = isAcc ? 10 : 8;
   const sec = Math.min(sectors, maxSectors);
@@ -175,13 +227,15 @@ export function DutyCalc({ lang, onRegister }) {
   const onFlight = (v) => { const m = maskClock(v); if (m == null) return; setFlight(m); };
 
   // Motor FTL: uma atividade → PSV (real vs máx), repouso e legalidade.
-  const { reportMin, endMin, fdp, rest } = computeDuty({ state: accState, report, end, sectors: sec, splitBreakH: brk, inBase, extended: ext });
+  const { reportMin, endMin, fdp, rest, discretion: discOv } = computeDuty({ state: accEff, report, end, sectors: sec, splitBreakH: brk, inBase, extended: ext, discretion: discr });
   const bandStr = fdp.band;
   const psvMaxDisp = fdp.maxFdpStr;
   const fdpDisp = fdp.actualFdpStr;
   const psvOver = fdp.over;
   const psvExcess = fdp.excessStr;
   const notAllowed = fdp.notAllowed; // prolongamento não permitido nesta hora/setores
+  const discUsed = !!(discOv && discOv.used);   // passou o máx planeado mas cabe na discrição (reportável)
+  const discIllegal = !!(discOv && discOv.over); // ilegal mesmo com discrição
   const toH = (min) => +(min / 60).toFixed(1);
   const servicoH = fdp.actualFdpMin != null ? toH(fdp.actualFdpMin) : 0;
   const flightMin = parseHhmm(flight);
@@ -192,9 +246,31 @@ export function DutyCalc({ lang, onRegister }) {
 
   return (
     <CalcCard title={t('ftl.calcDuty', lang)} style={cs.wrap}>
-      <Text style={cs.fieldLabel}>{t('ftl.psvState', lang)}</Text>
-      <Seg options={[{ id: 'acc', label: t('ftl.accAcc', lang) }, { id: 'unk', label: t('ftl.accUnk', lang) }, { id: 'frm', label: t('ftl.accFrm', lang) }]}
-        value={accState} setValue={changeState} />
+      <View style={cs.segRow}>
+        <Text style={cs.fieldLabel}>{t('ftl.acclim', lang)}</Text>
+        <Seg options={[{ id: 'man', label: t('ftl.acclimManual', lang) }, { id: 'auto', label: t('ftl.acclimAuto', lang) }]}
+          value={autoAcc ? 'auto' : 'man'} setValue={(v) => { anim(); setAutoAcc(v === 'auto'); }} />
+      </View>
+
+      {autoAcc ? (
+        <>
+          <Text style={cs.fieldLabel}>{t('ftl.tzDiff', lang)}</Text>
+          <ChipRow items={QUADRO1_DIFF} value={diffIdx} onChange={(i) => { anim(); setDiffIdx(i); }} />
+          <Text style={cs.fieldLabel}>{t('ftl.tzElapsed', lang)}</Text>
+          <ChipRow items={QUADRO1_ELAPSED} value={elapIdx} onChange={(i) => { anim(); setElapIdx(i); }} />
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{t('ftl.psvState', lang)}</Text>
+            <Text style={cs.dutyVal}>{auto.letter} · {t(accEff === 'unk' ? 'ftl.accUnk' : 'ftl.accAcc', lang)}</Text>
+          </View>
+          {auto.ref === 'arrival' && <Text style={cs.note}>{t('ftl.acclimRefNote', lang)}</Text>}
+        </>
+      ) : (
+        <>
+          <Text style={cs.fieldLabel}>{t('ftl.psvState', lang)}</Text>
+          <Seg options={[{ id: 'acc', label: t('ftl.accAcc', lang) }, { id: 'unk', label: t('ftl.accUnk', lang) }, { id: 'frm', label: t('ftl.accFrm', lang) }]}
+            value={accState} setValue={changeState} />
+        </>
+      )}
 
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
@@ -227,18 +303,33 @@ export function DutyCalc({ lang, onRegister }) {
         <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={C.sub}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
+      <View style={cs.segRow}>
+        <Text style={cs.fieldLabel}>{t('ftl.discretion', lang)}</Text>
+        <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
+          value={discr ? 'yes' : 'no'} setValue={(v) => { anim(); setDiscr(v === 'yes'); }} />
+      </View>
 
       {complete && (
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
             <Text style={cs.dutyLbl}>{l('PSV (205)', 'FDP (205)')}{ext ? ' +205(d)' : ''}</Text>
-            <Text style={[cs.dutyVal, (psvOver || notAllowed) && { color: C.red }]}>{notAllowed ? '—' : `${fdpDisp} / ${psvMaxDisp}`}</Text>
+            <Text style={[cs.dutyVal, (psvOver || notAllowed) && !discUsed && { color: C.red }, discUsed && { color: C.warn }]}>{notAllowed ? '—' : `${fdpDisp} / ${psvMaxDisp}`}</Text>
           </View>
+          {discr && !notAllowed && discOv.maxStr ? (
+            <View style={cs.dutyRow}>
+              <Text style={cs.dutyLbl}>{t('ftl.discretionMax', lang)}</Text>
+              <Text style={cs.dutyVal}>{discOv.maxStr}</Text>
+            </View>
+          ) : null}
           {notAllowed
             ? <Text style={cs.errNote}>{t('ftl.extNotAllowed', lang)}</Text>
-            : psvOver
-              ? <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {psvExcess}</Text>
-              : <Text style={cs.okNote}>{l('Dentro do PSV máximo', 'Within max FDP')}</Text>}
+            : !psvOver
+              ? <Text style={cs.okNote}>{l('Dentro do PSV máximo', 'Within max FDP')}</Text>
+              : discUsed
+                ? <Text style={cs.warnNote}>{t('ftl.discretionUsed', lang)} {discOv.maxStr} · {t('ftl.reportable', lang)}</Text>
+                : discIllegal
+                  ? <Text style={cs.errNote}>{t('ftl.illegalEvenDisc', lang)} {discOv.excessStr}</Text>
+                  : <Text style={cs.errNote}>{t('ftl.illegalOver', lang)} {psvExcess}</Text>}
 
           <View style={[cs.dutyRow, cs.dutyDivider]}>
             <Text style={cs.dutyLbl}>{l('Limites (210)', 'Limits (210)')}</Text>
@@ -255,7 +346,8 @@ export function DutyCalc({ lang, onRegister }) {
       {onRegister && <RegisterBtn lang={lang} disabled={!complete || notAllowed}
         onPress={() => onRegister({
           kind: 'duty',
-          psv: { state: accState, sectors: sec, result: fdpDisp, max: psvMaxDisp, band: isAcc ? bandStr : null, start: report, over: psvOver, excess: psvExcess, extended: ext },
+          // Em discrição, a legalidade efetiva é discIllegal (não o excesso ao máx planeado).
+          psv: { state: accEff, sectors: sec, result: fdpDisp, max: psvMaxDisp, band: isAcc ? bandStr : null, start: report, over: discr ? discIllegal : psvOver, excess: discr ? (discIllegal ? discOv.excessStr : null) : psvExcess, extended: ext, discretion: discr ? { used: discUsed, max: discOv.maxStr } : null },
           limits: { servico: servicoH, voo: vooH },
           rest: { place: inBase ? 'base' : 'away', value: restMin != null ? toH(restMin) : 0, prev: servicoH },
         })} />}
@@ -320,11 +412,21 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const [prev, setPrev] = useState(0);
   const [dir, setDir] = useState('after'); // 'after' = off-block→apresentação · 'before' = apresentação→off-block
   const [timeStr, setTimeStr] = useState('');
+  const [tzD, setTzD] = useState(0);       // diferença de fuso (235b3)
+  const [tzE, setTzE] = useState(0);       // tempo decorrido na rotação (235b3)
+  const [redOn, setRedOn] = useState(false); // repouso reduzido (235c)
+  const [redStr, setRedStr] = useState(''); // repouso reduzido inserido (HH:MM)
   // Motor FTL (235): repouso mínimo = máx(serviço anterior, piso). Em horas.
   const { floorMin, restMin } = computeRest({ prevDutyMin: prev * 60, inBase: place === 'base' });
   const floor = floorMin / 60;
   const min = restMin / 60;
   const l = (pt, en) => (lang === 'en' ? en : pt);
+  // Fusos (235b3): noites locais de repouso na base.
+  const tz = computeTimeZoneRest({ diffIdx: tzD, elapsedIdx: tzE });
+  // Repouso reduzido (235c): piso + efeitos no repouso/PSV seguinte (sob FRM).
+  const onRed = (v) => { const m = maskClock(v); if (m == null) return; anim(); setRedStr(m); };
+  const redMin = parseHhmm(redStr);
+  const red = computeReducedRest({ inBase: place === 'base', reducedMin: redMin, normalRestMin: restMin });
   const restAudit = {
     valid: { ok: true, label: t('audit.valid', lang) },
     rule: {
@@ -373,7 +475,153 @@ export function RestCalc({ lang, collapsible, onRegister }) {
       )}
 
       <Text style={cs.note}>{t('ftl.recovery', lang)}</Text>
+
+      {/* Fusos (235b3): noites locais de repouso na base por diferença de fuso. */}
+      <Text style={[cs.fieldLabel, { marginTop: 16 }]}>{t('ftl.tzRestTitle', lang)}</Text>
+      <Text style={cs.note}>{t('ftl.tzDiff', lang)}</Text>
+      <ChipRow items={TZ_REST_DIFF} value={tzD} onChange={(i) => { anim(); setTzD(i); }} />
+      <Text style={cs.note}>{t('ftl.tzElapsed', lang)}</Text>
+      <ChipRow items={TZ_REST_ELAPSED} value={tzE} onChange={(i) => { anim(); setTzE(i); }} />
+      <View style={cs.extRow}>
+        <Text style={cs.extLbl}>{t('ftl.tzNights', lang)}</Text>
+        <Text style={cs.extVal}>{tz.nights} {tz.nights === 1 ? t('ftl.night', lang) : t('ftl.nights', lang)}</Text>
+      </View>
+      <Text style={cs.note}>{t('ftl.tzRestNote', lang)}</Text>
+
+      {/* Repouso reduzido (235c): só sob FRM. */}
+      <View style={[cs.segRow, { marginTop: 16 }]}>
+        <Text style={cs.fieldLabel}>{t('ftl.reducedRest', lang)}</Text>
+        <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
+          value={redOn ? 'yes' : 'no'} setValue={(v) => { anim(); setRedOn(v === 'yes'); }} />
+      </View>
+      {redOn && (
+        <>
+          <View style={cs.timeRow}>
+            <Text style={cs.timeLbl}>{t('ftl.reducedValue', lang)}</Text>
+            <TextInput value={redStr} onChangeText={onRed} placeholder="HH:MM" placeholderTextColor={C.sub}
+              keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, red.belowFloor && cs.timeInputErr]} />
+          </View>
+          {redMin != null && (
+            <>
+              {red.belowFloor
+                ? <Text style={cs.errNote}>{t('ftl.reducedBelow', lang)} {red.floorStr}</Text>
+                : <Text style={cs.okNote}>{t('ftl.reducedOk', lang)} {red.floorStr}</Text>}
+              <View style={cs.extRow}>
+                <Text style={cs.extLbl}>{t('ftl.reducedNext', lang)}</Text>
+                <Text style={cs.extVal}>+{red.nextRestExtStr}</Text>
+              </View>
+            </>
+          )}
+          <Text style={cs.note}>{t('ftl.reducedFrm', lang)}</Text>
+        </>
+      )}
+
       {onRegister && <RegisterBtn lang={lang} onPress={() => onRegister({ kind: 'rest', place, prev, value: min, at: resClock, atDir: dir, atDay })} />}
+    </CalcCard>
+  );
+}
+
+// Repouso a bordo (CS FTL.1.205(c)(3)) — tripulação de cabina. Dado o PSV máximo
+// prolongado e a classe do espaço de descanso, mostra o repouso a bordo mínimo.
+export function InflightRestCalc({ lang, collapsible }) {
+  const C = useTheme();
+  const cs = makeCs(C);
+  const [cls, setCls] = useState('c1');
+  const [fdp, setFdp] = useState('');   // PSV máximo prolongado (HH:MM)
+  const [sectors, setSectors] = useState(0);
+  const onFdp = (v) => { const m = maskClock(v); if (m == null) return; anim(); setFdp(m); };
+  const fdpMin = parseHhmm(fdp);
+  const r = computeInflightRest({ maxFdpMin: fdpMin, restClass: cls, sectors });
+  const complete = fdpMin != null && sectors >= 1;
+
+  return (
+    <CalcCard title={t('ftl.calcInflight', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+      <Text style={cs.fieldLabel}>{t('ftl.restClass', lang)}</Text>
+      <Seg options={[{ id: 'c1', label: t('ftl.class1', lang) }, { id: 'c2', label: t('ftl.class2', lang) }, { id: 'c3', label: t('ftl.class3', lang) }]}
+        value={cls} setValue={(v) => { anim(); setCls(v); }} />
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.maxExtFdp', lang)}</Text>
+        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+      <Stepper label={t('ftl.sectors', lang)} value={sectors} setValue={setSectors} min={0} max={5} />
+
+      {complete && (
+        <View style={cs.dutyResult}>
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{t('ftl.minInflightRest', lang)}</Text>
+            <Text style={[cs.dutyVal, !r.allowed && { color: C.red }]}>{r.allowed ? r.minRestStr : '—'}</Text>
+          </View>
+          {r.overSectors
+            ? <Text style={cs.errNote}>{t('ftl.inflightSectors', lang)}</Text>
+            : !r.allowed
+              ? <Text style={cs.errNote}>{t('ftl.inflightNotAllowed', lang)} {r.classMaxStr}</Text>
+              : <Text style={cs.okNote}>{t('ftl.inflightOk', lang)}</Text>}
+        </View>
+      )}
+      <Text style={cs.note}>{t('ftl.inflightFoot', lang)}</Text>
+    </CalcCard>
+  );
+}
+
+// Standby (CS FTL.1.225) — impacto no PSV máximo e contagem como serviço.
+export function StandbyCalc({ lang, collapsible }) {
+  const C = useTheme();
+  const cs = makeCs(C);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const [type, setType] = useState('airport');
+  const [sbH, setSbH] = useState(0);
+  const [fdp, setFdp] = useState('');       // PSV máximo planeado (HH:MM)
+  const [extended, setExtended] = useState(false); // PSV c/ repouso a bordo ou repartido (6h→8h)
+  const onFdp = (v) => { const m = maskClock(v); if (m == null) return; anim(); setFdp(m); };
+  const fdpMin = parseHhmm(fdp);
+  const isAirport = type === 'airport';
+  const r = computeStandby({ type, standbyH: sbH, maxFdpMin: fdpMin, extended });
+  const complete = sbH > 0;
+
+  return (
+    <CalcCard title={t('ftl.calcStandby', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+      <Seg options={[{ id: 'airport', label: t('ftl.sbAirport', lang) }, { id: 'other', label: t('ftl.sbOther', lang) }]}
+        value={type} setValue={(v) => { anim(); setType(v); }} />
+      <Stepper label={t('ftl.sbDuration', lang)} value={sbH} setValue={setSbH} min={0} max={16} />
+      {!isAirport && (
+        <View style={cs.segRow}>
+          <Text style={cs.fieldLabel}>{t('ftl.sbExtended', lang)}</Text>
+          <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
+            value={extended ? 'yes' : 'no'} setValue={(v) => { anim(); setExtended(v === 'yes'); }} />
+        </View>
+      )}
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.sbMaxFdp', lang)}</Text>
+        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+
+      {complete && (
+        <View style={cs.dutyResult}>
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{t('ftl.sbReduction', lang)}</Text>
+            <Text style={[cs.dutyVal, r.reductionMin > 0 && { color: C.warn }]}>{r.reductionMin > 0 ? `−${r.reductionStr}` : '0:00'}</Text>
+          </View>
+          {fdpMin != null && (
+            <View style={[cs.dutyRow, cs.dutyDivider]}>
+              <Text style={cs.dutyLbl}>{t('ftl.sbReducedFdp', lang)}</Text>
+              <Text style={cs.dutyVal}>{r.reducedMaxFdpStr}</Text>
+            </View>
+          )}
+          <View style={[cs.dutyRow, cs.dutyDivider]}>
+            <Text style={cs.dutyLbl}>{t('ftl.sbDutyCount', lang)}</Text>
+            <Text style={cs.dutyVal}>{r.dutyCountStr}{isAirport ? '' : ` · 25%`}</Text>
+          </View>
+          {isAirport
+            ? <Text style={cs.note}>{t('ftl.sbCombinedNote', lang)} {r.combinedMaxStr}</Text>
+            : <>
+                {r.overMaxStandby && <Text style={cs.errNote}>{t('ftl.sbOverMax', lang)}</Text>}
+                {r.awakeOver && <Text style={cs.warnNote}>{t('ftl.sbAwakeOver', lang)}</Text>}
+              </>}
+        </View>
+      )}
+      <Text style={cs.note}>{l('Valores das especificações de certificação (CS FTL.1.225). O operador pode definir limites mais restritivos.', 'Certification specification values (CS FTL.1.225). The operator may set stricter limits.')}</Text>
     </CalcCard>
   );
 }
@@ -395,6 +643,7 @@ const makeCs = (C) => StyleSheet.create({
   timeInputErr: { borderColor: C.red, color: C.red, backgroundColor: C.redSoft },
   errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontWeight: '600' },
   okNote: { fontSize: TYPE.micro, color: C.green, marginTop: 4, fontWeight: '600' },
+  warnNote: { fontSize: TYPE.micro, color: C.warn, marginTop: 4, fontWeight: '600' },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },
   dutyResult: { marginTop: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },

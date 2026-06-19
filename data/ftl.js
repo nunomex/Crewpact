@@ -121,6 +121,80 @@ export const extBandIdx = (m) => {
   return -1; // 1900–0359 e 0400–0559 → prolongamento não permitido
 };
 
+// ─── Quadro 1 — Estado de aclimatação (uso pelo motor) ───────────────────────
+// FONTE ÚNICA: reutiliza FTL_TABLE1 (transcrição oficial do Reg. (UE) 83/2014,
+// já mostrada no ecrã de referência). O motor NÃO duplica valores.
+//  Linhas (diferença horária h): < 4, ≤ 6, ≤ 9, ≤ 12.
+//  Colunas (tempo decorrido h desde a apresentação na referência): < 48 … ≥ 120.
+//  B = aclimatado ao fuso de partida · D = aclimatado ao local do turno seguinte ·
+//  X = estado desconhecido. (B e D → Quadro 2; X → Quadro 3.)
+export const QUADRO1 = FTL_TABLE1.rows.map((r) => r.v);
+export const QUADRO1_DIFF = FTL_TABLE1.rows.map((r) => r.diff); // < 4, ≤ 6, ≤ 9, ≤ 12
+export const QUADRO1_ELAPSED = FTL_TABLE1.cols;                 // < 48 … ≥ 120
+
+// Índice da linha pela diferença horária (h). A tabela não vai além de 12 h.
+export const q1DiffIdx = (h) => {
+  const d = Math.abs(h);
+  if (d < 4) return 0;
+  if (d <= 6) return 1;
+  if (d <= 9) return 2;
+  return 3;
+};
+// Índice da coluna pelo tempo decorrido (h) desde a apresentação na referência.
+export const q1ElapsedIdx = (h) => {
+  if (h < 48) return 0;
+  if (h < 72) return 1;
+  if (h < 96) return 2;
+  if (h < 120) return 3;
+  return 4;
+};
+
+// ─── CS FTL.1.205(c)(3) · Repouso a bordo mínimo — tripulação de CABINA ───────
+// Por cada faixa de PSV máximo prolongado, o repouso a bordo mínimo (HH:MM) por
+// classe de instalação de descanso. null = não permitido nessa classe.
+// `fdp` é o LIMITE SUPERIOR da faixa (a 1.ª faixa é "até 14:30").
+// Fonte: CS FTL.1.205(c)(3) (EASA, ED Decision 2014/002/R, pág. 7).
+export const INFLIGHT_REST = [
+  { fdp: '14:30', c1: '1:30', c2: '1:30', c3: '1:30' },
+  { fdp: '15:00', c1: '1:45', c2: '2:00', c3: '2:20' },
+  { fdp: '15:30', c1: '2:00', c2: '2:20', c3: '2:40' },
+  { fdp: '16:00', c1: '2:15', c2: '2:40', c3: '3:00' },
+  { fdp: '16:30', c1: '2:35', c2: '3:00', c3: null },
+  { fdp: '17:00', c1: '3:00', c2: '3:25', c3: null },
+  { fdp: '17:30', c1: '3:25', c2: null, c3: null },
+  { fdp: '18:00', c1: '3:50', c2: null, c3: null },
+];
+
+// ─── CS FTL.1.235(b)(3)(i) · Noites locais de repouso na base por fusos ───────
+// Linhas = diferença horária máx (h) entre a hora de referência e a hora local
+//   onde o tripulante repousa numa rotação: ≤6, ≤9, ≤12 (só para diferença ≥ 4 h).
+// Colunas = tempo decorrido (h) desde a apresentação ao 1.º PSV da rotação:
+//   <48, 48–71:59, 72–95:59, ≥96.
+// Valores = noites locais mínimas de repouso na base. Fonte: CS FTL.1.235(b)(3).
+export const TZ_REST_NIGHTS = [
+  [2, 2, 3, 3], // ≤ 6
+  [2, 3, 3, 4], // ≤ 9
+  [2, 3, 4, 5], // ≤ 12
+];
+export const TZ_REST_DIFF = ['≤ 6', '≤ 9', '≤ 12'];                 // h (linhas)
+export const TZ_REST_ELAPSED = ['< 48', '48–72', '72–96', '≥ 96']; // h (colunas)
+
+// Índice da linha pela diferença horária (h). Só ≥ 4 h ativa a regra; <4 → -1.
+export const tzDiffIdx = (h) => {
+  const d = Math.abs(h);
+  if (d < 4) return -1;
+  if (d <= 6) return 0;
+  if (d <= 9) return 1;
+  return 2;
+};
+// Índice da coluna pelo tempo decorrido (h) desde a apresentação ao 1.º PSV.
+export const tzElapsedIdx = (h) => {
+  if (h < 48) return 0;
+  if (h < 72) return 1;
+  if (h < 96) return 2;
+  return 3;
+};
+
 // ─── Referência rápida (ORO.FTL.210 / 235) ───────────────────────────────────
 export const FTL_LIMITS = {
   duty: [
@@ -461,6 +535,28 @@ export const FTL_ARTICLES = [
     },
   },
   {
+    code: 'CS FTL.1.205(c)', section: 'cat',
+    title: { pt: 'Repouso a bordo', en: 'In-flight rest' },
+    sub: { pt: 'Prolongamento do PSV com repouso a bordo — repouso mínimo por classe (cabina).', en: 'FDP extension with in-flight rest — minimum rest by class (cabin crew).' },
+    inflight: true,
+    body: {
+      pt: [
+        'O PSV máximo diário pode ser prolongado por repouso a bordo, em conformidade com as especificações de certificação:',
+        'O PSV com repouso a bordo é limitado a 3 setores e o repouso a bordo mínimo é de 90 minutos por tripulante.',
+        'Para a tripulação de cabina, o repouso a bordo mínimo depende do PSV máximo prolongado e da classe da instalação de descanso (1, 2 ou 3) — ver tabela. A classe 3 permite até 16:00, a classe 2 até 17:00 e a classe 1 até 18:00.',
+        'Todo o tempo passado no espaço de repouso conta como PSV. O repouso no destino deve ser pelo menos igual ao serviço anterior, ou 14 horas, conforme o maior.',
+        'O prolongamento por repouso a bordo não pode ser combinado com prolongamento sem repouso a bordo (205d) nem com serviço de voo repartido (220).',
+      ],
+      en: [
+        'The maximum daily FDP may be extended due to in-flight rest, in accordance with the applicable certification specifications:',
+        'FDP with in-flight rest is limited to 3 sectors and the minimum in-flight rest is 90 minutes for each crew member.',
+        'For cabin crew, the minimum in-flight rest depends on the maximum extended FDP and the rest facility class (1, 2 or 3) — see table. Class 3 allows up to 16:00, class 2 up to 17:00 and class 1 up to 18:00.',
+        'All time spent in the rest facility counts as FDP. Minimum rest at destination is at least as long as the preceding duty period, or 14 hours, whichever is greater.',
+        'Extension due to in-flight rest cannot be combined with extension without in-flight rest (205d) or with split duty (220).',
+      ],
+    },
+  },
+  {
     code: 'ORO.FTL.210', section: 'cat',
     title: { pt: 'Tempos de voo e períodos de serviço', en: 'Flight times and duty periods' },
     sub: { pt: 'Limites de 60/110/190 h de serviço e 100/900/1000 h de voo.', en: 'Limits of 60/110/190 h duty and 100/900/1000 h flight.' },
@@ -530,6 +626,7 @@ export const FTL_ARTICLES = [
     code: 'ORO.FTL.225', section: 'cat',
     title: { pt: 'Serviços de assistência e serviços no aeroporto', en: 'Standby and duties at the airport' },
     sub: { pt: 'Standby: contagem como serviço e impacto no PSV.', en: 'Standby: counting as duty and impact on the FDP.' },
+    standby: true,
     body: {
       pt: [
         'Caso o operador atribua serviços de assistência ou serviços no aeroporto, aplicam-se as condições seguintes, de acordo com as especificações de certificação:',

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
-import { PsvCalc, LimitsCalc, RestCalc, DutyCalc } from '../components/FtlCalcs';
+import { PsvCalc, LimitsCalc, RestCalc, DutyCalc, InflightRestCalc, StandbyCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { t, tx } from '../data/i18n';
@@ -80,7 +80,7 @@ export default function FtlCalcScreen({ route, navigation }) {
     else setResetKey(k => k + 1);
   };
 
-  const Calc = isDuty ? DutyCalc : a.psv ? PsvCalc : a.limits ? LimitsCalc : RestCalc;
+  const Calc = isDuty ? DutyCalc : a.psv ? PsvCalc : a.limits ? LimitsCalc : a.inflight ? InflightRestCalc : a.standby ? StandbyCalc : RestCalc;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
