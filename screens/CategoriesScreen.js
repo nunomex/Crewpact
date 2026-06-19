@@ -2,7 +2,7 @@ import React, { useContext, useState, createContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION, companyContent } from '../data/constants';
+import { C as _C, RADIUS, TYPE, RANKS, CONTRACTS, CONTRACT_NOTE, PAY_NUM, RANK_ROW, POSITIONING, SALARY, SECTOR_TABLE, DATA_VERSION } from '../data/constants';
 
 // Fração da base anual aplicável por tipo de contrato (12/12 = inteiro).
 const CONTRACT_FACTOR = { '12_12': 1, '10_12': 10 / 12, '8_12': 8 / 12, '9_3': 9.75 / 12, pt: null };
@@ -233,7 +233,7 @@ function CalcCount({ lang }) {
 
 // ─── Ecrã ────────────────────────────────────────────────────────────────────
 export default function CategoriesScreen({ navigation }) {
-  const { profile, lang, addExtra } = useContext(AppContext);
+  const { profile, lang, addExtra, isFtl } = useContext(AppContext);
   const C = useTheme();
   const cs = makeCs(C);
   const s = makeStyles(C);
@@ -270,9 +270,7 @@ export default function CategoriesScreen({ navigation }) {
   };
 
   // Companhias FTL: o separador Cálculos lista os artigos calculáveis como
-  // cartões de consulta; tocar abre a calculadora (ecrã FtlCalc).
-  const isFtl = companyContent(profile.company) === 'ftl';
-
+  // cartões de consulta; tocar abre a calculadora (ecrã FtlCalc). `isFtl` vem do contexto.
   if (isFtl) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>

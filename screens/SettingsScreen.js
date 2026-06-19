@@ -5,11 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { t, txv } from '../data/i18n';
+import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { C, RADIUS, TYPE, COMPANIES, RANKS, CONTRACTS, DATA_VERSION, companyContent } from '../data/constants';
-import { changePassword, validatePassword, updateProfile } from '../data/auth';
+import { C, RADIUS, TYPE, DATA_VERSION } from '../data/constants';
+import { changePassword, validatePassword } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../App';
@@ -35,7 +35,7 @@ function Row({ label, value, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen() {
-  const { profile, setProfile, setOnboarded, user, logout, lang, setLang, theme, setTheme } = useContext(AppContext);
+  const { user, logout, lang, setLang, theme, setTheme, isFtl } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -46,42 +46,6 @@ export default function SettingsScreen() {
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
   const [pwShown, setPwShown] = useState({}); // { [index]: true } — mostrar/esconder por campo
-  const [pickerField, setPickerField] = useState(null); // 'company' | 'rank' | 'contract'
-  const [toast, setToast] = useState(null);
-  const toastY = useRef(new Animated.Value(-120)).current;
-
-  useEffect(() => {
-    if (!toast) return;
-    Animated.spring(toastY, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }).start();
-    const timer = setTimeout(() => {
-      Animated.timing(toastY, { toValue: -120, duration: 280, useNativeDriver: true }).start(() => setToast(null));
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [toast, toastY]);
-
-  const PICKERS = {
-    company:  { title: t('profile.company', lang), options: COMPANIES.map(c => ({ id: c.id, label: c.name, disabled: !c.active })) },
-    rank:     { title: t('profile.rank', lang),    options: RANKS.map(r => ({ id: r.id, label: txv(r.label, lang) })) },
-    contract: { title: t('profile.contract', lang), options: CONTRACTS.map(c => ({ id: c.id, label: txv(c.label, lang) })) },
-  };
-
-  const selectOption = (field, id) => {
-    const next = { ...profile, [field]: id };
-    const opt = PICKERS[field].options.find(o => o.id === id);
-    setProfile(next);
-    setPickerField(null);
-    success();
-    setToast({
-      title: lang === 'en' ? `${PICKERS[field].title} updated` : `${PICKERS[field].title} atualizada`,
-      sub: opt?.label || '',
-    });
-    updateProfile(next, lang).catch(() => {}); // persiste no Supabase (user_metadata)
-  };
-
-  const company  = COMPANIES.find(c => c.id === profile.company);
-  const rankObj  = RANKS.find(r => r.id === profile.rank);
-  const contract = CONTRACTS.find(c => c.id === profile.contract);
-  const isFtl    = companyContent(profile.company) === 'ftl';
 
   const confirmLogout = () => {
     Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
@@ -119,12 +83,6 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
-
-        <Group title={t('profile.groupProfile', lang)} s={s}>
-          <Row s={s} C={C} label={t('profile.company', lang)} value={company?.name} onPress={() => setPickerField('company')} last={isFtl} />
-          {!isFtl && <Row s={s} C={C} label={t('profile.rank', lang)} value={txv(rankObj?.short, lang)} onPress={() => setPickerField('rank')} />}
-          {!isFtl && <Row s={s} C={C} label={t('profile.contract', lang)} value={txv(contract?.label, lang)} onPress={() => setPickerField('contract')} last />}
-        </Group>
 
         <Group title={t('profile.groupPrefs', lang)} s={s}>
           <View style={s.prefBlock}>
@@ -197,40 +155,6 @@ export default function SettingsScreen() {
         </View>
       </CenterDialog>
 
-      {/* Seletor de perfil (companhia / categoria / contrato) */}
-      <CenterDialog visible={!!pickerField} onClose={() => setPickerField(null)}
-        title={pickerField ? PICKERS[pickerField].title : ''} closeLabel={t('common.close', lang)}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28 }}>
-          {pickerField && PICKERS[pickerField].options.map((o, i) => {
-            const sel = profile[pickerField] === o.id;
-            return (
-              <TouchableOpacity key={o.id} disabled={o.disabled}
-                onPress={() => selectOption(pickerField, o.id)}
-                style={[s.optRow, i > 0 && s.optDiv, o.disabled && { opacity: 0.4 }]}>
-                <Text style={[s.optLabel, sel && { color: C.text, fontWeight: '700' }]}>{o.label}</Text>
-                {o.disabled
-                  ? <Text style={s.optSoon}>{t('profile.soon', lang)}</Text>
-                  : sel
-                    ? <Ionicons name="checkmark-circle" size={20} color={C.red} />
-                    : <View style={s.optDot} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </CenterDialog>
-
-      {/* Toast de confirmação — igual ao do registo; renderizado por último p/ ficar à frente no iOS */}
-      {toast && (
-        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
-          <View style={s.toastIcon}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.toastTitle}>{toast.title}</Text>
-            {toast.sub ? <Text style={s.toastSub}>{toast.sub}</Text> : null}
-          </View>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 }

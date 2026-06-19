@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, COMPANIES, RANKS, CONTRACTS, CREW_TYPES, companyContent } from '../data/constants';
+import { C as _C, TYPE, RANKS, CONTRACTS, CREW_TYPES } from '../data/constants';
 import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
@@ -10,7 +10,7 @@ import { t, txv } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
-  const { user, setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
+  const { user, airlines, setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
@@ -18,10 +18,12 @@ export default function OnboardingScreen() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  // FTL não tem categorias nem contrato — esses passos desaparecem.
-  const isFtl = draft.company && companyContent(draft.company) === 'ftl';
+  // FTL não tem categorias nem contrato — esses passos desaparecem. O motor da
+  // companhia escolhida vem do `engine_code` da linha `airlines`.
+  const draftAirline = airlines.find(a => a.id === draft.company) || null;
+  const isFtl = draftAirline?.engine_code === 'ftl';
   const STEP_DEFS = {
-    company:  { title: t('onb.s0t', lang),    sub: t('onb.s0s', lang),    items: COMPANIES,  field: 'company' },
+    company:  { title: t('onb.s0t', lang),    sub: t('onb.s0s', lang),    items: airlines,   field: 'company' },
     crewType: { title: t('onb.sCrewT', lang), sub: t('onb.sCrewS', lang), items: CREW_TYPES, field: 'crewType' },
     rank:     { title: t('onb.s1t', lang),    sub: t('onb.s1s', lang),    items: RANKS,      field: 'rank' },
     contract: { title: t('onb.s2t', lang),    sub: t('onb.s2s', lang),    items: CONTRACTS,  field: 'contract' },

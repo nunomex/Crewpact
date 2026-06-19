@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, GUTTER, companyContent } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -60,13 +60,12 @@ function RecRow({ s, C, label, value, onPress, onDelete }) {
 }
 
 export default function CalendarScreen({ navigation }) {
-  const { lang, profile, dayLog, extras, addExtra, updateDayLog, removeDayLog, removeExtra } = useContext(AppContext);
+  const { lang, dayLog, extras, addExtra, updateDayLog, removeDayLog, removeExtra, isFtl } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
-  // FTL (TAP) regista cálculos da "Atividade" por dia; AE (easyJet) regista extras (€).
-  const isFtl = companyContent(profile.company) === 'ftl';
+  // FTL (TAP) regista cálculos da "Atividade" por dia; AE (easyJet) regista extras (€). `isFtl` vem do contexto.
 
   const today = isoDay();
   const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });

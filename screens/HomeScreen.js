@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Polyline } from 'react-native-svg';
-import { RADIUS, SPACE, TYPE, COMPANIES, companyContent } from '../data/constants';
+import { RADIUS, SPACE, TYPE } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import {
@@ -163,11 +163,9 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, dayLog } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, dayLog, company, isFtl } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
-  const company  = COMPANIES.find(c => c.id === profile.company);
-  const isFtl    = companyContent(profile.company) === 'ftl';
 
   const [ftlTab, setFtlTab] = useState('psv'); // aba do cartão FTL: psv | limits | rest
   const [aeTab, setAeTab] = useState('summary'); // aba do cartão AE: summary | records

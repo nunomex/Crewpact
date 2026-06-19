@@ -160,6 +160,7 @@ export default function App() {
   const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
+  const [airlines, setAirlines]         = useState([]);   // catálogo de companhias (tabela `airlines`)
 
   const addExtra = (entry) =>
     setExtras(prev => [{
@@ -274,16 +275,22 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, x, dl, fs, pf] = await Promise.all([
+        const [r, x, dl, fs, pf, al] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_extras_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
           AsyncStorage.getItem(`cp_profile_${user.id}`),
+          AsyncStorage.getItem('cp_airlines'),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         setExtras(x ? JSON.parse(x) : []);
+        // Catálogo de companhias (global): cache instantânea → refresca do servidor.
+        if (al) setAirlines(JSON.parse(al));
+        fetchAirlines().then(fresh => {
+          if (!cancelled && fresh.length) { setAirlines(fresh); AsyncStorage.setItem('cp_airlines', JSON.stringify(fresh)).catch(() => {}); }
+        });
         if (dl) {
           setDayLog(JSON.parse(dl));
         } else if (fs) {
@@ -317,10 +324,17 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
+  // Companhia resolvida a partir do catálogo `airlines`. Tolera id (novo) OU slug
+  // (dados legados de utilizadores anteriores) — ponte de migração. O motor deriva
+  // do `engine_code`.
+  const company = airlines.find(a => a.id === profile.company || a.slug === profile.company) || null;
+  const isFtl = company?.engine_code === 'ftl';
+
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
+    airlines, company, isFtl,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,
