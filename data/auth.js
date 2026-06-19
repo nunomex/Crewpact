@@ -18,6 +18,7 @@ const M = {
     registered: 'Este email já está registado.', pwShort: 'A palavra-passe é demasiado curta.',
     expired: 'O código expirou. Pede um novo.', otp: 'Código incorreto ou expirado.',
     rate: 'Demasiadas tentativas. Aguarda uns minutos.', network: 'Sem ligação à internet. Verifica a rede.',
+    loginOffline: 'Precisas de internet para iniciar sessão. Depois de entrares uma vez, a app funciona offline.',
     generic: 'Ocorreu um erro. Tenta novamente.', confirmEmail: 'Confirma o teu e-mail para ativar a conta.',
     emailReq: 'Email é obrigatório.', emailInvalid: 'Email inválido.',
     pwReq: 'Palavra-passe é obrigatória.', pwMin: 'Mínimo de 8 caracteres.',
@@ -29,6 +30,7 @@ const M = {
     registered: 'This email is already registered.', pwShort: 'The password is too short.',
     expired: 'The code has expired. Request a new one.', otp: 'Incorrect or expired code.',
     rate: 'Too many attempts. Wait a few minutes.', network: 'No internet connection. Check your network.',
+    loginOffline: 'You need internet to sign in. After signing in once, the app works offline.',
     generic: 'An error occurred. Please try again.', confirmEmail: 'Confirm your email to activate the account.',
     emailReq: 'Email is required.', emailInvalid: 'Invalid email.',
     pwReq: 'Password is required.', pwMin: 'Minimum 8 characters.',
@@ -37,6 +39,9 @@ const M = {
   },
 };
 const m = (key, lang) => (M[lang] || M.pt)[key];
+
+// Falha de rede (fetch sem ligação) — em RN surge como "Network request failed".
+const isNetworkError = (error) => /network|fetch/i.test(error?.message || '');
 
 // ─── Translate Supabase error messages ───────────────────────────────────────
 const mapError = (error, lang = 'pt') => {
@@ -80,7 +85,11 @@ export const login = async (email, password, lang = 'pt') => {
     email: email.trim().toLowerCase(),
     password,
   });
-  if (error) return { ok: false, error: mapError(error, lang) };
+  if (error) {
+    // Login é online-obrigatório: distingue "estás offline" do genérico de rede.
+    if (isNetworkError(error)) return { ok: false, error: m('loginOffline', lang) };
+    return { ok: false, error: mapError(error, lang) };
+  }
   return { ok: true, user: mapUser(data.user) };
 };
 
