@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
@@ -20,10 +20,12 @@ import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines } from './data/db';
+import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
+import DutiesScreen       from './screens/DutiesScreen';
 import HomeScreen         from './screens/HomeScreen';
 import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
@@ -59,6 +61,7 @@ function HomeStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
       <Stack.Screen name="Calendar"  component={CalendarScreen} />
+      <Stack.Screen name="Duties"    component={DutiesScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="Detail"    component={DetailScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
@@ -174,6 +177,15 @@ export default function App() {
   const lockHydrated = useRef(false);
   const bgAt = useRef(null); // timestamp de ida a segundo plano (para o timeout de re-bloqueio)
 
+  // Duties (registo bruto da escala) — offline-first com sync Supabase. Mapa por
+  // dia: { 'YYYY-MM-DD': { report_time, block_off, block_on, sectors, flight_minutes,
+  // updated_at, dirty, deleted } }. `dirty`/`deleted` = pendente de envio.
+  const [duties, setDuties]   = useState({});
+  const dutiesHydrated        = useRef(false);
+  const dutiesSyncing         = useRef(false);
+  const dutiesRef             = useRef({});
+  useEffect(() => { dutiesRef.current = duties; }, [duties]);
+
   const addExtra = (entry) =>
     setExtras(prev => [{
       id: String(Date.now()), ts: Date.now(),
@@ -203,6 +215,48 @@ export default function App() {
   // (Fases seguintes ligam estes consumidores diretamente ao dia selecionado.)
   const ftlSnap = dayLog[isoDay()] || {};
   const updateFtlSnap = (key, val) => updateDayLog(isoDay(), key, val);
+
+  // ── Duties (escala) ──
+  // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.
+  const saveDuty = (date, fields) =>
+    setDuties(prev => ({
+      ...prev,
+      [date]: {
+        report_time: fields.report_time || null,
+        block_off: fields.block_off || null,
+        block_on: fields.block_on || null,
+        sectors: fields.sectors || 0,
+        flight_minutes: fields.flight_minutes || 0,
+        duty_date: date,
+        updated_at: new Date().toISOString(),
+        dirty: true,
+        deleted: false,
+      },
+    }));
+  // Apagar: marca `deleted` para propagar ao servidor (o flush remove no fim).
+  const removeDuty = (date) =>
+    setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], deleted: true, dirty: true, updated_at: new Date().toISOString() } } : prev));
+
+  // Empurra pendentes (dirty/deleted) para o Supabase. Best-effort: o que falhar
+  // (offline) fica pendente e tenta de novo no foreground / próxima alteração.
+  const flushDuties = useCallback(async (uid) => {
+    if (!uid || dutiesSyncing.current) return;
+    dutiesSyncing.current = true;
+    try {
+      for (const [date, d] of Object.entries(dutiesRef.current)) {
+        if (d.deleted) {
+          if (await deleteDuty(uid, date)) {
+            setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; });
+          }
+        } else if (d.dirty) {
+          if (await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes })) {
+            // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
+            setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev));
+          }
+        }
+      }
+    } finally { dutiesSyncing.current = false; }
+  }, []);
 
   // When a user logs in, pre-populate profile if they already have one saved
   const handleSetUser = (u) => {
@@ -368,6 +422,52 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
+  // Duties: cache local instantânea → merge com o servidor (histórico). Pendentes
+  // locais (dirty/deleted) vencem sobre o servidor (ainda não foram enviados).
+  useEffect(() => {
+    dutiesHydrated.current = false;
+    if (!user?.id) { setDuties({}); return; }
+    let cancelled = false;
+    (async () => {
+      let local = {};
+      try { const raw = await AsyncStorage.getItem(`cp_duties_${user.id}`); if (raw) local = JSON.parse(raw) || {}; } catch { /* primeira execução */ }
+      if (cancelled) return;
+      setDuties(local);
+      dutiesHydrated.current = true;
+      const server = await fetchDuties(user.id); // [] em erro/offline
+      if (cancelled || !server.length) { if (!cancelled) flushDuties(user.id); return; }
+      setDuties(prev => {
+        const merged = { ...prev };
+        for (const row of server) {
+          const cur = merged[row.duty_date];
+          if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
+          merged[row.duty_date] = {
+            report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
+            sectors: row.sectors, flight_minutes: row.flight_minutes,
+            duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
+          };
+        }
+        return merged;
+      });
+      flushDuties(user.id); // empurra pendentes acumulados offline
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, flushDuties]);
+
+  // Persistir a cache local sempre que mudar (depois de hidratar, com utilizador).
+  useEffect(() => { if (dutiesHydrated.current && user?.id) AsyncStorage.setItem(`cp_duties_${user.id}`, JSON.stringify(duties)).catch(() => {}); }, [duties, user?.id]);
+
+  // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
+  useEffect(() => {
+    if (!dutiesHydrated.current || !user?.id) return;
+    if (Object.values(duties).some(d => d.dirty || d.deleted)) flushDuties(user.id);
+  }, [duties, user?.id, flushDuties]);
+  useEffect(() => {
+    if (!user?.id) return;
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') flushDuties(user.id); });
+    return () => sub.remove();
+  }, [user?.id, flushDuties]);
+
   // Companhia resolvida a partir do catálogo `airlines`. Tolera id (novo) OU slug
   // (dados legados de utilizadores anteriores) — ponte de migração. O motor deriva
   // do `engine_code`.
@@ -386,6 +486,7 @@ export default function App() {
     extras, addExtra, removeExtra,
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
+    duties, saveDuty, removeDuty,
     onboarded, setOnboarded,
   };
 

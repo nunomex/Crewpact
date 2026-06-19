@@ -348,6 +348,18 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // Cartão "Duties" — registo bruto da escala (apresentação, setores, horas). Só FTL.
+  const dutiesCardEl = (
+    <TouchableOpacity style={s.calCard} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
+      <View style={s.calIcon}><Ionicons name="time-outline" size={20} color={C.text} /></View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.calTitle}>{t('duties.cardTitle', lang)}</Text>
+        <Text style={s.calSub}>{t('duties.cardSub', lang)}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.sub} />
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
@@ -561,6 +573,8 @@ export default function HomeScreen({ navigation }) {
 
         {/* Calendário — entrada dedicada (escala + registos) */}
         {calendarCardEl}
+        {/* Duties — registo bruto da escala (só FTL) */}
+        {isFtl ? dutiesCardEl : null}
       </ScrollView>
 
       {/* Notificações */}
