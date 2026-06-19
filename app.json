@@ -26,6 +26,12 @@
           "calendarPermission": "A CrewPact lê a tua escala do calendário para mostrar o próximo voo, folgas e pernoitas."
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "A CrewPact usa o Face ID para desbloquear a app e proteger os teus dados."
+        }
+      ],
       "expo-localization",
       "expo-asset"
     ]

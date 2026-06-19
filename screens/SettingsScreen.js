@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -35,7 +36,7 @@ function Row({ label, value, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen() {
-  const { user, logout, lang, setLang, theme, setTheme, isFtl } = useContext(AppContext);
+  const { user, logout, lang, setLang, theme, setTheme, isFtl, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -46,6 +47,25 @@ export default function SettingsScreen() {
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
   const [pwShown, setPwShown] = useState({}); // { [index]: true } — mostrar/esconder por campo
+
+  // Bloqueio biometria/PIN (opt-in). Ao ativar, confirma que o dispositivo
+  // consegue autenticar (senão não vale a pena trancar e arriscar trancar fora).
+  const toggleLock = async (next) => {
+    if (next === lockEnabled) return;
+    if (!next) { setLockEnabled(false); return; }
+    try {
+      const hasHw = await LocalAuthentication.hasHardwareAsync();
+      if (!hasHw) { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); return; }
+      const res = await LocalAuthentication.authenticateAsync({
+        promptMessage: t('lock.enablePrompt', lang),
+        cancelLabel: t('common.cancel', lang),
+        disableDeviceFallback: false,
+      });
+      if (!res.success) return; // só ativa se a autenticação for confirmada
+      setLockEnabled(true);
+      success();
+    } catch { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); }
+  };
 
   const confirmLogout = () => {
     Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
@@ -93,6 +113,12 @@ export default function SettingsScreen() {
             <Text style={s.prefLabel}>{t('profile.theme', lang)}</Text>
             <Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]}
               value={theme} setValue={setTheme} />
+          </View>
+          <View style={[s.prefBlock, s.prefDivider]}>
+            <Text style={s.prefLabel}>{t('lock.title', lang)}</Text>
+            <Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]}
+              value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />
+            <Text style={s.prefHint}>{t('lock.hint', lang)}</Text>
           </View>
         </Group>
 
@@ -163,6 +189,7 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   prefBlock: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6 },
   prefLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 10 },
+  prefHint: { fontSize: TYPE.micro, color: C.sub, marginTop: 8 },
   prefDivider: { borderTopWidth: 1, borderTopColor: C.line },
   toast: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, zIndex: 50, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 20 },
   toastIcon: { width: 36, height: 36, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },

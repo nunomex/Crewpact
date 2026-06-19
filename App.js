@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
@@ -23,6 +23,7 @@ import { fetchProfile, fetchAirlines } from './data/db';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
+import LockScreen         from './screens/LockScreen';
 import HomeScreen         from './screens/HomeScreen';
 import ListScreen         from './screens/ListScreen';
 import DetailScreen       from './screens/DetailScreen';
@@ -48,6 +49,10 @@ export const isoDay = (d = new Date()) =>
 // — isso ensombra o import estático `C`, por isso tanto os estilos como as cores
 // inline passam a usar a paleta do tema.
 export const useTheme = () => useContext(AppContext)?.palette || PALETTES.light;
+
+// Bloqueio biometria/PIN (opt-in): re-tranca a app ao voltar de segundo plano
+// se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
+const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
 function HomeStack() {
   return (
@@ -162,6 +167,13 @@ export default function App() {
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
   const [airlines, setAirlines]         = useState([]);   // catálogo de companhias (tabela `airlines`)
 
+  // Bloqueio biometria/PIN — preferência do dispositivo (opt-in, desligado por
+  // omissão). `lockEnabled` = funcionalidade ativa; `locked` = app trancada agora.
+  const [lockEnabled, setLockEnabled]   = useState(false);
+  const [locked, setLocked]             = useState(false);
+  const lockHydrated = useRef(false);
+  const bgAt = useRef(null); // timestamp de ida a segundo plano (para o timeout de re-bloqueio)
+
   const addExtra = (entry) =>
     setExtras(prev => [{
       id: String(Date.now()), ts: Date.now(),
@@ -208,6 +220,7 @@ export default function App() {
     setUser(null);
     setOnboarded(false);
     setProfile({ company: null, rank: null, contract: null });
+    setLocked(false); // sai do estado trancado — o próximo login começa destrancado
     // Os favoritos/notificações ficam guardados por utilizador no telemóvel;
     // limpamos apenas o estado em memória (o efeito de user?.id trata disso).
   };
@@ -215,12 +228,24 @@ export default function App() {
   // Offline-first: a sessão é persistida (persistSession: true). No arranque,
   // getSession() lê a sessão guardada localmente (sem rede) e restaura-a — sem
   // novo login. O listener reage a logout / expiração (SIGNED_OUT) e à recuperação
-  // de palavra-passe.
+  // de palavra-passe. Ler também a preferência de bloqueio (cp_lock) aqui evita
+  // a corrida com o gate: se há sessão restaurada e o bloqueio está ativo, trancar.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) handleSetUser(mapUser(session.user));
+    (async () => {
+      let enabled = false;
+      try { enabled = (await AsyncStorage.getItem('cp_lock')) === '1'; } catch { /* default desligado */ }
+      if (enabled) setLockEnabled(true);
+      lockHydrated.current = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          handleSetUser(mapUser(session.user));
+          // Sessão restaurada (reabertura), não login fresco → exigir desbloqueio.
+          if (enabled) setLocked(true);
+        }
+      } catch { /* sem sessão guardada / storage indisponível */ }
       setAuthLoading(false);
-    }).catch(() => setAuthLoading(false));
+    })();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') return;
@@ -230,10 +255,28 @@ export default function App() {
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setOnboarded(false);
+        setLocked(false);
       }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Persistir a preferência de bloqueio (só depois de hidratar, p/ não a apagar).
+  useEffect(() => { if (lockHydrated.current) AsyncStorage.setItem('cp_lock', lockEnabled ? '1' : '0').catch(() => {}); }, [lockEnabled]);
+
+  // Re-bloquear ao voltar de segundo plano se passou o timeout (e o bloqueio
+  // estiver ativo). Reaberturas rápidas (< 5 min) não pedem desbloqueio.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        if (lockEnabled && bgAt.current && (Date.now() - bgAt.current > LOCK_TIMEOUT_MS)) setLocked(true);
+        bgAt.current = null;
+      } else if (bgAt.current == null) {
+        bgAt.current = Date.now(); // 'background' / 'inactive'
+      }
+    });
+    return () => sub.remove();
+  }, [lockEnabled]);
 
   // Idioma é uma preferência do dispositivo (global) — hidratar no arranque.
   // Se nunca foi escolhido, deteta a língua do dispositivo (EN para sistemas em
@@ -336,6 +379,7 @@ export default function App() {
     suppressAuth,
     profile, setProfile,
     airlines, company, isFtl,
+    lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,
@@ -353,6 +397,10 @@ export default function App() {
       </View>
     );
     if (!user)       return <LoginScreen />;
+    // Bloqueio biometria/PIN (opt-in): com sessão restaurada/timeout, exige
+    // desbloqueio antes de mostrar qualquer dado. Camada por cima — não toca no
+    // onboarding nem no fluxo de perfil.
+    if (lockEnabled && locked) return <LockScreen />;
     // Espera a resolução do perfil (profiles → cache → metadata) antes de decidir
     // entre onboarding e app — evita "flash" do onboarding a quem já tem perfil.
     if (loadedUserId !== user.id) return (

@@ -480,6 +480,19 @@ export const STRINGS = {
     'onb.s2t': 'O teu contrato', 'onb.s2s': 'Tipo de vínculo atual.',
     'onb.soon': 'Em breve', 'onb.back': 'Voltar', 'onb.continue': 'Continuar', 'onb.enter': 'Entrar',
     'onb.saveErr': 'Erro ao guardar. Tenta novamente.',
+
+    // Bloqueio (biometria/PIN)
+    'lock.title': 'Bloqueio (biometria/PIN)',
+    'lock.on': 'Ligado',
+    'lock.off': 'Desligado',
+    'lock.hint': 'Pede biometria ou o código do telemóvel ao abrir a app. Funciona sem internet.',
+    'lock.prompt': 'Desbloquear o CrewPact',
+    'lock.enablePrompt': 'Confirma para ativar o bloqueio',
+    'lock.sub': 'App bloqueada',
+    'lock.unlock': 'Desbloquear',
+    'lock.failed': 'Não foi possível autenticar. Tenta novamente.',
+    'lock.naTitle': 'Bloqueio indisponível',
+    'lock.naMsg': 'Este dispositivo não tem biometria nem código configurado.',
   },
   en: {
     // Tabs
@@ -847,5 +860,18 @@ export const STRINGS = {
     'onb.s2t': 'Your contract', 'onb.s2s': 'Current contract type.',
     'onb.soon': 'Soon', 'onb.back': 'Back', 'onb.continue': 'Continue', 'onb.enter': 'Enter',
     'onb.saveErr': 'Error saving. Please try again.',
+
+    // Lock (biometrics/PIN)
+    'lock.title': 'Lock (biometrics/PIN)',
+    'lock.on': 'On',
+    'lock.off': 'Off',
+    'lock.hint': 'Asks for biometrics or your device passcode when you open the app. Works offline.',
+    'lock.prompt': 'Unlock CrewPact',
+    'lock.enablePrompt': 'Confirm to enable the lock',
+    'lock.sub': 'App locked',
+    'lock.unlock': 'Unlock',
+    'lock.failed': 'Could not authenticate. Try again.',
+    'lock.naTitle': 'Lock unavailable',
+    'lock.naMsg': 'This device has no biometrics or passcode set up.',
   },
 };
