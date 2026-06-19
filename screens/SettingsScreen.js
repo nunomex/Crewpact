@@ -12,6 +12,7 @@ import { success } from '../data/haptics';
 import { C, RADIUS, TYPE } from '../data/constants';
 import appJson from '../app.json';
 import { changePassword, validatePassword } from '../data/auth';
+import { openFtlPdf } from '../data/ftlPdf';
 import ScreenHeader from '../components/ScreenHeader';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../App';
@@ -36,8 +37,8 @@ function Row({ label, value, onPress, last, danger, s, C }) {
   );
 }
 
-export default function SettingsScreen() {
-  const { user, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+export default function SettingsScreen({ navigation }) {
+  const { user, company, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -66,6 +67,12 @@ export default function SettingsScreen() {
       setLockEnabled(true);
       success();
     } catch { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); }
+  };
+
+  // Biblioteca: abre o PDF do Regulamento (UE) 83/2014 incluído na app.
+  const openPdf = async () => {
+    const ok = await openFtlPdf();
+    if (!ok) Alert.alert(t('ftl.pdfTitle', lang), t('ftl.pdfError', lang));
   };
 
   const confirmLogout = () => {
@@ -108,6 +115,19 @@ export default function SettingsScreen() {
           );
         })()}
 
+        {/* Companhia — operador resolvido do catálogo de airlines */}
+        {company ? (
+          <Group title={t('profile.groupCompany', lang)} s={s}>
+            <View style={s.coRow}>
+              <View style={s.coBadge}><Text style={s.coBadgeTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.coName} numberOfLines={1}>{company.name}</Text>
+                <Text style={s.coSub}>{t('profile.crewCabin', lang)}</Text>
+              </View>
+            </View>
+          </Group>
+        ) : null}
+
         <Group title={t('profile.groupPrefs', lang)} s={s}>
           <View style={s.prefBlock}>
             <Text style={s.prefLabel}>{t('profile.language', lang)}</Text>
@@ -131,14 +151,9 @@ export default function SettingsScreen() {
           <Row s={s} C={C} label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
         </Group>
 
-        <Group title={t('profile.groupContent', lang)} s={s}>
-          <View style={s.syncRow}>
-            <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.text} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.syncTitle}>Regulamento (UE) 83/2014</Text>
-              <Text style={s.syncSub}>{lang === 'en' ? 'Flight time limitations · bundled in the app' : 'Limites de tempo de voo · incluído na app'}</Text>
-            </View>
-          </View>
+        <Group title={t('profile.groupLibrary', lang)} s={s}>
+          <Row s={s} C={C} label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} />
+          <Row s={s} C={C} label={t('profile.libArticles', lang)} value="" onPress={() => navigation.navigate('FTL', { screen: 'FtlHub' })} last />
         </Group>
 
         <Group title={t('profile.groupAbout', lang)} s={s}>
@@ -198,10 +213,12 @@ const makeStyles = (C) => StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
   rowLabel: { fontSize: TYPE.body, color: C.text },
   rowValue: { fontSize: TYPE.sub, color: C.sub, maxWidth: 180, textAlign: 'right' },
-  syncRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  syncIcon: { width: 34, height: 34, borderRadius: RADIUS.sm, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  syncTitle: { fontSize: TYPE.sub, fontWeight: '500', color: C.text },
-  syncSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
+  // Companhia (operador)
+  coRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  coBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  coBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
+  coName: { fontSize: TYPE.value, fontWeight: '600', color: C.text },
+  coSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
   fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
