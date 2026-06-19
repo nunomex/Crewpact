@@ -28,8 +28,6 @@ import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
 import DutiesScreen       from './screens/DutiesScreen';
 import HomeScreen         from './screens/HomeScreen';
-import ListScreen         from './screens/ListScreen';
-import DetailScreen       from './screens/DetailScreen';
 import FtlScreen          from './screens/FtlScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
@@ -64,22 +62,17 @@ function HomeStack() {
       <Stack.Screen name="Calendar"  component={CalendarScreen} />
       <Stack.Screen name="Duties"    component={DutiesScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
-      <Stack.Screen name="Detail"    component={DetailScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
 
 function AgreementStack() {
-  // Cada companhia só tem um tipo de conteúdo (AE ou FTL), por isso a aba abre
-  // diretamente a Lista ou o FTL — sem ecrã-hub intermédio de um só cartão.
-  const { isFtl } = useContext(AppContext);
+  // CrewPact = FTL/cabine: esta aba abre sempre a consulta FTL (o conteúdo AE foi
+  // desativado no refoco da app).
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Reference">
-        {props => (isFtl ? <FtlScreen {...props} /> : <ListScreen {...props} />)}
-      </Stack.Screen>
-      <Stack.Screen name="Detail" component={DetailScreen} />
+      <Stack.Screen name="Reference" component={FtlScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
@@ -90,7 +83,6 @@ function CalcStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Calc"    component={CategoriesScreen} />
       <Stack.Screen name="FtlCalc" component={FtlCalcScreen} />
-      <Stack.Screen name="Detail"  component={DetailScreen} />
     </Stack.Navigator>
   );
 }
@@ -99,11 +91,11 @@ function CalcStack() {
 // pílula clara; inativas = só ícone) + um círculo destacado para o Perfil.
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const { lang, isFtl } = useContext(AppContext);
+  const { lang } = useContext(AppContext);
   const C = useTheme();
   const META = {
     'Início':   { label: t('tab.home', lang),    icon: ['home', 'home-outline'] },
-    'AE/FTL':   { label: isFtl ? t('tab.ftl', lang) : t('tab.ae', lang), icon: isFtl ? ['time', 'time-outline'] : ['document-text', 'document-text-outline'] },
+    'AE/FTL':   { label: t('tab.ftl', lang),     icon: ['time', 'time-outline'] },
     'Cálculos': { label: t('tab.calc', lang),    icon: ['calculator', 'calculator-outline'] },
     'Perfil':   { label: t('tab.profile', lang), icon: ['person', 'person-outline'] },
   };
@@ -488,7 +480,10 @@ export default function App() {
   // (dados legados de utilizadores anteriores) — ponte de migração. O motor deriva
   // do `engine_code`.
   const company = airlines.find(a => a.id === profile.company || a.slug === profile.company) || null;
-  const isFtl = company?.engine_code === 'ftl';
+  // CrewPact refocado em FTL/cabine: o motor é sempre FTL (o conteúdo AE foi
+  // desativado). Mantém-se `isFtl` no contexto (a true) para os ecrãs renderizarem
+  // o ramo FTL; os ramos AE ficam código morto até serem removidos nos passos seguintes.
+  const isFtl = true;
 
   const ctx = {
     user, setUser: handleSetUser, logout,
