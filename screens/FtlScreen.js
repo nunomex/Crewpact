@@ -13,6 +13,14 @@ import { AppContext, useTheme } from '../App';
 
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest || a.inflight || a.standby || a.delayed);
 
+// Agrupamento por tema (consulta) — organiza os artigos calculáveis em blocos
+// legíveis em vez de uma lista plana. Códigos fora destes temas caem em "ungrouped".
+const THEMES = [
+  { id: 'psv',  label: { pt: 'PSV e prolongamentos', en: 'FDP & extensions' }, codes: ['ORO.FTL.205', 'CS FTL.1.205(c)', 'CS FTL.1.205(g)'] },
+  { id: 'lim',  label: { pt: 'Limites e serviço',     en: 'Limits & duty' },    codes: ['ORO.FTL.210', 'ORO.FTL.215'] },
+  { id: 'rest', label: { pt: 'Repouso e standby',     en: 'Rest & standby' },   codes: ['ORO.FTL.235', 'ORO.FTL.225'] },
+];
+
 // Aba FTL — consulta dos artigos calculáveis (sem pesquisa) + link para o PDF.
 // As calculadoras interativas vivem no separador Cálculos.
 export default function FtlScreen({ navigation }) {
@@ -21,6 +29,9 @@ export default function FtlScreen({ navigation }) {
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const articles = FTL_ARTICLES.filter(hasCalc);
+  const groups = THEMES.map(th => ({ ...th, items: articles.filter(a => th.codes.includes(a.code)) })).filter(g => g.items.length);
+  const used = new Set(THEMES.flatMap(th => th.codes));
+  const ungrouped = articles.filter(a => !used.has(a.code));
 
   const openPdf = async () => {
     select();
@@ -48,19 +59,38 @@ export default function FtlScreen({ navigation }) {
           <Text style={s.noteTxt}>{t('ftl.support', lang)}</Text>
         </View>
 
-        <Text style={s.group}>{t('ftl.consultTitle', lang)}</Text>
-
-        {articles.map(a => (
-          <TouchableOpacity key={a.code} style={s.card} activeOpacity={0.8}
-            onPress={() => navigation.navigate('FtlDetail', { code: a.code })}>
-            <View style={s.badge}><Text style={s.badgeTxt}>{a.code.replace('ORO.FTL.', '')}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.cardTitle} numberOfLines={2}>{tx(a.title, lang)}</Text>
-              <Text style={s.cardSub} numberOfLines={2}>{tx(a.sub, lang)}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={C.sub} />
-          </TouchableOpacity>
+        {groups.map(g => (
+          <View key={g.id}>
+            <Text style={s.group}>{tx(g.label, lang)}</Text>
+            {g.items.map(a => (
+              <TouchableOpacity key={a.code} style={s.card} activeOpacity={0.8}
+                onPress={() => navigation.navigate('FtlDetail', { code: a.code })}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle} numberOfLines={1}>{tx(a.title, lang)}</Text>
+                  <Text style={s.cardSub} numberOfLines={1}>{tx(a.sub, lang)}</Text>
+                </View>
+                <Text style={s.codeTag}>{a.code.replace('ORO.FTL.', '').replace('CS FTL.1.', '')}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
+              </TouchableOpacity>
+            ))}
+          </View>
         ))}
+        {ungrouped.length ? (
+          <View>
+            <Text style={s.group}>{t('ftl.consultTitle', lang)}</Text>
+            {ungrouped.map(a => (
+              <TouchableOpacity key={a.code} style={s.card} activeOpacity={0.8}
+                onPress={() => navigation.navigate('FtlDetail', { code: a.code })}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle} numberOfLines={1}>{tx(a.title, lang)}</Text>
+                  <Text style={s.cardSub} numberOfLines={1}>{tx(a.sub, lang)}</Text>
+                </View>
+                <Text style={s.codeTag}>{a.code.replace('ORO.FTL.', '').replace('CS FTL.1.', '')}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -82,4 +112,5 @@ const makeStyles = (C) => StyleSheet.create({
   badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
   cardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
   cardSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 3, lineHeight: 16 },
+  codeTag: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '700', color: C.sub, backgroundColor: C.soft, borderRadius: RADIUS.xs, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden' },
 });

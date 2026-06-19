@@ -614,6 +614,7 @@ export const FTL_ARTICLES = [
     code: 'ORO.FTL.215', section: 'cat',
     title: { pt: 'Posicionamento', en: 'Positioning' },
     sub: { pt: 'Regras de contagem do posicionamento.', en: 'How positioning is counted.' },
+    positioning: true,
     body: {
       pt: [
         'Em caso de posicionamento de um tripulante, o operador deve aplicar as seguintes regras:',

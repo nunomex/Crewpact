@@ -215,6 +215,8 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
   const [extended, setExtended] = useState(false); // prolongamento 205(d) — só acc, não combina com split
   const [discr, setDiscr] = useState(false); // discrição do comandante (205f)
   const [flight, setFlight] = useState('');   // horas de voo (bloco), opcional
+  const [postFlight, setPostFlight] = useState(0); // serviço pós-voo (min) — conta p/ repouso (235) e acumulado (210)
+  const [advOpen, setAdvOpen] = useState(false); // disclosure: extensão/split/voo/pós-voo/discrição recolhidos por defeito
 
   // Quadro 1 (Auto): diferença de fuso + tempo decorrido → estado (B/D→acc, X→unk).
   const auto = autoAcc ? computeAcclimatisation({ diffIdx, elapsedIdx: elapIdx }) : null;
@@ -231,7 +233,7 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
   const onFlight = (v) => { const m = maskClock(v); if (m == null) return; setFlight(m); };
 
   // Motor FTL: uma atividade → PSV (real vs máx), repouso e legalidade.
-  const { reportMin, endMin, fdp, rest, discretion: discOv } = computeDuty({ state: accEff, report, end, sectors: sec, splitBreakH: brk, splitBreakStart: brkStart, accommodation: accom, inBase, extended: ext, discretion: discr });
+  const { reportMin, endMin, fdp, rest, dutyPeriodMin, discretion: discOv } = computeDuty({ state: accEff, report, end, sectors: sec, splitBreakH: brk, splitBreakStart: brkStart, accommodation: accom, inBase, extended: ext, discretion: discr, postFlightMin: postFlight });
   const bandStr = fdp.band;
   const psvMaxDisp = fdp.maxFdpStr;
   const fdpDisp = fdp.actualFdpStr;
@@ -243,7 +245,8 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
   const discUsed = !!(discOv && discOv.used);   // passou o máx planeado mas cabe na discrição (reportável)
   const discIllegal = !!(discOv && discOv.over); // ilegal mesmo com discrição
   const toH = (min) => +(min / 60).toFixed(1);
-  const servicoH = fdp.actualFdpMin != null ? toH(fdp.actualFdpMin) : 0;
+  // Serviço (ORO.FTL.210) = período de serviço = PSV + serviço pós-voo (não só o PSV).
+  const servicoH = dutyPeriodMin != null ? toH(dutyPeriodMin) : 0;
   const flightMin = parseHhmm(flight);
   const vooH = flightMin != null ? toH(flightMin) : 0;
   const restMin = rest.restMin; // minutos
@@ -296,6 +299,14 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
         <Seg options={[{ id: 'base', label: t('ftl.atBase', lang) }, { id: 'away', label: t('ftl.awayBase', lang) }]}
           value={inBase ? 'base' : 'away'} setValue={(v) => setInBase(v === 'base')} />
       </View>
+
+      {/* Opções avançadas (recolhidas): extensão · split · voo · pós-voo · discrição */}
+      <TouchableOpacity style={cs.advToggle} activeOpacity={0.7} onPress={() => { anim(); setAdvOpen(o => !o); }}>
+        <Text style={cs.advToggleTxt}>{t('ftl.advanced', lang)}</Text>
+        <Text style={cs.advCaret}>{advOpen ? '▴' : '▾'}</Text>
+      </TouchableOpacity>
+      {advOpen && (
+        <>
       {isAcc && (
         <View style={cs.segRow}>
           <Text style={cs.fieldLabel}>{t('ftl.extension', lang)}</Text>
@@ -329,11 +340,14 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
         <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={C.sub}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
+      <Stepper label={t('ftl.postFlight', lang)} value={postFlight} setValue={setPostFlight} min={0} max={120} />
       <View style={cs.segRow}>
         <Text style={cs.fieldLabel}>{t('ftl.discretion', lang)}</Text>
         <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
           value={discr ? 'yes' : 'no'} setValue={(v) => { anim(); setDiscr(v === 'yes'); }} />
       </View>
+        </>
+      )}
 
       {complete && (
         <View style={cs.dutyResult}>
@@ -591,10 +605,11 @@ export function InflightRestCalc({ lang, collapsible }) {
 }
 
 // Standby (CS FTL.1.225) — impacto no PSV máximo e contagem como serviço.
-export function StandbyCalc({ lang, collapsible }) {
+export function StandbyCalc({ lang, collapsible, onRegister }) {
   const C = useTheme();
   const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
+  const toH = (min) => +(min / 60).toFixed(1);
   const [type, setType] = useState('airport');
   const [sbH, setSbH] = useState(0);
   const [fdp, setFdp] = useState('');       // PSV máximo planeado (HH:MM)
@@ -648,6 +663,38 @@ export function StandbyCalc({ lang, collapsible }) {
         </View>
       )}
       <Text style={cs.note}>{l('Valores das especificações de certificação (CS FTL.1.225). O operador pode definir limites mais restritivos.', 'Certification specification values (CS FTL.1.225). The operator may set stricter limits.')}</Text>
+      {onRegister && <RegisterBtn lang={lang} disabled={!complete} onPress={() => onRegister({ kind: 'limits', category: 'servico', amount: toH(r.dutyCountMin) })} />}
+    </CalcCard>
+  );
+}
+
+// Posicionamento (ORO.FTL.215(b)) — conta 100% como período de serviço (ORO.FTL.210).
+export function PositioningCalc({ lang, collapsible, onRegister }) {
+  const C = useTheme();
+  const cs = makeCs(C);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const [dur, setDur] = useState('');
+  const onDur = (v) => { const m = maskClock(v); if (m == null) return; anim(); setDur(m); };
+  const durMin = parseHhmm(dur);
+  const hours = durMin != null ? +(durMin / 60).toFixed(1) : 0;
+  const complete = durMin != null && durMin > 0;
+  return (
+    <CalcCard title={t('ftl.calcPositioning', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+      <View style={cs.timeRow}>
+        <Text style={cs.timeLbl}>{t('ftl.posDuration', lang)}</Text>
+        <TextInput value={dur} onChangeText={onDur} placeholder="HH:MM" placeholderTextColor={C.sub}
+          keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
+      </View>
+      {complete && (
+        <View style={cs.dutyResult}>
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{l('Conta como serviço (210)', 'Counts as duty (210)')}</Text>
+            <Text style={cs.dutyVal}>+{hours} h</Text>
+          </View>
+        </View>
+      )}
+      <Text style={cs.note}>{l('O posicionamento conta 100% como período de serviço (ORO.FTL.215(b)). Não conta como setor.', 'Positioning counts 100% as duty period (ORO.FTL.215(b)). It does not count as a sector.')}</Text>
+      {onRegister && <RegisterBtn lang={lang} disabled={!complete} onPress={() => onRegister({ kind: 'limits', category: 'servico', amount: hours })} />}
     </CalcCard>
   );
 }
@@ -734,6 +781,9 @@ const makeCs = (C) => StyleSheet.create({
   warnNote: { fontSize: TYPE.micro, color: C.warn, marginTop: 4, fontWeight: '600' },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },
+  advToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 4, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line },
+  advToggleTxt: { fontSize: TYPE.label, fontWeight: '700', color: C.text, letterSpacing: 0.3, textTransform: 'uppercase' },
+  advCaret: { fontSize: TYPE.body, color: C.sub },
   dutyResult: { marginTop: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   dutyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   dutyDivider: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },

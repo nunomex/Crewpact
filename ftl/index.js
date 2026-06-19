@@ -27,20 +27,31 @@ import { validateLimits, computeDutyTime } from './validators/validateLimits';
 import { withinBand, fmtBandRange, bandRangeMins } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
-import { parseHhmm } from './utils/time';
+import { parseHhmm, minToHhmm } from './utils/time';
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
-// input: { state, report, end?, sectors, splitBreakH?, inBase? }
-export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null, accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false }) => {
+// input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
+//   `postFlightMin` = serviço pós-voo (min) após o fim do PSV (calços). O repouso
+//   (ORO.FTL.235 a/b) e o acumulado (210) contam o PERÍODO DE SERVIÇO — PSV +
+//   serviço pós-voo — não só o PSV (ORO.FTL.105(11), 210(c)). Default 0 mantém o
+//   comportamento anterior quando o pós-voo não é fornecido.
+export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null, accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false, postFlightMin = 0 }) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
   const fdp = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, splitBreakStartMin: parseHhmm(splitBreakStart), accommodation, extended });
-  const rest = computeRest({ prevDutyMin: fdp.actualFdpMin || 0, inBase });
+  // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
+  const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
+  const rest = computeRest({ prevDutyMin: dutyPeriodMin || 0, inBase });
   const duty = validateDuty({ fdp, reportMin, endMin, sectors });
   const disc = discretion
     ? computeDiscretion({ maxFdpMin: fdp.maxFdpMin, actualFdpMin: fdp.actualFdpMin, restMin: rest.restMin, inFlightRest })
     : null;
-  return { reportMin, endMin, sectors, state, inBase, fdp, rest, discretion: disc, ...duty };
+  return {
+    reportMin, endMin, sectors, state, inBase,
+    postFlightMin: postFlightMin || 0,
+    dutyPeriodMin, dutyPeriodStr: dutyPeriodMin != null ? minToHhmm(dutyPeriodMin) : null,
+    fdp, rest, discretion: disc, ...duty,
+  };
 };
 
 export {

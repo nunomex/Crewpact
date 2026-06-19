@@ -25,7 +25,6 @@ const hhmmToH = (s) => {
   const [h, m] = String(s).split(':').map(Number);
   return (h || 0) + (m || 0) / 60;
 };
-const ACC_LABEL = { acc: 'ftl.accAcc', unk: 'ftl.accUnk', frm: 'ftl.accFrm' };
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 // Recebe a paleta ativa (C) para acompanhar o tema (claro/escuro).
@@ -57,7 +56,7 @@ function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
     <View style={s.restItem}>
       <Text style={s.restItemLbl}>{label}</Text>
       <Text style={[s.restHero, over && { color: C.red }]}>{empty ? '—' : fmtVal(value, 'h')}</Text>
-      <AnimatedBar ratio={fill} color={over ? C.red : C.onDark} s={s} />
+      <AnimatedBar ratio={fill} color={over ? C.red : C.ink} s={s} />
       <Text style={[s.progFoot, over && { color: C.red }]}>
         {empty
           ? `${t('home.restNoLog', lang)} · ${t('home.restMin', lang)} ${floor}:00`
@@ -85,23 +84,6 @@ function StatusChip({ level, label, s, C }) {
       <View style={[s.chipDot, { backgroundColor: col }]} />
       <Text style={[s.chipTxt, { color: col }]} numberOfLines={1}>{label}</Text>
     </View>
-  );
-}
-
-// Mosaico de estado (faixa do cartão FTL): rótulo + ponto colorido + valor.
-// É ao mesmo tempo o seletor de aba e a leitura de relance dos 3 estados.
-// `level`: 'ok'|'warn'|'over' (semáforo, Limites) ou 'neutral' (cinza, PSV/Repouso).
-function StatTile({ eyebrow, value, level, active, onPress, s, C }) {
-  const dotCol = level === 'over' ? C.red : level === 'warn' ? C.warn : level === 'ok' ? C.green : C.onDarkSub;
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.tile, active && s.tileActive]}
-      accessibilityRole="button" accessibilityState={{ selected: active }}>
-      <Text style={s.tileEyebrow} numberOfLines={1}>{eyebrow}</Text>
-      <View style={s.tileValRow}>
-        <View style={[s.tileDot, { backgroundColor: dotCol }]} />
-        <Text style={s.tileVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
-      </View>
-    </TouchableOpacity>
   );
 }
 
@@ -167,7 +149,6 @@ export default function HomeScreen({ navigation }) {
   const C = useTheme();
   const s = makeStyles(C);
 
-  const [ftlTab, setFtlTab] = useState('psv'); // aba do cartão FTL: psv | limits | rest
   const [aeTab, setAeTab] = useState('summary'); // aba do cartão AE: summary | records
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no separador Limites
   const [notifOpen, setNotifOpen] = useState(false);
@@ -209,9 +190,7 @@ export default function HomeScreen({ navigation }) {
   const limWorst = worstOf([...dutyLimits, ...flightLimits]);
   const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
 
-  // Mosaicos da faixa FTL.
-  const psvTileVal  = ftlSnap.psv?.result || '—';
-  // PSV: usa os dados reais do registo. O DutyCalc guarda o máximo da tabela
+  // PSV de hoje: usa os dados reais do registo. O DutyCalc guarda o máximo da tabela
   // (psv.max) e o excesso (psv.over/psv.excess). Registos antigos (só PSV, sem
   // 'over') não têm excesso → sem badge (são o próprio máximo).
   const psvMax = ftlSnap.psv?.max || null;
@@ -219,8 +198,6 @@ export default function HomeScreen({ navigation }) {
   const psvExcess = ftlSnap.psv?.excess || null;
   const psvRatio = ftlSnap.psv ? hhmmToH(ftlSnap.psv.result) / (psvMax ? hhmmToH(psvMax) : 13) : 0;
   const psvFoot = psvMax ? `${lang === 'en' ? 'max' : 'máx'} ${psvMax}` : t('home.psvMaxFoot', lang);
-  const restTileVal = ftlSnap.rest?.base != null ? fmtVal(ftlSnap.rest.base, 'h') : '—';
-  const limTileVal  = hasLimitData ? `${Math.round(limWorst.ratio * 100)}%` : '—';
 
   // Anel + folga: pior janela DENTRO da categoria selecionada (coerente com as barras).
   const catLimits = limCat === 'voo' ? flightLimits : dutyLimits;
@@ -245,6 +222,7 @@ export default function HomeScreen({ navigation }) {
     : stateLevel === 'warn' ? t('home.statusWarn', lang)
     : stateLevel === 'ok' ? t('home.statusOk', lang)
     : t('home.dashNoData', lang);
+  const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
   const ftlAlerts = [];
   if (isFtl) {
     const pushLim = (arr, cat) => arr.forEach(w => {
@@ -257,17 +235,6 @@ export default function HomeScreen({ navigation }) {
     pushLim(flightLimits, 'voo');
     if (psvOver) ftlAlerts.push({ id: 'psv', level: 'over', text: `${t('home.psvMaxLbl', lang)} · ${t('home.illegal', lang)} +${psvExcess}` });
   }
-
-  // Arranque inteligente: na 1ª vez que houver dados de limites, se algum estiver
-  // âmbar/vermelho, abrir já na aba Limites (lidera o aviso). Não volta a mexer
-  // depois — respeita a navegação do utilizador.
-  const autoTabRef = useRef(false);
-  useEffect(() => {
-    if (autoTabRef.current || !isFtl || !hasLimitData) return;
-    autoTabRef.current = true;
-    if (limLevel !== 'ok') setFtlTab('limits');
-  }, [isFtl, hasLimitData, limLevel]);
-
 
   const closeNotifs = () => {
     setNotifOpen(false);
@@ -401,8 +368,8 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           } />
 
-        {/* Próximo voo no topo quando há voo (mais relevante nesse momento) */}
-        {flight ? flightCardEl : null}
+        {/* AE: próximo voo no topo quando há voo. (FTL coloca-o no dashboard, abaixo do herói.) */}
+        {!isFtl && flight ? flightCardEl : null}
 
         {/* Cartão preto: FTL (PSV · Limites · Repouso) ou AE (Resumo · Registos), em abas */}
         <View style={s.monthCard}>
@@ -414,72 +381,13 @@ export default function HomeScreen({ navigation }) {
 
           {isFtl ? (
             <>
-              {/* 1. Estado FTL — semáforo global + PSV de hoje */}
-              <Text style={s.dashSecLbl}>{t('home.dashState', lang)}</Text>
-              <StatusChip level={stateLevel} label={stateLabel} s={s} C={C} />
+              {/* Herói operacional — estado de relance + janela que o causa. */}
+              <Text style={s.heroEyebrow}>{t('home.dashState', lang)}</Text>
+              <View style={s.heroStatusRow}>
+                <View style={[s.heroDot, { backgroundColor: stateColor }]} />
+                <Text style={[s.heroStatus, { color: stateColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stateLabel}</Text>
+              </View>
               {stateReason ? <Text style={s.dashReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
-              {ftlSnap.psv ? (
-                <>
-                  <Text style={s.psvHeroLbl}>{t('home.psvMaxLbl', lang)}</Text>
-                  <View style={s.psvHeroRow}>
-                    <Text style={s.psvHero}>{ftlSnap.psv.result}</Text>
-                    {psvOver && <Text style={s.psvIllegal}>{t('home.illegal', lang)} · +{psvExcess}</Text>}
-                  </View>
-                  <AnimatedBar ratio={psvRatio} color={barColor(psvRatio, C)} s={s} />
-                  <Text style={s.progFoot}>{psvFoot}</Text>
-                </>
-              ) : (
-                <Text style={s.dashHint}>{t('home.psvEmpty', lang)}</Text>
-              )}
-
-              <View style={s.monthDivider} />
-
-              {/* 2. Limites acumulados (210) */}
-              <Text style={s.dashSecLbl}>{t('home.dashLimits', lang)}</Text>
-              {hasLimitData && (
-                <View style={s.ringWrap}>
-                  <Ring ratio={catWorst.ratio} color={catColor} size={84} stroke={9} C={C}>
-                    <Text style={[s.ringPct, { color: catColor }]}>{catPct}</Text>
-                  </Ring>
-                  <View style={s.ringText}>
-                    <Text style={[s.ringNum, { color: catColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{folgaNum}</Text>
-                    <Text style={s.ringCtx}>{folgaLabel} · {folgaCtx}</Text>
-                  </View>
-                </View>
-              )}
-              <Seg
-                options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]}
-                value={limCat} setValue={setLimCat} dark />
-              {catLimits.some(w => w.done > 0) ? (
-                catLimits.map(w => (
-                  <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
-                ))
-              ) : (
-                <View style={s.psvEmpty}>
-                  <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                  <Text style={s.psvEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>
-                </View>
-              )}
-
-              <View style={s.monthDivider} />
-
-              {/* 3. Repouso (235) */}
-              <Text style={s.dashSecLbl}>{t('home.dashRest', lang)}</Text>
-              {ftlSnap.rest ? (
-                <>
-                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C}
-                    at={ftlSnap.rest?.baseAt} atDir={ftlSnap.rest?.baseAtDir} atDay={ftlSnap.rest?.baseAtDay} />
-                  <View style={s.monthDivider} />
-                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C}
-                    at={ftlSnap.rest?.awayAt} atDir={ftlSnap.rest?.awayAtDir} atDay={ftlSnap.rest?.awayAtDay} />
-                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
-                </>
-              ) : (
-                <View style={s.psvEmpty}>
-                  <View style={s.psvEmptyIcon}><Ionicons name="calculator-outline" size={22} color={C.onDarkSub} /></View>
-                  <Text style={s.psvEmptyTxt}>{t('home.restEmpty', lang)}</Text>
-                </View>
-              )}
             </>
           ) : (
             <>
@@ -556,31 +464,46 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {/* 4. Alertas + 5. Acesso rápido ao simulador (dashboard FTL) */}
         {isFtl ? (
           <>
-            <View style={s.alertCard}>
-              <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
-              {ftlAlerts.length === 0 ? (
-                <View style={s.alertRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={C.green} />
-                  <Text style={s.alertTxt}>{t('home.dashNoAlerts', lang)}</Text>
-                </View>
-              ) : ftlAlerts.slice(0, 5).map((al, i) => (
-                <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
-                  <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
-                  <Text style={s.alertTxt}>{al.text}</Text>
-                </View>
-              ))}
-              {notifs.length > 0 ? (
-                <TouchableOpacity style={[s.alertRow, s.alertRowDiv]} activeOpacity={0.7} onPress={() => setNotifOpen(true)}>
-                  <Ionicons name="notifications-outline" size={18} color={C.sub} />
-                  <Text style={s.alertTxt}>{(unread || notifs.length)} {t('home.notifsTitle', lang)}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={C.sub} />
-                </TouchableOpacity>
-              ) : null}
+            {/* Próximo voo (sempre nesta posição — não salta) */}
+            {flightCardEl}
+
+            {/* Limites acumulados — cartão claro */}
+            <View style={s.panel}>
+              <Text style={s.secTitle}>{t('home.dashLimits', lang)}</Text>
+              <Seg options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]} value={limCat} setValue={setLimCat} />
+              {catLimits.some(w => w.done > 0)
+                ? catLimits.map(w => <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />)
+                : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
             </View>
 
+            {/* Repouso — cartão claro */}
+            <View style={s.panel}>
+              <Text style={s.secTitle}>{t('home.dashRest', lang)}</Text>
+              {ftlSnap.rest ? (
+                <>
+                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C} />
+                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C} />
+                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+                </>
+              ) : <Text style={s.panelEmptyTxt}>{t('home.restEmpty', lang)}</Text>}
+            </View>
+
+            {/* Alertas — só quando existem (o estado verde já vive no herói) */}
+            {ftlAlerts.length > 0 ? (
+              <View style={s.alertCard}>
+                <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
+                {ftlAlerts.slice(0, 5).map((al, i) => (
+                  <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
+                    <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
+                    <Text style={s.alertTxt}>{al.text}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Simulador — CTA primário */}
             <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
               <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
               <View style={{ flex: 1 }}>
@@ -589,16 +512,26 @@ export default function HomeScreen({ navigation }) {
               </View>
               <Ionicons name="chevron-forward" size={18} color={C.onDarkSub} />
             </TouchableOpacity>
+
+            {/* Atalhos — 2 colunas */}
+            <View style={s.shortcutsRow}>
+              <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
+                <Ionicons name="calendar-outline" size={20} color={C.text} />
+                <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
+                <Ionicons name="time-outline" size={20} color={C.text} />
+                <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
+              </TouchableOpacity>
+            </View>
           </>
-        ) : null}
-
-        {/* Próximo voo fica por baixo quando não há voo (evita liderar com cartão vazio) */}
-        {!flight ? flightCardEl : null}
-
-        {/* Calendário — entrada dedicada (escala + registos) */}
-        {calendarCardEl}
-        {/* Duties — registo bruto da escala (só FTL) */}
-        {isFtl ? dutiesCardEl : null}
+        ) : (
+          <>
+            {/* AE: voo (quando não há, abaixo) + calendário */}
+            {!flight ? flightCardEl : null}
+            {calendarCardEl}
+          </>
+        )}
       </ScrollView>
 
       {/* Notificações */}
@@ -640,14 +573,6 @@ const makeStyles = (C) => StyleSheet.create({
   // Este mês (extras)
   monthCard: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
   cardTabs: { marginBottom: SPACE.md }, // wrapper das abas AE (Seg)
-  // Faixa de mosaicos de estado (FTL) — seletor de aba + leitura de relance.
-  stripRow: { flexDirection: 'row', gap: SPACE.sm, marginBottom: SPACE.md },
-  tile: { flex: 1, borderRadius: RADIUS.md, borderWidth: 1, borderColor: C.hairlineOnDark, paddingVertical: 9, paddingHorizontal: 10 },
-  tileActive: { backgroundColor: C.hairlineOnDark, borderColor: C.onDarkSub },
-  tileEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 0.8, color: C.onDarkFaint, fontWeight: '700' },
-  tileValRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
-  tileDot: { width: 7, height: 7, borderRadius: RADIUS.pill },
-  tileVal: { flex: 1, fontSize: TYPE.value, fontWeight: '700', color: C.onDark },
   // Anel de folga (aba Limites) — pequeno, à esquerda, com a folga em texto ao lado.
   ringWrap: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.md },
   ringPct: { fontSize: TYPE.body, fontWeight: '700' },
@@ -688,24 +613,35 @@ const makeStyles = (C) => StyleSheet.create({
   // Barras de progresso FTL (PSV / limites / repouso)
   prog: { marginBottom: SPACE.md + 4 },
   progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
-  progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: '#fff' },
-  progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.onDarkSub },
-  progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, overflow: 'hidden' },
+  // FTL agora vive em cartões CLAROS → texto/track em tons claros (AE usa estilos próprios).
+  progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
+  progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.sub },
+  progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.line, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
-  progFoot: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 6 },
+  progFoot: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
   psvHeroLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
   psvHeroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm, marginTop: 2, marginBottom: SPACE.sm },
   psvHero: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -1, color: '#fff' },
   psvIllegal: { color: C.red, fontSize: TYPE.sub, fontWeight: '700', marginBottom: 6 },
   restItem: { marginBottom: SPACE.md },
-  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.onDarkSub, fontWeight: '600' },
-  restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: '#fff', marginTop: 2, marginBottom: SPACE.sm },
+  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '700' },
+  restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
   psvEmpty: { alignItems: 'center', paddingVertical: SPACE.lg, gap: SPACE.sm },
   psvEmptyIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.hairlineOnDark, alignItems: 'center', justifyContent: 'center' },
   psvEmptyTxt: { fontSize: TYPE.sub, color: C.onDarkSub, textAlign: 'center', lineHeight: 18, maxWidth: 220 },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
-  // Dashboard FTL — rótulos de secção (cartão preto), estado, alertas e CTA simulador.
+  // Dashboard FTL — herói (cartão preto = estado), painéis claros e atalhos.
+  heroEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase', marginBottom: SPACE.sm },
+  heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  heroDot: { width: 12, height: 12, borderRadius: RADIUS.pill },
+  heroStatus: { flex: 1, fontSize: TYPE.heading, fontWeight: '700', letterSpacing: -0.3 },
+  panel: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
+  secTitle: { fontSize: TYPE.label, fontWeight: '700', color: C.text, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: SPACE.md },
+  panelEmptyTxt: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
+  shortcutsRow: { flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.md },
+  shortcut: { flex: 1, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: SPACE.md + 4, backgroundColor: C.card },
+  shortcutTxt: { fontSize: TYPE.label, fontWeight: '600', color: C.text },
   dashSecLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase', marginBottom: SPACE.sm },
   dashReason: { fontSize: TYPE.micro, color: C.onDarkSub, marginBottom: SPACE.md },
   dashHint: { fontSize: TYPE.sub, color: C.onDarkSub, lineHeight: 18, marginBottom: SPACE.sm },
