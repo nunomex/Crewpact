@@ -306,6 +306,14 @@ export default function CategoriesScreen({ navigation }) {
             </View>
             <Ionicons name="chevron-forward" size={16} color={C.sub} />
           </TouchableOpacity>
+          <TouchableOpacity style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: 'CS FTL.1.205(g)' })}>
+            <View style={s.badge}><Text style={s.badgeTxt}>205g</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.fcardTitle} numberOfLines={2}>{t('ftl.calcDelayed', lang)}</Text>
+              <Text style={s.fcardSub} numberOfLines={2}>{l('Apresentação adiada: que hora manda no PSV.', 'Delayed reporting: which time governs the FDP.')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.sub} />
+          </TouchableOpacity>
 
           <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
         </ScrollView>

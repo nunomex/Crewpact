@@ -11,7 +11,7 @@ import { t, tx } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
-const hasCalc = (a) => !!(a.psv || a.limits || a.rest || a.inflight || a.standby);
+const hasCalc = (a) => !!(a.psv || a.limits || a.rest || a.inflight || a.standby || a.delayed);
 
 // Aba FTL — consulta dos artigos calculáveis (sem pesquisa) + link para o PDF.
 // As calculadoras interativas vivem no separador Cálculos.

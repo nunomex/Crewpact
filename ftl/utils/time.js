@@ -36,6 +36,13 @@ export const overlapsWindow = (startMin, endMin, lo, hi) => {
   return segs.some(([s, e]) => s < hi && e > lo);
 };
 
+// Duração (min) da interseção de [start,end] (com volta da meia-noite) com [lo, hi).
+export const overlapDurationMin = (startMin, endMin, lo, hi) => {
+  if (startMin == null || endMin == null) return 0;
+  const segs = endMin >= startMin ? [[startMin, endMin]] : [[startMin, 1440], [0, endMin]];
+  return segs.reduce((sum, [s, e]) => sum + Math.max(0, Math.min(e, hi) - Math.max(s, lo)), 0);
+};
+
 // Data local 'YYYY-MM-DD'.
 export const isoDay = (d = new Date()) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

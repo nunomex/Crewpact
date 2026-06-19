@@ -557,6 +557,30 @@ export const FTL_ARTICLES = [
     },
   },
   {
+    code: 'CS FTL.1.205(g)', section: 'cat',
+    title: { pt: 'Adiamento da apresentação', en: 'Delayed reporting' },
+    sub: { pt: 'Que hora manda no PSV máximo quando a apresentação é adiada.', en: 'Which time governs the max FDP when reporting is delayed.' },
+    delayed: true,
+    body: {
+      pt: [
+        'O operador pode adiar a hora de apresentação em circunstâncias imprevistas, se tiver procedimentos no Manual de Operações e mantiver registos.',
+        'i) Uma notificação de atraso leva ao cálculo do PSV máximo segundo iii) ou iv);',
+        'ii) Se a hora for novamente alterada, o PSV começa a contar 1 hora após a segunda notificação, ou na hora adiada original se for anterior;',
+        'iii) Quando o atraso é inferior a 4 horas, o PSV máximo calcula-se pela hora de apresentação original e conta a partir da hora adiada;',
+        'iv) Quando o atraso é de 4 horas ou mais, o PSV máximo calcula-se pela hora mais limitativa (original ou adiada) e conta a partir da hora adiada;',
+        'v) Quando o operador comunica um atraso de 10 horas ou mais e não volta a perturbar o tripulante, esse atraso conta como período de repouso.',
+      ],
+      en: [
+        'The operator may delay the reporting time in unforeseen circumstances, if procedures are established in the operations manual and records are kept.',
+        'i) One notification of a delay leads to the calculation of the maximum FDP according to iii) or iv);',
+        'ii) If the reporting time is further amended, the FDP starts counting 1 hour after the second notification, or at the original delayed reporting time if earlier;',
+        'iii) When the delay is less than 4 hours, the maximum FDP is based on the original reporting time and counts from the delayed reporting time;',
+        'iv) When the delay is 4 hours or more, the maximum FDP is based on the more limiting of the original or delayed reporting time and counts from the delayed reporting time;',
+        'v) When the operator notifies a delay of 10 hours or more and the crew member is not further disturbed, that delay counts as a rest period.',
+      ],
+    },
+  },
+  {
     code: 'ORO.FTL.210', section: 'cat',
     title: { pt: 'Tempos de voo e períodos de serviço', en: 'Flight times and duty periods' },
     sub: { pt: 'Limites de 60/110/190 h de serviço e 100/900/1000 h de voo.', en: 'Limits of 60/110/190 h duty and 100/900/1000 h flight.' },

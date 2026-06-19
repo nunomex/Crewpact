@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
-import { PsvCalc, LimitsCalc, RestCalc, DutyCalc, InflightRestCalc, StandbyCalc } from '../components/FtlCalcs';
+import { PsvCalc, LimitsCalc, RestCalc, DutyCalc, InflightRestCalc, StandbyCalc, DelayedReportingCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { t, tx } from '../data/i18n';
@@ -19,7 +19,7 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 // cartões na aba Cálculos ou de um dia no Calendário. "Confirmar" regista o
 // cálculo no dia indicado (param `date`) ou, por omissão, em hoje.
 export default function FtlCalcScreen({ route, navigation }) {
-  const { lang, updateDayLog } = useContext(AppContext);
+  const { lang, updateDayLog, dayLog } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = L(lang);
@@ -67,7 +67,7 @@ export default function FtlCalcScreen({ route, navigation }) {
     } else if (p.kind === 'rest') {
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.place]: p.value, [`${p.place}Prev`]: p.prev, [`${p.place}At`]: p.at, [`${p.place}AtDir`]: p.atDir, [`${p.place}AtDay`]: p.atDay, ts: Date.now() }));
     } else if (p.kind === 'duty') {
-      updateDayLog(logDate, 'psv', { state: p.psv.state, sectors: p.psv.sectors, result: p.psv.result, max: p.psv.max, band: p.psv.band, start: p.psv.start, over: p.psv.over, excess: p.psv.excess, ts: Date.now() });
+      updateDayLog(logDate, 'psv', { state: p.psv.state, sectors: p.psv.sectors, result: p.psv.result, max: p.psv.max, band: p.psv.band, start: p.psv.start, over: p.psv.over, excess: p.psv.excess, extended: p.psv.extended, ts: Date.now() });
       if (p.limits.servico > 0) updateDayLog(logDate, 'servico', prev => (prev || 0) + p.limits.servico);
       if (p.limits.voo > 0) updateDayLog(logDate, 'voo', prev => (prev || 0) + p.limits.voo);
       updateDayLog(logDate, 'rest', prev => ({ ...(prev || {}), [p.rest.place]: p.rest.value, [`${p.rest.place}Prev`]: p.rest.prev, ts: Date.now() }));
@@ -80,7 +80,7 @@ export default function FtlCalcScreen({ route, navigation }) {
     else setResetKey(k => k + 1);
   };
 
-  const Calc = isDuty ? DutyCalc : a.psv ? PsvCalc : a.limits ? LimitsCalc : a.inflight ? InflightRestCalc : a.standby ? StandbyCalc : RestCalc;
+  const Calc = isDuty ? DutyCalc : a.psv ? PsvCalc : a.limits ? LimitsCalc : a.inflight ? InflightRestCalc : a.standby ? StandbyCalc : a.delayed ? DelayedReportingCalc : RestCalc;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
@@ -109,7 +109,7 @@ export default function FtlCalcScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        <Calc key={resetKey} lang={lang} onRegister={registerFtl} />
+        <Calc key={resetKey} lang={lang} onRegister={registerFtl} dayLog={dayLog} refISO={logDate} />
 
         <Text style={s.foot}>{l('Estimativas de apoio (Regulamento UE 83/2014). Confirma sempre na escala e nos limites oficiais.', 'Guidance estimates (Regulation EU 83/2014). Always confirm against the official roster and limits.')}</Text>
       </ScrollView>
