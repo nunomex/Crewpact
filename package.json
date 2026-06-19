@@ -6,7 +6,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "test:ftl": "node scripts/ftl-golden.test.cjs"
+    "test:ftl": "node scripts/ftl-golden.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

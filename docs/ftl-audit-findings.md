@@ -30,7 +30,7 @@ o repouso (235) usa o período de serviço. Default `postFlightMin = 0` mantém 
 comportamento anterior quando o pós-voo não é fornecido.
 **UI:** `DutyCalc` ([components/FtlCalcs.js](../components/FtlCalcs.js)) ganhou o campo
 "Serviço pós-voo (min)"; o repouso mostrado já reflete o período de serviço.
-**Golden:** 4 casos novos (`Duty …`) em `scripts/ftl-golden.test.cjs`.
+**Golden:** 4 casos novos (`Duty …`) em `scripts/ftl-golden.test.js`.
 
 ## ✅ Issue 2 — Acumulado de serviço inclui o período de serviço (RESOLVIDO p/ serviços de voo)
 **Era:** ao registar uma duty, gravava-se em `dayLog.servico` só as horas de PSV.
@@ -66,7 +66,7 @@ de confirmação). Assim o acumulado 210(a) cobre PSV+pós-voo, standby e posici
 ---
 
 ## Testes golden
-`scripts/ftl-golden.test.cjs` fixa os valores das tabelas/limiares contra os PDFs.
+`scripts/ftl-golden.test.js` fixa os valores das tabelas/limiares contra os PDFs.
 Correr antes de qualquer alteração ao motor:
 
 ```
