@@ -9,7 +9,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { C, RADIUS, TYPE, DATA_VERSION } from '../data/constants';
+import { C, RADIUS, TYPE } from '../data/constants';
 import { changePassword, validatePassword } from '../data/auth';
 import ScreenHeader from '../components/ScreenHeader';
 import { Seg } from '../components/Stepper';
@@ -36,7 +36,7 @@ function Row({ label, value, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen() {
-  const { user, logout, lang, setLang, theme, setTheme, isFtl, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -131,17 +131,8 @@ export default function SettingsScreen() {
           <View style={s.syncRow}>
             <View style={s.syncIcon}><Ionicons name="shield-checkmark-outline" size={16} color={C.text} /></View>
             <View style={{ flex: 1 }}>
-              {isFtl ? (
-                <>
-                  <Text style={s.syncTitle}>Regulamento (UE) 83/2014</Text>
-                  <Text style={s.syncSub}>{lang === 'en' ? 'Flight time limitations · bundled in the app' : 'Limites de tempo de voo · incluído na app'}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={s.syncTitle}>{DATA_VERSION.agreement}</Text>
-                  <Text style={s.syncSub}>{DATA_VERSION.version} · {DATA_VERSION.payRef} · {lang === 'en' ? `bundled in the app (in force ${DATA_VERSION.effective})` : `conteúdo incluído na app (em vigor ${DATA_VERSION.effective})`}</Text>
-                </>
-              )}
+              <Text style={s.syncTitle}>Regulamento (UE) 83/2014</Text>
+              <Text style={s.syncSub}>{lang === 'en' ? 'Flight time limitations · bundled in the app' : 'Limites de tempo de voo · incluído na app'}</Text>
             </View>
           </View>
         </Group>

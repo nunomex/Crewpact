@@ -2,15 +2,11 @@ import React, { useContext, useState, useRef, useEffect, useCallback } from 'rea
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Polyline } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
-import {
-  catLabel, fmtEur, fmtVal,
-  monthKey, monthLabel, monthTotal, monthBySection, aeSectionLabel, pctChange,
-} from '../data/extras';
-import { computeDutyTime, computeFlightTime } from '../ftl';
+import { catLabel, fmtVal } from '../data/extras';
+import { computeDutyTime, computeFlightTime, computeRestSequence } from '../ftl';
 import ScreenHeader from '../components/ScreenHeader';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
@@ -87,40 +83,6 @@ function StatusChip({ level, label, s, C }) {
   );
 }
 
-// Anel de progresso (aba Limites): preenchido = % consumido da janela mais
-// apertada; cor = nível; o centro mostra a folga em horas. Começa no topo.
-function Ring({ ratio, color, size = 132, stroke = 12, children, C }) {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const fill = Math.max(0, Math.min(1, ratio || 0));
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.hairlineOnDark} strokeWidth={stroke} fill="none" />
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
-          strokeDasharray={circ} strokeDashoffset={circ * (1 - fill)} strokeLinecap="round" />
-      </Svg>
-      <View style={{ alignItems: 'center' }}>{children}</View>
-    </View>
-  );
-}
-
-// Mini-tendência (sparkline) dos últimos meses — usado no resumo AE.
-function Sparkline({ values, color, width = 130, height = 30 }) {
-  const max = Math.max(...values, 1);
-  const n = values.length;
-  const pts = values.map((v, i) => {
-    const x = n > 1 ? (i / (n - 1)) * width : 0;
-    const y = height - 2 - (v / max) * (height - 4);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-  return (
-    <Svg width={width} height={height}>
-      <Polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 // Barra de limite (FTL) — feito / limite, com horas em falta.
 function ProgressRow({ label, done, limit, lang, s, C }) {
   const ratio = limit ? done / limit : 0;
@@ -145,36 +107,15 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, lang, readNotifIds, setReadNotifIds, extras, addExtra, ftlSnap, dayLog, company, isFtl } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
 
-  const [aeTab, setAeTab] = useState('summary'); // aba do cartão AE: summary | records
   const [limCat, setLimCat] = useState('servico'); // categoria mostrada no separador Limites
   const [notifOpen, setNotifOpen] = useState(false);
 
   const notifs = buildNotifications(profile, lang);
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
-
-  // ── Extras do mês (AE) ──
-  const curKey   = monthKey();
-  const total    = monthTotal(extras, curKey);
-  const aeSections = monthBySection(extras, curKey); // registos do mês agrupados por secção (carrossel AE)
-  const aeEventSec = aeSections.find(sec => sec.id === 'perEvent'); // pagamentos por evento → vão para o slide 1
-  const aeRestSecs = aeSections.filter(sec => sec.id !== 'perEvent'); // restantes → slide 2 (Registos)
-  const pct      = pctChange(extras, curKey);
-  const totalDisplay = fmtEur(total);
-  // Sparkline AE — totais dos últimos 6 meses (antigo → recente).
-  const sparkVals = (() => {
-    const now = new Date();
-    const arr = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      arr.push(monthTotal(extras, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`));
-    }
-    return arr;
-  })();
-  const hasSpark = sparkVals.some(v => v > 0);
 
   // FTL — limites de tempo (ORO.FTL.210), calculados pelo MOTOR a partir do dayLog (store FTL).
   const dutyLimits = computeDutyTime(dayLog);     // serviço: 60/110/190 h em 7/14/28 dias
@@ -224,7 +165,7 @@ export default function HomeScreen({ navigation }) {
     : t('home.dashNoData', lang);
   const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
   const ftlAlerts = [];
-  if (isFtl) {
+  {
     const pushLim = (arr, cat) => arr.forEach(w => {
       if (!(w.done > 0)) return;
       const lbl = `${catLabel(cat, lang)} ${limLabel(w)}`;
@@ -234,6 +175,13 @@ export default function HomeScreen({ navigation }) {
     pushLim(dutyLimits, 'servico');
     pushLim(flightLimits, 'voo');
     if (psvOver) ftlAlerts.push({ id: 'psv', level: 'over', text: `${t('home.psvMaxLbl', lang)} · ${t('home.illegal', lang)} +${psvExcess}` });
+    // Sequência de escala (235(a)(2)/(d)): recuperação/disruptivos a partir das duties.
+    computeRestSequence(duties || {}).issues.forEach((iss, k) => {
+      const text = iss.type === 'recovery60' ? t('home.seqRecovery60', lang)
+        : iss.type === 'recovery168' ? t('home.seqRecovery168', lang)
+        : t('home.seqTransition', lang);
+      ftlAlerts.push({ id: `seq-${iss.type}-${k}`, level: 'warn', text });
+    });
   }
 
   const closeNotifs = () => {
@@ -327,37 +275,13 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  // Cartão "Calendário" — entrada dedicada para o ecrã do calendário (escala + registos).
-  const calendarCardEl = (
-    <TouchableOpacity style={s.calCard} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
-      <View style={s.calIcon}><Ionicons name="calendar-outline" size={20} color={C.text} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.calTitle}>{t('home.calTitle', lang)}</Text>
-        <Text style={s.calSub}>{t('home.calSub', lang)}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={C.sub} />
-    </TouchableOpacity>
-  );
-
-  // Cartão "Duties" — registo bruto da escala (apresentação, setores, horas). Só FTL.
-  const dutiesCardEl = (
-    <TouchableOpacity style={s.calCard} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
-      <View style={s.calIcon}><Ionicons name="time-outline" size={20} color={C.text} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.calTitle}>{t('duties.cardTitle', lang)}</Text>
-        <Text style={s.calSub}>{t('duties.cardSub', lang)}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={C.sub} />
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
         {/* Cabeçalho (cartão preto) */}
         <ScreenHeader
-          eyebrow={isFtl ? t('home.eyebrowFtl', lang) : t('home.eyebrow', lang)}
+          eyebrow={t('home.eyebrowFtl', lang)}
           badge={<View style={s.codeBadge}><Text style={s.codeText}>{company?.code}</Text></View>}
           title={company?.name}
           style={{ margin: 0, marginBottom: SPACE.md }}
@@ -368,170 +292,74 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           } />
 
-        {/* AE: próximo voo no topo quando há voo. (FTL coloca-o no dashboard, abaixo do herói.) */}
-        {!isFtl && flight ? flightCardEl : null}
-
-        {/* Cartão preto: FTL (PSV · Limites · Repouso) ou AE (Resumo · Registos), em abas */}
+        {/* Herói — estado operacional (cartão preto): semáforo + janela que o causa */}
         <View style={s.monthCard}>
-          {!isFtl && (
-            <View style={s.monthHead}>
-              <Text style={s.monthEyebrow}>{`${t('home.monthEyebrow', lang)} · ${monthLabel(curKey, lang, true)}`}</Text>
-            </View>
-          )}
-
-          {isFtl ? (
-            <>
-              {/* Herói operacional — estado de relance + janela que o causa. */}
-              <Text style={s.heroEyebrow}>{t('home.dashState', lang)}</Text>
-              <View style={s.heroStatusRow}>
-                <View style={[s.heroDot, { backgroundColor: stateColor }]} />
-                <Text style={[s.heroStatus, { color: stateColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stateLabel}</Text>
-              </View>
-              {stateReason ? <Text style={s.dashReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
-            </>
-          ) : (
-            <>
-              <View style={s.cardTabs}>
-                <Seg
-                  options={[
-                    { id: 'summary', label: lang === 'en' ? 'Summary' : 'Resumo' },
-                    { id: 'records', label: lang === 'en' ? 'Records' : 'Registos' },
-                  ]}
-                  value={aeTab} setValue={setAeTab} dark />
-              </View>
-
-              {/* Resumo — total + variação + pagamentos por evento */}
-              {aeTab === 'summary' && (
-                <View>
-                  <Text style={s.monthLbl}>{t('home.totalExtra', lang)}</Text>
-                  <Text style={s.monthTotal}>{totalDisplay}</Text>
-                  {pct != null && (
-                    <View style={s.pctRow}>
-                      <Ionicons name={pct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={pct >= 0 ? C.green : C.red} />
-                      <Text style={[s.pctTxt, { color: pct >= 0 ? C.green : C.red }]}>{Math.abs(pct)}% {t('home.vsPrev', lang)}</Text>
-                    </View>
-                  )}
-                  {hasSpark && (
-                    <View style={s.sparkWrap}>
-                      <Sparkline values={sparkVals} color={C.onDarkSub} />
-                      <Text style={s.sparkLbl}>{t('home.last6m', lang)}</Text>
-                    </View>
-                  )}
-                  {aeEventSec && (
-                    <View style={[s.recSection, { marginTop: SPACE.lg }]}>
-                      <View style={s.recSecHead}>
-                        <Text style={s.recSecTitle}>{aeSectionLabel(aeEventSec.id, lang)}</Text>
-                        <Text style={s.recSecTotal}>{fmtEur(aeEventSec.total)}</Text>
-                      </View>
-                      {aeEventSec.items.map(it => (
-                        <View key={it.key} style={s.recItem}>
-                          <Text style={s.bdLbl} numberOfLines={1}>{it.label || catLabel(it.category, lang)}</Text>
-                          <Text style={s.bdVal}>{fmtEur(it.total)}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Registos do mês, agrupados por secção (sem pagamentos por evento) */}
-              {aeTab === 'records' && (
-                <View>
-                  {aeRestSecs.length === 0 ? (
-                    <View style={s.psvEmpty}>
-                      <View style={s.psvEmptyIcon}><Ionicons name="receipt-outline" size={22} color={C.onDarkSub} /></View>
-                      <Text style={s.psvEmptyTxt}>{t('home.noExtras', lang)}</Text>
-                    </View>
-                  ) : (
-                    aeRestSecs.map(sec => (
-                      <View key={sec.id} style={s.recSection}>
-                        <View style={s.recSecHead}>
-                          <Text style={s.recSecTitle}>{aeSectionLabel(sec.id, lang)}</Text>
-                          <Text style={s.recSecTotal}>{fmtEur(sec.total)}</Text>
-                        </View>
-                        {sec.items.map(it => (
-                          <View key={it.key} style={s.recItem}>
-                            <Text style={s.bdLbl} numberOfLines={1}>{it.label || catLabel(it.category, lang)}</Text>
-                            <Text style={s.bdVal}>{fmtEur(it.total)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    ))
-                  )}
-                </View>
-              )}
-            </>
-          )}
+          <Text style={s.heroEyebrow}>{t('home.dashState', lang)}</Text>
+          <View style={s.heroStatusRow}>
+            <View style={[s.heroDot, { backgroundColor: stateColor }]} />
+            <Text style={[s.heroStatus, { color: stateColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stateLabel}</Text>
+          </View>
+          {stateReason ? <Text style={s.dashReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
         </View>
 
-        {isFtl ? (
-          <>
-            {/* Próximo voo (sempre nesta posição — não salta) */}
-            {flightCardEl}
+        {/* Próximo voo (sempre nesta posição — não salta) */}
+        {flightCardEl}
 
-            {/* Limites acumulados — cartão claro */}
-            <View style={s.panel}>
-              <Text style={s.secTitle}>{t('home.dashLimits', lang)}</Text>
-              <Seg options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]} value={limCat} setValue={setLimCat} />
-              {catLimits.some(w => w.done > 0)
-                ? catLimits.map(w => <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />)
-                : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
-            </View>
+        {/* Limites acumulados — cartão claro */}
+        <View style={s.panel}>
+          <Text style={s.secTitle}>{t('home.dashLimits', lang)}</Text>
+          <Seg options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]} value={limCat} setValue={setLimCat} />
+          {catLimits.some(w => w.done > 0)
+            ? catLimits.map(w => <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />)
+            : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
+        </View>
 
-            {/* Repouso — cartão claro */}
-            <View style={s.panel}>
-              <Text style={s.secTitle}>{t('home.dashRest', lang)}</Text>
-              {ftlSnap.rest ? (
-                <>
-                  <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C} />
-                  <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C} />
-                  <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
-                </>
-              ) : <Text style={s.panelEmptyTxt}>{t('home.restEmpty', lang)}</Text>}
-            </View>
+        {/* Repouso — cartão claro */}
+        <View style={s.panel}>
+          <Text style={s.secTitle}>{t('home.dashRest', lang)}</Text>
+          {ftlSnap.rest ? (
+            <>
+              <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C} />
+              <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C} />
+              <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
+            </>
+          ) : <Text style={s.panelEmptyTxt}>{t('home.restEmpty', lang)}</Text>}
+        </View>
 
-            {/* Alertas — só quando existem (o estado verde já vive no herói) */}
-            {ftlAlerts.length > 0 ? (
-              <View style={s.alertCard}>
-                <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
-                {ftlAlerts.slice(0, 5).map((al, i) => (
-                  <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
-                    <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
-                    <Text style={s.alertTxt}>{al.text}</Text>
-                  </View>
-                ))}
+        {/* Alertas — só quando existem (o estado verde já vive no herói) */}
+        {ftlAlerts.length > 0 ? (
+          <View style={s.alertCard}>
+            <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
+            {ftlAlerts.slice(0, 5).map((al, i) => (
+              <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
+                <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
+                <Text style={s.alertTxt}>{al.text}</Text>
               </View>
-            ) : null}
+            ))}
+          </View>
+        ) : null}
 
-            {/* Simulador — CTA primário */}
-            <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
-              <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.simTitle}>{t('home.dashSim', lang)}</Text>
-                <Text style={s.simSub}>{t('home.dashSimSub', lang)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={C.onDarkSub} />
-            </TouchableOpacity>
+        {/* Simulador — CTA primário */}
+        <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
+          <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.simTitle}>{t('home.dashSim', lang)}</Text>
+            <Text style={s.simSub}>{t('home.dashSimSub', lang)}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={C.onDarkSub} />
+        </TouchableOpacity>
 
-            {/* Atalhos — 2 colunas */}
-            <View style={s.shortcutsRow}>
-              <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
-                <Ionicons name="calendar-outline" size={20} color={C.text} />
-                <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
-                <Ionicons name="time-outline" size={20} color={C.text} />
-                <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            {/* AE: voo (quando não há, abaixo) + calendário */}
-            {!flight ? flightCardEl : null}
-            {calendarCardEl}
-          </>
-        )}
+        {/* Atalhos — 2 colunas */}
+        <View style={s.shortcutsRow}>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Calendar')}>
+            <Ionicons name="calendar-outline" size={20} color={C.text} />
+            <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => navigation.navigate('Duties')}>
+            <Ionicons name="time-outline" size={20} color={C.text} />
+            <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Notificações */}

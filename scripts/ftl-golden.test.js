@@ -45,6 +45,7 @@ const {
   computeFdp, computeInflightRest, computeStandby, computeReducedRest,
   computeTimeZoneRest, computeDelayedReporting, computeDiscretion,
   computeDutyTime, computeFlightTime, overlapsWOCL, isNightDuty, isoDay,
+  computeRest, classifyDisruptive, computeRestSequence, computeFatigue, fatigueFromDuty, computeDuty,
 } = ftl;
 
 // ── Harness mínimo ──
@@ -126,6 +127,9 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
   eq('SB outro: 25% serviço', ot.dutyCountMin, M('02:00'));
   eq('SB outro estendido: livre 8h', computeStandby({ type: 'other', standbyH: 8, extended: true, maxFdpMin: M('13:00') }).reductionMin, 0);
   eq('SB outro: máx 16h', computeStandby({ type: 'other', standbyH: 17, maxFdpMin: M('13:00') }).overMaxStandby, true);
+  // (b)(9): standby iniciado entre 23:00–07:00 → a parte na janela não conta p/ a redução.
+  eq('SB outro 23:30 (noturno) → janela não conta', computeStandby({ type: 'other', standbyH: 10, startMin: M('23:30'), maxFdpMin: M('13:00') }).reductionMin, 0);
+  eq('SB outro 10:00 (fora da janela) → conta tudo', computeStandby({ type: 'other', standbyH: 10, startMin: M('10:00'), maxFdpMin: M('13:00') }).reductionMin, M('04:00'));
 }
 
 // ─────────────────────────────── Discrição do comandante (ORO.FTL.205(f)) ──────────────────
@@ -152,8 +156,10 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
 }
 
 // ─────────────────────────────── Split duty (CS FTL.1.220) ─────────────────────────────────
-eq('Split +50% (alojamento)', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 4, splitBreakStartMin: M('10:00'), accommodation: true }), M('15:00'));
-eq('Split sem alojamento: parte >6h não conta', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 8, splitBreakStartMin: M('10:00'), accommodation: false }), M('16:00'));
+// CS FTL.1.220(b): a pausa exclui 30 min (pré/pós-voo+deslocação) antes do +50%.
+eq('Split 4h alojamento → líquida 3:30 → +1:45', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 4, splitBreakStartMin: M('10:00'), accommodation: true }), M('14:45'));
+eq('Split 3h → líquida 2:30 (<3h) → sem extensão', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 3, splitBreakStartMin: M('10:00'), accommodation: true }), M('13:00'));
+eq('Split sem alojamento: teto 6h domina', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 8, splitBreakStartMin: M('10:00'), accommodation: false }), M('16:00'));
 
 // ─────────────────────────────── Limites cumulativos (ORO.FTL.210) ─────────────────────────
 {
@@ -215,6 +221,128 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Adapter serviço ilegal (h)', il.servico, 14);
   // Sem on-block → null (sem dados FTL).
   eq('Adapter sem block_on → null', dutyToFtlDay({ report_time: '06:00' }), null);
+}
+
+// ─────────── 235(b)(3)(ii) — repouso fora-base com fuso ≥ 4 h (piso 14 h) ───────────
+{
+  eq('TZ-away: fuso 5h fora-base → piso 14h', computeRest({ prevDutyMin: M('11:00'), inBase: false, tzDiffH: 5 }).restMin, M('14:00'));
+  eq('TZ-away: serviço anterior domina (15h)', computeRest({ prevDutyMin: M('15:00'), inBase: false, tzDiffH: 5 }).restMin, M('15:00'));
+  eq('TZ-away: fuso 3h (<4h) → piso 10h', computeRest({ prevDutyMin: M('08:00'), inBase: false, tzDiffH: 3 }).restMin, M('10:00'));
+  eq('TZ-away: na base ignora fuso → piso 12h', computeRest({ prevDutyMin: M('08:00'), inBase: true, tzDiffH: 5 }).restMin, M('12:00'));
+  eq('TZ-away: flag awayTz', computeRest({ prevDutyMin: M('08:00'), inBase: false, tzDiffH: 5 }).awayTz, true);
+}
+
+// ─────────── 235(a) — classificação de serviços disruptivos ───────────
+{
+  eq('Disrupt: entrada matinal 05:30', classifyDisruptive({ reportMin: M('05:30'), endMin: M('14:00') }).earlyStart, true);
+  eq('Disrupt: largada tardia 23:30', classifyDisruptive({ reportMin: M('06:00'), endMin: M('23:30') }).lateFinish, true);
+  eq('Disrupt: largada tardia 00:30', classifyDisruptive({ reportMin: M('20:00'), endMin: M('00:30') }).lateFinish, true);
+  eq('Disrupt: noturno 01:00→09:00', classifyDisruptive({ reportMin: M('01:00'), endMin: M('09:00') }).night, true);
+  eq('Disrupt: diurno 08:00→16:00 não é disruptivo', classifyDisruptive({ reportMin: M('08:00'), endMin: M('16:00') }).disruptive, false);
+}
+
+// ─────────── 235(a)(2)/(d) — sequência de escala (computeRestSequence) ───────────
+{
+  const nd = () => ({ report_time: '01:00', block_on: '09:00' }); // noturno 8h
+  const dd = () => ({ report_time: '08:00', block_on: '16:00' }); // diurno 8h
+  // A) 4 noturnos seguidos + recovery 40h (<60h) → aviso recovery60
+  const a = computeRestSequence({
+    '2026-06-01': nd(), '2026-06-02': nd(), '2026-06-03': nd(), '2026-06-04': nd(), '2026-06-06': nd(),
+  });
+  eq('Seq: 4 disruptivos → recovery 60h em falta', a.issues.some(i => i.type === 'recovery60'), true);
+  // B) diurnos com recovery 40h → sem aviso recovery60
+  const b = computeRestSequence({ '2026-06-01': dd(), '2026-06-02': dd(), '2026-06-04': dd() });
+  eq('Seq: diurnos com recovery → sem recovery60', b.issues.some(i => i.type === 'recovery60'), false);
+  // C) 8 dias seguidos sem gap ≥36h → bloco >168h → aviso recovery168
+  const days = {}; for (let i = 1; i <= 8; i++) days[`2026-06-0${i}`] = dd();
+  const c = computeRestSequence(days);
+  eq('Seq: >168h sem recovery → aviso', c.issues.some(i => i.type === 'recovery168'), true);
+}
+
+// ─────────── Índice de risco de fadiga (consultivo) ───────────
+// A — serviço diurno curto, dentro de tudo → 0.
+{
+  const f = computeFatigue({ reportMin: M('08:00'), endMin: M('16:00'), sectors: 2, maxFdpMin: M('14:00'), actualFdpMin: M('08:00'), restMin: M('13:00') });
+  eq('Fadiga A: score 0', f.score, 0);
+  eq('Fadiga A: banda low', f.band, 'low');
+}
+// B — noturno longo (WOCL cheio + PSV quase no máximo) → 35 + 27 = 62, elevado.
+{
+  const f = computeFatigue({ reportMin: M('22:00'), endMin: M('06:30'), sectors: 2, maxFdpMin: M('11:00'), actualFdpMin: M('10:30'), restMin: M('12:00') });
+  eq('Fadiga B: WOCL cheio = 35', f.factors.wocl, 35);
+  eq('Fadiga B: utilização PSV = 27', f.factors.fdpLoad, 27);
+  eq('Fadiga B: score 62', f.score, 62);
+  eq('Fadiga B: banda elevated', f.band, 'elevated');
+}
+// C — noturno + 5 setores + repouso reduzido (10h) + 4 disruptivos seguidos → 96, alto.
+{
+  const f = computeFatigue({ reportMin: M('22:00'), endMin: M('06:30'), sectors: 5, maxFdpMin: M('11:00'), actualFdpMin: M('11:00'), restMin: M('10:00'), consecutiveDisruptive: 4 });
+  eq('Fadiga C: setores = 9', f.factors.sectors, 9);
+  eq('Fadiga C: repouso curto = 10', f.factors.shortRest, 10);
+  eq('Fadiga C: cadeia disruptiva = 12', f.factors.consecutive, 12);
+  eq('Fadiga C: score 96', f.score, 96);
+  eq('Fadiga C: banda high', f.band, 'high');
+}
+// D — entrada matinal (05:20), 4 setores, WOCL parcial → 6+1+6+8 = 21, low.
+{
+  const f = computeFatigue({ reportMin: M('05:20'), endMin: M('13:20'), sectors: 4, maxFdpMin: M('13:00'), actualFdpMin: M('08:00') });
+  eq('Fadiga D: WOCL parcial = 6', f.factors.wocl, 6);
+  eq('Fadiga D: disruptivo matinal = 8', f.factors.disruptive, 8);
+  eq('Fadiga D: score 21', f.score, 21);
+}
+// Helper a partir de computeDuty: o fator WOCL não depende do PSV.
+{
+  const d = computeDuty({ state: 'acc', report: '22:00', end: '06:30', sectors: 2 });
+  eq('fatigueFromDuty: WOCL = 35', fatigueFromDuty(d).factors.wocl, 35);
+}
+
+// ─────────── Importação de escala (rosterImport) ───────────
+{
+  const { dutyFromActivity, prospectiveDuty } = require(path.resolve('data/rosterImport.js'));
+  const D = (h, m) => new Date(2026, 5, 1, h, m, 0);
+  const act = {
+    dateISO: '2026-06-01', sectors: 2,
+    legs: [
+      { report: '05:00', depTime: '06:00', arrTime: '08:00', startDate: D(6, 0), endDate: D(8, 0) },  // 2h
+      { report: '08:30', depTime: '09:00', arrTime: '12:00', startDate: D(9, 0), endDate: D(12, 0) }, // 3h
+    ],
+  };
+  const duty = dutyFromActivity(act);
+  eq('Import: report = apresentação', duty.report_time, '05:00');
+  eq('Import: block_off = 1.º dep', duty.block_off, '06:00');
+  eq('Import: block_on = último arr', duty.block_on, '12:00');
+  eq('Import: setores', duty.sectors, 2);
+  eq('Import: flight_minutes (2h+3h)', duty.flight_minutes, 300);
+  // Prospetivo: duty legal e isolada → ok.
+  eq('Prospetivo: legal isolada → ok', prospectiveDuty(duty, {}).ok, true);
+  // Prospetivo: 28d já a 188h de serviço → incluir a duty (7h) passa 190h → aviso.
+  const p = prospectiveDuty(duty, { '2026-05-20': { servico: 188 } });
+  eq('Prospetivo: excede 190h/28d', p.issues.some(i => i.type === 'duty28'), true);
+}
+
+// ─────────── Registo ORO.FTL.245 (PDF) ───────────
+{
+  const { buildRecordModel, recordHtml, esc } = require(path.resolve('data/ftlRecord.js'));
+  const duties = {
+    '2026-06-01': { report_time: '06:00', block_off: '07:00', block_on: '11:00', sectors: 2, flight_minutes: 240 },
+    '2026-06-03': { report_time: '08:00', block_off: '09:00', block_on: '13:00', sectors: 1, flight_minutes: 240, deleted: true }, // apagada → ignorada
+    '2026-06-02': { report_time: '05:00', block_off: '06:00', block_on: '09:00', sectors: 1, flight_minutes: 180 },
+  };
+  const m = buildRecordModel({ duties, dayLog: {}, name: 'Ana <Cruz>', crewId: 'CC-1', operator: 'TAP', email: 'a@b.pt', generatedAt: '2026-06-19' });
+  eq('Registo: linhas (apagada excluída)', m.rows.length, 2);
+  eq('Registo: ordenado asc', m.rows[0].date, '2026-06-01');
+  eq('Registo: voo total (240+180)', m.totals.flightMin, 420);
+  eq('Registo: setores totais', m.totals.sectors, 3);
+  eq('Registo: período início', m.header.periodStart, '2026-06-01');
+  eq('Registo: período fim', m.header.periodEnd, '2026-06-02');
+  eq('Registo: janelas serviço 210a', m.cumulative.duty.length, 3);
+  // Escape de HTML — sem injeção.
+  eq('Registo HTML: esc < e >', esc('a<b>&"\''), 'a&lt;b&gt;&amp;&quot;&#39;');
+  const html = recordHtml(m, 'pt');
+  eq('Registo HTML: nome escapado', html.includes('Ana &lt;Cruz&gt;'), true);
+  eq('Registo HTML: sem tag crua', html.includes('<Cruz>'), false);
+  eq('Registo HTML: declaração 245', html.includes('ORO.FTL.245'), true);
+  eq('Registo HTML: voo total 07:00', html.includes('07:00'), true);
 }
 
 // ── Resumo ──

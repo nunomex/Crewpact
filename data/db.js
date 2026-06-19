@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 // (ex.: "tap-pt"); a ligação à tabela `airlines` é uma etapa posterior.
 
 const rowToProfile = (r) =>
-  r ? { company: r.airline_id || null, crewType: r.crew_type || null, rank: r.crew_category || null, contract: r.contract_type || null } : null;
+  r ? { company: r.airline_id || null, crewType: r.crew_type || 'cabin' } : null;
 
 // Lê o perfil do utilizador. Devolve null se não existir, em erro, ou sem rede.
 export const fetchProfile = async (userId) => {
@@ -16,7 +16,7 @@ export const fetchProfile = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('airline_id, crew_type, crew_category, contract_type')
+      .select('airline_id, crew_type')
       .eq('id', userId)
       .maybeSingle();
     if (error) return null;
@@ -39,7 +39,7 @@ export const fetchAirlines = async () => {
 };
 
 // Cria ou atualiza o perfil. Best-effort: devolve true/false sem lançar.
-export const upsertProfile = async (userId, { company, rank, contract, crewType = 'cabin' } = {}) => {
+export const upsertProfile = async (userId, { company, crewType = 'cabin' } = {}) => {
   if (!userId) return false;
   try {
     const { error } = await supabase
@@ -48,8 +48,6 @@ export const upsertProfile = async (userId, { company, rank, contract, crewType 
         id: userId,
         airline_id: company || null,
         crew_type: crewType,
-        crew_category: rank || null,
-        contract_type: contract || null,
       }, { onConflict: 'id' });
     return !error;
   } catch {

@@ -6,3 +6,7 @@ export const OTHER_STANDBY_FREE_H = 6;      // (b)(6)(7): reduz o PSV máx o que
 export const OTHER_STANDBY_FREE_EXT_H = 8;  // (b)(8): 8 h se PSV com repouso a bordo/repartido
 export const OTHER_STANDBY_DUTY_PCT = 0.25; // (b)(3): 25 % conta como serviço (ORO.FTL.210)
 export const MAX_AWAKE_H = 18;              // (b)(2): standby + PSV não deve passar 18 h acordado
+// (b)(9): standby iniciado entre 23:00–07:00 → o tempo nessa janela não conta para a
+// redução do PSV (até contacto pelo operador).
+export const STANDBY_NIGHT_START_MIN = 23 * 60; // 23:00
+export const STANDBY_NIGHT_END_MIN = 7 * 60;    // 07:00

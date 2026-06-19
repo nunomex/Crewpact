@@ -152,13 +152,12 @@ export default function App() {
   const hydrated = useRef(false);
 
   // Profile filled during onboarding (pre-populated from user object if available)
-  const [profile, setProfile] = useState({ company: null, rank: null, contract: null });
+  const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
   const [onboarded, setOnboarded] = useState(false);
 
   const [lang, setLang]                 = useState('pt');
   const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
   const [readNotifIds, setReadNotifIds] = useState(new Set());
-  const [extras, setExtras]             = useState([]); // extras mensais registados pelo utilizador
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
   const [airlines, setAirlines]         = useState([]);   // catálogo de companhias (tabela `airlines`)
@@ -179,14 +178,6 @@ export default function App() {
   const dutiesRef             = useRef({});
   useEffect(() => { dutiesRef.current = duties; }, [duties]);
 
-  const addExtra = (entry) =>
-    setExtras(prev => [{
-      id: String(Date.now()), ts: Date.now(),
-      date: new Date().toISOString().slice(0, 10), // data do registo (hoje) p/ janela de 28 dias
-      ...entry,
-    }, ...prev]);
-  const removeExtra = (id) =>
-    setExtras(prev => prev.filter(e => e.id !== id));
   // ── Registo FTL por dia ──
   // dayLog: { 'YYYY-MM-DD': { psv, rest, … } }. As calculadoras registam num dia
   // (a data selecionada no calendário ou, por omissão, hoje).
@@ -269,8 +260,8 @@ export default function App() {
   // When a user logs in, pre-populate profile if they already have one saved
   const handleSetUser = (u) => {
     setUser(u);
-    if (u && u.company && u.rank && u.contract) {
-      setProfile({ company: u.company, rank: u.rank, contract: u.contract });
+    if (u && u.company) {
+      setProfile({ company: u.company });
       setOnboarded(true);
     } else {
       setOnboarded(false);
@@ -281,7 +272,7 @@ export default function App() {
     await supabase.auth.signOut();
     setUser(null);
     setOnboarded(false);
-    setProfile({ company: null, rank: null, contract: null });
+    setProfile({ company: null });
     setLocked(false); // sai do estado trancado — o próximo login começa destrancado
     // Os favoritos/notificações ficam guardados por utilizador no telemóvel;
     // limpamos apenas o estado em memória (o efeito de user?.id trata disso).
@@ -377,13 +368,12 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setExtras([]); setDayLog({}); setLoadedUserId(null); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setLoadedUserId(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, x, dl, fs, pf, al] = await Promise.all([
+        const [r, dl, fs, pf, al] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
-          AsyncStorage.getItem(`cp_extras_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
           AsyncStorage.getItem(`cp_profile_${user.id}`),
@@ -391,7 +381,6 @@ export default function App() {
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
-        setExtras(x ? JSON.parse(x) : []);
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
         if (al) setAirlines(JSON.parse(al));
         fetchAirlines().then(fresh => {
@@ -411,9 +400,9 @@ export default function App() {
         let resolved = await fetchProfile(user.id);
         if (cancelled) return;
         if (!resolved) resolved = localProfile;
-        if (!resolved && user.company) resolved = { company: user.company, crewType: user.crewType || null, rank: user.rank || null, contract: user.contract || null };
+        if (!resolved && user.company) resolved = { company: user.company, crewType: user.crewType || 'cabin' };
         if (resolved && resolved.company) {
-          setProfile({ company: resolved.company, crewType: resolved.crewType || null, rank: resolved.rank || null, contract: resolved.contract || null });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin' });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -426,7 +415,6 @@ export default function App() {
 
   // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
-  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_extras_${user.id}`, JSON.stringify(extras)).catch(() => {}); }, [extras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
@@ -494,7 +482,6 @@ export default function App() {
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,
-    extras, addExtra, removeExtra,
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
     duties, saveDuty, removeDuty,

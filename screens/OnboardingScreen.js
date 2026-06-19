@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, RANKS, CONTRACTS, CREW_TYPES } from '../data/constants';
+import { C as _C, TYPE } from '../data/constants';
 import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
@@ -14,21 +14,16 @@ export default function OnboardingScreen() {
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null, crewType: null, rank: null, contract: null });
+  const [draft, setDraft] = useState({ company: null });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  // FTL não tem categorias nem contrato — esses passos desaparecem. O motor da
-  // companhia escolhida vem do `engine_code` da linha `airlines`.
-  const draftAirline = airlines.find(a => a.id === draft.company) || null;
-  const isFtl = draftAirline?.engine_code === 'ftl';
+  // Tripulação de cabine (FTL): o onboarding pede apenas o operador. O tipo de
+  // tripulação é fixo ('cabin'); categoria/contrato (AE) já não se aplicam.
   const STEP_DEFS = {
-    company:  { title: t('onb.s0t', lang),    sub: t('onb.s0s', lang),    items: airlines,   field: 'company' },
-    crewType: { title: t('onb.sCrewT', lang), sub: t('onb.sCrewS', lang), items: CREW_TYPES, field: 'crewType' },
-    rank:     { title: t('onb.s1t', lang),    sub: t('onb.s1s', lang),    items: RANKS,      field: 'rank' },
-    contract: { title: t('onb.s2t', lang),    sub: t('onb.s2s', lang),    items: CONTRACTS,  field: 'contract' },
+    company: { title: t('onb.s0t', lang), sub: t('onb.s0s', lang), items: airlines, field: 'company' },
   };
-  const flow = isFtl ? ['company', 'crewType'] : ['company', 'crewType', 'rank', 'contract'];
+  const flow = ['company'];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
   const items = s.items;
@@ -90,7 +85,7 @@ export default function OnboardingScreen() {
           if (!isLast) { setStep(step + 1); return; }
           setSaving(true);
           setSaveError(null);
-          const payload = isFtl ? { company: draft.company, crewType: draft.crewType, rank: null, contract: null } : draft;
+          const payload = { company: draft.company, crewType: 'cabin', rank: null, contract: null };
           const result = await updateProfile(payload, lang);
           if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
           // Cria/atualiza o perfil na tabela `profiles` (best-effort; metadata +

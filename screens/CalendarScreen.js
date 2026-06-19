@@ -1,13 +1,13 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, AppState, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, AppState, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
-import BottomSheet from '../components/BottomSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import { catLabel, extraCategories, fmtVal, fmtEur } from '../data/extras';
-import { getFlightsInRange, requestCalendarAccess } from '../data/calendar';
+import { fmtVal } from '../data/extras';
+import { getFlightsInRange, getDutiesInRange, requestCalendarAccess } from '../data/calendar';
+import { dutyFromActivity } from '../data/rosterImport';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -17,8 +17,6 @@ const WEEKDAYS = {
   pt: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
   en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
 };
-const FTL_CATS = new Set(['voo', 'servico']); // filtra registos FTL legados dos extras AE
-
 // Grelha mensal (semana a começar 2ª-feira). Inclui os dias de transbordo do mês
 // anterior/seguinte (a cinzento), como num calendário normal.
 function buildGrid(monthDate) {
@@ -60,12 +58,12 @@ function RecRow({ s, C, label, value, onPress, onDelete }) {
 }
 
 export default function CalendarScreen({ navigation }) {
-  const { lang, dayLog, extras, addExtra, updateDayLog, removeDayLog, removeExtra, isFtl } = useContext(AppContext);
+  const { lang, dayLog, updateDayLog, removeDayLog, saveDuty } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
-  // FTL (TAP) regista cálculos da "Atividade" por dia; AE (easyJet) regista extras (€). `isFtl` vem do contexto.
+  // FTL/cabine: cada dia mostra os cálculos da "Atividade" registados (PSV/limites/repouso).
 
   const today = isoDay();
   const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
@@ -73,9 +71,7 @@ export default function CalendarScreen({ navigation }) {
   const [flightsByDay, setFlightsByDay] = useState({});
   const [calOk, setCalOk] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [addOpen, setAddOpen] = useState(false);
-  const [newCat, setNewCat] = useState(() => extraCategories('ae')[0].id); // categoria do extra AE
-  const [newAmount, setNewAmount] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const monthKeyNum = viewMonth.getFullYear() * 12 + viewMonth.getMonth();
   const grid = useMemo(() => buildGrid(viewMonth), [monthKeyNum]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -113,6 +109,30 @@ export default function CalendarScreen({ navigation }) {
     else if (res && res.canAskAgain === false) Linking.openSettings();
   };
 
+  // Importa as atividades do mês visível (agrupadas em duties) para a tabela `duties`,
+  // uma por dia (upsert). Não toca no calendário real — só lê. Cada duty alimenta o
+  // motor FTL via saveDuty (deriva PSV/limites/repouso). Substitui o que já existir no dia.
+  const onImport = async () => {
+    if (importing) return;
+    select();
+    setImporting(true);
+    try {
+      const { ok, duties } = await getDutiesInRange(grid.gridStart, grid.gridEnd);
+      if (!ok) { setCalOk(false); Alert.alert(t('cal.import', lang), t('cal.permission', lang)); return; }
+      let n = 0;
+      for (const act of duties) {
+        const row = dutyFromActivity(act);
+        if (row && row.duty_date) { saveDuty(row.duty_date, row); n++; }
+      }
+      if (n > 0) { success(); loadFlights(); }
+      Alert.alert(t('cal.import', lang), n > 0 ? t('cal.importOk', lang).replace('{n}', n) : t('cal.importNone', lang));
+    } catch {
+      Alert.alert(t('cal.import', lang), t('cal.importErr', lang));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const shiftMonth = (delta) => { select(); setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + delta, 1)); };
   const pickDay = (cell) => {
     select();
@@ -123,26 +143,13 @@ export default function CalendarScreen({ navigation }) {
   const selDate = new Date(`${selISO}T00:00:00`);
   const selFlights = flightsByDay[selISO] || [];
   const selDay = dayLog[selISO] || {};
-  // Extras AE (€) do dia. (O filtro FTL_CATS ignora registos FTL legados nos extras.)
-  const selExtras = extras.filter(e => e.date === selISO && !FTL_CATS.has(e.category));
-  const hasFtlRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null || selDay.voo > 0 || selDay.servico > 0);
-  const hasRecords = isFtl ? hasFtlRecords : selExtras.length > 0;
+  const hasRecords = !!(selDay.psv || selDay.rest?.base != null || selDay.rest?.away != null || selDay.voo > 0 || selDay.servico > 0);
 
-  // FTL: o "+" e os registos abrem a calculadora unificada "Atividade" ligada a este dia.
-  const openDuty = () => { setAddOpen(false); navigation.navigate('FtlCalc', { duty: true, date: selISO }); };
-  // Registar um extra AE (categoria + €) no dia selecionado.
-  const saveAeExtra = () => {
-    const amount = parseFloat(String(newAmount).replace(',', '.')) || 0;
-    if (amount <= 0) return;
-    addExtra({ month: selISO.slice(0, 7), date: selISO, category: newCat, amount });
-    success();
-    setNewAmount('');
-    setAddOpen(false);
-  };
+  // O "+" e os registos abrem a calculadora unificada "Atividade" ligada a este dia.
+  const openDuty = () => { navigation.navigate('FtlCalc', { duty: true, date: selISO }); };
   // Apagar registos do dia (só os nossos dados — nunca o calendário real).
   const delPsv = () => { select(); removeDayLog(selISO, 'psv'); };
   const delHours = (key) => { select(); removeDayLog(selISO, key); }; // 'voo' | 'servico'
-  const delExtra = (id) => { select(); removeExtra(id); };
   const delRest = (place) => {
     select();
     const r = { ...(selDay.rest || {}) };
@@ -206,7 +213,13 @@ export default function CalendarScreen({ navigation }) {
         </View>
 
         {/* Voos (leitura) */}
-        <Text style={s.secHd}>{t('cal.flights', lang)}</Text>
+        <View style={s.flightsHead}>
+          <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{t('cal.flights', lang)}</Text>
+          <TouchableOpacity style={s.importBtn} onPress={onImport} disabled={importing} activeOpacity={0.85} accessibilityLabel={t('cal.import', lang)}>
+            {importing ? <ActivityIndicator size="small" color={C.sub} />
+              : <><Ionicons name="download-outline" size={14} color={C.text} /><Text style={s.importBtnTxt}>{t('cal.import', lang)}</Text></>}
+          </TouchableOpacity>
+        </View>
         {!calOk ? (
           <View style={s.note}>
             <Ionicons name="information-circle-outline" size={16} color={C.sub} />
@@ -233,10 +246,10 @@ export default function CalendarScreen({ navigation }) {
           ))
         )}
 
-        {/* Registos do dia — FTL (cálculos da Atividade) ou AE (extras em €) */}
+        {/* Registos do dia — cálculos da Atividade (PSV · limites · repouso) */}
         <View style={s.recHead}>
-          <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{isFtl ? t('cal.records', lang) : t('cal.recordsAe', lang)}</Text>
-          <TouchableOpacity style={s.addBtn} onPress={() => { select(); if (isFtl) openDuty(); else setAddOpen(true); }} hitSlop={8} accessibilityLabel={t('cal.addRecord', lang)}>
+          <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{t('cal.records', lang)}</Text>
+          <TouchableOpacity style={s.addBtn} onPress={() => { select(); openDuty(); }} hitSlop={8} accessibilityLabel={t('cal.addRecord', lang)}>
             <Ionicons name="add" size={20} color={C.onDark} />
           </TouchableOpacity>
         </View>
@@ -244,57 +257,29 @@ export default function CalendarScreen({ navigation }) {
           <Text style={s.empty}>{t('cal.noRecords', lang)}</Text>
         ) : (
           <>
-            {isFtl && selDay.psv ? (
+            {selDay.psv ? (
               <RecRow s={s} C={C} label={t('home.psvMaxLbl', lang)} value={selDay.psv.result}
                 onPress={openDuty} onDelete={delPsv} />
             ) : null}
-            {isFtl && selDay.rest?.base != null ? (
+            {selDay.rest?.base != null ? (
               <RecRow s={s} C={C} label={t('home.restBase', lang)} value={fmtVal(selDay.rest.base, 'h')}
                 onPress={openDuty} onDelete={() => delRest('base')} />
             ) : null}
-            {isFtl && selDay.rest?.away != null ? (
+            {selDay.rest?.away != null ? (
               <RecRow s={s} C={C} label={t('home.restAway', lang)} value={fmtVal(selDay.rest.away, 'h')}
                 onPress={openDuty} onDelete={() => delRest('away')} />
             ) : null}
-            {isFtl && selDay.servico > 0 ? (
+            {selDay.servico > 0 ? (
               <RecRow s={s} C={C} label={t('ftl.duty', lang)} value={fmtVal(selDay.servico, 'h')}
                 onPress={openDuty} onDelete={() => delHours('servico')} />
             ) : null}
-            {isFtl && selDay.voo > 0 ? (
+            {selDay.voo > 0 ? (
               <RecRow s={s} C={C} label={t('ftl.flight', lang)} value={fmtVal(selDay.voo, 'h')}
                 onPress={openDuty} onDelete={() => delHours('voo')} />
             ) : null}
-            {selExtras.map(e => (
-              <RecRow key={e.id} s={s} C={C} label={e.label || catLabel(e.category, lang)}
-                value={fmtEur(e.amount)} onDelete={() => delExtra(e.id)} />
-            ))}
           </>
         )}
       </ScrollView>
-
-      {/* AE: registar extra (categoria + €) no dia */}
-      <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)} title={t('cal.addRecord', lang)} closeLabel={t('common.close', lang)}>
-        <View style={s.aeForm}>
-          <Text style={s.fieldLbl}>{t('home.category', lang)}</Text>
-          <View style={s.catWrap}>
-            {extraCategories('ae').map(c => {
-              const sel = newCat === c.id;
-              return (
-                <TouchableOpacity key={c.id} onPress={() => setNewCat(c.id)} style={[s.catChip, { backgroundColor: sel ? C.ink : C.soft }]}>
-                  <Ionicons name={c.icon} size={14} color={sel ? '#fff' : C.sub} />
-                  <Text style={[s.catChipTxt, { color: sel ? '#fff' : C.sub }]}>{catLabel(c.id, lang)}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={[s.fieldLbl, { marginTop: 16 }]}>{t('home.amount', lang)}</Text>
-          <TextInput value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" placeholder="0,00"
-            placeholderTextColor={C.sub} style={s.amountInput} />
-          <TouchableOpacity onPress={saveAeExtra} style={[s.saveBtn, { opacity: (parseFloat(String(newAmount).replace(',', '.')) || 0) > 0 ? 1 : 0.4 }]}>
-            <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -324,6 +309,9 @@ const makeStyles = (C) => StyleSheet.create({
   dayHeadSub: { fontSize: TYPE.body, color: C.text, fontWeight: '600', marginTop: 1 },
 
   secHd: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.md, marginBottom: SPACE.sm },
+  flightsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md, marginBottom: SPACE.sm },
+  importBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 30, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: C.card },
+  importBtnTxt: { fontSize: TYPE.micro, fontWeight: '700', color: C.text, letterSpacing: 0.3 },
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm },
   noteTxt: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },

@@ -450,6 +450,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const cs = makeCs(C);
   const [place, setPlace] = useState('base');
   const [prev, setPrev] = useState(0);
+  const [awayTz4, setAwayTz4] = useState(false); // 235(b)(3)(ii): fora da base com fuso ≥ 4 h → piso 14 h
   const [dir, setDir] = useState('after'); // 'after' = off-block→apresentação · 'before' = apresentação→off-block
   const [timeStr, setTimeStr] = useState('');
   const [tzD, setTzD] = useState(0);       // diferença de fuso (235b3)
@@ -457,7 +458,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   const [redOn, setRedOn] = useState(false); // repouso reduzido (235c)
   const [redStr, setRedStr] = useState(''); // repouso reduzido inserido (HH:MM)
   // Motor FTL (235): repouso mínimo = máx(serviço anterior, piso). Em horas.
-  const { floorMin, restMin } = computeRest({ prevDutyMin: prev * 60, inBase: place === 'base' });
+  const { floorMin, restMin } = computeRest({ prevDutyMin: prev * 60, inBase: place === 'base', tzDiffH: (place === 'away' && awayTz4) ? 5 : 0 });
   const floor = floorMin / 60;
   const min = restMin / 60;
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -497,6 +498,13 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   return (
     <CalcCard title={t('ftl.calcRest', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
       <Seg options={[{ id: 'base', label: t('ftl.atBase', lang) }, { id: 'away', label: t('ftl.awayBase', lang) }]} value={place} setValue={setPlace} />
+      {place === 'away' && (
+        <View style={cs.segRow}>
+          <Text style={cs.fieldLabel}>{t('ftl.tzAway', lang)}</Text>
+          <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
+            value={awayTz4 ? 'yes' : 'no'} setValue={(v) => { anim(); setAwayTz4(v === 'yes'); }} />
+        </View>
+      )}
       <Stepper label={t('ftl.prevDuty', lang)} value={prev} setValue={setPrev} min={0} max={20} />
       <ResultBlock label={t('ftl.minRest', lang)} value={`${min} h`} valueSize={28} audit={restAudit} lang={lang} />
 
@@ -614,10 +622,12 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
   const [sbH, setSbH] = useState(0);
   const [fdp, setFdp] = useState('');       // PSV máximo planeado (HH:MM)
   const [extended, setExtended] = useState(false); // PSV c/ repouso a bordo ou repartido (6h→8h)
+  const [start, setStart] = useState('');     // início do standby (HH:MM) — carve-out noturno (b)(9)
   const onFdp = (v) => { const m = maskClock(v); if (m == null) return; anim(); setFdp(m); };
+  const onStart = (v) => { const m = maskClock(v); if (m == null) return; anim(); setStart(m); };
   const fdpMin = parseHhmm(fdp);
   const isAirport = type === 'airport';
-  const r = computeStandby({ type, standbyH: sbH, maxFdpMin: fdpMin, extended });
+  const r = computeStandby({ type, standbyH: sbH, maxFdpMin: fdpMin, extended, startMin: !isAirport ? parseHhmm(start) : null });
   const complete = sbH > 0;
 
   return (
@@ -630,6 +640,13 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
           <Text style={cs.fieldLabel}>{t('ftl.sbExtended', lang)}</Text>
           <Seg options={[{ id: 'no', label: t('common.no', lang) }, { id: 'yes', label: t('common.yes', lang) }]}
             value={extended ? 'yes' : 'no'} setValue={(v) => { anim(); setExtended(v === 'yes'); }} />
+        </View>
+      )}
+      {!isAirport && (
+        <View style={cs.timeRow}>
+          <Text style={cs.timeLbl}>{t('ftl.sbStart', lang)}</Text>
+          <TextInput value={start} onChangeText={onStart} placeholder="HH:MM" placeholderTextColor={C.sub}
+            keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
         </View>
       )}
       <View style={cs.timeRow}>

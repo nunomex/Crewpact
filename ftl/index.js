@@ -19,6 +19,9 @@ import { computeTimeZoneRest } from './calculators/timeZoneRestCalculator';
 import { computeDelayedReporting } from './calculators/delayedReportingCalculator';
 import { computeExtensionUsage } from './calculators/extensionUsageCalculator';
 import { computeRest } from './calculators/restCalculator';
+import { classifyDisruptive } from './calculators/disruptiveCalculator';
+import { computeRestSequence } from './calculators/sequenceCalculator';
+import { computeFatigue } from './calculators/fatigueCalculator';
 import { computeFlightTime } from './calculators/flightTimeCalculator';
 import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
 import { validateDuty } from './validators/validateDuty';
@@ -81,12 +84,26 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
   };
 };
 
+// Índice de risco de fadiga (consultivo) a partir de um resultado de computeDuty.
+// `restMin` default = repouso mínimo calculado após esta duty; `consecutiveDisruptive`
+// = dias disruptivos seguidos (ex.: de computeRestSequence) — 0 se não fornecido.
+export const fatigueFromDuty = (d, { restMin = null, consecutiveDisruptive = 0 } = {}) => {
+  if (!d || !d.fdp) return null;
+  return computeFatigue({
+    reportMin: d.reportMin, endMin: d.endMin, sectors: d.sectors,
+    maxFdpMin: d.fdp.maxFdpMin, actualFdpMin: d.fdp.actualFdpMin,
+    restMin: restMin != null ? restMin : (d.rest ? d.rest.restMin : null),
+    consecutiveDisruptive,
+  });
+};
+
 export {
   computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits,
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
   computeInflightRest, computeStandby, computeReducedRest, computeTimeZoneRest,
-  computeDelayedReporting, computeExtensionUsage,
+  computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence,
+  computeFatigue,
   withinBand, fmtBandRange, bandRangeMins,
   DUTY_WINDOWS, FLIGHT_WINDOWS, QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 };

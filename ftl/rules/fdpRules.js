@@ -6,6 +6,7 @@ import { woclOverlapMin } from '../calculators/woclCalculator';
 export const NIGHT_SECTOR_LIMIT = 4; // CS FTL.1.205(a)(1): noites consecutivas ≤ 4 setores
 export const SPLIT_MIN_BREAK_H = 3;  // ORO.FTL.220(a): intervalo em terra ≥ 3 h
 export const SPLIT_EXT_FACTOR = 0.5; // ORO.FTL.220(c): até 50 % do intervalo
+export const SPLIT_ADMIN_MIN = 30;   // CS FTL.1.220(b): pré/pós-voo + deslocação excluídos da pausa (mín 30 min)
 
 // PSV máximo de base (minutos) da tabela do estado de aclimatação:
 //  'acc' → Quadro 2 (faixa de report × setores), 'unk' → Quadro 3, 'frm' → Quadro 4.
@@ -39,18 +40,23 @@ export const bandRangeMins = (b) => String(b).split('–').map((s) => (+s.slice(
 export const withinBand = (m, b) => { const [lo, hi] = bandRangeMins(b); return lo <= hi ? (m >= lo && m <= hi) : (m >= lo || m <= hi); };
 export const fmtBandRange = (b) => String(b).split('–').map((s) => `${s.slice(0, 2)}:${s.slice(2)}`).join('–');
 
-// Extensão por serviço de voo repartido (ORO.FTL.220) — minutos (pausa inteira).
-export const splitExtensionMin = (breakH) =>
-  breakH >= SPLIT_MIN_BREAK_H ? Math.round(breakH * 60 * SPLIT_EXT_FACTOR) : 0;
+// Extensão por serviço de voo repartido (ORO.FTL.220) — caminho sem timing (seletor
+// de faixa). Pausa LÍQUIDA = bruta − 30 min (220(b)); estende se a líquida ≥ 3 h.
+export const splitExtensionMin = (breakH) => {
+  const net = breakH * 60 - SPLIT_ADMIN_MIN;
+  return net >= SPLIT_MIN_BREAK_H * 60 ? Math.round(net * SPLIT_EXT_FACTOR) : 0;
+};
 
-// CS FTL.1.220(d)(e): pausa CONTÁVEL para a extensão. Sem alojamento adequado, a
-// parte > 6 h e a parte que invade o WOCL não contam. Com alojamento, conta tudo.
+// CS FTL.1.220(b)(d)(e): pausa CONTÁVEL para a extensão. (b) exclui sempre 30 min de
+// pré/pós-voo+deslocação. Sem alojamento adequado, a parte > 6 h e a que invade o
+// WOCL não contam. Com alojamento, conta toda a pausa líquida.
 export const splitCountedBreakMin = (breakMin, breakStartMin = null, accommodation = false) => {
-  if (breakMin < SPLIT_MIN_BREAK_H * 60) return 0;          // < 3 h não estende
-  if (accommodation || breakStartMin == null) return breakMin; // alojamento (ou sem timing) → tudo conta
-  const cappedEnd = breakStartMin + Math.min(breakMin, 360); // exclui a parte > 6 h
+  const net = breakMin - SPLIT_ADMIN_MIN;                  // 220(b): exclui 30 min de admin/deslocação
+  if (net < SPLIT_MIN_BREAK_H * 60) return 0;              // 220(a): pausa líquida ≥ 3 h
+  if (accommodation || breakStartMin == null) return net;  // alojamento (ou sem timing) → toda a líquida conta
+  const cappedEnd = breakStartMin + Math.min(net, 360);    // exclui a parte > 6 h
   const cappedDur = cappedEnd - breakStartMin;
-  const woclOv = woclOverlapMin(breakStartMin, cappedEnd);   // exclui a parte no WOCL
+  const woclOv = woclOverlapMin(breakStartMin, cappedEnd); // exclui a parte no WOCL
   return Math.max(0, cappedDur - woclOv);
 };
 export const splitExtensionFromCountedMin = (countedBreakMin) => Math.round(countedBreakMin * SPLIT_EXT_FACTOR);
