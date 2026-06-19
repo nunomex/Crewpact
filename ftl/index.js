@@ -54,6 +54,33 @@ export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, sp
   };
 };
 
+// Adapter: registo bruto de duty (tabela `duties`) → entrada do `dayLog` (store FTL),
+// via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
+// `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).
+// Devolve null sem dados suficientes (sem apresentação ou sem on-block).
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) => {
+  if (!duty.report_time || !duty.block_on) return null;
+  const d = computeDuty({ state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: 0 });
+  if (d.fdp.actualFdpMin == null) return null;
+  const toH = (m) => +(m / 60).toFixed(1);
+  const servicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
+  const vooH = duty.flight_minutes ? toH(duty.flight_minutes) : 0;
+  const place = inBase ? 'base' : 'away';
+  const repMin = parseHhmm(duty.report_time), endMin = parseHhmm(duty.block_on);
+  return {
+    src: 'duty',
+    psv: {
+      state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: d.fdp.maxFdpStr,
+      band: d.fdp.band, start: duty.report_time, end: duty.block_on,
+      endNextDay: repMin != null && endMin != null && endMin < repMin,
+      over: d.fdp.over, excess: d.fdp.excessStr, extended: false, ts: Date.now(),
+    },
+    servico: servicoH,
+    voo: vooH,
+    rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: servicoH, ts: Date.now() },
+  };
+};
+
 export {
   computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits,
   validateDuty, validateRest, isNightDuty, overlapsWOCL,

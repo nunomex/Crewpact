@@ -21,6 +21,7 @@ import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines } from './data/db';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
+import { dutyToFtlDay } from './ftl';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -218,7 +219,7 @@ export default function App() {
 
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.
-  const saveDuty = (date, fields) =>
+  const saveDuty = (date, fields) => {
     setDuties(prev => ({
       ...prev,
       [date]: {
@@ -233,9 +234,24 @@ export default function App() {
         deleted: false,
       },
     }));
+    // Liga ao motor FTL: deriva o registo do dia (PSV/limites/repouso) a partir da
+    // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
+    const entry = dutyToFtlDay({
+      report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
+      sectors: fields.sectors, flight_minutes: fields.flight_minutes,
+    });
+    setDayLog(prev => {
+      if (entry) return { ...prev, [date]: entry };
+      if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
+      return prev;
+    });
+  };
   // Apagar: marca `deleted` para propagar ao servidor (o flush remove no fim).
-  const removeDuty = (date) =>
+  const removeDuty = (date) => {
     setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], deleted: true, dirty: true, updated_at: new Date().toISOString() } } : prev));
+    // Remove o registo FTL derivado deste dia (preserva registos manuais sem src).
+    setDayLog(prev => { if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; } return prev; });
+  };
 
   // Empurra pendentes (dirty/deleted) para o Supabase. Best-effort: o que falhar
   // (offline) fica pendente e tenta de novo no foreground / próxima alteração.
