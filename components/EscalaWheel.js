@@ -1,7 +1,9 @@
-import React, { useContext, useState, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { FONT, RADIUS } from '../data/constants';
 import { AppContext, useTheme, isoDay } from '../App';
+import { getDutiesInRange } from '../data/calendar';
 import { t } from '../data/i18n';
 
 // Roda da Escala (mockup): carrossel vertical de dias do mês, com snap nativo.
@@ -21,7 +23,7 @@ function Detail({ s, k, v }) {
   );
 }
 
-export default function EscalaWheel() {
+export default function EscalaWheel({ onAddDuty }) {
   const { duties, lang } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -36,15 +38,32 @@ export default function EscalaWheel() {
   const monthLabel = (() => { const m = now.toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
   const monthName = monthLabel.split(' ')[0];
 
+  // Voos do CALENDÁRIO do telemóvel (mês atual), agrupados em atividades. Leitura
+  // best-effort: sem permissão, fica vazio (a roda mostra só os manuais).
+  const [cal, setCal] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    getDutiesInRange(new Date(year, month, 1), new Date(year, month + 1, 0, 23, 59, 59))
+      .then(({ ok, duties: cd }) => {
+        if (cancelled || !ok) return;
+        const map = {};
+        cd.forEach((d) => { map[d.dateISO] = { route: `${d.startAirport} · ${d.endAirport}`, report_time: d.report, sectors: d.sectors, fromCal: true }; });
+        setCal(map);
+      }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [year, month]);
+
   const days = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
     const d = new Date(year, month, day);
     const iso = isoDay(d);
     const reg = duties[iso];
-    const flight = reg && !reg.deleted && reg.report_time ? reg : null;
+    // Manual (duties) tem prioridade; senão, o que vier do calendário do telemóvel.
+    const manual = reg && !reg.deleted && reg.report_time ? reg : null;
+    const flight = manual || cal[iso] || null;
     const wd = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
-    return { day, iso, wd: wd.charAt(0).toUpperCase() + wd.slice(1), flight, isToday: day === todayDay };
-  }), [duties, year, month, daysInMonth, todayDay, locale]);
+    return { day, iso, wd: wd.charAt(0).toUpperCase() + wd.slice(1), flight, fromCal: !manual && !!cal[iso], isToday: day === todayDay };
+  }), [duties, cal, year, month, daysInMonth, todayDay, locale]);
 
   const [sel, setSel] = useState(todayDay - 1);
   const onScroll = (e) => {
@@ -57,7 +76,12 @@ export default function EscalaWheel() {
 
   return (
     <View>
-      <Text style={s.month}>{monthLabel}</Text>
+      <View style={s.monthRow}>
+        <Text style={s.month}>{monthLabel}</Text>
+        <TouchableOpacity style={s.addBtn} activeOpacity={0.85} onPress={() => onAddDuty && onAddDuty(cur.iso)} accessibilityLabel={l('Nova duty', 'New duty')}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
       <View style={s.wheel}>
         <View style={s.band} pointerEvents="none" />
@@ -86,14 +110,15 @@ export default function EscalaWheel() {
         </ScrollView>
       </View>
 
-      {/* Detalhe do dia centrado */}
-      <View style={s.det}>
+      {/* Detalhe do dia centrado — toca para inserir/editar */}
+      <TouchableOpacity style={s.det} activeOpacity={0.9} onPress={() => onAddDuty && onAddDuty(cur.iso)}>
         <View style={s.detHead}>
           <View style={[s.dc, !cur.flight && s.dcOff]}><Text style={[s.dcTxt, !cur.flight && s.dcTxtOff]}>{cur.day}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={s.detTitle} numberOfLines={1}>{cur.flight ? (cur.flight.route || l('Voo', 'Flight')) : l('Folga', 'Day off')}</Text>
-            <Text style={s.detSub}>{cur.wd} · {cur.day} {monthName}{cur.isToday ? ` · ${t('cal.today', lang)}` : ''}</Text>
+            <Text style={s.detSub}>{cur.wd} · {cur.day} {monthName}{cur.isToday ? ` · ${t('cal.today', lang)}` : ''}{cur.fromCal ? ` · ${l('do calendário', 'from calendar')}` : ''}</Text>
           </View>
+          <Ionicons name={cur.flight ? 'create-outline' : 'add'} size={18} color={C.sub} />
         </View>
         {cur.flight ? (
           <View style={s.detGrid}>
@@ -104,13 +129,15 @@ export default function EscalaWheel() {
         ) : (
           <Text style={s.detEmpty}>{l('Sem serviço neste dia.', 'No duty on this day.')}</Text>
         )}
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  month: { fontFamily: FONT.heavy, fontSize: 28, letterSpacing: -0.6, color: C.text, marginBottom: 14 },
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  month: { fontFamily: FONT.heavy, fontSize: 28, letterSpacing: -0.6, color: C.text },
+  addBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   wheel: { height: WH, overflow: 'hidden', marginBottom: 14 },
   band: { position: 'absolute', left: -4, right: -4, top: WH / 2 - ROWH / 2, height: ROWH, borderRadius: 18, backgroundColor: C.soft },
   row: { height: ROWH, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12 },

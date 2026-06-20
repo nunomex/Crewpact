@@ -8,6 +8,7 @@ import { AppContext, useTheme } from '../App';
 import DutiesScreen from './DutiesScreen';
 import CalendarScreen from './CalendarScreen';
 import EscalaWheel from '../components/EscalaWheel';
+import DutyFormSheet from '../components/DutyFormSheet';
 
 // Aba Escala — junta a Lista de duties e a grelha mensal do Calendário num só
 // destino, com um seletor no topo. As telas existentes são reutilizadas em modo
@@ -17,6 +18,7 @@ export default function EscalaScreen({ navigation, route }) {
   const { lang } = useContext(AppContext);
   const C = useTheme();
   const [view, setView] = useState(route.params?.view || 'wheel');
+  const [dutyDate, setDutyDate] = useState(null); // dia a inserir/editar (roda → popup)
   useEffect(() => { if (route.params?.view) setView(route.params.view); }, [route.params?.view]);
 
   return (
@@ -32,11 +34,12 @@ export default function EscalaScreen({ navigation, route }) {
       </View>
       <View style={{ flex: 1 }}>
         {view === 'wheel'
-          ? <View style={{ paddingHorizontal: GUTTER, paddingTop: 10 }}><EscalaWheel /></View>
+          ? <View style={{ paddingHorizontal: GUTTER, paddingTop: 10 }}><EscalaWheel onAddDuty={(iso) => setDutyDate(iso)} /></View>
           : view === 'list'
             ? <DutiesScreen navigation={navigation} embedded />
             : <CalendarScreen navigation={navigation} embedded />}
       </View>
+      <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate} />
     </SafeAreaView>
   );
 }
