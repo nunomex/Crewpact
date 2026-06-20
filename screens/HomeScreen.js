@@ -94,6 +94,31 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
   );
 }
 
+// Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com
+// mini-barra colorida por severidade. Usado na grelha 2-col do Início.
+function LimitCard({ title, windows, limLabel, s, C }) {
+  return (
+    <View style={s.uc}>
+      <View style={s.ucHead}>
+        <View style={s.ucDot} />
+        <Text style={s.ucTitle} numberOfLines={1}>{title}</Text>
+      </View>
+      {windows.map((w) => {
+        const r = w.limit ? w.done / w.limit : 0;
+        return (
+          <View key={w.id} style={s.ucWin}>
+            <View style={s.ucWl}>
+              <Text style={s.ucA} numberOfLines={1}>{limLabel(w)}</Text>
+              <Text style={s.ucB} numberOfLines={1}><Text style={s.ucBnum}>{Math.round(w.done)}</Text>/{Math.round(w.limit)}h</Text>
+            </View>
+            <View style={s.ucBar}><View style={[s.ucBarFill, { width: `${Math.round(Math.min(1, r) * 100)}%`, backgroundColor: barColor(r, C) }]} /></View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot } = useContext(AppContext);
@@ -422,22 +447,12 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : null}
 
-        {/* Limites acumulados — pior janela em destaque + expandir */}
-        <View style={s.panel}>
-          <Text style={s.secTitle}>{t('home.dashLimits', lang)}</Text>
-          <Seg options={[{ id: 'servico', label: catLabel('servico', lang) }, { id: 'voo', label: catLabel('voo', lang) }]} value={limCat} setValue={setLimCat} />
-          {catLimits.some(w => w.done > 0) ? (
-            <>
-              <ProgressRow key={catWorst.id} label={limLabel(catWorst)} done={catWorst.done} limit={catWorst.limit} lang={lang} s={s} C={C} />
-              {limExpanded ? catLimits.filter(w => w !== catWorst).map(w => (
-                <ProgressRow key={w.id} label={limLabel(w)} done={w.done} limit={w.limit} lang={lang} s={s} C={C} />
-              )) : null}
-              <TouchableOpacity onPress={() => { select(); setLimExpanded(e => !e); }} hitSlop={6} activeOpacity={0.7}>
-                <Text style={s.limToggle}>{limExpanded ? t('home.showLess', lang) : t('home.showAll', lang)}</Text>
-              </TouchableOpacity>
-            </>
-          ) : <Text style={s.panelEmptyTxt}>{t('home.limitsEmpty', lang)}</Text>}
+        {/* Limites acumulados — grelha 2-col (Voo + Serviço), como o mockup */}
+        <View style={s.grid2}>
+          <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
+          <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />
         </View>
+        {!hasLimitData ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
 
         {/* Repouso — cartão claro */}
         <View style={s.panel}>
@@ -544,6 +559,22 @@ const makeStyles = (C) => StyleSheet.create({
   aeTotalK: { fontSize: TYPE.body, color: C.text, fontWeight: '700' },
   aeTotalV: { fontSize: TYPE.value + 2, color: C.text, fontWeight: '800', fontVariant: ['tabular-nums'] },
   aeMiss: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
+
+  // Limites — grelha 2-col (mockup .grid2/.uc/.win/.wbar)
+  grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
+  gridHint: { fontSize: TYPE.micro, color: C.sub, marginTop: -8, marginBottom: SPACE.md, paddingHorizontal: 2, lineHeight: 16 },
+  uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15,
+    shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
+  ucHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
+  ucDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.ink },
+  ucTitle: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, flexShrink: 1 },
+  ucWin: { marginTop: 10 },
+  ucWl: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, marginBottom: 5 },
+  ucA: { fontSize: 9.5, fontWeight: '700', color: C.sub, flexShrink: 1 },
+  ucB: { fontSize: 10.5, color: C.sub, fontVariant: ['tabular-nums'] },
+  ucBnum: { color: C.text, fontWeight: '700' },
+  ucBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
+  ucBarFill: { height: '100%', borderRadius: RADIUS.pill },
 
   // Próximo voo — badge circular do report + texto
   nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
