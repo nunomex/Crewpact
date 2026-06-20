@@ -34,10 +34,10 @@ import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
-import AnimatedSplash     from './components/AnimatedSplash';
 
-// Segura o splash nativo no arranque — o AnimatedSplash assume daqui (handoff sem
-// salto) e esconde-o quando a app está pronta. Chamado uma vez, no load do módulo.
+// Segura o splash nativo no arranque e esconde-o assim que a app está pronta
+// (sem animação — o splash estático nativo cobre a janela de auth + hidratação).
+// Chamado uma vez, no load do módulo.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const Tab   = createBottomTabNavigator();
@@ -160,7 +160,7 @@ export default function App() {
 
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
-  const [splashDone, setSplashDone] = useState(false);       // splash animado feito (esconde o overlay)
+  const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
 
   const [lang, setLang]                 = useState('pt');
@@ -539,17 +539,23 @@ export default function App() {
   };
 
   // Pronto = o renderScreen mostraria um ecrã REAL (não o spinner de carga). O
-  // splash animado mascara exatamente esta janela (auth + hidratação) e sai aqui.
+  // splash nativo (estático) cobre exatamente esta janela (auth + hidratação) e
+  // só é escondido aqui — sem salto, porque o ecrã real já está montado por baixo.
   const appReady = !authLoading && (!user || (lockEnabled && locked) || loadedUserId === user.id);
+
+  useEffect(() => {
+    if (appReady && !splashHidden) {
+      SplashScreen.hideAsync().catch(() => {}).finally(() => setSplashHidden(true));
+    }
+  }, [appReady, splashHidden]);
 
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
-        <StatusBar style={(!splashDone || theme === 'dark') ? 'light' : 'dark'} />
+        <StatusBar style={(!splashHidden || theme === 'dark') ? 'light' : 'dark'} />
         <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
-        {!splashDone && <AnimatedSplash ready={appReady} onDone={() => setSplashDone(true)} />}
       </AppContext.Provider>
     </SafeAreaProvider>
   );
