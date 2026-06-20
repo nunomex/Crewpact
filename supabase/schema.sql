@@ -147,3 +147,21 @@ begin
       alter column block_on   type text using block_on::text;
   end if;
 end $$;
+
+
+-- ── 8. duties: constraint UNIQUE (user_id, duty_date) para o upsert ──────────
+-- O upsertDuty (data/duties.js) faz `onConflict: 'user_id,duty_date'` (uma duty
+-- por dia por utilizador). Sem uma constraint/índice UNIQUE nessas colunas o upsert
+-- falha: "there is no unique or exclusion constraint matching the ON CONFLICT
+-- specification" → as duties NÃO sincronizam. Idempotente.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.duties'::regclass and contype = 'u'
+      and conname = 'duties_user_date_unique'
+  ) then
+    alter table public.duties
+      add constraint duties_user_date_unique unique (user_id, duty_date);
+  end if;
+end $$;

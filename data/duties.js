@@ -27,8 +27,9 @@ export const fetchDuties = async (userId) => {
 };
 
 // Cria/atualiza a duty de um dia (upsert por user_id + duty_date).
+// Devolve a MENSAGEM de erro (string) em falha, ou `null` em sucesso. [DIAGNÓSTICO]
 export const upsertDuty = async (userId, d = {}) => {
-  if (!userId || !d.duty_date) return false;
+  if (!userId || !d.duty_date) return 'sem userId/data';
   try {
     const { error } = await supabase
       .from('duties')
@@ -42,19 +43,19 @@ export const upsertDuty = async (userId, d = {}) => {
         flight_minutes: d.flight_minutes || 0,
         notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       }, { onConflict: 'user_id,duty_date' });
-    return !error;
-  } catch {
-    return false;
+    return error ? (error.message || 'erro') : null;   // null = sucesso
+  } catch (e) {
+    return e?.message || 'exceção';
   }
 };
 
-// Apaga a duty de um dia.
+// Apaga a duty de um dia. Devolve a mensagem de erro, ou `null` em sucesso.
 export const deleteDuty = async (userId, dutyDate) => {
-  if (!userId || !dutyDate) return false;
+  if (!userId || !dutyDate) return 'sem dados';
   try {
     const { error } = await supabase.from('duties').delete().eq('user_id', userId).eq('duty_date', dutyDate);
-    return !error;
-  } catch {
-    return false;
+    return error ? (error.message || 'erro') : null;
+  } catch (e) {
+    return e?.message || 'exceção';
   }
 };

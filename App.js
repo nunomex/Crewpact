@@ -295,18 +295,20 @@ export default function App() {
   // (offline) fica pendente e tenta de novo no foreground / próxima alteração.
   const flushDuties = useCallback(async (uid) => {
     if (!uid || dutiesSyncing.current) return;
+    const pend = Object.entries(dutiesRef.current).filter(([, d]) => d.dirty || d.deleted);
+    if (!pend.length) return;
     dutiesSyncing.current = true;
     try {
-      for (const [date, d] of Object.entries(dutiesRef.current)) {
+      for (const [date, d] of pend) {
         if (d.deleted) {
-          if (await deleteDuty(uid, date)) {
-            setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; });
-          }
+          const err = await deleteDuty(uid, date);
+          if (!err) setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; });
+          else console.warn('[duties] delete falhou', date, err);
         } else if (d.dirty) {
-          if (await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route })) {
-            // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
-            setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev));
-          }
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route });
+          // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
+          if (!err) setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev));
+          else console.warn('[duties] upsert falhou', date, err);
         }
       }
     } finally { dutiesSyncing.current = false; }
