@@ -126,3 +126,24 @@ end $$;
 -- create trigger on_auth_user_created
 --   after insert on auth.users
 --   for each row execute function public.handle_new_user();
+
+
+-- ── 7. duties: horas são "HH:MM" (TEXT), não timestamp ───────────────────────
+-- A app guarda report_time/block_off/block_on como texto local "HH:MM" (modelo do
+-- motor FTL — ver data/duties.js). As colunas vieram como `timestamp` → o upsert
+-- falhava sempre ("invalid input syntax for type timestamp: 06:00") e as duties
+-- NUNCA sincronizavam (falha em silêncio: upsertDuty devolve false). Converte para
+-- text. Idempotente (só altera se ainda for timestamp); seguro (tabela vazia).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'duties'
+      and column_name = 'report_time' and data_type like 'timestamp%'
+  ) then
+    alter table public.duties
+      alter column report_time type text using report_time::text,
+      alter column block_off  type text using block_off::text,
+      alter column block_on   type text using block_on::text;
+  end if;
+end $$;

@@ -16,7 +16,7 @@ const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '' };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '' };
 
 // Campo "HH:MM" (nível de módulo — definir dentro do componente fá-lo perder o foco a cada tecla).
 function ClockField({ label, value, onChange, C, s }) {
@@ -44,7 +44,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!visible) return;
     const iso = date || isoDay();
     const d = duties[iso];
-    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes) });
+    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '' });
     else setForm({ ...EMPTY, date: iso });
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -76,7 +76,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!canSave) return;
     saveDuty(form.date, {
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
-      sectors: form.sectors, flight_minutes: hhmmToMin(form.flight),
+      sectors: form.sectors, flight_minutes: hhmmToMin(form.flight), route: form.route.trim() || null,
     });
     success();
     onClose && onClose();
@@ -104,6 +104,12 @@ export default function DutyFormSheet({ visible, onClose, date }) {
         <ClockField C={C} s={s} label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm(f => ({ ...f, on: v }))} />
         <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm(f => ({ ...f, sectors: n }))} min={0} max={12} />
         <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm(f => ({ ...f, flight: v }))} />
+        <View style={s.fieldRow}>
+          <Text style={s.fieldLbl}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
+          <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
+            placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
+            maxLength={40} style={s.routeInput} />
+        </View>
 
         {prospect ? (
           <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
@@ -138,6 +144,7 @@ const makeStyles = (C) => StyleSheet.create({
   fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   clockInput: { width: 92, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
+  routeInput: { width: 170, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 10, borderWidth: 1, borderColor: C.line, color: C.text, letterSpacing: 0.5 },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
   dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
