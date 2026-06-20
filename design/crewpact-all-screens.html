@@ -223,6 +223,56 @@
   .rrow b{ font-weight:800; font-size:13px; color:var(--ink); display:block } .rrow span{ font-size:10.5px; color:var(--sub); font-weight:600 }
   .rrow .tg{ margin-left:auto; font-family:var(--f-disp); font-weight:600; font-size:11px; color:var(--sub); background:var(--soft); padding:5px 10px; border-radius:9px }
 
+  /* AE compacto — vive nos Cálculos (não no Perfil) */
+  .aecalc{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--red); border-radius:18px; padding:14px 15px; box-shadow:0 12px 26px -20px rgba(20,22,26,.3); margin-bottom:18px }
+  .aetop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px }
+  .aelbl{ display:flex; align-items:center; gap:6px; font-weight:800; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub) }
+  .aelbl i{ width:7px;height:7px;border-radius:50%;background:var(--red) }
+  .aechip{ font-weight:800; font-size:9px; color:var(--ink); background:var(--soft); border-radius:99px; padding:4px 9px; letter-spacing:.02em }
+  .aemain{ display:flex; align-items:center; gap:8px }
+  .aebig{ font-family:var(--f-disp); font-weight:600; font-size:33px; color:var(--ink); line-height:1 } .aebig small{ font-size:16px; color:var(--sub); margin-left:2px }
+  .aearrow{ margin-left:auto; font-size:26px; color:var(--grey); font-weight:300; line-height:1 }
+  .aesub{ font-weight:600; font-size:10px; color:var(--sub); margin-top:3px }
+  .aebrk{ display:flex; gap:10px; margin-top:12px; border-top:1px solid var(--line); padding-top:10px }
+  .aebrk > div{ flex:1; display:flex; flex-direction:column }
+  .aebrk .bk{ font-weight:800; font-size:8.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--sub) }
+  .aebrk .bv{ font-family:var(--f-disp); font-weight:600; font-size:14px; color:var(--ink); margin-top:2px } .aebrk .bv.red{ color:var(--red) }
+
+  /* Cálculos · lançador (escolhe AE ou FTL — páginas separadas) */
+  .launch{ display:flex; align-items:center; gap:14px; border-radius:22px; padding:18px; margin-bottom:14px; box-shadow:0 14px 30px -22px rgba(20,22,26,.4) }
+  .launch.ae{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--red) }
+  .launch.ftl{ background:var(--ink); position:relative; overflow:hidden }
+  .launch.ftl::after{ content:""; position:absolute; right:-30px; top:-30px; width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(245,64,44,.5),transparent 70%) }
+  .lc-ic{ width:48px;height:48px;border-radius:15px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;position:relative;z-index:1;background:var(--red);color:#fff }
+  .lc-ic svg{ width:22px;height:22px } .lc-ic .e{ font-family:var(--f-disp);font-weight:600;font-size:22px }
+  .lc-tx{ flex:1;min-width:0;position:relative;z-index:1 }
+  .lc-tx b{ font-family:var(--f-disp);font-weight:600;font-size:17px;display:block }
+  .launch.ae .lc-tx b{ color:var(--ink) } .launch.ftl .lc-tx b{ color:#fff }
+  .lc-tx span{ font-weight:600;font-size:11px;margin-top:2px;display:block }
+  .launch.ae .lc-tx span{ color:var(--sub) } .launch.ftl .lc-tx span{ color:rgba(255,255,255,.55) }
+  .lc-go{ font-size:26px;font-weight:300;position:relative;z-index:1 }
+  .launch.ae .lc-go{ color:var(--grey) } .launch.ftl .lc-go{ color:rgba(255,255,255,.5) }
+
+  /* Página AE (Acordo de Empresa) — full */
+  .aehead{ display:flex; gap:8px; margin-bottom:16px }
+  .aehead .chip{ font-weight:800;font-size:10px;background:var(--soft);color:var(--ink);border-radius:99px;padding:7px 12px }
+  .aehead .chip.red{ background:var(--red);color:#fff }
+  .aebox{ background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 16px;margin-bottom:14px;box-shadow:0 12px 26px -20px rgba(20,22,26,.3) }
+  .aeline{ display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-top:1px solid var(--line) }
+  .aeline:first-child{ border-top:none }
+  .aeline .k{ font-weight:700;font-size:12px;color:var(--sub) }
+  .aeline .v{ font-family:var(--f-disp);font-weight:600;font-size:15px;color:var(--ink) }
+  .aetotal{ background:var(--ink);border-radius:20px;padding:18px 20px;color:#fff;display:flex;align-items:center;justify-content:space-between }
+  .aetotal .k{ font-weight:800;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);max-width:110px;line-height:1.3 }
+  .aetotal .v{ font-family:var(--f-disp);font-weight:600;font-size:30px }
+  /* gráfico per diem por setor */
+  .pdrow{ display:flex;align-items:center;gap:10px;padding:7px 0 }
+  .pdrow .lab{ width:42px;font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--sub) }
+  .pdrow .track{ flex:1;height:8px;border-radius:99px;background:var(--soft);overflow:hidden }
+  .pdrow .track i{ display:block;height:100%;border-radius:99px;background:var(--red) }
+  .pdrow .val{ font-family:var(--f-disp);font-weight:600;font-size:12.5px;color:var(--ink);width:46px;text-align:right }
+  .pdfoot{ font-weight:600;font-size:10px;color:var(--sub);margin-top:9px;padding-top:9px;border-top:1px solid var(--line) }
+
   /* Calculadora detalhe (Repouso a bordo · piloto) */
   .cdtl .eyebrow{ font-weight:800; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub) }
   .cdtl .code{ font-family:var(--f-disp); font-weight:300; font-size:24px; color:var(--ink); margin-top:3px }
@@ -482,10 +532,34 @@
       </div>
     </div></div><figcaption><b><i>12</i>Escala · calendário do mês</b><p>Abre a "explodir" do dia tocado. Pontos vermelhos nos dias com voo; hoje com anel.</p></figcaption></figure>
 
-    <!-- 13 · Cálculos hub -->
+    <!-- 13 · Cálculos · companhia AE (easyJet → a aba rende o AE) -->
     <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
       <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
-      <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">REGULAMENTO UE 83/2014</span></div><div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div><h2 class="ht">Cálculos</h2></div>
+      <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">EASYJET · ACORDO DE EMPRESA</span></div><div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div><h2 class="ht">Cálculos</h2></div>
+      <div class="view" style="overflow-y:auto">
+        <div class="aehead"><span class="chip red">CPT · Comandante</span><span class="chip">5/4 · 92%</span></div>
+        <div class="aebox">
+          <div class="aeline"><span class="k">Base mensal (5/4)</span><span class="v">8 017,14 €</span></div>
+          <div class="aeline"><span class="k">Setor nominal</span><span class="v">78,75 €</span></div>
+        </div>
+        <div class="sec">Per diem · por setor</div>
+        <div class="aebox">
+          <div class="aeline"><span class="k">Total do mês</span><span class="v" style="color:var(--red)">+421,30 €</span></div>
+          <div class="pdrow"><span class="lab">curto</span><span class="track"><i style="width:100%"></i></span><span class="val">248 €</span></div>
+          <div class="pdrow"><span class="lab">médio</span><span class="track"><i style="width:56%"></i></span><span class="val">140 €</span></div>
+          <div class="pdrow"><span class="lab">longo</span><span class="track"><i style="width:13%"></i></span><span class="val">33 €</span></div>
+          <div class="pdfoot">12 voos com rota · distância de grande círculo (Art. 37)</div>
+        </div>
+        <div class="aetotal"><span class="k">Total estimado · junho</span><span class="v">8 438 €</span></div>
+        <div style="font-size:10px;color:var(--sub);line-height:1.5;margin-top:12px">Estimativa de apoio (valores 2024). Não substitui o processamento salarial oficial.</div>
+      </div>
+      <div class="dock"><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><div class="tb on"><span class="pp"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+    </div></div><figcaption><b><i>13</i>Cálculos · companhia AE <span style="font-weight:800;color:var(--red);font-size:10px">NOVO</span></b><p>easyJet é <b>AE</b> (rule_type) → a aba Cálculos rende o AE: categoria, contrato, base e <b>per diem por setor</b>.</p></figcaption></figure>
+
+    <!-- 14 · Cálculos · companhia FTL (TAP → a aba rende o FTL) -->
+    <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
+      <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">TAP AIR PORTUGAL · FTL</span></div><div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div><h2 class="ht">Cálculos</h2></div>
       <div class="view">
         <div class="actbig"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 4v16M5 4h11l-2 4 2 4H5"/></svg></div><div><b>Atividade</b><span>PSV · limites · repouso de um dia</span></div></div>
         <div class="sec">Calcular</div>
@@ -496,9 +570,9 @@
       </div>
       <div class="dock"><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><div class="tb on"><span class="pp"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
       <div class="fab"><span class="ft">Atividade</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
-    </div></div><figcaption><b><i>13</i>Cálculos · índice</b><p>Cartão grande "Atividade" + atalhos de cálculo + consulta dos artigos/PDF.</p></figcaption></figure>
+    </div></div><figcaption><b><i>14</i>Cálculos · companhia FTL</b><p>TAP é <b>FTL</b> (rule_type) → a mesma aba rende o FTL: Atividade + cálculos + consulta.</p></figcaption></figure>
 
-    <!-- 14 · Calculadora (piloto) -->
+    <!-- 15 · Calculadora (piloto) -->
     <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
       <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
       <div class="scr" style="padding:50px 22px 0"><div class="cdtl">
@@ -516,9 +590,9 @@
           <div class="cfoot">Tripulação técnica: mín. 90 min por piloto; o piloto que aterra precisa de ≥ 2h consecutivas. Repouso no destino ≥ 14h. Máximo 3 setores.</div>
         </div>
       </div></div>
-    </div></div><figcaption><b><i>14</i>Cálculo · repouso a bordo (piloto) <span style="font-weight:800;color:var(--red);font-size:10px">NOVO</span></b><p>A mesma calculadora adapta-se: piloto vê classe × pilotos extra → PSV máximo.</p></figcaption></figure>
+    </div></div><figcaption><b><i>15</i>Cálculo · repouso a bordo (piloto)<span style="font-weight:800;color:var(--red);font-size:10px">NOVO</span></b><p>A mesma calculadora adapta-se: piloto vê classe × pilotos extra → PSV máximo.</p></figcaption></figure>
 
-    <!-- 15 · Perfil (cabine) -->
+    <!-- 16 · Perfil (cabine) -->
     <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
       <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
       <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">A TUA CONTA</span></div></div><h2 class="ht">Perfil</h2></div>
@@ -533,9 +607,9 @@
       </div>
       <div class="dock"><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="tb on"><span class="pp"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
       <div class="fab"><span class="ft">Sair</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/></svg></div>
-    </div></div><figcaption><b><i>15</i>Perfil · cabine</b><p>Conta, Companhia, Preferências, Biblioteca. Ação contextual = Sair.</p></figcaption></figure>
+    </div></div><figcaption><b><i>16</i>Perfil · cabine</b><p>Conta, Companhia, Preferências, Biblioteca. Ação contextual = Sair.</p></figcaption></figure>
 
-    <!-- 16 · Perfil (piloto AE) -->
+    <!-- 17 · Perfil (piloto) -->
     <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
       <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
       <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">A TUA CONTA</span></div></div><h2 class="ht">Perfil</h2></div>
@@ -543,31 +617,25 @@
         <div class="uca"><div class="av">F</div><div><div class="un">Funsnake</div><div class="ue">funsnake@gmail.com</div></div></div>
         <div class="gt">Companhia</div>
         <div class="gbox"><div class="gr co"><div class="gi">EZY</div><b>easyJet<small>Piloto</small></b></div></div>
-        <div class="gt">Acordo de Empresa</div>
-        <div class="gbox">
-          <div class="gr ae"><div class="gi">CPT</div><b>Easyjet · SPAC (pilotos)<small>Comandante</small></b></div>
-          <div class="gr"><div class="gi">§</div><b>Contrato</b><div class="rv">Escala fixa 5/4</div></div>
-          <div class="gr"><div class="gi">€</div><b>Base mensal</b><div class="rv">8 017,14 €</div></div>
-          <div class="gr"><div class="gi">✈</div><b>Per diem (mês)</b><div class="rv">421,30 €</div></div>
-          <div class="gr"><div class="gi" style="background:var(--ink);color:#fff">Σ</div><b>Total estimado</b><div class="rv" style="font-size:15px;font-weight:700">8 438,44 €</div></div>
-        </div>
         <div class="gt">Preferências</div>
-        <div class="gbox"><div class="gr"><div class="gi">文A</div><b>Idioma</b><div class="seg"><i class="on">PT</i><i>EN</i></div></div></div>
+        <div class="gbox"><div class="gr"><div class="gi">文A</div><b>Idioma</b><div class="seg"><i class="on">PT</i><i>EN</i></div></div><div class="gr"><div class="gi">◐</div><b>Tema</b><div class="seg"><i class="on">Claro</i><i>Escuro</i></div></div></div>
+        <div class="gt">Biblioteca</div>
+        <div class="gbox"><div class="gr"><div class="gi">▤</div><b>Regulamento 83/2014</b><div class="rv sub">PDF →</div></div></div>
       </div>
       <div class="dock"><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="tb on"><span class="pp"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
       <div class="fab"><span class="ft">Sair</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/></svg></div>
-    </div></div><figcaption><b><i>16</i>Perfil · piloto (cartão AE) <span style="font-weight:800;color:var(--red);font-size:10px">NOVO</span></b><p>Categoria, contrato, base ajustada, per diem do mês e total estimado.</p></figcaption></figure>
+    </div></div><figcaption><b><i>17</i>Perfil · piloto</b><p>Igual ao de cabine — conta, companhia (easyJet · Piloto), preferências, biblioteca. O AE saiu daqui (foi para os Cálculos).</p></figcaption></figure>
 
-    <!-- 17 · Logout -->
+    <!-- 18 · Logout -->
     <figure class="frame"><div class="phone"><div class="screen"><div class="island"></div>
       <div class="sb"><span>9:41</span><div class="r"><i></i><i></i><i style="opacity:.4"></i><div class="b"></div></div></div>
       <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">A TUA CONTA</span></div></div><h2 class="ht">Perfil</h2></div>
       <div class="view" style="filter:blur(1px);opacity:.5"><div class="uca"><div class="av">F</div><div><div class="un">Funsnake</div><div class="ue">funsnake@gmail.com</div></div></div><div class="gt">Companhia</div><div class="gbox"><div class="gr co"><div class="gi">EZY</div><b>easyJet<small>Piloto</small></b></div></div></div>
       <div class="cbk"></div>
       <div class="csheet"><div class="cicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/></svg></div><div class="ctitle">Terminar sessão?</div><div class="cmsg">Vais precisar de internet para entrar de novo.</div><div class="cbtns"><button class="cno">Cancelar</button><button class="cyes">Sim, sair</button></div></div>
-    </div></div><figcaption><b><i>17</i>Terminar sessão</b><p>O blob vermelho (Sair) abre confirmação. "Sim, sair" → "Sessão terminada".</p></figcaption></figure>
+    </div></div><figcaption><b><i>18</i>Terminar sessão</b><p>O blob vermelho (Sair) abre confirmação. "Sim, sair" → "Sessão terminada".</p></figcaption></figure>
   </div>
 
-  <div class="ftr">CrewPact · 17 ecrãs · do login ao logout — pronto a portar para React Native</div>
+  <div class="ftr">CrewPact · 18 ecrãs · do login ao logout — pronto a portar para React Native</div>
 </body>
 </html>

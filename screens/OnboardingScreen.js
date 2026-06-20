@@ -25,10 +25,10 @@ export default function OnboardingScreen() {
     { id: 'cabin', label: { pt: 'Tripulante de Cabine', en: 'Cabin Crew' } },
     { id: 'pilot', label: { pt: 'Piloto', en: 'Pilot' } },
   ];
-  // AE da companhia escolhida (se existir). Só pilotos de companhias com AE
-  // modelado precisam de escolher a categoria (CPT/SFO/FO/SO).
+  // AE da companhia escolhida + tipo de tripulação (pilotos e cabine têm AEs
+  // diferentes). Resolve-se só depois de o crewType estar escolhido.
   const selAirline = airlines.find((a) => a.id === draft.company || a.slug === draft.company) || null;
-  const ae = getAe(selAirline || draft.company);
+  const ae = draft.crewType ? getAe(selAirline || draft.company, draft.crewType) : null;
   // A BD comanda o passo: `airlines.requires_category` (default: mostra se há AE).
   const requiresCategory = selAirline?.requires_category ?? !!ae;
   const requiresContract = selAirline?.requires_contract ?? false;
@@ -46,11 +46,10 @@ export default function OnboardingScreen() {
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
     crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
   };
-  const isPilotAe = draft.crewType === 'pilot';
   const flow = [
     'company', 'crewType',
-    ...(isPilotAe && companyHasAe ? ['crewCategory'] : []),
-    ...(isPilotAe && companyHasContract ? ['crewContract'] : []),
+    ...(companyHasAe ? ['crewCategory'] : []),
+    ...(companyHasContract ? ['crewContract'] : []),
   ];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
@@ -116,8 +115,8 @@ export default function OnboardingScreen() {
           const payload = {
             company: draft.company,
             crewType: draft.crewType,
-            crewCategory: (isPilotAe && companyHasAe) ? draft.crewCategory : null,
-            crewContract: (isPilotAe && companyHasContract) ? draft.crewContract : null,
+            crewCategory: companyHasAe ? draft.crewCategory : null,
+            crewContract: companyHasContract ? draft.crewContract : null,
           };
           const result = await updateProfile(payload, lang);
           if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }

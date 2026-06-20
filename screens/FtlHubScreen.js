@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE } from '../data/constants';
 import ScreenHeader from '../components/ScreenHeader';
+import AeCalcs from '../components/AeCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES } from '../data/ftl';
 import { openFtlPdf } from '../data/ftlPdf';
@@ -23,11 +24,26 @@ const THEMES = [
 // Aba FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) num só
 // destino. Junta as antigas abas Cálculos e FTL. Toda a matemática vive no motor `ftl/`.
 export default function FtlHubScreen({ navigation }) {
-  const { lang } = useContext(AppContext);
+  const { lang, ae, crewCategory, crewContract, duties } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
+
+  // Empresa com Acordo de Empresa modelado → a aba Cálculos mostra a suite AE
+  // (pagamento). Empresa de FTL → as ferramentas regulamentares (limites). Uma
+  // companhia tem AE OU FTL, nunca ambos.
+  if (ae) {
+    return (
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScreenHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
+          right={<View style={s.regBadge}><Text style={s.regTxt}>AE</Text></View>} />
+        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
+          <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   const articles = FTL_ARTICLES.filter(hasCalc);
   const groups = THEMES.map(th => ({ ...th, items: articles.filter(a => th.codes.includes(a.code)) })).filter(g => g.items.length);

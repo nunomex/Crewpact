@@ -51,6 +51,15 @@ export const NIGHT_STOP_SECTORS = 2;    // Art. 39 — paragem nocturna = 2 seto
 export const VAC_DAY_SECTORS = 2;       // Art. 38 (a partir abr 2024) — dia de férias = 2 setores nominais
 export const ADHOC_SECTORS = 3;         // Art. 43 — deveres ad-hoc = 3 setores nominais
 
+// Prestações por perturbação / função (Anexo I — pilotos diferem da cabine: % da base
+// anual, não €€ fixos). SNC €60 fixo; DDO/IDO/WFLY = fração da base anual ilíquida.
+export const SNC_EUR = 60;              // alteração de escala a curto prazo (€/evento)
+export const DDO_PCT_ANNUAL = 0.004;    // trabalhar em dia de descanso (0,4% base anual)
+export const IDO_PCT_ANNUAL = 0.008;    // dia de descanso infringido (0,8% base anual)
+export const WFLY_PCT_ANNUAL = 0.01;    // voluntário em dia de folga (1% base anual)
+export const INSTRUCTOR_EUR = 120;      // instrutor/verificador (€/dia)
+export const SICK_PCT = 0.45;           // complemento de doença = 45% base diária (após 3 dias)
+
 // Art. 37 — per diem por SETOR voado, por distância de grande círculo (NM) → multiplicador
 // de setor nominal. Bandas: curto / médio / longo / extra-longo.
 export const SECTOR_BANDS = [
@@ -93,4 +102,64 @@ export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [
     category, contract, base, perDiem: perDiemTotal, nightStops: nightTotal, extras,
     variable, total: +(base + variable).toFixed(2),
   };
+};
+
+// ── Calculadoras individuais (Anexo I) — cada prestação do AE, à parte ──
+const r2 = (n) => +(+n).toFixed(2);
+const nomOf = (cat, index = 1) => (NOMINAL_SECTOR[cat] || 0) * index;
+
+export const nightStop  = (cat, index = 1) => r2(NIGHT_STOP_SECTORS * nomOf(cat, index));  // Art. 39 — €/paragem
+export const vacDay     = (cat, index = 1) => r2(VAC_DAY_SECTORS * nomOf(cat, index));      // Art. 38 — €/dia de férias
+export const adhoc      = (cat, index = 1) => r2(ADHOC_SECTORS * nomOf(cat, index));        // Art. 43 — €/dever ad-hoc
+export const instructor = () => INSTRUCTOR_EUR;                                              // €/dia de instrução
+export const snc        = () => SNC_EUR;                                                     // €/evento (alteração de escala)
+export const ddo        = (cat) => r2(DDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,4% base anual
+export const ido        = (cat) => r2(IDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,8% base anual
+export const wfly       = (cat) => r2(WFLY_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));           // Art. — 1% base anual
+export const sickDay    = (cat) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) / SALARY_INSTALMENTS) / 30);  // 45% base diária
+
+// Catálogo de cálculos do AE de PILOTO (para listar na página Cálculos). `linked`
+// = entra no total mensal interligado (computeAeMonth).
+export const CALCS = [
+  { id: 'base',    group: 'Base',        linked: true,  label: 'Remuneração base',          sub: 'categoria × contrato ÷ 14' },
+  { id: 'perdiem', group: 'Por voo',     linked: true,  label: 'Per diem',                  sub: 'Σ setores × nominal (Art. 37)' },
+  { id: 'night',   group: 'Por voo',     linked: true,  label: 'Paragem nocturna',          sub: '2 setores nominais (Art. 39)' },
+  { id: 'vac',     group: 'Por voo',     linked: false, label: 'Dia de férias',             sub: '2 setores nominais (Art. 38)' },
+  { id: 'adhoc',   group: 'Por voo',     linked: false, label: 'Dever ad-hoc',              sub: '3 setores nominais (Art. 43)' },
+  { id: 'snc',     group: 'Perturbação', linked: false, label: 'Alteração de escala (SNC)', sub: '€60/evento' },
+  { id: 'ddo',     group: 'Perturbação', linked: false, label: 'Trabalhar em folga (DDO)',  sub: '0,4% base anual' },
+  { id: 'ido',     group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',    sub: '0,8% base anual' },
+  { id: 'wfly',    group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual' },
+  { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '45% base diária (após 3 dias)' },
+  { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia' },
+];
+
+// ── Papéis adicionais (additional roles) — funções extra sobre a categoria, com
+// pagamento acumulável. Instrução/verificação é desempenhada por pilotos seniores
+// (CPT/SFO). `categories` = leitura do AE (ajustável); `calc` = função deste módulo. ──
+export const ADDITIONAL_ROLES = [
+  { id: 'instr', calc: 'instructor', categories: ['CPT', 'SFO'],
+    label: { pt: 'Instrutor / verificador', en: 'Instructor / examiner' },
+    unit: { pt: '€/dia', en: '€/day' }, sub: '€120 / dia' },
+];
+// Papéis adicionais que a categoria `cat` pode desempenhar.
+export const additionalRolesFor = (cat) => ADDITIONAL_ROLES.filter((r) => r.categories.includes(cat));
+
+// Valor (€) de um cálculo do catálogo para uma categoria — para o ecrã Cálculos.
+// Devolve número, ou `null` quando o valor depende do voo/mês (per diem).
+export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 1 } = {}) => {
+  switch (id) {
+    case 'base':    return monthlyBase(category, { contract, index });
+    case 'perdiem': return null;                        // depende da rota do mês
+    case 'night':   return nightStop(category, index);
+    case 'vac':     return vacDay(category, index);
+    case 'adhoc':   return adhoc(category, index);
+    case 'snc':     return snc();
+    case 'ddo':     return ddo(category);
+    case 'ido':     return ido(category);
+    case 'wfly':    return wfly(category);
+    case 'sick':    return sickDay(category);
+    case 'instr':   return instructor();
+    default:        return null;
+  }
 };
