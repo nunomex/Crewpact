@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
+import NotificationsBell from '../components/NotificationsBell';
 import AeCalcs from '../components/AeCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -66,7 +67,7 @@ export default function FtlHubScreen({ navigation }) {
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
-            right={<View style={s.regBadge}><Text style={s.regTxt}>AE</Text></View>} />
+            right={<NotificationsBell />} />
           <Animated.View style={seg(0)}>
             <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
           </Animated.View>
@@ -101,8 +102,8 @@ export default function FtlHubScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
-        <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
-          right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
+        <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={l('Cálculos', 'Calculations')}
+          right={<NotificationsBell />} />
         {/* Atividade — cartão de ação escuro com glow radial (mockup .actbig) */}
         <Animated.View style={seg(0)}>
           <TouchableOpacity style={s.actbig} activeOpacity={0.9} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>

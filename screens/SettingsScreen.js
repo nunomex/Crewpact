@@ -43,9 +43,10 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
 
@@ -79,13 +80,6 @@ export default function SettingsScreen({ navigation }) {
   const openPdf = async () => {
     const ok = await openFtlPdf();
     if (!ok) Alert.alert(t('ftl.pdfTitle', lang), t('ftl.pdfError', lang));
-  };
-
-  const confirmLogout = () => {
-    Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
-      { text: t('common.cancel', lang), style: 'cancel' },
-      { text: t('profile.logoutConfirm', lang), style: 'destructive', onPress: logout },
-    ]);
   };
 
   const handleChangePw = async () => {
@@ -125,42 +119,55 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Companhia — badge escuro com o código do operador */}
         {company ? (
-          <Animated.View style={[s.gbox, seg(1)]}>
-            <View style={s.gr}>
-              <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
-                <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
+          <Animated.View style={seg(1)}>
+            <Text style={s.gt}>{l('Companhia', 'Airline')}</Text>
+            <View style={s.gbox}>
+              <View style={s.gr}>
+                <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
+                  <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
+                </View>
               </View>
             </View>
           </Animated.View>
         ) : null}
 
-        {/* Preferências — idioma / tema / bloqueio (segmento inline à direita) */}
-        <Animated.View style={[s.gbox, seg(2)]}>
-          <Row icon="language-outline" label={t('profile.language', lang)} s={s} C={C}
-            right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
-          <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s} C={C}
-            right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
-          <Row icon="lock-closed-outline" label={t('lock.title', lang)} last s={s} C={C}
-            right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
+        {/* Preferências — idioma / tema */}
+        <Animated.View style={seg(2)}>
+          <Text style={s.gt}>{l('Preferências', 'Preferences')}</Text>
+          <View style={s.gbox}>
+            <Row icon="language-outline" label={t('profile.language', lang)} s={s} C={C}
+              right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
+            <Row icon="contrast-outline" label={t('profile.theme', lang)} last s={s} C={C}
+              right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
+          </View>
         </Animated.View>
 
-        {/* Conta — mudar password / sair */}
-        <Animated.View style={[s.gbox, seg(3)]}>
-          <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => setPwModal(true)} s={s} C={C} />
-          <Row icon="log-out-outline" label={t('profile.logout', lang)} onPress={confirmLogout} danger last s={s} C={C} />
+        {/* Segurança — bloqueio / mudar password */}
+        <Animated.View style={seg(3)}>
+          <Text style={s.gt}>{l('Segurança', 'Security')}</Text>
+          <View style={s.gbox}>
+            <Row icon="lock-closed-outline" label={t('lock.title', lang)} s={s} C={C}
+              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
+            <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => setPwModal(true)} last s={s} C={C} />
+          </View>
         </Animated.View>
 
-        {/* Biblioteca — regulamento (PDF) / artigos FTL */}
-        <Animated.View style={[s.gbox, seg(4)]}>
-          <Row icon="document-text-outline" label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} s={s} C={C} />
-          <Row icon="library-outline" label={t('profile.libArticles', lang)} onPress={() => navigation.navigate('FTL', { screen: 'FtlHub' })} last s={s} C={C} />
+        {/* Biblioteca — regulamento (PDF) */}
+        <Animated.View style={seg(4)}>
+          <Text style={s.gt}>{l('Biblioteca', 'Library')}</Text>
+          <View style={s.gbox}>
+            <Row icon="document-text-outline" label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} last s={s} C={C} />
+          </View>
         </Animated.View>
 
         {/* Sobre */}
-        <Animated.View style={[s.gbox, seg(5)]}>
-          <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />
+        <Animated.View style={seg(5)}>
+          <Text style={s.gt}>{l('Sobre', 'About')}</Text>
+          <View style={s.gbox}>
+            <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />
+          </View>
         </Animated.View>
       </ScrollView>
 
@@ -203,7 +210,8 @@ const makeStyles = (C) => StyleSheet.create({
   avatarTxt: { color: '#fff', fontSize: 24, fontFamily: FONT.semibold },
   userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
   userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
-  // Grupos (mockup .gbox) + linhas (.gr) com ícone (.gi)
+  // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
+  gt: { fontFamily: FONT.heavy, fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
   gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },
   gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
   grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },

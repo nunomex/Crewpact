@@ -35,3 +35,19 @@ export const sectorDistanceNM = (from, to) => {
   const a = airportCoord(from), b = airportCoord(to);
   return a && b ? greatCircleNM(a, b) : null;
 };
+
+// Pesquisa de aeroportos por código IATA ou ICAO (a base não tem nomes). Devolve
+// até `limit` resultados { iata, icao }. Usado pela pesquisa dos Cálculos.
+export const searchAirports = (q, limit = 12) => {
+  const Q = String(q || '').trim().toUpperCase();
+  if (Q.length < 2) return [];
+  const out = [];
+  for (const iata in AIRPORTS) {
+    const icao = AIRPORTS[iata][2] || '';
+    if (iata.includes(Q) || icao.includes(Q)) {
+      out.push({ iata, icao });
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+};

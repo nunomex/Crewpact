@@ -80,7 +80,7 @@ function LimitCard({ title, windows, limLabel, s, C }) {
 
 // ── DEMO: voo de exemplo no cartão "Próximo voo", para comparar com o mockup.
 // TEMPORÁRIO — quando ligares o calendário real do telemóvel, põe SHOW_DEMO_FLIGHT = false.
-const SHOW_DEMO_FLIGHT = true;
+const SHOW_DEMO_FLIGHT = false;
 const DEMO_FLIGHT = (() => {
   const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
   const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
@@ -195,9 +195,11 @@ export default function HomeScreen({ navigation }) {
       ndPsvMax = d.fdp.maxFdpStr;
     }
   }
-  const dutyDateLabel = flight ? (() => {
-    const str = new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  // Dia do voo para o badge circular (número + dia da semana).
+  const ndDayNum = flight ? new Date(flight.dateISO + 'T00:00:00').getDate() : null;
+  const ndDayWd = flight ? (() => {
+    const w = new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
+    return w.charAt(0).toUpperCase() + w.slice(1);
   })() : null;
 
   // Formata € compacto (sem decimais) — cartão AE e meta do próximo voo.
@@ -219,8 +221,8 @@ export default function HomeScreen({ navigation }) {
       <View style={s.ndCircWrap}>
         <PulseRing size={78} color={C.red} border duration={2800} />
         <View style={s.ndCirc}>
-          <Text style={s.ndCircTime}>{flight.report}</Text>
-          <Text style={s.ndCircLbl}>Report</Text>
+          <Text style={s.ndCircDay}>{ndDayNum}</Text>
+          <Text style={s.ndCircLbl}>{ndDayWd}</Text>
         </View>
       </View>
       <View style={s.ndX}>
@@ -230,23 +232,35 @@ export default function HomeScreen({ navigation }) {
         </View>
         <Text style={s.ndRoute} numberOfLines={1}>{flight.depAirport} · {flight.arrAirport}</Text>
         <Text style={s.ndMeta} numberOfLines={1}>
-          {dutyDateLabel}{ndSectors ? ` · ${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
-          {aeNextPd != null ? <Text> · per diem <Text style={s.ndMetaEm}>{fmtEur0(aeNextPd)}</Text></Text> : null}
+          {ndSectors ? `${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
+          {aeNextPd != null ? <Text>{ndSectors ? ' · ' : ''}per diem <Text style={s.ndMetaEm}>{fmtEur0(aeNextPd)}</Text></Text> : null}
         </Text>
         <View style={s.ndTags}>
-          <View style={s.ndSrc}>
-            <Ionicons name="calendar-outline" size={10} color={C.sub} />
-            <Text style={s.ndSrcTxt}>{lang === 'en' ? 'from calendar' : 'do calendário'}</Text>
-          </View>
-          {ndFat ? (
-            <View style={[s.ndFat, { backgroundColor: fatBg(ndFat.band) }]}>
-              <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
-              <Text style={[s.ndFatTxt, { color: fatColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
-            </View>
-          ) : null}
-          {ndPsvMax ? (
+          {/* Linha 1 — origem do voo + report */}
+          <View style={s.ndTagRow}>
             <View style={s.ndSrc}>
-              <Text style={s.ndSrcTxt}>{t('home.fdpMax', lang)} {ndPsvMax}</Text>
+              <Ionicons name="calendar-outline" size={10} color={C.sub} />
+              <Text style={s.ndSrcTxt}>{lang === 'en' ? 'from calendar' : 'do calendário'}</Text>
+            </View>
+            <View style={s.ndSrc}>
+              <Ionicons name="time-outline" size={10} color={C.sub} />
+              <Text style={s.ndSrcTxt}>Report <Text style={s.ndSrcEm}>{flight.report}</Text></Text>
+            </View>
+          </View>
+          {/* Linha 2 — fadiga + PSV máx */}
+          {(ndFat || ndPsvMax) ? (
+            <View style={s.ndTagRow}>
+              {ndFat ? (
+                <View style={[s.ndFat, { backgroundColor: fatBg(ndFat.band) }]}>
+                  <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
+                  <Text style={[s.ndFatTxt, { color: fatColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
+                </View>
+              ) : null}
+              {ndPsvMax ? (
+                <View style={s.ndSrc}>
+                  <Text style={s.ndSrcTxt}>{t('home.fdpMax', lang)} {ndPsvMax}</Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -435,18 +449,20 @@ const makeStyles = (C) => StyleSheet.create({
   ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
-  ndCircTime: { fontSize: 25, fontFamily: FONT.semibold, color: '#fff', lineHeight: 26 },
-  ndCircLbl: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  ndCircDay: { fontSize: 32, fontFamily: FONT.semibold, color: '#fff', lineHeight: 34, letterSpacing: -0.5, textAlign: 'center' },
+  ndCircLbl: { fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 0.85, textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', marginTop: 1, textAlign: 'center', includeFontPadding: false },
   ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
-  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ndXEyebrow: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
   ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
   ndRoute: { fontSize: 26, fontFamily: FONT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
   ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
   ndMetaEm: { color: C.red, fontFamily: FONT.bold },
-  ndTags: { flexDirection: 'row', gap: 7, marginTop: 9, flexWrap: 'wrap' },
+  ndTags: { marginTop: 9, gap: 7 },
+  ndTagRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
   ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndSrcTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  ndSrcEm: { color: C.text, fontFamily: FONT.heavy },
   ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndFatDot: { width: 7, height: 7, borderRadius: 99 },
   ndFatTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Alert } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
@@ -38,6 +38,7 @@ import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import SearchModal        from './components/SearchModal';
 import OfflineBanner      from './components/OfflineBanner';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
@@ -96,7 +97,7 @@ function FtlStack() {
 // stack da aba atual (Início/Escala/FTL têm FtlCalc; no Perfil esconde-se).
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const { lang } = useContext(AppContext);
+  const { lang, logout } = useContext(AppContext);
   const C = useTheme();
   const ICON = {
     'Início': ['home', 'home-outline'],
@@ -109,34 +110,52 @@ function FloatingTabBar({ state, navigation }) {
     if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
   };
   const active = state.routes[state.index];
-  const canSim = active.name !== 'Perfil';
-  const simulate = () => navigation.navigate(active.name, { screen: 'FtlCalc', params: { duty: true } });
+  const isEscala = active.name === 'Escala';
+  const isFtl = active.name === 'FTL';
+  const isPerfil = active.name === 'Perfil';
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const confirmLogout = () => Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
+    { text: t('common.cancel', lang), style: 'cancel' },
+    { text: t('profile.logoutConfirm', lang), style: 'destructive', onPress: logout },
+  ]);
+
+  // FAB contextual (mockup): Escala → "Serviço"; Cálculos → "Pesquisa"; Perfil →
+  // "Sair" (logout); Início → "Simular".
+  const onFab = isEscala
+    ? () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } })
+    : isFtl
+      ? () => setSearchOpen(true)
+      : isPerfil
+        ? confirmLogout
+        : () => navigation.navigate(active.name, { screen: 'FtlCalc', params: { duty: true } });
 
   return (
-    <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) }]} pointerEvents="box-none">
-      <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
-        {state.routes.map(route => {
-          const focused = active.key === route.key;
-          const [on, off] = ICON[route.name];
-          return (
-            <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-              accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
-              style={tbar.tb}>
-              {focused && <View style={tbar.tbHi} />}
-              <Ionicons name={focused ? on : off} size={20} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
-              {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {canSim && (
+    <>
+      <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
+      <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) }]} pointerEvents="box-none">
+        <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
+          {state.routes.map(route => {
+            const focused = active.key === route.key;
+            const [on, off] = ICON[route.name];
+            return (
+              <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
+                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
+                style={tbar.tb}>
+                {focused && <View style={tbar.tbHi} />}
+                <Ionicons name={focused ? on : off} size={20} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
+                {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: C.red }]} activeOpacity={0.9}
-          onPress={simulate} accessibilityRole="button" accessibilityLabel={t('home.dashSim', lang)}>
-          <Text style={[tbar.fabLabel, { color: C.subLight || C.sub }]}>{t('tab.simulate', lang)}</Text>
-          <Ionicons name="play" size={21} color="#fff" />
+          onPress={onFab} accessibilityRole="button" accessibilityLabel={isEscala ? (lang === 'en' ? 'New duty' : 'Nova duty') : isFtl ? (lang === 'en' ? 'Search' : 'Pesquisa') : isPerfil ? (lang === 'en' ? 'Log out' : 'Sair') : t('home.dashSim', lang)}>
+          <Text numberOfLines={1} style={[tbar.fabLabel, { color: C.subLight || C.sub }]}>{isEscala ? (lang === 'en' ? 'Duty' : 'Serviço') : isFtl ? (lang === 'en' ? 'Search' : 'Pesquisa') : isPerfil ? (lang === 'en' ? 'Log out' : 'Sair') : t('tab.simulate', lang)}</Text>
+          <Ionicons name={isEscala ? 'add' : isFtl ? 'search' : isPerfil ? 'log-out-outline' : 'play'} size={isEscala ? 24 : isFtl ? 22 : isPerfil ? 20 : 21} color="#fff" />
         </TouchableOpacity>
-      )}
-    </View>
+      </View>
+    </>
   );
 }
 
@@ -162,7 +181,7 @@ const tbar = StyleSheet.create({
   // FAB vermelho (direita) — "Simular"
   fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  fabLabel: { position: 'absolute', top: -16, right: 2, fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
+  fabLabel: { position: 'absolute', top: -15, left: -60, right: -60, textAlign: 'center', fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
 });
 
 export default function App() {
