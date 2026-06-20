@@ -12,6 +12,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -96,40 +97,51 @@ function FtlStack() {
   );
 }
 
-// Tab bar flutuante: pílula com as abas de conteúdo (ativa = ícone + label numa
-// pílula clara; inativas = só ícone) + um círculo destacado para o Perfil.
+// Tab bar flutuante (mockup): dock escuro só-ícones (ponto vermelho na ativa) em
+// baixo à esquerda + FAB vermelho "Simular" à direita. O FAB abre o simulador no
+// stack da aba atual (Início/Escala/FTL têm FtlCalc; no Perfil esconde-se).
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const { lang } = useContext(AppContext);
   const C = useTheme();
-  const META = {
-    'Início': { label: t('tab.home', lang),     icon: ['home', 'home-outline'] },
-    'Escala': { label: t('tab.schedule', lang), icon: ['calendar', 'calendar-outline'] },
-    'FTL':    { label: t('tab.ftl', lang),      icon: ['time', 'time-outline'] },
-    'Perfil': { label: t('tab.profile', lang),  icon: ['person', 'person-outline'] },
+  const ICON = {
+    'Início': ['home', 'home-outline'],
+    'Escala': ['calendar', 'calendar-outline'],
+    'FTL':    ['time', 'time-outline'],
+    'Perfil': ['person', 'person-outline'],
   };
   const go = (route, focused) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
     if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
   };
-  const activeKey = state.routes[state.index].key;
-  const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 18, elevation: 10 };
+  const active = state.routes[state.index];
+  const canSim = active.name !== 'Perfil';
+  const simulate = () => navigation.navigate(active.name, { screen: 'FtlCalc', params: { duty: true } });
 
   return (
-    <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 12) }]} pointerEvents="box-none">
-      <View style={[tbar.pill, shadow, { backgroundColor: C.card, borderColor: C.line }]}>
+    <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) }]} pointerEvents="box-none">
+      <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
         {state.routes.map(route => {
-          const focused = activeKey === route.key;
-          const m = META[route.name];
+          const focused = active.key === route.key;
+          const [on, off] = ICON[route.name];
           return (
             <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-              accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={m.label}
-              style={[tbar.item, focused && [tbar.itemActive, { backgroundColor: C.soft }]]}>
-              <Text style={[tbar.label, { color: focused ? C.text : C.sub }]} numberOfLines={1}>{m.label}</Text>
+              accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
+              style={tbar.tb}>
+              {focused && <View style={tbar.tbHi} />}
+              <Ionicons name={focused ? on : off} size={20} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
             </TouchableOpacity>
           );
         })}
       </View>
+      {canSim && (
+        <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: C.red }]} activeOpacity={0.9}
+          onPress={simulate} accessibilityRole="button" accessibilityLabel={t('home.dashSim', lang)}>
+          <Text style={[tbar.fabLabel, { color: C.subLight || C.sub }]}>{t('tab.simulate', lang)}</Text>
+          <Ionicons name="play" size={21} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -146,11 +158,17 @@ function MainTabs() {
 }
 
 const tbar = StyleSheet.create({
-  wrap: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center' },
-  pill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: RADIUS.xl, borderWidth: 1, paddingHorizontal: 6 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 11, borderRadius: RADIUS.lg },
-  itemActive: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 5 },
-  label: { fontSize: 14, fontWeight: '600' },
+  wrap: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // Dock escuro (esquerda) — 4 ícones, ponto vermelho na ativa
+  dock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 54, borderRadius: 22, paddingHorizontal: 5 },
+  dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.42, shadowRadius: 26, elevation: 14 },
+  tb: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  tbHi: { position: 'absolute', width: 40, height: 40, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.10)' },
+  tbDot: { position: 'absolute', bottom: 5, width: 4, height: 4, borderRadius: 2 },
+  // FAB vermelho (direita) — "Simular"
+  fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
+  fabLabel: { position: 'absolute', top: -16, right: 2, fontSize: 8.5, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
 });
 
 export default function App() {

@@ -122,6 +122,7 @@ export const STRINGS = {
     'tab.calc': 'Cálculos',
     'tab.schedule': 'Escala',
     'tab.profile': 'Perfil',
+    'tab.simulate': 'Simular',
     'escala.list': 'Lista',
     'escala.month': 'Mês',
 
@@ -608,6 +609,7 @@ export const STRINGS = {
     'tab.calc': 'Calculators',
     'tab.schedule': 'Schedule',
     'tab.profile': 'Profile',
+    'tab.simulate': 'Simulate',
     'escala.list': 'List',
     'escala.month': 'Month',
 
