@@ -15,6 +15,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, PALETTES } from './data/constants';
 import { t } from './data/i18n';
@@ -34,6 +35,7 @@ import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import OfflineBanner      from './components/OfflineBanner';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
 // (sem animação — o splash estático nativo cobre a janela de auth + hidratação).
@@ -176,6 +178,11 @@ export default function App() {
   const [locked, setLocked]             = useState(false);
   const lockHydrated = useRef(false);
   const bgAt = useRef(null); // timestamp de ida a segundo plano (para o timeout de re-bloqueio)
+
+  // Estado de ligação (NetInfo): controla o banner offline e dispara o flush da
+  // outbox na transição offline→online. Otimista por omissão (começa online).
+  const [online, setOnline] = useState(true);
+  const onlineRef = useRef(true);
 
   // Duties (registo bruto da escala) — offline-first com sync Supabase. Mapa por
   // dia: { 'YYYY-MM-DD': { report_time, block_off, block_on, sectors, flight_minutes,
@@ -476,6 +483,18 @@ export default function App() {
     const sub = AppState.addEventListener('change', (st) => { if (st === 'active') flushDuties(user.id); });
     return () => sub.remove();
   }, [user?.id, flushDuties]);
+  // Ligação de rede: atualiza o banner e, ao reconectar (offline→online), empurra
+  // a outbox — o gatilho que faltava ("o wifi voltou com a app aberta").
+  useEffect(() => {
+    const unsub = NetInfo.addEventListener((state) => {
+      const next = state.isConnected !== false; // null (a determinar) → otimista
+      const wasOnline = onlineRef.current;
+      onlineRef.current = next;
+      setOnline(next);
+      if (next && !wasOnline && user?.id) flushDuties(user.id);
+    });
+    return () => unsub();
+  }, [user?.id, flushDuties]);
 
   // Companhia resolvida a partir do catálogo `airlines`. Tolera id (novo) OU slug
   // (dados legados de utilizadores anteriores) — ponte de migração. O motor deriva
@@ -506,6 +525,7 @@ export default function App() {
     dayLog, updateDayLog, removeDayLog,
     duties, saveDuty, removeDuty,
     onboarded, setOnboarded,
+    online,
   };
 
   // ── Render flow: Splash → Login → Onboarding → Main ──
@@ -556,6 +576,7 @@ export default function App() {
         <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
+        <OfflineBanner />
       </AppContext.Provider>
     </SafeAreaProvider>
   );
