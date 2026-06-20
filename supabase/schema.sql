@@ -94,7 +94,27 @@ create policy "duties_own" on public.duties
   with check (auth.uid() = user_id);
 
 
--- ── 5. (Opcional) criar o profile automaticamente no signup ──────────────────
+-- ── 5. FK duties.user_id → profiles com ON DELETE CASCADE ────────────────────
+-- Sem cascade, apagar um utilizador com escala registada falha ("Database error
+-- deleting user"): a cascade auth.users→profiles é bloqueada pelas duties. Com
+-- cascade: apagar o user → limpa profiles → limpa duties. (Encontra o FK seja
+-- qual for o nome e recria-o.)
+do $$
+declare fk_name text;
+begin
+  select conname into fk_name from pg_constraint
+  where conrelid = 'public.duties'::regclass and contype = 'f'
+    and confrelid = 'public.profiles'::regclass;
+  if fk_name is not null then
+    execute format('alter table public.duties drop constraint %I', fk_name);
+  end if;
+  alter table public.duties
+    add constraint duties_user_id_fkey
+    foreign key (user_id) references public.profiles(id) on delete cascade;
+end $$;
+
+
+-- ── 6. (Opcional) criar o profile automaticamente no signup ──────────────────
 -- Em vez de depender do upsertProfile da app. Comentado por omissão.
 -- create or replace function public.handle_new_user()
 -- returns trigger language plpgsql security definer as $$
