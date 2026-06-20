@@ -19,7 +19,7 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 // cartões na aba Cálculos ou de um dia no Calendário. "Confirmar" regista o
 // cálculo no dia indicado (param `date`) ou, por omissão, em hoje.
 export default function FtlCalcScreen({ route, navigation }) {
-  const { lang, updateDayLog, dayLog } = useContext(AppContext);
+  const { lang, updateDayLog, dayLog, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = L(lang);
@@ -109,7 +109,7 @@ export default function FtlCalcScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        <Calc key={resetKey} lang={lang} onRegister={registerFtl} dayLog={dayLog} refISO={logDate} />
+        <Calc key={resetKey} lang={lang} onRegister={registerFtl} dayLog={dayLog} refISO={logDate} isPilot={isPilot} />
 
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
       </ScrollView>

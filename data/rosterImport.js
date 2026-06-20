@@ -3,8 +3,10 @@
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
 import { dutyToFtlDay, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 
-// Atividade { dateISO, sectors, legs:[{ report, depTime, arrTime, startDate, endDate }] }
-// → { duty_date, report_time, block_off, block_on, sectors, flight_minutes }.
+// Atividade { dateISO, sectors, legs:[{ report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
+// → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
+// `route` = cadeia de aeroportos "LIS-OPO-LIS" (null se algum for desconhecido) —
+// alimenta o per diem do AE (distância de grande círculo por setor).
 export const dutyFromActivity = (act) => {
   if (!act || !Array.isArray(act.legs) || !act.legs.length) return null;
   const first = act.legs[0], last = act.legs[act.legs.length - 1];
@@ -12,6 +14,9 @@ export const dutyFromActivity = (act) => {
     const d = (l.endDate && l.startDate) ? Math.round((new Date(l.endDate) - new Date(l.startDate)) / 60000) : 0;
     return s + Math.max(0, d);
   }, 0);
+  // Cadeia de aeroportos: dep da 1.ª perna + arr de cada perna (setores contíguos).
+  const codes = [first.depAirport, ...act.legs.map((l) => l.arrAirport)];
+  const route = codes.length >= 2 && codes.every((c) => c && c !== '—') ? codes.join('-') : null;
   return {
     duty_date: act.dateISO,
     report_time: first.report || null,   // apresentação (≈ dep − 1 h)
@@ -19,6 +24,7 @@ export const dutyFromActivity = (act) => {
     block_on: last.arrTime || null,       // último on-block
     sectors: act.sectors || act.legs.length,
     flight_minutes: flightMin,
+    route,
   };
 };
 

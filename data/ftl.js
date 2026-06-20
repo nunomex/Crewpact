@@ -165,6 +165,17 @@ export const INFLIGHT_REST = [
   { fdp: '18:00', c1: '3:50', c2: null, c3: null },
 ];
 
+// ─── ORO.FTL.205(c) · PSV máximo com tripulação TÉCNICA (pilotos) reforçada ───
+// PSV máximo (HH:MM) por classe de instalação de descanso × nº de pilotos EXTRA
+// além do mínimo de 2: `1` → 3 pilotos no total; `2` → 4 pilotos no total.
+// Difere da tabela de cabine (acima): aqui a tabela dá o PSV MÁXIMO permitido, não
+// o repouso mínimo. Fonte: ORO.FTL.205(c)(3) (Reg. (UE) 83/2014).
+export const INFLIGHT_FDP_FC = {
+  c1: { 1: '16:00', 2: '17:00' }, // Classe 1 — beliche (bunk)
+  c2: { 1: '15:00', 2: '16:00' }, // Classe 2 — cama plana / assento-cama
+  c3: { 1: '14:15', 2: '15:15' }, // Classe 3 — assento reclinável
+};
+
 // ─── CS FTL.1.235(b)(3)(i) · Noites locais de repouso na base por fusos ───────
 // Linhas = diferença horária máx (h) entre a hora de referência e a hora local
 //   onde o tripulante repousa numa rotação: ≤6, ≤9, ≤12 (só para diferença ≥ 4 h).

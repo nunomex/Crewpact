@@ -20,6 +20,7 @@ import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines } from './data/db';
+import { getAeForProfile } from './ae';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { dutyToFtlDay } from './ftl';
 
@@ -211,6 +212,7 @@ export default function App() {
         block_on: fields.block_on || null,
         sectors: fields.sectors || 0,
         flight_minutes: fields.flight_minutes || 0,
+        route: fields.route || null,        // rota "LIS-OPO-LIS" (per diem AE)
         duty_date: date,
         updated_at: new Date().toISOString(),
         dirty: true,
@@ -248,7 +250,7 @@ export default function App() {
             setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; });
           }
         } else if (d.dirty) {
-          if (await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes })) {
+          if (await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route })) {
             // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
             setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev));
           }
@@ -402,7 +404,11 @@ export default function App() {
         if (!resolved) resolved = localProfile;
         if (!resolved && user.company) resolved = { company: user.company, crewType: user.crewType || 'cabin' };
         if (resolved && resolved.company) {
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin' });
+          // crewCategory/crewContract (piloto) não existem na tabela `profiles` —
+          // vêm da cache local ou do metadata do Auth.
+          const crewCategory = resolved.crewCategory || localProfile?.crewCategory || user.crewCategory || null;
+          const crewContract = resolved.crewContract || localProfile?.crewContract || user.crewContract || null;
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -439,7 +445,7 @@ export default function App() {
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
-            sectors: row.sectors, flight_minutes: row.flight_minutes,
+            sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -472,12 +478,19 @@ export default function App() {
   // desativado). Mantém-se `isFtl` no contexto (a true) para os ecrãs renderizarem
   // o ramo FTL; os ramos AE ficam código morto até serem removidos nos passos seguintes.
   const isFtl = true;
+  // Papel da tripulação (onboarding → profiles.crew_type): adapta motor/UI.
+  const crewType = profile?.crewType || 'cabin';   // 'cabin' | 'pilot'
+  const isPilot = crewType === 'pilot';
+  const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
+  const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE)
+  // AE (Acordo de Empresa) aplicável: só pilotos de companhias com AE modelado.
+  const ae = getAeForProfile({ company: company || profile?.company, crewType });
 
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, company, isFtl,
+    airlines, company, isFtl, crewType, isPilot, crewCategory, crewContract, ae,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,

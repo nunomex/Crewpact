@@ -6,6 +6,7 @@ import { C as _C, TYPE } from '../data/constants';
 import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
+import { getAe } from '../ae';
 import { t, txv } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
@@ -14,16 +15,43 @@ export default function OnboardingScreen() {
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null });
+  const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  // Tripulação de cabine (FTL): o onboarding pede apenas o operador. O tipo de
-  // tripulação é fixo ('cabin'); categoria/contrato (AE) já não se aplicam.
+  // Onboarding: operador (tabela `airlines`) + tipo de tripulação (cabine/piloto →
+  // guardado em `profiles.crew_type` como 'cabin' | 'pilot').
+  const CREW = [
+    { id: 'cabin', label: { pt: 'Tripulante de Cabine', en: 'Cabin Crew' } },
+    { id: 'pilot', label: { pt: 'Piloto', en: 'Pilot' } },
+  ];
+  // AE da companhia escolhida (se existir). Só pilotos de companhias com AE
+  // modelado precisam de escolher a categoria (CPT/SFO/FO/SO).
+  const selAirline = airlines.find((a) => a.id === draft.company || a.slug === draft.company) || null;
+  const ae = getAe(selAirline || draft.company);
+  // A BD comanda o passo: `airlines.requires_category` (default: mostra se há AE).
+  const requiresCategory = selAirline?.requires_category ?? !!ae;
+  const requiresContract = selAirline?.requires_contract ?? false;
+  const companyHasAe = !!ae && requiresCategory;
+  const companyHasContract = !!ae && requiresContract;
+  const CATEGORIES = ae
+    ? ae.CATEGORIES.map((id) => ({ id, label: { pt: `${id} · ${ae.categoryLabel(id, 'pt')}`, en: `${id} · ${ae.categoryLabel(id, 'en')}` } }))
+    : [];
+  const CONTRACTS = ae
+    ? ae.CONTRACTS.map((id) => ({ id, label: { pt: ae.contractLabel(id, 'pt'), en: ae.contractLabel(id, 'en') } }))
+    : [];
   const STEP_DEFS = {
-    company: { title: t('onb.s0t', lang), sub: t('onb.s0s', lang), items: airlines, field: 'company' },
+    company:      { title: t('onb.s0t', lang),       sub: t('onb.s0s', lang),       items: airlines,   field: 'company' },
+    crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
+    crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
+    crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
   };
-  const flow = ['company'];
+  const isPilotAe = draft.crewType === 'pilot';
+  const flow = [
+    'company', 'crewType',
+    ...(isPilotAe && companyHasAe ? ['crewCategory'] : []),
+    ...(isPilotAe && companyHasContract ? ['crewContract'] : []),
+  ];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
   const items = s.items;
@@ -85,7 +113,12 @@ export default function OnboardingScreen() {
           if (!isLast) { setStep(step + 1); return; }
           setSaving(true);
           setSaveError(null);
-          const payload = { company: draft.company, crewType: 'cabin', rank: null, contract: null };
+          const payload = {
+            company: draft.company,
+            crewType: draft.crewType,
+            crewCategory: (isPilotAe && companyHasAe) ? draft.crewCategory : null,
+            crewContract: (isPilotAe && companyHasContract) ? draft.crewContract : null,
+          };
           const result = await updateProfile(payload, lang);
           if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
           // Cria/atualiza o perfil na tabela `profiles` (best-effort; metadata +

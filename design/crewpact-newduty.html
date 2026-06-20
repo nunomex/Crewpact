@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Nova Duty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA;
+    --red:#F5402C; --grey:#C2C2C0; --sub:#97978F; --green:#28B26A; --amber:#E89324;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{ font-family:"Nunito",sans-serif; background:#E7E8EA; color:#23262B; min-height:100vh; padding:54px 24px 80px; position:relative; overflow-x:hidden }
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1000px 680px at 50% -6%, #fff, transparent 62%)}
+  .wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto}
+
+  .intro{ text-align:center; margin-bottom:40px }
+  .intro .k{ font-weight:800; font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--red); margin-bottom:13px }
+  .intro h1{ font-family:"Fredoka"; font-weight:600; font-size:clamp(28px,4vw,46px); color:#1B1B1B; letter-spacing:-.01em }
+  .intro p{ max-width:58ch; margin:15px auto 0; font-size:15px; line-height:1.6; color:#5C616A }
+  .intro b{color:#1B1B1B;font-weight:700}
+
+  .deck{ display:flex; gap:clamp(30px,5vw,80px); justify-content:center; align-items:flex-start; flex-wrap:wrap }
+  .device{ width:354px; flex:0 0 auto; animation:fade .8s both }
+  .device:nth-child(2){animation-delay:.12s}
+  @keyframes fade{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  .cap{ text-align:center; margin-top:20px }
+  .cap b{ font-family:"Fredoka"; font-weight:600; font-size:18px; color:#1B1B1B }
+  .cap span{ display:block; font-weight:800; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#8A8F97; margin-top:5px }
+
+  .phone{ width:354px; height:768px; background:#fff; border-radius:54px; padding:9px; position:relative;
+    box-shadow:0 44px 90px -36px rgba(20,22,26,.5) }
+  .screen{ width:100%; height:100%; background:var(--paper); border-radius:46px; overflow:hidden; position:relative }
+  .island{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:100px; height:26px; background:#0A0A0A; border-radius:15px; z-index:60 }
+
+  /* Escala esbatida por trás */
+  .behind{ position:absolute; inset:0; padding:64px 24px 0; filter:saturate(.6) }
+  .behind .bd{ display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-bottom:7px; opacity:.5 }
+  .behind .bd .n{ font-family:"Fredoka"; font-weight:500; font-size:24px; color:var(--grey) }
+  .behind .bd .w{ font-weight:700; font-size:11px; color:var(--grey); width:34px }
+  .scrim{ position:absolute; inset:0; background:rgba(18,18,18,.42); z-index:5; backdrop-filter:blur(1.5px) }
+
+  /* folha (bottom sheet) */
+  .sheet{ position:absolute; left:0; right:0; bottom:0; top:84px; background:#fff; border-radius:34px 34px 46px 46px; z-index:10; padding:0 22px;
+    box-shadow:0 -20px 50px -24px rgba(18,18,18,.4); animation:rise .6s cubic-bezier(.2,.85,.25,1) both }
+  @keyframes rise{from{transform:translateY(60px);opacity:.4}to{transform:none;opacity:1}}
+  .grab{ width:44px;height:5px;border-radius:99px;background:#E2E2DF;margin:11px auto 4px }
+
+  /* header blob da folha */
+  .shead{ position:relative; display:flex; align-items:flex-start; justify-content:space-between; margin:6px 0 16px }
+  .hblob{ background:var(--ink); color:#fff; border-radius:22px; padding:13px 18px }
+  .hblob .l{ font-weight:800; font-size:8.5px; letter-spacing:.26em; text-transform:uppercase; color:rgba(255,255,255,.5) }
+  .hblob .t{ font-family:"Fredoka"; font-weight:500; font-size:21px; margin-top:4px }
+  .xbtn{ width:38px;height:38px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:18px;font-weight:700 }
+
+  /* day strip */
+  .strip{ display:flex; gap:7px; margin-bottom:18px }
+  .ds{ flex:1; text-align:center; padding:8px 0; border-radius:15px; background:var(--soft2); border:1px solid var(--line) }
+  .ds .n{ font-family:"Fredoka"; font-weight:600; font-size:17px; color:#1B1B1B; line-height:1 }
+  .ds .d{ font-weight:700; font-size:8.5px; text-transform:uppercase; color:var(--sub); margin-top:4px }
+  .ds.on{ background:var(--red); border-color:var(--red) }
+  .ds.on .n,.ds.on .d{ color:#fff } .ds.on .d{color:rgba(255,255,255,.7)}
+
+  .flbl{ font-weight:800; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub); margin:0 2px 8px }
+  .tfield{ background:var(--soft2); border:1.5px solid var(--line); border-radius:18px; padding:13px 16px; display:flex; align-items:center; justify-content:space-between; margin-bottom:13px }
+  .tfield .v{ font-family:"Fredoka"; font-weight:600; font-size:26px; color:#1B1B1B; letter-spacing:.02em }
+  .tfield .v.ph{ color:var(--grey) }
+  .tfield .tg{ font-weight:800; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub) }
+  .tfield.act{ border-color:var(--red); background:#fff; box-shadow:0 0 0 4px rgba(245,64,44,.10) }
+  .tfield.act .v{ color:var(--red) }
+  .row2{ display:flex; gap:11px } .row2 > div{ flex:1 }
+  .row2 .flbl{ margin-left:0 }
+
+  /* setores stepper */
+  .step{ display:flex; align-items:center; justify-content:space-between; background:var(--soft2); border:1.5px solid var(--line); border-radius:18px; padding:9px 12px; margin-bottom:13px }
+  .step .sb2{ width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink);font-weight:600 }
+  .step .sv{ font-family:"Fredoka"; font-weight:600; font-size:24px; color:#1B1B1B }
+  .step .sl{ font-weight:800; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub); margin-right:auto; margin-left:6px }
+
+  /* validação ao vivo */
+  .valid{ border-radius:20px; padding:15px 16px; margin-bottom:14px; border:1.5px solid; position:relative; overflow:hidden }
+  .valid.ok{ background:#EFF8F2; border-color:#CDEAD9 }
+  .valid.bad{ background:#FDEFEC; border-color:#F6D2C8 }
+  .valid::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px }
+  .valid.ok::before{ background:var(--green) } .valid.bad::before{ background:var(--red) }
+  .valid .vh{ display:flex; align-items:center; gap:9px; margin-bottom:7px }
+  .valid .vi{ width:24px;height:24px;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:0 0 auto }
+  .valid.ok .vi{ background:var(--green) } .valid.bad .vi{ background:var(--red) }
+  .valid .vt{ font-family:"Fredoka"; font-weight:600; font-size:15px; color:#1B1B1B }
+  .valid .vm{ font-weight:700; font-size:11.5px; color:#5C616A; line-height:1.5 }
+  .valid .vm b{ font-family:"Fredoka"; font-weight:600 }
+  .valid .vm .ovr{ color:var(--red) }
+  .valid .fat{ display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-weight:800; font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:5px 10px; border-radius:99px }
+  .valid .fat.low{ background:#E2F3E9; color:#1E8A56 }
+  .valid .fat.hi{ background:#FBE6D6; color:#C2701B }
+
+  .save{ background:var(--red); color:#fff; border:none; width:100%; padding:16px; border-radius:20px; font-family:"Nunito"; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 16px 30px -14px rgba(245,64,44,.55); display:flex; align-items:center; justify-content:center; gap:9px }
+
+  /* teclado numérico próprio */
+  .pad{ position:absolute; left:0; right:0; bottom:0; background:#F4F4F2; border-top:1px solid var(--line); border-radius:28px 28px 46px 46px; padding:14px 18px 26px; z-index:20; animation:rise .4s cubic-bezier(.2,.85,.25,1) both }
+  .padgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px }
+  .key{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 0; text-align:center; font-family:"Fredoka"; font-weight:600; font-size:24px; color:#1B1B1B; box-shadow:0 4px 10px -8px rgba(20,22,26,.3) }
+  .key.act{ background:var(--ink); color:#fff }
+  .key.alt{ background:transparent; box-shadow:none; border:none; color:var(--sub); font-size:18px; display:flex; align-items:center; justify-content:center }
+
+  .foot{ text-align:center; margin-top:50px; font-weight:800; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#9097A0 }
+  @media(max-width:740px){body{padding:36px 14px 56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <div class="k">FAB "Nova duty" → folha que sobe</div>
+    <h1>Registar uma duty</h1>
+    <p>Folha focada (não ecrã cheio), <b>teclado próprio</b> para as horas, e <b>validação ao vivo pelo motor</b> — verde se dentro, vermelho se excede. À esquerda, a preencher; à direita, o aviso ao vivo.</p>
+  </div>
+
+  <div class="deck">
+
+    <!-- ── A · A PREENCHER (com teclado) ── -->
+    <div class="device">
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="behind">
+          <div class="bd"><span class="n">20</span><span class="w">Sex</span></div>
+          <div class="bd"><span class="n">21</span><span class="w">Sáb</span></div>
+          <div class="bd"><span class="n">22</span><span class="w">Dom</span></div>
+        </div>
+        <div class="scrim"></div>
+
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="shead">
+            <div class="hblob"><div class="l">Nova duty</div><div class="t">Sábado, 21</div></div>
+            <div class="xbtn">×</div>
+          </div>
+
+          <div class="strip">
+            <div class="ds"><div class="n">19</div><div class="d">Qui</div></div>
+            <div class="ds"><div class="n">20</div><div class="d">Sex</div></div>
+            <div class="ds on"><div class="n">21</div><div class="d">Sáb</div></div>
+            <div class="ds"><div class="n">22</div><div class="d">Dom</div></div>
+            <div class="ds"><div class="n">23</div><div class="d">Seg</div></div>
+          </div>
+
+          <div class="flbl">Apresentação</div>
+          <div class="tfield act"><span class="v">05:1<span style="opacity:.4">_</span></span><span class="tg">a escrever</span></div>
+
+          <div class="row2">
+            <div><div class="flbl">Calços fora</div><div class="tfield"><span class="v ph">06:00</span></div></div>
+            <div><div class="flbl">Calços dentro</div><div class="tfield"><span class="v ph">12:00</span></div></div>
+          </div>
+        </div>
+
+        <!-- teclado próprio -->
+        <div class="pad">
+          <div class="padgrid">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key alt">:</div><div class="key">0</div><div class="key alt">⌫</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>A preencher</b><span>Teclado próprio · máscara HH:MM</span></div>
+    </div>
+
+    <!-- ── B · VALIDAÇÃO AO VIVO (aviso) ── -->
+    <div class="device">
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="scrim" style="background:rgba(18,18,18,.30)"></div>
+
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="shead">
+            <div class="hblob"><div class="l">Nova duty</div><div class="t">Sábado, 21</div></div>
+            <div class="xbtn">×</div>
+          </div>
+
+          <div class="flbl">Apresentação</div>
+          <div class="tfield"><span class="v">05:10</span><span class="tg">apres.</span></div>
+          <div class="row2">
+            <div><div class="flbl">Calços fora</div><div class="tfield"><span class="v">06:00</span></div></div>
+            <div><div class="flbl">Calços dentro</div><div class="tfield"><span class="v">12:40</span></div></div>
+          </div>
+
+          <div class="step">
+            <span class="sl">Setores</span>
+            <div class="sb2">−</div><span class="sv">2</span><div class="sb2">+</div>
+          </div>
+
+          <div class="flbl">Tempo de voo</div>
+          <div class="tfield"><span class="v">07:10</span><span class="tg">voo</span></div>
+
+          <!-- VALIDAÇÃO AO VIVO -->
+          <div class="valid bad">
+            <div class="vh"><div class="vi">!</div><div class="vt">Atenção aos limites</div></div>
+            <div class="vm">Serviço <b>134</b>/190 h · Voo <b class="ovr">101</b>/100 h<br><span class="ovr">Voo excede 100 h em 28 dias.</span></div>
+            <span class="fat hi">● Fadiga: Elevada (62)</span>
+          </div>
+
+          <button class="save"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>Guardar duty</button>
+        </div>
+      </div></div>
+      <div class="cap"><b>Validação ao vivo</b><span>Motor read-only · verde/vermelho</span></div>
+    </div>
+
+  </div>
+
+  <div class="foot">CrewPact · Nova Duty — folha · teclado próprio · validação ao vivo</div>
+</div>
+</body>
+</html>

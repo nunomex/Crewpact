@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Redesenho "Altitude"</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Paleta "Altitude" — crepúsculo a 38.000 ft */
+    --bone:#F1ECE1;        /* tela quente */
+    --paper:#FAF6EE;       /* superfície de cartão */
+    --paper-2:#F4EFE4;
+    --ink:#15302B;         /* verde-petróleo profundo (tinta + herói) */
+    --ink-2:#1E433C;
+    --coral:#E2693B;       /* acento de assinatura (pôr-do-sol) */
+    --coral-deep:#C9542B;
+    --moss:#3C8466;        /* ok */
+    --amber:#C68A2C;       /* aviso */
+    --rust:#BB4536;        /* excedido */
+    --muted:#6B7A72;
+    --muted-2:#93A096;
+    --line:#E4DCCB;
+    --line-ink:rgba(241,236,225,.14);
+    --board:#0F2622;
+    --board-2:#143029;
+    --radius:30px;
+    --shadow:0 30px 70px -30px rgba(8,24,21,.55), 0 8px 20px -12px rgba(8,24,21,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility }
+  body{
+    font-family:"Hanken Grotesk",sans-serif;
+    background:var(--board);
+    color:var(--bone);
+    min-height:100vh;
+    padding:64px clamp(20px,5vw,80px) 96px;
+    position:relative; overflow-x:hidden;
+  }
+  /* Atmosfera do board: linhas de altitude + grão */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(1200px 700px at 78% -10%, rgba(226,105,59,.16), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(60,132,102,.14), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(241,236,225,.025) 0 1px, transparent 1px 64px);
+  }
+  body::after{ /* grão */
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.045;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1680px;margin:0 auto}
+
+  /* ── Cabeçalho do board ── */
+  .masthead{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:40px; margin-bottom:18px }
+  .brand-block{max-width:640px}
+  .kicker{ font-family:"Spline Sans Mono",monospace; font-size:12px; letter-spacing:.32em; text-transform:uppercase; color:var(--coral); margin-bottom:18px }
+  .wordmark{ font-family:"Fraunces",serif; font-weight:400; font-size:clamp(46px,6vw,82px); line-height:.92; letter-spacing:-.02em; color:var(--bone) }
+  .wordmark em{ font-style:italic; color:var(--coral) }
+  .lede{ margin-top:20px; font-size:clamp(15px,1.5vw,18px); line-height:1.6; color:rgba(241,236,225,.66); max-width:52ch }
+  .specimen{ display:flex; flex-direction:column; gap:18px; align-items:flex-start }
+  .swatches{display:flex;gap:10px}
+  .sw{ width:42px;height:42px;border-radius:12px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 8px 18px -10px rgba(0,0,0,.5); position:relative }
+  .sw span{ position:absolute;bottom:-20px;left:0; font-family:"Spline Sans Mono",monospace; font-size:9px; color:var(--muted-2); letter-spacing:.04em }
+  .type-row{ display:flex; align-items:baseline; gap:18px; border-top:1px solid var(--line-ink); padding-top:18px; margin-top:14px; flex-wrap:wrap }
+  .type-row b{ font-weight:400 }
+  .t-disp{ font-family:"Fraunces",serif; font-size:30px; color:var(--bone) }
+  .t-ui{ font-family:"Hanken Grotesk"; font-weight:600; font-size:18px; color:rgba(241,236,225,.8) }
+  .t-mono{ font-family:"Spline Sans Mono",monospace; font-size:16px; color:var(--coral) }
+  .t-lbl{ font-family:"Spline Sans Mono",monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); display:block; margin-top:4px }
+
+  .board-note{ font-family:"Spline Sans Mono",monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2); margin:54px 0 28px; display:flex; align-items:center; gap:16px }
+  .board-note::after{ content:""; flex:1; height:1px; background:var(--line-ink) }
+
+  /* ── Galeria de telemóveis ── */
+  .deck{ display:flex; gap:clamp(28px,3.5vw,64px); flex-wrap:wrap; justify-content:center; align-items:flex-start }
+  .device{ width:344px; flex:0 0 auto; animation:rise .9s cubic-bezier(.2,.7,.2,1) both }
+  .device:nth-child(2){animation-delay:.08s}
+  .device:nth-child(3){animation-delay:.16s}
+  .device:nth-child(4){animation-delay:.24s}
+  @keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+  .device .cap{ text-align:center; margin-top:22px }
+  .device .cap b{ font-family:"Fraunces",serif; font-weight:400; font-size:20px; color:var(--bone) }
+  .device .cap span{ display:block; font-family:"Spline Sans Mono",monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted-2); margin-top:4px }
+
+  .phone{ position:relative; width:344px; height:744px; background:var(--ink); border-radius:54px; padding:11px;
+    box-shadow:var(--shadow); }
+  .phone::before{ content:""; position:absolute; inset:11px; border-radius:44px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06) }
+  .screen{ position:relative; width:100%; height:100%; background:var(--bone); border-radius:44px; overflow:hidden;
+    display:flex; flex-direction:column }
+  .island{ position:absolute; top:14px; left:50%; transform:translateX(-50%); width:104px; height:28px; background:#0c1d19; border-radius:16px; z-index:30 }
+
+  /* status bar */
+  .sbar{ display:flex; justify-content:space-between; align-items:center; padding:16px 28px 4px; font-family:"Spline Sans Mono",monospace; font-size:12px; color:var(--ink); font-weight:500 }
+  .sbar .dots{ display:flex; gap:5px; align-items:center }
+  .sbar .dots i{ width:6px;height:6px;border-radius:50%;background:var(--ink);display:block;opacity:.85 }
+  .sbar .batt{ width:22px;height:11px;border:1.5px solid var(--ink);border-radius:3px;position:relative }
+  .sbar .batt::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:13px;background:var(--ink);border-radius:1px}
+
+  .view{ flex:1; overflow:hidden; padding:6px 22px 0; }
+  .pad{ padding-bottom:120px }
+
+  /* topbar app */
+  .top{ display:flex; align-items:center; justify-content:space-between; padding:10px 2px 18px }
+  .op{ display:flex; align-items:center; gap:11px }
+  .op .badge{ width:38px;height:38px;border-radius:12px;background:var(--ink);color:var(--bone);
+    font-family:"Spline Sans Mono",monospace;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em }
+  .op .meta b{ display:block;font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:-.01em }
+  .op .meta span{ font-family:"Spline Sans Mono",monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted) }
+  .bell{ width:40px;height:40px;border-radius:50%;background:var(--paper);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;position:relative;color:var(--ink) }
+  .bell::after{content:"";position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 2px var(--bone)}
+
+  .eyebrow{ font-family:"Spline Sans Mono",monospace; font-size:10px; letter-spacing:.26em; text-transform:uppercase; color:var(--muted) }
+
+  /* status pill */
+  .status{ display:flex; align-items:center; gap:13px; padding:15px 18px; background:var(--paper); border:1px solid var(--line);
+    border-radius:20px; margin-bottom:18px }
+  .orb{ width:34px;height:34px;border-radius:50%; flex:0 0 auto; position:relative;
+    background:radial-gradient(circle at 35% 30%, #5fb389, var(--moss)); box-shadow:0 0 0 6px rgba(60,132,102,.12) }
+  .status.warn .orb{ background:radial-gradient(circle at 35% 30%, #e6b85c, var(--amber)); box-shadow:0 0 0 6px rgba(198,138,44,.12) }
+  .status h3{ font-family:"Fraunces",serif; font-weight:500; font-size:21px; letter-spacing:-.01em; color:var(--ink); line-height:1.05 }
+  .status p{ font-size:11.5px; color:var(--muted); margin-top:2px }
+  .status p b{ font-family:"Spline Sans Mono",monospace; font-weight:500; color:var(--ink-2) }
+
+  /* boarding-pass — Próximo Duty (herói escuro) */
+  .pass{ background:var(--ink); border-radius:26px; color:var(--bone); position:relative; overflow:hidden; margin-bottom:18px;
+    box-shadow:0 24px 50px -28px rgba(10,30,26,.7) }
+  .pass::before{ content:""; position:absolute; inset:0; opacity:.5;
+    background:radial-gradient(420px 220px at 90% -20%, rgba(226,105,59,.30), transparent 60%) }
+  .pass .pc{ position:relative; padding:20px 22px 16px }
+  .pass .ph{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px }
+  .pass .ph .lbl{ font-family:"Spline Sans Mono",monospace; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:rgba(241,236,225,.55) }
+  .pass .cd{ text-align:right }
+  .pass .cd b{ font-family:"Spline Sans Mono",monospace; font-weight:600; font-size:26px; color:var(--bone); letter-spacing:.01em; display:block; line-height:1 }
+  .pass .cd span{ font-size:10px; color:var(--coral); letter-spacing:.04em }
+  .route{ display:flex; align-items:center; gap:14px }
+  .route .ap{ font-family:"Fraunces",serif; font-weight:500; font-size:40px; letter-spacing:-.02em; color:var(--bone); line-height:.9 }
+  .route .path{ flex:1; position:relative; height:24px }
+  .route .path::before{ content:""; position:absolute; top:50%; left:0; right:0; border-top:1.5px dashed rgba(241,236,225,.32) }
+  .route .path svg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(90deg); color:var(--coral) }
+  .route .date{ font-family:"Spline Sans Mono",monospace; font-size:10px; color:rgba(241,236,225,.55); letter-spacing:.06em; margin-top:9px }
+  .perf{ height:1px; margin:16px 0 0; border-top:1.5px dotted rgba(241,236,225,.22); position:relative }
+  .perf::before,.perf::after{ content:""; position:absolute; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--bone) }
+  .perf::before{ left:-31px } .perf::after{ right:-31px }
+  .pass .ftl{ position:relative; display:flex; gap:22px; padding:14px 22px 18px }
+  .pass .ftl .k{ font-family:"Spline Sans Mono",monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(241,236,225,.5) }
+  .pass .ftl .v{ font-family:"Spline Sans Mono",monospace; font-size:15px; font-weight:500; color:var(--bone); margin-top:3px }
+  .chip-fat{ display:inline-flex; align-items:center; gap:6px }
+  .chip-fat i{ width:7px;height:7px;border-radius:50%;background:var(--moss);display:block }
+
+  /* secção + medidores */
+  .sec{ display:flex; align-items:center; justify-content:space-between; margin:22px 2px 14px }
+  .sec .eyebrow{ color:var(--ink-2) }
+  .sec a{ font-family:"Spline Sans Mono",monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--coral); text-decoration:none }
+  .meter{ margin-bottom:16px }
+  .meter .ml{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px }
+  .meter .ml b{ font-size:13px; font-weight:600; color:var(--ink) }
+  .meter .ml span{ font-family:"Spline Sans Mono",monospace; font-size:12px; color:var(--muted) }
+  .meter .ml span b{ color:var(--ink); font-weight:600 }
+  .track{ height:6px; border-radius:99px; background:var(--paper-2); box-shadow:inset 0 0 0 1px var(--line); overflow:hidden }
+  .fill{ height:100%; border-radius:99px; background:var(--moss) }
+  .fill.warn{ background:linear-gradient(90deg,var(--amber),var(--coral)) }
+
+  .alert{ display:flex; align-items:center; gap:12px; padding:13px 16px; background:#FBEFE6; border:1px solid #F0D7C5;
+    border-radius:16px; margin-bottom:10px }
+  .alert .ai{ width:26px;height:26px;border-radius:8px;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto }
+  .alert p{ font-size:12.5px; color:var(--ink-2) } .alert p b{ font-weight:600 }
+
+  .qa{ display:flex; gap:12px; margin-top:6px }
+  .qa button{ flex:1; border:none; cursor:pointer; font-family:inherit; padding:15px; border-radius:18px; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:9px }
+  .qa .primary{ background:var(--coral); color:#fff; box-shadow:0 12px 26px -12px rgba(226,105,59,.6) }
+  .qa .ghost{ background:var(--paper); color:var(--ink); border:1px solid var(--line) }
+
+  /* tab bar */
+  .tabs{ position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:84%; height:62px;
+    background:rgba(21,48,43,.92); border-radius:24px; display:flex; align-items:center; justify-content:space-around; padding:0 8px;
+    box-shadow:0 18px 40px -18px rgba(8,24,21,.7); backdrop-filter:blur(8px); z-index:25 }
+  .tabs .tb{ display:flex; flex-direction:column; align-items:center; gap:4px; color:rgba(241,236,225,.5); font-size:9px; font-family:"Spline Sans Mono",monospace; letter-spacing:.1em; text-transform:uppercase }
+  .tabs .tb svg{ width:20px;height:20px }
+  .tabs .tb.on{ color:var(--bone) }
+  .tabs .tb.on .pip{ position:absolute; bottom:9px; width:5px; height:5px; border-radius:50%; background:var(--coral) }
+  .tabs .tb{ position:relative }
+
+  /* ── Escala ── */
+  .seg{ display:flex; background:var(--paper-2); border:1px solid var(--line); border-radius:16px; padding:4px; margin:6px 0 20px }
+  .seg div{ flex:1; text-align:center; padding:9px; font-size:12.5px; font-weight:600; color:var(--muted); border-radius:12px; letter-spacing:.02em }
+  .seg div.on{ background:var(--ink); color:var(--bone) }
+  .title{ font-family:"Fraunces",serif; font-weight:400; font-size:30px; letter-spacing:-.02em; color:var(--ink); margin:2px 0 3px }
+  .sub{ font-size:12px; color:var(--muted); margin-bottom:20px }
+  .duty{ background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:15px 17px; margin-bottom:12px; position:relative }
+  .duty .dtop{ display:flex; align-items:center; gap:9px; margin-bottom:7px }
+  .duty .dd{ font-family:"Fraunces",serif; font-weight:500; font-size:17px; color:var(--ink) }
+  .duty .dsync{ width:7px;height:7px;border-radius:50%;background:var(--coral) }
+  .duty .droute{ font-family:"Spline Sans Mono",monospace; font-size:12.5px; color:var(--ink-2); display:flex; align-items:center; gap:8px }
+  .duty .droute em{ font-style:normal; color:var(--muted) }
+  .duty .dmeta{ font-family:"Spline Sans Mono",monospace; font-size:10px; color:var(--muted); margin-top:7px; letter-spacing:.04em }
+  .duty .pin{ position:absolute; top:15px; right:17px; font-family:"Spline Sans Mono",monospace; font-size:10px; color:var(--moss); background:#E9F1EC; border:1px solid #CFE3D6; padding:3px 8px; border-radius:8px }
+  .addbar{ display:flex; align-items:center; gap:10px; margin-top:4px }
+  .addbar .add{ flex:1; border:1px dashed var(--line); border-radius:18px; padding:15px; text-align:center; color:var(--muted); font-size:12.5px; font-weight:600 }
+  .addbar .ic{ width:48px;height:48px;border-radius:16px;background:var(--ink);color:var(--bone);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:300 }
+
+  /* ── FTL ── */
+  .hero-act{ background:var(--ink); border-radius:24px; padding:20px; color:var(--bone); display:flex; align-items:center; gap:16px; margin-bottom:22px; position:relative; overflow:hidden }
+  .hero-act::after{ content:""; position:absolute; right:-30px; top:-30px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle,rgba(226,105,59,.4),transparent 70%) }
+  .hero-act .ha-ic{ width:52px;height:52px;border-radius:16px;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto;position:relative;z-index:1 }
+  .hero-act b{ font-family:"Fraunces",serif; font-weight:500; font-size:19px; display:block; position:relative; z-index:1 }
+  .hero-act span{ font-size:11.5px; color:rgba(241,236,225,.6); position:relative; z-index:1 }
+  .tools{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .tool{ background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:16px; min-height:96px; display:flex; flex-direction:column; justify-content:space-between }
+  .tool .tg{ align-self:flex-start; font-family:"Spline Sans Mono",monospace; font-size:11px; font-weight:600; color:#fff; background:var(--ink); padding:3px 9px; border-radius:8px; letter-spacing:.04em }
+  .tool b{ font-size:13px; font-weight:600; color:var(--ink); line-height:1.25 }
+  .ref{ display:flex; align-items:center; gap:13px; padding:15px 4px; border-bottom:1px solid var(--line) }
+  .ref .ri{ font-family:"Spline Sans Mono",monospace; font-size:11px; color:var(--muted); background:var(--paper-2); border:1px solid var(--line); padding:4px 9px; border-radius:8px; margin-left:auto }
+  .ref b{ font-size:13.5px; font-weight:600; color:var(--ink) }
+  .ref span{ font-size:11px; color:var(--muted); display:block; margin-top:2px }
+
+  /* ── Perfil ── */
+  .ucard{ display:flex; align-items:center; gap:15px; padding:18px; background:var(--ink); border-radius:22px; color:var(--bone); margin-bottom:14px; position:relative; overflow:hidden }
+  .ucard::after{ content:""; position:absolute; left:-40px; bottom:-50px; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle,rgba(60,132,102,.4),transparent 70%) }
+  .ucard .av{ width:54px;height:54px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center; font-family:"Fraunces",serif; font-size:24px; color:#fff; position:relative; z-index:1 }
+  .ucard .un{ font-family:"Fraunces",serif; font-weight:500; font-size:20px; position:relative; z-index:1 }
+  .ucard .ue{ font-family:"Spline Sans Mono",monospace; font-size:11px; color:rgba(241,236,225,.6); position:relative; z-index:1; margin-top:2px }
+  .grp{ margin-bottom:18px }
+  .grp .gt{ font-family:"Spline Sans Mono",monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:0 4px 9px }
+  .gbox{ background:var(--paper); border:1px solid var(--line); border-radius:18px; overflow:hidden }
+  .gr{ display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--line) }
+  .gr:last-child{ border-bottom:none }
+  .gr .gi{ width:34px;height:34px;border-radius:10px;background:var(--paper-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px }
+  .gr b{ font-size:13.5px; color:var(--ink); font-weight:600 }
+  .gr .rv{ margin-left:auto; font-family:"Spline Sans Mono",monospace; font-size:11px; color:var(--muted) }
+  .co .gi{ background:var(--ink); color:var(--bone); border:none; font-family:"Spline Sans Mono",monospace; font-size:12px; font-weight:600 }
+  .co span{ font-family:"Spline Sans Mono",monospace; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:block; margin-top:2px }
+  .segmini{ display:flex; gap:6px; margin-left:auto }
+  .segmini i{ font-family:"Spline Sans Mono",monospace; font-size:10px; padding:5px 10px; border-radius:8px; background:var(--paper-2); color:var(--muted); font-style:normal }
+  .segmini i.on{ background:var(--ink); color:var(--bone) }
+
+  .footer-note{ text-align:center; margin-top:70px; color:var(--muted-2); font-family:"Spline Sans Mono",monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase }
+  @media(max-width:760px){ body{padding:40px 16px 70px} .masthead{flex-direction:column;align-items:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── Cabeçalho ── -->
+  <header class="masthead">
+    <div class="brand-block">
+      <div class="kicker">Proposta de redesenho · Direção "Altitude"</div>
+      <h1 class="wordmark">Crew<em>Pact</em></h1>
+      <p class="lede">Um companheiro de FTL <b>calmo e premium</b> para tripulantes de cabine. Menos densidade, hierarquia clara, e uma identidade própria — crepúsculo a 38.000 ft: osso quente, verde-petróleo profundo, um acento coral.</p>
+    </div>
+    <div class="specimen">
+      <div class="swatches">
+        <div class="sw" style="background:#15302B"><span>ink</span></div>
+        <div class="sw" style="background:#F1ECE1"><span>bone</span></div>
+        <div class="sw" style="background:#E2693B"><span>coral</span></div>
+        <div class="sw" style="background:#3C8466"><span>moss</span></div>
+        <div class="sw" style="background:#C68A2C"><span>amber</span></div>
+      </div>
+      <div class="type-row">
+        <div><span class="t-disp">Fraunces</span><span class="t-lbl">Display · títulos</span></div>
+        <div><span class="t-ui">Hanken Grotesk</span><span class="t-lbl">Interface</span></div>
+        <div><span class="t-mono">05:10 · PSV 13:00</span><span class="t-lbl">Mono · valores</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="board-note">Quatro ecrãs principais</div>
+
+  <!-- ── Deck de telemóveis ── -->
+  <div class="deck">
+
+    <!-- ===== HOME ===== -->
+    <div class="device">
+      <div class="phone"><div class="island"></div><div class="screen">
+        <div class="sbar"><span>23:14</span><div class="dots"><i></i><i></i><i style="opacity:.4"></i><div class="batt"></div></div></div>
+        <div class="view pad">
+          <div class="top">
+            <div class="op">
+              <div class="badge">TP</div>
+              <div class="meta"><b>TAP Air Portugal</b><span>Plataforma FTL</span></div>
+            </div>
+            <div class="bell">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            </div>
+          </div>
+
+          <div class="status">
+            <div class="orb"></div>
+            <div>
+              <h3>Dentro dos limites</h3>
+              <p>Pior janela — Serviço 28 d · <b>64%</b></p>
+            </div>
+          </div>
+
+          <!-- Próximo Duty como cartão de embarque -->
+          <div class="pass">
+            <div class="pc">
+              <div class="ph">
+                <div class="lbl">Próximo duty</div>
+                <div class="cd"><b>14:20</b><span>faltam 14h 20m</span></div>
+              </div>
+              <div class="route">
+                <div class="ap">LIS</div>
+                <div class="path"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
+                <div class="ap">FNC</div>
+              </div>
+              <div class="route date">SÁB · 21 JUN · Apresentação 05:10L · 04:10Z</div>
+            </div>
+            <div class="perf"></div>
+            <div class="ftl">
+              <div><div class="k">Setores</div><div class="v">2</div></div>
+              <div><div class="k">PSV máx</div><div class="v">13:00</div></div>
+              <div><div class="k">Fadiga</div><div class="v chip-fat"><i></i>Baixa</div></div>
+            </div>
+          </div>
+
+          <div class="sec"><span class="eyebrow">Limites acumulados</span><a>Ver todas →</a></div>
+          <div class="meter">
+            <div class="ml"><b>Serviço · 28 dias</b><span><b>122</b> / 190 h</span></div>
+            <div class="track"><div class="fill" style="width:64%"></div></div>
+          </div>
+          <div class="meter">
+            <div class="ml"><b>Voo · 28 dias</b><span><b>92</b> / 100 h</span></div>
+            <div class="track"><div class="fill warn" style="width:92%"></div></div>
+          </div>
+
+          <div class="alert">
+            <div class="ai">!</div>
+            <p><b>Voo 28 d a 92%</b> — 8 h até ao limite</p>
+          </div>
+
+          <div class="qa">
+            <button class="primary">▶ Simular</button>
+            <button class="ghost">Escala</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tb on"><span class="pip"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Início</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Escala</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>FTL</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Perfil</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Início</b><span>Estado · Próximo Duty · Limites</span></div>
+    </div>
+
+    <!-- ===== ESCALA ===== -->
+    <div class="device">
+      <div class="phone"><div class="island"></div><div class="screen">
+        <div class="sbar"><span>23:14</span><div class="dots"><i></i><i></i><i style="opacity:.4"></i><div class="batt"></div></div></div>
+        <div class="view pad">
+          <div class="seg"><div class="on">Lista</div><div>Mês</div></div>
+          <div class="title">A minha escala</div>
+          <div class="sub">Histórico local · sincroniza com a conta</div>
+
+          <div class="duty">
+            <div class="pin">Dentro</div>
+            <div class="dtop"><div class="dd">Sáb · 21 jun</div><div class="dsync"></div></div>
+            <div class="droute">LIS <em>→</em> FNC <em>→</em> LIS</div>
+            <div class="dmeta">05:10 → 17:40 · 2 SET · 04:00 VOO · PSV 11:30</div>
+          </div>
+          <div class="duty">
+            <div class="pin" style="color:var(--amber);background:#FBF1DE;border-color:#EEDDB6">Noturno</div>
+            <div class="dtop"><div class="dd">Sex · 20 jun</div></div>
+            <div class="droute">LIS <em>→</em> OPO</div>
+            <div class="dmeta">22:00 → 06:30 · 1 SET · 06:30 VOO · PSV 08:30</div>
+          </div>
+          <div class="duty">
+            <div class="dtop"><div class="dd">Qua · 18 jun</div></div>
+            <div class="droute">LIS <em>→</em> MAD <em>→</em> LIS</div>
+            <div class="dmeta">07:00 → 14:20 · 2 SET · 03:40 VOO · PSV 07:20</div>
+          </div>
+
+          <div class="addbar">
+            <div class="add">+ Adicionar duty</div>
+            <div class="ic">＋</div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Início</div>
+          <div class="tb on"><span class="pip"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Escala</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>FTL</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Perfil</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Escala</b><span>Lista ⇄ Mês · Adicionar</span></div>
+    </div>
+
+    <!-- ===== FTL ===== -->
+    <div class="device">
+      <div class="phone"><div class="island"></div><div class="screen">
+        <div class="sbar"><span>23:14</span><div class="dots"><i></i><i></i><i style="opacity:.4"></i><div class="batt"></div></div></div>
+        <div class="view pad">
+          <div class="top" style="padding-bottom:10px">
+            <div><div class="eyebrow">Regulamento UE 83/2014</div><div class="title" style="margin-top:6px">FTL</div></div>
+          </div>
+
+          <div class="sec" style="margin-top:6px"><span class="eyebrow">Calcular</span></div>
+          <div class="hero-act">
+            <div class="ha-ic">＝</div>
+            <div><b>Atividade</b><span>PSV · limites · repouso de um dia</span></div>
+          </div>
+          <div class="tools">
+            <div class="tool"><span class="tg">205c</span><b>Repouso a bordo</b></div>
+            <div class="tool"><span class="tg">225</span><b>Standby</b></div>
+            <div class="tool"><span class="tg">215</span><b>Posicionamento</b></div>
+            <div class="tool"><span class="tg">205g</span><b>Apres. adiada</b></div>
+          </div>
+
+          <div class="sec"><span class="eyebrow">Consultar</span><a>Abrir PDF →</a></div>
+          <div class="ref"><div><b>PSV e prolongamentos</b><span>205 · 205(c) · 205(g)</span></div><div class="ri">205</div></div>
+          <div class="ref"><div><b>Limites e serviço</b><span>210 · 215</span></div><div class="ri">210</div></div>
+          <div class="ref" style="border:none"><div><b>Repouso e standby</b><span>235 · 225</span></div><div class="ri">235</div></div>
+        </div>
+        <div class="tabs">
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Início</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Escala</div>
+          <div class="tb on"><span class="pip"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>FTL</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Perfil</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>FTL</b><span>Calcular + Consultar</span></div>
+    </div>
+
+    <!-- ===== PERFIL ===== -->
+    <div class="device">
+      <div class="phone"><div class="island"></div><div class="screen">
+        <div class="sbar"><span>23:14</span><div class="dots"><i></i><i></i><i style="opacity:.4"></i><div class="batt"></div></div></div>
+        <div class="view pad">
+          <div class="top" style="padding-bottom:12px">
+            <div><div class="eyebrow">A tua conta</div><div class="title" style="margin-top:6px">Perfil</div></div>
+          </div>
+
+          <div class="ucard">
+            <div class="av">F</div>
+            <div><div class="un">Funsnake</div><div class="ue">funsnake@gmail.com</div></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Companhia</div>
+            <div class="gbox">
+              <div class="gr co"><div class="gi">TP</div><div><b>TAP Air Portugal</b><span>Tripulante de Cabine</span></div></div>
+            </div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Preferências</div>
+            <div class="gbox">
+              <div class="gr"><div class="gi" style="font-family:'Spline Sans Mono',monospace;font-size:12px;letter-spacing:-1px">文A</div><b>Idioma</b><div class="segmini"><i class="on">PT</i><i>EN</i></div></div>
+              <div class="gr"><div class="gi">◐</div><b>Tema</b><div class="segmini"><i class="on">Claro</i><i>Escuro</i></div></div>
+              <div class="gr"><div class="gi">⚷</div><b>Bloqueio</b><div class="rv">Desligado</div></div>
+            </div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Biblioteca</div>
+            <div class="gbox">
+              <div class="gr"><div class="gi">▤</div><b>Regulamento (UE) 83/2014</b><div class="rv">PDF →</div></div>
+              <div class="gr"><div class="gi">§</div><b>Artigos e calculadoras FTL</b><div class="rv">→</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Início</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Escala</div>
+          <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>FTL</div>
+          <div class="tb on"><span class="pip"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Perfil</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Perfil</b><span>Conta · Companhia · Biblioteca</span></div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">CrewPact · Direção "Altitude" — mockup para aprovar antes de portar para React Native</div>
+</div>
+</body>
+</html>

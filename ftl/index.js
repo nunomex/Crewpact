@@ -12,7 +12,7 @@
 import { computeFdp, computeFdpByBand } from './calculators/fdpCalculator';
 import { computeAcclimatisation } from './calculators/acclimatisationCalculator';
 import { computeDiscretion } from './calculators/discretionCalculator';
-import { computeInflightRest } from './calculators/inflightRestCalculator';
+import { computeInflightRest, computeFlightCrewFdp } from './calculators/inflightRestCalculator';
 import { computeStandby } from './calculators/standbyCalculator';
 import { computeReducedRest } from './calculators/reducedRestCalculator';
 import { computeTimeZoneRest } from './calculators/timeZoneRestCalculator';
@@ -101,7 +101,7 @@ export {
   computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits,
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
-  computeInflightRest, computeStandby, computeReducedRest, computeTimeZoneRest,
+  computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
   computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence,
   computeFatigue,
   withinBand, fmtBandRange, bandRangeMins,

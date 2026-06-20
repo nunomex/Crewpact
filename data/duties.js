@@ -3,8 +3,11 @@ import { supabase } from './supabase';
 // Acesso à tabela `duties` (registo bruto da escala). Uma duty por dia
 // (unique user_id + duty_date → upsert). Esta é a FONTE de dados crua; o motor
 // FTL recalcula a partir daqui num passo posterior — aqui só guardamos/sincronizamos.
-//   Forma na BD:  { user_id, duty_date, report_time, block_off, block_on, sectors, flight_minutes, updated_at }
-//   Horas: texto "HH:MM" (hora local); flight_minutes: inteiro.
+//   Forma na BD:  { user_id, duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, created_at }
+//   Horas: texto "HH:MM" (hora local); flight_minutes: inteiro. (A BD não tem
+//   `updated_at`; na leitura aliasamos `created_at`→`updated_at` para o token de
+//   concorrência local do App.js continuar a funcionar sem alterações.)
+//   `notes` (texto livre, não usado pela app) guarda a ROTA "LIS-OPO-LIS" → per diem AE.
 // Best-effort: devolve []/false sem lançar — offline cai para a cache local.
 
 // Lê as duties do utilizador (mais recentes primeiro). [] em erro/sem rede.
@@ -13,7 +16,7 @@ export const fetchDuties = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('duties')
-      .select('duty_date, report_time, block_off, block_on, sectors, flight_minutes, updated_at')
+      .select('duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, updated_at:created_at')
       .eq('user_id', userId)
       .order('duty_date', { ascending: false });
     if (error) return [];
@@ -37,7 +40,7 @@ export const upsertDuty = async (userId, d = {}) => {
         block_on: d.block_on || null,
         sectors: d.sectors || 0,
         flight_minutes: d.flight_minutes || 0,
-        updated_at: new Date().toISOString(),
+        notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       }, { onConflict: 'user_id,duty_date' });
     return !error;
   } catch {

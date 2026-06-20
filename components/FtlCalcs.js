@@ -7,7 +7,7 @@ import { PSV_ACCLIMATISED } from '../data/ftl'; // só a lista de faixas (UI)
 import {
   parseHhmm, minToHhmm, maskClock,
   computeFdpByBand, computeDuty, computeRest, computeAcclimatisation,
-  computeInflightRest, computeStandby, computeReducedRest, computeTimeZoneRest,
+  computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
   computeDelayedReporting, computeExtensionUsage,
   withinBand, fmtBandRange, DUTY_WINDOWS, FLIGHT_WINDOWS,
   QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
@@ -569,24 +569,59 @@ export function RestCalc({ lang, collapsible, onRegister }) {
   );
 }
 
-// Repouso a bordo (CS FTL.1.205(c)(3)) — tripulação de cabina. Dado o PSV máximo
-// prolongado e a classe do espaço de descanso, mostra o repouso a bordo mínimo.
-export function InflightRestCalc({ lang, collapsible }) {
+// Repouso a bordo (ORO.FTL.205(c) · CS FTL.1.205(c)). Adapta-se ao papel:
+//  • Cabina  → dado o PSV máximo prolongado + classe, mostra o repouso a bordo mín.
+//  • Pilotos → dado a classe + nº de pilotos extra, mostra o PSV MÁXIMO permitido.
+export function InflightRestCalc({ lang, collapsible, isPilot }) {
   const C = useTheme();
   const cs = makeCs(C);
   const [cls, setCls] = useState('c1');
-  const [fdp, setFdp] = useState('');   // PSV máximo prolongado (HH:MM)
+  const [fdp, setFdp] = useState('');   // PSV máximo prolongado (HH:MM) — cabina
   const [sectors, setSectors] = useState(0);
+  const [addCrew, setAddCrew] = useState(1); // pilotos extra (1|2) — tripulação técnica
   const onFdp = (v) => { const m = maskClock(v); if (m == null) return; anim(); setFdp(m); };
+
+  const clsSeg = (
+    <>
+      <Text style={cs.fieldLabel}>{t('ftl.restClass', lang)}</Text>
+      <Seg options={[{ id: 'c1', label: t('ftl.class1', lang) }, { id: 'c2', label: t('ftl.class2', lang) }, { id: 'c3', label: t('ftl.class3', lang) }]}
+        value={cls} setValue={(v) => { anim(); setCls(v); }} />
+    </>
+  );
+
+  // ── Tripulação técnica (pilotos): PSV máximo por classe × nº de pilotos extra ──
+  if (isPilot) {
+    const r = computeFlightCrewFdp({ restClass: cls, additionalCrew: addCrew, sectors });
+    return (
+      <CalcCard title={t('ftl.calcInflight', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+        {clsSeg}
+        <Text style={cs.fieldLabel}>{t('ftl.addCrew', lang)}</Text>
+        <Seg options={[{ id: 1, label: t('ftl.addCrew1', lang) }, { id: 2, label: t('ftl.addCrew2', lang) }]}
+          value={addCrew} setValue={(v) => { anim(); setAddCrew(v); }} />
+        <Stepper label={t('ftl.sectors', lang)} value={sectors} setValue={setSectors} min={0} max={5} />
+
+        <View style={cs.dutyResult}>
+          <View style={cs.dutyRow}>
+            <Text style={cs.dutyLbl}>{t('ftl.fcMaxFdp', lang)}</Text>
+            <Text style={[cs.dutyVal, !r.allowed && { color: C.red }]}>{r.allowed ? r.maxFdpStr : '—'}</Text>
+          </View>
+          {r.overSectors
+            ? <Text style={cs.errNote}>{t('ftl.inflightSectors', lang)}</Text>
+            : <Text style={cs.okNote}>{t('ftl.inflightOk', lang)}</Text>}
+        </View>
+        <Text style={cs.note}>{t('ftl.fcFoot', lang)}</Text>
+      </CalcCard>
+    );
+  }
+
+  // ── Cabina: repouso a bordo mínimo dado o PSV prolongado ──
   const fdpMin = parseHhmm(fdp);
   const r = computeInflightRest({ maxFdpMin: fdpMin, restClass: cls, sectors });
   const complete = fdpMin != null && sectors >= 1;
 
   return (
     <CalcCard title={t('ftl.calcInflight', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
-      <Text style={cs.fieldLabel}>{t('ftl.restClass', lang)}</Text>
-      <Seg options={[{ id: 'c1', label: t('ftl.class1', lang) }, { id: 'c2', label: t('ftl.class2', lang) }, { id: 'c3', label: t('ftl.class3', lang) }]}
-        value={cls} setValue={(v) => { anim(); setCls(v); }} />
+      {clsSeg}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.maxExtFdp', lang)}</Text>
         <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={C.sub}

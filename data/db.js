@@ -1,11 +1,10 @@
 import { supabase } from './supabase';
 
 // Acesso à tabela `profiles` (perfil do utilizador no servidor).
-//  - Forma em memória da app:  { company, rank, contract }
-//  - Forma na base de dados:   { id, airline_id, crew_type, crew_category, contract_type }
-// O mapeamento vive SÓ aqui (fronteira de persistência) — os consumidores
-// continuam a falar em company/rank/contract. `airline_id` guarda o slug atual
-// (ex.: "tap-pt"); a ligação à tabela `airlines` é uma etapa posterior.
+//  - Forma em memória da app:  { company, crewType }
+//  - Forma na base de dados:   { id, airline_id, crew_type, created_at }
+//    crew_type: 'cabin' | 'pilot'. `airline_id` guarda o id/slug da companhia.
+// O mapeamento vive SÓ aqui (fronteira de persistência).
 
 const rowToProfile = (r) =>
   r ? { company: r.airline_id || null, crewType: r.crew_type || 'cabin' } : null;
