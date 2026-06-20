@@ -2,10 +2,12 @@ import React, { useContext, useState, useRef, useEffect, useCallback } from 'rea
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE } from '../data/constants';
+import { RADIUS, SPACE, TYPE, WEIGHT, TRACK_DISPLAY } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel, fmtVal } from '../data/extras';
+import { monthlyPerDiem } from '../data/perdiem';
+import { sectorDistanceNM } from '../data/airports';
 import { computeDutyTime, computeFlightTime, computeRestSequence, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
@@ -93,7 +95,7 @@ function ProgressRow({ label, done, limit, lang, s, C }) {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -240,39 +242,54 @@ export default function HomeScreen({ navigation }) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   })() : null;
 
+  // Formata € compacto (sem decimais) — cartão AE e meta do próximo voo.
+  const fmtEur0 = (n) => {
+    if (n == null) return '—';
+    const grouped = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${grouped}` : `${grouped} €`;
+  };
+  // Per diem do próximo voo — só companhias AE, com categoria e rota conhecida.
+  let aeNextPd = null;
+  if (flight && ae && crewCategory && flight.depAirport && flight.arrAirport) {
+    const dist = sectorDistanceNM(flight.depAirport, flight.arrAirport);
+    if (dist != null) aeNextPd = ae.perDiem(crewCategory, [dist]);
+  }
+  const fatBg = (b) => b === 'high' ? C.redSoft : b === 'elevated' ? C.warnSoft : b === 'low' ? C.greenSoft : C.soft;
+
   const nextDutyEl = flight ? (
-    <View style={s.nextDuty}>
-      <View style={s.ndTop}>
-        <Text style={s.ndEyebrow}>{t('home.nextDuty', lang)}</Text>
-        {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
+    <View style={s.nd}>
+      <View style={s.ndCirc}>
+        <Text style={s.ndCircTime}>{flight.report}</Text>
+        <Text style={s.ndCircLbl}>Report</Text>
       </View>
-      <Text style={s.ndDate}>{dutyDateLabel}</Text>
-      <View style={s.ndRouteRow}>
-        <Text style={s.ndAir}>{flight.depAirport}</Text>
-        <Ionicons name="airplane" size={15} color={C.onDarkSub} />
-        <Text style={s.ndAir}>{flight.arrAirport}</Text>
-        {ndSectors ? <Text style={s.ndSectors}>{ndSectors} {t('duties.sectorsShort', lang)}</Text> : null}
-      </View>
-      <Text style={s.ndReport}>{t('home.flightBoarding', lang)} {flight.reportZ}Z · {flight.report}L</Text>
-      {(ndPsvMax || ndFat) ? (
-        <>
-          <View style={s.ndDivider} />
-          <View style={s.ndFtlRow}>
-            {ndPsvMax ? (
-              <View style={s.ndFtlItem}>
-                <Text style={s.ndFtlLbl}>{t('home.fdpMax', lang)}</Text>
-                <Text style={s.ndFtlVal}>{ndPsvMax}</Text>
-              </View>
-            ) : null}
-            {ndFat ? (
-              <View style={s.ndFtlItem}>
-                <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
-                <Text style={s.ndFtlLbl}>{t('duties.fatigueLbl', lang)}: {fatLabel(ndFat.band)}</Text>
-              </View>
-            ) : null}
+      <View style={s.ndX}>
+        <View style={s.ndXTop}>
+          <Text style={s.ndXEyebrow}>{t('home.nextDuty', lang)}</Text>
+          {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
+        </View>
+        <Text style={s.ndRoute} numberOfLines={1}>{flight.depAirport} · {flight.arrAirport}</Text>
+        <Text style={s.ndMeta} numberOfLines={1}>
+          {dutyDateLabel}{ndSectors ? ` · ${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
+          {aeNextPd != null ? <Text> · per diem <Text style={s.ndMetaEm}>{fmtEur0(aeNextPd)}</Text></Text> : null}
+        </Text>
+        <View style={s.ndTags}>
+          <View style={s.ndSrc}>
+            <Ionicons name="calendar-outline" size={10} color={C.sub} />
+            <Text style={s.ndSrcTxt}>{lang === 'en' ? 'from calendar' : 'do calendário'}</Text>
           </View>
-        </>
-      ) : null}
+          {ndFat ? (
+            <View style={[s.ndFat, { backgroundColor: fatBg(ndFat.band) }]}>
+              <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
+              <Text style={[s.ndFatTxt, { color: fatColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
+            </View>
+          ) : null}
+          {ndPsvMax ? (
+            <View style={s.ndSrc}>
+              <Text style={s.ndSrcTxt}>{t('home.fdpMax', lang)} {ndPsvMax}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
     </View>
   ) : (
     <View style={s.flightCard}>
@@ -302,36 +319,95 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
+  // ── Cartão AE (companhias com Acordo de Empresa) — base do contrato + per diem
+  // do mês = estimado, igual ao cartão do Perfil. Toca → abre a página AE nos
+  // Cálculos. Só aparece se a companhia é AE e a categoria está escolhida. ──
+  const aeCardEl = (ae && crewCategory) ? (() => {
+    const d = new Date();
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const monthName = (() => { const m = d.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
+    const base = ae.monthlyBase(crewCategory, { contract: crewContract || '12/12' });
+    const pd = monthlyPerDiem(duties, crewCategory, ae, { ym });
+    const pdTotal = pd ? pd.total : 0;
+    const total = base + pdTotal;
+    const fill = total > 0 ? Math.min(1, pdTotal / total) : 0;
+    return (
+      <TouchableOpacity style={s.aeCard} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
+        <View style={s.aeHead}>
+          <View style={s.aeDot} />
+          <Text style={s.aeEyebrow}>AE · {monthName}</Text>
+          <Ionicons name="chevron-forward" size={16} color={C.sub} style={{ marginLeft: 'auto' }} />
+        </View>
+        <Text style={s.aeSub} numberOfLines={1}>{ae.categoryLabel(crewCategory, lang)} · {ae.contractLabel(crewContract || '12/12', lang)}</Text>
+        <View style={s.aeRow}><Text style={s.aeK}>{t('profile.aeMonthlyBase', lang)}</Text><Text style={s.aeV}>{fmtEur0(base)}</Text></View>
+        <View style={s.aeRow}><Text style={s.aeK}>{t('profile.aePerDiem', lang)}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(pdTotal)}</Text></View>
+        <View style={s.aeBar}><View style={[s.aeBarFill, { width: `${Math.round(fill * 100)}%` }]} /></View>
+        <View style={[s.aeRow, s.aeTotalRow]}><Text style={s.aeTotalK}>{t('profile.aeTotalEst', lang)}</Text><Text style={s.aeTotalV}>{fmtEur0(total)}</Text></View>
+        {pd && pd.missing > 0 ? <Text style={s.aeMiss}>{pd.missing} {t('profile.aePdMissing', lang)}</Text> : null}
+      </TouchableOpacity>
+    );
+  })() : null;
+
+  // ── Cabeçalho premium + tira de 5 dias ──
+  const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
+  const crewWord = isPilot ? (lang === 'en' ? 'Pilot' : 'Piloto') : (lang === 'en' ? 'Cabin' : 'Cabine');
+  const opEyebrow = [company?.name, ae ? 'AE' : 'FTL', crewWord].filter(Boolean).join(' · ').toUpperCase();
+  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayISO = isoOf(new Date());
+  const nextFlightISO = flight?.dateISO || null;
+  const weekDays = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i);
+    const iso = isoOf(d);
+    const reg = duties[iso];
+    const wd = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
+    return { iso, day: d.getDate(), wd: wd.charAt(0).toUpperCase() + wd.slice(1), hasFlight: !!(reg && !reg.deleted && reg.report_time), isToday: iso === todayISO };
+  });
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Identidade — faixa compacta (operador + sino) */}
-        <View style={s.idStrip}>
-          <View style={s.idLeft}>
-            {company?.code ? <View style={s.codeBadge}><Text style={s.codeText}>{company.code}</Text></View> : null}
-            <View style={{ flex: 1 }}>
-              <Text style={s.idEyebrow}>{t('home.eyebrowFtl', lang)}</Text>
-              <Text style={s.idTitle} numberOfLines={1}>{company?.name}</Text>
-            </View>
+        {/* Cabeçalho — eyebrow do operador (ponto vermelho) + sino + saudação */}
+        <View style={s.htop}>
+          <View style={s.hlw}>
+            <View style={s.hrd} />
+            <Text style={s.hl} numberOfLines={1}>{opEyebrow}</Text>
           </View>
-          <TouchableOpacity style={s.idBell} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-            <Ionicons name="notifications-outline" size={19} color={C.text} />
+          <TouchableOpacity style={s.hbtn} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+            <Ionicons name="notifications-outline" size={18} color={C.text} />
             {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
           </TouchableOpacity>
         </View>
+        <Text style={s.ht}>{t('home.hello', lang)}{firstName ? `, ${firstName}` : ''}</Text>
 
-        {/* Estado FTL — banda semáforo (acento colorido à esquerda) */}
-        <View style={[s.stateBand, { borderLeftColor: stateColor }]}>
-          <View style={[s.stateDot, { backgroundColor: stateColor }]} />
-          <View style={{ flex: 1 }}>
-            <Text style={[s.stateLabel, { color: stateColor }]} numberOfLines={1}>{stateLabel}</Text>
-            {stateReason ? <Text style={s.stateReason}>{t('home.dashWorst', lang)}: {stateReason}</Text> : null}
-          </View>
+        {/* Tira de 5 dias — hoje a contorno vermelho, próximo voo preenchido, ponto nos dias com voo */}
+        <View style={s.week}>
+          {weekDays.map((wdy) => {
+            const isNext = nextFlightISO === wdy.iso;
+            return (
+              <TouchableOpacity key={wdy.iso} activeOpacity={0.8}
+                onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'month' } }); }}
+                style={[s.wd, isNext && s.wdOn, wdy.isToday && !isNext && s.wdToday]}>
+                <Text style={[s.wdNum, isNext && s.wdNumOn, wdy.isToday && !isNext && s.wdNumToday]}>{wdy.day}</Text>
+                <Text style={[s.wdDay, isNext && s.wdDayOn]}>{wdy.wd}</Text>
+                <View style={[s.wdDot, wdy.hasFlight && s.wdDotOn, isNext && wdy.hasFlight && s.wdDotWhite]} />
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Próximo duty — herói (cartão escuro único) */}
+        {/* Estado FTL — linha de estado (ponto semáforo + contexto à direita) */}
+        <View style={s.statline}>
+          <View style={[s.statDot, { backgroundColor: stateColor }]} />
+          <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>
+          <Text style={s.statCtx} numberOfLines={1}>{crewCategory ? `${crewCategory}${crewContract ? ' · ' + crewContract : ''}` : (stateReason || '')}</Text>
+        </View>
+
+        {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
         {nextDutyEl}
+
+        {/* Cartão AE — companhias com Acordo de Empresa (pagamento do mês) */}
+        {aeCardEl}
 
         {/* Alertas — só quando existem (urgente → acima dos limites) */}
         {ftlAlerts.length > 0 ? (
@@ -428,39 +504,71 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  // Faixa de identidade (compacta) + sino
-  idStrip: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.md },
-  idLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, flex: 1 },
-  idEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', textTransform: 'uppercase' },
-  idTitle: { fontSize: TYPE.value, fontWeight: '700', color: C.text, marginTop: 1 },
-  idBell: { position: 'relative', width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.ink },
+  // Cabeçalho — eyebrow do operador + sino + saudação display
+  htop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
+  hlw: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  hrd: { width: 7, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.red },
+  hl: { fontSize: 10.5, fontWeight: WEIGHT.heavy, letterSpacing: 1.3, color: C.sub, textTransform: 'uppercase', flexShrink: 1 },
+  hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
-  codeBadge: { backgroundColor: C.red, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  codeText: { color: '#fff', fontSize: 11, fontFamily: 'monospace', fontWeight: '700' },
+  ht: { fontSize: 28, fontWeight: WEIGHT.heavy, letterSpacing: -0.6, color: C.text, lineHeight: 30, marginBottom: SPACE.lg },
 
-  // Estado FTL — banda semáforo (acento colorido à esquerda)
-  stateBand: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: C.line, borderLeftWidth: 3, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.md, backgroundColor: C.card },
-  stateDot: { width: 10, height: 10, borderRadius: RADIUS.pill },
-  stateLabel: { fontSize: TYPE.body, fontWeight: '700', letterSpacing: -0.2 },
-  stateReason: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
+  // Tira de 5 dias
+  week: { flexDirection: 'row', gap: 7, justifyContent: 'space-between', marginBottom: SPACE.md },
+  wd: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: RADIUS.md, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line },
+  wdOn: { backgroundColor: C.ink, borderColor: C.ink },
+  wdToday: { borderColor: C.red },
+  wdNum: { fontSize: 17, fontWeight: WEIGHT.semibold, color: C.text, lineHeight: 18 },
+  wdNumOn: { color: '#fff' },
+  wdNumToday: { color: C.red },
+  wdDay: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', color: C.sub, marginTop: 4 },
+  wdDayOn: { color: C.onDarkSub },
+  wdDot: { width: 5, height: 5, borderRadius: RADIUS.pill, backgroundColor: 'transparent', marginTop: 5 },
+  wdDotOn: { backgroundColor: C.red },
+  wdDotWhite: { backgroundColor: '#fff' },
 
-  // Próximo duty — herói (cartão escuro único)
-  nextDuty: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.lg, marginBottom: SPACE.md },
-  ndTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.sm },
-  ndEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.onDarkSub, fontWeight: '700', textTransform: 'uppercase' },
-  ndCountdown: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
-  ndDate: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginBottom: SPACE.sm },
-  ndRouteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  ndAir: { fontSize: 24, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
-  ndSectors: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600', marginLeft: 'auto' },
-  ndReport: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 8 },
-  ndDivider: { height: 1, backgroundColor: C.hairlineOnDark, marginVertical: SPACE.md },
-  ndFtlRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, flexWrap: 'wrap' },
-  ndFtlItem: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  ndFtlLbl: { fontSize: TYPE.micro, color: C.onDarkSub, fontWeight: '600' },
-  ndFtlVal: { fontSize: TYPE.sub, color: '#fff', fontWeight: '700', fontFamily: 'monospace' },
-  ndFatDot: { width: 8, height: 8, borderRadius: 99 },
+  // Estado FTL — linha de estado (ponto semáforo + contexto à direita)
+  statline: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: SPACE.md },
+  statDot: { width: 9, height: 9, borderRadius: RADIUS.pill },
+  statLabel: { fontSize: TYPE.label, fontWeight: WEIGHT.heavy, color: C.text },
+  statCtx: { marginLeft: 'auto', fontSize: 10, fontWeight: WEIGHT.heavy, letterSpacing: 0.4, color: C.sub, textTransform: 'uppercase' },
+
+  // Cartão AE — pagamento do mês (companhias com Acordo de Empresa)
+  aeCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.md, backgroundColor: C.card },
+  aeHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aeDot: { width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
+  aeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '800', textTransform: 'uppercase' },
+  aeSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 4, marginBottom: 8 },
+  aeRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: 5 },
+  aeK: { fontSize: TYPE.sub, color: C.sub, fontWeight: '500' },
+  aeV: { fontSize: TYPE.body, color: C.text, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  aeBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 6, marginBottom: 2 },
+  aeBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
+  aeTotalRow: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 6, paddingTop: 10 },
+  aeTotalK: { fontSize: TYPE.body, color: C.text, fontWeight: '700' },
+  aeTotalV: { fontSize: TYPE.value + 2, color: C.text, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  aeMiss: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
+
+  // Próximo voo — badge circular do report + texto
+  nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
+  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
+  ndCircTime: { fontSize: 25, fontWeight: WEIGHT.semibold, color: '#fff', lineHeight: 26 },
+  ndCircLbl: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
+  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ndXEyebrow: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
+  ndCountdown: { fontSize: TYPE.micro, fontWeight: '700', color: C.red },
+  ndRoute: { fontSize: 26, fontWeight: WEIGHT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
+  ndMeta: { fontSize: TYPE.micro, fontWeight: '700', color: C.sub },
+  ndMetaEm: { color: C.red, fontWeight: '700' },
+  ndTags: { flexDirection: 'row', gap: 7, marginTop: 9, flexWrap: 'wrap' },
+  ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
+  ndSrcTxt: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
+  ndFatDot: { width: 7, height: 7, borderRadius: 99 },
+  ndFatTxt: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
   bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
   bdVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', fontWeight: '600' },
   // Barras de progresso (limites · repouso)
@@ -473,7 +581,7 @@ const makeStyles = (C) => StyleSheet.create({
   progFoot: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
   restItem: { marginBottom: SPACE.md },
   restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '700' },
-  restHero: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -0.5, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
+  restHero: { fontSize: TYPE.display, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   // Painéis claros (limites · repouso · alertas) + atalhos

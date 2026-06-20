@@ -4,21 +4,23 @@
 export const PALETTE_LIGHT = {
   canvas: "#FFFFFF",
   card: "#FFFFFF",   // superfície de cartão (= canvas no claro; elevada no escuro)
-  soft: "#F3F2EF",
-  ink: "#191919",
+  soft: "#F2F2F0",
+  soft2: "#FAFAF9",  // superfície alternativa subtil (linhas zebra, fundos de campo)
+  ink: "#1B1B1B",
   inkSoft: "#2A2A2A",
-  red: "#EA3D2F",
-  redSoft: "#FBE3E0",
+  red: "#F5402C",       // vermelho da marca (alinhado ao mockup + splash)
+  redSoft: "#FDE9E4",
+  redDark: "#E0341F",   // estado pressionado de ações primárias
   // Cores semânticas — evitar reutilizar `red` para tudo.
-  danger: "#EA3D2F",
+  danger: "#F5402C",
   info: "#2E6BE6",       // azul — sinal neutro de relevância
   infoSoft: "#E4ECFB",
   warn: "#E8932B",       // âmbar — aviso/aproximação ao limite
   warnSoft: "#FBEAD2",
-  line: "#E7E6E2",
-  text: "#191919",
+  line: "#ECECEA",
+  text: "#1B1B1B",
   sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)
-  subLight: "#9B9B95", // antigo tom claro: usar só em fundos escuros/decorativo
+  subLight: "#97978F", // tom decorativo do mockup: rótulos discretos/eyebrows (não texto corrido)
   // Tons sobre fundo escuro (ink).
   onDark: "#FFFFFF",
   onDarkSub: "rgba(255,255,255,0.6)", // texto secundário sobre fundo preto
@@ -35,10 +37,12 @@ export const PALETTE_DARK = {
   canvas: "#141414",
   card: "#1E1E1E",
   soft: "#232323",
+  soft2: "#1A1A1A",  // superfície alternativa subtil (par escuro de soft2)
   ink: "#242424",
   inkSoft: "#2E2E2E",
-  red: "#FF5547",
+  red: "#FF5547",       // vermelho mais claro/saturado para fundos escuros
   redSoft: "#3A1F1C",
+  redDark: "#E84A3D",   // estado pressionado (escuro)
   danger: "#FF5547",
   info: "#5B8DEF",
   infoSoft: "#1B2A4A",
@@ -82,3 +86,17 @@ export const TYPE = {
   display: 26,   // números grandes
   hero: 30,      // título de onboarding
 };
+
+// Pesos tipográficos. O mockup usa a fonte de sistema (SF Pro Display no iOS /
+// Roboto no Android) com peso 600 nos títulos/números grandes ("display") e
+// letterSpacing apertado. Sem fonte custom — só pesos consistentes. Os ports de
+// ecrã passam de pesos avulsos ('300'/'700') para estes tokens.
+export const WEIGHT = {
+  regular: "400",
+  medium: "500",
+  semibold: "600",  // títulos de ecrã/cartão + números grandes (display do mockup)
+  bold: "700",
+  heavy: "800",     // eyebrows/badges (rótulos densos em maiúsculas)
+};
+// LetterSpacing recomendado para títulos display (negativo = mais apertado/premium).
+export const TRACK_DISPLAY = -0.4;

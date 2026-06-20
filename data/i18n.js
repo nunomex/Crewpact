@@ -136,6 +136,7 @@ export const STRINGS = {
 
     // Início
     'home.greeting': 'Bem-vindo/a',
+    'home.hello': 'Olá',
     'home.eyebrow': 'ACORDO DE EMPRESA',
     'home.eyebrowFtl': 'LIMITES DE TEMPO DE VOO',
     'home.payEyebrow': 'A TUA REMUNERAÇÃO',
@@ -620,6 +621,7 @@ export const STRINGS = {
 
     // Home
     'home.greeting': 'Welcome',
+    'home.hello': 'Hi',
     'home.eyebrow': 'COLLECTIVE LABOUR AGREEMENT',
     'home.eyebrowFtl': 'FLIGHT TIME LIMITATIONS',
     'home.payEyebrow': 'YOUR PAY',
