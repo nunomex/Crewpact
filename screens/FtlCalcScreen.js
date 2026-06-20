@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { C as _C, RADIUS, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import CenterDialog from '../components/CenterDialog';
 import { PsvCalc, LimitsCalc, RestCalc, DutyCalc, InflightRestCalc, StandbyCalc, DelayedReportingCalc, PositioningCalc } from '../components/FtlCalcs';
@@ -141,20 +141,20 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-  code: { fontSize: 26, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: 'monospace' },
-  title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4 },
+  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.medium },
+  title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4 },
   sub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 14 },
   logForRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 18 },
-  logForTxt: { fontSize: TYPE.sub, color: C.text, fontWeight: '600' },
+  logForTxt: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.semibold },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
   dlgBody: { padding: 20 },
   dlgText: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20 },
   dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
-  dlgSummaryTxt: { fontSize: 13, color: C.text, fontWeight: '600', lineHeight: 19 },
+  dlgSummaryTxt: { fontSize: 13, color: C.text, fontFamily: FONT.semibold, lineHeight: 19 },
   dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
   dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
-  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
+  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
   dlgBtnPrimary: { backgroundColor: C.ink },
-  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontWeight: '700', color: '#fff' },
+  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: '#fff' },
 });

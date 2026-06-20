@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, GUTTER, SPACE, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { RADIUS, TYPE, GUTTER, SPACE, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import BottomSheet from '../components/BottomSheet';
 import { Stepper } from '../components/Stepper';
@@ -281,10 +281,10 @@ export default function DutiesScreen({ navigation, embedded }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER, paddingTop: 2 },
-  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, textTransform: 'uppercase', marginBottom: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titleActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontSize: TYPE.hero, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
+  title: { fontSize: TYPE.hero, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
   iconBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   sub: { fontSize: TYPE.sub, color: C.sub, marginTop: 6, marginBottom: SPACE.lg },
@@ -292,34 +292,34 @@ const makeStyles = (C) => StyleSheet.create({
 
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowDate: { fontSize: TYPE.value, fontWeight: '700', color: C.text },
+  rowDate: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
   pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.warn || C.sub },
-  rowMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 3, fontFamily: 'monospace' },
+  rowMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
   delBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
 
   form: { padding: 20 },
-  fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
+  fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  clockInput: { width: 92, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
+  clockInput: { width: 92, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
   dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  dateTxt: { fontSize: TYPE.body, fontWeight: '600', color: C.text },
+  dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
   proj: { marginTop: 18, borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
   projOk: { borderColor: C.line, backgroundColor: C.soft },
   projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },
   projHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  projTitle: { fontSize: TYPE.label, fontWeight: '700', color: C.text },
-  projMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 6, fontFamily: 'monospace' },
-  projIssue: { fontSize: TYPE.micro, color: (C.warn || C.text), marginTop: 4, fontWeight: '600' },
+  projTitle: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text },
+  projMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 6, fontFamily: FONT.medium },
+  projIssue: { fontSize: TYPE.micro, color: (C.warn || C.text), marginTop: 4, fontFamily: FONT.semibold },
   fatRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   fatDot: { width: 8, height: 8, borderRadius: 99, marginRight: 7 },
-  fatLbl: { fontSize: TYPE.micro, color: C.sub, fontWeight: '600' },
-  fatVal: { fontSize: TYPE.micro, fontWeight: '800' },
+  fatLbl: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.semibold },
+  fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
   fatHint: { fontSize: 10, color: C.sub, marginTop: 6, fontStyle: 'italic' },
 
   saveBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
+  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
   recSub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   recInput: { backgroundColor: C.soft, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: C.line, color: C.text, fontSize: TYPE.body },
   formHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginTop: 10 },

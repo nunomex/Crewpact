@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, TYPE } from '../data/constants';
+import { C as _C, RADIUS, TYPE, FONT } from '../data/constants';
 import Eyebrow from './Eyebrow';
 import { t } from '../data/i18n';
 import { useTheme } from '../App';
@@ -113,24 +113,24 @@ const makeC = (C) => StyleSheet.create({
   accHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   accBody: { marginTop: 12 },
   result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase' },
-  resVal: { color: C.red, fontFamily: 'monospace', marginTop: 2 },
+  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', fontFamily: FONT.semibold, textTransform: 'uppercase' },
+  resVal: { color: C.red, fontFamily: FONT.medium, marginTop: 2 },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 
   validRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   validDot: { width: 7, height: 7, borderRadius: 4 },
-  validTxt: { fontSize: TYPE.micro, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase' },
+  validTxt: { fontSize: TYPE.micro, fontFamily: FONT.bold, letterSpacing: 0.3, textTransform: 'uppercase' },
 
   auditToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 10 },
-  auditToggleTxt: { fontSize: TYPE.sub, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  auditToggleTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: 'rgba(255,255,255,0.85)' },
   auditBody: { marginTop: 4 },
-  auditHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.45)', fontWeight: '700', textTransform: 'uppercase', marginTop: 14, marginBottom: 5 },
-  auditRule: { fontSize: TYPE.sub, fontFamily: 'monospace', fontWeight: '700', color: '#fff' },
+  auditHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.45)', fontFamily: FONT.bold, textTransform: 'uppercase', marginTop: 14, marginBottom: 5 },
+  auditRule: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: '#fff' },
   auditText: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 17, marginTop: 3 },
   auditKv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 3 },
   auditK: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.6)', flex: 1 },
-  auditV: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '600', color: '#fff' },
-  auditFormula: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  auditV: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: '#fff' },
+  auditFormula: { fontSize: TYPE.sub, fontFamily: FONT.medium, color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
   auditStep: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginTop: 4 },
   auditResult: { marginTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8 },
 });

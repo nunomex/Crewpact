@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { FONT } from '../data/constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext, useTheme } from '../App';
@@ -27,5 +28,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 6, paddingBottom: 6, paddingHorizontal: 16,
   },
-  txt: { color: '#fff', fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
+  txt: { color: '#fff', fontSize: 11, fontFamily: FONT.semibold, letterSpacing: 0.2 },
 });

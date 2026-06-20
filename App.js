@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { getLocales } from 'expo-localization';
-import { C, RADIUS, PALETTES } from './data/constants';
+import { C, RADIUS, PALETTES, FONT } from './data/constants';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
@@ -169,7 +169,7 @@ const tbar = StyleSheet.create({
   // FAB vermelho (direita) — "Simular"
   fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  fabLabel: { position: 'absolute', top: -16, right: 2, fontSize: 8.5, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  fabLabel: { position: 'absolute', top: -16, right: 2, fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
 });
 
 export default function App() {

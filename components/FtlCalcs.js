@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { RADIUS, TYPE } from '../data/constants';
+import { RADIUS, TYPE, FONT } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED } from '../data/ftl'; // só a lista de faixas (UI)
@@ -817,28 +817,28 @@ const makeCs = (C) => StyleSheet.create({
   wrap: { marginBottom: 10 },
   fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
   chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  chipTxt: { fontSize: TYPE.label, fontFamily: 'monospace', fontWeight: '600' },
+  chipTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold },
   regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
-  regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '700' },
+  regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.bold },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 10, lineHeight: 16 },
   extRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  extLbl: { fontSize: TYPE.sub, color: C.text, fontWeight: '500' },
-  extVal: { fontSize: TYPE.value, fontFamily: 'monospace', fontWeight: '700', color: C.text },
+  extLbl: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.medium },
+  extVal: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginTop: 4 },
   timeLbl: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
-  timeInput: { width: 84, textAlign: 'center', fontFamily: 'monospace', fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
+  timeInput: { width: 84, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
   timeInputErr: { borderColor: C.red, color: C.red, backgroundColor: C.redSoft },
-  errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontWeight: '600' },
-  okNote: { fontSize: TYPE.micro, color: C.green, marginTop: 4, fontWeight: '600' },
-  warnNote: { fontSize: TYPE.micro, color: C.warn, marginTop: 4, fontWeight: '600' },
+  errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontFamily: FONT.semibold },
+  okNote: { fontSize: TYPE.micro, color: C.green, marginTop: 4, fontFamily: FONT.semibold },
+  warnNote: { fontSize: TYPE.micro, color: C.warn, marginTop: 4, fontFamily: FONT.semibold },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },
   advToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 4, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line },
-  advToggleTxt: { fontSize: TYPE.label, fontWeight: '700', color: C.text, letterSpacing: 0.3, textTransform: 'uppercase' },
+  advToggleTxt: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.3, textTransform: 'uppercase' },
   advCaret: { fontSize: TYPE.body, color: C.sub },
   dutyResult: { marginTop: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
   dutyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   dutyDivider: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  dutyLbl: { fontSize: TYPE.sub, color: C.sub, fontWeight: '600' },
-  dutyVal: { fontSize: TYPE.body, fontFamily: 'monospace', fontWeight: '700', color: C.text },
+  dutyLbl: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.semibold },
+  dutyVal: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text },
 });

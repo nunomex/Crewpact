@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, AppState, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { fmtVal } from '../data/extras';
@@ -306,55 +306,55 @@ const makeStyles = (C) => StyleSheet.create({
 
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   navBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  monthLbl: { fontSize: TYPE.title, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
+  monthLbl: { fontSize: TYPE.title, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
 
   weekRow: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
-  dow: { fontSize: TYPE.micro, fontWeight: '600', color: C.sub, paddingVertical: 6 },
+  dow: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, paddingVertical: 6 },
   dayCircle: { width: 38, height: 38, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
   dayToday: { backgroundColor: C.ink },
   daySel: { borderColor: C.text },
-  dayTxt: { fontSize: TYPE.sub, color: C.text, fontWeight: '500' },
+  dayTxt: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.medium },
   dayMuted: { color: C.subLight },
-  dayTodayTxt: { color: C.onDark, fontWeight: '700' },
+  dayTodayTxt: { color: C.onDark, fontFamily: FONT.bold },
   markerSlot: { height: 14, alignItems: 'center', justifyContent: 'center' },
   flightDot: { width: 5, height: 5, borderRadius: RADIUS.pill, backgroundColor: C.red },
 
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.lg, marginBottom: SPACE.sm, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.line },
-  dayHeadNum: { fontSize: TYPE.display, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
-  dayHeadTop: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', textTransform: 'uppercase' },
-  dayHeadSub: { fontSize: TYPE.body, color: C.text, fontWeight: '600', marginTop: 1 },
+  dayHeadNum: { fontSize: TYPE.display, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
+  dayHeadTop: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontFamily: FONT.bold, textTransform: 'uppercase' },
+  dayHeadSub: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.semibold, marginTop: 1 },
 
-  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.md, marginBottom: SPACE.sm },
+  secHd: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginTop: SPACE.md, marginBottom: SPACE.sm },
   flightsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md, marginBottom: SPACE.sm },
   importBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 30, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: C.card },
-  importBtnTxt: { fontSize: TYPE.micro, fontWeight: '700', color: C.text, letterSpacing: 0.3 },
+  importBtnTxt: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.3 },
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
   note: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, paddingVertical: SPACE.sm },
   noteTxt: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
-  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '600' },
+  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
   flightRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   flightIcon: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  flightRoute: { fontSize: TYPE.value, fontWeight: '700', color: C.text, letterSpacing: -0.2 },
+  flightRoute: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
   flightMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
-  pdEm: { color: C.red, fontWeight: '700' },
-  flightAc: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.sub },
+  pdEm: { color: C.red, fontFamily: FONT.bold },
+  flightAc: { fontSize: TYPE.micro, fontFamily: FONT.medium, color: C.sub },
 
   recHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.lg, marginBottom: SPACE.sm },
   addBtn: { width: 32, height: 32, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   recRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   recLbl: { fontSize: TYPE.sub, color: C.text, flex: 1 },
-  recVal: { fontSize: TYPE.sub, fontFamily: 'monospace', fontWeight: '600', color: C.text },
+  recVal: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
   delBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   // Formulário de registo AE (categoria + €) — espelha o cartão do mês no Início.
   aeForm: { padding: 20 },
-  fieldLbl: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 8 },
+  fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
   catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: RADIUS.pill, paddingHorizontal: 12, minHeight: 38 },
-  catChipTxt: { fontSize: TYPE.label, fontWeight: '600' },
-  amountInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.heading, fontFamily: 'monospace', color: C.text },
+  catChipTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold },
+  amountInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.heading, fontFamily: FONT.medium, color: C.text },
   saveBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
-  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
+  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
 });
