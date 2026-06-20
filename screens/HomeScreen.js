@@ -2,16 +2,15 @@ import React, { useContext, useState, useRef, useEffect, useCallback } from 'rea
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
-import { catLabel, fmtVal } from '../data/extras';
+import { catLabel } from '../data/extras';
 import { monthlyPerDiem } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
 import PageHeader from '../components/PageHeader';
-import { computeDutyTime, computeFlightTime, computeRestSequence, computeDuty, fatigueFromDuty } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
-import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,31 +18,8 @@ import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
 
-// "11:30" → 11.5 (horas decimais).
-const hhmmToH = (s) => {
-  const [h, m] = String(s).split(':').map(Number);
-  return (h || 0) + (m || 0) / 60;
-};
-
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
-// Recebe a paleta ativa (C) para acompanhar o tema (claro/escuro).
 const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
-
-// Barra com preenchimento animado (0 → valor) sempre que o rácio muda — dá a
-// sensação de "encher" ao abrir o Início depois de registar nos Cálculos.
-function AnimatedBar({ ratio, color, s }) {
-  const w = useRef(new Animated.Value(0)).current;
-  const target = Math.max(0, Math.min(1, ratio || 0));
-  useEffect(() => {
-    Animated.timing(w, { toValue: target, duration: 550, useNativeDriver: false }).start();
-  }, [target, w]);
-  const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-  return (
-    <View style={s.progTrack}>
-      <Animated.View style={[s.progFill, { width, backgroundColor: color }]} />
-    </View>
-  );
-}
 
 // Anel a pulsar (escala 1→1.7 + desvanece, em loop) — atrás do ponto de estado e
 // do badge do report, como o mockup (@keyframes ring).
@@ -73,56 +49,6 @@ function MiniBar({ ratio, color, track, fill }) {
   return (
     <View style={track}>
       <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
-    </View>
-  );
-}
-
-// Barra de repouso mínimo: escala 0 → piso (12 h base / 10 h fora). O valor é o
-// repouso exigido = máx(serviço anterior, piso); acima do piso assinala a vermelho.
-function RestBar({ label, value, floor, prev, lang, s, C, at, atDir, atDay }) {
-  const empty = value == null;
-  const over = !empty && value > floor;
-  const fill = empty ? 0 : Math.min(1, value / floor);
-  return (
-    <View style={s.restItem}>
-      <Text style={s.restItemLbl}>{label}</Text>
-      <Text style={[s.restHero, over && { color: C.red }]}>{empty ? '—' : fmtVal(value, 'h')}</Text>
-      <AnimatedBar ratio={fill} color={over ? C.red : C.ink} s={s} />
-      <Text style={[s.progFoot, over && { color: C.red }]}>
-        {empty
-          ? `${t('home.restNoLog', lang)} · ${t('home.restMin', lang)} ${floor}:00`
-          : over
-            ? `${t('home.restExt', lang)} · ${t('home.restMin', lang)} ${floor}:00`
-            : `${t('home.restMin', lang)} ${floor}:00`}
-      </Text>
-      {at ? (
-        <View style={[s.setoresRow, { marginTop: 6 }]}>
-          <Text style={s.bdLbl}>{t(atDir === 'before' ? 'ftl.latestOff' : 'ftl.earliestReport', lang)}</Text>
-          <Text style={s.bdVal}>{at}{atDay || ''}</Text>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-// Barra de limite (FTL) — feito / limite, com horas em falta.
-function ProgressRow({ label, done, limit, lang, s, C }) {
-  const ratio = limit ? done / limit : 0;
-  const fill = Math.min(1, ratio);
-  const over = done > limit;
-  const remaining = Math.max(0, limit - done);
-  return (
-    <View style={s.prog}>
-      <View style={s.progTop}>
-        <Text style={s.progLbl}>{label}</Text>
-        <Text style={s.progVal}>{fmtVal(done, 'h')} / {limit} h</Text>
-      </View>
-      <AnimatedBar ratio={fill} color={barColor(ratio, C)} s={s} />
-      <Text style={[s.progFoot, over && { color: C.red }]}>
-        {over
-          ? `${t('home.excess', lang)} ${fmtVal(done - limit, 'h')}`
-          : `${t('home.remaining', lang)} ${fmtVal(remaining, 'h')}`}
-      </Text>
     </View>
   );
 }
@@ -159,8 +85,6 @@ export default function HomeScreen({ navigation }) {
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
-  const [limCat, setLimCat] = useState('servico'); // categoria mostrada no separador Limites
-  const [limExpanded, setLimExpanded] = useState(false); // Limites: pior janela vs. todas
   const [notifOpen, setNotifOpen] = useState(false);
 
   const notifs = buildNotifications(profile, lang);
@@ -175,34 +99,15 @@ export default function HomeScreen({ navigation }) {
                       `${w.days} ${lang === 'en' ? 'days' : 'dias'}`;
   const hasLimitData = Object.values(dayLog).some(d => (d?.voo > 0) || (d?.servico > 0));
 
-  // Estado global (pior janela de tudo) → mosaico Limites.
+  // Estado global (pior janela de tudo) → linha de estado.
   const worstOf = (arr) => arr.reduce((w, x) => (x.ratio > w.ratio ? x : w), { ratio: -1, limit: null, done: 0 });
   const limWorst = worstOf([...dutyLimits, ...flightLimits]);
   const limLevel = limWorst.ratio >= 1 ? 'over' : limWorst.ratio >= 0.85 ? 'warn' : 'ok';
 
-  // PSV de hoje: usa os dados reais do registo. O DutyCalc guarda o máximo da tabela
-  // (psv.max) e o excesso (psv.over/psv.excess). Registos antigos (só PSV, sem
-  // 'over') não têm excesso → sem badge (são o próprio máximo).
-  const psvMax = ftlSnap.psv?.max || null;
+  // PSV de hoje — só interessa para o nível de estado (ilegal → vermelho).
   const psvOver = !!(ftlSnap.psv && ftlSnap.psv.over);
-  const psvExcess = ftlSnap.psv?.excess || null;
-  const psvRatio = ftlSnap.psv ? hhmmToH(ftlSnap.psv.result) / (psvMax ? hhmmToH(psvMax) : 13) : 0;
-  const psvFoot = psvMax ? `${lang === 'en' ? 'max' : 'máx'} ${psvMax}` : t('home.psvMaxFoot', lang);
 
-  // Anel + folga: pior janela DENTRO da categoria selecionada (coerente com as barras).
-  const catLimits = limCat === 'voo' ? flightLimits : dutyLimits;
-  const catWorst = worstOf(catLimits);
-  const catLevel = catWorst.ratio >= 1 ? 'over' : catWorst.ratio >= 0.85 ? 'warn' : 'ok';
-  const catColor = catLevel === 'over' ? C.red : catLevel === 'warn' ? C.warn : C.green;
-  const catPct   = `${Math.round(Math.max(0, catWorst.ratio) * 100)}%`;
-  const catFolga = catWorst.limit != null ? catWorst.limit - catWorst.done : 0; // horas
-  const catOver  = catFolga < 0;
-  const folgaNum   = (catOver ? '−' : '') + fmtVal(Math.abs(catFolga), 'h');
-  const folgaLabel = catOver ? t('home.statusOver', lang) : t('home.headroom', lang);
-  const folgaCtx   = `${catLabel(limCat, lang)} · ${catWorst.limit != null ? limLabel(catWorst) : ''}`;
-
-  // ── Dashboard FTL: estado global + alertas (derivados dos cálculos existentes,
-  // sem novas fórmulas) ──
+  // ── Linha de estado FTL: estado global (derivado dos cálculos existentes) ──
   const stateLevel = psvOver ? 'over' : (hasLimitData ? limLevel : 'neutral');
   const worstCat = dutyLimits.indexOf(limWorst) >= 0 ? 'servico' : flightLimits.indexOf(limWorst) >= 0 ? 'voo' : null;
   const stateReason = hasLimitData && limWorst.limit != null
@@ -213,25 +118,6 @@ export default function HomeScreen({ navigation }) {
     : stateLevel === 'ok' ? t('home.statusOk', lang)
     : t('home.dashNoData', lang);
   const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
-  const ftlAlerts = [];
-  {
-    const pushLim = (arr, cat) => arr.forEach(w => {
-      if (!(w.done > 0)) return;
-      const lbl = `${catLabel(cat, lang)} ${limLabel(w)}`;
-      if (w.ratio >= 1) ftlAlerts.push({ id: `${cat}-${w.id}`, level: 'over', text: `${lbl} · ${t('home.excess', lang)} ${fmtVal(w.done - w.limit, 'h')}` });
-      else if (w.ratio >= 0.85) ftlAlerts.push({ id: `${cat}-${w.id}`, level: 'warn', text: `${lbl} · ${Math.round(w.ratio * 100)}%` });
-    });
-    pushLim(dutyLimits, 'servico');
-    pushLim(flightLimits, 'voo');
-    if (psvOver) ftlAlerts.push({ id: 'psv', level: 'over', text: `${t('home.psvMaxLbl', lang)} · ${t('home.illegal', lang)} +${psvExcess}` });
-    // Sequência de escala (235(a)(2)/(d)): recuperação/disruptivos a partir das duties.
-    computeRestSequence(duties || {}).issues.forEach((iss, k) => {
-      const text = iss.type === 'recovery60' ? t('home.seqRecovery60', lang)
-        : iss.type === 'recovery168' ? t('home.seqRecovery168', lang)
-        : t('home.seqTransition', lang);
-      ftlAlerts.push({ id: `seq-${iss.type}-${k}`, level: 'warn', text });
-    });
-  }
 
   const closeNotifs = () => {
     setNotifOpen(false);
@@ -419,7 +305,7 @@ export default function HomeScreen({ navigation }) {
     return { iso, day: d.getDate(), wd: wd.charAt(0).toUpperCase() + wd.slice(1), hasFlight: !!(reg && !reg.deleted && reg.report_time), isToday: iso === todayISO };
   });
 
-  // Entrada escalonada das secções (hook partilhado, re-toca no foco).
+  // Entrada escalonada das secções (hook partilhado, re-toca no foco) — mockup .rise.
   const seg = useEnter();
 
   return (
@@ -473,53 +359,6 @@ export default function HomeScreen({ navigation }) {
           {ae && crewCategory ? aeMiniEl : <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />}
         </Animated.View>
         {(!(ae && crewCategory) && !hasLimitData) ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
-
-        {/* Alertas — só quando existem (urgente → acima dos limites) */}
-        {ftlAlerts.length > 0 ? (
-          <View style={s.alertCard}>
-            <Text style={s.alertHead}>{t('home.dashAlerts', lang)}</Text>
-            {ftlAlerts.slice(0, 5).map((al, i) => (
-              <View key={al.id} style={[s.alertRow, i > 0 && s.alertRowDiv]}>
-                <Ionicons name={al.level === 'over' ? 'alert-circle' : 'warning'} size={18} color={al.level === 'over' ? C.red : C.warn} />
-                <Text style={s.alertTxt}>{al.text}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {/* Repouso — cartão claro */}
-        <View style={s.panel}>
-          <Text style={s.secTitle}>{t('home.dashRest', lang)}</Text>
-          {ftlSnap.rest ? (
-            <>
-              <RestBar label={t('home.restBase', lang)} value={ftlSnap.rest?.base} floor={12} prev={ftlSnap.rest?.basePrev} lang={lang} s={s} C={C} />
-              <RestBar label={t('home.restAway', lang)} value={ftlSnap.rest?.away} floor={10} prev={ftlSnap.rest?.awayPrev} lang={lang} s={s} C={C} />
-              <Text style={s.progFoot}>{t('home.recovery', lang)}</Text>
-            </>
-          ) : <Text style={s.panelEmptyTxt}>{t('home.restEmpty', lang)}</Text>}
-        </View>
-
-        {/* Simulador — CTA primário */}
-        <TouchableOpacity style={s.simCta} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FtlCalc', { duty: true }); }}>
-          <View style={s.simIcon}><Ionicons name="play" size={20} color="#fff" /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.simTitle}>{t('home.dashSim', lang)}</Text>
-            <Text style={s.simSub}>{t('home.dashSimSub', lang)}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={C.onDarkSub} />
-        </TouchableOpacity>
-
-        {/* Atalhos — 2 colunas */}
-        <View style={s.shortcutsRow}>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'month' } }); }}>
-            <Ionicons name="calendar-outline" size={20} color={C.text} />
-            <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'list' } }); }}>
-            <Ionicons name="time-outline" size={20} color={C.text} />
-            <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       {/* Notificações */}
@@ -578,23 +417,28 @@ const makeStyles = (C) => StyleSheet.create({
   statLabel: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
   statCtx: { marginLeft: 'auto', fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.4, color: C.sub, textTransform: 'uppercase' },
 
-  // Cartão AE — pagamento do mês (companhias com Acordo de Empresa)
-  aeCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.md, backgroundColor: C.card },
-  aeHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  aeDot: { width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  aeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontFamily: FONT.heavy, textTransform: 'uppercase' },
-  aeSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 4, marginBottom: 8 },
-  aeRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: 5 },
-  aeK: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium },
-  aeV: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.semibold, fontVariant: ['tabular-nums'] },
-  aeBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 6, marginBottom: 2 },
-  aeBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
-  aeTotalRow: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 6, paddingTop: 10 },
-  aeTotalK: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold },
-  aeTotalV: { fontSize: TYPE.value + 2, color: C.text, fontFamily: FONT.heavy, fontVariant: ['tabular-nums'] },
-  aeMiss: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
+  // Próximo voo — badge circular do report + texto
+  nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
+  ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
+  ndCircTime: { fontSize: 25, fontFamily: FONT.semibold, color: '#fff', lineHeight: 26 },
+  ndCircLbl: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
+  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ndXEyebrow: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
+  ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
+  ndRoute: { fontSize: 26, fontFamily: FONT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
+  ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
+  ndMetaEm: { color: C.red, fontFamily: FONT.bold },
+  ndTags: { flexDirection: 'row', gap: 7, marginTop: 9, flexWrap: 'wrap' },
+  ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
+  ndSrcTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
+  ndFatDot: { width: 7, height: 7, borderRadius: 99 },
+  ndFatTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
 
-  // Limites — grelha 2-col (mockup .grid2/.uc/.win/.wbar)
+  // Grelha 2-col (mockup .grid2/.uc/.win/.wbar)
   grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
   gridHint: { fontSize: TYPE.micro, color: C.sub, marginTop: -8, marginBottom: SPACE.md, paddingHorizontal: 2, lineHeight: 16 },
   uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15,
@@ -619,59 +463,6 @@ const makeStyles = (C) => StyleSheet.create({
   aeMVtot: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
   aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
   aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
-
-  // Próximo voo — badge circular do report + texto
-  nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
-  ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
-  ndCircTime: { fontSize: 25, fontFamily: FONT.semibold, color: '#fff', lineHeight: 26 },
-  ndCircLbl: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
-  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ndXEyebrow: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
-  ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
-  ndRoute: { fontSize: 26, fontFamily: FONT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
-  ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
-  ndMetaEm: { color: C.red, fontFamily: FONT.bold },
-  ndTags: { flexDirection: 'row', gap: 7, marginTop: 9, flexWrap: 'wrap' },
-  ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
-  ndSrcTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
-  ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
-  ndFatDot: { width: 7, height: 7, borderRadius: 99 },
-  ndFatTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
-  bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
-  bdVal: { fontSize: TYPE.sub, color: '#fff', fontFamily: FONT.semibold },
-  // Barras de progresso (limites · repouso)
-  prog: { marginBottom: SPACE.md + 4 },
-  progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
-  progLbl: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
-  progVal: { fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub },
-  progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.line, overflow: 'hidden' },
-  progFill: { height: 10, borderRadius: RADIUS.pill },
-  progFoot: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
-  restItem: { marginBottom: SPACE.md },
-  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontFamily: FONT.bold },
-  restHero: { fontSize: TYPE.display, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
-  setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-
-  // Painéis claros (limites · repouso · alertas) + atalhos
-  panel: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
-  secTitle: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: SPACE.md },
-  panelEmptyTxt: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
-  limToggle: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.bold, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  shortcutsRow: { flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.md },
-  shortcut: { flex: 1, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: SPACE.md + 4, backgroundColor: C.card },
-  shortcutTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text },
-  alertCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
-  alertHead: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginBottom: SPACE.sm },
-  alertRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
-  alertRowDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  alertTxt: { flex: 1, fontSize: TYPE.sub, color: C.text },
-  simCta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.md + 2, marginBottom: SPACE.md },
-  simIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
-  simTitle: { fontSize: TYPE.body, fontFamily: FONT.bold, color: '#fff' },
-  simSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2 },
 
   // Próximo duty — estado vazio / sem permissão (cartão claro)
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
