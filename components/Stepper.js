@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { C as _C, RADIUS, TYPE, PALETTE_DARK, FONT } from '../data/constants';
 import { tap, select } from '../data/haptics';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Stepper numérico (− valor +) e seletor segmentado, partilhados pelas calculadoras.
 export function Stepper({ label, value, setValue, min = 0, max = 9999 }) {

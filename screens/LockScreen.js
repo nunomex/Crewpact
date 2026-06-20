@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
 import { TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import { success } from '../data/haptics';

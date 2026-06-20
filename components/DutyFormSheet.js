@@ -7,7 +7,7 @@ import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { AppContext, useTheme, isoDay } from '../App';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 
 // ── helpers HH:MM ──
 const maskClock = (v) => { const d = (v || '').replace(/[^0-9]/g, '').slice(0, 4); return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`; };

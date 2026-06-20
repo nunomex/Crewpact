@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GUTTER } from '../data/constants';
 import { Seg } from '../components/Stepper';
 import { t } from '../data/i18n';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 import DutiesScreen from './DutiesScreen';
 import CalendarScreen from './CalendarScreen';
 import EscalaWheel from '../components/EscalaWheel';

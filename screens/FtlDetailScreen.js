@@ -11,7 +11,7 @@ import {
   FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
 import { t, tx } from '../data/i18n';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 // Cabeçalho de tabela com dica de scroll horizontal.
 function TableTitle({ children }) {

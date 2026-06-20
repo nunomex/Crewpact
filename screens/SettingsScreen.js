@@ -15,7 +15,7 @@ import appJson from '../app.json';
 import { changePassword, validatePassword } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 // Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
 // segmento, um valor + chevron, ou nada. Toca quando há onPress.

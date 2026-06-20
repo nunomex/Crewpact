@@ -12,7 +12,7 @@ import { dutyFromActivity } from '../data/rosterImport';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { AppContext, useTheme, isoDay } from '../App';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 
 const WEEKDAYS = {
   pt: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],

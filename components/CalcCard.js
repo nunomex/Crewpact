@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, TYPE, FONT } from '../data/constants';
 import Eyebrow from './Eyebrow';
 import { t } from '../data/i18n';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Invólucro de calculadora. Por defeito estático (eyebrow + caixa).
 // Com `collapsible`, vira acordeão (fechado se `defaultOpen={false}`).

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { TYPE, FONT } from '../data/constants';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Rótulo "eyebrow" partilhado (10px, espaçado, maiúsculas).
 // `dark` para fundos escuros. Aceita `style` para margens/cor pontuais.

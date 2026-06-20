@@ -13,7 +13,7 @@ import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { printToPdfAndShare } from '../data/pdf';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { AppContext, useTheme, isoDay } from '../App';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 
 // "HH:MM" helpers — máscara à medida que se escreve + validação + minutos.
 const maskClock = (v) => {

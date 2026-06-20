@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, 
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import Eyebrow from './Eyebrow';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Folha inferior partilhada (overlay + cabeçalho com título e fechar).
 // Props: visible, onClose, title, eyebrow?, maxHeight?, children.

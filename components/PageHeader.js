@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { RADIUS, SPACE, FONT } from '../data/constants';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Cabeçalho claro do mockup (substitui o ScreenHeader blob preto): eyebrow do
 // operador/módulo com ponto vermelho + título display, e um slot opcional à

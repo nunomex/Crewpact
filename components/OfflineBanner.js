@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { FONT } from '../data/constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
 
 // Banner fino no topo quando não há ligação. Só aparece offline — as escritas

@@ -12,7 +12,7 @@ import { FTL_ARTICLES } from '../data/ftl';
 import { openFtlPdf } from '../data/ftlPdf';
 import { t, tx } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest || a.inflight || a.standby || a.delayed);
 

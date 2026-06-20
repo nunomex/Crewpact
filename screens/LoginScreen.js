@@ -14,7 +14,7 @@ import {
 } from '../data/auth';
 import { t } from '../data/i18n';
 import { success, warning, select } from '../data/haptics';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 /* ─── Field ──────────────────────────────────────────────────────────────── */
 function Field({ value, onChangeText, placeholder, error, secure,

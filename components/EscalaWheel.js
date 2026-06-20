@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT, RADIUS } from '../data/constants';
-import { AppContext, useTheme, isoDay } from '../App';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
 import { t } from '../data/i18n';
 

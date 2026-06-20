@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, 
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import Eyebrow from './Eyebrow';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Diálogo centrado (popup) — visual de alerta. API igual ao BottomSheet:
 // Props: visible, onClose, title, eyebrow?, closeLabel?, children.

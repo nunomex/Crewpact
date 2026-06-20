@@ -17,7 +17,7 @@ import useEnter from '../hooks/useEnter';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 // "11:30" → 11.5 (horas decimais).
 const hhmmToH = (s) => {
@@ -444,7 +444,7 @@ export default function HomeScreen({ navigation }) {
             const isNext = nextFlightISO === wdy.iso;
             return (
               <TouchableOpacity key={wdy.iso} activeOpacity={0.8}
-                onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'month' } }); }}
+                onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'month' } }); }}
                 style={[s.wd, isNext && s.wdOn, wdy.isToday && !isNext && s.wdToday]}>
                 <Text style={[s.wdNum, isNext && s.wdNumOn, wdy.isToday && !isNext && s.wdNumToday]}>{wdy.day}</Text>
                 <Text style={[s.wdDay, isNext && s.wdDayOn]}>{wdy.wd}</Text>
@@ -511,11 +511,11 @@ export default function HomeScreen({ navigation }) {
 
         {/* Atalhos — 2 colunas */}
         <View style={s.shortcutsRow}>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'month' } }); }}>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'month' } }); }}>
             <Ionicons name="calendar-outline" size={20} color={C.text} />
             <Text style={s.shortcutTxt}>{t('home.calTitle', lang)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'Escala', params: { view: 'list' } }); }}>
+          <TouchableOpacity style={s.shortcut} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'list' } }); }}>
             <Ionicons name="time-outline" size={20} color={C.text} />
             <Text style={s.shortcutTxt}>{t('duties.cardTitle', lang)}</Text>
           </TouchableOpacity>

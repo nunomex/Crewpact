@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { monthlyPerDiem } from '../data/perdiem';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 
 // Cabeçalhos de grupo do catálogo (CALCS.group em PT) → bilingue.
 const GROUP_LABEL = {

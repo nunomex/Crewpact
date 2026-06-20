@@ -20,6 +20,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, PALETTES, FONT } from './data/constants';
+import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
@@ -47,18 +48,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-export const AppContext = React.createContext(null);
-
-// Data local no formato 'YYYY-MM-DD' (chave do registo FTL por dia). Usa as
-// componentes locais — não o UTC do toISOString() — para não trocar de dia
-// perto da meia-noite consoante o fuso.
-export const isoDay = (d = new Date()) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-// Paleta ativa (modo claro/escuro). Ecrãs convertidos fazem `const C = useTheme()`
-// — isso ensombra o import estático `C`, por isso tanto os estilos como as cores
-// inline passam a usar a paleta do tema.
-export const useTheme = () => useContext(AppContext)?.palette || PALETTES.light;
+// AppContext / isoDay / useTheme vivem em data/appContext (módulo-folha) para
+// QUEBRAR o ciclo de require App ↔ screens (que enchia os logs de WARN). São
+// importados acima (uso interno) e reexportados aqui para compatibilidade.
+export { AppContext, isoDay, useTheme };
 
 // Bloqueio biometria/PIN (opt-in): re-tranca a app ao voltar de segundo plano
 // se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
@@ -79,7 +72,7 @@ function HomeStack() {
 function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Escala"    component={EscalaScreen} />
+      <Stack.Screen name="EscalaMain" component={EscalaScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>

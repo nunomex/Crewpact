@@ -10,7 +10,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES, ftlSectionTitle } from '../data/ftl';
 import { t, tx } from '../data/i18n';
 import { success } from '../data/haptics';
-import { AppContext, useTheme, isoDay } from '../App';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 
 const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 

@@ -13,7 +13,7 @@ import {
   QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 } from '../ftl';
 import { t } from '../data/i18n';
-import { useTheme } from '../App';
+import { useTheme } from '../data/appContext';
 
 // Toda a matemática FTL vem do motor `ftl/` — os componentes só tratam de UI.
 // Transição suave ao mostrar/esconder (ex.: fim-limite, troca de estado).

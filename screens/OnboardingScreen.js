@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
-import { AppContext, useTheme } from '../App';
+import { AppContext, useTheme } from '../data/appContext';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
