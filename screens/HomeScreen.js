@@ -13,6 +13,7 @@ import { computeDutyTime, computeFlightTime, computeRestSequence, computeDuty, f
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import useEnter from '../hooks/useEnter';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -418,20 +419,8 @@ export default function HomeScreen({ navigation }) {
     return { iso, day: d.getDate(), wd: wd.charAt(0).toUpperCase() + wd.slice(1), hasFlight: !!(reg && !reg.deleted && reg.report_time), isToday: iso === todayISO };
   });
 
-  // Entrada escalonada (mockup .view.show > * com delays): um valor 0→1 que cada
-  // secção interpola na sua sub-faixa. Re-toca sempre que o ecrã ganha foco.
-  const enter = useRef(new Animated.Value(0)).current;
-  useFocusEffect(useCallback(() => {
-    enter.setValue(0);
-    Animated.timing(enter, { toValue: 1, duration: 820, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [enter]));
-  const seg = (i) => {
-    const start = Math.min(0.55, i * 0.11);
-    return {
-      opacity: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [0, 1], extrapolate: 'clamp' }),
-      transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
-    };
-  };
+  // Entrada escalonada das secções (hook partilhado, re-toca no foco).
+  const seg = useEnter();
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>

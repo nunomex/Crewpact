@@ -1,40 +1,45 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
-import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
+import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { C, RADIUS, TYPE, WEIGHT } from '../data/constants';
+import { C, RADIUS, TYPE, FONT } from '../data/constants';
 import appJson from '../app.json';
 import { changePassword, validatePassword } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../App';
 
-function Group({ title, children, s }) {
-  return (
-    <View style={s.group}>
-      {title ? <Eyebrow style={s.groupTitle}>{title}</Eyebrow> : null}
-      <View style={s.groupBox}>{children}</View>
-    </View>
-  );
-}
-function Row({ label, value, onPress, last, danger, s, C }) {
-  return (
-    <TouchableOpacity onPress={onPress} style={[s.row, !last && s.rowBorder]}>
-      <Text style={[s.rowLabel, danger && { color: C.red }]}>{label}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {value ? <Text style={s.rowValue} numberOfLines={1}>{value}</Text> : null}
-        <Ionicons name={danger ? 'log-out-outline' : 'chevron-forward'} size={14} color={danger ? C.red : C.sub} />
+// Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
+// segmento, um valor + chevron, ou nada. Toca quando há onPress.
+function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
+  const body = (
+    <>
+      <View style={[s.gi, danger && s.giDanger]}>
+        <Ionicons name={icon} size={17} color={danger ? C.red : C.ink} />
       </View>
-    </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <Text style={[s.grLabel, danger && { color: C.red }]} numberOfLines={1}>{label}</Text>
+        {sub ? <Text style={s.grSub} numberOfLines={1}>{sub}</Text> : null}
+      </View>
+      {right ? right : (
+        <View style={s.grRight}>
+          {value ? <Text style={s.rv} numberOfLines={1}>{value}</Text> : null}
+          {onPress ? <Ionicons name={danger ? 'log-out-outline' : 'chevron-forward'} size={15} color={danger ? C.red : C.sub} /> : null}
+        </View>
+      )}
+    </>
   );
+  return onPress
+    ? <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[s.gr, !last && s.grBorder]}>{body}</TouchableOpacity>
+    : <View style={[s.gr, !last && s.grBorder]}>{body}</View>;
 }
 
 export default function SettingsScreen({ navigation }) {
@@ -42,6 +47,7 @@ export default function SettingsScreen({ navigation }) {
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
+  const seg = useEnter(); // entrada escalonada das secções
 
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
@@ -101,11 +107,11 @@ export default function SettingsScreen({ navigation }) {
         {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) */}
         <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} />
 
-        {/* User card — nome do auth ou, em falta, a parte local do email */}
+        {/* User card escuro (mockup .uca) — avatar vermelho + nome + email */}
         {user && (() => {
           const displayName = user.name || user.email?.split('@')[0] || '—';
           return (
-            <View style={s.userCard}>
+            <Animated.View style={[s.userCard, seg(0)]}>
               <View style={s.avatar}>
                 <Text style={s.avatarTxt}>{displayName[0]?.toUpperCase() ?? '?'}</Text>
               </View>
@@ -113,58 +119,49 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={s.userName} numberOfLines={1}>{displayName}</Text>
                 <Text style={s.userEmail} numberOfLines={1}>{user.email}</Text>
               </View>
-            </View>
+            </Animated.View>
           );
         })()}
 
-        {/* Companhia — operador resolvido do catálogo de airlines */}
+        {/* Companhia — badge escuro com o código do operador */}
         {company ? (
-          <Group title={t('profile.groupCompany', lang)} s={s}>
-            <View style={s.coRow}>
-              <View style={s.coBadge}><Text style={s.coBadgeTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
+          <Animated.View style={[s.gbox, seg(1)]}>
+            <View style={s.gr}>
+              <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={s.coName} numberOfLines={1}>{company.name}</Text>
-                <Text style={s.coSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
+                <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
+                <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
               </View>
             </View>
-          </Group>
+          </Animated.View>
         ) : null}
 
+        {/* Preferências — idioma / tema / bloqueio (segmento inline à direita) */}
+        <Animated.View style={[s.gbox, seg(2)]}>
+          <Row icon="language-outline" label={t('profile.language', lang)} s={s} C={C}
+            right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
+          <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s} C={C}
+            right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
+          <Row icon="lock-closed-outline" label={t('lock.title', lang)} last s={s} C={C}
+            right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
+        </Animated.View>
 
-        <Group title={t('profile.groupPrefs', lang)} s={s}>
-          <View style={s.prefBlock}>
-            <Text style={s.prefLabel}>{t('profile.language', lang)}</Text>
-            <Seg options={[{ id: 'pt', label: 'Português' }, { id: 'en', label: 'English' }]} value={lang} setValue={setLang} />
-          </View>
-          <View style={[s.prefBlock, s.prefDivider]}>
-            <Text style={s.prefLabel}>{t('profile.theme', lang)}</Text>
-            <Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]}
-              value={theme} setValue={setTheme} />
-          </View>
-          <View style={[s.prefBlock, s.prefDivider]}>
-            <Text style={s.prefLabel}>{t('lock.title', lang)}</Text>
-            <Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]}
-              value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />
-            <Text style={s.prefHint}>{t('lock.hint', lang)}</Text>
-          </View>
-        </Group>
+        {/* Conta — mudar password / sair */}
+        <Animated.View style={[s.gbox, seg(3)]}>
+          <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => setPwModal(true)} s={s} C={C} />
+          <Row icon="log-out-outline" label={t('profile.logout', lang)} onPress={confirmLogout} danger last s={s} C={C} />
+        </Animated.View>
 
-        <Group title={t('profile.groupAccount', lang)} s={s}>
-          <Row s={s} C={C} label={t('profile.changePw', lang)} value="" onPress={() => setPwModal(true)} />
-          <Row s={s} C={C} label={t('profile.logout', lang)} value="" onPress={confirmLogout} last danger />
-        </Group>
+        {/* Biblioteca — regulamento (PDF) / artigos FTL */}
+        <Animated.View style={[s.gbox, seg(4)]}>
+          <Row icon="document-text-outline" label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} s={s} C={C} />
+          <Row icon="library-outline" label={t('profile.libArticles', lang)} onPress={() => navigation.navigate('FTL', { screen: 'FtlHub' })} last s={s} C={C} />
+        </Animated.View>
 
-        <Group title={t('profile.groupLibrary', lang)} s={s}>
-          <Row s={s} C={C} label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} />
-          <Row s={s} C={C} label={t('profile.libArticles', lang)} value="" onPress={() => navigation.navigate('FTL', { screen: 'FtlHub' })} last />
-        </Group>
-
-        <Group title={t('profile.groupAbout', lang)} s={s}>
-          <View style={s.row}>
-            <Text style={s.rowLabel}>CrewPact</Text>
-            <Text style={s.rowValue}>v{appJson.expo.version}</Text>
-          </View>
-        </Group>
+        {/* Sobre */}
+        <Animated.View style={[s.gbox, seg(5)]}>
+          <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />
+        </Animated.View>
       </ScrollView>
 
       {/* Change password modal */}
@@ -200,32 +197,29 @@ export default function SettingsScreen({ navigation }) {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  prefBlock: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6 },
-  prefLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 10 },
-  prefHint: { fontSize: TYPE.micro, color: C.sub, marginTop: 8 },
-  prefDivider: { borderTopWidth: 1, borderTopColor: C.line },
-  userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20, backgroundColor: C.card },
-  avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: '#fff', fontSize: 20, fontWeight: WEIGHT.semibold },
-  userName: { fontSize: TYPE.value, fontWeight: WEIGHT.bold, color: C.text },
-  userEmail: { fontSize: TYPE.label, color: C.sub, marginTop: 2 },
-  group: { marginBottom: 20 },
-  groupTitle: { marginBottom: 6, paddingLeft: 2 },
-  groupBox: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden', backgroundColor: C.card },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
-  rowLabel: { fontSize: TYPE.body, color: C.text },
-  rowValue: { fontSize: TYPE.sub, color: C.sub, maxWidth: 180, textAlign: 'right' },
-  // Companhia (operador)
-  coRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  coBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  coBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
-  coName: { fontSize: TYPE.value, fontWeight: '600', color: C.text },
-  coSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
-  fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
+  // User card escuro (mockup .uca)
+  userCard: { flexDirection: 'row', alignItems: 'center', gap: 15, borderRadius: 24, padding: 18, marginBottom: 14, backgroundColor: C.ink },
+  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { color: '#fff', fontSize: 24, fontFamily: FONT.semibold },
+  userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
+  userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  // Grupos (mockup .gbox) + linhas (.gr) com ícone (.gi)
+  gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },
+  gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
+  grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
+  gi: { width: 36, height: 36, borderRadius: 11, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  giCo: { backgroundColor: C.ink },
+  giCoTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 13 },
+  giDanger: { backgroundColor: C.redSoft },
+  grLabel: { fontFamily: FONT.heavy, fontSize: 13.5, color: C.text },
+  grSub: { fontFamily: FONT.medium, fontSize: 10, color: C.sub, marginTop: 1 },
+  grRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rv: { fontFamily: FONT.heavy, fontSize: 11, color: C.sub },
+  // Modal de password
+  fieldLabel: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
   pwEye: { padding: 4, marginLeft: 6 },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
+  pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
 });
