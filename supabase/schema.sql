@@ -20,6 +20,14 @@
 -- Auth (updateUser), não em profiles.current_category_id/current_contract_id —
 -- por isso essas colunas estão (quase de certeza) sempre NULL. Decisão em aberto:
 -- migrar a app para o modelo relacional, ou assumir o metadado como fonte.
+--
+-- ⚠️ RLS: TODAS as 19 tabelas têm RLS LIGADA e ZERO políticas → "deny-all". A app
+-- (key anon/authenticated) não consegue ler/escrever NADA; só o service_role
+-- (dashboard) acede. Efeito: profiles/duties nunca sincronizam (a app cai para
+-- metadados+AsyncStorage) e o ONBOARDING DE UTILIZADOR NOVO BLOQUEIA (lista de
+-- companhias vem vazia). A app só toca em 3 tabelas via client — `airlines`,
+-- `profiles`, `duties` — e são as únicas que precisam de política (abaixo). As
+-- outras 16 (backend relacional paralelo, não usado pela app) ficam deny-all.
 -- ════════════════════════════════════════════════════════════════════════════
 
 
@@ -74,7 +82,19 @@ create policy "airlines_read_authenticated" on public.airlines
   for select to authenticated using (true);
 
 
--- ── 4. (Opcional) criar o profile automaticamente no signup ──────────────────
+-- ── 4. RLS — cada utilizador só acede às SUAS duties ─────────────────────────
+-- A app lê/escreve/apaga por `user_id` (data/duties.js). Uma política `for all`
+-- cobre select + insert + update + delete.
+alter table public.duties enable row level security;
+
+drop policy if exists "duties_own" on public.duties;
+create policy "duties_own" on public.duties
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+
+-- ── 5. (Opcional) criar o profile automaticamente no signup ──────────────────
 -- Em vez de depender do upsertProfile da app. Comentado por omissão.
 -- create or replace function public.handle_new_user()
 -- returns trigger language plpgsql security definer as $$
