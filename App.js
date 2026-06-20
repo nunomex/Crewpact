@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
@@ -39,6 +39,7 @@ import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import SearchModal        from './components/SearchModal';
+import ConfirmDialog       from './components/ConfirmDialog';
 import OfflineBanner      from './components/OfflineBanner';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
@@ -113,26 +114,29 @@ function FloatingTabBar({ state, navigation }) {
   const isEscala = active.name === 'Escala';
   const isFtl = active.name === 'FTL';
   const isPerfil = active.name === 'Perfil';
+  const l = (pt, en) => (lang === 'en' ? en : pt);
   const [searchOpen, setSearchOpen] = useState(false);
-
-  const confirmLogout = () => Alert.alert(t('profile.logout', lang), t('profile.logoutConfirmMsg', lang), [
-    { text: t('common.cancel', lang), style: 'cancel' },
-    { text: t('profile.logoutConfirm', lang), style: 'destructive', onPress: logout },
-  ]);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   // FAB contextual (mockup): Escala → "Serviço"; Cálculos → "Pesquisa"; Perfil →
-  // "Sair" (logout); Início → "Simular".
+  // "Sair" (logout, com diálogo de confirmação); Início → "Simular".
   const onFab = isEscala
     ? () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } })
     : isFtl
       ? () => setSearchOpen(true)
       : isPerfil
-        ? confirmLogout
+        ? () => setLogoutOpen(true)
         : () => navigation.navigate(active.name, { screen: 'FtlCalc', params: { duty: true } });
 
   return (
     <>
       <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
+      <ConfirmDialog visible={logoutOpen} danger icon="log-out-outline"
+        title={l('Terminar sessão?', 'Log out?')}
+        message={l('Vais sair da tua conta neste dispositivo.', 'You will be logged out on this device.')}
+        cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={() => { setLogoutOpen(false); logout(); }} />
       <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) }]} pointerEvents="box-none">
         <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
           {state.routes.map(route => {
@@ -319,12 +323,14 @@ export default function App() {
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
+    // Limpa o estado local PRIMEIRO → vai já para o Login (mesmo offline/rede lenta).
     setUser(null);
     setOnboarded(false);
     setProfile({ company: null });
     setLocked(false); // sai do estado trancado — o próximo login começa destrancado
+    // Termina a sessão no servidor em segundo plano (não bloqueia a navegação).
+    supabase.auth.signOut().catch(() => {});
     // Os favoritos/notificações ficam guardados por utilizador no telemóvel;
     // limpamos apenas o estado em memória (o efeito de user?.id trata disso).
   };
