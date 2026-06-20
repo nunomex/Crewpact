@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
 import AeCalcs from '../components/AeCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -135,30 +135,30 @@ export default function FtlHubScreen({ navigation }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: 16, paddingTop: 4 },
-  group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
-  subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '600', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
+  group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
+  subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontFamily: FONT.semibold, marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
   regBadge: { backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
-  regTxt: { color: C.sub, fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  regTxt: { color: C.sub, fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
 
   // Calcular: cartão principal (Atividade) + grelha de ferramentas
   fcard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8, backgroundColor: C.card },
-  fcardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
+  fcardTitle: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text, lineHeight: 19 },
   fcardSub: { fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 16 },
   badge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  badgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
+  badgeTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
   toolGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   tool: { width: '48%', borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 10, backgroundColor: C.card, gap: 10, minHeight: 92 },
   toolBadge: { alignSelf: 'flex-start', borderRadius: RADIUS.sm - 2, backgroundColor: C.ink, paddingHorizontal: 8, paddingVertical: 3 },
-  toolBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 12, fontWeight: '700' },
-  toolTitle: { fontSize: TYPE.sub, fontWeight: '600', color: C.text, lineHeight: 18 },
+  toolBadgeTxt: { color: '#fff', fontSize: 12, fontFamily: FONT.bold },
+  toolTitle: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text, lineHeight: 18 },
 
   // Consultar: cabeçalho com botão PDF + cartões de artigo
   consultHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: C.card },
-  pdfBtnTxt: { fontSize: TYPE.micro, fontWeight: '700', color: C.text, letterSpacing: 0.3 },
+  pdfBtnTxt: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.3 },
   card: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
-  cardTitle: { fontSize: TYPE.body, fontWeight: '600', color: C.text, lineHeight: 19 },
+  cardTitle: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text, lineHeight: 19 },
   cardSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 3, lineHeight: 16 },
-  codeTag: { fontSize: TYPE.micro, fontFamily: 'monospace', fontWeight: '700', color: C.sub, backgroundColor: C.soft, borderRadius: RADIUS.xs, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden' },
+  codeTag: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub, backgroundColor: C.soft, borderRadius: RADIUS.xs, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden' },
 });

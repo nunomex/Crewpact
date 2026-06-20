@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { RADIUS, SPACE, TYPE } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { monthlyPerDiem } from '../data/perdiem';
 import { AppContext, useTheme } from '../App';
 
@@ -61,10 +61,11 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
         <Row s={s} k={l('Base mensal', 'Monthly base')} v={fmtEur(base)} />
         {cash ? <Row s={s} k={l('+ Abono para falhas', '+ Cash handling')} v={fmtEur(cash)} border /> : null}
         <Row s={s} k={l('+ Per diem (mês)', '+ Per diem (month)')} v={pd ? fmtEur(pd.total) : '—'} border />
-        <View style={[s.row, s.rowBorder]}>
-          <Text style={s.totalK}>{l('Total estimado', 'Estimated total')}</Text>
-          <Text style={s.totalV}>{fmtEur(total)}</Text>
-        </View>
+      </View>
+      {/* Total estimado — cartão escuro (mockup .aetotal) */}
+      <View style={s.aetotal}>
+        <Text style={s.aetotalK}>{l('Total estimado mensal', 'Estimated monthly total')}</Text>
+        <Text style={s.aetotalV}>{fmtEur(total)}</Text>
       </View>
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
@@ -134,22 +135,24 @@ const Row = ({ s, k, v, border }) => (
 );
 
 const makeStyles = (C) => StyleSheet.create({
-  group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.lg, marginBottom: 8, marginLeft: 2 },
-  subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '600', marginTop: SPACE.sm, marginBottom: 6, marginLeft: 2 },
+  group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginTop: SPACE.lg, marginBottom: 8, marginLeft: 2 },
+  subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontFamily: FONT.semibold, marginTop: SPACE.sm, marginBottom: 6, marginLeft: 2 },
   card: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: SPACE.md, backgroundColor: C.card, marginBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   rowBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  rowK: { fontSize: TYPE.sub, color: C.sub, fontWeight: '500' },
-  rowV: { fontSize: TYPE.body, color: C.text, fontWeight: '600' },
-  totalK: { fontSize: TYPE.body, color: C.text, fontWeight: '700' },
-  totalV: { fontSize: TYPE.body + 2, color: C.text, fontWeight: '800' },
+  rowK: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium },
+  rowV: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.semibold },
+  // Total estimado — cartão escuro (mockup .aetotal)
+  aetotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, marginTop: 4, marginBottom: 10 },
+  aetotalK: { fontFamily: FONT.heavy, fontSize: 9.5, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', maxWidth: 130, lineHeight: 13 },
+  aetotalV: { fontFamily: FONT.semibold, fontSize: 30, color: '#fff', fontVariant: ['tabular-nums'] },
   crow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11 },
   clRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  cl: { fontSize: TYPE.sub, color: C.text, fontWeight: '700' },
+  cl: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.bold },
   cs: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, lineHeight: 15 },
-  cv: { fontSize: TYPE.body, color: C.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  cv: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
   unit: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
-  tag: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
+  tag: { fontSize: 8, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, marginLeft: 2 },
   empty: { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.lg, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
