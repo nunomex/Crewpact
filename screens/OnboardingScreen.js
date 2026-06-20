@@ -7,7 +7,7 @@ import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
-import { t, txv } from '../data/i18n';
+import { t, tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
 export default function OnboardingScreen() {
@@ -84,7 +84,7 @@ export default function OnboardingScreen() {
                 <View style={styles.optBadge}><Text style={styles.optBadgeTxt}>{item.code}</Text></View>
               ) : null}
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: C.text }]}>{txv(item.label || item.name, lang)}</Text>
+                <Text style={[styles.rowLabel, { color: C.text }]}>{tx(item.label || item.name, lang)}</Text>
               </View>
               <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
                 {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
