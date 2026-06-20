@@ -1,11 +1,13 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
 import AeCalcs from '../components/AeCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import useEnter from '../hooks/useEnter';
 import { FTL_ARTICLES } from '../data/ftl';
 import { openFtlPdf } from '../data/ftlPdf';
 import { t, tx } from '../data/i18n';
@@ -13,6 +15,31 @@ import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../App';
 
 const hasCalc = (a) => !!(a.psv || a.limits || a.rest || a.inflight || a.standby || a.delayed);
+
+// Glow radial vermelho do cartão de ação (mockup .actbig::after), via SVG.
+function Glow() {
+  return (
+    <Svg width={130} height={130} style={{ position: 'absolute', right: -30, top: -34 }} pointerEvents="none">
+      <Defs>
+        <RadialGradient id="actGlow" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#F5402C" stopOpacity="0.5" />
+          <Stop offset="0.7" stopColor="#F5402C" stopOpacity="0" />
+        </RadialGradient>
+      </Defs>
+      <Circle cx="65" cy="65" r="65" fill="url(#actGlow)" />
+    </Svg>
+  );
+}
+
+// Pill de ferramenta (mockup .pills .p): código a vermelho + rótulo.
+function Pill({ code, label, onPress, s }) {
+  return (
+    <TouchableOpacity style={s.pill} activeOpacity={0.8} onPress={onPress}>
+      <Text style={s.pillCode}>{code}</Text>
+      <Text style={s.pillTxt} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
 
 // Agrupamento temático dos artigos de consulta (fundido da antiga aba FTL).
 const THEMES = [
@@ -29,6 +56,7 @@ export default function FtlHubScreen({ navigation }) {
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
+  const seg = useEnter(); // entrada escalonada das secções
 
   // Empresa com Acordo de Empresa modelado → a aba Cálculos mostra a suite AE
   // (pagamento). Empresa de FTL → as ferramentas regulamentares (limites). Uma
@@ -39,7 +67,9 @@ export default function FtlHubScreen({ navigation }) {
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
             right={<View style={s.regBadge}><Text style={s.regTxt}>AE</Text></View>} />
-          <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
+          <Animated.View style={seg(0)}>
+            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -73,39 +103,33 @@ export default function FtlHubScreen({ navigation }) {
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
           right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
-        {/* ── CALCULAR ── */}
-        <Text style={s.group}>{l('CALCULAR', 'CALCULATE')}</Text>
-        <TouchableOpacity style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>
-          <View style={s.badge}><Text style={s.badgeTxt}>FTL</Text></View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.fcardTitle} numberOfLines={2}>{t('ftl.dutyCardTitle', lang)}</Text>
-            <Text style={s.fcardSub} numberOfLines={2}>{t('ftl.dutyCardSub', lang)}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={C.sub} />
-        </TouchableOpacity>
+        {/* Atividade — cartão de ação escuro com glow radial (mockup .actbig) */}
+        <Animated.View style={seg(0)}>
+          <TouchableOpacity style={s.actbig} activeOpacity={0.9} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>
+            <Glow />
+            <View style={s.actIc}><Ionicons name="flag" size={22} color="#fff" /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.actTitle} numberOfLines={1}>{t('ftl.dutyCardTitle', lang)}</Text>
+              <Text style={s.actSub} numberOfLines={1}>{t('ftl.dutyCardSub', lang)}</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
 
-        <View style={s.toolGrid}>
-          <TouchableOpacity style={s.tool} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: 'CS FTL.1.205(c)' })}>
-            <View style={s.toolBadge}><Text style={s.toolBadgeTxt}>205c</Text></View>
-            <Text style={s.toolTitle} numberOfLines={2}>{t('ftl.calcInflight', lang)}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.tool} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: 'ORO.FTL.225' })}>
-            <View style={s.toolBadge}><Text style={s.toolBadgeTxt}>225</Text></View>
-            <Text style={s.toolTitle} numberOfLines={2}>{t('ftl.calcStandby', lang)}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.tool} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: 'ORO.FTL.215' })}>
-            <View style={s.toolBadge}><Text style={s.toolBadgeTxt}>215</Text></View>
-            <Text style={s.toolTitle} numberOfLines={2}>{t('ftl.calcPositioning', lang)}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.tool} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { code: 'CS FTL.1.205(g)' })}>
-            <View style={s.toolBadge}><Text style={s.toolBadgeTxt}>205g</Text></View>
-            <Text style={s.toolTitle} numberOfLines={2}>{t('ftl.calcDelayed', lang)}</Text>
-          </TouchableOpacity>
+        {/* ── CALCULAR — pills das ferramentas (mockup .pills) ── */}
+        <Animated.View style={seg(1)}>
+        <Text style={s.sec}>{l('CALCULAR', 'CALCULATE')}</Text>
+        <View style={s.pills}>
+          <Pill code="205c" label={t('ftl.calcInflight', lang)} onPress={() => navigation.navigate('FtlCalc', { code: 'CS FTL.1.205(c)' })} s={s} />
+          <Pill code="225" label={t('ftl.calcStandby', lang)} onPress={() => navigation.navigate('FtlCalc', { code: 'ORO.FTL.225' })} s={s} />
+          <Pill code="215" label={t('ftl.calcPositioning', lang)} onPress={() => navigation.navigate('FtlCalc', { code: 'ORO.FTL.215' })} s={s} />
+          <Pill code="205g" label={t('ftl.calcDelayed', lang)} onPress={() => navigation.navigate('FtlCalc', { code: 'CS FTL.1.205(g)' })} s={s} />
         </View>
+        </Animated.View>
 
         {/* ── CONSULTAR ── */}
+        <Animated.View style={seg(2)}>
         <View style={s.consultHead}>
-          <Text style={[s.group, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
+          <Text style={[s.sec, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
           <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openPdf}>
             <Ionicons name="document-text-outline" size={14} color={C.text} />
             <Text style={s.pdfBtnTxt}>PDF</Text>
@@ -127,6 +151,7 @@ export default function FtlHubScreen({ navigation }) {
         ) : null}
 
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -138,6 +163,16 @@ const makeStyles = (C) => StyleSheet.create({
   group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontFamily: FONT.semibold, marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
+  // Atividade (mockup .actbig) — cartão escuro + glow radial + ícone vermelho
+  actbig: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: C.ink, borderRadius: 24, padding: 19, marginTop: SPACE.sm, marginBottom: 20, overflow: 'hidden' },
+  actIc: { width: 50, height: 50, borderRadius: 16, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  actTitle: { fontFamily: FONT.semibold, fontSize: 19, color: '#fff' },
+  actSub: { fontFamily: FONT.medium, fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  sec: { fontFamily: FONT.heavy, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: C.sub, marginTop: 2, marginBottom: 11, marginLeft: 2 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 18 },
+  pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 11 },
+  pillCode: { fontFamily: FONT.semibold, fontSize: 12.5, color: C.red, marginRight: 5 },
+  pillTxt: { fontFamily: FONT.heavy, fontSize: 12.5, color: C.text },
   regBadge: { backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
   regTxt: { color: C.sub, fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
 
