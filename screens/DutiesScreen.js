@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, GUTTER, SPACE } from '../data/constants';
+import { RADIUS, TYPE, GUTTER, SPACE, WEIGHT, TRACK_DISPLAY } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import BottomSheet from '../components/BottomSheet';
 import { Stepper } from '../components/Stepper';
@@ -284,7 +284,7 @@ const makeStyles = (C) => StyleSheet.create({
   eyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titleActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -0.5, color: C.text },
+  title: { fontSize: TYPE.hero, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
   iconBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   sub: { fontSize: TYPE.sub, color: C.sub, marginTop: 6, marginBottom: SPACE.lg },

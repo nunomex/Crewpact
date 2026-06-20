@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext, useTheme } from '../App';
 import { t } from '../data/i18n';
-import { TYPE, RADIUS } from '../data/constants';
+import { TYPE, RADIUS, WEIGHT, TRACK_DISPLAY } from '../data/constants';
 import { success } from '../data/haptics';
 
 // Ecrã de bloqueio: pede biometria (Face ID / impressão digital) e cai para o
@@ -43,7 +43,8 @@ export default function LockScreen() {
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <View style={s.center}>
         <View style={s.iconWrap}>
-          <Ionicons name="lock-closed" size={30} color={C.text} />
+          <Ionicons name="lock-closed" size={30} color={C.onDark} />
+          <View style={s.iconDot} />
         </View>
         <Text style={s.title}>CrewPact</Text>
         <Text style={s.sub}>{t('lock.sub', lang)}</Text>
@@ -63,8 +64,9 @@ export default function LockScreen() {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  iconWrap: { width: 64, height: 64, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  title: { fontSize: TYPE.hero, fontWeight: '300', letterSpacing: -0.5, color: C.text },
+  iconWrap: { width: 72, height: 72, borderRadius: RADIUS.pill, backgroundColor: C.ink, borderWidth: 2.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+  iconDot: { position: 'absolute', top: 9, right: 9, width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
+  title: { fontSize: TYPE.hero, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6, textAlign: 'center' },
   err: { fontSize: 13, color: C.red, marginTop: 14, textAlign: 'center' },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, paddingHorizontal: 28, marginTop: 28 },

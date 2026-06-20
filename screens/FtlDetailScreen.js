@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, GUTTER } from '../data/constants';
+import { C as _C, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
@@ -198,7 +198,7 @@ const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-  code: { fontSize: 26, fontWeight: '300', letterSpacing: -0.5, color: C.text, fontFamily: 'monospace' },
+  code: { fontSize: 26, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: 'monospace' },
   title: { fontSize: 22, fontWeight: '600', letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
   paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },
   box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },

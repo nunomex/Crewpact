@@ -139,7 +139,7 @@ function OTPInput({ value, onChange }) {
 const makeOtp = (C) => StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.text },
+  boxActive:{ backgroundColor: C.redSoft, borderColor: C.red },
   boxFilled:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.line },
   digit:    { fontSize: TYPE.title, fontWeight: '700', color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },

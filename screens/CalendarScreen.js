@@ -2,10 +2,11 @@ import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, AppState, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, GUTTER } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { fmtVal } from '../data/extras';
+import { sectorDistanceNM } from '../data/airports';
 import { getFlightsInRange, getDutiesInRange, requestCalendarAccess } from '../data/calendar';
 import { dutyFromActivity } from '../data/rosterImport';
 import { useFocusEffect } from '@react-navigation/native';
@@ -58,7 +59,12 @@ function RecRow({ s, C, label, value, onPress, onDelete }) {
 }
 
 export default function CalendarScreen({ navigation, embedded }) {
-  const { lang, dayLog, updateDayLog, removeDayLog, saveDuty } = useContext(AppContext);
+  const { lang, dayLog, updateDayLog, removeDayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
+  const fmtEur = (n) => {
+    if (n == null) return '—';
+    const grouped = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${grouped}` : `${grouped} €`;
+  };
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -194,7 +200,7 @@ export default function CalendarScreen({ navigation, embedded }) {
                     <Text style={[s.dayTxt, !cell.inMonth && s.dayMuted, isToday && s.dayTodayTxt]}>{cell.date.getDate()}</Text>
                   </View>
                   <View style={s.markerSlot}>
-                    {hasFlight ? <Ionicons name="airplane" size={11} color={isToday ? C.text : C.sub} /> : null}
+                    {hasFlight ? <View style={s.flightDot} /> : null}
                   </View>
                 </TouchableOpacity>
               );
@@ -234,16 +240,26 @@ export default function CalendarScreen({ navigation, embedded }) {
         ) : selFlights.length === 0 ? (
           <Text style={s.empty}>{loading ? t('cal.loading', lang) : t('cal.noFlights', lang)}</Text>
         ) : (
-          selFlights.map((f, i) => (
-            <View key={i} style={s.flightRow}>
-              <View style={s.flightIcon}><Ionicons name="airplane" size={16} color={C.text} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.flightRoute}>{f.depAirport} → {f.arrAirport}</Text>
-                <Text style={s.flightMeta}>{f.depTime}–{f.arrTime} · {t('home.flightBoarding', lang)} {f.report}</Text>
+          selFlights.map((f, i) => {
+            let pd = null;
+            if (ae && crewCategory && f.depAirport && f.arrAirport) {
+              const dist = sectorDistanceNM(f.depAirport, f.arrAirport);
+              if (dist != null) pd = ae.perDiem(crewCategory, [dist]);
+            }
+            return (
+              <View key={i} style={s.flightRow}>
+                <View style={s.flightIcon}><Ionicons name="airplane" size={16} color={C.text} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.flightRoute}>{f.depAirport} → {f.arrAirport}</Text>
+                  <Text style={s.flightMeta}>
+                    {f.depTime}–{f.arrTime} · {t('home.flightBoarding', lang)} {f.report}
+                    {pd != null ? <Text> · per diem <Text style={s.pdEm}>{fmtEur(pd)}</Text></Text> : null}
+                  </Text>
+                </View>
+                {f.aircraft !== '—' ? <Text style={s.flightAc}>{f.aircraft}</Text> : null}
               </View>
-              {f.aircraft !== '—' ? <Text style={s.flightAc}>{f.aircraft}</Text> : null}
-            </View>
-          ))
+            );
+          })
         )}
 
         {/* Registos do dia — cálculos da Atividade (PSV · limites · repouso) */}
@@ -290,7 +306,7 @@ const makeStyles = (C) => StyleSheet.create({
 
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   navBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  monthLbl: { fontSize: TYPE.title, fontWeight: '600', color: C.text },
+  monthLbl: { fontSize: TYPE.title, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
 
   weekRow: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
@@ -302,9 +318,10 @@ const makeStyles = (C) => StyleSheet.create({
   dayMuted: { color: C.subLight },
   dayTodayTxt: { color: C.onDark, fontWeight: '700' },
   markerSlot: { height: 14, alignItems: 'center', justifyContent: 'center' },
+  flightDot: { width: 5, height: 5, borderRadius: RADIUS.pill, backgroundColor: C.red },
 
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.lg, marginBottom: SPACE.sm, paddingTop: SPACE.md, borderTopWidth: 1, borderTopColor: C.line },
-  dayHeadNum: { fontSize: TYPE.display, fontWeight: '300', letterSpacing: -1, color: C.text },
+  dayHeadNum: { fontSize: TYPE.display, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
   dayHeadTop: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '700', textTransform: 'uppercase' },
   dayHeadSub: { fontSize: TYPE.body, color: C.text, fontWeight: '600', marginTop: 1 },
 
@@ -322,6 +339,7 @@ const makeStyles = (C) => StyleSheet.create({
   flightIcon: { width: 36, height: 36, borderRadius: RADIUS.md, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   flightRoute: { fontSize: TYPE.value, fontWeight: '700', color: C.text, letterSpacing: -0.2 },
   flightMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
+  pdEm: { color: C.red, fontWeight: '700' },
   flightAc: { fontSize: TYPE.micro, fontFamily: 'monospace', color: C.sub },
 
   recHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.lg, marginBottom: SPACE.sm },

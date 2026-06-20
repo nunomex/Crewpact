@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE } from '../data/constants';
-import ScreenHeader from '../components/ScreenHeader';
+import PageHeader from '../components/PageHeader';
 import AeCalcs from '../components/AeCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { FTL_ARTICLES } from '../data/ftl';
@@ -36,9 +36,9 @@ export default function FtlHubScreen({ navigation }) {
   if (ae) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
-          right={<View style={s.regBadge}><Text style={s.regTxt}>AE</Text></View>} />
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
+          <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
+            right={<View style={s.regBadge}><Text style={s.regTxt}>AE</Text></View>} />
           <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
         </ScrollView>
       </SafeAreaView>
@@ -70,10 +70,9 @@ export default function FtlHubScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
-        right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
-
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
+        <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={t('ftl.title', lang)}
+          right={<View style={s.regBadge}><Text style={s.regTxt}>UE 83/2014</Text></View>} />
         {/* ── CALCULAR ── */}
         <Text style={s.group}>{l('CALCULAR', 'CALCULATE')}</Text>
         <TouchableOpacity style={s.fcard} activeOpacity={0.8} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>
@@ -139,8 +138,8 @@ const makeStyles = (C) => StyleSheet.create({
   group: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontWeight: '600', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
-  regBadge: { backgroundColor: C.hairlineOnDark, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  regTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  regBadge: { backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  regTxt: { color: C.sub, fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
 
   // Calcular: cartão principal (Atividade) + grelha de ferramentas
   fcard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8, backgroundColor: C.card },

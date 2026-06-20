@@ -6,15 +6,14 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import PageHeader from '../components/PageHeader';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { C, RADIUS, TYPE } from '../data/constants';
+import { C, RADIUS, TYPE, WEIGHT } from '../data/constants';
 import appJson from '../app.json';
 import { changePassword, validatePassword } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
-import { monthlyPerDiem } from '../data/perdiem';
-import ScreenHeader from '../components/ScreenHeader';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../App';
 
@@ -39,7 +38,7 @@ function Row({ label, value, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, crewCategory, crewContract, ae, duties, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, logout, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -97,8 +96,10 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} style={{ marginBottom: 8 }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
+
+        {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) */}
+        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} />
 
         {/* User card — nome do auth ou, em falta, a parte local do email */}
         {user && (() => {
@@ -129,53 +130,6 @@ export default function SettingsScreen({ navigation }) {
           </Group>
         ) : null}
 
-        {/* Acordo de Empresa — só pilotos de companhias com AE modelado */}
-        {ae ? (() => {
-          const fmtEur = (n) => {
-            if (n == null) return '—';
-            const [int, dec] = Number(n).toFixed(2).split('.');
-            const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-            return lang === 'en' ? `€${grouped}.${dec}` : `${grouped},${dec} €`;
-          };
-          const now = new Date();
-          const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-          const baseVal = crewCategory ? ae.monthlyBase(crewCategory, { contract: crewContract || '12/12' }) : null;
-          const pd = crewCategory ? monthlyPerDiem(duties, crewCategory, ae, { ym }) : null;
-          const totalEst = (baseVal != null && pd) ? baseVal + pd.total : null;
-          return (
-            <Group title={t('profile.groupAe', lang)} s={s}>
-              <View style={s.coRow}>
-                <View style={s.coBadge}><Text style={s.coBadgeTxt}>{crewCategory || '—'}</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.coName} numberOfLines={1}>{ae.AE_LABEL}</Text>
-                  <Text style={s.coSub}>{crewCategory ? ae.categoryLabel(crewCategory, lang) : t('profile.aeNoCat', lang)}</Text>
-                </View>
-              </View>
-              {crewContract ? (
-                <View style={[s.row, s.rowBorder]}>
-                  <Text style={s.rowLabel}>{t('profile.aeContract', lang)}</Text>
-                  <Text style={s.rowValue}>{ae.contractLabel(crewContract, lang)}</Text>
-                </View>
-              ) : null}
-              <View style={[s.row, s.rowBorder]}>
-                <Text style={s.rowLabel}>{t('profile.aeMonthlyBase', lang)}</Text>
-                <Text style={s.rowValue}>{fmtEur(baseVal)}</Text>
-              </View>
-              <View style={[s.row, s.rowBorder]}>
-                <Text style={s.rowLabel}>{t('profile.aePerDiem', lang)}</Text>
-                <Text style={s.rowValue}>{pd ? fmtEur(pd.total) : '—'}</Text>
-              </View>
-              <View style={s.row}>
-                <Text style={[s.rowLabel, { fontWeight: '600' }]}>{t('profile.aeTotalEst', lang)}</Text>
-                <Text style={[s.rowValue, { color: C.text, fontWeight: '700' }]}>{fmtEur(totalEst)}</Text>
-              </View>
-              {pd && pd.missing > 0 ? (
-                <Text style={s.aeNote}>{pd.missing} {t('profile.aePdMissing', lang)}</Text>
-              ) : null}
-              <Text style={s.aeNote}>{t('profile.aeNote', lang)}</Text>
-            </Group>
-          );
-        })() : null}
 
         <Group title={t('profile.groupPrefs', lang)} s={s}>
           <View style={s.prefBlock}>
@@ -252,8 +206,8 @@ const makeStyles = (C) => StyleSheet.create({
   prefDivider: { borderTopWidth: 1, borderTopColor: C.line },
   userCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginBottom: 20, backgroundColor: C.card },
   avatar: { width: 48, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: '#fff', fontSize: 20, fontWeight: '300' },
-  userName: { fontSize: TYPE.value, fontWeight: '500', color: C.text },
+  avatarTxt: { color: '#fff', fontSize: 20, fontWeight: WEIGHT.semibold },
+  userName: { fontSize: TYPE.value, fontWeight: WEIGHT.bold, color: C.text },
   userEmail: { fontSize: TYPE.label, color: C.sub, marginTop: 2 },
   group: { marginBottom: 20 },
   groupTitle: { marginBottom: 6, paddingLeft: 2 },
@@ -268,7 +222,6 @@ const makeStyles = (C) => StyleSheet.create({
   coBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
   coName: { fontSize: TYPE.value, fontWeight: '600', color: C.text },
   coSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 2 },
-  aeNote: { fontSize: TYPE.micro, color: C.sub, lineHeight: 15, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12 },
   fieldLabel: { fontSize: TYPE.label, fontWeight: '600', color: C.text, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },

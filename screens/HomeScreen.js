@@ -8,6 +8,7 @@ import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel, fmtVal } from '../data/extras';
 import { monthlyPerDiem } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
+import PageHeader from '../components/PageHeader';
 import { computeDutyTime, computeFlightTime, computeRestSequence, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
 import { Seg } from '../components/Stepper';
@@ -367,18 +368,17 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
 
-        {/* Cabeçalho — eyebrow do operador (ponto vermelho) + sino + saudação */}
-        <View style={s.htop}>
-          <View style={s.hlw}>
-            <View style={s.hrd} />
-            <Text style={s.hl} numberOfLines={1}>{opEyebrow}</Text>
-          </View>
-          <TouchableOpacity style={s.hbtn} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-            <Ionicons name="notifications-outline" size={18} color={C.text} />
-            {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-          </TouchableOpacity>
-        </View>
-        <Text style={s.ht}>{t('home.hello', lang)}{firstName ? `, ${firstName}` : ''}</Text>
+        {/* Cabeçalho claro (PageHeader) — eyebrow do operador + sino + saudação */}
+        <PageHeader
+          eyebrow={opEyebrow}
+          title={`${t('home.hello', lang)}${firstName ? `, ${firstName}` : ''}`}
+          right={
+            <TouchableOpacity style={s.hbtn} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
+              <Ionicons name="notifications-outline" size={18} color={C.text} />
+              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+            </TouchableOpacity>
+          }
+        />
 
         {/* Tira de 5 dias — hoje a contorno vermelho, próximo voo preenchido, ponto nos dias com voo */}
         <View style={s.week}>
@@ -504,15 +504,10 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
 
-  // Cabeçalho — eyebrow do operador + sino + saudação display
-  htop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
-  hlw: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  hrd: { width: 7, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  hl: { fontSize: 10.5, fontWeight: WEIGHT.heavy, letterSpacing: 1.3, color: C.sub, textTransform: 'uppercase', flexShrink: 1 },
+  // Sino do cabeçalho (slot direito do PageHeader)
   hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
-  ht: { fontSize: 28, fontWeight: WEIGHT.heavy, letterSpacing: -0.6, color: C.text, lineHeight: 30, marginBottom: SPACE.lg },
 
   // Tira de 5 dias
   week: { flexDirection: 'row', gap: 7, justifyContent: 'space-between', marginBottom: SPACE.md },
