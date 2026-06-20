@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK, FONT } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -103,7 +103,7 @@ const makeSb = (C) => StyleSheet.create({
   bar:     { flex: 1, height: 3, borderRadius: RADIUS.pill },
   chips:   { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
   chip:    { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 3 },
-  chipTxt: { fontSize: TYPE.micro, fontWeight: '500' },
+  chipTxt: { fontSize: TYPE.micro, fontFamily: FONT.medium },
 });
 
 /* ─── OTP Input ──────────────────────────────────────────────────────────── */
@@ -141,7 +141,7 @@ const makeOtp = (C) => StyleSheet.create({
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxActive:{ backgroundColor: C.redSoft, borderColor: C.red },
   boxFilled:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.line },
-  digit:    { fontSize: TYPE.title, fontWeight: '700', color: C.text },
+  digit:    { fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text },
   hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });
 
@@ -458,7 +458,7 @@ export default function LoginScreen() {
                   </View>
                   <Text style={s.stepEyebrow}>{t('login.verifyEyebrow', lang)}</Text>
                   <Text style={s.stepTitle}>{t('login.verifyTitle', lang)}</Text>
-                  <Text style={s.stepSub}>{t('login.verifySub', lang)}{'\n'}<Text style={{ color: C.text, fontWeight: '600' }}>{resetEmail}</Text></Text>
+                  <Text style={s.stepSub}>{t('login.verifySub', lang)}{'\n'}<Text style={{ color: C.text, fontFamily: FONT.semibold }}>{resetEmail}</Text></Text>
                 </View>
                 <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); }} />
                 {codeErr ? (
@@ -527,32 +527,32 @@ const makeS = (C) => StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
   langRow:      { position: 'absolute', right: SPACE.lg, zIndex: 20, flexDirection: 'row', gap: SPACE.sm },
   langDot:      { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt:   { fontSize: TYPE.label, fontWeight: '700', letterSpacing: 0.5 },
+  langDotTxt:   { fontSize: TYPE.label, fontFamily: FONT.bold, letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
   ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
-  logoName:     { fontSize: TYPE.hero, fontWeight: '700', letterSpacing: -0.5, color: C.text },
+  logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
   seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: SPACE.xs, marginBottom: SPACE.xl },
   segBtn:       { flex: 1, borderRadius: RADIUS.pill, paddingVertical: 10, alignItems: 'center' },
-  segTxt:       { fontSize: TYPE.sub, fontWeight: '600', letterSpacing: 0.3 },
+  segTxt:       { fontSize: TYPE.sub, fontFamily: FONT.semibold, letterSpacing: 0.3 },
   errBanner:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.redSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.redSoft },
-  errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontWeight: '500' },
+  errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontFamily: FONT.medium },
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
   forgotTxt:    { fontSize: TYPE.sub, color: C.sub },
   btnMain:      { backgroundColor: C.ink, borderRadius: RADIUS.pill, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: SPACE.xs },
-  btnMainTxt:   { color: '#fff', fontSize: TYPE.value, fontWeight: '700', letterSpacing: 0.8 },
+  btnMainTxt:   { color: '#fff', fontSize: TYPE.value, fontFamily: FONT.bold, letterSpacing: 0.8 },
   terms:        { fontSize: TYPE.micro, color: C.sub, textAlign: 'center', marginTop: 20, lineHeight: 16 },
   // Forgot/code/reset shared
   stepHeader:   { alignItems: 'center', marginBottom: SPACE.xl },
   stepIconWrap: { width: 60, height: 60, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  stepEyebrow:  { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '600', marginBottom: 6 },
-  stepTitle:    { fontSize: 22, fontWeight: '700', letterSpacing: -0.3, color: C.text, marginBottom: SPACE.sm, textAlign: 'center' },
+  stepEyebrow:  { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.semibold, marginBottom: 6 },
+  stepTitle:    { fontSize: 22, fontFamily: FONT.bold, letterSpacing: -0.3, color: C.text, marginBottom: SPACE.sm, textAlign: 'center' },
   stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: TYPE.sub, color: C.sub },
   toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
   toastIcon:    { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  toastTitle:   { fontSize: TYPE.body, fontWeight: '700', color: '#fff' },
+  toastTitle:   { fontSize: TYPE.body, fontFamily: FONT.bold, color: '#fff' },
   toastSub:     { fontSize: TYPE.label, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 });

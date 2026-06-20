@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import { AppContext, useTheme } from '../App';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
@@ -143,20 +143,20 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   header: { paddingHorizontal: 24, paddingTop: 16 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 },
-  pillText: { color: '#fff', fontSize: 10, letterSpacing: 2, fontWeight: '600' },
+  pillText: { color: '#fff', fontSize: 10, letterSpacing: 2, fontFamily: FONT.semibold },
   top: { paddingHorizontal: 24, paddingTop: 28, paddingBottom: 16 },
   dots: { flexDirection: 'row', gap: 6, marginBottom: 20 },
   dot: { flex: 1, height: 3, borderRadius: 99 },
-  title: { fontSize: TYPE.hero, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
+  title: { fontSize: TYPE.hero, fontFamily: FONT.heavy, letterSpacing: TRACK_DISPLAY, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6 },
   scroll: { flex: 1, paddingHorizontal: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.card },
   optBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  optBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
-  rowLabel: { fontSize: 14, fontWeight: '600' },
+  optBadgeTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
+  rowLabel: { fontSize: 14, fontFamily: FONT.semibold },
   check: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   footer: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 8 },
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },
   btnNext: { flex: 1, paddingVertical: 14, borderRadius: 99, alignItems: 'center' },
-  btnText: { fontSize: 14, fontWeight: '600' },
+  btnText: { fontSize: 14, fontFamily: FONT.semibold },
 });

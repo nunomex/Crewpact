@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext, useTheme } from '../App';
 import { t } from '../data/i18n';
-import { TYPE, RADIUS, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import { success } from '../data/haptics';
 
 // Ecrã de bloqueio: pede biometria (Face ID / impressão digital) e cai para o
@@ -66,11 +66,11 @@ const makeStyles = (C) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   iconWrap: { width: 72, height: 72, borderRadius: RADIUS.pill, backgroundColor: C.ink, borderWidth: 2.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   iconDot: { position: 'absolute', top: 9, right: 9, width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  title: { fontSize: TYPE.hero, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
+  title: { fontSize: TYPE.hero, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6, textAlign: 'center' },
   err: { fontSize: 13, color: C.red, marginTop: 14, textAlign: 'center' },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, paddingHorizontal: 28, marginTop: 28 },
-  btnTxt: { color: '#fff', fontSize: TYPE.body, fontWeight: '600' },
+  btnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
   logout: { alignItems: 'center', paddingVertical: 20 },
-  logoutTxt: { fontSize: TYPE.label, color: C.sub, fontWeight: '600' },
+  logoutTxt: { fontSize: TYPE.label, color: C.sub, fontFamily: FONT.semibold },
 });
