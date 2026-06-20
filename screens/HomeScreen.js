@@ -1,8 +1,8 @@
 import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, AppState, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE, WEIGHT, TRACK_DISPLAY } from '../data/constants';
+import { RADIUS, SPACE, TYPE, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel, fmtVal } from '../data/extras';
@@ -40,6 +40,38 @@ function AnimatedBar({ ratio, color, s }) {
   return (
     <View style={s.progTrack}>
       <Animated.View style={[s.progFill, { width, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+// Anel a pulsar (escala 1→1.7 + desvanece, em loop) — atrás do ponto de estado e
+// do badge do report, como o mockup (@keyframes ring).
+function PulseRing({ size, color, border = false, duration = 2400 }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration, easing: Easing.out(Easing.ease), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [v, duration]);
+  return (
+    <Animated.View pointerEvents="none" style={{
+      position: 'absolute', width: size, height: size, borderRadius: size / 2,
+      ...(border ? { borderWidth: 2, borderColor: color } : { backgroundColor: color }),
+      opacity: v.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.5, 0, 0] }),
+      transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] }) }],
+    }} />
+  );
+}
+
+// Mini-barra que enche de 0 → valor ao montar (mockup .wbar i com transição).
+function MiniBar({ ratio, color, track, fill }) {
+  const w = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: Math.max(0, Math.min(1, ratio || 0)), duration: 800, delay: 300, useNativeDriver: false }).start();
+  }, [ratio, w]);
+  return (
+    <View style={track}>
+      <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
     </View>
   );
 }
@@ -111,7 +143,7 @@ function LimitCard({ title, windows, limLabel, s, C }) {
               <Text style={s.ucA} numberOfLines={1}>{limLabel(w)}</Text>
               <Text style={s.ucB} numberOfLines={1}><Text style={s.ucBnum}>{Math.round(w.done)}</Text>/{Math.round(w.limit)}h</Text>
             </View>
-            <View style={s.ucBar}><View style={[s.ucBarFill, { width: `${Math.round(Math.min(1, r) * 100)}%`, backgroundColor: barColor(r, C) }]} /></View>
+            <MiniBar ratio={r} color={barColor(r, C)} track={s.ucBar} fill={s.ucBarFill} />
           </View>
         );
       })}
@@ -284,9 +316,12 @@ export default function HomeScreen({ navigation }) {
 
   const nextDutyEl = flight ? (
     <View style={s.nd}>
-      <View style={s.ndCirc}>
-        <Text style={s.ndCircTime}>{flight.report}</Text>
-        <Text style={s.ndCircLbl}>Report</Text>
+      <View style={s.ndCircWrap}>
+        <PulseRing size={78} color={C.red} border duration={2800} />
+        <View style={s.ndCirc}>
+          <Text style={s.ndCircTime}>{flight.report}</Text>
+          <Text style={s.ndCircLbl}>Report</Text>
+        </View>
       </View>
       <View style={s.ndX}>
         <View style={s.ndXTop}>
@@ -345,10 +380,10 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  // ── Cartão AE (companhias com Acordo de Empresa) — base do contrato + per diem
-  // do mês = estimado, igual ao cartão do Perfil. Toca → abre a página AE nos
-  // Cálculos. Só aparece se a companhia é AE e a categoria está escolhida. ──
-  const aeCardEl = (ae && crewCategory) ? (() => {
+  // ── Cartão AE compacto (mockup .uc.ae) — entra na grelha de baixo (direita),
+  // emparelhado com o cartão FTL·Voo. Só para companhias AE com categoria. Toca
+  // → abre a página AE nos Cálculos. ──
+  const aeMiniEl = (ae && crewCategory) ? (() => {
     const d = new Date();
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const monthName = (() => { const m = d.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
@@ -358,18 +393,12 @@ export default function HomeScreen({ navigation }) {
     const total = base + pdTotal;
     const fill = total > 0 ? Math.min(1, pdTotal / total) : 0;
     return (
-      <TouchableOpacity style={s.aeCard} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
-        <View style={s.aeHead}>
-          <View style={s.aeDot} />
-          <Text style={s.aeEyebrow}>AE · {monthName}</Text>
-          <Ionicons name="chevron-forward" size={16} color={C.sub} style={{ marginLeft: 'auto' }} />
-        </View>
-        <Text style={s.aeSub} numberOfLines={1}>{ae.categoryLabel(crewCategory, lang)} · {ae.contractLabel(crewContract || '12/12', lang)}</Text>
-        <View style={s.aeRow}><Text style={s.aeK}>{t('profile.aeMonthlyBase', lang)}</Text><Text style={s.aeV}>{fmtEur0(base)}</Text></View>
-        <View style={s.aeRow}><Text style={s.aeK}>{t('profile.aePerDiem', lang)}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(pdTotal)}</Text></View>
-        <View style={s.aeBar}><View style={[s.aeBarFill, { width: `${Math.round(fill * 100)}%` }]} /></View>
-        <View style={[s.aeRow, s.aeTotalRow]}><Text style={s.aeTotalK}>{t('profile.aeTotalEst', lang)}</Text><Text style={s.aeTotalV}>{fmtEur0(total)}</Text></View>
-        {pd && pd.missing > 0 ? <Text style={s.aeMiss}>{pd.missing} {t('profile.aePdMissing', lang)}</Text> : null}
+      <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
+        <View style={s.ucHead}><View style={[s.ucDot, s.ucDotAe]} /><Text style={s.ucTitle} numberOfLines={1}>AE · {monthName}</Text></View>
+        <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>Base ({crewContract || '12/12'})</Text><Text style={s.aeMV}>{fmtEur0(base)}</Text></View>
+        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>Per diem</Text><Text style={[s.aeMV, { color: C.red }]}>+{fmtEur0(pdTotal)}</Text></View>
+        <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><Text style={s.aeMVtot}>{fmtEur0(total)}</Text></View>
+        <MiniBar ratio={fill} color={C.red} track={s.aeMBar} fill={s.aeMBarFill} />
       </TouchableOpacity>
     );
   })() : null;
@@ -389,6 +418,21 @@ export default function HomeScreen({ navigation }) {
     return { iso, day: d.getDate(), wd: wd.charAt(0).toUpperCase() + wd.slice(1), hasFlight: !!(reg && !reg.deleted && reg.report_time), isToday: iso === todayISO };
   });
 
+  // Entrada escalonada (mockup .view.show > * com delays): um valor 0→1 que cada
+  // secção interpola na sua sub-faixa. Re-toca sempre que o ecrã ganha foco.
+  const enter = useRef(new Animated.Value(0)).current;
+  useFocusEffect(useCallback(() => {
+    enter.setValue(0);
+    Animated.timing(enter, { toValue: 1, duration: 820, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [enter]));
+  const seg = (i) => {
+    const start = Math.min(0.55, i * 0.11);
+    return {
+      opacity: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [0, 1], extrapolate: 'clamp' }),
+      transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
+    };
+  };
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
@@ -406,7 +450,7 @@ export default function HomeScreen({ navigation }) {
         />
 
         {/* Tira de 5 dias — hoje a contorno vermelho, próximo voo preenchido, ponto nos dias com voo */}
-        <View style={s.week}>
+        <Animated.View style={[s.week, seg(0)]}>
           {weekDays.map((wdy) => {
             const isNext = nextFlightISO === wdy.iso;
             return (
@@ -419,20 +463,27 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </Animated.View>
 
-        {/* Estado FTL — linha de estado (ponto semáforo + contexto à direita) */}
-        <View style={s.statline}>
-          <View style={[s.statDot, { backgroundColor: stateColor }]} />
+        {/* Estado FTL — linha de estado (ponto semáforo a pulsar + contexto à direita) */}
+        <Animated.View style={[s.statline, seg(1)]}>
+          <View style={s.statDotWrap}>
+            <PulseRing size={9} color={stateColor} duration={2400} />
+            <View style={[s.statDot, { backgroundColor: stateColor }]} />
+          </View>
           <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>
           <Text style={s.statCtx} numberOfLines={1}>{crewCategory ? `${crewCategory}${crewContract ? ' · ' + crewContract : ''}` : (stateReason || '')}</Text>
-        </View>
+        </Animated.View>
 
         {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
-        {nextDutyEl}
+        <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
 
-        {/* Cartão AE — companhias com Acordo de Empresa (pagamento do mês) */}
-        {aeCardEl}
+        {/* Grelha de baixo — FTL·Voo + (AE compacto | FTL·Serviço), como o mockup */}
+        <Animated.View style={[s.grid2, seg(3)]}>
+          <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
+          {ae && crewCategory ? aeMiniEl : <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />}
+        </Animated.View>
+        {(!(ae && crewCategory) && !hasLimitData) ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
 
         {/* Alertas — só quando existem (urgente → acima dos limites) */}
         {ftlAlerts.length > 0 ? (
@@ -446,13 +497,6 @@ export default function HomeScreen({ navigation }) {
             ))}
           </View>
         ) : null}
-
-        {/* Limites acumulados — grelha 2-col (Voo + Serviço), como o mockup */}
-        <View style={s.grid2}>
-          <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
-          <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />
-        </View>
-        {!hasLimitData ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
 
         {/* Repouso — cartão claro */}
         <View style={s.panel}>
@@ -522,17 +566,17 @@ const makeStyles = (C) => StyleSheet.create({
   // Sino do cabeçalho (slot direito do PageHeader)
   hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
-  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: 'monospace', fontWeight: '700' },
+  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
 
   // Tira de 5 dias
   week: { flexDirection: 'row', gap: 7, justifyContent: 'space-between', marginBottom: SPACE.md },
   wd: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: RADIUS.md, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line },
   wdOn: { backgroundColor: C.ink, borderColor: C.ink },
   wdToday: { borderColor: C.red },
-  wdNum: { fontSize: 17, fontWeight: WEIGHT.semibold, color: C.text, lineHeight: 18 },
+  wdNum: { fontSize: 17, fontFamily: FONT.semibold, color: C.text, lineHeight: 18 },
   wdNumOn: { color: '#fff' },
   wdNumToday: { color: C.red },
-  wdDay: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', color: C.sub, marginTop: 4 },
+  wdDay: { fontSize: 9, fontFamily: FONT.bold, textTransform: 'uppercase', color: C.sub, marginTop: 4 },
   wdDayOn: { color: C.onDarkSub },
   wdDot: { width: 5, height: 5, borderRadius: RADIUS.pill, backgroundColor: 'transparent', marginTop: 5 },
   wdDotOn: { backgroundColor: C.red },
@@ -540,24 +584,25 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Estado FTL — linha de estado (ponto semáforo + contexto à direita)
   statline: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: SPACE.md },
+  statDotWrap: { width: 9, height: 9, alignItems: 'center', justifyContent: 'center' },
   statDot: { width: 9, height: 9, borderRadius: RADIUS.pill },
-  statLabel: { fontSize: TYPE.label, fontWeight: WEIGHT.heavy, color: C.text },
-  statCtx: { marginLeft: 'auto', fontSize: 10, fontWeight: WEIGHT.heavy, letterSpacing: 0.4, color: C.sub, textTransform: 'uppercase' },
+  statLabel: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
+  statCtx: { marginLeft: 'auto', fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.4, color: C.sub, textTransform: 'uppercase' },
 
   // Cartão AE — pagamento do mês (companhias com Acordo de Empresa)
   aeCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.md, backgroundColor: C.card },
   aeHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   aeDot: { width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  aeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '800', textTransform: 'uppercase' },
+  aeEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontFamily: FONT.heavy, textTransform: 'uppercase' },
   aeSub: { fontSize: TYPE.micro, color: C.sub, marginTop: 4, marginBottom: 8 },
   aeRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingVertical: 5 },
-  aeK: { fontSize: TYPE.sub, color: C.sub, fontWeight: '500' },
-  aeV: { fontSize: TYPE.body, color: C.text, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  aeK: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium },
+  aeV: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.semibold, fontVariant: ['tabular-nums'] },
   aeBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 6, marginBottom: 2 },
   aeBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
   aeTotalRow: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 6, paddingTop: 10 },
-  aeTotalK: { fontSize: TYPE.body, color: C.text, fontWeight: '700' },
-  aeTotalV: { fontSize: TYPE.value + 2, color: C.text, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  aeTotalK: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold },
+  aeTotalV: { fontSize: TYPE.value + 2, color: C.text, fontFamily: FONT.heavy, fontVariant: ['tabular-nums'] },
   aeMiss: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
 
   // Limites — grelha 2-col (mockup .grid2/.uc/.win/.wbar)
@@ -567,85 +612,96 @@ const makeStyles = (C) => StyleSheet.create({
     shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
   ucHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
   ucDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.ink },
-  ucTitle: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, flexShrink: 1 },
+  ucTitle: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, flexShrink: 1 },
   ucWin: { marginTop: 10 },
   ucWl: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, marginBottom: 5 },
-  ucA: { fontSize: 9.5, fontWeight: '700', color: C.sub, flexShrink: 1 },
+  ucA: { fontSize: 9.5, fontFamily: FONT.bold, color: C.sub, flexShrink: 1 },
   ucB: { fontSize: 10.5, color: C.sub, fontVariant: ['tabular-nums'] },
-  ucBnum: { color: C.text, fontWeight: '700' },
+  ucBnum: { color: C.text, fontFamily: FONT.bold },
   ucBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
   ucBarFill: { height: '100%', borderRadius: RADIUS.pill },
+  // AE compacto (cartão direito da grelha, mockup .uc.ae)
+  ucDotAe: { backgroundColor: C.red },
+  aeMRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, paddingVertical: 7, borderTopWidth: 1, borderTopColor: C.line },
+  aeMRow0: { borderTopWidth: 0 },
+  aeMK: { fontFamily: FONT.bold, fontSize: 10.5, color: C.sub, flexShrink: 1 },
+  aeMV: { fontFamily: FONT.semibold, fontSize: 13, color: C.text, fontVariant: ['tabular-nums'] },
+  aeMKtot: { fontFamily: FONT.heavy, fontSize: 10.5, color: C.text },
+  aeMVtot: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
+  aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
+  aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
 
   // Próximo voo — badge circular do report + texto
   nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
+  ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
-  ndCircTime: { fontSize: 25, fontWeight: WEIGHT.semibold, color: '#fff', lineHeight: 26 },
-  ndCircLbl: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  ndCircTime: { fontSize: 25, fontFamily: FONT.semibold, color: '#fff', lineHeight: 26 },
+  ndCircLbl: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
   ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ndXEyebrow: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
-  ndCountdown: { fontSize: TYPE.micro, fontWeight: '700', color: C.red },
-  ndRoute: { fontSize: 26, fontWeight: WEIGHT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
-  ndMeta: { fontSize: TYPE.micro, fontWeight: '700', color: C.sub },
-  ndMetaEm: { color: C.red, fontWeight: '700' },
+  ndXEyebrow: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
+  ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
+  ndRoute: { fontSize: 26, fontFamily: FONT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
+  ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
+  ndMetaEm: { color: C.red, fontFamily: FONT.bold },
   ndTags: { flexDirection: 'row', gap: 7, marginTop: 9, flexWrap: 'wrap' },
   ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
-  ndSrcTxt: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  ndSrcTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
   ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndFatDot: { width: 7, height: 7, borderRadius: 99 },
-  ndFatTxt: { fontSize: 9, fontWeight: WEIGHT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
+  ndFatTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
   bdLbl: { flex: 1, fontSize: TYPE.sub, color: C.onDarkSub },
-  bdVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: '#fff', fontWeight: '600' },
+  bdVal: { fontSize: TYPE.sub, color: '#fff', fontFamily: FONT.semibold },
   // Barras de progresso (limites · repouso)
   prog: { marginBottom: SPACE.md + 4 },
   progTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
-  progLbl: { fontSize: TYPE.sub, fontWeight: '600', color: C.text },
-  progVal: { fontSize: TYPE.sub, fontFamily: 'monospace', color: C.sub },
+  progLbl: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
+  progVal: { fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub },
   progTrack: { height: 10, borderRadius: RADIUS.pill, backgroundColor: C.line, overflow: 'hidden' },
   progFill: { height: 10, borderRadius: RADIUS.pill },
   progFoot: { fontSize: TYPE.micro, color: C.sub, marginTop: 6 },
   restItem: { marginBottom: SPACE.md },
-  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontWeight: '700' },
-  restHero: { fontSize: TYPE.display, fontWeight: WEIGHT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
+  restItemLbl: { fontSize: TYPE.eyebrow, letterSpacing: 1, color: C.sub, fontFamily: FONT.bold },
+  restHero: { fontSize: TYPE.display, fontFamily: FONT.semibold, letterSpacing: TRACK_DISPLAY, color: C.text, marginTop: 2, marginBottom: SPACE.sm },
   setoresRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   // Painéis claros (limites · repouso · alertas) + atalhos
   panel: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
-  secTitle: { fontSize: TYPE.label, fontWeight: '700', color: C.text, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: SPACE.md },
+  secTitle: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: SPACE.md },
   panelEmptyTxt: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.sm },
-  limToggle: { fontSize: TYPE.micro, color: C.sub, fontWeight: '700', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  limToggle: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.bold, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   shortcutsRow: { flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.md },
   shortcut: { flex: 1, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: SPACE.md + 4, backgroundColor: C.card },
-  shortcutTxt: { fontSize: TYPE.label, fontWeight: '600', color: C.text },
+  shortcutTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text },
   alertCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
-  alertHead: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700', marginBottom: SPACE.sm },
+  alertHead: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold, marginBottom: SPACE.sm },
   alertRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
   alertRowDiv: { borderTopWidth: 1, borderTopColor: C.line },
   alertTxt: { flex: 1, fontSize: TYPE.sub, color: C.text },
   simCta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: SPACE.md + 2, marginBottom: SPACE.md },
   simIcon: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
-  simTitle: { fontSize: TYPE.body, fontWeight: '700', color: '#fff' },
+  simTitle: { fontSize: TYPE.body, fontFamily: FONT.bold, color: '#fff' },
   simSub: { fontSize: TYPE.micro, color: C.onDarkSub, marginTop: 2 },
 
   // Próximo duty — estado vazio / sem permissão (cartão claro)
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
   flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
-  flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontWeight: '700' },
+  flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold },
   flightBadge: { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, minHeight: 24, justifyContent: 'center' },
   flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
-  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontWeight: '600' },
+  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
   // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 10, fontFamily: 'monospace', fontWeight: '600', color: C.text, letterSpacing: 0.5 },
+  tagTxt: { fontSize: 10, fontFamily: FONT.semibold, color: C.text, letterSpacing: 0.5 },
   notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
-  notifItemTitle: { fontSize: 13, fontWeight: '500', color: C.text },
+  notifItemTitle: { fontSize: 13, fontFamily: FONT.medium, color: C.text },
   notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },
   noMore: { textAlign: 'center', fontSize: 11, color: C.sub, padding: SPACE.lg },
 });

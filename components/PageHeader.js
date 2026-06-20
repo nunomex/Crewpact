@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { RADIUS, SPACE, WEIGHT } from '../data/constants';
+import { RADIUS, SPACE, FONT } from '../data/constants';
 import { useTheme } from '../App';
 
 // Cabeçalho claro do mockup (substitui o ScreenHeader blob preto): eyebrow do
@@ -27,6 +27,6 @@ const makeStyles = (C) => StyleSheet.create({
   htop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
   hlw: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   hrd: { width: 7, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  hl: { fontSize: 10.5, fontWeight: WEIGHT.heavy, letterSpacing: 1.3, color: C.sub, textTransform: 'uppercase', flexShrink: 1 },
-  ht: { fontSize: 28, fontWeight: WEIGHT.heavy, letterSpacing: -0.6, color: C.text, lineHeight: 30, marginBottom: SPACE.lg },
+  hl: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 1.3, color: C.sub, textTransform: 'uppercase', flexShrink: 1 },
+  ht: { fontSize: 28, fontFamily: FONT.heavy, letterSpacing: -0.6, color: C.text, lineHeight: 30, marginBottom: SPACE.lg },
 });
