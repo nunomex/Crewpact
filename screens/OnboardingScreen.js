@@ -77,20 +77,14 @@ export default function OnboardingScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }}>
         {items.map((item) => {
           const sel = draft[field] === item.id;
-          const disabled = (field === 'company' || field === 'crewType') && item.active === false;
           return (
-            <TouchableOpacity key={item.id} disabled={disabled} onPress={() => { select(); setDraft({ ...draft, [field]: item.id }); }}
-              style={[styles.row, { borderColor: sel ? C.red : C.line, opacity: disabled ? 0.4 : 1 }]}>
+            <TouchableOpacity key={item.id} onPress={() => { select(); setDraft({ ...draft, [field]: item.id }); }}
+              style={[styles.row, { borderColor: sel ? C.red : C.line }]}>
               {item.code ? (
                 <View style={styles.optBadge}><Text style={styles.optBadgeTxt}>{item.code}</Text></View>
               ) : null}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: C.text }]}>{txv(item.label || item.name, lang)}</Text>
-                {item.country
-                  ? <Text style={[styles.rowSub, { color: C.sub }]}>{item.active ? item.country : t('onb.soon', lang)}</Text>
-                  : (field === 'crewType' && item.active === false
-                      ? <Text style={[styles.rowSub, { color: C.sub }]}>{t('onb.soon', lang)}</Text>
-                      : null)}
               </View>
               <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
                 {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -127,8 +121,11 @@ export default function OnboardingScreen() {
           // AsyncStorage já garantem o fluxo, por isso uma falha aqui não bloqueia).
           await upsertProfile(user?.id, payload);
           setSaving(false);
-          setProfile(payload);
+          // Ordem importa: setUser(result.user) corre handleSetUser, que faz
+          // setProfile({ company }) e apagaria crewType/categoria/contrato. Por isso
+          // o setProfile(payload) COMPLETO tem de ser a ÚLTIMA escrita ao perfil.
           if (result.user) setUser(result.user);
+          setProfile(payload);
           success();
           setOnboarded(true);
         }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
@@ -157,7 +154,6 @@ const makeStyles = (C) => StyleSheet.create({
   optBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   optBadgeTxt: { color: '#fff', fontFamily: 'monospace', fontSize: 13, fontWeight: '700' },
   rowLabel: { fontSize: 14, fontWeight: '600' },
-  rowSub: { fontSize: 12, marginTop: 2 },
   check: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   footer: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 8 },
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },
