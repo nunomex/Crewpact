@@ -98,5 +98,15 @@ export const WEIGHT = {
   bold: "700",
   heavy: "800",     // eyebrows/badges (rótulos densos em maiúsculas)
 };
+// Famílias Inter (1:1 com o mockup, iguais em iOS+Android). Carregadas no App.js.
+// Nos ports usa-se `fontFamily: FONT.<peso>` em vez de `fontWeight` — as fontes
+// estáticas não respondem ao fontWeight, a família é que carrega o peso.
+export const FONT = {
+  regular:  "Inter_400Regular",
+  medium:   "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold:     "Inter_700Bold",
+  heavy:    "Inter_800ExtraBold",
+};
 // LetterSpacing recomendado para títulos display (negativo = mais apertado/premium).
 export const TRACK_DISPLAY = -0.4;

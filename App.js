@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, PALETTES } from './data/constants';
 import { t } from './data/i18n';
@@ -175,6 +176,10 @@ export default function App() {
   // Auth state — null = not logged in
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // Fonte Inter (1:1 com o mockup, igual em iOS+Android). Carrega os pesos que o
+  // design usa; aplica-se por ecrã via FONT (fontFamily) à medida que se porta.
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
+  const fontsReady = fontsLoaded || !!fontError; // erro a carregar → arranca na mesma (fonte do sistema)
   const suppressAuth = useRef(false);
   const hydrated = useRef(false);
 
@@ -579,7 +584,7 @@ export default function App() {
   // Pronto = o renderScreen mostraria um ecrã REAL (não o spinner de carga). O
   // splash nativo (estático) cobre exatamente esta janela (auth + hidratação) e
   // só é escondido aqui — sem salto, porque o ecrã real já está montado por baixo.
-  const appReady = !authLoading && (!user || (lockEnabled && locked) || loadedUserId === user.id);
+  const appReady = fontsReady && !authLoading && (!user || (lockEnabled && locked) || loadedUserId === user.id);
 
   useEffect(() => {
     if (appReady && !splashHidden) {
