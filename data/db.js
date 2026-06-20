@@ -1,13 +1,19 @@
 import { supabase } from './supabase';
 
 // Acesso à tabela `profiles` (perfil do utilizador no servidor).
-//  - Forma em memória da app:  { company, crewType }
+//  - Forma em memória da app:  { company, crewType }   (crewType: 'cabin' | 'pilot')
 //  - Forma na base de dados:   { id, airline_id, crew_type, created_at }
-//    crew_type: 'cabin' | 'pilot'. `airline_id` guarda o id/slug da companhia.
+//    `airline_id` guarda o id/slug da companhia.
 // O mapeamento vive SÓ aqui (fronteira de persistência).
 
+// A coluna `profiles.crew_type` é um enum em MAIÚSCULAS na BD
+// (CHECK: 'CABIN_CREW' | 'PILOT'); a app usa 'cabin' | 'pilot'. Converter nos
+// dois sentidos aqui — sem isto o upsert falha o CHECK (23514) e nada sincroniza.
+const toDbCrew = (crewType) => (crewType === 'pilot' ? 'PILOT' : 'CABIN_CREW');
+const fromDbCrew = (v) => (v === 'PILOT' ? 'pilot' : 'cabin');
+
 const rowToProfile = (r) =>
-  r ? { company: r.airline_id || null, crewType: r.crew_type || 'cabin' } : null;
+  r ? { company: r.airline_id || null, crewType: fromDbCrew(r.crew_type) } : null;
 
 // Lê o perfil do utilizador. Devolve null se não existir, em erro, ou sem rede.
 export const fetchProfile = async (userId) => {
@@ -46,7 +52,7 @@ export const upsertProfile = async (userId, { company, crewType = 'cabin' } = {}
       .upsert({
         id: userId,
         airline_id: company || null,
-        crew_type: crewType,
+        crew_type: toDbCrew(crewType),
       }, { onConflict: 'id' });
     return !error;
   } catch {
