@@ -13,6 +13,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, PALETTES } from './data/constants';
@@ -33,6 +34,11 @@ import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import AnimatedSplash     from './components/AnimatedSplash';
+
+// Segura o splash nativo no arranque — o AnimatedSplash assume daqui (handoff sem
+// salto) e esconde-o quando a app está pronta. Chamado uma vez, no load do módulo.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -154,6 +160,7 @@ export default function App() {
 
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
+  const [splashDone, setSplashDone] = useState(false);       // splash animado feito (esconde o overlay)
   const [onboarded, setOnboarded] = useState(false);
 
   const [lang, setLang]                 = useState('pt');
@@ -531,13 +538,18 @@ export default function App() {
     colors: { ...DefaultTheme.colors, background: palette.canvas, card: palette.canvas, text: palette.text, border: palette.line, primary: palette.ink },
   };
 
+  // Pronto = o renderScreen mostraria um ecrã REAL (não o spinner de carga). O
+  // splash animado mascara exatamente esta janela (auth + hidratação) e sai aqui.
+  const appReady = !authLoading && (!user || (lockEnabled && locked) || loadedUserId === user.id);
+
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
-        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        <StatusBar style={(!splashDone || theme === 'dark') ? 'light' : 'dark'} />
         <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
+        {!splashDone && <AnimatedSplash ready={appReady} onDone={() => setSplashDone(true)} />}
       </AppContext.Provider>
     </SafeAreaProvider>
   );

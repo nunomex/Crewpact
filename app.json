@@ -4,17 +4,16 @@
     "slug": "crewpact",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#FFFFFF"
-    },
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.crewpact.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B1B1B"
       },
       "package": "com.crewpact.app"
     },
@@ -33,7 +32,16 @@
         }
       ],
       "expo-localization",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#1B1B1B"
+        }
+      ]
     ]
   }
 }
