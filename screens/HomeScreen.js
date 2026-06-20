@@ -78,6 +78,15 @@ function LimitCard({ title, windows, limLabel, s, C }) {
   );
 }
 
+// ── DEMO: voo de exemplo no cartão "Próximo voo", para comparar com o mockup.
+// TEMPORÁRIO — quando ligares o calendário real do telemóvel, põe SHOW_DEMO_FLIGHT = false.
+const SHOW_DEMO_FLIGHT = true;
+const DEMO_FLIGHT = (() => {
+  const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
+  const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
+  return { demo: true, dateISO: iso, report: '05:40', depAirport: 'LIS', arrAirport: 'FNC', arrTime: '13:20', sectors: 2, startDate: dep };
+})();
+
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot } = useContext(AppContext);
@@ -125,7 +134,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
-  const [flight, setFlight] = useState(null);
+  const [flight, setFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
   const [calOk, setCalOk] = useState(true); // acesso ao calendário do telemóvel
   const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
@@ -137,8 +146,8 @@ export default function HomeScreen({ navigation }) {
     try {
       const res = await getUpcomingFlight();
       setCalOk(res.ok);
-      setFlight(res.flight);
-    } catch { setFlight(null); }
+      setFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null)); // sem voo real → mostra o exemplo
+    } catch { setFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
   };
@@ -174,7 +183,11 @@ export default function HomeScreen({ navigation }) {
   let ndPsvMax = null, ndFat = null, ndSectors = null;
   if (flight) {
     const reg = duties[flight.dateISO];
-    if (reg && !reg.deleted && reg.report_time && reg.block_on) {
+    if (flight.demo) {
+      // Voo de exemplo: gera PSV máx + fadiga a partir dos próprios dados (sem registo).
+      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: flight.sectors });
+      ndPsvMax = d.fdp.maxFdpStr; ndSectors = flight.sectors; ndFat = fatigueFromDuty(d);
+    } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
       const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0 });
       ndPsvMax = d.fdp.maxFdpStr; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
     } else {
