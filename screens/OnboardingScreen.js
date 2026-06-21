@@ -69,12 +69,13 @@ export default function OnboardingScreen({ signup = false }) {
   };
   // Data do mundo real (AAAA-MM-DD): valida intervalos E faz round-trip para
   // apanhar rollover do Date (2000-00-00, 2000-13-01, 2000-02-30 → recusadas).
-  // Não pode ser futura nem anterior a 1980.
+  // Não pode ser futura nem anterior ao piso dinâmico (ano atual − 100).
   const isRealDate = (v) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((v || '').trim());
     if (!m) return false;
     const y = +m[1], mo = +m[2], d = +m[3];
-    if (y < 1980 || mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+    const minYear = new Date().getFullYear() - 100;   // piso dinâmico: 100 anos antes do ano atual
+    if (y < minYear || mo < 1 || mo > 12 || d < 1 || d > 31) return false;
     const dt = new Date(y, mo - 1, d);
     if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return false;
     return dt.getTime() <= Date.now();
@@ -172,17 +173,17 @@ export default function OnboardingScreen({ signup = false }) {
           <Text style={styles.pillText}>{t('onb.eyebrow', lang)}</Text>
         </View>
         {(!signup || idx >= 1) ? (
-          <TouchableOpacity onPress={() => { if (signup) setSignupMode(false); else logout(); }} hitSlop={10} style={styles.exitTop}>
-            <Text style={styles.exitTopTxt}>{lang === 'en' ? 'Exit' : 'Sair'}</Text>
+          <TouchableOpacity onPress={() => { if (signup) setSignupMode(false); else logout(); }} hitSlop={10} style={styles.btnBack}>
+            <Text style={[styles.btnText, { color: C.text }]}>{lang === 'en' ? 'Exit' : 'Sair'}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
       <View style={styles.top}>
-        {draft.company ? (
-          <View style={styles.dots}>
-            {flow.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= idx ? C.red : C.line }]} />)}
-          </View>
-        ) : null}
+        {/* Espaço dos dots SEMPRE reservado → sem salto ao escolher a 1.ª companhia
+            (invisíveis enquanto não há companhia, aparecem no lugar depois). */}
+        <View style={[styles.dots, draft.company ? null : { opacity: 0 }]}>
+          {flow.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= idx ? C.red : C.line }]} />)}
+        </View>
         <Text style={styles.title}>{s.title}</Text>
         <Text style={styles.sub}>{s.sub}</Text>
       </View>
@@ -284,6 +285,4 @@ const makeStyles = (C) => StyleSheet.create({
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },
   btnNext: { flex: 1, paddingVertical: 14, borderRadius: 99, alignItems: 'center' },
   btnText: { fontSize: 14, fontFamily: FONT.semibold },
-  exitTop: { paddingVertical: 4, paddingHorizontal: 6 },
-  exitTopTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
 });
