@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { t, tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
+import AccountCreated from '../components/AccountCreated';
 
 export default function OnboardingScreen({ signup = false }) {
   const { user, airlines, setProfile, setOnboarded, setUser, setSignupMode, suppressAuth, logout, lang } = useContext(AppContext);
@@ -19,6 +20,19 @@ export default function OnboardingScreen({ signup = false }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
+  const [created, setCreated] = useState(null);   // {user, payload} pós-signup → página de transição
+
+  // Página de transição "Conta criada" → comita a sessão depois de ~2,5s e entra.
+  useEffect(() => {
+    if (!created) return;
+    const id = setTimeout(() => {
+      setUser(created.user);
+      setProfile(created.payload);
+      setOnboarded(true);
+      setSignupMode(false);
+    }, 2500);
+    return () => clearTimeout(id);
+  }, [created]);
 
   // Onboarding: operador (tabela `airlines`) + tipo de tripulação (cabine/piloto →
   // guardado em `profiles.crew_type` como 'cabin' | 'pilot').
@@ -81,7 +95,15 @@ export default function OnboardingScreen({ signup = false }) {
   const field = s.field;
   const isLast = idx >= flow.length - 1;
   const accountValid = !validateName(draft.name, lang) && !validateEmail(draft.email, lang) && !validatePassword(draft.password, true, lang);
-  const canNext = s.input === 'date' ? true : s.input === 'account' ? accountValid : !!draft[field];
+  // Data válida e completa? Controla quem fica "preto/ativo": vazia → Saltar; cheia → Confirmar.
+  const dateOk = (() => {
+    if (s.input !== 'date') return false;
+    const v = (draft.serviceStart || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    const dt = new Date(`${v}T00:00:00`);
+    return !isNaN(dt.getTime()) && +v.slice(0, 4) >= 1980 && dt.getTime() <= Date.now();
+  })();
+  const canNext = s.input === 'date' ? dateOk : s.input === 'account' ? accountValid : !!draft[field];
 
   // Grava o perfil e termina o onboarding. serviceStartVal: 'AAAA-MM-DD' ou null.
   const finish = async (serviceStartArg) => {
@@ -104,12 +126,10 @@ export default function OnboardingScreen({ signup = false }) {
       suppressAuth.current = false;
       if (!reg.ok) { setSaving(false); setSaveError(reg.error); setStep(0); return; }  // ex.: email já existe → volta ao 1.º passo
       upsertProfile(reg.user?.id, payload).catch(() => {});   // tabela profiles (best-effort; o metadata é a fonte de verdade)
-      setSaving(false);
-      setUser(reg.user);
-      setProfile(payload);
       success();
-      setOnboarded(true);
-      setSignupMode(false);
+      // Conta criada → mostra a página de transição; o commit da sessão (setUser…)
+      // faz-se a seguir, no useEffect temporizado, depois do beat de confirmação.
+      setCreated({ user: reg.user, payload });
       return;
     }
     // Utilizador já existente a (re)configurar — grava no metadata.
@@ -137,6 +157,8 @@ export default function OnboardingScreen({ signup = false }) {
     finish();   // último passo → cria/grava
   };
 
+  if (created) return <AccountCreated name={draft.name} lang={lang} />;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -144,6 +166,11 @@ export default function OnboardingScreen({ signup = false }) {
           <Ionicons name="airplane" size={14} color={C.red} />
           <Text style={styles.pillText}>{t('onb.eyebrow', lang)}</Text>
         </View>
+        {(!signup || idx >= 1) ? (
+          <TouchableOpacity onPress={() => { if (signup) setSignupMode(false); else logout(); }} hitSlop={10} style={styles.exitTop}>
+            <Text style={styles.exitTopTxt}>{lang === 'en' ? 'Exit' : 'Sair'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
       <View style={styles.top}>
         {draft.company ? (
@@ -204,11 +231,6 @@ export default function OnboardingScreen({ signup = false }) {
           {saveError}
         </Text>
       )}
-      {!signup ? (
-        <TouchableOpacity onPress={logout} style={styles.exitLink}>
-          <Text style={styles.exitTxt}>{lang === 'en' ? 'Sign out' : 'Sair'}</Text>
-        </TouchableOpacity>
-      ) : null}
       <View style={styles.footer}>
         {(step > 0 || signup) && (
           <TouchableOpacity onPress={() => { if (step === 0) setSignupMode(false); else setStep(step - 1); }} style={styles.btnBack}>
@@ -216,8 +238,8 @@ export default function OnboardingScreen({ signup = false }) {
           </TouchableOpacity>
         )}
         {s.input === 'date' && (
-          <TouchableOpacity disabled={saving} onPress={() => { if (isLast) finish(null); else { setDraft({ ...draft, serviceStart: '' }); setStep(step + 1); } }} style={styles.btnBack}>
-            <Text style={[styles.btnText, { color: C.sub }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
+          <TouchableOpacity disabled={saving} onPress={() => { if (isLast) finish(null); else { setDraft({ ...draft, serviceStart: '' }); setStep(step + 1); } }} style={[styles.btnBack, { backgroundColor: dateOk ? C.soft : C.ink }]}>
+            <Text style={[styles.btnText, { color: dateOk ? C.sub : '#fff' }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity disabled={!canNext || saving} onPress={handleNext} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
@@ -233,7 +255,7 @@ export default function OnboardingScreen({ signup = false }) {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  header: { paddingHorizontal: 24, paddingTop: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 16 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 },
   pillText: { color: '#fff', fontSize: 11, letterSpacing: 2, fontFamily: FONT.semibold },
   top: { paddingHorizontal: 24, paddingTop: 28, paddingBottom: 16 },
@@ -257,6 +279,6 @@ const makeStyles = (C) => StyleSheet.create({
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },
   btnNext: { flex: 1, paddingVertical: 14, borderRadius: 99, alignItems: 'center' },
   btnText: { fontSize: 14, fontFamily: FONT.semibold },
-  exitLink: { alignItems: 'center', paddingVertical: 6, marginBottom: 2 },
-  exitTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
+  exitTop: { paddingVertical: 4, paddingHorizontal: 6 },
+  exitTopTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
 });
