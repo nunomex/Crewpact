@@ -203,3 +203,25 @@ export async function getStandbyInRange(start, end) {
   const standby = events.map(mapStandby).filter(Boolean);
   return { ok: true, standby };
 }
+
+// Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica
+// (flight/standby/other). Para o utilizador ver o que o calendário tem e perceber
+// porque um evento é (ou não é) reconhecido. { ok, total, items:[{ title, dateISO,
+// kind, route, flightNo, times }] }.
+export async function diagnoseEvents(start, end) {
+  const { ok, events } = await fetchEvents(start, end);
+  if (!ok) return { ok: false, total: 0, items: [] };
+  const items = events.map((ev) => {
+    const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
+    const r = text.match(RE_ROUTE);
+    return {
+      title: (ev.title || '').trim() || '(sem título)',
+      dateISO: isoLocal(new Date(ev.startDate)),
+      kind: classify(text),
+      route: (r && r[1] !== r[2]) ? `${r[1]}-${r[2]}` : null,
+      flightNo: RE_FLIGHT.test(text),
+      times: RE_TIMES.test(text),
+    };
+  });
+  return { ok: true, total: events.length, items };
+}

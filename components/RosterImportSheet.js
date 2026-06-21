@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
-import { getDutiesInRange, getStandbyInRange, requestCalendarAccess } from '../data/calendar';
+import { getDutiesInRange, getStandbyInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
@@ -41,6 +41,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   const [loading, setLoading] = useState(false);
   const [denied, setDenied] = useState(false);
   const [cands, setCands] = useState([]);
+  const [diag, setDiag] = useState(null);   // diagnóstico: o que o calendário (eCrew) tem
 
   const load = async (opt) => {
     setLoading(true); setDenied(false);
@@ -55,6 +56,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   useEffect(() => { if (visible) load(range); }, [visible, range]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
+  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end)); };
   const toggle = (i) => { select(); setCands((cs) => cs.map((c, j) => j === i ? { ...c, selected: !c.selected } : c)); };
 
   const selected = cands.filter((c) => c.selected);
@@ -139,6 +141,20 @@ export default function RosterImportSheet({ visible, onClose }) {
               })}
             </>
           )}
+
+          {/* Diagnóstico — ver o que o calendário (eCrew) tem e como o parser o classifica */}
+          <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn}>
+            <Ionicons name="construct-outline" size={14} color={C.sub} />
+            <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
+          </TouchableOpacity>
+          {diag ? (
+            <View style={s.diagBox}>
+              <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind === 'flight').length} ✈ · {diag.items.filter((i) => i.kind === 'standby').length} ⏱ · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
+              {diag.items.length ? diag.items.map((it, i) => (
+                <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'flight' ? '✈' : it.kind === 'standby' ? '⏱' : '—'}  {it.title}{it.route ? ` · ${it.route}` : ''}</Text>
+              )) : <Text style={s.diagItem}>{l('Sem eventos no intervalo.', 'No events in range.')}</Text>}
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={s.foot}>
@@ -170,6 +186,11 @@ const makeStyles = (C) => StyleSheet.create({
   grantBtn: { marginTop: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11 },
   grantTxt: { color: '#fff', fontSize: TYPE.label, fontFamily: FONT.semibold },
   hint: { fontSize: 11.5, color: C.sub, fontFamily: FONT.medium, marginBottom: 10 },
+  diagBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
+  diagBtnTxt: { fontSize: 12, color: C.sub, fontFamily: FONT.semibold },
+  diagBox: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 12, marginTop: 4 },
+  diagHead: { fontSize: 11, fontFamily: FONT.bold, color: C.text, marginBottom: 8 },
+  diagItem: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, paddingVertical: 3 },
   crow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, borderTopWidth: 1, borderTopColor: C.line },
   check: { width: 24, height: 24, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
