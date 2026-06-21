@@ -67,6 +67,18 @@ export default function OnboardingScreen({ signup = false }) {
     if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
   };
+  // Data do mundo real (AAAA-MM-DD): valida intervalos E faz round-trip para
+  // apanhar rollover do Date (2000-00-00, 2000-13-01, 2000-02-30 → recusadas).
+  // Não pode ser futura nem anterior a 1980.
+  const isRealDate = (v) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((v || '').trim());
+    if (!m) return false;
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (y < 1980 || mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+    const dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return false;
+    return dt.getTime() <= Date.now();
+  };
   const STEP_DEFS = {
     account:      { title: lang === 'en' ? 'Create account' : 'Cria a tua conta', sub: lang === 'en' ? 'Your details' : 'Os teus dados', field: 'account', input: 'account' },
     company:      { title: t('onb.s0t', lang),       sub: t('onb.s0s', lang),       items: airlines,   field: 'company' },
@@ -96,13 +108,7 @@ export default function OnboardingScreen({ signup = false }) {
   const isLast = idx >= flow.length - 1;
   const accountValid = !validateName(draft.name, lang) && !validateEmail(draft.email, lang) && !validatePassword(draft.password, true, lang);
   // Data válida e completa? Controla quem fica "preto/ativo": vazia → Saltar; cheia → Confirmar.
-  const dateOk = (() => {
-    if (s.input !== 'date') return false;
-    const v = (draft.serviceStart || '').trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
-    const dt = new Date(`${v}T00:00:00`);
-    return !isNaN(dt.getTime()) && +v.slice(0, 4) >= 1980 && dt.getTime() <= Date.now();
-  })();
+  const dateOk = s.input === 'date' && isRealDate(draft.serviceStart);
   const canNext = s.input === 'date' ? dateOk : s.input === 'account' ? accountValid : !!draft[field];
 
   // Grava o perfil e termina o onboarding. serviceStartVal: 'AAAA-MM-DD' ou null.
@@ -144,13 +150,12 @@ export default function OnboardingScreen({ signup = false }) {
   };
 
   const handleNext = () => {
-    // Valida o passo de data ao SAIR dele (a data é opcional → vazia passa).
+    // Valida o passo de data ao SAIR dele (a data é opcional → vazia passa pelo Saltar).
     if (s.input === 'date') {
       const v = (draft.serviceStart || '').trim();
-      if (v !== '') {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setSaveError(lang === 'en' ? 'Use the format YYYY-MM-DD.' : 'Usa o formato AAAA-MM-DD.'); return; }
-        const dt = new Date(`${v}T00:00:00`);
-        if (isNaN(dt.getTime()) || +v.slice(0, 4) < 1980 || dt.getTime() > Date.now()) { setSaveError(lang === 'en' ? 'Invalid date.' : 'Data inválida.'); return; }
+      if (v !== '' && !isRealDate(v)) {
+        setSaveError(lang === 'en' ? 'Enter a valid real-world date (YYYY-MM-DD).' : 'Insere uma data real válida (AAAA-MM-DD).');
+        return;
       }
     }
     if (!isLast) { setStep(step + 1); return; }
