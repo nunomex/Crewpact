@@ -19,12 +19,17 @@ export const DUTY_KINDS = ['flight', 'standby_airport', 'standby_home', 'positio
 // Lê as duties do utilizador (mais recentes primeiro). [] em erro/sem rede.
 export const fetchDuties = async (userId) => {
   if (!userId) return [];
+  const FULL = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, updated_at:created_at';
+  const LEGACY = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, updated_at:created_at';
   try {
-    const { data, error } = await supabase
-      .from('duties')
-      .select('duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, updated_at:created_at')
-      .eq('user_id', userId)
-      .order('duty_date', { ascending: false });
+    let { data, error } = await supabase
+      .from('duties').select(FULL).eq('user_id', userId).order('duty_date', { ascending: false });
+    if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
+      // Colunas `kind`/`night_stop` ainda não existem (§9/§11 por correr) → lê sem
+      // elas, em vez de falhar a leitura toda. (Degradação elegante.)
+      ({ data, error } = await supabase
+        .from('duties').select(LEGACY).eq('user_id', userId).order('duty_date', { ascending: false }));
+    }
     if (error) return [];
     return data || [];
   } catch {
