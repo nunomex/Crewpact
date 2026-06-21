@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Stepper } from './Stepper';
@@ -126,9 +126,9 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const isEdit = duties[form.date] && !duties[form.date].deleted;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}
+    <BottomSheet visible={visible} onClose={onClose} maxHeight="90%"
       title={isEdit ? t('duties.edit', lang) : t('duties.add', lang)} closeLabel={t('common.close', lang)}>
-      <View style={s.form}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.form, { paddingBottom: 32 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={s.fieldLbl}>{t('duties.date', lang)}</Text>
         <View style={s.dateRow}>
           <TouchableOpacity onPress={() => goDate(-1)} hitSlop={8} style={s.dateNav}>
@@ -211,8 +211,8 @@ export default function DutyFormSheet({ visible, onClose, date }) {
         <TouchableOpacity onPress={onSave} disabled={!canSave} style={[s.saveBtn, { opacity: canSave ? 1 : 0.4 }]}>
           <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
         </TouchableOpacity>
-        <Text style={s.formHint}>{t('duties.reportReq', lang)}</Text>
-      </View>
+        {isFlight ? <Text style={s.formHint}>{t('duties.reportReq', lang)}</Text> : null}
+      </ScrollView>
     </BottomSheet>
   );
 }
