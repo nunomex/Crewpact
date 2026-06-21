@@ -527,7 +527,7 @@ export const STRINGS = {
     'st.8': '8+ caract.', 'st.upper': 'Maiúscula', 'st.num': 'Número', 'st.special': 'Especial',
     'sync.done': 'Sincronizado', 'sync.offline': 'Guardado offline', 'sync.offlineSub': 'Sincroniza ao reconectar',
     'duties.kindLabel': 'Tipo',
-    'duties.kind.flight': 'Voo', 'duties.kind.standby_airport': 'Reserva aeroporto', 'duties.kind.standby_home': 'Reserva casa', 'duties.kind.positioning': 'Posicionamento', 'duties.kind.office': 'Terra', 'duties.kind.training': 'Formação',
+    'duties.kind.flight': 'Voo', 'duties.kind.standby_airport': 'Standby Aeroporto', 'duties.kind.standby_home': 'Standby Casa', 'duties.kind.positioning': 'Posicionamento', 'duties.kind.office': 'Escritório', 'duties.kind.training': 'Formação',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · CONFIGURAR',
@@ -1013,7 +1013,7 @@ export const STRINGS = {
     'st.8': '8+ chars', 'st.upper': 'Uppercase', 'st.num': 'Number', 'st.special': 'Special',
     'sync.done': 'Synced', 'sync.offline': 'Saved offline', 'sync.offlineSub': 'Will sync when reconnected',
     'duties.kindLabel': 'Type',
-    'duties.kind.flight': 'Flight', 'duties.kind.standby_airport': 'Airport standby', 'duties.kind.standby_home': 'Home standby', 'duties.kind.positioning': 'Positioning', 'duties.kind.office': 'Ground', 'duties.kind.training': 'Training',
+    'duties.kind.flight': 'Flight', 'duties.kind.standby_airport': 'Airport Standby', 'duties.kind.standby_home': 'Home Standby', 'duties.kind.positioning': 'Positioning', 'duties.kind.office': 'Office', 'duties.kind.training': 'Training',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · SETUP',
