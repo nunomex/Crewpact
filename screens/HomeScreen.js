@@ -17,7 +17,7 @@ import useEnter from '../hooks/useEnter';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext, useTheme, toZulu } from '../data/appContext';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
@@ -273,6 +273,7 @@ export default function HomeScreen({ navigation }) {
   }
   // Dia do voo para o badge circular (número + dia da semana).
   const ndDayNum = flight ? new Date(flight.dateISO + 'T00:00:00').getDate() : null;
+  const ndReportZ = flight ? toZulu(flight.dateISO, flight.report) : null;
   const ndDayWd = flight ? (() => {
     const w = new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
     return w.charAt(0).toUpperCase() + w.slice(1);
@@ -344,6 +345,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : null}
         </View>
+        <Text style={s.ndTimes} numberOfLines={1}>Local {flight.report}  ·  Zulu {ndReportZ || '—'}Z</Text>
       </View>
     </View>
   ) : loadingFlight ? (
@@ -509,6 +511,7 @@ const makeStyles = (C) => StyleSheet.create({
   ndTagRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
   ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndSrcTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  ndTimes: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
   ndSrcEm: { color: C.text, fontFamily: FONT.heavy },
   ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndFatDot: { width: 7, height: 7, borderRadius: 99 },

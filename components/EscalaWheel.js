@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT } from '../data/constants';
-import { AppContext, useTheme, isoDay } from '../data/appContext';
+import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
 import { t } from '../data/i18n';
 
@@ -66,7 +66,7 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
       .then(({ ok, duties: cd }) => {
         if (cancelled || !ok) return;
         const map = {};
-        cd.forEach((d) => { map[d.dateISO] = { route: `${d.startAirport} · ${d.endAirport}`, report_time: d.report, sectors: d.sectors, fromCal: true }; });
+        cd.forEach((d) => { map[d.dateISO] = { route: `${d.startAirport} · ${d.endAirport}`, report_time: d.report, block_on: d.release, sectors: d.sectors, fromCal: true }; });
         setCal(map);
       }).catch(() => {});
     return () => { cancelled = true; };
@@ -152,6 +152,11 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
             <Text style={s.detEmpty}>{l('Sem serviço neste dia.', 'No duty on this day.')}</Text>
           )}
         </View>
+        {cur.flight ? (
+          <Text style={s.detTimes} numberOfLines={1}>
+            {l('Local', 'Local')} {cur.flight.report_time || '—'}{cur.flight.block_on ? `–${cur.flight.block_on}` : ''}  ·  Zulu {toZulu(cur.iso, cur.flight.report_time) || '—'}Z{cur.flight.block_on ? `–${toZulu(cur.iso, cur.flight.block_on)}Z` : ''}
+          </Text>
+        ) : null}
       </TouchableOpacity>
     </View>
   );
@@ -192,5 +197,6 @@ const makeStyles = (C) => StyleSheet.create({
   dCell: { flex: 1, borderLeftWidth: 1, borderLeftColor: C.line, paddingLeft: 13 },
   dK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   dV: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, marginTop: 3 },
+  detTimes: { fontFamily: FONT.medium, fontSize: 11.5, color: C.sub, marginTop: 13 },
   detEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.sub },
 });
