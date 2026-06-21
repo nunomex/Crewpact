@@ -76,11 +76,11 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
     const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
     const iso = isoDay(d);
     const reg = duties[iso];
-    // Manual (duties) tem prioridade; senão, o que vier do calendário do telemóvel.
+    // Calendário (eCrew) TEM PRIORIDADE (decisão "em ambos"); senão, o duty manual.
     const manual = reg && !reg.deleted && reg.report_time ? reg : null;
-    const flight = manual || cal[iso] || demoDuties[iso] || null;
+    const flight = cal[iso] || manual || demoDuties[iso] || null;
     const wd = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
-    return { day: d.getDate(), iso, wd: wd.charAt(0).toUpperCase() + wd.slice(1), flight, fromCal: !manual && !!cal[iso], isToday: iso === todayISO };
+    return { day: d.getDate(), iso, wd: wd.charAt(0).toUpperCase() + wd.slice(1), flight, fromCal: !!cal[iso], isToday: iso === todayISO };
   }), [duties, cal, demoDuties, monthKey, totalDays, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [sel, setSel] = useState(todayIndex);

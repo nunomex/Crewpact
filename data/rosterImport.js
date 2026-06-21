@@ -82,8 +82,9 @@ export const rangeFromOption = (option, from = new Date()) => {
 
 // Candidatos de importação a partir das atividades (voos) + standbys do calendário.
 // Cada candidato: { duty (com kind), kind, status: 'ok'|'warn'|'exists', exists,
-// prospect, selected }. Conflito (dia já tem duty) → status 'exists' + selected=false
-// (não substitui por omissão). Ordenado por data. Módulo PURO.
+// prospect, selected }. O calendário (eCrew) TEM PRIORIDADE (decisão "em ambos"):
+// todos vêm selected=true; um dia que já tenha duty → status 'exists' e SUBSTITUI.
+// Ordenado por data. Módulo PURO.
 export const buildImportCandidates = ({ activities = [], standbys = [], duties = {}, dayLog = {} } = {}) => {
   const make = (duty, kind) => {
     if (!duty) return null;
@@ -92,7 +93,7 @@ export const buildImportCandidates = ({ activities = [], standbys = [], duties =
     const exists = !!(ex && !ex.deleted);
     const prospect = prospectiveDuty(duty, dayLog);
     const status = exists ? 'exists' : (prospect && prospect.ok === false ? 'warn' : 'ok');
-    return { duty, kind, status, exists, prospect, selected: !exists };
+    return { duty, kind, status, exists, prospect, selected: true };
   };
   const out = [];
   for (const act of activities) { const c = make(dutyFromActivity(act), 'flight'); if (c) out.push(c); }

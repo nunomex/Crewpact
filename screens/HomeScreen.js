@@ -121,7 +121,7 @@ function mergeNextFlight(calFlight, duties, now) {
   if (!calFlight) return best;
   if (best.dateISO < calFlight.dateISO) return best;
   if (best.dateISO > calFlight.dateISO) return calFlight;
-  return best; // mesmo dia → manual ganha
+  return calFlight; // mesmo dia → calendário ganha (eCrew tem prioridade)
 }
 
 // Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com

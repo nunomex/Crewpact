@@ -63,7 +63,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
   const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
-  const badge = (st) => st === 'exists' ? { bg: C.soft, fg: C.sub, txt: l('já existe', 'exists') }
+  const badge = (st) => st === 'exists' ? { bg: C.soft, fg: C.sub, txt: l('substitui', 'replaces') }
     : st === 'warn' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('aviso', 'warning') }
     : { bg: C.greenSoft || C.soft, fg: C.green || C.text, txt: 'OK' };
 
@@ -124,7 +124,7 @@ export default function RosterImportSheet({ visible, onClose }) {
             <View style={s.center}><Ionicons name="checkmark-done-outline" size={26} color={C.sub} /><Text style={s.dim}>{l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text></View>
           ) : (
             <>
-              <Text style={s.hint}>{l('Desmarcados os dias que já têm duty. Marca para substituir.', 'Days that already have a duty are unchecked. Check to replace.')}</Text>
+              <Text style={s.hint}>{l('O eCrew tem prioridade — os dias com duty já existente são substituídos. Desmarca para manter o manual.', 'eCrew takes priority — days with an existing duty will be replaced. Uncheck to keep the manual one.')}</Text>
               {cands.map((c, i) => {
                 const b = badge(c.status);
                 return (
