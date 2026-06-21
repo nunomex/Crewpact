@@ -23,8 +23,8 @@ export const PALETTE_LIGHT = {
   subLight: "#97978F", // tom decorativo do mockup: rótulos discretos/eyebrows (não texto corrido)
   // Tons sobre fundo escuro (ink).
   onDark: "#FFFFFF",
-  onDarkSub: "rgba(255,255,255,0.6)", // texto secundário sobre fundo preto
-  onDarkFaint: "rgba(255,255,255,0.5)", // rótulos discretos sobre preto
+  onDarkSub: "rgba(255,255,255,0.7)", // texto secundário sobre fundo preto
+  onDarkFaint: "rgba(255,255,255,0.6)", // rótulos discretos sobre preto
   hairlineOnDark: "rgba(255,255,255,0.12)", // separadores/realces sobre preto
   scrim: "rgba(0,0,0,0.4)", // fundo de overlay de modais
   green: "#1F9E6E",
@@ -53,8 +53,8 @@ export const PALETTE_DARK = {
   sub: "#9A9A94",
   subLight: "#6F6F6A",
   onDark: "#FFFFFF",
-  onDarkSub: "rgba(255,255,255,0.6)",
-  onDarkFaint: "rgba(255,255,255,0.5)",
+  onDarkSub: "rgba(255,255,255,0.7)",
+  onDarkFaint: "rgba(255,255,255,0.6)",
   hairlineOnDark: "rgba(255,255,255,0.12)",
   scrim: "rgba(0,0,0,0.6)",
   green: "#2BB587",

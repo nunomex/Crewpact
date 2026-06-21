@@ -151,7 +151,7 @@ function FloatingTabBar({ state, navigation }) {
                 accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
-                <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
+                <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.6)'} />
                 {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
               </TouchableOpacity>
             );

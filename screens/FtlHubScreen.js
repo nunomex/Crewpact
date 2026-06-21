@@ -168,7 +168,7 @@ const makeStyles = (C) => StyleSheet.create({
   actbig: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: C.ink, borderRadius: 24, padding: 19, marginBottom: 20, overflow: 'hidden' },
   actIc: { width: 50, height: 50, borderRadius: 16, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   actTitle: { fontFamily: FONT.semibold, fontSize: 19, color: '#fff' },
-  actSub: { fontFamily: FONT.medium, fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  actSub: { fontFamily: FONT.medium, fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   sec: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: C.sub, marginTop: 2, marginBottom: 11, marginLeft: 2 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 18 },
   pill: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 11 },

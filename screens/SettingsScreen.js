@@ -210,7 +210,7 @@ const makeStyles = (C) => StyleSheet.create({
   avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 24, fontFamily: FONT.semibold },
   userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
-  userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
   gt: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
   gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },

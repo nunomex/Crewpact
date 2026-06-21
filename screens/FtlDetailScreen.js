@@ -19,7 +19,7 @@ function TableTitle({ children }) {
   return (
     <View style={tb.titleBar}>
       <Text style={tb.blockTitle}>{children}</Text>
-      <Ionicons name="swap-horizontal" size={14} color="rgba(255,255,255,0.55)" />
+      <Ionicons name="swap-horizontal" size={14} color="rgba(255,255,255,0.7)" />
     </View>
   );
 }
