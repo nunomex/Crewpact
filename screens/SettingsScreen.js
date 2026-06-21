@@ -17,6 +17,7 @@ import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
+import { monthlyAe } from '../data/perdiem';
 
 // Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
 // segmento, um valor + chevron, ou nada. Toca quando há onPress.
@@ -44,12 +45,20 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, serviceStart, serviceYears, base, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, crewCategory, crewContract, serviceStart, serviceYears, base, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
+
+  // Estimativa AE do mês (cartão da secção Companhia) — total interligado do motor.
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthName = (() => { const m = now.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
+  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym }) : null;
+  const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
+  const fmtEur0 = (n) => { const g = Math.round(Number(n || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}` : `${g} €`; };
 
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
@@ -175,6 +184,19 @@ export default function SettingsScreen({ navigation }) {
                   value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last s={s} C={C} />
               ) : null}
             </View>
+            {aeMonth ? (
+              <View style={s.aeCard}>
+                <View style={s.aeCardHead}>
+                  <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
+                  <Text style={s.aeCardV}>{fmtEur(aeMonth.total)}</Text>
+                </View>
+                <Text style={s.aeCardSub} numberOfLines={1}>
+                  {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
+                  {aeMonth.extras ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeMonth.extras)}` : ''}
+                  {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
+                </Text>
+              </View>
+            ) : null}
           </Animated.View>
         ) : null}
 
@@ -291,6 +313,11 @@ const makeStyles = (C) => StyleSheet.create({
   // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
   gt: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
   gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },
+  aeCard: { backgroundColor: C.ink, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
+  aeCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  aeCardK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', flex: 1, marginRight: 10 },
+  aeCardV: { fontFamily: FONT.semibold, fontSize: 24, color: '#fff', fontVariant: ['tabular-nums'] },
+  aeCardSub: { fontFamily: FONT.medium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 8 },
   gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
   grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
   gi: { width: 36, height: 36, borderRadius: 11, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

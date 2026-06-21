@@ -62,3 +62,43 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null } = 
   Object.keys(byBand).forEach((k) => { byBand[k] = +byBand[k].toFixed(2); });
   return { total: +total.toFixed(2), byBand, withRoute, missing, count };
 };
+
+// Estimativa mensal AE (€) a partir das duties (kind + rota). É a PONTE entre o
+// modelo da app (1 duty/dia: route + kind) e o `computeAeMonth` do motor. Mapeamento
+// dos kind (em setores nominais, que o motor multiplica pelo NS da categoria):
+//   • flight          → per-diem da rota (distâncias → ae.perDiem)
+//   • office          → OFC4 = 1,5 NS                          (Anexo I.14)
+//   • standby_airport → ADTY ≥4h não-chamado = 2 NS            (Anexo I.5)
+//   • standby_home / positioning / training → 0  (não há prestação de AE no Anexo I
+//     para o piloto: posicionamento conta para FTL mas não paga AE; em formação o
+//     pago é o instrutor, não o formando; standby em casa não tem abono no Anexo I)
+// Paragens nocturnas: contadas das duties marcadas `nightStop` (toggle no formulário),
+// valor fixo Art. 39 = 2 NS/paragem. Módulo PURO. duties = mapa { date: { route, kind,
+// nightStop?, deleted? } }. Devolve o objeto do motor (base, perDiem, nightStops €,
+// extras, total) + meta { withRoute, missing, count, officeDays, adtyDays, nightStopDays }
+// — ou null se faltar ae/categoria/computeAeMonth.
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1 } = {}) => {
+  if (!ae || !category || !ae.computeAeMonth) return null;
+  const office4 = ae.OFFICE4_SECTORS || 0;
+  const ADTY_SECTORS = 2;             // Anexo I.5 — serviço em aeroporto ≥4h não-chamado = 2 setores nominais
+  const flights = [];                 // arrays de distâncias (NM) por voo → computeAeMonth
+  let extraSectors = 0, withRoute = 0, missing = 0, count = 0, officeDays = 0, adtyDays = 0, nightStops = 0;
+  for (const date in duties) {
+    const d = duties[date];
+    if (!d || d.deleted) continue;
+    if (ym && !String(date).startsWith(ym)) continue;
+    count++;
+    if (d.nightStop) nightStops++;     // paragem nocturna marcada (Art. 39 = 2×NS) — independente do kind
+    const kind = d.kind || 'flight';
+    if (kind === 'office')          { extraSectors += office4;      officeDays++; continue; }
+    if (kind === 'standby_airport') { extraSectors += ADTY_SECTORS; adtyDays++;   continue; }
+    // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
+    if (kind !== 'flight') continue;
+    const dists = routeDistancesNM(d.route);
+    if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
+    flights.push(dists);
+    withRoute++;
+  }
+  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index });
+  return { ...month, withRoute, missing, count, officeDays, adtyDays, nightStopDays: nightStops };
+};

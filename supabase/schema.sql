@@ -211,3 +211,17 @@ alter table public.airlines enable row level security;
 drop policy if exists "airlines_read_anon" on public.airlines;
 create policy "airlines_read_anon" on public.airlines
   for select to anon using (true);
+
+
+-- ── 11. duties.night_stop — paragem nocturna (abono AE, Art. 39 = 2×NS) ──────
+-- Marcação por duty (toggle no formulário). Alimenta o total mensal do AE
+-- (data/perdiem.js → monthlyAe conta as paragens e o motor aplica 2× setor
+-- nominal). Default false → as duties existentes ficam sem paragem. Idempotente.
+-- (O upsertDuty da app já degrada com elegância se esta coluna ainda não existir.)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='duties' and column_name='night_stop') then
+    alter table public.duties add column night_stop boolean not null default false;
+  end if;
+end $$;

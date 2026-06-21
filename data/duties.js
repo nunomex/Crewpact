@@ -22,7 +22,7 @@ export const fetchDuties = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('duties')
-      .select('duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, updated_at:created_at')
+      .select('duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, updated_at:created_at')
       .eq('user_id', userId)
       .order('duty_date', { ascending: false });
     if (error) return [];
@@ -47,12 +47,13 @@ export const upsertDuty = async (userId, d = {}) => {
       flight_minutes: d.flight_minutes || 0,
       notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       kind: d.kind || 'flight',            // tipo de atividade (voo/standby/terra…)
+      night_stop: !!d.nightStop,           // paragem nocturna (abono AE, Art. 39)
     };
     let { error } = await supabase.from('duties').upsert(payload, { onConflict: 'user_id,duty_date' });
-    if (error && /\bkind\b/.test(error.message || '')) {
-      // Coluna `kind` ainda não existe (migração §9 por correr) → grava sem ela
-      // (degradação elegante: o kind fica só local até a coluna existir).
-      const { kind, ...legacy } = payload;
+    if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
+      // Colunas novas (`kind`/`night_stop`) ainda não existem (migração §9/§11 por
+      // correr) → grava sem elas (degradação elegante: ficam só locais até existirem).
+      const { kind, night_stop, ...legacy } = payload;
       ({ error } = await supabase.from('duties').upsert(legacy, { onConflict: 'user_id,duty_date' }));
     }
     return error ? (error.message || 'erro') : null;   // null = sucesso

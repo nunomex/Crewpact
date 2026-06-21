@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
-import { monthlyPerDiem, monthlyPerDiemByBand } from '../data/perdiem';
+import { monthlyPerDiem, monthlyPerDiemByBand, monthlyAe } from '../data/perdiem';
 import { AppContext, useTheme } from '../data/appContext';
 
 // Cabeçalhos de grupo do catálogo (CALCS.group em PT) → bilingue.
@@ -49,7 +49,11 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
   const cash = ae.cashHandling ? ae.cashHandling(category) : 0;   // só cabine tem abono p/ falhas
   const pd = monthlyPerDiem(duties, category, ae, { ym });
   const pdBand = monthlyPerDiemByBand(duties, category, ae, { ym });
-  const total = base + cash + (pd ? pd.total : 0);
+  // Total interligado do motor (base + per-diem + extras dos eventos). Fallback para
+  // o cálculo antigo se a AE não expuser computeAeMonth (ex.: cabine). `cash` (abono
+  // p/ falhas, só cabine) soma por cima.
+  const month = monthlyAe(duties, category, contract, ae, { ym });
+  const total = (month ? month.total : base + (pd ? pd.total : 0)) + cash;
 
   const nominal = ae.NOMINAL_SECTOR ? ae.NOMINAL_SECTOR[category] : null;
   const catName = ae.categoryLabel ? ae.categoryLabel(category, lang) : category;
@@ -117,6 +121,14 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
       </View>
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
+      ) : null}
+      {month && (month.officeDays > 0 || month.adtyDays > 0) ? (
+        <Text style={s.note}>
+          {l('No total:', 'In total:')} {[
+            month.officeDays > 0 ? `${month.officeDays} ${l('escritório', 'office')}` : null,
+            month.adtyDays > 0 ? `${month.adtyDays} ${l('standby aeroporto', 'airport standby')}` : null,
+          ].filter(Boolean).join(' · ')}
+        </Text>
       ) : null}
 
       {/* ── Catálogo de cálculos avulsos (Anexo I) ── */}

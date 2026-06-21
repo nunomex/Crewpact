@@ -280,6 +280,7 @@ export default function App() {
         flight_minutes: fields.flight_minutes || 0,
         route: fields.route || null,        // rota "LIS-OPO-LIS" (per diem AE)
         kind: fields.kind || 'flight',      // tipo de atividade (voo/standby/terra…)
+        nightStop: !!fields.nightStop,      // paragem nocturna (abono AE, Art. 39)
         duty_date: date,
         updated_at: new Date().toISOString(),
         dirty: true,
@@ -320,7 +321,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -533,7 +534,7 @@ export default function App() {
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight',
+            kind: row.kind || 'flight', nightStop: !!row.night_stop,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }

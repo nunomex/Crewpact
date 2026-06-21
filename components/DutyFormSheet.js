@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Stepper } from './Stepper';
@@ -18,7 +18,7 @@ const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight' };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false };
 
 // Campo "HH:MM" (nível de módulo — definir dentro do componente fá-lo perder o foco a cada tecla).
 function ClockField({ label, value, onChange, C, s }) {
@@ -46,7 +46,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!visible) return;
     const iso = date || isoDay();
     const d = duties[iso];
-    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight' });
+    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop });
     else setForm({ ...EMPTY, date: iso });
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -94,7 +94,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     saveDuty(form.date, {
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
       sectors: form.sectors, flight_minutes: hhmmToMin(form.flight), route: form.route.trim() || null,
-      kind: form.kind || 'flight',
+      kind: form.kind || 'flight', nightStop: !!form.nightStop,
     });
     success();
     onClose && onClose();
@@ -128,6 +128,16 @@ export default function DutyFormSheet({ visible, onClose, date }) {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        {/* Paragem nocturna — abono AE (Art. 39 = 2×NS). Conta para o total mensal. */}
+        <View style={s.nsRow}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={s.fieldLbl}>{lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text>
+            <Text style={s.nsHint}>{lang === 'en' ? 'Overnight away from base · AE allowance (Art. 39)' : 'Pernoita fora da base · abono AE (Art. 39)'}</Text>
+          </View>
+          <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm(f => ({ ...f, nightStop: v })); }}
+            trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
         </View>
 
         {/* Rota — topo (identidade do voo). Destrava o per-diem AE (Art. 53). */}
@@ -189,6 +199,8 @@ const makeStyles = (C) => StyleSheet.create({
   kindChipOn: { borderColor: C.ink, backgroundColor: C.ink },
   kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
   kindChipTxtOn: { color: '#fff' },
+  nsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  nsHint: { fontSize: 11, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
   dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
