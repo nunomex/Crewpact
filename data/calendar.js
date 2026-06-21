@@ -7,6 +7,7 @@
 //   easyJet: "EZY1234 LIS-FNC 06:40-08:15" / "U2 LIS/FNC 0640 0815"
 //   TAP:     "TP1923 LIS-OPO 07:10-08:05"  / "TAP 234 LIS/MAD"
 import * as Calendar from 'expo-calendar';
+import { codesFor } from './rosterCodes';
 
 export async function ensureCalendarPermission() {
   const { status } = await Calendar.requestCalendarPermissionsAsync();
@@ -21,7 +22,6 @@ export async function requestCalendarAccess() {
 
 // ── Parsers ──────────────────────────────────────────────────────────────────
 const RE_ROUTE  = /\b([A-Z]{3})\s*[-/→]\s*([A-Z]{3})\b/;                 // LIS-FNC, LIS/FNC, LIS→FNC
-const RE_FLIGHT = /\b(?:EZY|EJU|U2|TP|TAP)\s?\d{2,4}[A-Z]?\b/i;          // nº de voo easyJet (EZY/EJU/U2) + TAP (TP/TAP)
 const RE_TIMES  = /\b(\d{1,2})[:h.]?(\d{2})\s*[-–—/ ]\s*(\d{1,2})[:h.]?(\d{2})\b/; // 0640-0815 / 06:40 08:15
 const RE_AC     = /\b(A3\d{2}|A2\d{2}|A\d{2}N|B7\d{2})\b/;               // A320, A321, A20N/A21N (neo), A330, B738
 const RE_REG    = /\b(CS-[A-Z]{3})\b/;                                   // matrícula CS-EZW (easyJet) / CS-TVA (TAP)
@@ -32,20 +32,26 @@ const hhmmZ = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; // hor
 // Data local 'YYYY-MM-DD' (componentes locais, não UTC) — chave por dia.
 const isoLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const fmtDate = (d) => d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
-// Padrões extra: standby, bloco em Zulu e base (das notas da AIMS eCrew).
-const RE_STANDBY = /\b(L?SBY|STBY|STANDBY|RESERVE|RESERVA)\b/i;      // LSBY / SBY / STBY / reserva
+// Padrões extra: bloco em Zulu e base (das notas da AIMS eCrew). Os códigos de
+// TIPO de duty (voo/standby/posicionamento…) são por companhia → ver rosterCodes.js.
 const RE_BLOCKZ  = /\((\d{2})(\d{2})Z\s*[-–—]\s*(\d{2})(\d{2})Z\)/;  // (1350Z-1615Z)
 const RE_BASE    = /Local Base\s*\(([A-Z]{3})\)/i;                  // "All times in Local Base (LIS)"
 
-// Tipo do evento: 'flight' (perna) | 'standby' | 'other'. O standby tem
-// prioridade — um "LSBY LIS-LIS" tem rota igual e não pode contar como voo.
-function classify(text) {
-  if (RE_STANDBY.test(text)) return 'standby';
-  if (RE_FLIGHT.test(text)) return 'flight';
+// KIND universal do evento a partir dos CÓDIGOS da companhia (rosterCodes). Os
+// tipos sem-voo têm prioridade sobre a rota — "DH LIS-LGW" é posicionamento (não
+// voo); "SBY LIS-LIS" é standby.
+function classify(text, codes) {
+  if (codes.standbyHome && codes.standbyHome.test(text)) return 'standby_home';
+  if (codes.standbyAirport && codes.standbyAirport.test(text)) return 'standby_airport';
+  if (codes.positioning && codes.positioning.test(text)) return 'positioning';
+  if (codes.training && codes.training.test(text)) return 'training';
+  if (codes.office && codes.office.test(text)) return 'office';
+  if (codes.flightNo && codes.flightNo.test(text)) return 'flight';
   const r = text.match(RE_ROUTE);
   if (r && r[1] !== r[2]) return 'flight'; // rota com aeroportos diferentes
   return 'other';
 }
+const NONFLIGHT_KINDS = ['standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 
 // Eventos do calendário no intervalo [start, end].
 async function fetchEvents(start, end) {
@@ -59,9 +65,9 @@ async function fetchEvents(start, end) {
 }
 
 // Mapeia um evento de calendário para uma perna de voo (ou null se não for voo).
-function mapFlight(ev) {
+function mapFlight(ev, codes) {
   const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
-  if (classify(text) !== 'flight') return null; // exclui standby/outros (corrige LSBY tratado como voo)
+  if (classify(text, codes) !== 'flight') return null; // só pernas de voo
 
   const start = new Date(ev.startDate);
   const finish = new Date(ev.endDate);
@@ -97,14 +103,16 @@ function mapFlight(ev) {
   };
 }
 
-// Mapeia um evento de standby/reserva (ou null se não for standby).
-function mapStandby(ev) {
+// Mapeia um evento SEM-VOO (standby/posicionamento/terra/formação) → item com o
+// KIND universal. null se for voo/folga/outro.
+function mapNonFlight(ev, codes) {
   const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
-  if (classify(text) !== 'standby') return null;
+  const kind = classify(text, codes);
+  if (!NONFLIGHT_KINDS.includes(kind)) return null;
   const start = new Date(ev.startDate);
   const finish = new Date(ev.endDate);
   return {
-    kind: 'standby',
+    kind,
     dateISO: isoLocal(start),
     date: fmtDate(start),
     start: hhmm(start),
@@ -116,12 +124,13 @@ function mapStandby(ev) {
 
 // Próximo voo + estado da permissão: { ok, flight }. `ok:false` = sem acesso ao
 // calendário (para o cartão distinguir "sem permissão" de "sem voo").
-export async function getUpcomingFlight() {
+export async function getUpcomingFlight(company) {
   const now = new Date();
   const { ok, events } = await fetchEvents(now, new Date(now.getTime() + 21 * 24 * 3600 * 1000));
   if (!ok) return { ok: false, flight: null };
+  const codes = codesFor(company);
   for (const ev of events) {
-    const f = mapFlight(ev);
+    const f = mapFlight(ev, codes);
     if (f) return { ok: true, flight: f };
   }
   return { ok: true, flight: null };
@@ -129,12 +138,13 @@ export async function getUpcomingFlight() {
 
 // Devolve todos os voos no intervalo [start, end] (para a grelha mensal e a lista
 // do dia). { ok:false } quando não há permissão de calendário.
-export async function getFlightsInRange(start, end) {
+export async function getFlightsInRange(start, end, company) {
   const { ok, events } = await fetchEvents(start, end);
   if (!ok) return { ok: false, flights: [] };
+  const codes = codesFor(company);
   const flights = [];
   for (const ev of events) {
-    const f = mapFlight(ev);
+    const f = mapFlight(ev, codes);
     if (f) flights.push(f);
   }
   return { ok: true, flights };
@@ -189,37 +199,39 @@ export function buildDuties(legs) {
 }
 
 // Atividades no intervalo [start, end] (pernas de voo agrupadas por setores).
-export async function getDutiesInRange(start, end) {
+export async function getDutiesInRange(start, end, company) {
   const { ok, events } = await fetchEvents(start, end);
   if (!ok) return { ok: false, duties: [] };
-  const legs = events.map(mapFlight).filter(Boolean);
+  const codes = codesFor(company);
+  const legs = events.map((ev) => mapFlight(ev, codes)).filter(Boolean);
   return { ok: true, duties: buildDuties(legs) };
 }
 
-// Standby/reserva no intervalo [start, end].
-export async function getStandbyInRange(start, end) {
+// Duties SEM-VOO (standby/posicionamento/terra/formação) no intervalo [start, end].
+export async function getNonFlightInRange(start, end, company) {
   const { ok, events } = await fetchEvents(start, end);
-  if (!ok) return { ok: false, standby: [] };
-  const standby = events.map(mapStandby).filter(Boolean);
-  return { ok: true, standby };
+  if (!ok) return { ok: false, items: [] };
+  const codes = codesFor(company);
+  return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean) };
 }
 
 // Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica
 // (flight/standby/other). Para o utilizador ver o que o calendário tem e perceber
 // porque um evento é (ou não é) reconhecido. { ok, total, items:[{ title, dateISO,
 // kind, route, flightNo, times }] }.
-export async function diagnoseEvents(start, end) {
+export async function diagnoseEvents(start, end, company) {
   const { ok, events } = await fetchEvents(start, end);
   if (!ok) return { ok: false, total: 0, items: [] };
+  const codes = codesFor(company);
   const items = events.map((ev) => {
     const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
     const r = text.match(RE_ROUTE);
     return {
       title: (ev.title || '').trim() || '(sem título)',
       dateISO: isoLocal(new Date(ev.startDate)),
-      kind: classify(text),
+      kind: classify(text, codes),
       route: (r && r[1] !== r[2]) ? `${r[1]}-${r[2]}` : null,
-      flightNo: RE_FLIGHT.test(text),
+      flightNo: codes.flightNo.test(text),
       times: RE_TIMES.test(text),
     };
   });

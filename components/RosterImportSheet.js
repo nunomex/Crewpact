@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
-import { getDutiesInRange, getStandbyInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
+import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
@@ -30,7 +30,7 @@ const demoCands = () => {
 // (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
 // parcial. Página inteira (Modal slide-up), no estilo da página de duty.
 export default function RosterImportSheet({ visible, onClose }) {
-  const { lang, duties, dayLog, saveDuty } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -46,17 +46,18 @@ export default function RosterImportSheet({ visible, onClose }) {
   const load = async (opt) => {
     setLoading(true); setDenied(false);
     const { start, end } = rangeFromOption(opt);
-    const [fl, sb] = await Promise.all([getDutiesInRange(start, end), getStandbyInRange(start, end)]);
-    let next = (fl.ok || sb.ok) ? buildImportCandidates({ activities: fl.duties || [], standbys: sb.standby || [], duties, dayLog }) : [];
+    const co = company?.slug;
+    const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co), getNonFlightInRange(start, end, co)]);
+    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
-    else if (!fl.ok && !sb.ok) setDenied(true);
+    else if (!fl.ok && !nf.ok) setDenied(true);
     setCands(next);
     setLoading(false);
   };
   useEffect(() => { if (visible) load(range); }, [visible, range]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
-  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end)); };
+  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
   const toggle = (i) => { select(); setCands((cs) => cs.map((c, j) => j === i ? { ...c, selected: !c.selected } : c)); };
 
   const selected = cands.filter((c) => c.selected);
@@ -160,9 +161,9 @@ export default function RosterImportSheet({ visible, onClose }) {
           </TouchableOpacity>
           {diag ? (
             <View style={s.diagBox}>
-              <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind === 'flight').length} ✈ · {diag.items.filter((i) => i.kind === 'standby').length} ⏱ · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
+              <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind !== 'other').length} {l('reconhecidos', 'recognised')} · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
               {diag.items.length ? diag.items.map((it, i) => (
-                <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'flight' ? '✈' : it.kind === 'standby' ? '⏱' : '—'}  {it.title}{it.route ? ` · ${it.route}` : ''}</Text>
+                <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'other' ? '—' : '•'}  {it.title} → {it.kind === 'other' ? '?' : it.kind}{it.route ? ` · ${it.route}` : ''}</Text>
               )) : <Text style={s.diagItem}>{l('Sem eventos no intervalo.', 'No events in range.')}</Text>}
             </View>
           ) : null}

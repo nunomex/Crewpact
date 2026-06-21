@@ -55,15 +55,15 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null) => {
 };
 
 // ── Importação de escala (Fase 2) ─────────────────────────────────────────────
-// Standby do calendário { dateISO, start, end } → linha de duty. kind por omissão
-// 'standby_airport' (o utilizador ajusta no preview). Sem rota/setores/voo.
-export const dutyFromStandby = (sb) => {
-  if (!sb || !sb.dateISO) return null;
+// Duty SEM-VOO do calendário { dateISO, start, end, kind } → linha de duty. O kind
+// já vem do item (rosterCodes, por companhia). Sem rota/setores/voo.
+export const dutyFromNonFlight = (it) => {
+  if (!it || !it.dateISO) return null;
   return {
-    duty_date: sb.dateISO,
-    report_time: sb.start || null,
+    duty_date: it.dateISO,
+    report_time: it.start || null,
     block_off: null,
-    block_on: sb.end || null,
+    block_on: it.end || null,
     sectors: 0,
     flight_minutes: 0,
     route: null,
@@ -80,12 +80,12 @@ export const rangeFromOption = (option, from = new Date()) => {
   return { start, end };
 };
 
-// Candidatos de importação a partir das atividades (voos) + standbys do calendário.
+// Candidatos de importação: atividades (voos) + duties SEM-VOO do calendário.
 // Cada candidato: { duty (com kind), kind, status: 'ok'|'warn'|'exists', exists,
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
 // e selected=false (MANTÉM o manual). O utilizador marca para o calendário substituir
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
-export const buildImportCandidates = ({ activities = [], standbys = [], duties = {}, dayLog = {} } = {}) => {
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {} } = {}) => {
   const make = (duty, kind) => {
     if (!duty) return null;
     duty.kind = kind;
@@ -97,7 +97,7 @@ export const buildImportCandidates = ({ activities = [], standbys = [], duties =
   };
   const out = [];
   for (const act of activities) { const c = make(dutyFromActivity(act), 'flight'); if (c) out.push(c); }
-  for (const sb of standbys) { const c = make(dutyFromStandby(sb), 'standby_airport'); if (c) out.push(c); }
+  for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
   out.sort((a, b) => (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
   return out;
 };
