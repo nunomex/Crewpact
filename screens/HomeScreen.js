@@ -18,7 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
-import { TodayDutyCard, NextDutyCard, UpcomingDutiesCard } from '../components/HomeDutyCards';
+import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
@@ -96,7 +96,7 @@ function dutyToFlight(iso, d) {
   const last = ap[ap.length - 1];
   const arr = (ap.length > 1 ? (last !== dep ? last : ap[1]) : dep) || '—';  // ida-volta → mostra a estação fora
   return {
-    kind: 'flight', manual: true, dateISO: iso,
+    kind: d.kind || 'flight', nightStop: !!d.nightStop, manual: true, dateISO: iso,
     report: d.report_time,
     depTime: d.block_off || d.report_time,
     arrTime: d.block_on || d.report_time,
@@ -309,7 +309,8 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.ndXEyebrow}>{t('home.nextDuty', lang)}</Text>
           {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
         </View>
-        <Text style={s.ndRoute} numberOfLines={1}>{flight.depAirport} · {flight.arrAirport}</Text>
+        <Text style={s.ndRoute} numberOfLines={1}>{flight.kind && flight.kind !== 'flight' ? t('duties.kind.' + flight.kind, lang) : `${flight.depAirport} · ${flight.arrAirport}`}</Text>
+        {flight.nightStop ? <Text style={{ fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 2 }}>🌙 {lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text> : null}
         <Text style={s.ndMeta} numberOfLines={1}>
           {ndSectors ? `${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
           {aeNextPd != null ? <Text>{ndSectors ? ' · ' : ''}per diem <Text style={s.ndMetaEm}>{fmtEur0(aeNextPd)}</Text></Text> : null}
@@ -461,19 +462,15 @@ export default function HomeScreen({ navigation }) {
         {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
 
-        {/* CARDS DA DUTY (avaliação — 3 opções; elimina as que não quiseres depois) */}
-        <Animated.View style={seg(3)}>
-          <TodayDutyCard duties={duties} lang={lang} />
-          <NextDutyCard duties={duties} lang={lang} />
-          <UpcomingDutiesCard duties={duties} lang={lang} />
-        </Animated.View>
-
         {/* Grelha de baixo — FTL·Voo + (AE compacto | FTL·Serviço), como o mockup */}
         <Animated.View style={[s.grid2, seg(3)]}>
           <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
           {ae && crewCategory ? aeMiniEl : <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />}
         </Animated.View>
         {(!(ae && crewCategory) && !hasLimitData) ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
+
+        {/* Próximas atividades (qualquer tipo de duty) — card no fundo */}
+        <Animated.View style={seg(4)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View>
       </ScrollView>
 
       {/* Notificações */}
