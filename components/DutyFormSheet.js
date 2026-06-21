@@ -42,14 +42,20 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
 
-  // Ao abrir: inicializa do dia (edição) ou vazio (novo).
+  // Carrega o formulário a partir do dia: se JÁ existe duty nesse dia → EDITA (mostra
+  // os dados existentes); senão → vazio (NOVA). Garante 1 duty/dia — navegar para um
+  // dia com duty mostra-a (nunca se introduz dados por cima sem a ver).
+  const loadFor = (iso) => {
+    const d = duties[iso];
+    return (d && !d.deleted)
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop }
+      : { ...EMPTY, date: iso };
+  };
   useEffect(() => {
     if (!visible) return;
-    const iso = date || isoDay();
-    const d = duties[iso];
-    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop });
-    else setForm({ ...EMPTY, date: iso });
+    setForm(loadFor(date || isoDay()));
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
+  const goDate = (delta) => { select(); setForm(loadFor(addDays(form.date, delta))); };
 
   // O formulário ADAPTA-SE ao tipo: campos de VOO (rota/setores/tempo) só para
   // `flight`; os outros kinds veem só o período de serviço. `kindInfo` dá feedback
@@ -125,11 +131,11 @@ export default function DutyFormSheet({ visible, onClose, date }) {
       <View style={s.form}>
         <Text style={s.fieldLbl}>{t('duties.date', lang)}</Text>
         <View style={s.dateRow}>
-          <TouchableOpacity onPress={() => { select(); setForm(f => ({ ...f, date: addDays(f.date, -1) })); }} hitSlop={8} style={s.dateNav}>
+          <TouchableOpacity onPress={() => goDate(-1)} hitSlop={8} style={s.dateNav}>
             <Ionicons name="chevron-back" size={18} color={C.text} />
           </TouchableOpacity>
           <Text style={s.dateTxt}>{fmtDate(form.date)}{form.date === isoDay() ? ` · ${t('cal.today', lang)}` : ''}</Text>
-          <TouchableOpacity onPress={() => { select(); setForm(f => ({ ...f, date: addDays(f.date, 1) })); }} hitSlop={8} style={s.dateNav}>
+          <TouchableOpacity onPress={() => goDate(1)} hitSlop={8} style={s.dateNav}>
             <Ionicons name="chevron-forward" size={18} color={C.text} />
           </TouchableOpacity>
         </View>
