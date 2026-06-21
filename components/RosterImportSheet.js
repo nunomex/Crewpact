@@ -12,6 +12,20 @@ import { select, success } from '../data/haptics';
 const KIND_ICON = { flight: 'airplane', standby_airport: 'time-outline', standby_home: 'home-outline', positioning: 'swap-horizontal', office: 'business-outline', training: 'school-outline' };
 const RANGES = [{ id: '14', d: 14 }, { id: '28', d: 28 }, { id: 'month', d: 30 }];
 
+// ⚠️ TEMPORÁRIO — candidatos de EXEMPLO para ver o preview sem eventos no
+// calendário. Pôr DEMO_EXAMPLES=false (ou remover) quando já houver escala real.
+const DEMO_EXAMPLES = true;
+const demoCands = () => {
+  const iso = (off) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  return [
+    { duty: { duty_date: iso(1), report_time: '05:40', block_off: '06:25', block_on: '11:10', sectors: 2, flight_minutes: 255, route: 'LIS-OPO-LIS' }, kind: 'flight', status: 'ok', exists: false, selected: true },
+    { duty: { duty_date: iso(2), report_time: '13:00', block_off: '13:45', block_on: '15:30', sectors: 1, flight_minutes: 105, route: 'LIS-FNC' }, kind: 'flight', status: 'warn', exists: false, selected: true },
+    { duty: { duty_date: iso(3), report_time: '06:00', block_off: null, block_on: '14:00', sectors: 0, flight_minutes: 0, route: null }, kind: 'standby_airport', status: 'ok', exists: false, selected: true },
+    { duty: { duty_date: iso(4), report_time: '09:00', block_off: null, block_on: null, sectors: 0, flight_minutes: 0, route: null }, kind: 'office', status: 'ok', exists: false, selected: true },
+    { duty: { duty_date: iso(5), report_time: '07:15', block_off: '08:00', block_on: '12:40', sectors: 2, flight_minutes: 250, route: 'LIS-AGP-LIS' }, kind: 'flight', status: 'exists', exists: true, selected: false },
+  ];
+};
+
 // Importação de escala do calendário do telemóvel: seletor de intervalo → preview
 // (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
 // parcial. Página inteira (Modal slide-up), no estilo da página de duty.
@@ -32,8 +46,10 @@ export default function RosterImportSheet({ visible, onClose }) {
     setLoading(true); setDenied(false);
     const { start, end } = rangeFromOption(opt);
     const [fl, sb] = await Promise.all([getDutiesInRange(start, end), getStandbyInRange(start, end)]);
-    if (!fl.ok && !sb.ok) { setDenied(true); setCands([]); setLoading(false); return; }
-    setCands(buildImportCandidates({ activities: fl.duties || [], standbys: sb.standby || [], duties, dayLog }));
+    let next = (fl.ok || sb.ok) ? buildImportCandidates({ activities: fl.duties || [], standbys: sb.standby || [], duties, dayLog }) : [];
+    if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
+    else if (!fl.ok && !sb.ok) setDenied(true);
+    setCands(next);
     setLoading(false);
   };
   useEffect(() => { if (visible) load(range); }, [visible, range]); // eslint-disable-line react-hooks/exhaustive-deps
