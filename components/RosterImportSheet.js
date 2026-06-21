@@ -63,29 +63,40 @@ export default function RosterImportSheet({ visible, onClose }) {
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
   const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
-  const badge = (st) => st === 'exists' ? { bg: C.soft, fg: C.sub, txt: l('substitui', 'replaces') }
+  const badge = (st) => st === 'exists' ? { bg: C.soft, fg: C.sub, txt: l('conflito', 'conflict') }
     : st === 'warn' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('aviso', 'warning') }
     : { bg: C.greenSoft || C.soft, fg: C.green || C.text, txt: 'OK' };
 
   const doImport = () => {
     if (!selected.length) return;
-    let warn = 0;
-    for (const c of selected) {
-      saveDuty(c.duty.duty_date, {
-        report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
-        sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
-        kind: c.kind, nightStop: false,
-      });
-      if (c.status === 'warn') warn++;
-    }
-    success();
-    const ignored = cands.length - selected.length;
-    Alert.alert(
-      l('Escala importada', 'Roster imported'),
-      l(`${selected.length} importada(s)${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
-        `${selected.length} imported${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`),
-      [{ text: 'OK', onPress: onClose }],
-    );
+    const replacing = selected.filter((c) => c.exists).length;
+    const run = () => {
+      let warn = 0;
+      for (const c of selected) {
+        saveDuty(c.duty.duty_date, {
+          report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
+          sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
+          kind: c.kind, nightStop: false,
+        });
+        if (c.status === 'warn') warn++;
+      }
+      success();
+      const ignored = cands.length - selected.length;
+      Alert.alert(
+        l('Escala importada', 'Roster imported'),
+        l(`${selected.length} importada(s)${replacing ? ` · ${replacing} substituída(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
+          `${selected.length} imported${replacing ? ` · ${replacing} replaced` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`),
+        [{ text: 'OK', onPress: onClose }],
+      );
+    };
+    if (replacing > 0) {
+      Alert.alert(
+        l('Substituir duties manuais?', 'Replace manual duties?'),
+        l(`${replacing} dia(s) já têm duty manual e vão ser substituídos. Os restantes não são afetados.`,
+          `${replacing} day(s) already have a manual duty and will be replaced. The rest are unaffected.`),
+        [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Substituir', 'Replace'), style: 'destructive', onPress: run }],
+      );
+    } else run();
   };
 
   return (
@@ -124,7 +135,7 @@ export default function RosterImportSheet({ visible, onClose }) {
             <View style={s.center}><Ionicons name="checkmark-done-outline" size={26} color={C.sub} /><Text style={s.dim}>{l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text></View>
           ) : (
             <>
-              <Text style={s.hint}>{l('O eCrew tem prioridade — os dias com duty já existente são substituídos. Desmarca para manter o manual.', 'eCrew takes priority — days with an existing duty will be replaced. Uncheck to keep the manual one.')}</Text>
+              <Text style={s.hint}>{l('Conflito = já tens um duty manual nesse dia (mantido por omissão). Marca para o calendário substituir.', 'Conflict = you already have a manual duty that day (kept by default). Check to let the calendar replace it.')}</Text>
               {cands.map((c, i) => {
                 const b = badge(c.status);
                 return (
