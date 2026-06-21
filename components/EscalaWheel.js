@@ -91,6 +91,8 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
   const onLayout = () => { scRef.current?.scrollTo({ y: todayIndex * ROWH, animated: false }); };
 
   const cur = days[sel] || days[0];
+  // Rótulo da atividade: voo → rota; outros tipos → nome do kind (Standby/Escritório…).
+  const actLabel = (f) => (f && f.kind && f.kind !== 'flight') ? t('duties.kind.' + f.kind, lang) : ((f && f.route) || l('Voo', 'Flight'));
 
   // Mês do dia centrado (para o cartão de detalhe e para o título da Escala).
   const curMonthName = cur ? (() => { const m = new Date(`${cur.iso}T00:00:00`).toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })() : '';
@@ -113,7 +115,7 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
                 <View style={s.fl}>
                   {d.flight ? (
                     <>
-                      <Text style={[s.flRoute, on && s.flOn]} numberOfLines={1}>{d.flight.route || l('Voo', 'Flight')}</Text>
+                      <Text style={[s.flRoute, on && s.flOn]} numberOfLines={1}>{actLabel(d.flight)}</Text>
                       <Text style={[s.flTime, on && s.flTimeOn]}>{d.flight.report_time}</Text>
                     </>
                   ) : <Text style={s.flOff}>{l('Folga', 'Off')}</Text>}
@@ -134,7 +136,7 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
         <View style={s.detHead}>
           <View style={[s.dc, !cur.flight && s.dcOff]}><Text style={[s.dcTxt, !cur.flight && s.dcTxtOff]}>{cur.day}</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={s.detTitle} numberOfLines={1}>{cur.flight ? (cur.flight.route || l('Voo', 'Flight')) : l('Folga', 'Day off')}</Text>
+            <Text style={s.detTitle} numberOfLines={1}>{cur.flight ? actLabel(cur.flight) : l('Folga', 'Day off')}</Text>
             <Text style={s.detSub}>{cur.wd} · {cur.day} {curMonthName}{cur.isToday ? ` · ${t('cal.today', lang)}` : ''}{cur.fromCal ? ` · ${l('do calendário', 'from calendar')}` : ''}</Text>
           </View>
           <Ionicons name={cur.flight ? 'create-outline' : 'add'} size={18} color={C.sub} />
