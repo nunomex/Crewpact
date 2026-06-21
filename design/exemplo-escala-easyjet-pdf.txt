@@ -1,0 +1,22 @@
+=== EXEMPLO DE ESCALA easyJet (para testar o "Colar PDF" na app) ===
+Estas linhas de cabeçalho são IGNORADAS pelo parser (tudo antes da 1.ª data).
+Seleciona o bloco abaixo (das datas), copia, e cola no campo "Colar PDF" → "Ler escala".
+Datas de abril/2025 são só exemplo — iguais à imagem do PDF, mais 2 dias de standby.
+
+Schedule Details
+Date        Duties          Details            Report times   Actual times/Delays       Debrief times   Block hours   Duty hours
+
+01/04/2025 Tue   EJU7695 [320]   LIS - SID    10:50   A12:02 - A16:26          21:41   08:06   10:51
+                 EJU7696 [320]   SID - LIS            A17:29 - A21:11/00:12
+02/04/2025 Wed   EJU8514 [320]   LIS - LGW    14:55   A16:14 - A18:49          22:46   05:20   07:51
+                 EJU8515 [320]   LGW - LIS            A19:31 - A22:16/00:19
+03/04/2025 Thu   FTGD            Fatigued
+04/04/2025 Fri   D/O             Day off
+05/04/2025 Sat   D/O             Day off
+06/04/2025 Sun   D/O             Day off
+07/04/2025 Mon   EJU8514 [321]   LIS - LGW    15:00   A16:08 - A18:46          23:45   05:22   08:45
+                 EJU8515 [321]   LGW - LIS            A20:18 - A23:02/00:08
+08/04/2025 Tue   ASBY            Airport standby    05:30
+09/04/2025 Wed   HSBY            Home standby       12:00
+10/04/2025 Thu   EJU7211 [320]   LIS - FNC    06:10   A07:05 - A08:48          14:20   03:10   05:00
+                 EJU7212 [320]   FNC - LIS            A09:30 - A11:15

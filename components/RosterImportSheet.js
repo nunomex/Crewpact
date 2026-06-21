@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
+import { parseEasyjetRoster } from '../data/pdfRoster';
 import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -37,11 +38,14 @@ export default function RosterImportSheet({ visible, onClose }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
+  const [source, setSource] = useState('calendar');   // 'calendar' | 'paste'
   const [range, setRange] = useState('28');
   const [loading, setLoading] = useState(false);
   const [denied, setDenied] = useState(false);
   const [cands, setCands] = useState([]);
   const [diag, setDiag] = useState(null);   // diagnóstico: o que o calendário (eCrew) tem
+  const [pasteText, setPasteText] = useState('');
+  const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do texto colado
 
   const load = async (opt) => {
     setLoading(true); setDenied(false);
@@ -54,7 +58,24 @@ export default function RosterImportSheet({ visible, onClose }) {
     setCands(next);
     setLoading(false);
   };
-  useEffect(() => { if (visible) load(range); }, [visible, range]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source]); // eslint-disable-line react-hooks/exhaustive-deps
+  // RGPD: ao fechar, descartar o texto colado (não fica nada em memória).
+  useEffect(() => { if (!visible) { setPasteText(''); setPasteDiag(null); } }, [visible]);
+
+  // Trocar de fonte limpa o preview (não misturar resultados de calendário e colado).
+  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); };
+
+  // Colar PDF: parse LOCAL do texto → mesmos candidatos do calendário. RGPD: nada
+  // sai do dispositivo; o texto fica só no estado e é limpo ao fechar/limpar.
+  const parsePaste = () => {
+    const txt = pasteText.trim();
+    if (!txt) return;
+    const r = parseEasyjetRoster(txt, company?.slug);
+    setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog }));
+    setPasteDiag(r.diag);
+    success();
+  };
+  const clearPaste = () => { select(); setPasteText(''); setCands([]); setPasteDiag(null); };
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
@@ -111,29 +132,74 @@ export default function RosterImportSheet({ visible, onClose }) {
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
         </View>
 
-        {/* Seletor de intervalo */}
+        {/* Fonte da escala: calendário do telemóvel ou texto colado do PDF */}
         <View style={s.ranges}>
-          {RANGES.map((r) => {
-            const on = range === r.id;
+          {[{ id: 'calendar', ic: 'calendar-outline', label: l('Calendário', 'Calendar') }, { id: 'paste', ic: 'clipboard-outline', label: l('Colar PDF', 'Paste PDF') }].map((src) => {
+            const on = source === src.id;
             return (
-              <TouchableOpacity key={r.id} onPress={() => { select(); setRange(r.id); }} activeOpacity={0.85} style={[s.rChip, on && s.rChipOn]}>
-                <Text style={[s.rTxt, on && s.rTxtOn]}>{r.id === 'month' ? l('Próximo mês', 'Next month') : `${r.d} ${l('dias', 'days')}`}</Text>
+              <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]}>
+                <Ionicons name={src.ic} size={15} color={on ? '#fff' : C.sub} />
+                <Text style={[s.rTxt, on && s.rTxtOn]}>{src.label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
+        {source === 'calendar' ? (
+          /* Seletor de intervalo */
+          <View style={s.ranges}>
+            {RANGES.map((r) => {
+              const on = range === r.id;
+              return (
+                <TouchableOpacity key={r.id} onPress={() => { select(); setRange(r.id); }} activeOpacity={0.85} style={[s.rChip, on && s.rChipOn]}>
+                  <Text style={[s.rTxt, on && s.rTxtOn]}>{r.id === 'month' ? l('Próximo mês', 'Next month') : `${r.d} ${l('dias', 'days')}`}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          /* Colar texto do PDF (parse 100% local) */
+          <View style={s.pasteWrap}>
+            <TextInput
+              value={pasteText}
+              onChangeText={setPasteText}
+              multiline
+              placeholder={l('Cola aqui a escala copiada do PDF easyJet…', 'Paste your easyJet PDF roster here…')}
+              placeholderTextColor={C.sub}
+              style={s.pasteInput}
+              textAlignVertical="top"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            <View style={s.pasteBtns}>
+              <TouchableOpacity onPress={clearPaste} activeOpacity={0.85} style={[s.parseBtn, s.parseBtnGhost]} disabled={!pasteText}>
+                <Text style={[s.parseGhostTxt, !pasteText && { opacity: 0.4 }]}>{l('Limpar', 'Clear')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={parsePaste} activeOpacity={0.9} style={[s.parseBtn, { flex: 1, backgroundColor: pasteText.trim() ? C.ink : C.soft }]} disabled={!pasteText.trim()}>
+                <Ionicons name="reader-outline" size={15} color={pasteText.trim() ? '#fff' : C.sub} />
+                <Text style={[s.parseTxt, { color: pasteText.trim() ? '#fff' : C.sub }]}>{l('Ler escala', 'Read roster')}</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={s.pasteNote}>{l('🔒 Nada sai do telemóvel — o texto é lido aqui e apagado. Sem ficheiro guardado.', '🔒 Nothing leaves your phone — the text is read here and discarded. No file stored.')}</Text>
+          </View>
+        )}
+
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {loading ? (
             <View style={s.center}><ActivityIndicator color={C.sub} /><Text style={s.dim}>{l('A ler o calendário…', 'Reading calendar…')}</Text></View>
-          ) : denied ? (
+          ) : denied && source === 'calendar' ? (
             <View style={s.center}>
               <Ionicons name="calendar-outline" size={26} color={C.sub} />
               <Text style={s.dim}>{l('Sem acesso ao calendário.', 'No calendar access.')}</Text>
               <TouchableOpacity onPress={grant} style={s.grantBtn}><Text style={s.grantTxt}>{l('Dar acesso', 'Grant access')}</Text></TouchableOpacity>
             </View>
           ) : !cands.length ? (
-            <View style={s.center}><Ionicons name="checkmark-done-outline" size={26} color={C.sub} /><Text style={s.dim}>{l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text></View>
+            <View style={s.center}>
+              <Ionicons name={source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline'} size={26} color={C.sub} />
+              <Text style={s.dim}>{source === 'paste'
+                ? l('Cola a tua escala em cima e carrega em "Ler escala".', 'Paste your roster above and tap "Read roster".')
+                : l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text>
+            </View>
           ) : (
             <>
               <Text style={s.hint}>{l('Conflito = já tens um duty manual nesse dia (mantido por omissão). Marca para o calendário substituir.', 'Conflict = you already have a manual duty that day (kept by default). Check to let the calendar replace it.')}</Text>
@@ -154,17 +220,29 @@ export default function RosterImportSheet({ visible, onClose }) {
             </>
           )}
 
-          {/* Diagnóstico — ver o que o calendário (eCrew) tem e como o parser o classifica */}
-          <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn}>
-            <Ionicons name="construct-outline" size={14} color={C.sub} />
-            <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
-          </TouchableOpacity>
-          {diag ? (
+          {/* Diagnóstico do calendário — o que o eCrew tem e como o parser o classifica */}
+          {source === 'calendar' ? (
+            <>
+              <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn}>
+                <Ionicons name="construct-outline" size={14} color={C.sub} />
+                <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
+              </TouchableOpacity>
+              {diag ? (
+                <View style={s.diagBox}>
+                  <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind !== 'other').length} {l('reconhecidos', 'recognised')} · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
+                  {diag.items.length ? diag.items.map((it, i) => (
+                    <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'other' ? '—' : '•'}  {it.title} → {it.kind === 'other' ? '?' : it.kind === 'off' ? l('folga', 'off') : it.kind}{it.route ? ` · ${it.route}` : ''}</Text>
+                  )) : <Text style={s.diagItem}>{l('Sem eventos no intervalo.', 'No events in range.')}</Text>}
+                </View>
+              ) : null}
+            </>
+          ) : pasteDiag ? (
+            /* Diagnóstico da colagem — como cada dia do texto foi interpretado */
             <View style={s.diagBox}>
-              <Text style={s.diagHead}>{diag.total} {l('eventos', 'events')} · {diag.items.filter((i) => i.kind !== 'other').length} {l('reconhecidos', 'recognised')} · {diag.items.filter((i) => i.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
-              {diag.items.length ? diag.items.map((it, i) => (
-                <Text key={i} style={s.diagItem} numberOfLines={1}>{it.kind === 'other' ? '—' : '•'}  {it.title} → {it.kind === 'other' ? '?' : it.kind === 'off' ? l('folga', 'off') : it.kind}{it.route ? ` · ${it.route}` : ''}</Text>
-              )) : <Text style={s.diagItem}>{l('Sem eventos no intervalo.', 'No events in range.')}</Text>}
+              <Text style={s.diagHead}>{pasteDiag.length} {l('dias lidos', 'days read')} · {pasteDiag.filter((d) => d.kind === 'flight').length} {l('voos', 'flights')} · {pasteDiag.filter((d) => d.kind === 'off').length} {l('folgas', 'off')} · {pasteDiag.filter((d) => d.kind === 'other').length} {l('não reconhec.', 'unrecog.')}</Text>
+              {pasteDiag.map((d, i) => (
+                <Text key={i} style={s.diagItem} numberOfLines={1}>{d.kind === 'other' ? '—' : d.kind === 'off' ? '·' : '•'}  {d.iso.slice(8)}/{d.iso.slice(5, 7)} → {d.kind === 'other' ? '?' : d.kind === 'off' ? l('folga', 'off') : d.kind}{d.route ? ` · ${d.route}` : ''}{d.report ? ` · ${d.report}` : ''}{d.warn ? ` (${d.warn})` : ''}</Text>
+              ))}
             </View>
           ) : null}
         </ScrollView>
@@ -189,9 +267,18 @@ const makeStyles = (C) => StyleSheet.create({
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ranges: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 12 },
   rChip: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingVertical: 10, alignItems: 'center', backgroundColor: C.card },
+  srcChip: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
   rChipOn: { backgroundColor: C.ink, borderColor: C.ink },
   rTxt: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub },
   rTxtOn: { color: '#fff' },
+  pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
+  pasteInput: { minHeight: 150, maxHeight: 230, borderWidth: 1.5, borderColor: C.line, borderRadius: 16, backgroundColor: C.card, padding: 14, fontSize: 13, lineHeight: 19, fontFamily: FONT.medium, color: C.text },
+  pasteBtns: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  parseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 16 },
+  parseBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
+  parseTxt: { fontSize: 13, fontFamily: FONT.semibold },
+  parseGhostTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
+  pasteNote: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 10, lineHeight: 16 },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
   dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },

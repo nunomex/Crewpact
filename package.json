@@ -12,7 +12,8 @@
     "ios": "expo start --ios",
     "test:ftl": "node scripts/ftl-golden.test.js",
     "test:ae": "node scripts/ae-golden.test.js",
-    "test": "npm run test:ftl && npm run test:ae"
+    "test:pdf": "node scripts/pdf-roster.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
