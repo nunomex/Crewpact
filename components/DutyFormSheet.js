@@ -1,15 +1,19 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet from './BottomSheet';
 import { Stepper } from './Stepper';
-import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
+import { RADIUS, TYPE, SPACE, FONT, TRACK_DISPLAY } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ── helpers HH:MM ──
 const maskClock = (v) => { const d = (v || '').replace(/[^0-9]/g, '').slice(0, 4); return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`; };
@@ -20,32 +24,29 @@ const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60)
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
 const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false };
 
-// Campo "HH:MM" (nível de módulo — definir dentro do componente fá-lo perder o foco a cada tecla).
-function ClockField({ label, value, onChange, C, s }) {
+// Campo "HH:MM" — rótulo em cima, campo a toda a largura (`flex` para par lado-a-lado).
+function ClockField({ label, value, onChange, C, s, flex }) {
   return (
-    <View style={s.fieldRow}>
-      <Text style={s.fieldLbl}>{label}</Text>
+    <View style={flex ? { flex: 1 } : null}>
+      <Text style={s.lbl}>{label}</Text>
       <TextInput value={value} onChangeText={(v) => onChange(maskClock(v))} placeholder="HH:MM" placeholderTextColor={C.sub}
-        keyboardType="numbers-and-punctuation" maxLength={5} style={s.clockInput} />
+        keyboardType="numbers-and-punctuation" maxLength={5} style={s.input} />
     </View>
   );
 }
 
-// Formulário de duty em popup (BottomSheet), partilhado pela Escala (roda) e pela
-// Lista. Pré-preenche a partir do dia `date` (se já houver registo) e grava via
-// `saveDuty`. Inclui a projeção prospetiva de PSV + acumulados (210).
+// Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
+// cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
+// 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date }) {
   const { lang, duties, dayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
-  const { height: winH } = useWindowDimensions();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
 
-  // Carrega o formulário a partir do dia: se JÁ existe duty nesse dia → EDITA (mostra
-  // os dados existentes); senão → vazio (NOVA). Garante 1 duty/dia — navegar para um
-  // dia com duty mostra-a (nunca se introduz dados por cima sem a ver).
+  // Carrega o form a partir do dia: já existe duty → EDITA; senão → vazio (NOVA).
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
@@ -58,11 +59,21 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
   const goDate = (delta) => { select(); setForm(loadFor(addDays(form.date, delta))); };
 
-  // O formulário ADAPTA-SE ao tipo: campos de VOO (rota/setores/tempo) só para
-  // `flight`; os outros kinds veem só o período de serviço. `kindInfo` dá feedback
-  // imediato do que o tipo contribui para o total AE. Report opcional fora de voo.
+  // Revelação em cascata das secções (uma Animated.Value 0→1 mapeada por índice).
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!visible) { enter.setValue(0); return; }
+    Animated.timing(enter, { toValue: 1, duration: 620, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  const secStyle = (i) => {
+    const start = Math.min(0.6, i * 0.09);
+    const p = enter.interpolate({ inputRange: [start, Math.min(1, start + 0.4)], outputRange: [0, 1], extrapolate: 'clamp' });
+    return { opacity: p, transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] };
+  };
+  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: (k === 'flight' || k === 'positioning') ? f.nightStop : false })); };
+
   const isFlight = form.kind === 'flight';
-  const showNightStop = isFlight || form.kind === 'positioning';   // pernoita fora da base só em ops
+  const showNightStop = isFlight || form.kind === 'positioning';
   const kindInfo = !ae ? null : ({
     flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
     standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
@@ -76,16 +87,15 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     : (okOrEmpty(form.report) && okOrEmpty(form.off) && okOrEmpty(form.on));
 
   const prospect = useMemo(() => {
-    if (!canSave) return null;
+    if (!isFlight || !canSave) return null;
     return prospectiveDuty({
       duty_date: form.date, report_time: form.report,
       block_off: form.off || null, block_on: form.on || null,
       sectors: form.sectors, flight_minutes: hhmmToMin(form.flight),
     }, dayLog);
-  }, [canSave, form, dayLog]);
+  }, [isFlight, canSave, form, dayLog]);
 
-  // Per-diem AE deste voo (preview ao vivo por baixo da Rota). null = sem rota;
-  // {ok:false} = rota com aeroporto desconhecido; {ok:true, eur} = € estimado (Art. 53).
+  // Per-diem AE deste voo (preview ao vivo por baixo da Rota).
   const routePd = useMemo(() => {
     const r = (form.route || '').trim();
     if (!ae || !crewCategory || !r) return null;
@@ -99,7 +109,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`;
   };
 
-  const h1 = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
+  const h1n = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
   const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
   const issueLbl = (it) => it.type === 'fdp' ? t('duties.issueFdp', lang) : it.type === 'duty28' ? t('duties.issueDuty28', lang) : it.type === 'flight28' ? t('duties.issueFlight28', lang) : '';
@@ -127,116 +137,152 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const isEdit = duties[form.date] && !duties[form.date].deleted;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}
-      title={isEdit ? t('duties.edit', lang) : t('duties.add', lang)} closeLabel={t('common.close', lang)}>
-      <ScrollView style={{ maxHeight: winH * 0.78 }} contentContainerStyle={[s.form, { paddingBottom: 32 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={s.fieldLbl}>{t('duties.date', lang)}</Text>
-        <View style={s.dateRow}>
-          <TouchableOpacity onPress={() => goDate(-1)} hitSlop={8} style={s.dateNav}>
-            <Ionicons name="chevron-back" size={18} color={C.text} />
-          </TouchableOpacity>
-          <Text style={s.dateTxt}>{fmtDate(form.date)}{form.date === isoDay() ? ` · ${t('cal.today', lang)}` : ''}</Text>
-          <TouchableOpacity onPress={() => goDate(1)} hitSlop={8} style={s.dateNav}>
-            <Ionicons name="chevron-forward" size={18} color={C.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Tipo de atividade (kind) — base do motor AE/FTL por dia */}
-        <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.kindLabel', lang)}</Text>
-        <View style={s.kindWrap}>
-          {DUTY_KINDS.map((k) => {
-            const on = form.kind === k;
-            return (
-              <TouchableOpacity key={k} onPress={() => { select(); setForm(f => ({ ...f, kind: k })); }} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85}>
-                <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        {kindInfo ? <Text style={s.kindInfo}>{kindInfo}</Text> : null}
-
-        {/* Paragem nocturna — abono AE (Art. 39 = 2×NS). Só em ops (voo/posicionamento). */}
-        {showNightStop ? (
-          <View style={s.nsRow}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={s.fieldLbl}>{lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text>
-              <Text style={s.nsHint}>{lang === 'en' ? 'Overnight away from base · AE allowance (Art. 39)' : 'Pernoita fora da base · abono AE (Art. 39)'}</Text>
-            </View>
-            <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm(f => ({ ...f, nightStop: v })); }}
-              trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen" statusBarTranslucent>
+      <SafeAreaView style={s.page} edges={['top', 'bottom']}>
+        {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
+        <View style={s.head}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>{l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
+            <Text style={s.h1}>Duty</Text>
           </View>
-        ) : null}
+          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}>
+            <Ionicons name="close" size={20} color={C.text} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Rota — só em VOO. Destrava o per-diem AE (Art. 53). */}
-        {isFlight ? (
-          <>
-            <Text style={[s.fieldLbl, { marginTop: 14 }]}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
-            <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
-              placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
-              maxLength={40} style={s.routeInputFull} />
-            {ae ? (
-              routePd == null
-                ? <Text style={s.routeHint}>{lang === 'en' ? 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS' : 'Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS'}</Text>
-                : routePd.ok
-                  ? <Text style={[s.routeHint, { color: C.green }]}>{lang === 'en' ? 'Per diem for this duty: ' : 'Per diem deste voo: '}<Text style={{ fontFamily: FONT.heavy }}>+{fmtPd(routePd.eur)}</Text></Text>
-                  : <Text style={[s.routeHint, { color: C.warn }]}>{lang === 'en' ? 'Route not recognised — won’t count for per diem' : 'Rota não reconhecida — não conta para o per-diem'}</Text>
-            ) : null}
-          </>
-        ) : null}
-
-        <ClockField C={C} s={s} label={t('duties.report', lang)} value={form.report} onChange={(v) => setForm(f => ({ ...f, report: v }))} />
-        <ClockField C={C} s={s} label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm(f => ({ ...f, off: v }))} />
-        <ClockField C={C} s={s} label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm(f => ({ ...f, on: v }))} />
-        {isFlight ? <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm(f => ({ ...f, sectors: n }))} min={0} max={12} /> : null}
-        {isFlight ? <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm(f => ({ ...f, flight: v }))} /> : null}
-
-        {isFlight && prospect ? (
-          <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
-            <View style={s.projHead}>
-              <Ionicons name={prospect.ok ? 'checkmark-circle' : 'alert-circle'} size={15} color={prospect.ok ? (C.ok || C.text) : (C.warn || C.text)} />
-              <Text style={s.projTitle}>{prospect.ok ? t('duties.projOk', lang) : t('duties.projWarn', lang)}</Text>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {/* Data */}
+          <Animated.View style={[s.sec, secStyle(0)]}>
+            <View style={s.datepick}>
+              <TouchableOpacity onPress={() => goDate(-1)} hitSlop={8} style={s.dateNav}><Ionicons name="chevron-back" size={18} color={C.text} /></TouchableOpacity>
+              <Text style={s.dateTxt}>{fmtDate(form.date)}{form.date === isoDay() ? ` · ${t('cal.today', lang)}` : ''}</Text>
+              <TouchableOpacity onPress={() => goDate(1)} hitSlop={8} style={s.dateNav}><Ionicons name="chevron-forward" size={18} color={C.text} /></TouchableOpacity>
             </View>
-            <Text style={s.projMeta}>{t('duties.projDuty', lang)} {h1(prospect.servico28)}/190 h · {t('duties.projFlight', lang)} {h1(prospect.voo28)}/100 h</Text>
-            {prospect.fatigue ? (
-              <View style={s.fatRow}>
-                <View style={[s.fatDot, { backgroundColor: fatigueColor(prospect.fatigue.band) }]} />
-                <Text style={s.fatLbl}>{t('duties.fatigueLbl', lang)}: </Text>
-                <Text style={[s.fatVal, { color: fatigueColor(prospect.fatigue.band) }]}>{fatigueLbl(prospect.fatigue.band)} ({prospect.fatigue.score})</Text>
+          </Animated.View>
+
+          {/* Tipo de atividade */}
+          <Animated.View style={[s.sec, secStyle(1)]}>
+            <Text style={s.lbl}>{t('duties.kindLabel', lang)}</Text>
+            <View style={s.kindWrap}>
+              {DUTY_KINDS.map((k) => {
+                const on = form.kind === k;
+                return (
+                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85}>
+                    <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {kindInfo ? <Text style={s.kindInfo}>{kindInfo}</Text> : null}
+          </Animated.View>
+
+          {/* Paragem nocturna — só voo/posicionamento */}
+          {showNightStop ? (
+            <Animated.View style={[s.sec, secStyle(2)]}>
+              <View style={s.nsRow}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.lbl}>{l('Paragem nocturna', 'Night stop')}</Text>
+                  <Text style={s.nsHint}>{l('Pernoita fora da base · abono AE (Art. 39)', 'Overnight away from base · AE allowance (Art. 39)')}</Text>
+                </View>
+                <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
-            ) : null}
-            {prospect.issues.map((it, i) => <Text key={i} style={s.projIssue}>• {issueLbl(it)}</Text>)}
-            <Text style={s.fatHint}>{t('duties.fatigueHint', lang)}</Text>
-          </View>
-        ) : null}
+            </Animated.View>
+          ) : null}
 
-        <TouchableOpacity onPress={onSave} disabled={!canSave} style={[s.saveBtn, { opacity: canSave ? 1 : 0.4 }]}>
-          <Text style={s.saveBtnTxt}>{t('common.save', lang)}</Text>
-        </TouchableOpacity>
-        {isFlight ? <Text style={s.formHint}>{t('duties.reportReq', lang)}</Text> : null}
-      </ScrollView>
-    </BottomSheet>
+          {/* Rota + per-diem — só voo */}
+          {isFlight ? (
+            <Animated.View style={[s.sec, secStyle(3)]}>
+              <Text style={s.lbl}>{l('Rota', 'Route')}</Text>
+              <TextInput value={form.route} onChangeText={(v) => setForm((f) => ({ ...f, route: v.toUpperCase() }))}
+                placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
+                maxLength={40} style={[s.input, { letterSpacing: 1 }]} />
+              {ae ? (
+                routePd == null
+                  ? <Text style={s.routeHint}>{l('Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS', 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS')}</Text>
+                  : routePd.ok
+                    ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
+                    : <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text>
+              ) : null}
+            </Animated.View>
+          ) : null}
+
+          {/* Horas */}
+          <Animated.View style={[s.sec, secStyle(4)]}>
+            <ClockField C={C} s={s} label={t('duties.report', lang)} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
+            <View style={[s.row2, { marginTop: 12 }]}>
+              <ClockField C={C} s={s} flex label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm((f) => ({ ...f, off: v }))} />
+              <ClockField C={C} s={s} flex label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+            </View>
+          </Animated.View>
+
+          {/* Setores + tempo de voo + projeção FTL — só voo */}
+          {isFlight ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm((f) => ({ ...f, sectors: n }))} min={0} max={12} />
+              <View style={{ marginTop: 12 }}>
+                <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm((f) => ({ ...f, flight: v }))} />
+              </View>
+              {prospect ? (
+                <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn, { marginTop: 14 }]}>
+                  <View style={s.projHead}>
+                    <Ionicons name={prospect.ok ? 'checkmark-circle' : 'alert-circle'} size={15} color={prospect.ok ? (C.ok || C.text) : (C.warn || C.text)} />
+                    <Text style={s.projTitle}>{prospect.ok ? t('duties.projOk', lang) : t('duties.projWarn', lang)}</Text>
+                  </View>
+                  <Text style={s.projMeta}>{t('duties.projDuty', lang)} {h1n(prospect.servico28)}/190 h · {t('duties.projFlight', lang)} {h1n(prospect.voo28)}/100 h</Text>
+                  {prospect.fatigue ? (
+                    <View style={s.fatRow}>
+                      <View style={[s.fatDot, { backgroundColor: fatigueColor(prospect.fatigue.band) }]} />
+                      <Text style={s.fatLbl}>{t('duties.fatigueLbl', lang)}: </Text>
+                      <Text style={[s.fatVal, { color: fatigueColor(prospect.fatigue.band) }]}>{fatigueLbl(prospect.fatigue.band)} ({prospect.fatigue.score})</Text>
+                    </View>
+                  ) : null}
+                  {prospect.issues.map((it, i) => <Text key={i} style={s.projIssue}>• {issueLbl(it)}</Text>)}
+                </View>
+              ) : null}
+            </Animated.View>
+          ) : null}
+        </ScrollView>
+
+        {/* Rodapé fixo — Guardar */}
+        <View style={s.foot}>
+          {isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null}
+          <TouchableOpacity onPress={onSave} disabled={!canSave} activeOpacity={0.9} style={[s.save, { backgroundColor: canSave ? C.ink : C.soft }]}>
+            <Text style={[s.saveTxt, { color: canSave ? '#fff' : C.sub }]}>{t('common.save', lang)}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  form: { padding: 20 },
-  fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
-  fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  clockInput: { width: 92, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
-  routeInputFull: { fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line, color: C.text, letterSpacing: 1 },
-  routeHint: { fontSize: 11, color: C.sub, marginTop: 6, fontFamily: FONT.medium },
+  page: { flex: 1, backgroundColor: C.canvas },
+  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 6, paddingBottom: 10 },
+  eyebrow: { fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: C.red, fontFamily: FONT.heavy, marginBottom: 4 },
+  h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: TRACK_DISPLAY },
+  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  body: { paddingHorizontal: 22, paddingTop: 6, paddingBottom: 24, gap: 16 },
+  sec: {},
+  lbl: { fontSize: 12, fontFamily: FONT.bold, color: C.text, marginBottom: 7 },
+  input: { borderWidth: 1, borderColor: C.line, backgroundColor: C.soft2 || C.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text },
+  row2: { flexDirection: 'row', gap: 9 },
+  datepick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 8, paddingVertical: 6 },
+  dateNav: { width: 38, height: 38, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+  dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
   kindWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   kindChip: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, backgroundColor: C.card },
   kindChipOn: { borderColor: C.ink, backgroundColor: C.ink },
   kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
   kindChipTxtOn: { color: '#fff' },
   kindInfo: { fontSize: 12, color: C.text, fontFamily: FONT.semibold, marginTop: 10, marginLeft: 2 },
-  nsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  nsRow: { flexDirection: 'row', alignItems: 'center' },
   nsHint: { fontSize: 11, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
-  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
-  dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
-  proj: { marginTop: 18, borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
+  routeHint: { fontSize: 11.5, color: C.sub, marginTop: 7, fontFamily: FONT.medium },
+  pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
+  pdLab: { fontSize: 11.5, color: C.green || C.sub, fontFamily: FONT.semibold },
+  pdTag: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff', backgroundColor: C.green || C.ink, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, overflow: 'hidden' },
+  proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
   projOk: { borderColor: C.line, backgroundColor: C.soft },
   projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },
   projHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -247,8 +293,8 @@ const makeStyles = (C) => StyleSheet.create({
   fatDot: { width: 8, height: 8, borderRadius: 99, marginRight: 7 },
   fatLbl: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.semibold },
   fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
-  fatHint: { fontSize: 11, color: C.sub, marginTop: 6, fontStyle: 'italic' },
-  saveBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
-  formHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginTop: 10 },
+  foot: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
+  footHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginBottom: 8 },
+  save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
+  saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
 });
