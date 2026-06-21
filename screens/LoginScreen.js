@@ -8,9 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
 import {
-  login, register,
+  login,
   requestPasswordReset, verifyResetCode, resetPassword,
-  validateEmail, validatePassword, validateName,
+  validateEmail, validatePassword,
 } from '../data/auth';
 import { t } from '../data/i18n';
 import { success, warning, select } from '../data/haptics';
@@ -147,17 +147,11 @@ const makeOtp = (C) => StyleSheet.create({
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
-  const { setUser, suppressAuth, lang, setLang } = useContext(AppContext);
+  const { setUser, setSignupMode, lang, setLang } = useContext(AppContext);
   const C = useTheme();
   const s = makeS(C);
   const insets = useSafeAreaInsets();
-  // No escuro, a pílula da aba ativa fica clara (texto escuro) — caso contrário
-  // a pílula `C.ink` confunde-se com o trilho `C.soft`. Igual ao componente Seg.
-  const dark = C === PALETTE_DARK;
-  const segActiveBg = dark ? C.onDark : C.ink;
-  const segActiveFg = dark ? C.ink : C.onDark;
-
-  // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
+  // views: 'login' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
@@ -177,16 +171,6 @@ export default function LoginScreen() {
   const [lErrEmail, setLErrEmail] = useState('');
   const [lErrPw, setLErrPw]     = useState('');
 
-  // Register
-  const [rName, setRName]         = useState('');
-  const [rEmail, setREmail]       = useState('');
-  const [rPw, setRPw]             = useState('');
-  const [rPw2, setRPw2]           = useState('');
-  const [rErrName, setRErrName]   = useState('');
-  const [rErrEmail, setRErrEmail] = useState('');
-  const [rErrPw, setRErrPw]       = useState('');
-  const [rErrPw2, setRErrPw2]     = useState('');
-
   // Forgot / code / reset
   const [fInput, setFInput]       = useState('');
   const [fErr, setFErr]           = useState('');
@@ -199,9 +183,6 @@ export default function LoginScreen() {
   const [newPw2Err, setNewPw2Err] = useState('');
 
   const lPwRef    = useRef();
-  const rEmailRef = useRef();
-  const rPwRef    = useRef();
-  const rPw2Ref   = useRef();
   const newPw2Ref = useRef();
 
   // Shake for validation errors
@@ -232,12 +213,6 @@ export default function LoginScreen() {
     });
   };
 
-  const switchTab = (tab) => {
-    if (tab === view) return;
-    setGlobalErr('');
-    setView(tab);
-  };
-
   /* ── Handlers ── */
   const handleLogin = async () => {
     setGlobalErr('');
@@ -250,26 +225,6 @@ export default function LoginScreen() {
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
     setUser(res.user);
-  };
-
-  const handleRegister = async () => {
-    setGlobalErr('');
-    const eName  = validateName(rName, lang);
-    const eEmail = validateEmail(rEmail, lang);
-    const ePw    = validatePassword(rPw, true, lang);
-    const ePw2   = rPw !== rPw2 ? t('login.pwMismatch', lang) : null;
-    setRErrName(eName || ''); setRErrEmail(eEmail || '');
-    setRErrPw(ePw || '');     setRErrPw2(ePw2 || '');
-    if (eName || eEmail || ePw || ePw2) { doShake(); return; }
-    setLoading(true);
-    suppressAuth.current = true;
-    const res = await register(rName, rEmail, rPw, lang);
-    suppressAuth.current = false;
-    setLoading(false);
-    if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-    setRName(''); setREmail(''); setRPw(''); setRPw2('');
-    success();
-    setUser(res.user);   // sessão criada → entra direto no onboarding (fluxo contínuo)
   };
 
   const handleRequestReset = async () => {
@@ -310,8 +265,6 @@ export default function LoginScreen() {
     navigateTo('login', false);
   };
 
-  const isAuthView = view === 'login' || view === 'register';
-
   return (
     <SafeAreaView style={s.safe}>
       <View style={[s.langRow, { top: insets.top + 8 }]}>
@@ -330,7 +283,7 @@ export default function LoginScreen() {
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
 
-          {/* Brand — compacta-se quando o teclado está aberto */}
+          {/* Brand */}
           <View style={[s.brand, keyboardOpen && { marginBottom: 20 }]}>
             <View style={s.ring}>
               <Ionicons name="airplane" size={24} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
@@ -338,18 +291,6 @@ export default function LoginScreen() {
             <Text style={s.logoName}>CrewPact</Text>
             {!keyboardOpen && <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>}
           </View>
-
-          {/* Tab switcher — só no login/register */}
-          {isAuthView && (
-            <View style={s.seg}>
-              {[{ id: 'login', l: t('login.tabLogin', lang) }, { id: 'register', l: t('login.tabRegister', lang) }].map(tab => (
-                <TouchableOpacity key={tab.id} onPress={() => switchTab(tab.id)}
-                  style={[s.segBtn, { backgroundColor: view === tab.id ? segActiveBg : 'transparent' }]}>
-                  <Text style={[s.segTxt, { color: view === tab.id ? segActiveFg : C.sub }]}>{tab.l}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
 
           {/* Conteúdo com animação de transição.
               Mantemos sempre os mesmos valores Animated (transX/transOp) para não
@@ -382,33 +323,13 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={handleLogin} disabled={loading} style={s.btnMain}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnLogin', lang)}</Text>}
                 </TouchableOpacity>
+                <TouchableOpacity style={s.switchRow} onPress={() => setSignupMode(true)}>
+                  <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
+                  <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
+                </TouchableOpacity>
               </Animated.View>
             )}
 
-            {/* ── REGISTER ── */}
-            {view === 'register' && (
-              <Animated.View style={{ transform: [{ translateX: shake }] }}>
-                <Field value={rName} onChangeText={v => { setRName(v); setRErrName(''); }}
-                  placeholder={t('login.fullName', lang)} error={rErrName} icon="person-outline"
-                  autoCapitalize="words" returnKeyType="next"
-                  onSubmitEditing={() => rEmailRef.current?.focus()} />
-                <Field value={rEmail} onChangeText={v => { setREmail(v); setRErrEmail(''); }}
-                  placeholder={t('login.email', lang)} error={rErrEmail} icon="mail-outline"
-                  keyboardType="email-address" returnKeyType="next"
-                  onSubmitEditing={() => rPwRef.current?.focus()} inputRef={rEmailRef} />
-                <Field value={rPw} onChangeText={v => { setRPw(v); setRErrPw(''); }}
-                  placeholder={t('login.password', lang)} error={rErrPw} secure icon="lock-closed-outline"
-                  returnKeyType="next" onSubmitEditing={() => rPw2Ref.current?.focus()} inputRef={rPwRef} />
-                <StrengthBar password={rPw} lang={lang} />
-                <Field value={rPw2} onChangeText={v => { setRPw2(v); setRErrPw2(''); }}
-                  placeholder={t('login.confirmPw', lang)} error={rErrPw2} secure icon="lock-closed-outline"
-                  returnKeyType="done" onSubmitEditing={handleRegister} inputRef={rPw2Ref} />
-                <TouchableOpacity onPress={handleRegister} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnRegister', lang)}</Text>}
-                </TouchableOpacity>
-                <Text style={s.terms}>{t('login.terms', lang)}</Text>
-              </Animated.View>
-            )}
 
             {/* ── ESQUECI A PALAVRA-PASSE ── */}
             {view === 'forgot' && (
@@ -504,16 +425,14 @@ const makeS = (C) => StyleSheet.create({
   ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, ...SHADOW.sm },
   logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
-  seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: SPACE.xs, marginBottom: SPACE.xl },
-  segBtn:       { flex: 1, borderRadius: RADIUS.pill, paddingVertical: 10, alignItems: 'center' },
-  segTxt:       { fontSize: TYPE.sub, fontFamily: FONT.semibold, letterSpacing: 0.3 },
+  switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 },
+  switchLink:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
   errBanner:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.redSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.redSoft },
   errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontFamily: FONT.medium },
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
   forgotTxt:    { fontSize: TYPE.sub, color: C.sub },
   btnMain:      { backgroundColor: C.ink, borderRadius: RADIUS.pill, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: SPACE.xs },
   btnMainTxt:   { color: '#fff', fontSize: TYPE.value, fontFamily: FONT.bold, letterSpacing: 0.8 },
-  terms:        { fontSize: TYPE.micro, color: C.sub, textAlign: 'center', marginTop: 20, lineHeight: 16 },
   // Forgot/code/reset shared
   stepHeader:   { alignItems: 'center', marginBottom: SPACE.xl },
   stepIconWrap: { width: 60, height: 60, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },

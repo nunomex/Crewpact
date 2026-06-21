@@ -212,6 +212,7 @@ export default function App() {
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
+  const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
 
   const [lang, setLang]                 = useState('pt');
   const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
@@ -440,6 +441,16 @@ export default function App() {
   }, []);
   useEffect(() => { if (themeHydrated.current) AsyncStorage.setItem('cp_theme', theme).catch(() => {}); }, [theme]);
 
+  // Catálogo de companhias (global) — carrega já no ARRANQUE, também pré-login, para
+  // o wizard de criação de conta poder mostrar as companhias antes de a conta existir.
+  // Cache instantânea → refresca do servidor (precisa da política RLS anon, schema §10).
+  useEffect(() => {
+    AsyncStorage.getItem('cp_airlines').then((al) => { if (al) setAirlines(JSON.parse(al)); }).catch(() => {});
+    fetchAirlines().then((fresh) => {
+      if (fresh.length) { setAirlines(fresh); AsyncStorage.setItem('cp_airlines', JSON.stringify(fresh)).catch(() => {}); }
+    });
+  }, []);
+
   // Favoritos / notificações lidas são guardados POR UTILIZADOR no telemóvel.
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
@@ -483,7 +494,8 @@ export default function App() {
           const crewCategory = resolved.crewCategory || localProfile?.crewCategory || user.crewCategory || null;
           const crewContract = resolved.crewContract || localProfile?.crewContract || user.crewContract || null;
           const serviceStart = resolved.serviceStart || localProfile?.serviceStart || user.serviceStart || null;
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, serviceStart });
+          const base = resolved.base || localProfile?.base || user.base || null;
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, serviceStart, base });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -570,6 +582,7 @@ export default function App() {
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
+  const base = profile?.base || null;                  // base (LIS/OPO/FAO)
   const serviceYears = (() => {
     if (!serviceStart) return null;
     const sd = new Date(`${serviceStart}T00:00:00`);
@@ -587,7 +600,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, ae,
+    airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, ae,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
@@ -596,6 +609,7 @@ export default function App() {
     dayLog, updateDayLog, removeDayLog,
     duties, saveDuty, removeDuty,
     onboarded, setOnboarded,
+    signupMode, setSignupMode,
     online,
   };
 
@@ -606,7 +620,7 @@ export default function App() {
         <ActivityIndicator color={palette.text} />
       </View>
     );
-    if (!user)       return <LoginScreen />;
+    if (!user)       return signupMode ? <OnboardingScreen signup /> : <LoginScreen />;
     // Bloqueio biometria/PIN (opt-in): com sessão restaurada/timeout, exige
     // desbloqueio antes de mostrar qualquer dado. Camada por cima — não toca no
     // onboarding nem no fluxo de perfil.

@@ -200,3 +200,14 @@ end $$;
 -- vive no código (ae/*). Descomenta só se quiseres limpar de vez:
 -- drop table if exists public.airline_contracts;
 -- drop table if exists public.airline_categories;
+
+
+-- ── 10. RLS — catálogo `airlines` legível por ANON (wizard de criação de conta) ──
+-- O novo fluxo de signup mostra as companhias ANTES de a conta existir (a conta é
+-- criada só no FIM do wizard). Por isso o catálogo tem de ser legível SEM sessão.
+-- Não é sensível (nomes de companhias). Mantém também a política `authenticated`.
+-- ⚠️ SEM esta política, o passo "Companhia" do registo fica vazio. Idempotente.
+alter table public.airlines enable row level security;
+drop policy if exists "airlines_read_anon" on public.airlines;
+create policy "airlines_read_anon" on public.airlines
+  for select to anon using (true);

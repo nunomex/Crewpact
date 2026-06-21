@@ -10,6 +10,7 @@ export const mapUser = (u) => ({
   crewCategory: u.user_metadata?.crewCategory || null,
   crewContract: u.user_metadata?.crewContract || null,
   serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
+  base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
   rank:      u.user_metadata?.rank     || null,
   contract:  u.user_metadata?.contract || null,
   createdAt: u.created_at?.slice(0, 10) || '',
@@ -97,11 +98,14 @@ export const login = async (email, password, lang = 'pt') => {
   return { ok: true, user: mapUser(data.user) };
 };
 
-export const register = async (name, email, password, lang = 'pt') => {
+export const register = async (name, email, password, lang = 'pt', extra = {}) => {
+  // `extra` = config completa (company, crewType, categoria, contrato, base,
+  // serviceStart). Vai TODA nos metadados do signUp → a conta nasce completa ou
+  // não nasce. Nunca fica meio-configurada.
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
-    options: { data: { name: name.trim() } },
+    options: { data: { name: name.trim(), ...extra } },
   });
   if (error) return { ok: false, error: mapError(error, lang) };
   if (!data.session) {

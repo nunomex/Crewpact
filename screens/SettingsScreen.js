@@ -44,7 +44,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, serviceStart, serviceYears, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, serviceStart, serviceYears, base, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -82,6 +82,15 @@ export default function SettingsScreen({ navigation }) {
     setProfile((p) => ({ ...p, serviceStart: val }));          // UI instantânea (cache persiste)
     updateProfile({ serviceStart: val }, lang).catch(() => {}); // best-effort → metadata
     setSdModal(false); success();
+  };
+
+  // Base (LIS/OPO/FAO) — guardada no metadata; "fora da base" no per-diem/pernoitas.
+  const BASES = ['LIS', 'OPO', 'FAO'];
+  const [bModal, setBModal] = useState(false);
+  const saveBase = (val) => {
+    setProfile((p) => ({ ...p, base: val }));
+    updateProfile({ base: val }, lang).catch(() => {});
+    setBModal(false); success();
   };
 
   // Bloqueio biometria/PIN (opt-in). Ao ativar, confirma que o dispositivo
@@ -156,6 +165,10 @@ export default function SettingsScreen({ navigation }) {
                   <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
                 </View>
               </View>
+              {ae ? (
+                <Row icon="location-outline" label={l('Base', 'Base')} sub={l('Onde estás baseado', 'Where you are based')}
+                  value={base || l('Por definir', 'Not set')} onPress={() => setBModal(true)} s={s} C={C} />
+              ) : null}
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
                   sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
@@ -246,6 +259,23 @@ export default function SettingsScreen({ navigation }) {
         </View>
       </CenterDialog>
 
+      {/* Base */}
+      <CenterDialog visible={bModal} onClose={() => setBModal(false)} title={l('A tua base', 'Your base')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          <View style={s.baseWrap}>
+            {BASES.map((b) => {
+              const on = base === b;
+              return (
+                <TouchableOpacity key={b} onPress={() => saveBase(b)} style={[s.baseChip, on && s.baseChipOn]} activeOpacity={0.85}>
+                  <Text style={[s.baseChipTxt, on && s.baseChipTxtOn]}>{b}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={s.sdHint}>{l('Per-diem e pernoitas são "fora da base".', 'Per-diem and night stops are "away from base".')}</Text>
+        </View>
+      </CenterDialog>
+
     </SafeAreaView>
   );
 }
@@ -277,6 +307,11 @@ const makeStyles = (C) => StyleSheet.create({
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
   pwEye: { padding: 4, marginLeft: 6 },
   sdHint: { fontSize: TYPE.label, color: C.sub, marginTop: 8, marginBottom: 10, lineHeight: 16 },
+  baseWrap: { flexDirection: 'row', gap: 8 },
+  baseChip: { flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', backgroundColor: C.card },
+  baseChipOn: { borderColor: C.red, backgroundColor: C.redSoft },
+  baseChipTxt: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.sub },
+  baseChipTxtOn: { color: C.red },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

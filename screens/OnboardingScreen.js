@@ -4,26 +4,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
 import { AppContext, useTheme } from '../data/appContext';
-import { updateProfile } from '../data/auth';
+import { updateProfile, register, validateName, validateEmail, validatePassword } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { t, tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
-export default function OnboardingScreen() {
-  const { user, airlines, setProfile, setOnboarded, setUser, lang } = useContext(AppContext);
+export default function OnboardingScreen({ signup = false }) {
+  const { user, airlines, setProfile, setOnboarded, setUser, setSignupMode, suppressAuth, logout, lang } = useContext(AppContext);
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, serviceStart: '' });
+  const [draft, setDraft] = useState({ name: '', email: '', password: '', company: null, crewType: null, crewCategory: null, crewContract: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showPw, setShowPw] = useState(false);
 
   // Onboarding: operador (tabela `airlines`) + tipo de tripulação (cabine/piloto →
   // guardado em `profiles.crew_type` como 'cabin' | 'pilot').
   const CREW = [
     { id: 'cabin', label: { pt: 'Tripulante de Cabine', en: 'Cabin Crew' } },
     { id: 'pilot', label: { pt: 'Piloto', en: 'Pilot' } },
+  ];
+  // Bases portuguesas da easyJet — per-diem e pernoitas são "fora da base".
+  const BASES = [
+    { id: 'LIS', code: 'LIS', label: { pt: 'Lisboa', en: 'Lisbon' } },
+    { id: 'OPO', code: 'OPO', label: { pt: 'Porto', en: 'Porto' } },
+    { id: 'FAO', code: 'FAO', label: { pt: 'Faro', en: 'Faro' } },
   ];
   // AE da companhia escolhida + tipo de tripulação (pilotos e cabine têm AEs
   // diferentes). Resolve-se só depois de o crewType estar escolhido.
@@ -47,29 +54,37 @@ export default function OnboardingScreen() {
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
   };
   const STEP_DEFS = {
+    account:      { title: lang === 'en' ? 'Create account' : 'Cria a tua conta', sub: lang === 'en' ? 'Your details' : 'Os teus dados', field: 'account', input: 'account' },
     company:      { title: t('onb.s0t', lang),       sub: t('onb.s0s', lang),       items: airlines,   field: 'company' },
     crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
     crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
+    base:         { title: lang === 'en' ? 'Home base' : 'Base', sub: lang === 'en' ? 'Where you are based' : 'Onde estás baseado', items: BASES, field: 'base' },
     serviceStart: { title: lang === 'en' ? 'Start date' : 'Data de início',
                     sub: lang === 'en' ? 'Seniority — for the loyalty bonus (optional, you can skip)' : 'Antiguidade — para o prémio de permanência (opcional, podes saltar)',
                     field: 'serviceStart', input: 'date' },
   };
+  // Flow gerado a partir do que a COMPANHIA exige (requires_*), não de `companyHasAe`
+  // (que precisa do crewType). Assim a barra de passos fica certa logo ao escolher a
+  // companhia — os passos do AE não "saltam" para dentro só no crew type.
   const flow = [
     'company', 'crewType',
-    ...(companyHasAe ? ['crewCategory'] : []),
-    ...(companyHasContract ? ['crewContract'] : []),
-    ...(companyHasAe ? ['serviceStart'] : []),
+    ...(requiresCategory ? ['crewCategory'] : []),
+    ...(requiresContract ? ['crewContract'] : []),
+    ...(requiresCategory ? ['base'] : []),
+    ...(requiresCategory ? ['serviceStart'] : []),
+    ...(signup ? ['account'] : []),   // credenciais NO FIM — coladas à criação da conta
   ];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
   const items = s.items;
   const field = s.field;
   const isLast = idx >= flow.length - 1;
-  const canNext = s.input === 'date' ? true : !!draft[field];
+  const accountValid = !validateName(draft.name, lang) && !validateEmail(draft.email, lang) && !validatePassword(draft.password, true, lang);
+  const canNext = s.input === 'date' ? true : s.input === 'account' ? accountValid : !!draft[field];
 
   // Grava o perfil e termina o onboarding. serviceStartVal: 'AAAA-MM-DD' ou null.
-  const finish = async (serviceStartVal) => {
+  const finish = async (serviceStartArg) => {
     setSaving(true);
     setSaveError(null);
     const payload = {
@@ -77,13 +92,31 @@ export default function OnboardingScreen() {
       crewType: draft.crewType,
       crewCategory: companyHasAe ? draft.crewCategory : null,
       crewContract: companyHasContract ? draft.crewContract : null,
-      serviceStart: serviceStartVal || null,
+      base: companyHasAe ? draft.base : null,
+      serviceStart: serviceStartArg === undefined ? (draft.serviceStart || null) : serviceStartArg,
     };
+    if (signup) {
+      // A conta nasce COMPLETA num único passo: a config inteira vai nos metadados
+      // do próprio signUp → ou é criada com tudo, ou não é criada de todo. NUNCA
+      // fica meio-configurada.
+      suppressAuth.current = true;
+      const reg = await register(draft.name, draft.email, draft.password, lang, payload);
+      suppressAuth.current = false;
+      if (!reg.ok) { setSaving(false); setSaveError(reg.error); setStep(0); return; }  // ex.: email já existe → volta ao 1.º passo
+      upsertProfile(reg.user?.id, payload).catch(() => {});   // tabela profiles (best-effort; o metadata é a fonte de verdade)
+      setSaving(false);
+      setUser(reg.user);
+      setProfile(payload);
+      success();
+      setOnboarded(true);
+      setSignupMode(false);
+      return;
+    }
+    // Utilizador já existente a (re)configurar — grava no metadata.
     const result = await updateProfile(payload, lang);
     if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
-    await upsertProfile(user?.id, payload);   // best-effort (metadata + AsyncStorage garantem o fluxo)
+    await upsertProfile(user?.id, payload);
     setSaving(false);
-    // setProfile COMPLETO tem de ser a ÚLTIMA escrita (setUser→handleSetUser repõe só company).
     if (result.user) setUser(result.user);
     setProfile(payload);
     success();
@@ -91,7 +124,7 @@ export default function OnboardingScreen() {
   };
 
   const handleNext = () => {
-    if (!isLast) { setStep(step + 1); return; }
+    // Valida o passo de data ao SAIR dele (a data é opcional → vazia passa).
     if (s.input === 'date') {
       const v = (draft.serviceStart || '').trim();
       if (v !== '') {
@@ -99,10 +132,9 @@ export default function OnboardingScreen() {
         const dt = new Date(`${v}T00:00:00`);
         if (isNaN(dt.getTime()) || +v.slice(0, 4) < 1980 || dt.getTime() > Date.now()) { setSaveError(lang === 'en' ? 'Invalid date.' : 'Data inválida.'); return; }
       }
-      finish(v === '' ? null : v);
-      return;
     }
-    finish(null);
+    if (!isLast) { setStep(step + 1); return; }
+    finish();   // último passo → cria/grava
   };
 
   return (
@@ -114,15 +146,34 @@ export default function OnboardingScreen() {
         </View>
       </View>
       <View style={styles.top}>
-        <View style={styles.dots}>
-          {flow.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= idx ? C.red : C.line }]} />)}
-        </View>
+        {draft.company ? (
+          <View style={styles.dots}>
+            {flow.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i <= idx ? C.red : C.line }]} />)}
+          </View>
+        ) : null}
         <Text style={styles.title}>{s.title}</Text>
         <Text style={styles.sub}>{s.sub}</Text>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }}>
-        {s.input === 'date' ? (
+      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
+        {s.input === 'account' ? (
+          <View>
+            <TextInput value={draft.name} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, name: v }); }}
+              placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub} autoCapitalize="words" style={styles.acctInput} autoFocus />
+            {draft.name && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
+            <TextInput value={draft.email} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, email: v }); }}
+              placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput} />
+            {draft.email && validateEmail(draft.email, lang) ? <Text style={styles.acctErr}>{validateEmail(draft.email, lang)}</Text> : null}
+            <View style={styles.pwRow}>
+              <TextInput value={draft.password} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, password: v }); }}
+                placeholder={lang === 'en' ? 'Password' : 'Palavra-passe'} placeholderTextColor={C.sub} secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} style={styles.pwInput} />
+              <TouchableOpacity onPress={() => setShowPw((x) => !x)} hitSlop={8}>
+                <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.sub} />
+              </TouchableOpacity>
+            </View>
+            {draft.password && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
+          </View>
+        ) : s.input === 'date' ? (
           <View>
             <TextInput value={draft.serviceStart} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, serviceStart: maskDate(v) }); }}
               placeholder="2016-03-01" placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation"
@@ -153,14 +204,19 @@ export default function OnboardingScreen() {
           {saveError}
         </Text>
       )}
+      {!signup ? (
+        <TouchableOpacity onPress={logout} style={styles.exitLink}>
+          <Text style={styles.exitTxt}>{lang === 'en' ? 'Sign out' : 'Sair'}</Text>
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.footer}>
-        {step > 0 && (
-          <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.btnBack}>
+        {(step > 0 || signup) && (
+          <TouchableOpacity onPress={() => { if (step === 0) setSignupMode(false); else setStep(step - 1); }} style={styles.btnBack}>
             <Text style={[styles.btnText, { color: C.text }]}>{t('onb.back', lang)}</Text>
           </TouchableOpacity>
         )}
         {s.input === 'date' && (
-          <TouchableOpacity disabled={saving} onPress={() => finish(null)} style={styles.btnBack}>
+          <TouchableOpacity disabled={saving} onPress={() => { if (isLast) finish(null); else { setDraft({ ...draft, serviceStart: '' }); setStep(step + 1); } }} style={styles.btnBack}>
             <Text style={[styles.btnText, { color: C.sub }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
           </TouchableOpacity>
         )}
@@ -188,6 +244,10 @@ const makeStyles = (C) => StyleSheet.create({
   scroll: { flex: 1, paddingHorizontal: 24 },
   dateInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text, backgroundColor: C.card, letterSpacing: 1 },
   dateHint: { fontSize: 13, color: C.sub, marginTop: 10, lineHeight: 18 },
+  acctInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card, marginBottom: 10 },
+  acctErr: { fontSize: 12, color: C.red, marginTop: -6, marginBottom: 8, marginLeft: 4 },
+  pwRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, backgroundColor: C.card, marginBottom: 10 },
+  pwInput: { flex: 1, paddingVertical: 15, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.card },
   optBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   optBadgeTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
@@ -197,4 +257,6 @@ const makeStyles = (C) => StyleSheet.create({
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },
   btnNext: { flex: 1, paddingVertical: 14, borderRadius: 99, alignItems: 'center' },
   btnText: { fontSize: 14, fontFamily: FONT.semibold },
+  exitLink: { alignItems: 'center', paddingVertical: 6, marginBottom: 2 },
+  exitTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
 });
