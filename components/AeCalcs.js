@@ -122,11 +122,12 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
       ) : null}
-      {month && (month.officeDays > 0 || month.adtyDays > 0) ? (
+      {month && (month.officeDays > 0 || month.adtyDays > 0 || month.nightStopDays > 0) ? (
         <Text style={s.note}>
           {l('No total:', 'In total:')} {[
             month.officeDays > 0 ? `${month.officeDays} ${l('escritório', 'office')}` : null,
             month.adtyDays > 0 ? `${month.adtyDays} ${l('standby aeroporto', 'airport standby')}` : null,
+            month.nightStopDays > 0 ? `${month.nightStopDays} ${l('paragem(ns) nocturna(s)', 'night stop(s)')}` : null,
           ].filter(Boolean).join(' · ')}
         </Text>
       ) : null}

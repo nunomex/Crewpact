@@ -190,7 +190,7 @@ export default function SettingsScreen({ navigation }) {
                   <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
                   <Text style={s.aeCardV}>{fmtEur(aeMonth.total)}</Text>
                 </View>
-                <Text style={s.aeCardSub} numberOfLines={1}>
+                <Text style={s.aeCardSub}>
                   {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
                   {aeMonth.extras ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeMonth.extras)}` : ''}
                   {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
