@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
+import { TodayDutyCard, NextDutyCard, UpcomingDutiesCard } from '../components/HomeDutyCards';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
@@ -459,6 +460,13 @@ export default function HomeScreen({ navigation }) {
 
         {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
+
+        {/* CARDS DA DUTY (avaliação — 3 opções; elimina as que não quiseres depois) */}
+        <Animated.View style={seg(3)}>
+          <TodayDutyCard duties={duties} lang={lang} />
+          <NextDutyCard duties={duties} lang={lang} />
+          <UpcomingDutiesCard duties={duties} lang={lang} />
+        </Animated.View>
 
         {/* Grelha de baixo — FTL·Voo + (AE compacto | FTL·Serviço), como o mockup */}
         <Animated.View style={[s.grid2, seg(3)]}>
