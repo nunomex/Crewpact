@@ -119,6 +119,12 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
         <Text style={s.aetotalK}>{l('Total estimado', 'Estimated total')} · {monthName}</Text>
         <Text style={s.aetotalV}>{fmtEur(total)}</Text>
       </View>
+      {/* DEBUG TEMPORÁRIO — remover depois de diagnosticar a paragem nocturna */}
+      <Text style={[s.note, { color: C.red, fontFamily: FONT.bold }]}>
+        🔧 {month
+          ? `mes ${ym} · duties ${month.count} · voos ${month.withRoute} · office ${month.officeDays} · adty ${month.adtyDays} · paragens ${month.nightStopDays}`
+          : `month=null (ae=${!!ae}, categoria=${category || '—'})`}
+      </Text>
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
       ) : null}
