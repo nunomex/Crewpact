@@ -403,16 +403,6 @@ export default function HomeScreen({ navigation }) {
   const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
   const crewWord = isPilot ? (lang === 'en' ? 'Pilot' : 'Piloto') : (lang === 'en' ? 'Cabin' : 'Cabine');
   const opEyebrow = [company?.name, ae ? 'AE' : 'FTL', crewWord].filter(Boolean).join(' · ').toUpperCase();
-  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const todayISO = isoOf(new Date());
-  const nextFlightISO = flight?.dateISO || null;
-  const weekDays = Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i);
-    const iso = isoOf(d);
-    const reg = duties[iso];
-    const wd = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
-    return { iso, day: d.getDate(), wd: wd.charAt(0).toUpperCase() + wd.slice(1), hasFlight: !!(reg && !reg.deleted && reg.report_time), isToday: iso === todayISO };
-  });
 
   // Entrada escalonada das secções (hook partilhado, re-toca no foco) — mockup .rise.
   const seg = useEnter();
@@ -432,22 +422,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           }
         />
-
-        {/* Tira de 5 dias — hoje a contorno vermelho, próximo voo preenchido, ponto nos dias com voo */}
-        <Animated.View style={[s.week, seg(0)]}>
-          {weekDays.map((wdy) => {
-            const isNext = nextFlightISO === wdy.iso;
-            return (
-              <TouchableOpacity key={wdy.iso} activeOpacity={0.8}
-                onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { view: 'month' } }); }}
-                style={[s.wd, isNext && s.wdOn, wdy.isToday && !isNext && s.wdToday]}>
-                <Text style={[s.wdNum, isNext && s.wdNumOn, wdy.isToday && !isNext && s.wdNumToday]}>{wdy.day}</Text>
-                <Text style={[s.wdDay, isNext && s.wdDayOn]}>{wdy.wd}</Text>
-                <View style={[s.wdDot, wdy.hasFlight && s.wdDotOn, isNext && wdy.hasFlight && s.wdDotWhite]} />
-              </TouchableOpacity>
-            );
-          })}
-        </Animated.View>
 
         {/* Estado FTL — linha de estado (ponto semáforo a pulsar + contexto à direita) */}
         <Animated.View style={[s.statline, seg(1)]}>
@@ -509,18 +483,6 @@ const makeStyles = (C) => StyleSheet.create({
   headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
 
   // Tira de 5 dias
-  week: { flexDirection: 'row', gap: 7, justifyContent: 'space-between', marginBottom: SPACE.md },
-  wd: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: RADIUS.md, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line },
-  wdOn: { backgroundColor: C.ink, borderColor: C.ink },
-  wdToday: { borderColor: C.red },
-  wdNum: { fontSize: 17, fontFamily: FONT.semibold, color: C.text, lineHeight: 18 },
-  wdNumOn: { color: '#fff' },
-  wdNumToday: { color: C.red },
-  wdDay: { fontSize: 11, fontFamily: FONT.bold, textTransform: 'uppercase', color: C.sub, marginTop: 4 },
-  wdDayOn: { color: C.onDarkSub },
-  wdDot: { width: 5, height: 5, borderRadius: RADIUS.pill, backgroundColor: 'transparent', marginTop: 5 },
-  wdDotOn: { backgroundColor: C.red },
-  wdDotWhite: { backgroundColor: '#fff' },
 
   // Estado FTL — linha de estado (ponto semáforo + contexto à direita)
   statline: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: SPACE.md },
