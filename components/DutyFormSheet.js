@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
-import { RADIUS, TYPE, SPACE, FONT, TRACK_DISPLAY } from '../data/constants';
+import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
 import { DUTY_KINDS } from '../data/duties';
@@ -64,12 +64,15 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) { enter.setValue(0); return; }
-    Animated.timing(enter, { toValue: 1, duration: 620, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(enter, { toValue: 1, duration: 820, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Mesmas constantes do `useEnter` da app (stagger 0.11, faixa +0.42, translateY 16).
   const secStyle = (i) => {
-    const start = Math.min(0.6, i * 0.09);
-    const p = enter.interpolate({ inputRange: [start, Math.min(1, start + 0.4)], outputRange: [0, 1], extrapolate: 'clamp' });
-    return { opacity: p, transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] };
+    const start = Math.min(0.55, i * 0.11);
+    return {
+      opacity: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [0, 1], extrapolate: 'clamp' }),
+      transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
+    };
   };
   const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: (k === 'flight' || k === 'positioning') ? f.nightStop : false })); };
 
@@ -143,7 +146,10 @@ export default function DutyFormSheet({ visible, onClose, date }) {
         {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
         <View style={s.head}>
           <View style={{ flex: 1 }}>
-            <Text style={s.eyebrow}>{l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
+            <View style={s.eyebrowRow}>
+              <View style={s.eyebrowDot} />
+              <Text style={s.eyebrow}>{l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
+            </View>
             <Text style={s.h1}>Duty</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}>
@@ -259,14 +265,16 @@ export default function DutyFormSheet({ visible, onClose, date }) {
 
 const makeStyles = (C) => StyleSheet.create({
   page: { flex: 1, backgroundColor: C.canvas },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 6, paddingBottom: 10 },
-  eyebrow: { fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: C.red, fontFamily: FONT.heavy, marginBottom: 4 },
-  h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: TRACK_DISPLAY },
+  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
+  eyebrow: { fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy },
+  h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  body: { paddingHorizontal: 22, paddingTop: 6, paddingBottom: 24, gap: 16 },
+  body: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24, gap: 16 },
   sec: {},
   lbl: { fontSize: 12, fontFamily: FONT.bold, color: C.text, marginBottom: 7 },
-  input: { borderWidth: 1, borderColor: C.line, backgroundColor: C.soft2 || C.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text },
+  input: { borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 13, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text },
   row2: { flexDirection: 'row', gap: 9 },
   datepick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 8, paddingVertical: 6 },
   dateNav: { width: 38, height: 38, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
@@ -294,7 +302,7 @@ const makeStyles = (C) => StyleSheet.create({
   fatDot: { width: 8, height: 8, borderRadius: 99, marginRight: 7 },
   fatLbl: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.semibold },
   fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
-  foot: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
+  foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
   footHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginBottom: 8 },
   save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
   saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
