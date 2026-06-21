@@ -122,8 +122,28 @@ eq('Piloto DDO CPT (0,4% anual)', ae.ddo('CPT'), 488.00);                 // 0.0
 eq('Piloto IDO CPT (0,8% anual)', ae.ido('CPT'), 976.00);                 // 0.008×122000
 eq('Piloto WFLY CPT (1% anual)', ae.wfly('CPT'), 1220.00);               // 0.01×122000
 eq('Piloto DDO FO (0,4% anual)', ae.ddo('FO'), 191.00);                   // 0.004×47750
-eq('Piloto doença/dia CPT (45%)', ae.sickDay('CPT'), 130.71);            // 0.45×(122000/14)/30
-eq('Piloto catálogo (11 cálculos)', ae.CALCS.length, 11);
+eq('Piloto doença/dia CPT (60%)', ae.sickDay('CPT'), 174.29);            // 0.60×(122000/14)/30 — Anexo I.10 (dias 1-3)
+// Anexo I — itens acrescentados (I.5 ADTY, I.8 benefícios, I.9 permanência, I.11 gravidez, I.14 escritório, I.15 retenção)
+eq('Piloto benefícios CPT (€3500)', ae.benefits('CPT'), 3500);
+eq('Piloto benefícios FO (€1000)', ae.benefits('FO'), 1000);
+eq('Piloto OFC4 CPT (1,5 NS)', ae.office4('CPT'), 118.13);               // 1.5×78.75
+eq('Piloto OFC8 CPT (3 NS)', ae.office8('CPT'), 236.25);                 // 3×78.75
+eq('Piloto gravidez CPT (35% mensal)', ae.pregnancy('CPT'), 3050.00);    // 0.35×(122000/14)
+eq('Piloto retenção CPT (€12000)', ae.retention('CPT'), 12000);
+eq('Piloto retenção FO (€6000)', ae.retention('FO'), 6000);
+eq('Piloto ADTY não-chamado <4h (1 NS)', ae.airportStandby('CPT', { called: false, over4h: false }), 78.75);
+eq('Piloto ADTY não-chamado ≥4h (2 NS)', ae.airportStandby('CPT', { called: false, over4h: true }), 157.50);
+eq('Piloto ADTY chamado <4h (0)', ae.airportStandby('CPT', { called: true, over4h: false }), 0);
+eq('Piloto ADTY chamado ≥4h (2 NS)', ae.airportStandby('CPT', { called: true, over4h: true }), 157.50);
+eq('Piloto permanência CPT 10+ (15%)', ae.loyalty('CPT', { years: 10 }), 18300);   // 0.15×122000
+eq('Piloto permanência CPT 5 (10%)', ae.loyalty('CPT', { years: 5 }), 12200);
+eq('Piloto permanência CPT 2 (5%)', ae.loyalty('CPT', { years: 2 }), 6100);
+eq('Piloto permanência CPT 1 (0)', ae.loyalty('CPT', { years: 1 }), 0);
+eq('Piloto permanência SFO 3 (5%)', ae.loyalty('SFO', { years: 3 }), 3450);        // 0.05×69000
+eq('Piloto permanência FO (sempre 0)', ae.loyalty('FO', { years: 20 }), 0);
+eq('Piloto permanência CPT 10 part-time 9/12', ae.loyalty('CPT', { years: 10, contract: 'PPY 9/12' }), 13725);  // 18300×0.75
+eq('Piloto catalogValue loyalty CPT 5a', ae.catalogValue('loyalty', { category: 'CPT', years: 5 }), 12200);
+eq('Piloto catálogo (18 cálculos)', ae.CALCS.length, 18);
 eq('Piloto papéis CPT (instrutor)', ae.additionalRolesFor('CPT').map((r) => r.id).join(','), 'instr');
 eq('Piloto papéis SFO (instrutor)', ae.additionalRolesFor('SFO').map((r) => r.id).join(','), 'instr');
 eq('Piloto papéis FO (nenhum)', ae.additionalRolesFor('FO').length, 0);

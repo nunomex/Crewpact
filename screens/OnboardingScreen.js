@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
@@ -15,7 +15,7 @@ export default function OnboardingScreen() {
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null });
+  const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
@@ -40,23 +40,70 @@ export default function OnboardingScreen() {
   const CONTRACTS = ae
     ? ae.CONTRACTS.map((id) => ({ id, label: { pt: ae.contractLabel(id, 'pt'), en: ae.contractLabel(id, 'en') } }))
     : [];
+  const maskDate = (v) => {
+    const d = (v || '').replace(/\D/g, '').slice(0, 8);
+    if (d.length <= 4) return d;
+    if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
+    return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
+  };
   const STEP_DEFS = {
     company:      { title: t('onb.s0t', lang),       sub: t('onb.s0s', lang),       items: airlines,   field: 'company' },
     crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
     crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
+    serviceStart: { title: lang === 'en' ? 'Start date' : 'Data de início',
+                    sub: lang === 'en' ? 'Seniority — for the loyalty bonus (optional, you can skip)' : 'Antiguidade — para o prémio de permanência (opcional, podes saltar)',
+                    field: 'serviceStart', input: 'date' },
   };
   const flow = [
     'company', 'crewType',
     ...(companyHasAe ? ['crewCategory'] : []),
     ...(companyHasContract ? ['crewContract'] : []),
+    ...(companyHasAe ? ['serviceStart'] : []),
   ];
   const idx = Math.min(step, flow.length - 1);
   const s = STEP_DEFS[flow[idx]];
   const items = s.items;
   const field = s.field;
   const isLast = idx >= flow.length - 1;
-  const canNext = !!draft[field];
+  const canNext = s.input === 'date' ? true : !!draft[field];
+
+  // Grava o perfil e termina o onboarding. serviceStartVal: 'AAAA-MM-DD' ou null.
+  const finish = async (serviceStartVal) => {
+    setSaving(true);
+    setSaveError(null);
+    const payload = {
+      company: draft.company,
+      crewType: draft.crewType,
+      crewCategory: companyHasAe ? draft.crewCategory : null,
+      crewContract: companyHasContract ? draft.crewContract : null,
+      serviceStart: serviceStartVal || null,
+    };
+    const result = await updateProfile(payload, lang);
+    if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
+    await upsertProfile(user?.id, payload);   // best-effort (metadata + AsyncStorage garantem o fluxo)
+    setSaving(false);
+    // setProfile COMPLETO tem de ser a ÚLTIMA escrita (setUser→handleSetUser repõe só company).
+    if (result.user) setUser(result.user);
+    setProfile(payload);
+    success();
+    setOnboarded(true);
+  };
+
+  const handleNext = () => {
+    if (!isLast) { setStep(step + 1); return; }
+    if (s.input === 'date') {
+      const v = (draft.serviceStart || '').trim();
+      if (v !== '') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setSaveError(lang === 'en' ? 'Use the format YYYY-MM-DD.' : 'Usa o formato AAAA-MM-DD.'); return; }
+        const dt = new Date(`${v}T00:00:00`);
+        if (isNaN(dt.getTime()) || +v.slice(0, 4) < 1980 || dt.getTime() > Date.now()) { setSaveError(lang === 'en' ? 'Invalid date.' : 'Data inválida.'); return; }
+      }
+      finish(v === '' ? null : v);
+      return;
+    }
+    finish(null);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -75,7 +122,14 @@ export default function OnboardingScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }}>
-        {items.map((item) => {
+        {s.input === 'date' ? (
+          <View>
+            <TextInput value={draft.serviceStart} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, serviceStart: maskDate(v) }); }}
+              placeholder="2016-03-01" placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation"
+              maxLength={10} style={styles.dateInput} autoFocus />
+            <Text style={styles.dateHint}>{lang === 'en' ? 'Format YYYY-MM-DD. You can skip — it’s editable later in Profile.' : 'Formato AAAA-MM-DD. Podes saltar — é editável depois no Perfil.'}</Text>
+          </View>
+        ) : items.map((item) => {
           const sel = draft[field] === item.id;
           return (
             <TouchableOpacity key={item.id} onPress={() => { select(); setDraft({ ...draft, [field]: item.id }); }}
@@ -105,30 +159,12 @@ export default function OnboardingScreen() {
             <Text style={[styles.btnText, { color: C.text }]}>{t('onb.back', lang)}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity disabled={!canNext || saving} onPress={async () => {
-          if (!isLast) { setStep(step + 1); return; }
-          setSaving(true);
-          setSaveError(null);
-          const payload = {
-            company: draft.company,
-            crewType: draft.crewType,
-            crewCategory: companyHasAe ? draft.crewCategory : null,
-            crewContract: companyHasContract ? draft.crewContract : null,
-          };
-          const result = await updateProfile(payload, lang);
-          if (!result.ok) { setSaving(false); setSaveError(t('onb.saveErr', lang)); return; }
-          // Cria/atualiza o perfil na tabela `profiles` (best-effort; metadata +
-          // AsyncStorage já garantem o fluxo, por isso uma falha aqui não bloqueia).
-          await upsertProfile(user?.id, payload);
-          setSaving(false);
-          // Ordem importa: setUser(result.user) corre handleSetUser, que faz
-          // setProfile({ company }) e apagaria crewType/categoria/contrato. Por isso
-          // o setProfile(payload) COMPLETO tem de ser a ÚLTIMA escrita ao perfil.
-          if (result.user) setUser(result.user);
-          setProfile(payload);
-          success();
-          setOnboarded(true);
-        }} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
+        {s.input === 'date' && (
+          <TouchableOpacity disabled={saving} onPress={() => finish(null)} style={styles.btnBack}>
+            <Text style={[styles.btnText, { color: C.sub }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity disabled={!canNext || saving} onPress={handleNext} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
           {saving
             ? <ActivityIndicator color="#fff" size="small" />
             : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{!isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
@@ -150,6 +186,8 @@ const makeStyles = (C) => StyleSheet.create({
   title: { fontSize: TYPE.hero, fontFamily: FONT.heavy, letterSpacing: TRACK_DISPLAY, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6 },
   scroll: { flex: 1, paddingHorizontal: 24 },
+  dateInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text, backgroundColor: C.card, letterSpacing: 1 },
+  dateHint: { fontSize: 13, color: C.sub, marginTop: 10, lineHeight: 18 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, backgroundColor: C.card },
   optBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   optBadgeTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },

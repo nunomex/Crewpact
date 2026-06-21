@@ -5,6 +5,13 @@ import { supabase } from './supabase';
 //  - Forma na base de dados:   { id, airline_id, crew_type, created_at }
 //    `airline_id` guarda o id/slug da companhia.
 // O mapeamento vive SÓ aqui (fronteira de persistência).
+//
+// FONTE ÚNICA de CATEGORIA e CONTRATO (decisão de arquitetura — Opção A):
+// vivem nos METADADOS do Auth (updateUser) + cache AsyncStorage (cp_profile) — NÃO
+// nesta tabela. As colunas profiles.current_category_id/contract_id e as tabelas
+// airline_categories/contracts NÃO são usadas (catálogo + valores vivem em ae/*).
+// → o cache é um ESPELHO derivado do metadata; o metadata é o canónico.
+// (schema.sql §9 remove as colunas relacionais mortas.)
 
 // A coluna `profiles.crew_type` é um enum em MAIÚSCULAS na BD
 // (CHECK: 'CABIN_CREW' | 'PILOT'); a app usa 'cabin' | 'pilot'. Converter nos

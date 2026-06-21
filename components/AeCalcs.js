@@ -18,7 +18,7 @@ const GROUP_LABEL = {
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
 export default function AeCalcs({ ae, category, contract = '12/12', duties = [] }) {
-  const { lang } = useContext(AppContext);
+  const { lang, serviceYears } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -75,6 +75,8 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
     g.items.push(c);
   });
   const roles = ae.additionalRolesFor ? ae.additionalRolesFor(category) : [];
+  // Prémio de permanência (Anexo I.9) depende da antiguidade — só categorias elegíveis.
+  const hasLoyalty = !!ae.loyaltyPct && ae.loyaltyPct(category, 99) > 0;
 
   return (
     <View>
@@ -119,12 +121,15 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
 
       {/* ── Catálogo de cálculos avulsos (Anexo I) ── */}
       <Text style={s.group}>{l('CÁLCULOS · ANEXO I', 'CALCULATIONS · APPENDIX I')}</Text>
+      {hasLoyalty && serviceYears == null ? (
+        <Text style={s.note}>{l('Define a tua data de início no Perfil para o prémio de permanência.', 'Set your start date in Profile for the loyalty bonus.')}</Text>
+      ) : null}
       {groups.map((g) => (
         <View key={g.id}>
           <Text style={s.subGroup}>{gx(g.id)}</Text>
           <View style={s.card}>
             {g.items.map((c, i) => {
-              const val = ae.catalogValue ? ae.catalogValue(c.id, { category, contract }) : null;
+              const val = ae.catalogValue ? ae.catalogValue(c.id, { category, contract, years: serviceYears || 0 }) : null;
               return (
                 <View key={c.id} style={[s.crow, i > 0 && s.rowBorder]}>
                   <View style={{ flex: 1 }}>
@@ -149,7 +154,7 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
           <Text style={s.subGroup}>{l(`Disponíveis para ${ae.categoryLabel(category, lang)}`, `Available for ${ae.categoryLabel(category, lang)}`)}</Text>
           <View style={s.card}>
             {roles.map((r, i) => {
-              const val = ae.catalogValue ? ae.catalogValue(r.calc, { category, contract }) : null;
+              const val = ae.catalogValue ? ae.catalogValue(r.calc, { category, contract, years: serviceYears || 0 }) : null;
               const fallback = ae[r.calc] ? ae[r.calc](category) : null;
               return (
                 <View key={r.id} style={[s.crow, i > 0 && s.rowBorder]}>

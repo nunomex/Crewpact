@@ -9,6 +9,7 @@ export const mapUser = (u) => ({
   crewType:     u.user_metadata?.crewType     || null,
   crewCategory: u.user_metadata?.crewCategory || null,
   crewContract: u.user_metadata?.crewContract || null,
+  serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
   rank:      u.user_metadata?.rank     || null,
   contract:  u.user_metadata?.contract || null,
   createdAt: u.created_at?.slice(0, 10) || '',
@@ -104,11 +105,12 @@ export const register = async (name, email, password, lang = 'pt') => {
   });
   if (error) return { ok: false, error: mapError(error, lang) };
   if (!data.session) {
+    // autoconfirm OFF → é preciso confirmar o email antes de existir sessão.
     return { ok: false, error: m('confirmEmail', lang) };
   }
-  // Sign out immediately so onAuthStateChange doesn't auto-login before the success screen
-  await supabase.auth.signOut();
-  return { ok: true };
+  // autoconfirm ON → sessão já criada. NÃO fazer signOut: o registo entra DIRETO
+  // no onboarding (fluxo contínuo registo → configuração), sem relogin.
+  return { ok: true, user: mapUser(data.user) };
 };
 
 // ─── Password reset (OTP via e-mail) ─────────────────────────────────────────

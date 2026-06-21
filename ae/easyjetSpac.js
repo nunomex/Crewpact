@@ -58,7 +58,26 @@ export const DDO_PCT_ANNUAL = 0.004;    // trabalhar em dia de descanso (0,4% ba
 export const IDO_PCT_ANNUAL = 0.008;    // dia de descanso infringido (0,8% base anual)
 export const WFLY_PCT_ANNUAL = 0.01;    // voluntário em dia de folga (1% base anual)
 export const INSTRUCTOR_EUR = 120;      // instrutor/verificador (€/dia)
-export const SICK_PCT = 0.45;           // complemento de doença = 45% base diária (após 3 dias)
+export const SICK_PCT = 0.60;           // Art. 48 / Anexo I.10 — doença = 60% base diária (DIAS 1-3; ≠ cabine que é 45% após o 3.º)
+
+// Anexo I.8 — Prestação de benefícios (€/ano), a partir de 1 abr 2024.
+export const BENEFITS_ANNUAL = { CPT: 3500, SFO: 2000, FO: 1000, SO: 1000 };
+// Anexo I.14 — Dias de escritório: OFC4 = 1,5 setores nominais; OFC8 = 3.
+export const OFFICE4_SECTORS = 1.5;
+export const OFFICE8_SECTORS = 3;
+// Anexo I.11 / Art. 49 + 77 — complemento de gravidez = 35% da remuneração mensal base.
+export const PREGNANCY_PCT = 0.35;
+// Anexo I.15 / Art. 24-25 — pagamento de retenção (contrato sazonal), maio 2024.
+// Comandantes 12.000 €; co-pilotos (SFO/FO/SO) 6.000 €.
+export const RETENTION_EUR = { CPT: 12000, SFO: 6000, FO: 6000, SO: 6000 };
+// Anexo I.9 / Art. 47 — prémio de permanência: % da base anual por antiguidade,
+// pago 1×/ano no aniversário de serviço. Só SFO (5% a partir do 3.º ano) e CPT
+// (escalões 5/10/15%). FO/SO não constam na tabela → 0%.
+export const loyaltyPct = (cat, years = 0) => {
+  if (cat === 'CPT') return years >= 10 ? 0.15 : years >= 5 ? 0.10 : years >= 2 ? 0.05 : 0;
+  if (cat === 'SFO') return years >= 3 ? 0.05 : 0;
+  return 0;
+};
 
 // Art. 37 — per diem por SETOR voado, por distância de grande círculo (NM) → multiplicador
 // de setor nominal. Bandas: curto / médio / longo / extra-longo.
@@ -116,7 +135,22 @@ export const snc        = () => SNC_EUR;                                        
 export const ddo        = (cat) => r2(DDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,4% base anual
 export const ido        = (cat) => r2(IDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,8% base anual
 export const wfly       = (cat) => r2(WFLY_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));           // Art. — 1% base anual
-export const sickDay    = (cat) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) / SALARY_INSTALMENTS) / 30);  // 45% base diária
+export const sickDay    = (cat) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) / SALARY_INSTALMENTS) / 30);  // 60% base diária (dias 1-3)
+export const benefits   = (cat) => BENEFITS_ANNUAL[cat] || 0;                          // Anexo I.8 — €/ano
+export const office4    = (cat, index = 1) => r2(OFFICE4_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC4 (1,5 NS)
+export const office8    = (cat, index = 1) => r2(OFFICE8_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC8 (3 NS)
+export const pregnancy  = (cat, { contract = '12/12', index = 1 } = {}) => r2(PREGNANCY_PCT * monthlyBase(cat, { contract, index }));  // Anexo I.11 — €/mês
+export const retention  = (cat) => RETENTION_EUR[cat] || 0;                            // Anexo I.15 — €/ano (sazonal)
+export const loyalty    = (cat, { years = 0, contract = '12/12', index = 1 } = {}) =>  // Anexo I.9 — €/ano (antiguidade)
+  r2(loyaltyPct(cat, years) * (BASE_ANNUAL[cat] || 0) * index * contractFactor(contract));
+// Anexo I.5 — serviço em aeroporto (ADTY). Devolve só o ABONO de reserva (€); o
+// per-diem dos voos operados é somado à parte. Não chamado: <4h=1×NS, ≥4h=2×NS;
+// chamado: <4h=0 (só per-diem do voo), ≥4h=2×NS. (Piloto usa setor NOMINAL, ≠ cabine.)
+export const airportStandby = (cat, { called = false, over4h = false, index = 1 } = {}) => {
+  const ns = nomOf(cat, index);
+  if (called) return over4h ? r2(2 * ns) : 0;
+  return over4h ? r2(2 * ns) : r2(ns);
+};
 
 // Catálogo de cálculos do AE de PILOTO (para listar na página Cálculos). `linked`
 // = entra no total mensal interligado (computeAeMonth).
@@ -130,8 +164,15 @@ export const CALCS = [
   { id: 'ddo',     group: 'Perturbação', linked: false, label: 'Trabalhar em folga (DDO)',  sub: '0,4% base anual' },
   { id: 'ido',     group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',    sub: '0,8% base anual' },
   { id: 'wfly',    group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual' },
-  { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '45% base diária (após 3 dias)' },
+  { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '60% base diária (dias 1-3)' },
   { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia' },
+  { id: 'adty',    group: 'Por voo',     linked: false, label: 'Serviço de aeroporto (ADTY)', sub: '1-2 setores nominais · conforme serviço (Anexo I.5)' },
+  { id: 'office4', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC4)',   sub: '1,5 setores nominais (Anexo I.14)' },
+  { id: 'office8', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC8)',   sub: '3 setores nominais (Anexo I.14)' },
+  { id: 'benefits',  group: 'Subsídios', linked: false, label: 'Prestação de benefícios',    sub: '€/ano por categoria (Anexo I.8)' },
+  { id: 'pregnancy', group: 'Subsídios', linked: false, label: 'Complemento de gravidez',    sub: '35% da base mensal (Anexo I.11)' },
+  { id: 'retention', group: 'Subsídios', linked: false, label: 'Retenção (contrato sazonal)', sub: '€/ano · só sazonal (Anexo I.15)' },
+  { id: 'loyalty',   group: 'Subsídios', linked: false, label: 'Prémio de permanência',      sub: '% da base anual por antiguidade (Anexo I.9)' },
 ];
 
 // ── Papéis adicionais (additional roles) — funções extra sobre a categoria, com
@@ -147,7 +188,7 @@ export const additionalRolesFor = (cat) => ADDITIONAL_ROLES.filter((r) => r.cate
 
 // Valor (€) de um cálculo do catálogo para uma categoria — para o ecrã Cálculos.
 // Devolve número, ou `null` quando o valor depende do voo/mês (per diem).
-export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 1 } = {}) => {
+export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 1, years = 0 } = {}) => {
   switch (id) {
     case 'base':    return monthlyBase(category, { contract, index });
     case 'perdiem': return null;                        // depende da rota do mês
@@ -160,6 +201,13 @@ export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 
     case 'wfly':    return wfly(category);
     case 'sick':    return sickDay(category);
     case 'instr':   return instructor();
+    case 'adty':    return null;                        // depende do serviço (chamado / <4h)
+    case 'office4': return office4(category, index);
+    case 'office8': return office8(category, index);
+    case 'benefits':  return benefits(category);
+    case 'pregnancy': return pregnancy(category, { contract, index });
+    case 'retention': return retention(category);
+    case 'loyalty':   return loyalty(category, { years, contract, index });
     default:        return null;
   }
 };

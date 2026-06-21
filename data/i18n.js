@@ -525,11 +525,12 @@ export const STRINGS = {
     'login.newPwSub': 'Escolhe uma palavra-passe segura para a tua conta.',
     'login.newPw': 'Nova palavra-passe',
     'login.btnCreatePw': 'CRIAR PALAVRA-PASSE',
-    'login.toastTitle': 'Conta criada com sucesso',
     'login.pwMismatch': 'As palavras-passe não coincidem.',
     'login.codeIncomplete': 'Introduz o código completo de 8 dígitos.',
     'st.8': '8+ caract.', 'st.upper': 'Maiúscula', 'st.num': 'Número', 'st.special': 'Especial',
     'sync.done': 'Sincronizado', 'sync.offline': 'Guardado offline', 'sync.offlineSub': 'Sincroniza ao reconectar',
+    'duties.kindLabel': 'Tipo',
+    'duties.kind.flight': 'Voo', 'duties.kind.standby_airport': 'Reserva aeroporto', 'duties.kind.standby_home': 'Reserva casa', 'duties.kind.positioning': 'Posicionamento', 'duties.kind.office': 'Terra', 'duties.kind.training': 'Formação',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · CONFIGURAR',
@@ -1013,11 +1014,12 @@ export const STRINGS = {
     'login.newPwSub': 'Choose a secure password for your account.',
     'login.newPw': 'New password',
     'login.btnCreatePw': 'CREATE PASSWORD',
-    'login.toastTitle': 'Account created successfully',
     'login.pwMismatch': 'Passwords do not match.',
     'login.codeIncomplete': 'Enter the full 8-digit code.',
     'st.8': '8+ chars', 'st.upper': 'Uppercase', 'st.num': 'Number', 'st.special': 'Special',
     'sync.done': 'Synced', 'sync.offline': 'Saved offline', 'sync.offlineSub': 'Will sync when reconnected',
+    'duties.kindLabel': 'Type',
+    'duties.kind.flight': 'Flight', 'duties.kind.standby_airport': 'Airport standby', 'duties.kind.standby_home': 'Home standby', 'duties.kind.positioning': 'Positioning', 'duties.kind.office': 'Ground', 'duties.kind.training': 'Training',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · SETUP',

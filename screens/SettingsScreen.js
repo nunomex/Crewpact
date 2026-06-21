@@ -13,7 +13,7 @@ import { success } from '../data/haptics';
 
 import { C, RADIUS, TYPE, FONT } from '../data/constants';
 import appJson from '../app.json';
-import { changePassword, validatePassword } from '../data/auth';
+import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
@@ -44,7 +44,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, serviceStart, serviceYears, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -57,6 +57,32 @@ export default function SettingsScreen({ navigation }) {
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
   const [pwShown, setPwShown] = useState({}); // { [index]: true } — mostrar/esconder por campo
+
+  // Data de início (antiguidade) — guardada no metadata; alimenta o prémio de
+  // permanência (AE piloto, Anexo I.9). Edição via diálogo, com máscara AAAA-MM-DD.
+  const [sdModal, setSdModal] = useState(false);
+  const [sdVal, setSdVal] = useState('');
+  const [sdErr, setSdErr] = useState('');
+  const maskDate = (v) => {
+    const d = v.replace(/\D/g, '').slice(0, 8);
+    if (d.length <= 4) return d;
+    if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
+    return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
+  };
+  const openStartDate = () => { setSdErr(''); setSdVal(serviceStart || ''); setSdModal(true); };
+  const saveStartDate = () => {
+    setSdErr('');
+    const v = sdVal.trim();
+    if (v !== '') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setSdErr(l('Usa o formato AAAA-MM-DD.', 'Use the format YYYY-MM-DD.')); return; }
+      const d = new Date(`${v}T00:00:00`);
+      if (isNaN(d.getTime()) || +v.slice(0, 4) < 1980 || d.getTime() > Date.now()) { setSdErr(l('Data inválida.', 'Invalid date.')); return; }
+    }
+    const val = v === '' ? null : v;
+    setProfile((p) => ({ ...p, serviceStart: val }));          // UI instantânea (cache persiste)
+    updateProfile({ serviceStart: val }, lang).catch(() => {}); // best-effort → metadata
+    setSdModal(false); success();
+  };
 
   // Bloqueio biometria/PIN (opt-in). Ao ativar, confirma que o dispositivo
   // consegue autenticar (senão não vale a pena trancar e arriscar trancar fora).
@@ -123,13 +149,18 @@ export default function SettingsScreen({ navigation }) {
           <Animated.View style={seg(1)}>
             <Text style={s.gt}>{l('Companhia', 'Airline')}</Text>
             <View style={s.gbox}>
-              <View style={s.gr}>
+              <View style={[s.gr, ae && s.grBorder]}>
                 <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
                   <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
                 </View>
               </View>
+              {ae ? (
+                <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
+                  sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
+                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last s={s} C={C} />
+              ) : null}
             </View>
           </Animated.View>
         ) : null}
@@ -199,6 +230,22 @@ export default function SettingsScreen({ navigation }) {
         </View>
       </CenterDialog>
 
+      {/* Data de início (antiguidade) */}
+      <CenterDialog visible={sdModal} onClose={() => setSdModal(false)} title={l('Data de início na easyJet', 'Start date at easyJet')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          <Text style={s.fieldLabel}>{l('Data (AAAA-MM-DD)', 'Date (YYYY-MM-DD)')}</Text>
+          <View style={s.pwInputRow}>
+            <TextInput value={sdVal} onChangeText={(v) => setSdVal(maskDate(v))} placeholder="2016-03-01" placeholderTextColor={C.sub}
+              keyboardType="numbers-and-punctuation" maxLength={10} style={s.pwInput} autoCorrect={false} />
+          </View>
+          <Text style={s.sdHint}>{l('Calcula a antiguidade para o prémio de permanência (Anexo I.9). Deixa vazio para remover.', 'Computes seniority for the loyalty bonus (Appendix I.9). Leave empty to clear.')}</Text>
+          {sdErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{sdErr}</Text> : null}
+          <TouchableOpacity onPress={saveStartDate} style={s.pwBtn}>
+            <Text style={s.pwBtnTxt}>{t('common.save', lang)}</Text>
+          </TouchableOpacity>
+        </View>
+      </CenterDialog>
+
     </SafeAreaView>
   );
 }
@@ -229,6 +276,7 @@ const makeStyles = (C) => StyleSheet.create({
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
   pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
   pwEye: { padding: 4, marginLeft: 6 },
+  sdHint: { fontSize: TYPE.label, color: C.sub, marginTop: 8, marginBottom: 10, lineHeight: 16 },
   pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

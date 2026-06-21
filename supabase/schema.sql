@@ -165,3 +165,38 @@ begin
       add constraint duties_user_date_unique unique (user_id, duty_date);
   end if;
 end $$;
+
+
+-- ── 9. Categoria/Contrato = metadata (FONTE ÚNICA) + duties.kind ──────────────
+-- Decisão de arquitetura (Opção A): a CATEGORIA e o CONTRATO do tripulante vivem
+-- nos METADADOS do Auth (updateUser) + cache AsyncStorage. As colunas relacionais
+-- profiles.current_category_id / current_contract_id NUNCA foram usadas (sempre
+-- NULL) → removem-se para acabar com o "dois modelos a competir". Idempotente.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema='public' and table_name='profiles' and column_name='current_category_id') then
+    alter table public.profiles drop column current_category_id;
+  end if;
+  if exists (select 1 from information_schema.columns
+             where table_schema='public' and table_name='profiles' and column_name='current_contract_id') then
+    alter table public.profiles drop column current_contract_id;
+  end if;
+end $$;
+
+-- duties.kind: TIPO de atividade do dia (voo/standby/posicionamento/terra/formação).
+-- Base para o motor AE aplicar a regra certa e para a deteção de alterações de
+-- escala. Default 'flight' → as duties existentes ficam todas 'flight'. Idempotente.
+-- (O upsertDuty da app já degrada com elegância se esta coluna ainda não existir.)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='duties' and column_name='kind') then
+    alter table public.duties add column kind text not null default 'flight';
+  end if;
+end $$;
+
+-- (OPCIONAL · DESTRUTIVO) remover o catálogo relacional não usado — o catálogo
+-- vive no código (ae/*). Descomenta só se quiseres limpar de vez:
+-- drop table if exists public.airline_contracts;
+-- drop table if exists public.airline_categories;

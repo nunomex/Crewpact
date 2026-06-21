@@ -159,9 +159,6 @@ export default function LoginScreen() {
 
   // views: 'login' | 'register' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
-  const [registeredName, setRegisteredName] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const toastY = useRef(new Animated.Value(-120)).current;
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
@@ -270,12 +267,9 @@ export default function LoginScreen() {
     suppressAuth.current = false;
     setLoading(false);
     if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-    setRegisteredName(rName.split(' ')[0]);
-    setLEmail(rEmail);
     setRName(''); setREmail(''); setRPw(''); setRPw2('');
-    navigateTo('login', false);
     success();
-    setShowSuccess(true);
+    setUser(res.user);   // sessão criada → entra direto no onboarding (fluxo contínuo)
   };
 
   const handleRequestReset = async () => {
@@ -315,17 +309,6 @@ export default function LoginScreen() {
     setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
     navigateTo('login', false);
   };
-
-  // Success toast — slide down, hold ~2.4s, slide back up
-  useEffect(() => {
-    if (!showSuccess) return;
-    Animated.spring(toastY, { toValue: 0, friction: 8, tension: 70, useNativeDriver: true }).start();
-    const t = setTimeout(() => {
-      Animated.timing(toastY, { toValue: -120, duration: 280, useNativeDriver: true })
-        .start(() => setShowSuccess(false));
-    }, 2400);
-    return () => clearTimeout(t);
-  }, [showSuccess, toastY]);
 
   const isAuthView = view === 'login' || view === 'register';
 
@@ -507,18 +490,6 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── TOAST CONTA CRIADA ── */}
-      {showSuccess && (
-        <Animated.View style={[s.toast, { transform: [{ translateY: toastY }] }]} pointerEvents="none">
-          <View style={s.toastIcon}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.toastTitle}>{t('login.toastTitle', lang)}</Text>
-            <Text style={s.toastSub}>{lang === 'en' ? `Welcome, ${registeredName}. You can now sign in.` : `Bem-vindo/a, ${registeredName}. Já podes iniciar sessão.`}</Text>
-          </View>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 }
@@ -551,8 +522,4 @@ const makeS = (C) => StyleSheet.create({
   stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: TYPE.sub, color: C.sub },
-  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 16, ...SHADOW.md },
-  toastIcon:    { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  toastTitle:   { fontSize: TYPE.body, fontFamily: FONT.bold, color: '#fff' },
-  toastSub:     { fontSize: TYPE.label, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 });

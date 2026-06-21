@@ -6,6 +6,7 @@ import { Stepper } from './Stepper';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
+import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
@@ -17,7 +18,7 @@ const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '' };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight' };
 
 // Campo "HH:MM" (nível de módulo — definir dentro do componente fá-lo perder o foco a cada tecla).
 function ClockField({ label, value, onChange, C, s }) {
@@ -45,7 +46,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!visible) return;
     const iso = date || isoDay();
     const d = duties[iso];
-    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '' });
+    if (d && !d.deleted) setForm({ date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight' });
     else setForm({ ...EMPTY, date: iso });
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,6 +94,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     saveDuty(form.date, {
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
       sectors: form.sectors, flight_minutes: hhmmToMin(form.flight), route: form.route.trim() || null,
+      kind: form.kind || 'flight',
     });
     success();
     onClose && onClose();
@@ -113,6 +115,19 @@ export default function DutyFormSheet({ visible, onClose, date }) {
           <TouchableOpacity onPress={() => { select(); setForm(f => ({ ...f, date: addDays(f.date, 1) })); }} hitSlop={8} style={s.dateNav}>
             <Ionicons name="chevron-forward" size={18} color={C.text} />
           </TouchableOpacity>
+        </View>
+
+        {/* Tipo de atividade (kind) — base do motor AE/FTL por dia */}
+        <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.kindLabel', lang)}</Text>
+        <View style={s.kindWrap}>
+          {DUTY_KINDS.map((k) => {
+            const on = form.kind === k;
+            return (
+              <TouchableOpacity key={k} onPress={() => { select(); setForm(f => ({ ...f, kind: k })); }} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85}>
+                <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Rota — topo (identidade do voo). Destrava o per-diem AE (Art. 53). */}
@@ -169,6 +184,11 @@ const makeStyles = (C) => StyleSheet.create({
   clockInput: { width: 92, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
   routeInputFull: { fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line, color: C.text, letterSpacing: 1 },
   routeHint: { fontSize: 11, color: C.sub, marginTop: 6, fontFamily: FONT.medium },
+  kindWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  kindChip: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, backgroundColor: C.card },
+  kindChipOn: { borderColor: C.ink, backgroundColor: C.ink },
+  kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
+  kindChipTxtOn: { color: '#fff' },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
   dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
