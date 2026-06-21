@@ -124,7 +124,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
             const on = form.kind === k;
             return (
               <TouchableOpacity key={k} onPress={() => { select(); setForm(f => ({ ...f, kind: k })); }} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85}>
-                <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
+                <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{k}</Text>
               </TouchableOpacity>
             );
           })}
