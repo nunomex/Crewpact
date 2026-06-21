@@ -14,7 +14,7 @@ const RANGES = [{ id: '14', d: 14 }, { id: '28', d: 28 }, { id: 'month', d: 30 }
 
 // ⚠️ TEMPORÁRIO — candidatos de EXEMPLO para ver o preview sem eventos no
 // calendário. Pôr DEMO_EXAMPLES=false (ou remover) quando já houver escala real.
-const DEMO_EXAMPLES = true;
+const DEMO_EXAMPLES = false;
 const demoCands = () => {
   const iso = (off) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   return [
