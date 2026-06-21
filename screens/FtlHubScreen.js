@@ -59,9 +59,11 @@ export default function FtlHubScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
 
-  // Empresa com Acordo de Empresa modelado → a aba Cálculos mostra a suite AE
-  // (pagamento). Empresa de FTL → as ferramentas regulamentares (limites). Uma
-  // companhia tem AE OU FTL, nunca ambos.
+  // A aba Cálculos mostra UMA suite: companhia com AE → a suite de pagamento
+  // (AeCalcs); companhia só-FTL → as ferramentas regulamentares (limites).
+  // NB: o FTL (EASA) aplica-se a TODAS as companhias — o motor FTL corre sempre
+  // (estado/limites na Home, projeção no duty). O `rule_type='AE'` só decide o que
+  // ESTA aba apresenta; NÃO desliga o FTL. A companhia AE é, de facto, AE + FTL.
   if (ae) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>

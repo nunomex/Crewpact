@@ -559,23 +559,20 @@ export default function App() {
   // (dados legados de utilizadores anteriores) — ponte de migração. O motor deriva
   // do `engine_code`.
   const company = airlines.find(a => a.id === profile.company || a.slug === profile.company) || null;
-  // CrewPact refocado em FTL/cabine: o motor é sempre FTL (o conteúdo AE foi
-  // desativado). Mantém-se `isFtl` no contexto (a true) para os ecrãs renderizarem
-  // o ramo FTL; os ramos AE ficam código morto até serem removidos nos passos seguintes.
-  const isFtl = true;
   // Papel da tripulação (onboarding → profiles.crew_type): adapta motor/UI.
   const crewType = profile?.crewType || 'cabin';   // 'cabin' | 'pilot'
   const isPilot = crewType === 'pilot';
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE)
-  // AE (Acordo de Empresa) aplicável: só pilotos de companhias com AE modelado.
+  // AE (Acordo de Empresa) aplicável às companhias com AE modelado, resolvido por
+  // crewType — pilotos (SPAC) OU cabine (SNPVAC). Companhia FTL → ae = null.
   const ae = getAeForProfile({ company: company || profile?.company, crewType });
 
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, company, isFtl, crewType, isPilot, crewCategory, crewContract, ae,
+    airlines, company, crewType, isPilot, crewCategory, crewContract, ae,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
