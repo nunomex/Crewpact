@@ -189,10 +189,22 @@ export default function OnboardingScreen({ signup = false }) {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
+        {/* key={step} → cada passo MONTA conteúdo novo. Sem isto, ao mudar de passo o
+            React reutiliza o TextInput nativo da posição 0 do passo anterior (a data)
+            para o 1.º campo da conta (o nome); no iOS esse input reciclado fica
+            "focado mas não escreve". A key força um input fresco por passo. */}
+        <View key={step}>
         {s.input === 'account' ? (
           <View>
+            {/* iOS: com um campo secureTextEntry no formulário, o AutoFill de
+                palavras-passe agarra o 1.º campo de texto (o suposto "username") e
+                BLOQUEIA a escrita manual — por isso só o 1.º campo ficava preso,
+                fosse ele qual fosse. A cura está NO campo da PASSWORD (abaixo):
+                textContentType="oneTimeCode" + autoComplete="off" desativam esse
+                AutoFill e devolvem a escrita a todo o formulário. */}
             <TextInput value={draft.name} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, name: v }); }}
-              placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub} autoCapitalize="words" style={styles.acctInput} autoFocus />
+              placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub}
+              autoCapitalize="words" autoCorrect={false} style={styles.acctInput} />
             {draft.name && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
             <TextInput value={draft.email} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, email: v }); }}
               placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput} />
@@ -210,7 +222,7 @@ export default function OnboardingScreen({ signup = false }) {
           <View>
             <TextInput value={draft.serviceStart} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, serviceStart: maskDate(v) }); }}
               placeholder="2016-03-01" placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation"
-              maxLength={10} style={styles.dateInput} autoFocus />
+              maxLength={10} style={styles.dateInput} />
             <Text style={styles.dateHint}>{lang === 'en' ? 'Format YYYY-MM-DD. You can skip — it’s editable later in Profile.' : 'Formato AAAA-MM-DD. Podes saltar — é editável depois no Perfil.'}</Text>
           </View>
         ) : items.map((item) => {
@@ -230,6 +242,7 @@ export default function OnboardingScreen({ signup = false }) {
             </TouchableOpacity>
           );
         })}
+        </View>
       </ScrollView>
 
       {saveError && (
