@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK, FONT } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
 import {
   login, register,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -530,7 +530,7 @@ const makeS = (C) => StyleSheet.create({
   langDotTxt:   { fontSize: TYPE.label, fontFamily: FONT.bold, letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
-  ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
+  ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 18, ...SHADOW.sm },
   logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
   seg:          { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: SPACE.xs, marginBottom: SPACE.xl },
@@ -551,7 +551,7 @@ const makeS = (C) => StyleSheet.create({
   stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: TYPE.sub, color: C.sub },
-  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
+  toast:        { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 28, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 16, ...SHADOW.md },
   toastIcon:    { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
   toastTitle:   { fontSize: TYPE.body, fontFamily: FONT.bold, color: '#fff' },
   toastSub:     { fontSize: TYPE.label, color: 'rgba(255,255,255,0.7)', marginTop: 1 },

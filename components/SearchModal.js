@@ -2,7 +2,7 @@ import React, { useContext, useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Animated, Easing, Dimensions, Keyboard, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
 import { FTL_ARTICLES } from '../data/ftl';
 import { t, tx } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -151,7 +151,7 @@ const makeStyles = (C) => StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: C.scrim },
   topWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
   panel: { marginHorizontal: 12, marginTop: 6, backgroundColor: C.card, borderRadius: 22, overflow: 'hidden',
-    shadowColor: '#14161A', shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 16 }, elevation: 16 },
+    ...SHADOW.lg },
   bar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 14, height: 44 },
   input: { flex: 1, fontFamily: FONT.medium, fontSize: TYPE.body, color: C.text, paddingVertical: 0 },

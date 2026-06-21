@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, FONT } from '../data/constants';
+import { C as _C, RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
 import Eyebrow from './Eyebrow';
 import { useTheme } from '../data/appContext';
 
@@ -36,7 +36,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
 
 const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 4 },
-  card: { width: '100%', maxWidth: 420, maxHeight: '80%', backgroundColor: C.card, borderRadius: RADIUS.xxl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 16 },
+  card: { width: '100%', maxWidth: 420, maxHeight: '80%', backgroundColor: C.card, borderRadius: RADIUS.xxl, overflow: 'hidden', ...SHADOW.lg },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: SPACE.lg + 4, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontFamily: FONT.medium, color: C.text },
   close: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

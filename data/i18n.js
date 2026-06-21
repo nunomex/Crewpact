@@ -529,6 +529,7 @@ export const STRINGS = {
     'login.pwMismatch': 'As palavras-passe não coincidem.',
     'login.codeIncomplete': 'Introduz o código completo de 8 dígitos.',
     'st.8': '8+ caract.', 'st.upper': 'Maiúscula', 'st.num': 'Número', 'st.special': 'Especial',
+    'sync.done': 'Sincronizado', 'sync.offline': 'Guardado offline', 'sync.offlineSub': 'Sincroniza ao reconectar',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · CONFIGURAR',
@@ -1016,6 +1017,7 @@ export const STRINGS = {
     'login.pwMismatch': 'Passwords do not match.',
     'login.codeIncomplete': 'Enter the full 8-digit code.',
     'st.8': '8+ chars', 'st.upper': 'Uppercase', 'st.num': 'Number', 'st.special': 'Special',
+    'sync.done': 'Synced', 'sync.offline': 'Saved offline', 'sync.offlineSub': 'Will sync when reconnected',
 
     // Onboarding
     'onb.eyebrow': 'CREWPACT · SETUP',

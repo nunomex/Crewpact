@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FONT, SPACE } from '../data/constants';
+import { FONT, SPACE, SHADOW } from '../data/constants';
 import { useTheme } from '../data/appContext';
 
 // Diálogo de confirmação centrado (popup) — ícone num círculo suave + título +
@@ -39,7 +39,7 @@ export default function ConfirmDialog({ visible, onCancel, onConfirm, icon = 'he
 const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 8 },
   card: { width: '100%', maxWidth: 380, backgroundColor: C.card, borderRadius: 28, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 18, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.22, shadowRadius: 32, elevation: 18 },
+    ...SHADOW.xl },
   iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   title: { fontFamily: FONT.heavy, fontSize: 22, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
   msg: { fontFamily: FONT.medium, fontSize: 14.5, color: C.sub, textAlign: 'center', marginTop: 8, lineHeight: 20 },

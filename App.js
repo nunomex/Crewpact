@@ -42,6 +42,7 @@ import SearchModal        from './components/SearchModal';
 import ConfirmDialog       from './components/ConfirmDialog';
 import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
+import Toast              from './components/Toast';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
 // (sem animação — o splash estático nativo cobre a janela de auth + hidratação).
@@ -262,6 +263,9 @@ export default function App() {
   const ftlSnap = dayLog[isoDay()] || {};
   const updateFtlSnap = (key, val) => updateDayLog(isoDay(), key, val);
 
+  // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
+  const [toast, setToast] = useState(null);
+
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.
   const saveDuty = (date, fields) => {
@@ -306,20 +310,24 @@ export default function App() {
     const pend = Object.entries(dutiesRef.current).filter(([, d]) => d.dirty || d.deleted);
     if (!pend.length) return;
     dutiesSyncing.current = true;
+    let okN = 0, failN = 0;
     try {
       for (const [date, d] of pend) {
         if (d.deleted) {
           const err = await deleteDuty(uid, date);
-          if (!err) setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; });
-          else console.warn('[duties] delete falhou', date, err);
+          if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
+          else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
           const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
-          if (!err) setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev));
-          else console.warn('[duties] upsert falhou', date, err);
+          if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
+          else { console.warn('[duties] upsert falhou', date, err); failN++; }
         }
       }
     } finally { dutiesSyncing.current = false; }
+    // Feedback: tudo no servidor → "Sincronizado"; algo falhou (offline) → "Guardado offline".
+    if (failN > 0) setToast({ kind: 'warn', ts: Date.now() });
+    else if (okN > 0) setToast({ kind: 'sync', ts: Date.now() });
   }, []);
 
   // When a user logs in, pre-populate profile if they already have one saved
@@ -628,6 +636,7 @@ export default function App() {
           {renderScreen()}
         </NavigationContainer>
         <OfflineBanner />
+        <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
       </AppContext.Provider>
     </SafeAreaProvider>
   );

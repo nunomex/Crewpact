@@ -5,6 +5,7 @@ import BottomSheet from './BottomSheet';
 import { Stepper } from './Stepper';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
+import { routeDistancesNM } from '../data/perdiem';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
@@ -33,7 +34,7 @@ function ClockField({ label, value, onChange, C, s }) {
 // Lista. Pré-preenche a partir do dia `date` (se já houver registo) e grava via
 // `saveDuty`. Inclui a projeção prospetiva de PSV + acumulados (210).
 export default function DutyFormSheet({ visible, onClose, date }) {
-  const { lang, duties, dayLog, saveDuty } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -58,6 +59,21 @@ export default function DutyFormSheet({ visible, onClose, date }) {
       sectors: form.sectors, flight_minutes: hhmmToMin(form.flight),
     }, dayLog);
   }, [canSave, form, dayLog]);
+
+  // Per-diem AE deste voo (preview ao vivo por baixo da Rota). null = sem rota;
+  // {ok:false} = rota com aeroporto desconhecido; {ok:true, eur} = € estimado (Art. 53).
+  const routePd = useMemo(() => {
+    const r = (form.route || '').trim();
+    if (!ae || !crewCategory || !r) return null;
+    const dists = routeDistancesNM(r);
+    if (!dists.length || dists.some((x) => x == null)) return { ok: false };
+    return { ok: true, eur: ae.perDiem(crewCategory, dists) };
+  }, [ae, crewCategory, form.route]);
+  const fmtPd = (n) => {
+    const [int, dec] = Number(n).toFixed(2).split('.');
+    const g = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`;
+  };
 
   const h1 = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
@@ -99,17 +115,24 @@ export default function DutyFormSheet({ visible, onClose, date }) {
           </TouchableOpacity>
         </View>
 
+        {/* Rota — topo (identidade do voo). Destrava o per-diem AE (Art. 53). */}
+        <Text style={[s.fieldLbl, { marginTop: 14 }]}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
+        <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
+          placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
+          maxLength={40} style={s.routeInputFull} />
+        {ae ? (
+          routePd == null
+            ? <Text style={s.routeHint}>{lang === 'en' ? 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS' : 'Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS'}</Text>
+            : routePd.ok
+              ? <Text style={[s.routeHint, { color: C.green }]}>{lang === 'en' ? 'Per diem for this duty: ' : 'Per diem deste voo: '}<Text style={{ fontFamily: FONT.heavy }}>+{fmtPd(routePd.eur)}</Text></Text>
+              : <Text style={[s.routeHint, { color: C.warn }]}>{lang === 'en' ? 'Route not recognised — won’t count for per diem' : 'Rota não reconhecida — não conta para o per-diem'}</Text>
+        ) : null}
+
         <ClockField C={C} s={s} label={t('duties.report', lang)} value={form.report} onChange={(v) => setForm(f => ({ ...f, report: v }))} />
         <ClockField C={C} s={s} label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm(f => ({ ...f, off: v }))} />
         <ClockField C={C} s={s} label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm(f => ({ ...f, on: v }))} />
         <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm(f => ({ ...f, sectors: n }))} min={0} max={12} />
         <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm(f => ({ ...f, flight: v }))} />
-        <View style={s.fieldRow}>
-          <Text style={s.fieldLbl}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
-          <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
-            placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
-            maxLength={40} style={s.routeInput} />
-        </View>
 
         {prospect ? (
           <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
@@ -144,7 +167,8 @@ const makeStyles = (C) => StyleSheet.create({
   fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   clockInput: { width: 92, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: C.line, color: C.text },
-  routeInput: { width: 170, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 10, borderWidth: 1, borderColor: C.line, color: C.text, letterSpacing: 0.5 },
+  routeInputFull: { fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line, color: C.text, letterSpacing: 1 },
+  routeHint: { fontSize: 11, color: C.sub, marginTop: 6, fontFamily: FONT.medium },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
   dateNav: { width: 40, height: 40, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
   dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },

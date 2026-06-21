@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { sectorDistanceNM } from '../data/airports';
 import PageHeader from '../components/PageHeader';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
+import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import { useFocusEffect } from '@react-navigation/native';
@@ -51,6 +52,75 @@ function MiniBar({ ratio, color, track, fill }) {
       <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
     </View>
   );
+}
+
+// Skeleton do próximo voo — mesma FORMA do badge real (círculo + linhas + 2 tags),
+// mostrado durante o 1º carregamento do calendário para evitar spinner + salto.
+function NextFlightSkeleton({ s }) {
+  return (
+    <View style={s.nd}>
+      <View style={s.ndCircWrap}><Skeleton circle h={78} /></View>
+      <View style={s.ndX}>
+        <Skeleton w={88} h={11} r={4} style={{ marginBottom: 9 }} />
+        <Skeleton w={150} h={18} r={5} style={{ marginBottom: 9 }} />
+        <Skeleton w={120} h={12} r={4} style={{ marginBottom: 13 }} />
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <Skeleton w={104} h={20} r={99} />
+          <Skeleton w={76} h={20} r={99} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Constrói um objeto "voo" (forma do calendário) a partir de um duty MANUAL do
+// store, para a Home o poder mostrar no "próximo voo". startDate = report + 1 h
+// porque o countdown da Home calcula partida − 1 h ≈ report.
+function dutyToFlight(iso, d) {
+  if (!d || d.deleted || !d.report_time) return null;
+  const ap = String(d.route || '').split(/[^A-Za-z]+/).map((x) => x.trim().toUpperCase()).filter(Boolean);
+  const at = (hhmm) => { const [h, m] = String(hhmm).split(':').map(Number); const dt = new Date(iso + 'T00:00:00'); dt.setHours(h || 0, m || 0, 0, 0); return dt; };
+  const reportInstant = at(d.report_time);
+  // Fim do duty (para esconder os já terminados). Com block-on: se a hora for mais
+  // cedo que o report, o duty VIRA A NOITE → fim no dia seguinte. Sem block-on,
+  // mantém-se até ao fim desse dia.
+  let endDate;
+  if (d.block_on) {
+    const e = at(d.block_on);
+    endDate = e.getTime() < reportInstant.getTime() ? new Date(e.getTime() + 86400000) : e;
+  } else {
+    endDate = at('23:59');
+  }
+  const dep = ap[0] || '—';
+  const last = ap[ap.length - 1];
+  const arr = (ap.length > 1 ? (last !== dep ? last : ap[1]) : dep) || '—';  // ida-volta → mostra a estação fora
+  return {
+    kind: 'flight', manual: true, dateISO: iso,
+    report: d.report_time,
+    depTime: d.block_off || d.report_time,
+    arrTime: d.block_on || d.report_time,
+    depAirport: dep, arrAirport: arr,
+    sectors: d.sectors || null,
+    startDate: new Date(reportInstant.getTime() + 60 * 60 * 1000),
+    endDate,
+  };
+}
+
+// Próximo voo efetivo = o mais próximo entre o duty manual (store) e o voo do
+// calendário. Empate de dia → o manual ganha (mesmo critério da roda da Escala).
+function mergeNextFlight(calFlight, duties, now) {
+  let best = null;
+  for (const iso in duties) {
+    const mf = dutyToFlight(iso, duties[iso]);
+    if (!mf || mf.endDate.getTime() < now) continue;   // inválido/apagado ou JÁ TERMINADO
+    // o mais próximo: por dia e, no mesmo dia, pela hora de início (apanha o em curso)
+    if (!best || mf.dateISO < best.dateISO || (mf.dateISO === best.dateISO && mf.startDate < best.startDate)) best = mf;
+  }
+  if (!best) return calFlight;
+  if (!calFlight) return best;
+  if (best.dateISO < calFlight.dateISO) return best;
+  if (best.dateISO > calFlight.dateISO) return calFlight;
+  return best; // mesmo dia → manual ganha
 }
 
 // Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com
@@ -134,7 +204,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
-  const [flight, setFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
+  const [calFlight, setCalFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
   const [calOk, setCalOk] = useState(true); // acesso ao calendário do telemóvel
   const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
@@ -146,8 +216,8 @@ export default function HomeScreen({ navigation }) {
     try {
       const res = await getUpcomingFlight();
       setCalOk(res.ok);
-      setFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null)); // sem voo real → mostra o exemplo
-    } catch { setFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }
+      setCalFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null)); // sem voo real → mostra o exemplo
+    } catch { setCalFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
   };
@@ -168,6 +238,11 @@ export default function HomeScreen({ navigation }) {
     const sub = AppState.addEventListener('change', (state) => { if (state === 'active') syncFlight(); });
     return () => sub.remove();
   }, []);
+
+  // Próximo voo EFETIVO = funde o duty manual (store `duties`) com o voo do
+  // calendário do telemóvel e mostra o mais próximo (empate de dia → manual ganha,
+  // como a roda da Escala). Resolve "inseri um duty e não aparece na Home".
+  const flight = useMemo(() => mergeNextFlight(calFlight, duties, Date.now()), [calFlight, duties]);
 
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
@@ -216,10 +291,13 @@ export default function HomeScreen({ navigation }) {
   }
   const fatBg = (b) => b === 'high' ? C.redSoft : b === 'elevated' ? C.warnSoft : b === 'low' ? C.greenSoft : C.soft;
 
+  // Skeleton só no 1º carregamento real (a sincronizar, ainda sem resultado e com
+  // acesso ao calendário) — não no estado "sem voo" nem no pedido de permissão.
+  const loadingFlight = !flight && syncing && !syncDone && calOk;
   const nextDutyEl = flight ? (
     <View style={s.nd}>
       <View style={s.ndCircWrap}>
-        <PulseRing size={78} color={C.red} border duration={2800} />
+        {stateLevel === 'over' && <PulseRing size={78} color={C.red} border duration={2800} />}
         <View style={s.ndCirc}>
           <Text style={s.ndCircDay}>{ndDayNum}</Text>
           <Text style={s.ndCircLbl}>{ndDayWd}</Text>
@@ -266,6 +344,8 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
     </View>
+  ) : loadingFlight ? (
+    <NextFlightSkeleton s={s} />
   ) : (
     <View style={s.flightCard}>
       <View style={s.flightTop}>
@@ -370,7 +450,7 @@ export default function HomeScreen({ navigation }) {
         {/* Estado FTL — linha de estado (ponto semáforo a pulsar + contexto à direita) */}
         <Animated.View style={[s.statline, seg(1)]}>
           <View style={s.statDotWrap}>
-            <PulseRing size={9} color={stateColor} duration={2400} />
+            {(stateLevel === 'over' || stateLevel === 'warn') && <PulseRing size={9} color={stateColor} duration={2400} />}
             <View style={[s.statDot, { backgroundColor: stateColor }]} />
           </View>
           <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>

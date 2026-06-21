@@ -70,6 +70,15 @@ export const C = PALETTE_LIGHT;
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
 export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
+// Escala de elevação (sombra). Cor ink-azulada para profundidade; usa-se por
+// spread no estilo: ...SHADOW.md. As sombras de marca (glow vermelho do FAB/roda/
+// cartões) e a do dock são próprias (afinadas à mão) e ficam FORA desta escala.
+export const SHADOW = {
+  sm: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 4 },  shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
+  md: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 8 },  shadowOpacity: 0.22, shadowRadius: 20, elevation: 10 },
+  lg: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.22, shadowRadius: 28, elevation: 16 },
+  xl: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 18 }, shadowOpacity: 0.24, shadowRadius: 32, elevation: 18 },
+};
 // Gutter horizontal padrão dos ecrãs de conteúdo.
 export const GUTTER = 16;
 // Escala tipográfica (px). Mínimo 11 para texto informativo (acessibilidade).
