@@ -179,7 +179,7 @@ const makeStyles = (C) => StyleSheet.create({
   card: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: SPACE.md, backgroundColor: C.card, marginBottom: 4 },
 
   // Chips de categoria + contrato (mockup .aehead .chip)
-  aehead: { flexDirection: 'row', gap: 8, marginTop: SPACE.sm, marginBottom: 12, flexWrap: 'wrap' },
+  aehead: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
   chip: { backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
   chipRed: { backgroundColor: C.red },
   chipTxt: { fontFamily: FONT.bold, fontSize: 11.5, color: C.text },
@@ -202,7 +202,7 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Total estimado — cartão escuro (mockup .aetotal)
   aetotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
-  aetotalK: { fontFamily: FONT.heavy, fontSize: 9.5, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', maxWidth: 150, lineHeight: 13 },
+  aetotalK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', maxWidth: 150, lineHeight: 13 },
   aetotalV: { fontFamily: FONT.semibold, fontSize: 30, color: '#fff', fontVariant: ['tabular-nums'] },
 
   // Catálogo Anexo I
@@ -213,7 +213,7 @@ const makeStyles = (C) => StyleSheet.create({
   cs: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, lineHeight: 15 },
   cv: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
   unit: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
-  tag: { fontSize: 8, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
+  tag: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, marginLeft: 2 },
   empty: { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.lg, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },

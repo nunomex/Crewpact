@@ -143,7 +143,7 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   header: { paddingHorizontal: 24, paddingTop: 16 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 },
-  pillText: { color: '#fff', fontSize: 10, letterSpacing: 2, fontFamily: FONT.semibold },
+  pillText: { color: '#fff', fontSize: 11, letterSpacing: 2, fontFamily: FONT.semibold },
   top: { paddingHorizontal: 24, paddingTop: 28, paddingBottom: 16 },
   dots: { flexDirection: 'row', gap: 6, marginBottom: 20 },
   dot: { flex: 1, height: 3, borderRadius: 99 },

@@ -85,8 +85,8 @@ export default function EscalaScreen({ navigation, route }) {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
-  body: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 8 },
-  wheelWrap: { flex: 1, justifyContent: 'center' },
+  body: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 16 },
+  wheelWrap: { flex: 1, justifyContent: 'flex-start' },
   iconBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 6, paddingBottom: 8 },
   monthBarTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, letterSpacing: 0.6, color: C.text, textTransform: 'uppercase' },

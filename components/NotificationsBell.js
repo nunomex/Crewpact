@@ -59,7 +59,7 @@ const makeStyles = (C) => StyleSheet.create({
   notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 10, fontFamily: FONT.semibold, color: C.text, letterSpacing: 0.5 },
+  tagTxt: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, letterSpacing: 0.5 },
   notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
   notifItemTitle: { fontSize: 13, fontFamily: FONT.medium, color: C.text },
   notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },

@@ -6,6 +6,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
+import NotificationsBell from '../components/NotificationsBell';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -99,7 +100,7 @@ export default function SettingsScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
         {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) */}
-        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} />
+        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} right={<NotificationsBell />} />
 
         {/* User card escuro (mockup .uca) — avatar vermelho + nome + email */}
         {user && (() => {
@@ -211,7 +212,7 @@ const makeStyles = (C) => StyleSheet.create({
   userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
   userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
   // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
-  gt: { fontFamily: FONT.heavy, fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
+  gt: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
   gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },
   gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
   grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
@@ -220,7 +221,7 @@ const makeStyles = (C) => StyleSheet.create({
   giCoTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 13 },
   giDanger: { backgroundColor: C.redSoft },
   grLabel: { fontFamily: FONT.heavy, fontSize: 13.5, color: C.text },
-  grSub: { fontFamily: FONT.medium, fontSize: 10, color: C.sub, marginTop: 1 },
+  grSub: { fontFamily: FONT.medium, fontSize: 11, color: C.sub, marginTop: 1 },
   grRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6 },
   rv: { fontFamily: FONT.heavy, fontSize: 11, color: C.sub },
   // Modal de password

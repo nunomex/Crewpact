@@ -40,6 +40,7 @@ import FtlCalcScreen      from './screens/FtlCalcScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import SearchModal        from './components/SearchModal';
 import ConfirmDialog       from './components/ConfirmDialog';
+import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
@@ -137,6 +138,9 @@ function FloatingTabBar({ state, navigation }) {
         cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
         onCancel={() => setLogoutOpen(false)}
         onConfirm={() => { setLogoutOpen(false); logout(); }} />
+      {/* Degradê de fundo (canvas) — esconde o conteúdo que passa por trás da barra */}
+      <LinearGradient pointerEvents="none" colors={[C.canvas + '00', C.canvas + '80', C.canvas]} locations={[0, 0.22, 0.36]}
+        start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={tbar.fade} />
       <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) + 4 }]} pointerEvents="box-none">
         <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
           {state.routes.map(route => {
@@ -175,6 +179,9 @@ function MainTabs() {
 }
 
 const tbar = StyleSheet.create({
+  // Degradê de fundo atrás da barra (largura toda, do fundo até ~220px) — sólido
+  // até ~140px (cobre os nomes do FAB) e desvanece suave (~80px, com easing) acima.
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   // Dock (esquerda) + FAB (direita), separados como o mockup — mas maiores.
   wrap: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Dock escuro — 4 ícones, ponto vermelho na ativa
@@ -186,7 +193,7 @@ const tbar = StyleSheet.create({
   // FAB vermelho (direita) — maior, a condizer com a dock
   fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  fabLabel: { position: 'absolute', top: -15, left: -60, right: -60, textAlign: 'center', fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
+  fabLabel: { position: 'absolute', top: -22, left: -60, right: -60, textAlign: 'center', fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
 });
 
 export default function App() {

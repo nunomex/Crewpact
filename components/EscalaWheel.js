@@ -1,7 +1,6 @@
 import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FONT } from '../data/constants';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
@@ -128,8 +127,6 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
             );
           })}
         </ScrollView>
-        {/* Sombra suave no topo da roda (degradê escuro → transparente), como no mockup. */}
-        <LinearGradient pointerEvents="none" colors={['rgba(20,22,26,0.02)', 'rgba(20,22,26,0)']} style={s.wheelFadeTop} />
       </View>
 
       {/* Detalhe do dia centrado — toca para inserir/editar */}
@@ -160,7 +157,6 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
 
 const makeStyles = (C) => StyleSheet.create({
   wheel: { height: WH, overflow: 'hidden', marginBottom: 14 },
-  wheelFadeTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 72, zIndex: 5 },
   band: { position: 'absolute', left: -4, right: -4, top: WH / 2 - ROWH / 2, height: ROWH, borderRadius: 18, backgroundColor: C.soft },
   row: { height: ROWH, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12 },
   fl: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
@@ -192,7 +188,7 @@ const makeStyles = (C) => StyleSheet.create({
   detBody: { minHeight: 40, justifyContent: 'center' }, // altura fixa → não salta entre voo/folga
   detGrid: { flexDirection: 'row' },
   dCell: { flex: 1, borderLeftWidth: 1, borderLeftColor: C.line, paddingLeft: 13 },
-  dK: { fontFamily: FONT.heavy, fontSize: 8.5, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
+  dK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   dV: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, marginTop: 3 },
   detEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.sub },
 });

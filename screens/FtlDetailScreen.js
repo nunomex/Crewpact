@@ -187,9 +187,9 @@ const makeTb = (C) => StyleSheet.create({
   wideCell: { width: 78 },
   startCell: { width: 92, textAlign: 'left', paddingLeft: 10, color: C.sub },
   headCell: { color: C.sub, fontFamily: FONT.bold },
-  note: { fontSize: 10, color: C.sub, padding: 10, borderTopWidth: 1, borderTopColor: C.line },
+  note: { fontSize: 11, color: C.sub, padding: 10, borderTopWidth: 1, borderTopColor: C.line },
   legend: { padding: 10, borderTopWidth: 1, borderTopColor: C.line },
-  legendHead: { fontSize: 10, color: C.text, fontFamily: FONT.semibold, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
+  legendHead: { fontSize: 11, color: C.text, fontFamily: FONT.semibold, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
   legendTxt: { fontSize: 11, color: C.sub, lineHeight: 17 },
   legendAxis: { fontSize: 11, color: C.sub, lineHeight: 17, marginTop: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
 });
@@ -197,7 +197,7 @@ const makeTb = (C) => StyleSheet.create({
 const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
-  eyebrow: { fontSize: 10, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
+  eyebrow: { fontSize: 11, color: C.sub, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.medium },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
   paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },

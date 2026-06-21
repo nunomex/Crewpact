@@ -316,7 +316,7 @@ const makeStyles = (C) => StyleSheet.create({
   fatDot: { width: 8, height: 8, borderRadius: 99, marginRight: 7 },
   fatLbl: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.semibold },
   fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
-  fatHint: { fontSize: 10, color: C.sub, marginTop: 6, fontStyle: 'italic' },
+  fatHint: { fontSize: 11, color: C.sub, marginTop: 6, fontStyle: 'italic' },
 
   saveBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
