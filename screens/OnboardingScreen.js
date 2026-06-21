@@ -81,7 +81,7 @@ export default function OnboardingScreen({ signup = false }) {
     return dt.getTime() <= Date.now();
   };
   const STEP_DEFS = {
-    account:      { title: lang === 'en' ? 'Create account' : 'Cria a tua conta', sub: lang === 'en' ? 'Your details' : 'Os teus dados', field: 'account', input: 'account' },
+    account:      { title: lang === 'en' ? 'Final details' : 'Últimos detalhes', sub: lang === 'en' ? 'Your details' : 'Os teus dados', field: 'account', input: 'account' },
     company:      { title: t('onb.s0t', lang),       sub: t('onb.s0s', lang),       items: airlines,   field: 'company' },
     crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
@@ -264,7 +264,7 @@ export default function OnboardingScreen({ signup = false }) {
         <TouchableOpacity disabled={!canNext || saving} onPress={handleNext} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
           {saving
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{!isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
+            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{s.input === 'account' ? (lang === 'en' ? 'Create account' : 'Criar conta') : !isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
           }
         </TouchableOpacity>
       </View>
