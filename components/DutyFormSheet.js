@@ -39,6 +39,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
 
   // Ao abrir: inicializa do dia (edição) ou vazio (novo).
@@ -50,7 +51,22 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     else setForm({ ...EMPTY, date: iso });
   }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const canSave = isClock(form.report) && okOrEmpty(form.off) && okOrEmpty(form.on) && okOrEmpty(form.flight);
+  // O formulário ADAPTA-SE ao tipo: campos de VOO (rota/setores/tempo) só para
+  // `flight`; os outros kinds veem só o período de serviço. `kindInfo` dá feedback
+  // imediato do que o tipo contribui para o total AE. Report opcional fora de voo.
+  const isFlight = form.kind === 'flight';
+  const showNightStop = isFlight || form.kind === 'positioning';   // pernoita fora da base só em ops
+  const kindInfo = !ae ? null : ({
+    flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
+    standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
+    office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
+    positioning:     l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+    standby_home:    l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+    training:        l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+  })[form.kind] || null;
+  const canSave = isFlight
+    ? (isClock(form.report) && okOrEmpty(form.off) && okOrEmpty(form.on) && okOrEmpty(form.flight))
+    : (okOrEmpty(form.report) && okOrEmpty(form.off) && okOrEmpty(form.on));
 
   const prospect = useMemo(() => {
     if (!canSave) return null;
@@ -93,8 +109,9 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!canSave) return;
     saveDuty(form.date, {
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
-      sectors: form.sectors, flight_minutes: hhmmToMin(form.flight), route: form.route.trim() || null,
-      kind: form.kind || 'flight', nightStop: !!form.nightStop,
+      sectors: isFlight ? form.sectors : 0, flight_minutes: isFlight ? hhmmToMin(form.flight) : 0,
+      route: isFlight ? (form.route.trim() || null) : null,
+      kind: form.kind || 'flight', nightStop: showNightStop ? !!form.nightStop : false,
     });
     success();
     onClose && onClose();
@@ -129,37 +146,44 @@ export default function DutyFormSheet({ visible, onClose, date }) {
             );
           })}
         </View>
+        {kindInfo ? <Text style={s.kindInfo}>{kindInfo}</Text> : null}
 
-        {/* Paragem nocturna — abono AE (Art. 39 = 2×NS). Conta para o total mensal. */}
-        <View style={s.nsRow}>
-          <View style={{ flex: 1, paddingRight: 12 }}>
-            <Text style={s.fieldLbl}>{lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text>
-            <Text style={s.nsHint}>{lang === 'en' ? 'Overnight away from base · AE allowance (Art. 39)' : 'Pernoita fora da base · abono AE (Art. 39)'}</Text>
+        {/* Paragem nocturna — abono AE (Art. 39 = 2×NS). Só em ops (voo/posicionamento). */}
+        {showNightStop ? (
+          <View style={s.nsRow}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={s.fieldLbl}>{lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text>
+              <Text style={s.nsHint}>{lang === 'en' ? 'Overnight away from base · AE allowance (Art. 39)' : 'Pernoita fora da base · abono AE (Art. 39)'}</Text>
+            </View>
+            <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm(f => ({ ...f, nightStop: v })); }}
+              trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
           </View>
-          <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm(f => ({ ...f, nightStop: v })); }}
-            trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-        </View>
+        ) : null}
 
-        {/* Rota — topo (identidade do voo). Destrava o per-diem AE (Art. 53). */}
-        <Text style={[s.fieldLbl, { marginTop: 14 }]}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
-        <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
-          placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
-          maxLength={40} style={s.routeInputFull} />
-        {ae ? (
-          routePd == null
-            ? <Text style={s.routeHint}>{lang === 'en' ? 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS' : 'Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS'}</Text>
-            : routePd.ok
-              ? <Text style={[s.routeHint, { color: C.green }]}>{lang === 'en' ? 'Per diem for this duty: ' : 'Per diem deste voo: '}<Text style={{ fontFamily: FONT.heavy }}>+{fmtPd(routePd.eur)}</Text></Text>
-              : <Text style={[s.routeHint, { color: C.warn }]}>{lang === 'en' ? 'Route not recognised — won’t count for per diem' : 'Rota não reconhecida — não conta para o per-diem'}</Text>
+        {/* Rota — só em VOO. Destrava o per-diem AE (Art. 53). */}
+        {isFlight ? (
+          <>
+            <Text style={[s.fieldLbl, { marginTop: 14 }]}>{lang === 'en' ? 'Route' : 'Rota'}</Text>
+            <TextInput value={form.route} onChangeText={(v) => setForm(f => ({ ...f, route: v.toUpperCase() }))}
+              placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
+              maxLength={40} style={s.routeInputFull} />
+            {ae ? (
+              routePd == null
+                ? <Text style={s.routeHint}>{lang === 'en' ? 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS' : 'Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS'}</Text>
+                : routePd.ok
+                  ? <Text style={[s.routeHint, { color: C.green }]}>{lang === 'en' ? 'Per diem for this duty: ' : 'Per diem deste voo: '}<Text style={{ fontFamily: FONT.heavy }}>+{fmtPd(routePd.eur)}</Text></Text>
+                  : <Text style={[s.routeHint, { color: C.warn }]}>{lang === 'en' ? 'Route not recognised — won’t count for per diem' : 'Rota não reconhecida — não conta para o per-diem'}</Text>
+            ) : null}
+          </>
         ) : null}
 
         <ClockField C={C} s={s} label={t('duties.report', lang)} value={form.report} onChange={(v) => setForm(f => ({ ...f, report: v }))} />
         <ClockField C={C} s={s} label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm(f => ({ ...f, off: v }))} />
         <ClockField C={C} s={s} label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm(f => ({ ...f, on: v }))} />
-        <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm(f => ({ ...f, sectors: n }))} min={0} max={12} />
-        <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm(f => ({ ...f, flight: v }))} />
+        {isFlight ? <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm(f => ({ ...f, sectors: n }))} min={0} max={12} /> : null}
+        {isFlight ? <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm(f => ({ ...f, flight: v }))} /> : null}
 
-        {prospect ? (
+        {isFlight && prospect ? (
           <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
             <View style={s.projHead}>
               <Ionicons name={prospect.ok ? 'checkmark-circle' : 'alert-circle'} size={15} color={prospect.ok ? (C.ok || C.text) : (C.warn || C.text)} />
@@ -199,6 +223,7 @@ const makeStyles = (C) => StyleSheet.create({
   kindChipOn: { borderColor: C.ink, backgroundColor: C.ink },
   kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
   kindChipTxtOn: { color: '#fff' },
+  kindInfo: { fontSize: 12, color: C.text, fontFamily: FONT.semibold, marginTop: 10, marginLeft: 2 },
   nsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
   nsHint: { fontSize: 11, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 4 },
