@@ -1,7 +1,7 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Altura da tab bar flutuante (ver App.js).
-export const TAB_BAR_HEIGHT = 66;
+export const TAB_BAR_HEIGHT = 70;
 
 // Espaço a reservar no fundo dos ScrollView/FlatList para o conteúdo não
 // ficar tapado pela tab bar flutuante. Liga-se aos insets do dispositivo,

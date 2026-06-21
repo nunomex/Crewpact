@@ -137,7 +137,7 @@ function FloatingTabBar({ state, navigation }) {
         cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
         onCancel={() => setLogoutOpen(false)}
         onConfirm={() => { setLogoutOpen(false); logout(); }} />
-      <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) }]} pointerEvents="box-none">
+      <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) + 4 }]} pointerEvents="box-none">
         <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
           {state.routes.map(route => {
             const focused = active.key === route.key;
@@ -147,7 +147,7 @@ function FloatingTabBar({ state, navigation }) {
                 accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
-                <Ionicons name={focused ? on : off} size={20} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
+                <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.5)'} />
                 {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
               </TouchableOpacity>
             );
@@ -175,15 +175,16 @@ function MainTabs() {
 }
 
 const tbar = StyleSheet.create({
+  // Dock (esquerda) + FAB (direita), separados como o mockup — mas maiores.
   wrap: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  // Dock escuro (esquerda) — 4 ícones, ponto vermelho na ativa
-  dock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 54, borderRadius: 22, paddingHorizontal: 5 },
+  // Dock escuro — 4 ícones, ponto vermelho na ativa
+  dock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 26, paddingHorizontal: 8 },
   dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.42, shadowRadius: 26, elevation: 14 },
-  tb: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  tbHi: { position: 'absolute', width: 40, height: 40, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.10)' },
-  tbDot: { position: 'absolute', bottom: 5, width: 4, height: 4, borderRadius: 2 },
-  // FAB vermelho (direita) — "Simular"
-  fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  tb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+  tbHi: { position: 'absolute', width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
+  tbDot: { position: 'absolute', bottom: 8, width: 4, height: 4, borderRadius: 2 },
+  // FAB vermelho (direita) — maior, a condizer com a dock
+  fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
   fabLabel: { position: 'absolute', top: -15, left: -60, right: -60, textAlign: 'center', fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
 });
