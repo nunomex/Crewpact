@@ -13,6 +13,7 @@ export const ROSTER_CODES = {
     positioning:    /\b(DH|DHD|DEADHEAD|POS|PSN)\b/i,               // posicionamento/deadhead
     training:       /\b(SIM|TRG|RECURRENT|CBT|GS)\b/i,              // formação/simulador
     office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN)\b/i,           // terra/escritório
+    dayOff:         /\bFTGD\b|D\/O|\bRDO\b|\bANL\b|\bVAC\b|\bLVE\b/i, // folga/fadiga/férias (não é duty → não importa)
   },
   // jet2 / volotea / wizz / hifly → acrescentar aqui (com o diagnóstico).
 };

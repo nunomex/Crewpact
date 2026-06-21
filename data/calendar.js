@@ -47,6 +47,7 @@ function classify(text, codes) {
   if (codes.training && codes.training.test(text)) return 'training';
   if (codes.office && codes.office.test(text)) return 'office';
   if (codes.flightNo && codes.flightNo.test(text)) return 'flight';
+  if (codes.dayOff && codes.dayOff.test(text)) return 'off'; // folga/fadiga (depois do voo, p/ não apanhar aeroportos)
   const r = text.match(RE_ROUTE);
   if (r && r[1] !== r[2]) return 'flight'; // rota com aeroportos diferentes
   return 'other';
