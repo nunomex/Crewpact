@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
 import { RADIUS, TYPE, SPACE, FONT, TRACK_DISPLAY } from '../data/constants';
@@ -42,6 +42,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const { lang, duties, dayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
+  const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
@@ -137,8 +138,8 @@ export default function DutyFormSheet({ visible, onClose, date }) {
   const isEdit = duties[form.date] && !duties[form.date].deleted;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen" statusBarTranslucent>
-      <SafeAreaView style={s.page} edges={['top', 'bottom']}>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+      <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
         <View style={s.head}>
           <View style={{ flex: 1 }}>
@@ -251,7 +252,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
             <Text style={[s.saveTxt, { color: canSave ? '#fff' : C.sub }]}>{t('common.save', lang)}</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
