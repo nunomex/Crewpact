@@ -13,6 +13,7 @@ import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
 import EscalaWheel from '../components/EscalaWheel';
 import DutyFormSheet from '../components/DutyFormSheet';
+import RosterImportSheet from '../components/RosterImportSheet';
 import BottomSheet from '../components/BottomSheet';
 import CalendarScreen from './CalendarScreen';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -47,6 +48,7 @@ export default function EscalaScreen({ navigation, route }) {
 
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
   const [recOpen, setRecOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   useEffect(() => {
     if (!user?.id) return;
@@ -145,7 +147,14 @@ export default function EscalaScreen({ navigation, route }) {
           eyebrow={l('Escala semanal', 'Weekly schedule')}
           title={monthLabel}
           onTitlePress={openMonth}
-          right={<NotificationsBell />}
+          right={
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => { select(); setImportOpen(true); }} hitSlop={8} style={s.iconBtnSm} accessibilityLabel={l('Importar escala', 'Import roster')}>
+                <Ionicons name="download-outline" size={18} color={C.text} />
+              </TouchableOpacity>
+              <NotificationsBell />
+            </View>
+          }
         />
 
         {/* Toolbar — toggle Roda|Lista (esq.) + export na Lista (dir.) */}
@@ -204,6 +213,7 @@ export default function EscalaScreen({ navigation, route }) {
       </View>
 
       <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate} />
+      <RosterImportSheet visible={importOpen} onClose={() => setImportOpen(false)} />
 
       {/* Registo ORO.FTL.245 (PDF assinável) */}
       <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
