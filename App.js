@@ -37,6 +37,7 @@ import EscalaScreen       from './screens/EscalaScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
+import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import SearchModal        from './components/SearchModal';
 import ConfirmDialog       from './components/ConfirmDialog';
@@ -65,6 +66,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
+      <Stack.Screen name="Stats"     component={StatsScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>

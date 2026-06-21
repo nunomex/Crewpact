@@ -8,6 +8,7 @@ import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { monthlyPerDiem } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
+import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import PageHeader from '../components/PageHeader';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import BottomSheet from '../components/BottomSheet';
@@ -164,6 +165,7 @@ export default function HomeScreen({ navigation }) {
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -401,6 +403,28 @@ export default function HomeScreen({ navigation }) {
     );
   })() : null;
 
+  // ── Estatísticas YTD — cartão-resumo (toca → página Stats completa) ──
+  const statsYtd = useMemo(
+    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12' }),
+    [duties, ae, crewCategory, crewContract],
+  );
+  const statRatio = Math.min(1, statsYtd.flightHours / ANNUAL_FLIGHT_LIMIT_H);
+  const statsCardEl = statsYtd.count > 0 ? (
+    <TouchableOpacity style={s.statsCard} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Stats'); }}>
+      <View style={s.statsIc}><Ionicons name="stats-chart" size={18} color="#fff" /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.statsEyebrow}>{l('Estatísticas', 'Statistics')} · {new Date().getFullYear()}</Text>
+        <Text style={s.statsRow} numberOfLines={1}>
+          <Text style={s.statsBig}>{statsYtd.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })}</Text>
+          <Text style={s.statsBigU}> h</Text>
+          <Text style={s.statsDim}>  ·  {statsYtd.sectors} {t('duties.sectorsShort', lang)}  ·  {statsYtd.count} {l('dias', 'days')}</Text>
+        </Text>
+        <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.statsBar} fill={s.statsBarFill} />
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.sub} />
+    </TouchableOpacity>
+  ) : null;
+
   // ── Cabeçalho premium + tira de 5 dias ──
   const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
   const crewWord = isPilot ? (lang === 'en' ? 'Pilot' : 'Piloto') : (lang === 'en' ? 'Cabin' : 'Cabine');
@@ -447,6 +471,9 @@ export default function HomeScreen({ navigation }) {
 
         {/* Próximas atividades (qualquer tipo de duty) — card no fundo */}
         <Animated.View style={seg(4)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View>
+
+        {/* Estatísticas do ano — cartão-resumo (abre a página Stats) */}
+        {statsCardEl ? <Animated.View style={seg(5)}>{statsCardEl}</Animated.View> : null}
       </ScrollView>
 
       {/* Notificações */}
@@ -552,6 +579,18 @@ const makeStyles = (C) => StyleSheet.create({
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
+
+  // Estatísticas YTD — cartão-resumo (toca → página Stats)
+  statsCard: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15, marginTop: SPACE.md,
+    shadowColor: '#14161A', shadowOpacity: 0.1, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 2 },
+  statsIc: { width: 42, height: 42, borderRadius: 13, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statsEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub, marginBottom: 3 },
+  statsRow: { marginBottom: 9 },
+  statsBig: { fontSize: 22, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
+  statsBigU: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
+  statsDim: { fontSize: 11.5, fontFamily: FONT.bold, color: C.sub },
+  statsBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
+  statsBarFill: { height: '100%', borderRadius: RADIUS.pill },
 
   // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
