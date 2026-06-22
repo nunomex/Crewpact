@@ -33,7 +33,7 @@ const buildDutiesCsv = (duties) => {
 // edição passa pelo DutyFormSheet partilhado (um só formulário, com rota+per-diem).
 // Na Lista, o cabeçalho traz o export: CSV + PDF do registo ORO.FTL.245.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, removeDuty, dayLog, user, company } = useContext(AppContext);
+  const { lang, duties, removeDuty, dayLog, user, company, rosterChanges, checkRosterChanges } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -70,6 +70,11 @@ export default function EscalaScreen({ navigation, route }) {
       setDutyDate(selIso || isoDay());
     }
   }, [route.params?.newDuty, selIso]);
+
+  // Vindo do sino/banner "Alterações na escala" → abre a folha de revisão (import).
+  useEffect(() => {
+    if (route.params?.review) { setView((v) => (v === 'month' ? 'wheel' : v)); setImportOpen(true); }
+  }, [route.params?.review]);
 
   // Título segue o mês do dia centrado na roda (selIso); fallback = hoje.
   const monthLabel = (() => {
@@ -181,6 +186,20 @@ export default function EscalaScreen({ navigation, route }) {
           ) : null}
         </View>
 
+        {/* Alterações de escala (Fase 4) — banner que abre a revisão (import) */}
+        {rosterChanges?.counts?.total ? (
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportOpen(true); }} style={s.rcBanner}>
+            <Ionicons name="sync-circle" size={20} color={C.warn || C.red} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.rcTitle}>{l('Alterações na escala', 'Roster changes')}</Text>
+              <Text style={s.rcSub} numberOfLines={1}>
+                {[((rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)) ? `${(rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)} ${l('alterada(s)', 'changed')}` : null, rosterChanges.counts.added ? `${rosterChanges.counts.added} ${l('nova(s)', 'new')}` : null, rosterChanges.counts.removed ? `${rosterChanges.counts.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ')} · {l('rever', 'review')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.sub} />
+          </TouchableOpacity>
+        ) : null}
+
         {view === 'list' ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
             {listRows.length === 0 ? (
@@ -213,7 +232,7 @@ export default function EscalaScreen({ navigation, route }) {
       </View>
 
       <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate} />
-      <RosterImportSheet visible={importOpen} onClose={() => setImportOpen(false)} />
+      <RosterImportSheet visible={importOpen} onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
       {/* Registo ORO.FTL.245 (PDF assinável) */}
       <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
@@ -255,6 +274,11 @@ const makeStyles = (C) => StyleSheet.create({
   segTxtOn: { color: C.text },
   exportRow: { flexDirection: 'row', gap: 8 },
   iconBtnSm: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+
+  // Alterações de escala (Fase 4) — banner
+  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: 14, padding: 12, marginBottom: 14 },
+  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
+  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
 
   // Lista de duties
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.md },

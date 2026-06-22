@@ -6,7 +6,7 @@ import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { parseEasyjetRoster } from '../data/pdfRoster';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
@@ -31,7 +31,7 @@ const demoCands = () => {
 // (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
 // parcial. Página inteira (Modal slide-up), no estilo da página de duty.
 export default function RosterImportSheet({ visible, onClose }) {
-  const { lang, duties, dayLog, saveDuty, company } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -52,7 +52,8 @@ export default function RosterImportSheet({ visible, onClose }) {
     const { start, end } = rangeFromOption(opt);
     const co = company?.slug;
     const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co), getNonFlightInRange(start, end, co)]);
-    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog }) : [];
+    const window = { start: isoDay(start), end: isoDay(end) };  // p/ detetar cancelados na janela
+    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!fl.ok && !nf.ok) setDenied(true);
     setCands(next);
@@ -79,44 +80,64 @@ export default function RosterImportSheet({ visible, onClose }) {
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
-  const toggle = (i) => { select(); setCands((cs) => cs.map((c, j) => j === i ? { ...c, selected: !c.selected } : c)); };
+  // Alterna pela IDENTIDADE do candidato (data+kind) — a lista mostrada é filtrada/
+  // reordenada, por isso o índice já não serve.
+  const toggle = (cand) => { select(); setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c))); };
 
   const selected = cands.filter((c) => c.selected);
+  // Revisão focada: esconder os "igual" (nada a fazer). A ordem (cancelado → conflito
+  // → alterado → novo) já vem do buildImportCandidates.
+  const shown = cands.filter((c) => c.status !== 'same');
+  const sameCount = cands.length - shown.length;
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
   const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
-  const badge = (st) => st === 'exists' ? { bg: C.soft, fg: C.sub, txt: l('conflito', 'conflict') }
+  const badge = (st) => st === 'removed' ? { bg: C.redSoft || C.soft, fg: C.red, txt: l('cancelado', 'cancelled') }
+    : st === 'conflict' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('conflito', 'conflict') }
+    : st === 'changed' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('alterado', 'changed') }
+    : st === 'same' ? { bg: C.soft, fg: C.sub, txt: l('igual', 'same') }
     : st === 'warn' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('aviso', 'warning') }
     : { bg: C.greenSoft || C.soft, fg: C.green || C.text, txt: 'OK' };
+  // Linha "antes → depois" dos campos que mudaram (candidatos 'changed').
+  const diffLine = (c) => (c.diff || []).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt']} ${f.before == null || f.before === '' ? '—' : f.before}→${f.after == null || f.after === '' ? '—' : f.after}`).join('  ·  ');
 
   const doImport = () => {
     if (!selected.length) return;
-    const replacing = selected.filter((c) => c.exists).length;
+    const src = source === 'paste' ? 'pdf' : 'calendar';
+    const deletes = selected.filter((c) => c.action === 'delete');     // cancelados → apagar
+    const conflicts = selected.filter((c) => c.status === 'conflict');  // sobrepõem a tua edição
     const run = () => {
       let warn = 0;
       for (const c of selected) {
+        if (c.action === 'delete') { removeDuty(c.duty.duty_date); continue; }
+        const snap = { report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on, route: c.duty.route, sectors: c.duty.sectors, kind: c.kind };
         saveDuty(c.duty.duty_date, {
           report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
           sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
-          kind: c.kind, nightStop: false,
+          kind: c.kind, nightStop: false, source: src, snap,
         });
         if (c.status === 'warn') warn++;
       }
       success();
-      const ignored = cands.length - selected.length;
+      const saved = selected.length - deletes.length;
+      const ignored = shown.filter((c) => !c.selected).length;
       Alert.alert(
-        l('Escala importada', 'Roster imported'),
-        l(`${selected.length} importada(s)${replacing ? ` · ${replacing} substituída(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
-          `${selected.length} imported${replacing ? ` · ${replacing} replaced` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`),
+        l('Escala atualizada', 'Roster updated'),
+        l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
+          `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`),
         [{ text: 'OK', onPress: onClose }],
       );
     };
-    if (replacing > 0) {
+    // Confirmação só para o que é destrutivo: apagar cancelados ou sobrepor a tua edição.
+    if (deletes.length || conflicts.length) {
+      const parts = [
+        deletes.length ? l(`apagar ${deletes.length} cancelada(s)`, `delete ${deletes.length} cancelled`) : null,
+        conflicts.length ? l(`sobrepor ${conflicts.length} que editaste`, `overwrite ${conflicts.length} you edited`) : null,
+      ].filter(Boolean).join(l(' e ', ' and '));
       Alert.alert(
-        l('Substituir duties manuais?', 'Replace manual duties?'),
-        l(`${replacing} dia(s) já têm duty manual e vão ser substituídos. Os restantes não são afetados.`,
-          `${replacing} day(s) already have a manual duty and will be replaced. The rest are unaffected.`),
-        [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Substituir', 'Replace'), style: 'destructive', onPress: run }],
+        l('Confirmar alterações', 'Confirm changes'),
+        l(`Vais ${parts}. Os restantes não são afetados.`, `You will ${parts}. The rest are unaffected.`),
+        [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Aplicar', 'Apply'), style: 'destructive', onPress: run }],
       );
     } else run();
   };
@@ -193,25 +214,34 @@ export default function RosterImportSheet({ visible, onClose }) {
               <Text style={s.dim}>{l('Sem acesso ao calendário.', 'No calendar access.')}</Text>
               <TouchableOpacity onPress={grant} style={s.grantBtn}><Text style={s.grantTxt}>{l('Dar acesso', 'Grant access')}</Text></TouchableOpacity>
             </View>
-          ) : !cands.length ? (
+          ) : !shown.length ? (
             <View style={s.center}>
-              <Ionicons name={source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline'} size={26} color={C.sub} />
-              <Text style={s.dim}>{source === 'paste'
-                ? l('Cola a tua escala em cima e carrega em "Ler escala".', 'Paste your roster above and tap "Read roster".')
-                : l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text>
+              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? (C.green || C.sub) : C.sub} />
+              <Text style={s.dim}>{cands.length
+                ? l('Sem alterações — a escala está igual ao guardado.', 'No changes — your roster matches what you have.')
+                : source === 'paste'
+                  ? l('Cola a tua escala em cima e carrega em "Ler escala".', 'Paste your roster above and tap "Read roster".')
+                  : l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text>
             </View>
           ) : (
             <>
-              <Text style={s.hint}>{l('Conflito = já tens um duty manual nesse dia (mantido por omissão). Marca para o calendário substituir.', 'Conflict = you already have a manual duty that day (kept by default). Check to let the calendar replace it.')}</Text>
-              {cands.map((c, i) => {
+              <Text style={s.hint}>
+                {l('🔴 Cancelado · ⚠️ Conflito (editaste) · 🟠 Alterado (antes→depois) · 🟢 Novo — marca o que aplicar.', '🔴 Cancelled · ⚠️ Conflict (you edited) · 🟠 Changed (before→after) · 🟢 New — check what to apply.')}
+                {sameCount ? l(` · ${sameCount} já iguais (escondidas)`, ` · ${sameCount} unchanged (hidden)`) : ''}
+              </Text>
+              {shown.map((c) => {
                 const b = badge(c.status);
                 return (
-                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => toggle(i)} activeOpacity={0.8} style={s.crow}>
+                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => toggle(c)} activeOpacity={0.8} style={s.crow}>
                     <View style={[s.check, c.selected && { backgroundColor: C.ink, borderColor: C.ink }]}>{c.selected ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}</View>
                     <Ionicons name={KIND_ICON[c.kind] || 'ellipse-outline'} size={16} color={C.red} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
-                      {metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
+                      {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
+                        ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
+                        : c.status === 'removed'
+                          ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}{c.duty.report_time ? ` · ${l('era', 'was')} ${c.duty.report_time}` : ''}</Text>
+                          : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                     </View>
                     <View style={[s.badge, { backgroundColor: b.bg }]}><Text style={[s.badgeTxt, { color: b.fg }]}>{b.txt}</Text></View>
                   </TouchableOpacity>
@@ -294,6 +324,7 @@ const makeStyles = (C) => StyleSheet.create({
   check: { width: 24, height: 24, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
+  cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
   badge: { borderRadius: RADIUS.xs, paddingHorizontal: 8, paddingVertical: 4 },
   badgeTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase' },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },

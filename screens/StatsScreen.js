@@ -77,8 +77,8 @@ export default function StatsScreen({ navigation }) {
 
   const tiles = [
     { ic: 'briefcase-outline', label: l('Serviço', 'Duty'), value: fmtH(st.dutyHours) },
-    { ic: 'git-branch-outline', label: l('Setores', 'Sectors'), value: nf(st.sectors) },
     { ic: 'calendar-outline', label: l('Dias de escala', 'Duty days'), value: nf(st.count) },
+    { ic: 'sunny-outline', label: l('Dias de folga', 'Days off'), value: nf(st.offDays) },
     { ic: 'moon-outline', label: l('Paragens noct.', 'Night stops'), value: nf(st.nightStops) },
   ];
 
@@ -143,6 +143,14 @@ export default function StatsScreen({ navigation }) {
                   <Text style={s.tileLbl} numberOfLines={1}>{ti.label}</Text>
                 </View>
               ))}
+            </Animated.View>
+
+            {/* Repouso & fadiga (qualidade do descanso) */}
+            <Animated.View style={[s.card, seg(3)]}>
+              <Text style={s.cardTitle}>{l('Repouso & fadiga', 'Rest & fatigue')}</Text>
+              <View style={s.aeRow}><Text style={s.aeK} numberOfLines={1}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text><Text style={s.aeV}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text></View>
+              {st.reducedRests ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Repousos < 11 h', 'Rests < 11 h')}</Text><Text style={[s.aeV, { color: C.warn || C.text }]}>{st.reducedRests}</Text></View> : null}
+              <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text><Text style={s.aeV}>{st.longestStreak} {l('dias', 'days')}</Text></View>
             </Animated.View>
 
             {/* Gráfico mensal — horas de voo por mês */}

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
-import { buildNotifications } from '../data/notifications';
+import NotificationsBell from '../components/NotificationsBell';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { monthlyPerDiem } from '../data/perdiem';
@@ -11,7 +11,6 @@ import { sectorDistanceNM } from '../data/airports';
 import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import PageHeader from '../components/PageHeader';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
-import BottomSheet from '../components/BottomSheet';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -161,16 +160,11 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot, rosterChanges } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
-
-  const [notifOpen, setNotifOpen] = useState(false);
-
-  const notifs = buildNotifications(profile, lang);
-  const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
 
   // FTL — limites de tempo (ORO.FTL.210), calculados pelo MOTOR a partir do dayLog (store FTL).
   const dutyLimits = computeDutyTime(dayLog);     // serviço: 60/110/190 h em 7/14/28 dias
@@ -200,11 +194,6 @@ export default function HomeScreen({ navigation }) {
     : stateLevel === 'ok' ? t('home.statusOk', lang)
     : t('home.dashNoData', lang);
   const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
-
-  const closeNotifs = () => {
-    setNotifOpen(false);
-    setReadNotifIds(new Set(notifs.map(n => n.id)));
-  };
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
   const [calFlight, setCalFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
@@ -443,12 +432,7 @@ export default function HomeScreen({ navigation }) {
         <PageHeader
           eyebrow={opEyebrow}
           title={`${t('home.hello', lang)}${firstName ? `, ${firstName}` : ''}`}
-          right={
-            <TouchableOpacity style={s.hbtn} onPress={() => setNotifOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityLabel={t('home.notifsAria', lang)}>
-              <Ionicons name="notifications-outline" size={18} color={C.text} />
-              {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
-            </TouchableOpacity>
-          }
+          right={<NotificationsBell />}
         />
 
         {/* Estado FTL — linha de estado (ponto semáforo a pulsar + contexto à direita) */}
@@ -460,6 +444,24 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>
           <Text style={s.statCtx} numberOfLines={1}>{crewCategory ? `${crewCategory}${crewContract ? ' · ' + crewContract : ''}` : (stateReason || '')}</Text>
         </Animated.View>
+
+        {/* Alterações de escala (Fase 4) — aviso quando o calendário difere do guardado */}
+        {(() => {
+          const rc = rosterChanges?.counts || {};
+          if (!rc.total) return null;
+          const ch = (rc.changed || 0) + (rc.conflict || 0);
+          const parts = [ch ? `${ch} ${l('alterada(s)', 'changed')}` : null, rc.added ? `${rc.added} ${l('nova(s)', 'new')}` : null, rc.removed ? `${rc.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ');
+          return (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Escala'); }} style={s.rcBanner}>
+              <Ionicons name="sync-circle" size={22} color={C.warn || C.red} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.rcTitle}>{l('Alterações na escala', 'Roster changes')}</Text>
+                <Text style={s.rcSub} numberOfLines={1}>{parts}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.sub} />
+            </TouchableOpacity>
+          );
+        })()}
 
         {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
@@ -479,29 +481,6 @@ export default function HomeScreen({ navigation }) {
             o Stats lhe tomou o lugar na grelha. */}
         {statsMiniEl ? <Animated.View style={[s.grid2, seg(5)]}>{ftlVooCard}</Animated.View> : null}
       </ScrollView>
-
-      {/* Notificações */}
-      <BottomSheet visible={notifOpen} onClose={closeNotifs} eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)} maxHeight="80%" closeLabel={t('common.close', lang)}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACE.xl + 8 }}>
-          {notifs.map((n, i) => {
-            const isNew = !readNotifIds.has(n.id);
-            return (
-              <View key={n.id} style={[s.notifItem, i > 0 && { borderTopWidth: 1, borderTopColor: C.line }]}>
-                <View style={[s.notifDot, { backgroundColor: isNew ? C.red : C.line }]} />
-                <View style={{ flex: 1 }}>
-                  <View style={s.notifMeta}>
-                    <View style={s.tagBadge}><Text style={s.tagTxt}>{n.tag}</Text></View>
-                    <Text style={s.notifTime}>{n.time}</Text>
-                  </View>
-                  <Text style={s.notifItemTitle}>{n.title}</Text>
-                  <Text style={s.notifItemBody}>{n.body}</Text>
-                </View>
-              </View>
-            );
-          })}
-          <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
-        </ScrollView>
-      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -584,9 +563,14 @@ const makeStyles = (C) => StyleSheet.create({
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
+  // Alterações de escala (Fase 4) — banner de aviso
+  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: 16, padding: 13, marginBottom: SPACE.md },
+  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
+  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
+
   // Notificações
-  notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
-  notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, marginTop: 6 },
+  notifItem: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
+  notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, flexShrink: 0 },
   notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
   tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
   tagTxt: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, letterSpacing: 0.5 },

@@ -225,3 +225,19 @@ begin
     alter table public.duties add column night_stop boolean not null default false;
   end if;
 end $$;
+
+-- ── 12. duties.roster_meta — origem + snapshot da escala (Fase 4) ────────────
+-- JSON de texto: { "source": "manual|calendar|pdf", "snap": { report_time,
+-- block_off, block_on, route, sectors, kind } | null }. Serve a deteção de
+-- ALTERAÇÕES DE ESCALA (calendário vs guardado), incl. CANCELAMENTOS: só duties
+-- com source='calendar' que sumiram do calendário são propostas para apagar
+-- (manuais/PDF nunca). O `snap` (3 vias, tipo git) distingue "o calendário mudou"
+-- de "tu editaste". Default null → as duties existentes ficam 'manual' (nunca
+-- canceladas). Idempotente. (O upsertDuty degrada com elegância se faltar.)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='duties' and column_name='roster_meta') then
+    alter table public.duties add column roster_meta text;
+  end if;
+end $$;

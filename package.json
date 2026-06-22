@@ -14,7 +14,8 @@
     "test:ae": "node scripts/ae-golden.test.js",
     "test:pdf": "node scripts/pdf-roster.test.js",
     "test:stats": "node scripts/stats.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats"
+    "test:diff": "node scripts/roster-diff.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

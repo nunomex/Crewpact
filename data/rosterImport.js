@@ -2,6 +2,7 @@
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
 import { dutyToFtlDay, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
+import { classify } from './rosterDiff';
 
 // Atividade { dateISO, sectors, legs:[{ report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
 // → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
@@ -85,19 +86,47 @@ export const rangeFromOption = (option, from = new Date()) => {
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
 // e selected=false (MANTÉM o manual). O utilizador marca para o calendário substituir
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {} } = {}) => {
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null } = {}) => {
+  const out = [];
+  const inDates = new Set();
   const make = (duty, kind) => {
     if (!duty) return null;
     duty.kind = kind;
+    inDates.add(duty.duty_date);
     const ex = duties[duty.duty_date];
     const exists = !!(ex && !ex.deleted);
     const prospect = prospectiveDuty(duty, dayLog);
-    const status = exists ? 'exists' : (prospect && prospect.ok === false ? 'warn' : 'ok');
-    return { duty, kind, status, exists, prospect, selected: !exists };
+    // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
+    let status = 'ok', diff = [];
+    if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }
+    else status = (prospect && prospect.ok === false) ? 'warn' : 'ok';
+    // Default SEGURO: só os NOVOS vêm marcados; alterado/conflito por marcar.
+    return { duty, kind, status, exists, diff, prospect, selected: !exists, action: 'save' };
   };
-  const out = [];
   for (const act of activities) { const c = make(dutyFromActivity(act), 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
-  out.sort((a, b) => (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
+  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do
+  // calendário. Ação = apagar (por marcar; confirmação na UI). Manuais/PDF nunca.
+  if (window && window.start && window.end) {
+    for (const date in duties) {
+      const d = duties[date];
+      if (!d || d.deleted || d.source !== 'calendar') continue;
+      if (date < window.start || date > window.end) continue;
+      if (inDates.has(date)) continue;
+      const kind = d.kind || 'flight';
+      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
+    }
+  }
+  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, same: 5 };
+  out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
+  return out;
+};
+
+// Duty-rows da nova leitura (calendário/PDF) — sem o cálculo prospetivo, para a
+// deteção automática de alterações (diffRoster). Reaproveita os mesmos mapeadores.
+export const buildIncoming = ({ activities = [], nonflights = [] } = {}) => {
+  const out = [];
+  for (const act of activities) { const d = dutyFromActivity(act); if (d) { d.kind = 'flight'; out.push(d); } }
+  for (const nf of nonflights) { const d = dutyFromNonFlight(nf); if (d) { d.kind = nf.kind; out.push(d); } }
   return out;
 };

@@ -19,17 +19,15 @@ export const DUTY_KINDS = ['flight', 'standby_airport', 'standby_home', 'positio
 // Lê as duties do utilizador (mais recentes primeiro). [] em erro/sem rede.
 export const fetchDuties = async (userId) => {
   if (!userId) return [];
-  const FULL = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, updated_at:created_at';
+  const FULL = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, roster_meta, updated_at:created_at';
+  const MID = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, kind, night_stop, updated_at:created_at';
   const LEGACY = 'duty_date, report_time, block_off, block_on, sectors, flight_minutes, notes, updated_at:created_at';
+  const sel = (cols) => supabase.from('duties').select(cols).eq('user_id', userId).order('duty_date', { ascending: false });
   try {
-    let { data, error } = await supabase
-      .from('duties').select(FULL).eq('user_id', userId).order('duty_date', { ascending: false });
-    if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
-      // Colunas `kind`/`night_stop` ainda não existem (§9/§11 por correr) → lê sem
-      // elas, em vez de falhar a leitura toda. (Degradação elegante.)
-      ({ data, error } = await supabase
-        .from('duties').select(LEGACY).eq('user_id', userId).order('duty_date', { ascending: false }));
-    }
+    let { data, error } = await sel(FULL);
+    // Degradação elegante: lê sem as colunas que ainda não existirem (migração por correr).
+    if (error && /roster_meta/.test(error.message || '')) ({ data, error } = await sel(MID));
+    if (error && /\b(kind|night_stop)\b/.test(error.message || '')) ({ data, error } = await sel(LEGACY));
     if (error) return [];
     return data || [];
   } catch {
@@ -53,13 +51,22 @@ export const upsertDuty = async (userId, d = {}) => {
       notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       kind: d.kind || 'flight',            // tipo de atividade (voo/standby/terra…)
       night_stop: !!d.nightStop,           // paragem nocturna (abono AE, Art. 39)
+      // origem + snapshot da escala (Fase 4) — JSON num só campo
+      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null }),
     };
-    let { error } = await supabase.from('duties').upsert(payload, { onConflict: 'user_id,duty_date' });
-    if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
-      // Colunas novas (`kind`/`night_stop`) ainda não existem (migração §9/§11 por
-      // correr) → grava sem elas (degradação elegante: ficam só locais até existirem).
-      const { kind, night_stop, ...legacy } = payload;
-      ({ error } = await supabase.from('duties').upsert(legacy, { onConflict: 'user_id,duty_date' }));
+    const up = (p) => supabase.from('duties').upsert(p, { onConflict: 'user_id,duty_date' });
+    let { error } = await up(payload);
+    // Degradação elegante: grava sem as colunas que ainda não existirem.
+    if (error && /roster_meta/.test(error.message || '')) {
+      const { roster_meta, ...rest } = payload; payload.roster_meta = undefined;
+      ({ error } = await up(rest));
+      if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
+        const { kind, night_stop, ...legacy } = rest;
+        ({ error } = await up(legacy));
+      }
+    } else if (error && /\b(kind|night_stop)\b/.test(error.message || '')) {
+      const { kind, night_stop, roster_meta, ...legacy } = payload;
+      ({ error } = await up(legacy));
     }
     return error ? (error.message || 'erro') : null;   // null = sucesso
   } catch (e) {

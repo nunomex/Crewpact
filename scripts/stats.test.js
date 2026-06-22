@@ -76,5 +76,20 @@ eq('2025: base 12 meses', rp.aeYtd.base, 60000);
 // availableYears
 eq('availableYears', availableYears(DUTIES), ['2026', '2025']);
 
+// ── Repouso & folgas ──
+eq('offDays (105−4)', r.offDays, 101);          // dayOfYear(2026-04-15)=105, count=4
+eq('longestStreak (não-consecutivos)', r.longestStreak, 1);
+ok('minRestH número', typeof r.minRestH === 'number' && r.minRestH > 0);
+
+const REST_D = {
+  '2026-05-01': { duty_date: '2026-05-01', report_time: '14:00', block_on: '23:00', kind: 'flight', sectors: 2 }, // fim 23:00
+  '2026-05-02': { duty_date: '2026-05-02', report_time: '08:00', block_on: '16:00', kind: 'flight', sectors: 2 }, // rest 9h (<11) reduzido
+  '2026-05-03': { duty_date: '2026-05-03', report_time: '10:00', block_on: '18:00', kind: 'flight', sectors: 2 }, // rest 18h
+};
+const rr = yearStats(REST_D, { year: 2026, now: new Date('2026-12-31T12:00:00') });
+eq('minRestH = 9', rr.minRestH, 9);
+eq('reducedRests = 1', rr.reducedRests, 1);
+eq('longestStreak = 3', rr.longestStreak, 3);
+
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

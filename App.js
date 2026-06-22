@@ -27,6 +27,9 @@ import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines } from './data/db';
 import { getAeForProfile } from './ae';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
+import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
+import { buildIncoming, rangeFromOption } from './data/rosterImport';
+import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay } from './ftl';
 
 import LoginScreen        from './screens/LoginScreen';
@@ -243,6 +246,8 @@ export default function App() {
   const dutiesSyncing         = useRef(false);
   const dutiesRef             = useRef({});
   useEffect(() => { dutiesRef.current = duties; }, [duties]);
+  // Fase 4 — Alterações de escala detetadas (calendário vs guardado). { changed, added, counts }.
+  const [rosterChanges, setRosterChanges] = useState({ changed: [], conflict: [], added: [], removed: [], counts: { changed: 0, conflict: 0, added: 0, removed: 0, total: 0 } });
 
   // ── Registo FTL por dia ──
   // dayLog: { 'YYYY-MM-DD': { psv, rest, … } }. As calculadoras registam num dia
@@ -272,23 +277,30 @@ export default function App() {
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.
   const saveDuty = (date, fields) => {
-    setDuties(prev => ({
-      ...prev,
-      [date]: {
-        report_time: fields.report_time || null,
-        block_off: fields.block_off || null,
-        block_on: fields.block_on || null,
-        sectors: fields.sectors || 0,
-        flight_minutes: fields.flight_minutes || 0,
-        route: fields.route || null,        // rota "LIS-OPO-LIS" (per diem AE)
-        kind: fields.kind || 'flight',      // tipo de atividade (voo/standby/terra…)
-        nightStop: !!fields.nightStop,      // paragem nocturna (abono AE, Art. 39)
-        duty_date: date,
-        updated_at: new Date().toISOString(),
-        dirty: true,
-        deleted: false,
-      },
-    }));
+    setDuties(prev => {
+      const ex = prev[date];
+      return {
+        ...prev,
+        [date]: {
+          report_time: fields.report_time || null,
+          block_off: fields.block_off || null,
+          block_on: fields.block_on || null,
+          sectors: fields.sectors || 0,
+          flight_minutes: fields.flight_minutes || 0,
+          route: fields.route || null,        // rota "LIS-OPO-LIS" (per diem AE)
+          kind: fields.kind || 'flight',      // tipo de atividade (voo/standby/terra…)
+          nightStop: !!fields.nightStop,      // paragem nocturna (abono AE, Art. 39)
+          // ORIGEM imutável + SNAPSHOT (Fase 4): só mudam se vierem nos fields (import);
+          // a edição manual NÃO os toca → uma importada editada continua 'calendar'.
+          source: fields.source !== undefined ? fields.source : (ex?.source || 'manual'),
+          snap: ('snap' in fields) ? fields.snap : (ex?.snap ?? null),
+          duty_date: date,
+          updated_at: new Date().toISOString(),
+          dirty: true,
+          deleted: false,
+        },
+      };
+    });
     // Liga ao motor FTL: deriva o registo do dia (PSV/limites/repouso) a partir da
     // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
     const entry = dutyToFtlDay({
@@ -323,7 +335,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -533,10 +545,13 @@ export default function App() {
         for (const row of server) {
           const cur = merged[row.duty_date];
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
+          // roster_meta (Fase 4): JSON { source, snap } — origem + snapshot da escala.
+          let source = 'manual', snap = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -599,6 +614,27 @@ export default function App() {
   // crewType — pilotos (SPAC) OU cabine (SNPVAC). Companhia FTL → ae = null.
   const ae = getAeForProfile({ company: company || profile?.company, crewType });
 
+  // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
+  // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
+  // permissão de calendário → não faz nada. NÃO altera nada (o utilizador revê/aplica).
+  const checkRosterChanges = useCallback(async () => {
+    try {
+      const co = company?.slug;
+      const { start, end } = rangeFromOption('month');
+      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co), getNonFlightInRange(start, end, co)]);
+      if (!fl.ok && !nf.ok) return;   // sem leitura válida → não marca cancelamentos
+      const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
+      const window = { start: isoDay(start), end: isoDay(end) };
+      setRosterChanges(diffRoster({ incoming, duties: dutiesRef.current, window }));
+    } catch { /* best-effort */ }
+  }, [company]);
+  // Corre quando o perfil fica pronto e ao voltar ao foreground (auto, ao focar).
+  useEffect(() => { if (onboarded && company) checkRosterChanges(); }, [onboarded, company, checkRosterChanges]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') checkRosterChanges(); });
+    return () => sub.remove();
+  }, [checkRosterChanges]);
+
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
@@ -611,6 +647,7 @@ export default function App() {
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
     duties, saveDuty, removeDuty,
+    rosterChanges, checkRosterChanges,
     onboarded, setOnboarded,
     signupMode, setSignupMode,
     online,

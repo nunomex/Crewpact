@@ -1,8 +1,32 @@
-// Notificações da app (FTL · cabine). Lista curta de referência regulamentar.
-// (Recebe `profile`/`lang`; mantém a assinatura usada pelo HomeScreen.)
-export function buildNotifications(profile, lang = 'pt') {
+// Notificações da app (FTL · cabine). Lista curta de referência regulamentar +,
+// quando há, o aviso de ALTERAÇÕES DE ESCALA (Fase 4) no topo. Recebe `profile`,
+// `lang` e `opts` (ex.: { rosterChanges }). Mantém a assinatura usada antes.
+export function buildNotifications(profile, lang = 'pt', opts = {}) {
   const en = lang === 'en';
-  return [
+  const list = [];
+
+  // Alterações de escala detetadas (calendário vs guardado) → notificação tocável.
+  // id dinâmico (datas) para RE-avisar quando o conjunto de alterações muda.
+  const rc = opts.rosterChanges;
+  if (rc && rc.counts && rc.counts.total) {
+    const dates = [...(rc.changed || []), ...(rc.conflict || []), ...(rc.added || []), ...(rc.removed || [])].map((x) => x.date).sort();
+    const changed = (rc.counts.changed || 0) + (rc.counts.conflict || 0);
+    const parts = [
+      changed ? `${changed} ${en ? 'changed' : 'alterada(s)'}` : null,
+      rc.counts.added ? `${rc.counts.added} ${en ? 'new' : 'nova(s)'}` : null,
+      rc.counts.removed ? `${rc.counts.removed} ${en ? 'cancelled' : 'cancelada(s)'}` : null,
+    ].filter(Boolean).join(' · ');
+    list.push({
+      id: 'roster:' + dates.join(','),
+      action: 'roster',
+      tag: en ? 'ROSTER' : 'ESCALA',
+      time: en ? 'Calendar' : 'Calendário',
+      title: en ? 'Roster changes' : 'Alterações na escala',
+      body: en ? `${parts}. Tap to review.` : `${parts}. Toca para rever.`,
+    });
+  }
+
+  list.push(
     {
       id: 'ftl', tag: 'FTL', time: 'UE 83/2014',
       title: en ? 'Flight time limitations' : 'Limites de tempo de voo',
@@ -17,5 +41,6 @@ export function buildNotifications(profile, lang = 'pt') {
         ? 'At base ≥ 12 h, away ≥ 10 h (or the preceding duty period, whichever is greater).'
         : 'Na base ≥ 12 h, fora ≥ 10 h (ou o período de serviço anterior, o maior).',
     },
-  ];
+  );
+  return list;
 }
