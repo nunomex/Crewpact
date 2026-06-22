@@ -3,3 +3,7 @@ node_modules
 .expo
 dist
 *.log
+
+# Native (CNG) — geradas pelo prebuild/expo run, não versionar
+/android
+/ios
