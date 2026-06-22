@@ -301,17 +301,23 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('catálogo: bónus de performance a todos (FO)', fo.includes('bonus'), true);
 }
 
-// ── Indexação 2025+ (Anexo I.1/I.2): piso 1% / teto 5%, placeholder no piso ──
+// ── Indexação 2025+ (Anexo I.1/I.2): piso 1% / teto 5%, IPC oficial 2,4% (BTE/INE) ──
 eq('index 2024 = 1', ae.indexFactor(2024), 1);
-eq('index 2025 = piso 1%', ae.indexFactor(2025), 1.01);
-eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.01);
+eq('index 2025 = IPC 2,4% (BTE/INE)', ae.indexFactor(2025), 1.024);
+eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.024);
 eq('index 2025 com IPC oficial 3%', ae.indexFactor(2025, { ipc2025: 0.03 }), 1.03);
 eq('index 2025 IPC 8% → teto 5%', ae.indexFactor(2025, { ipc2025: 0.08 }), 1.05);
 eq('index 2025 IPC 0,5% → piso 1%', ae.indexFactor(2025, { ipc2025: 0.005 }), 1.01);
 eq('index estimado 2024 = false', ae.isIndexEstimated(2024), false);
-eq('index estimado 2025 = true (placeholder)', ae.isIndexEstimated(2025), true);
+eq('index estimado 2025 = false (IPC oficial confirmado)', ae.isIndexEstimated(2025), false);
+eq('index estimado 2025 c/ ipc:null = true (ramo estimativa)', ae.isIndexEstimated(2025, { ipc2025: null }), true);
 eq('index estimado 2025 c/ IPC = false', ae.isIndexEstimated(2025, { ipc2025: 0.03 }), false);
-eq('base CPT indexada 2025 (×1.01)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8801.43);  // 122000×1.01/14
+eq('base CPT indexada 2025 (×1.024)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8923.43);  // 122000×1.024/14
+
+// ── Vigência do AE (BTE 40/2023): expira 31 jan 2026 → valores de 2026 são referência ──
+eq('AE vigência até jan-2026', ae.AE_VALID_UNTIL, '2026-01-31');
+eq('AE não expirado em jan-2026', ae.isAgreementExpired(new Date('2026-01-15')), false);
+eq('AE expirado em jun-2026', ae.isAgreementExpired(new Date('2026-06-23')), true);
 
 // ── Art. 46 — bónus de performance anual (alvo, por categoria) ──
 eq('bónus CPT (10% base)', ae.perfBonus('CPT'), 12200);          // 0.10×122000

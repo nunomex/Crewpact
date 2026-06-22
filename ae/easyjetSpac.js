@@ -52,13 +52,13 @@ export const isSeasonalContract = (c) => SEASONAL_CONTRACTS.includes(c);
 // ── Indexação 2025+ (Anexo I.1/I.2) ──────────────────────────────────────────
 // Os valores em tabela são "a partir de 1 fev 2024". A partir de 1 fev 2025 a base
 // E o setor nominal são indexados ao IPC do INE (média de 12 meses até nov 2024),
-// com PISO de 1% e TETO de 5%. O número exato depende do INE e NÃO consta do AE —
-// usamos um PLACEHOLDER no piso (1%) até confirmar o valor oficial (ver isIndexEstimated).
+// com PISO de 1% e TETO de 5%. Valor oficial do INE (média 12m até nov-2024) = 2,4%,
+// confirmado contra o BTE 40/2023 → IPC_2025 = 0.024 (ver isIndexEstimated).
 // O AE termina em 31 jan 2026, pelo que não há degrau de 2026 (mantém-se o de 2025).
 export const INDEX_BASE_YEAR = 2024;   // ano dos valores do Anexo I em tabela
 export const IPC_FLOOR = 0.01;         // mín. garantido
 export const IPC_CAP = 0.05;           // máx.
-export const IPC_2025 = null;          // % oficial de 2025 (null → usa o piso, estimativa)
+export const IPC_2025 = 0.024;         // IPC oficial confirmado — BTE 40/2023 (média 12m até nov-2024, INE = 2,4%)
 
 // Fator multiplicativo a aplicar aos valores de 2024 num dado ano. < 2025 → 1.
 // ≥ 2025 → 1 + IPC (limitado a [1%, 5%]). `ipc2025` injeta o valor oficial quando conhecido.
@@ -70,6 +70,13 @@ export const indexFactor = (year, { ipc2025 = IPC_2025 } = {}) => {
 // true quando o fator usa o piso-placeholder (IPC oficial por confirmar) → estimativa.
 export const isIndexEstimated = (year, { ipc2025 = IPC_2025 } = {}) =>
   (+year || INDEX_BASE_YEAR) >= 2025 && ipc2025 == null;
+
+// Vigência do AE (BTE 40/2023): 1 fev 2023 → 31 jan 2026. Depois disto os valores de
+// tabela passam a REFERÊNCIA até novo acordo (não há degrau de indexação para 2026).
+export const AE_VALID_FROM = '2023-02-01';
+export const AE_VALID_UNTIL = '2026-01-31';
+export const isAgreementExpired = (ref = new Date()) =>
+  +new Date(ref) > +new Date(`${AE_VALID_UNTIL}T23:59:59`);
 
 export const SALARY_INSTALMENTS = 14;   // Art. 36 — 14 prestações/ano (2 = férias + Natal)
 export const NIGHT_STOP_SECTORS = 2;    // Art. 39 — paragem nocturna = 2 setores nominais

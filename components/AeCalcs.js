@@ -120,6 +120,9 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
       {indexEst ? (
         <Text style={s.note}>{l(`Valores indexados a ${year} · estimativa (piso 1%) — IPC oficial por confirmar.`, `Values indexed to ${year} · estimate (1% floor) — official CPI to be confirmed.`)}</Text>
       ) : null}
+      {ae.isAgreementExpired && ae.isAgreementExpired(now) ? (
+        <Text style={s.note}>{l(`AE em vigor até jan-2026 · valores de ${year} são referência até novo acordo.`, `Agreement in force until Jan-2026 · ${year} values are reference until a new agreement.`)}</Text>
+      ) : null}
 
       {/* ── Per diem · por setor (barras curto/médio/longo) ── */}
       <Text style={s.group}>{l('PER DIEM · POR SETOR', 'PER DIEM · BY SECTOR')}</Text>

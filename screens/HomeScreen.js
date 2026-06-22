@@ -390,6 +390,9 @@ export default function HomeScreen({ navigation }) {
         <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.red }]}>+{fmtEur0(variable)}</Text></View>
         <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><Text style={s.aeMVtot}>{fmtEur0(total)}</Text></View>
         <MiniBar ratio={fill} color={C.red} track={s.aeMBar} fill={s.aeMBarFill} />
+        {ae.isAgreementExpired && ae.isAgreementExpired(d) ? (
+          <Text style={s.aeMNote}>{l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026')}</Text>
+        ) : null}
       </TouchableOpacity>
     );
   })() : null;
@@ -554,6 +557,7 @@ const makeStyles = (C) => StyleSheet.create({
   aeMVtot: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
   aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
   aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
+  aeMNote: { fontFamily: FONT.regular, fontSize: 10, color: C.sub, marginTop: 9, lineHeight: 13 },
 
   // Próximo duty — estado vazio / sem permissão (cartão claro)
   flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
