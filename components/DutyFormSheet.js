@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
+import AirportRoute from './AirportRoute';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
@@ -201,9 +202,10 @@ export default function DutyFormSheet({ visible, onClose, date }) {
           {isFlight ? (
             <Animated.View style={[s.sec, secStyle(3)]}>
               <Text style={s.lbl}>{l('Rota', 'Route')}</Text>
-              <TextInput value={form.route} onChangeText={(v) => setForm((f) => ({ ...f, route: v.toUpperCase() }))}
-                placeholder="LIS-OPO-LIS" placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false}
-                maxLength={40} style={[s.input, { letterSpacing: 1 }]} />
+              <AirportRoute
+                value={form.route}
+                onChange={(r) => setForm((f) => ({ ...f, route: r, sectors: Math.max(0, r ? r.split('-').filter(Boolean).length - 1 : 0) }))}
+              />
               {ae ? (
                 routePd == null
                   ? <Text style={s.routeHint}>{l('Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS', 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS')}</Text>
@@ -227,6 +229,8 @@ export default function DutyFormSheet({ visible, onClose, date }) {
           {isFlight ? (
             <Animated.View style={[s.sec, secStyle(5)]}>
               <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={(n) => setForm((f) => ({ ...f, sectors: n }))} min={0} max={12} />
+              {form.route && form.route.split('-').filter(Boolean).length > 1
+                ? <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Setores definidos pela rota · ajustável', 'Sectors set from route · adjustable')}</Text> : null}
               <View style={{ marginTop: 12 }}>
                 <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm((f) => ({ ...f, flight: v }))} />
               </View>

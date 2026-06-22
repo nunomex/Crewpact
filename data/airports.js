@@ -36,18 +36,40 @@ export const sectorDistanceNM = (from, to) => {
   return a && b ? greatCircleNM(a, b) : null;
 };
 
-// Pesquisa de aeroportos por código IATA ou ICAO (a base não tem nomes). Devolve
-// até `limit` resultados { iata, icao }. Usado pela pesquisa dos Cálculos.
-export const searchAirports = (q, limit = 12) => {
-  const Q = String(q || '').trim().toUpperCase();
-  if (Q.length < 2) return [];
-  const out = [];
+// Registo: [lat, lon, icao, nome, cidade, cc]. Normaliza p/ pesquisa (sem acentos).
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Info de apresentação de um aeroporto por código IATA/ICAO → { iata, icao, name,
+// city, cc } ou null. Usado pelos chips/grelha do formulário de rota.
+export const airportInfo = (code) => {
+  const c = String(code || '').trim().toUpperCase();
+  const e = AIRPORTS[c] || BY_ICAO[c];
+  if (!e) return null;
+  const iata = AIRPORTS[c] ? c : (Object.keys(AIRPORTS).find((k) => AIRPORTS[k] === e) || c);
+  return { iata, icao: e[2] || null, name: e[3] || '', city: e[4] || '', cc: e[5] || '' };
+};
+
+// Pesquisa por código IATA/ICAO, CIDADE ou NOME (sem acentos). Ranqueada: código
+// exato > código começa > cidade começa > cidade contém > nome contém. Devolve até
+// `limit` { iata, icao, name, city, cc }. (5400+ entradas → varrimento trivial.)
+export const searchAirports = (q, limit = 8) => {
+  const raw = String(q || '').trim();
+  if (raw.length < 2) return [];
+  const Q = norm(raw);
+  const scored = [];
   for (const iata in AIRPORTS) {
-    const icao = AIRPORTS[iata][2] || '';
-    if (iata.includes(Q) || icao.includes(Q)) {
-      out.push({ iata, icao });
-      if (out.length >= limit) break;
-    }
+    const e = AIRPORTS[iata];
+    const ia = iata.toLowerCase();
+    const city = norm(e[4]), name = norm(e[3]), icao = (e[2] || '').toLowerCase();
+    let s = -1;
+    if (ia === Q) s = 100;
+    else if (ia.indexOf(Q) === 0) s = 80;
+    else if (city.indexOf(Q) === 0) s = 60;
+    else if (city.indexOf(Q) >= 0) s = 40;
+    else if (name.indexOf(Q) >= 0) s = 25;
+    else if (ia.indexOf(Q) >= 0 || icao.indexOf(Q) >= 0) s = 10;
+    if (s > 0) scored.push({ s, iata, icao: e[2] || null, name: e[3] || '', city: e[4] || '', cc: e[5] || '' });
   }
-  return out;
+  scored.sort((a, b) => b.s - a.s || a.iata.localeCompare(b.iata));
+  return scored.slice(0, limit).map((r) => ({ iata: r.iata, icao: r.icao, name: r.name, city: r.city, cc: r.cc }));
 };

@@ -4,7 +4,8 @@
  *   2) Gerar:        node scripts/build-airports.js [caminho-do-csv]
  *
  * Mantém só aeroportos COMERCIAIS com código IATA (large/medium OU com serviço
- * regular). Saída compacta: { "IATA": [lat, lon, "ICAO"] } (lat/lon a 4 casas).
+ * regular). Saída compacta: { "IATA": [lat, lon, "ICAO", "Nome", "Cidade", "CC"] }
+ * (lat/lon a 4 casas; nome/cidade/país para a pesquisa por nome no formulário).
  * Fonte: https://ourairports.com/data/ (domínio público).
  */
 const fs = require('fs');
@@ -34,7 +35,15 @@ const lines = raw.split(/\r?\n/);
 const H = parseLine(lines[0]);
 const col = (name) => H.indexOf(name);
 const iType = col('type'), iLat = col('latitude_deg'), iLon = col('longitude_deg'),
-      iSched = col('scheduled_service'), iIcao = col('icao_code'), iIdent = col('ident'), iIata = col('iata_code');
+      iSched = col('scheduled_service'), iIcao = col('icao_code'), iIdent = col('ident'), iIata = col('iata_code'),
+      iName = col('name'), iMuni = col('municipality'), iCountry = col('iso_country');
+
+// Nome do aeroporto encurtado para apresentação (tira sufixos redundantes).
+const shortName = (s) => (s || '').trim()
+  .replace(/\s+International Airport$/i, '')
+  .replace(/\s+Airport$/i, '')
+  .replace(/\s+Airfield$/i, '')
+  .trim();
 
 const KEEP = new Set(['large_airport', 'medium_airport']);
 const out = {};
@@ -48,7 +57,10 @@ for (let r = 1; r < lines.length; r++) {
   const lat = parseFloat(f[iLat]), lon = parseFloat(f[iLon]);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
   const icao = ((f[iIcao] || f[iIdent]) || '').trim().toUpperCase() || null;
-  out[iata] = [Math.round(lat * 1e4) / 1e4, Math.round(lon * 1e4) / 1e4, icao];
+  const name = shortName(f[iName]);
+  const city = (f[iMuni] || '').trim() || name;                 // cidade (fallback p/ nome)
+  const cc = (f[iCountry] || '').trim().toUpperCase();
+  out[iata] = [Math.round(lat * 1e4) / 1e4, Math.round(lon * 1e4) / 1e4, icao, name, city, cc];
   n++;
 }
 

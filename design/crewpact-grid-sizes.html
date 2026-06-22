@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Grelha — tamanhos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1B1B1B;--red:#F5402C;--soft:#F2F2F0;--line:#ECECEA;--sub:#97978F;--card:#FFFFFF;--green:#18A957}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;color:var(--ink);background:#E9E9E6;-webkit-font-smoothing:antialiased;padding:38px 18px 80px;background-image:radial-gradient(circle at 50% -6%,#fff 0,transparent 50%)}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.6px;text-align:center}
+  .lead{text-align:center;color:#6b6b64;font-size:13px;font-weight:500;max-width:600px;margin:6px auto 30px;line-height:1.5}
+  .grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;max-width:1180px;margin:0 auto}
+  .card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 14px 34px rgba(20,22,26,.08)}
+  .ch{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+  .ck{font-size:15px;font-weight:800}
+  .cstar{font-size:10px;font-weight:800;color:var(--red);background:#fdeae7;border-radius:6px;padding:3px 8px;letter-spacing:.5px}
+  .cmeta{font-size:11.5px;color:var(--sub);font-weight:600;margin-bottom:14px}
+  .ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}
+  /* simulação da largura útil da página Duty (≈328px) */
+  .frame{width:328px;background:#FBFBFA;border:1px dashed #d8d8d3;border-radius:14px;padding:10px}
+  .lbl{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:8px}
+  .gt{border:1px solid var(--line);border-radius:13px;background:#fff;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gt .c{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:1px}
+  .gt .n{color:var(--sub);font-weight:600}
+  /* A — confortável (atual) */
+  .gA{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .gA .gt{height:56px;padding:6px}.gA .c{font-size:18px}.gA .n{font-size:10px;margin-top:2px}
+  /* B — compacto 3 col (recomendado) */
+  .gB{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .gB .gt{height:50px;padding:5px}.gB .c{font-size:16px}.gB .n{font-size:9.5px;margin-top:1px}
+  /* C — 4 colunas */
+  .gC{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .gC .gt{height:48px;padding:4px}.gC .c{font-size:15px}.gC .n{font-size:9px;margin-top:1px}
+  /* D — só sigla, 5 col (abaixo do mínimo) */
+  .gD{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .gD .gt{height:38px;padding:3px}.gD .c{font-size:14px}.gD .n{display:none}
+  .floor{font-size:11px;color:var(--sub);margin-top:12px;font-weight:600}
+  .legend{max-width:1180px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;font-size:12.5px;color:#55554e;line-height:1.6}
+  .legend b{color:var(--ink)}
+</style>
+</head>
+<body>
+  <h1>Grelha das estações — que tamanho?</h1>
+  <p class="lead">Mesma largura útil da página Duty (≈328 pt). Mínimo de alvo de toque: <b>iOS 44 pt</b> · <b>Android 48 dp</b>. Abaixo disso = toques errados.</p>
+
+  <div class="grid-cards">
+<div class="card"><div class="ch"><span class="ck">A · Confortável (atual)</span></div><div class="cmeta">≈104 × 56 pt · 3 colunas · <span class="ok">≥ 44 pt ✓</span></div><div class="frame"><div class="lbl">ROTA · toca para juntar</div><div class="gA"><div class="gt"><div class="c">LIS</div><div class="n">Lisboa</div></div><div class="gt"><div class="c">OPO</div><div class="n">Porto</div></div><div class="gt"><div class="c">FAO</div><div class="n">Faro</div></div><div class="gt"><div class="c">LGW</div><div class="n">Londres</div></div><div class="gt"><div class="c">AGP</div><div class="n">Malaga</div></div><div class="gt"><div class="c">BCN</div><div class="n">Barcelona</div></div><div class="gt"><div class="c">MAD</div><div class="n">Madrid</div></div><div class="gt"><div class="c">FNC</div><div class="n">Funchal</div></div><div class="gt"><div class="c">ALC</div><div class="n">Alicante</div></div></div></div></div>
+<div class="card"><div class="ch"><span class="ck">B · Compacto 3 col</span><span class="cstar">RECOMENDADO</span></div><div class="cmeta">≈104 × 50 pt · 3 colunas · <span class="ok">≥ 44 pt ✓</span></div><div class="frame"><div class="lbl">ROTA · toca para juntar</div><div class="gB"><div class="gt"><div class="c">LIS</div><div class="n">Lisboa</div></div><div class="gt"><div class="c">OPO</div><div class="n">Porto</div></div><div class="gt"><div class="c">FAO</div><div class="n">Faro</div></div><div class="gt"><div class="c">LGW</div><div class="n">Londres</div></div><div class="gt"><div class="c">AGP</div><div class="n">Malaga</div></div><div class="gt"><div class="c">BCN</div><div class="n">Barcelona</div></div><div class="gt"><div class="c">MAD</div><div class="n">Madrid</div></div><div class="gt"><div class="c">FNC</div><div class="n">Funchal</div></div><div class="gt"><div class="c">ALC</div><div class="n">Alicante</div></div></div></div></div>
+<div class="card"><div class="ch"><span class="ck">C · 4 colunas</span></div><div class="cmeta">≈76 × 48 pt · 4 colunas · <span class="ok">≥ 44 pt ✓</span></div><div class="frame"><div class="lbl">ROTA · toca para juntar</div><div class="gC"><div class="gt"><div class="c">LIS</div><div class="n">Lisboa</div></div><div class="gt"><div class="c">OPO</div><div class="n">Porto</div></div><div class="gt"><div class="c">FAO</div><div class="n">Faro</div></div><div class="gt"><div class="c">LGW</div><div class="n">Londres</div></div><div class="gt"><div class="c">AGP</div><div class="n">Malaga</div></div><div class="gt"><div class="c">BCN</div><div class="n">Barcelona</div></div><div class="gt"><div class="c">MAD</div><div class="n">Madrid</div></div><div class="gt"><div class="c">FNC</div><div class="n">Funchal</div></div><div class="gt"><div class="c">ALC</div><div class="n">Alicante</div></div></div></div></div>
+<div class="card"><div class="ch"><span class="ck">D · Só sigla, 5 col</span></div><div class="cmeta">≈60 × 38 pt · 5 colunas · <span class="bad">< 44 pt ✗</span></div><div class="frame"><div class="lbl">ROTA · toca para juntar</div><div class="gD"><div class="gt"><div class="c">LIS</div><div class="n">Lisboa</div></div><div class="gt"><div class="c">OPO</div><div class="n">Porto</div></div><div class="gt"><div class="c">FAO</div><div class="n">Faro</div></div><div class="gt"><div class="c">LGW</div><div class="n">Londres</div></div><div class="gt"><div class="c">AGP</div><div class="n">Malaga</div></div><div class="gt"><div class="c">BCN</div><div class="n">Barcelona</div></div><div class="gt"><div class="c">MAD</div><div class="n">Madrid</div></div><div class="gt"><div class="c">FNC</div><div class="n">Funchal</div></div><div class="gt"><div class="c">ALC</div><div class="n">Alicante</div></div></div></div><div class="floor">⚠️ Abaixo do mínimo recomendado — risco de toque errado.</div></div>
+</div>
+
+  <div class="legend">
+    <b>Recomendação:</b> <b>B — compacto 3 col (~50 pt)</b> é o ponto doce: mais compacto que o atual, acima do mínimo, e a cidade ainda cabe. <b>C — 4 col (~48 pt)</b> mostra mais estações de uma vez, ainda OK. <b>D — só sigla (~38 pt)</b> fica <span class="bad">abaixo do mínimo</span> → não recomendo (toca-se errado, e perdes a cidade que ajuda a confirmar).
+  </div>
+
+</body>
+</html>
