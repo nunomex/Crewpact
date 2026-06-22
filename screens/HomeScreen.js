@@ -403,27 +403,29 @@ export default function HomeScreen({ navigation }) {
     );
   })() : null;
 
-  // ── Estatísticas YTD — cartão-resumo (toca → página Stats completa) ──
+  // ── Estatísticas YTD — cartão COMPACTO (.uc) na grelha, no lugar do FTL·Voo.
+  // Toca → abre a página Stats. Mostra setores/dias + total de horas de voo do ano
+  // com barra vs limite anual (1000 h). ──
   const statsYtd = useMemo(
     () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12' }),
     [duties, ae, crewCategory, crewContract],
   );
   const statRatio = Math.min(1, statsYtd.flightHours / ANNUAL_FLIGHT_LIMIT_H);
-  const statsCardEl = statsYtd.count > 0 ? (
-    <TouchableOpacity style={s.statsCard} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Stats'); }}>
-      <View style={s.statsIc}><Ionicons name="stats-chart" size={18} color="#fff" /></View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={s.statsEyebrow}>{l('Estatísticas', 'Statistics')} · {new Date().getFullYear()}</Text>
-        <Text style={s.statsRow} numberOfLines={1}>
-          <Text style={s.statsBig}>{statsYtd.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })}</Text>
-          <Text style={s.statsBigU}> h</Text>
-          <Text style={s.statsDim}>  ·  {statsYtd.sectors} {t('duties.sectorsShort', lang)}  ·  {statsYtd.count} {l('dias', 'days')}</Text>
-        </Text>
-        <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.statsBar} fill={s.statsBarFill} />
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={C.sub} />
+  const statsMiniEl = statsYtd.count > 0 ? (
+    <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Stats'); }}>
+      <View style={s.ucHead}><View style={s.ucDot} /><Text style={s.ucTitle} numberOfLines={1}>{l('Estatísticas', 'Statistics')} · {new Date().getFullYear()}</Text></View>
+      <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>{l('Setores', 'Sectors')}</Text><Text style={s.aeMV}>{statsYtd.sectors}</Text></View>
+      <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{l('Dias de escala', 'Duty days')}</Text><Text style={s.aeMV}>{statsYtd.count}</Text></View>
+      <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{l('Voo (ano)', 'Flight (yr)')}</Text><Text style={s.aeMVtot}>{statsYtd.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })} h</Text></View>
+      <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.aeMBar} fill={s.aeMBarFill} />
     </TouchableOpacity>
   ) : null;
+
+  // Cartão FTL · Voo (limites de voo). Vai para a grelha quando NÃO há stats; quando
+  // há stats, o Stats ocupa o lugar e este desce para baixo das Próximas atividades.
+  const ftlVooCard = (
+    <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
+  );
 
   // ── Cabeçalho premium + tira de 5 dias ──
   const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
@@ -462,9 +464,10 @@ export default function HomeScreen({ navigation }) {
         {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
 
-        {/* Grelha de baixo — FTL·Voo + (AE compacto | FTL·Serviço), como o mockup */}
+        {/* Grelha de baixo — Stats (compacto) + (AE compacto | FTL·Serviço). Quando
+            ainda não há stats, o FTL·Voo fica aqui (fallback). */}
         <Animated.View style={[s.grid2, seg(3)]}>
-          <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
+          {statsMiniEl || ftlVooCard}
           {ae && crewCategory ? aeMiniEl : <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />}
         </Animated.View>
         {(!(ae && crewCategory) && !hasLimitData) ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
@@ -472,8 +475,9 @@ export default function HomeScreen({ navigation }) {
         {/* Próximas atividades (qualquer tipo de duty) — card no fundo */}
         <Animated.View style={seg(4)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View>
 
-        {/* Estatísticas do ano — cartão-resumo (abre a página Stats) */}
-        {statsCardEl ? <Animated.View style={seg(5)}>{statsCardEl}</Animated.View> : null}
+        {/* FTL · Voo — desce para baixo das Próximas atividades (largura inteira) quando
+            o Stats lhe tomou o lugar na grelha. */}
+        {statsMiniEl ? <Animated.View style={[s.grid2, seg(5)]}>{ftlVooCard}</Animated.View> : null}
       </ScrollView>
 
       {/* Notificações */}
@@ -579,18 +583,6 @@ const makeStyles = (C) => StyleSheet.create({
   flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
   grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
-
-  // Estatísticas YTD — cartão-resumo (toca → página Stats)
-  statsCard: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15, marginTop: SPACE.md,
-    shadowColor: '#14161A', shadowOpacity: 0.1, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 2 },
-  statsIc: { width: 42, height: 42, borderRadius: 13, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  statsEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub, marginBottom: 3 },
-  statsRow: { marginBottom: 9 },
-  statsBig: { fontSize: 22, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
-  statsBigU: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
-  statsDim: { fontSize: 11.5, fontFamily: FONT.bold, color: C.sub },
-  statsBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  statsBarFill: { height: '100%', borderRadius: RADIUS.pill },
 
   // Notificações
   notifItem: { flexDirection: 'row', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
