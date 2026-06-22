@@ -52,26 +52,34 @@ const THEMES = [
 // Aba FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) num só
 // destino. Junta as antigas abas Cálculos e FTL. Toda a matemática vive no motor `ftl/`.
 export default function FtlHubScreen({ navigation }) {
-  const { lang, ae, crewCategory, crewContract, duties } = useContext(AppContext);
+  const { lang, ae, caps, crewCategory, crewContract, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
 
+  // Extras do mês (Passo 4) — no contexto, partilhado por Home/Perfil/Cálculos.
+  const ym = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+  const extrasMonth = aeExtras[ym] || {};
+  const setExtrasMonth = (next) => setAeExtras((prev) => ({ ...prev, [ym]: next }));
+  // SNC sugerido pela deteção de alterações de escala (Fase 4): alteradas + conflitos.
+  const sncSuggest = rosterChanges?.counts ? ((rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)) : 0;
+
   // A aba Cálculos mostra UMA suite: companhia com AE → a suite de pagamento
   // (AeCalcs); companhia só-FTL → as ferramentas regulamentares (limites).
   // NB: o FTL (EASA) aplica-se a TODAS as companhias — o motor FTL corre sempre
   // (estado/limites na Home, projeção no duty). O `rule_type='AE'` só decide o que
   // ESTA aba apresenta; NÃO desliga o FTL. A companhia AE é, de facto, AE + FTL.
-  if (ae) {
+  if (caps?.pay) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
             right={<NotificationsBell />} />
           <Animated.View style={seg(0)}>
-            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []} />
+            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []}
+              lifestyle={!!caps.lifestyle} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
           </Animated.View>
         </ScrollView>
       </SafeAreaView>

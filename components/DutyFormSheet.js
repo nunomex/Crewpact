@@ -40,7 +40,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date }) {
-  const { lang, duties, dayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, base } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -108,6 +108,14 @@ export default function DutyFormSheet({ visible, onClose, date }) {
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
     return { ok: true, eur: ae.perDiem(crewCategory, dists) };
   }, [ae, crewCategory, form.route]);
+  // Auto-sugestão de pernoita: se a rota TERMINA fora da base, o dia acaba fora da
+  // base → sugerir o toggle. NÃO muda nada sozinho — o utilizador confirma (toca).
+  const endAirport = (() => {
+    const c = (form.route || '').split('-').map((x) => x.trim().toUpperCase()).filter(Boolean);
+    return c.length >= 2 ? c[c.length - 1] : null;
+  })();
+  const suggestNightStop = showNightStop && !form.nightStop && !!base && !!endAirport && endAirport !== String(base).toUpperCase();
+
   const fmtPd = (n) => {
     const [int, dec] = Number(n).toFixed(2).split('.');
     const g = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
@@ -198,8 +206,8 @@ export default function DutyFormSheet({ visible, onClose, date }) {
             </Animated.View>
           ) : null}
 
-          {/* Rota + per-diem — só voo */}
-          {isFlight ? (
+          {/* Rota + per-diem — só voo, e só onde serve (AE). FTL-only → setores diretos. */}
+          {isFlight && (caps ? caps.route : !!ae) ? (
             <Animated.View style={[s.sec, secStyle(3)]}>
               <Text style={s.lbl}>{l('Rota', 'Route')}</Text>
               <AirportRoute
@@ -212,6 +220,13 @@ export default function DutyFormSheet({ visible, onClose, date }) {
                   : routePd.ok
                     ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
                     : <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text>
+              ) : null}
+              {suggestNightStop ? (
+                <TouchableOpacity onPress={() => { success(); setForm((f) => ({ ...f, nightStop: true })); }} style={s.nsSuggest} activeOpacity={0.75}>
+                  <Ionicons name="moon-outline" size={15} color={C.ink} />
+                  <Text style={s.nsSuggestTxt}>{l(`Termina em ${endAirport}, fora da base (${base})`, `Ends at ${endAirport}, away from base (${base})`)}</Text>
+                  <Text style={s.nsSuggestBtn}>{l('Pernoita', 'Night stop')}</Text>
+                </TouchableOpacity>
               ) : null}
             </Animated.View>
           ) : null}
@@ -295,6 +310,10 @@ const makeStyles = (C) => StyleSheet.create({
   pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
   pdLab: { fontSize: 11.5, color: C.green || C.sub, fontFamily: FONT.semibold },
   pdTag: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff', backgroundColor: C.green || C.ink, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, overflow: 'hidden' },
+  // Sugestão de pernoita (rota termina fora da base) — toca para marcar.
+  nsSuggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 9, paddingHorizontal: 12, borderRadius: RADIUS.md, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line },
+  nsSuggestTxt: { flex: 1, fontSize: 11.5, fontFamily: FONT.semibold, color: C.text, lineHeight: 15 },
+  nsSuggestBtn: { fontSize: 11, fontFamily: FONT.bold, color: '#fff', backgroundColor: C.ink, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, overflow: 'hidden' },
   proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
   projOk: { borderColor: C.line, backgroundColor: C.soft },
   projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },

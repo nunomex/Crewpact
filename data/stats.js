@@ -70,13 +70,15 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
   if (ae && category && typeof ae.monthlyBase === 'function') {
     const cy = now.getFullYear();
     const monthsElapsed = (+y < cy) ? 12 : (+y > cy ? 0 : now.getMonth() + 1);
-    const base = ae.monthlyBase(category, { contract }) || 0;
+    const index = ae.indexFactor ? ae.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
+    const base = ae.monthlyBase(category, { contract, index }) || 0;
     const baseYtd = base * monthsElapsed;
-    const pd = monthlyPerDiem(duties, category, ae, { ym: y }); // prefixo "YYYY" → ano inteiro
+    const pd = monthlyPerDiem(duties, category, ae, { ym: y, index }); // prefixo "YYYY" → ano inteiro
     const perDiemYtd = pd ? pd.total : 0;
     aeYtd = {
       base: +baseYtd.toFixed(2), perDiem: +perDiemYtd.toFixed(2),
-      total: +(baseYtd + perDiemYtd).toFixed(2), monthsElapsed,
+      total: +(baseYtd + perDiemYtd).toFixed(2), monthsElapsed, index,
+      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(+y)) && index > 1,
       withRoute: pd ? pd.withRoute : 0, missing: pd ? pd.missing : 0,
     };
   }

@@ -26,6 +26,7 @@ import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines } from './data/db';
 import { getAeForProfile } from './ae';
+import { capabilitiesFor } from './data/capabilities';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
@@ -215,6 +216,7 @@ export default function App() {
 
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
+  const [aeExtras, setAeExtras] = useState({});              // Extras do mês AE { "YYYY-MM": { <id>: n } } — partilhado por Home/Perfil/Cálculos
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
@@ -474,15 +476,17 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al] = await Promise.all([
+        const [r, dl, fs, pf, al, ax] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
           AsyncStorage.getItem(`cp_profile_${user.id}`),
           AsyncStorage.getItem('cp_airlines'),
+          AsyncStorage.getItem(`cp_ae_extras_${user.id}`),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
+        try { setAeExtras(ax ? (JSON.parse(ax) || {}) : {}); } catch { setAeExtras({}); }   // extras do mês AE
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
         if (al) setAirlines(JSON.parse(al));
         fetchAirlines().then(fresh => {
@@ -510,7 +514,9 @@ export default function App() {
           const crewContract = resolved.crewContract || localProfile?.crewContract || user.crewContract || null;
           const serviceStart = resolved.serviceStart || localProfile?.serviceStart || user.serviceStart || null;
           const base = resolved.base || localProfile?.base || user.base || null;
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, serviceStart, base });
+          // PPY como estilo de vida (Art. 66.9) → sem retenção. Metadata/cache (≠ tabela profiles).
+          const lifestyle = resolved.lifestyle ?? localProfile?.lifestyle ?? user.lifestyle ?? false;
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, serviceStart, base, lifestyle });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -524,6 +530,7 @@ export default function App() {
   // Persistir (só depois de hidratar e com utilizador, para não apagar o guardado).
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
   // Duties: cache local instantânea → merge com o servidor (histórico). Pendentes
@@ -601,6 +608,7 @@ export default function App() {
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
   const base = profile?.base || null;                  // base (LIS/OPO/FAO)
+  const lifestyle = !!profile?.lifestyle;              // PPY como estilo de vida (Art. 66.9) → sem retenção
   const serviceYears = (() => {
     if (!serviceStart) return null;
     const sd = new Date(`${serviceStart}T00:00:00`);
@@ -613,6 +621,9 @@ export default function App() {
   // AE (Acordo de Empresa) aplicável às companhias com AE modelado, resolvido por
   // crewType — pilotos (SPAC) OU cabine (SNPVAC). Companhia FTL → ae = null.
   const ae = getAeForProfile({ company: company || profile?.company, crewType });
+  // Matriz de capacidades — fonte única do que cada ecrã mostra/pede (AE↔FTL,
+  // piloto↔cabine). `lifestyle` (Art. 66.9): PPY como estilo de vida → sem retenção.
+  const caps = capabilitiesFor({ company: company || profile?.company, crewType, contract: crewContract || '12/12', lifestyle });
 
   // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
@@ -639,7 +650,8 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, ae,
+    airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, ae, caps,
+    aeExtras, setAeExtras,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,

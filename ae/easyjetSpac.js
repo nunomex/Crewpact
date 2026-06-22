@@ -45,6 +45,31 @@ export const CONTRACT_LABEL_EN = {
 export const contractFactor = (c) => CONTRACT_FACTOR[c] != null ? CONTRACT_FACTOR[c] : 1;
 export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
+// Contratos SAZONAIS (part-time anual) — só estes recebem retenção (Anexo I.15).
+export const SEASONAL_CONTRACTS = ['PPY 9/12', 'PPY 8/12'];
+export const isSeasonalContract = (c) => SEASONAL_CONTRACTS.includes(c);
+
+// ── Indexação 2025+ (Anexo I.1/I.2) ──────────────────────────────────────────
+// Os valores em tabela são "a partir de 1 fev 2024". A partir de 1 fev 2025 a base
+// E o setor nominal são indexados ao IPC do INE (média de 12 meses até nov 2024),
+// com PISO de 1% e TETO de 5%. O número exato depende do INE e NÃO consta do AE —
+// usamos um PLACEHOLDER no piso (1%) até confirmar o valor oficial (ver isIndexEstimated).
+// O AE termina em 31 jan 2026, pelo que não há degrau de 2026 (mantém-se o de 2025).
+export const INDEX_BASE_YEAR = 2024;   // ano dos valores do Anexo I em tabela
+export const IPC_FLOOR = 0.01;         // mín. garantido
+export const IPC_CAP = 0.05;           // máx.
+export const IPC_2025 = null;          // % oficial de 2025 (null → usa o piso, estimativa)
+
+// Fator multiplicativo a aplicar aos valores de 2024 num dado ano. < 2025 → 1.
+// ≥ 2025 → 1 + IPC (limitado a [1%, 5%]). `ipc2025` injeta o valor oficial quando conhecido.
+export const indexFactor = (year, { ipc2025 = IPC_2025 } = {}) => {
+  if ((+year || INDEX_BASE_YEAR) < 2025) return 1;
+  const ipc = Math.min(IPC_CAP, Math.max(IPC_FLOOR, ipc2025 == null ? IPC_FLOOR : ipc2025));
+  return +(1 + ipc).toFixed(6);
+};
+// true quando o fator usa o piso-placeholder (IPC oficial por confirmar) → estimativa.
+export const isIndexEstimated = (year, { ipc2025 = IPC_2025 } = {}) =>
+  (+year || INDEX_BASE_YEAR) >= 2025 && ipc2025 == null;
 
 export const SALARY_INSTALMENTS = 14;   // Art. 36 — 14 prestações/ano (2 = férias + Natal)
 export const NIGHT_STOP_SECTORS = 2;    // Art. 39 — paragem nocturna = 2 setores nominais
@@ -78,6 +103,12 @@ export const loyaltyPct = (cat, years = 0) => {
   if (cat === 'SFO') return years >= 3 ? 0.05 : 0;
   return 0;
 };
+
+// Art. 46 — bónus de performance anual (discricionário, pago em dezembro): % da base
+// anual por categoria. ALVO ("on target") / MÁXIMO: CPT 10/20 · SFO 10/20 · FO 7,5/15
+// · SO 5/10 (%). Estimamos pelo ALVO; proporcional ao contrato (como a base anual).
+export const PERF_BONUS_TARGET = { CPT: 0.10, SFO: 0.10, FO: 0.075, SO: 0.05 };
+export const PERF_BONUS_MAX    = { CPT: 0.20, SFO: 0.20, FO: 0.15,  SO: 0.10 };
 
 // Art. 37 — per diem por SETOR voado, por distância de grande círculo (NM) → multiplicador
 // de setor nominal. Bandas: curto / médio / longo / extra-longo.
@@ -132,10 +163,10 @@ export const vacDay     = (cat, index = 1) => r2(VAC_DAY_SECTORS * nomOf(cat, in
 export const adhoc      = (cat, index = 1) => r2(ADHOC_SECTORS * nomOf(cat, index));        // Art. 43 — €/dever ad-hoc
 export const instructor = () => INSTRUCTOR_EUR;                                              // €/dia de instrução
 export const snc        = () => SNC_EUR;                                                     // €/evento (alteração de escala)
-export const ddo        = (cat) => r2(DDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,4% base anual
-export const ido        = (cat) => r2(IDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));            // Art. — 0,8% base anual
-export const wfly       = (cat) => r2(WFLY_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0));           // Art. — 1% base anual
-export const sickDay    = (cat) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) / SALARY_INSTALMENTS) / 30);  // 60% base diária (dias 1-3)
+export const ddo        = (cat, index = 1) => r2(DDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);   // Art. — 0,4% base anual
+export const ido        = (cat, index = 1) => r2(IDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);   // Art. — 0,8% base anual
+export const wfly       = (cat, index = 1) => r2(WFLY_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);  // Art. — 1% base anual
+export const sickDay    = (cat, index = 1) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) * index / SALARY_INSTALMENTS) / 30);  // 60% base diária (dias 1-3)
 export const benefits   = (cat) => BENEFITS_ANNUAL[cat] || 0;                          // Anexo I.8 — €/ano
 export const office4    = (cat, index = 1) => r2(OFFICE4_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC4 (1,5 NS)
 export const office8    = (cat, index = 1) => r2(OFFICE8_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC8 (3 NS)
@@ -143,6 +174,9 @@ export const pregnancy  = (cat, { contract = '12/12', index = 1 } = {}) => r2(PR
 export const retention  = (cat) => RETENTION_EUR[cat] || 0;                            // Anexo I.15 — €/ano (sazonal)
 export const loyalty    = (cat, { years = 0, contract = '12/12', index = 1 } = {}) =>  // Anexo I.9 — €/ano (antiguidade)
   r2(loyaltyPct(cat, years) * (BASE_ANNUAL[cat] || 0) * index * contractFactor(contract));
+// Art. 46 — bónus de performance anual (€/ano). `max` → teto; default = alvo.
+export const perfBonus  = (cat, { contract = '12/12', index = 1, max = false } = {}) =>
+  r2(((max ? PERF_BONUS_MAX[cat] : PERF_BONUS_TARGET[cat]) || 0) * (BASE_ANNUAL[cat] || 0) * index * contractFactor(contract));
 // Anexo I.5 — serviço em aeroporto (ADTY). Devolve só o ABONO de reserva (€); o
 // per-diem dos voos operados é somado à parte. Não chamado: <4h=1×NS, ≥4h=2×NS;
 // chamado: <4h=0 (só per-diem do voo), ≥4h=2×NS. (Piloto usa setor NOMINAL, ≠ cabine.)
@@ -165,15 +199,24 @@ export const CALCS = [
   { id: 'ido',     group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',    sub: '0,8% base anual' },
   { id: 'wfly',    group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual' },
   { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '60% base diária (dias 1-3)' },
-  { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia' },
+  { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia', role: true },
   { id: 'adty',    group: 'Por voo',     linked: false, label: 'Serviço de aeroporto (ADTY)', sub: '1-2 setores nominais · conforme serviço (Anexo I.5)' },
   { id: 'office4', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC4)',   sub: '1,5 setores nominais (Anexo I.14)' },
   { id: 'office8', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC8)',   sub: '3 setores nominais (Anexo I.14)' },
   { id: 'benefits',  group: 'Subsídios', linked: false, label: 'Prestação de benefícios',    sub: '€/ano por categoria (Anexo I.8)' },
   { id: 'pregnancy', group: 'Subsídios', linked: false, label: 'Complemento de gravidez',    sub: '35% da base mensal (Anexo I.11)' },
-  { id: 'retention', group: 'Subsídios', linked: false, label: 'Retenção (contrato sazonal)', sub: '€/ano · só sazonal (Anexo I.15)' },
-  { id: 'loyalty',   group: 'Subsídios', linked: false, label: 'Prémio de permanência',      sub: '% da base anual por antiguidade (Anexo I.9)' },
+  { id: 'retention', group: 'Subsídios', linked: false, label: 'Retenção (contrato sazonal)', sub: '€/ano · só sazonal, não estilo de vida (Anexo I.15 / Art. 66.9)', when: ({ contract, lifestyle }) => isSeasonalContract(contract) && !lifestyle },
+  { id: 'loyalty',   group: 'Subsídios', linked: false, label: 'Prémio de permanência',      sub: '% da base anual por antiguidade (Anexo I.9)', when: ({ category }) => loyaltyPct(category, 99) > 0 },
+  { id: 'bonus',     group: 'Subsídios', linked: false, label: 'Bónus de performance anual',  sub: '% da base anual · alvo, por categoria (Art. 46)' },
 ];
+
+// Catálogo APLICÁVEL a uma categoria/contrato — esconde o que não pertence:
+//  • papéis (role:true, ex.: instrutor) vivem em ADDITIONAL_ROLES (não no catálogo);
+//  • itens com `when` só aparecem se a condição for verdadeira (permanência só
+//    CPT/SFO; retenção só em PPY SAZONAL, não estilo de vida). Os restantes a todos.
+//  `lifestyle` (Art. 66.9): PPY como opção de estilo de vida → NÃO recebe retenção.
+export const catalogFor = (category, contract = '12/12', { lifestyle = false } = {}) =>
+  CALCS.filter((c) => !c.role && (!c.when || c.when({ category, contract, lifestyle })));
 
 // ── Papéis adicionais (additional roles) — funções extra sobre a categoria, com
 // pagamento acumulável. Instrução/verificação é desempenhada por pilotos seniores
@@ -196,10 +239,10 @@ export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 
     case 'vac':     return vacDay(category, index);
     case 'adhoc':   return adhoc(category, index);
     case 'snc':     return snc();
-    case 'ddo':     return ddo(category);
-    case 'ido':     return ido(category);
-    case 'wfly':    return wfly(category);
-    case 'sick':    return sickDay(category);
+    case 'ddo':     return ddo(category, index);
+    case 'ido':     return ido(category, index);
+    case 'wfly':    return wfly(category, index);
+    case 'sick':    return sickDay(category, index);
     case 'instr':   return instructor();
     case 'adty':    return null;                        // depende do serviço (chamado / <4h)
     case 'office4': return office4(category, index);
@@ -208,6 +251,50 @@ export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 
     case 'pregnancy': return pregnancy(category, { contract, index });
     case 'retention': return retention(category);
     case 'loyalty':   return loyalty(category, { years, contract, index });
+    case 'bonus':     return perfBonus(category, { contract, index });
     default:        return null;
   }
+};
+
+// ── "Extras do mês" — contadores por evento/dia que NÃO se inferem da rota ──
+// Cada um valoriza-se com a calculadora respetiva do Anexo I e SOMA-SE ao total
+// mensal estimado. Por evento/dia → rate cheio (não proporcional ao contrato).
+//  • instrutor é UNIVERSAL (qualquer categoria qualificada — Art. 42; corrige o
+//    gating por categoria) · snc é auto-preenchível da deteção de alterações (Fase 4)
+//  • doença só conta dias 1-3 (cap) — depois é Segurança Social (Art. 48).
+export const EXTRA_KINDS = [
+  { id: 'instructorDays', calc: 'instructor', per: 'day',   label: { pt: 'Dias de instrutor',            en: 'Instructor days' } },
+  { id: 'adhocDays',      calc: 'adhoc',      per: 'day',   label: { pt: 'Dias ad-hoc',                  en: 'Ad-hoc days' } },
+  { id: 'vacDays',        calc: 'vacDay',     per: 'day',   label: { pt: 'Dias de férias',               en: 'Leave days' } },
+  { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença (1-3)',         en: 'Sick days (1-3)' }, cap: 3 },
+  { id: 'ddo',            calc: 'ddo',        per: 'event', label: { pt: 'Trabalhar em folga (DDO)',     en: 'Worked day off (DDO)' } },
+  { id: 'ido',            calc: 'ido',        per: 'event', label: { pt: 'Folga infringida (IDO)',       en: 'Infringed day off (IDO)' } },
+  { id: 'wfly',           calc: 'wfly',       per: 'event', label: { pt: 'Voluntário em folga (WFLY)',   en: 'Volunteer day off (WFLY)' } },
+  { id: 'snc',            calc: 'snc',        per: 'event', label: { pt: 'Alteração de escala (SNC)',     en: 'Short-notice change (SNC)' }, auto: true },
+];
+// € por unidade de cada extra (categoria + indexação). Por-evento → sem fração de contrato.
+const EXTRA_VALUE = {
+  instructorDays: () => instructor(),
+  adhocDays:  (cat, index) => adhoc(cat, index),
+  vacDays:    (cat, index) => vacDay(cat, index),
+  sickDays:   (cat, index) => sickDay(cat, index),
+  ddo:        (cat, index) => ddo(cat, index),
+  ido:        (cat, index) => ido(cat, index),
+  wfly:       (cat, index) => wfly(cat, index),
+  snc:        () => snc(),
+};
+// Valoriza os contadores → { items: [{id, n, each, total}], total }. counts = mapa
+// { <id>: nº }. Negativos/decimais → saneados; cap aplicado (ex.: doença ≤ 3).
+export const monthExtras = (cat, counts = {}, { index = 1 } = {}) => {
+  const items = []; let total = 0;
+  for (const k of EXTRA_KINDS) {
+    let n = Math.max(0, Math.floor(+counts[k.id] || 0));
+    if (k.cap) n = Math.min(n, k.cap);
+    if (!n) continue;
+    const each = EXTRA_VALUE[k.id](cat, index) || 0;
+    const sub = r2(each * n);
+    items.push({ id: k.id, calc: k.calc, n, each, total: sub });
+    total += sub;
+  }
+  return { items, total: r2(total) };
 };

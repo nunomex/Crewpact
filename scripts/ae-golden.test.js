@@ -42,7 +42,7 @@ const registry = require(path.resolve('ae/index.js'));
 const { getAe, hasAe, getAeForProfile, getAeSet } = registry;
 const cabin = require(path.resolve('ae/easyjetSnpvac.js'));
 const { airportCoord, greatCircleNM, sectorDistanceNM } = require(path.resolve('data/airports.js'));
-const { routeDistancesNM, monthlyPerDiem } = require(path.resolve('data/perdiem.js'));
+const { routeDistancesNM, monthlyPerDiem, aeMonthTotal } = require(path.resolve('data/perdiem.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => {
@@ -143,7 +143,7 @@ eq('Piloto permanência SFO 3 (5%)', ae.loyalty('SFO', { years: 3 }), 3450);    
 eq('Piloto permanência FO (sempre 0)', ae.loyalty('FO', { years: 20 }), 0);
 eq('Piloto permanência CPT 10 part-time 9/12', ae.loyalty('CPT', { years: 10, contract: 'PPY 9/12' }), 13725);  // 18300×0.75
 eq('Piloto catalogValue loyalty CPT 5a', ae.catalogValue('loyalty', { category: 'CPT', years: 5 }), 12200);
-eq('Piloto catálogo (18 cálculos)', ae.CALCS.length, 18);
+eq('Piloto catálogo (19 cálculos)', ae.CALCS.length, 19);
 eq('Piloto papéis CPT (instrutor)', ae.additionalRolesFor('CPT').map((r) => r.id).join(','), 'instr');
 eq('Piloto papéis SFO (instrutor)', ae.additionalRolesFor('SFO').map((r) => r.id).join(','), 'instr');
 eq('Piloto papéis FO (nenhum)', ae.additionalRolesFor('FO').length, 0);
@@ -205,7 +205,7 @@ eq('Cabine ADTY não-chamado ≤4h (1 médio)', cabin.airportStandby('CM', { cal
 eq('Cabine ADTY não-chamado >4h (2 médios)', cabin.airportStandby('CM', { called: false, over4h: true }), 78.00);
 eq('Cabine ADTY chamado ≤4h (0)', cabin.airportStandby('CM', { called: true, over4h: false }), 0);
 eq('Cabine doença/dia CM (45%)', cabin.sickDay('CM'), 24.86);
-eq('Cabine catálogo (19 cálculos)', cabin.CALCS.length, 19);
+eq('Cabine catálogo (20 cálculos)', cabin.CALCS.length, 20);
 eq('Cabine total inclui abono', cabin.computeAeMonth({ category: 'CM', contract: '12/12' }).total, 1753.66);  // 1657+96.66
 
 // ─────────── Papéis adicionais de cabine (additional roles) ───────────
@@ -220,6 +220,28 @@ eq('Cabine catalogValue cash CM', cabin.catalogValue('cash', { category: 'CM' })
 eq('Cabine catalogValue night', cabin.catalogValue('night', { category: 'CM' }), 46);
 eq('Cabine catalogValue perdiem = null', cabin.catalogValue('perdiem', { category: 'CM' }), null);
 eq('Cabine catalogValue cti CM', cabin.catalogValue('cti', { category: 'CM' }), 130.00);
+
+// ── Cabine — paridade com pilotos: bónus (Cl. 63), catalogFor, extras do mês ──
+eq('Cabine bónus CM (2 semanas)', cabin.perfBonus('CM'), 892.23);      // 23198×2/52
+eq('Cabine bónus FA (2 semanas)', cabin.perfBonus('FA'), 725.08);      // 18852×2/52
+eq('Cabine bónus FA1 (SMN×14×2/52)', cabin.perfBonus('FA1'), 468.46);  // 12180×2/52
+eq('Cabine bónus CM part-time 50%', cabin.perfBonus('CM', { contract: 'fixo-50' }), 446.12);  // ×0.5
+eq('Cabine catalogValue bónus CM', cabin.catalogValue('bonus', { category: 'CM' }), 892.23);
+// catalogFor esconde papéis (upranker/cclt/cti), mantém office/bonus
+{
+  const ids = cabin.catalogFor('CM', '12/12').map((c) => c.id);
+  eq('Cabine catalogFor sem upranker', ids.includes('upranker'), false);
+  eq('Cabine catalogFor sem cti', ids.includes('cti'), false);
+  eq('Cabine catalogFor com office', ids.includes('office'), true);
+  eq('Cabine catalogFor com bónus', ids.includes('bonus'), true);
+}
+// Extras do mês (cabine)
+eq('Cabine extras vazio → 0', cabin.monthExtras('CM', {}).total, 0);
+eq('Cabine extras CM férias×2 + ddo×1 + snc×3', cabin.monthExtras('CM', { vacDays: 2, ddo: 1, snc: 3 }).total, 305);  // 130 + 115 + 60
+eq('Cabine extras CM doença paga×4', cabin.monthExtras('CM', { sickDays: 4 }).total, 99.44);  // 4×24.86
+eq('Cabine extras CM rdp×1', cabin.monthExtras('CM', { rdp: 1 }).total, 32.50);
+eq('Cabine EXTRA_KINDS (7)', cabin.EXTRA_KINDS.length, 7);
+eq('Cabine EXTRA_KINDS snc é auto', cabin.EXTRA_KINDS.find((k) => k.id === 'snc').auto, true);
 
 // ─────────── Distâncias de aeroportos (OurAirports) → bandas de per diem ───────────
 eq('LIS conhecido (IATA)', airportCoord('LIS') != null, true);
@@ -252,6 +274,72 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Per diem mês: total (jun)', r.total, 155.04);
   eq('Per diem mês: sem categoria → null', monthlyPerDiem(duties, null, ae, { ym: '2026-06' }), null);
 }
+
+// ── Caminho único do total AE (aeMonthTotal) — abono UMA vez + extras ──
+{
+  // Cabine sem duties: total = base + abono (1657 + 96.66) — NÃO 1850.32 (abono uma vez).
+  eq('aeMonthTotal cabine s/ extras (abono 1×)', aeMonthTotal({}, 'CM', '12/12', cabin, { ym: '2099-01' }), 1753.66);
+  eq('aeMonthTotal cabine + DDO×1', aeMonthTotal({}, 'CM', '12/12', cabin, { ym: '2099-01', extras: { ddo: 1 } }), 1868.66);  // +115
+  // Piloto (sem abono): base + extras.
+  eq('aeMonthTotal piloto s/ extras', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2099-01' }), 8714.29);
+  eq('aeMonthTotal piloto + instrutor×1', aeMonthTotal({}, 'CPT', '12/12', ae, { ym: '2099-01', extras: { instructorDays: 1 } }), 8834.29);  // +120
+  eq('aeMonthTotal sem categoria → null', aeMonthTotal({}, null, '12/12', ae, { ym: '2099-01' }), null);
+}
+
+// ── Catálogo aplicável por categoria/contrato (filtro Passo 2) ──
+{
+  const ids = (cat, ctr) => ae.catalogFor(cat, ctr).map((c) => c.id);
+  const cpt = ids('CPT', '12/12'), fo = ids('FO', '12/12');
+  eq('catálogo: instrutor fora do catálogo (papel adicional)', cpt.includes('instr') || fo.includes('instr'), false);
+  eq('catálogo: permanência — CPT sim', cpt.includes('loyalty'), true);
+  eq('catálogo: permanência — FO não', fo.includes('loyalty'), false);
+  eq('catálogo: retenção escondida em 12/12', cpt.includes('retention'), false);
+  eq('catálogo: retenção aparece em sazonal (PPY 8/12)', ids('CPT', 'PPY 8/12').includes('retention'), true);
+  eq('catálogo: retenção ESCONDIDA em PPY estilo de vida (Art. 66.9)', ae.catalogFor('CPT', 'PPY 8/12', { lifestyle: true }).map((c) => c.id).includes('retention'), false);
+  eq('catálogo: per-diem a todos (FO)', fo.includes('perdiem'), true);
+  eq('catálogo: benefícios a todos (SO)', ids('SO', '12/12').includes('benefits'), true);
+  eq('catálogo: bónus de performance a todos (FO)', fo.includes('bonus'), true);
+}
+
+// ── Indexação 2025+ (Anexo I.1/I.2): piso 1% / teto 5%, placeholder no piso ──
+eq('index 2024 = 1', ae.indexFactor(2024), 1);
+eq('index 2025 = piso 1%', ae.indexFactor(2025), 1.01);
+eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.01);
+eq('index 2025 com IPC oficial 3%', ae.indexFactor(2025, { ipc2025: 0.03 }), 1.03);
+eq('index 2025 IPC 8% → teto 5%', ae.indexFactor(2025, { ipc2025: 0.08 }), 1.05);
+eq('index 2025 IPC 0,5% → piso 1%', ae.indexFactor(2025, { ipc2025: 0.005 }), 1.01);
+eq('index estimado 2024 = false', ae.isIndexEstimated(2024), false);
+eq('index estimado 2025 = true (placeholder)', ae.isIndexEstimated(2025), true);
+eq('index estimado 2025 c/ IPC = false', ae.isIndexEstimated(2025, { ipc2025: 0.03 }), false);
+eq('base CPT indexada 2025 (×1.01)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8801.43);  // 122000×1.01/14
+
+// ── Art. 46 — bónus de performance anual (alvo, por categoria) ──
+eq('bónus CPT (10% base)', ae.perfBonus('CPT'), 12200);          // 0.10×122000
+eq('bónus SFO (10% base)', ae.perfBonus('SFO'), 6900);           // 0.10×69000
+eq('bónus FO (7,5% base)', ae.perfBonus('FO'), 3581.25);         // 0.075×47750
+eq('bónus SO (5% base)', ae.perfBonus('SO'), 1931.25);           // 0.05×38625
+eq('bónus CPT teto (20%)', ae.perfBonus('CPT', { max: true }), 24400);
+eq('bónus CPT part-time 9/12', ae.perfBonus('CPT', { contract: 'PPY 9/12' }), 9150);  // 12200×0.75
+eq('bónus CPT indexado 2025', ae.perfBonus('CPT', { index: 1.01 }), 12322);           // 12200×1.01
+eq('catalogValue bónus FO', ae.catalogValue('bonus', { category: 'FO' }), 3581.25);
+
+// ── DDO/IDO/WFLY/doença indexáveis (% da base → crescem com a indexação) ──
+eq('DDO CPT indexado 2025', ae.ddo('CPT', 1.01), 492.88);     // 488×1.01
+eq('IDO CPT indexado 2025', ae.ido('CPT', 1.01), 985.76);     // 976×1.01
+eq('WFLY CPT indexado 2025', ae.wfly('CPT', 1.01), 1232.20);  // 1220×1.01
+eq('DDO CPT base (index 1) inalterado', ae.ddo('CPT'), 488.00);
+
+// ── Passo 4 — "Extras do mês" (contadores → €) ──
+eq('extras vazio → 0', ae.monthExtras('CPT', {}).total, 0);
+eq('extras vazio → sem itens', ae.monthExtras('CPT', {}).items.length, 0);
+eq('extras CPT instrutor×2 + ddo×1 + snc×3',
+  ae.monthExtras('CPT', { instructorDays: 2, ddo: 1, snc: 3 }).total, 908);   // 240 + 488 + 180
+eq('extras doença cap 3 (de 5)', ae.monthExtras('CPT', { sickDays: 5 }).total, 522.87);  // 3×174.29
+eq('extras saneia negativos/decimais', ae.monthExtras('CPT', { adhocDays: -2, ido: 1.9 }).total, 976.00); // ido×1
+eq('extras indexados (ddo×1 @1.01)', ae.monthExtras('CPT', { ddo: 1 }, { index: 1.01 }).total, 492.88);
+eq('extras instrutor universal (FO)', ae.monthExtras('FO', { instructorDays: 1 }).total, 120);  // não trancado por categoria
+eq('EXTRA_KINDS (8)', ae.EXTRA_KINDS.length, 8);
+eq('EXTRA_KINDS snc é auto', ae.EXTRA_KINDS.find((k) => k.id === 'snc').auto, true);
 
 // ── Resumo ──
 console.log(`\nAE golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

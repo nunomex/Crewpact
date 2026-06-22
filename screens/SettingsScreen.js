@@ -45,7 +45,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, crewCategory, crewContract, serviceStart, serviceYears, base, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -56,7 +56,12 @@ export default function SettingsScreen({ navigation }) {
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthName = (() => { const m = now.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
-  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym }) : null;
+  const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
+  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex }) : null;
+  // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
+  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, (aeExtras && aeExtras[ym]) || {}, { index: aeIndex }) : null;
+  const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
+  const aeExtrasShown = aeMonth ? +(aeMonth.extras + (aeXt ? aeXt.total : 0)).toFixed(2) : 0;
   const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
   const fmtEur0 = (n) => { const g = Math.round(Number(n || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}` : `${g} €`; };
 
@@ -93,6 +98,15 @@ export default function SettingsScreen({ navigation }) {
     setSdModal(false); success();
   };
 
+  // PPY estilo de vida (Art. 66.9) — só pilotos em contrato SAZONAL (PPY). ON → sem
+  // retenção (esconde o item no catálogo via caps/lifestyle). Guardado no metadata.
+  const showLifestyle = crewType === 'pilot' && !!ae && !!ae.isSeasonalContract && ae.isSeasonalContract(crewContract);
+  const saveLifestyle = (val) => {
+    setProfile((p) => ({ ...p, lifestyle: val }));
+    updateProfile({ lifestyle: val }, lang).catch(() => {});
+    success();
+  };
+
   // Base (LIS/OPO/FAO) — guardada no metadata; "fora da base" no per-diem/pernoitas.
   const BASES = ['LIS', 'OPO', 'FAO'];
   const [bModal, setBModal] = useState(false);
@@ -100,6 +114,21 @@ export default function SettingsScreen({ navigation }) {
     setProfile((p) => ({ ...p, base: val }));
     updateProfile({ base: val }, lang).catch(() => {});
     setBModal(false); success();
+  };
+
+  // Categoria/rank + contrato (AE) — editáveis depois do onboarding (promoção FO→SFO,
+  // mudança de contrato…). Guardados no metadata + cache (como crewCategory/crewContract).
+  const [catModal, setCatModal] = useState(false);
+  const [contractModal, setContractModal] = useState(false);
+  const saveCategory = (val) => {
+    setProfile((p) => ({ ...p, crewCategory: val }));
+    updateProfile({ crewCategory: val }, lang).catch(() => {});
+    setCatModal(false); success();
+  };
+  const saveContract = (val) => {
+    setProfile((p) => ({ ...p, crewContract: val }));
+    updateProfile({ crewContract: val }, lang).catch(() => {});
+    setContractModal(false); success();
   };
 
   // Bloqueio biometria/PIN (opt-in). Ao ativar, confirma que o dispositivo
@@ -175,24 +204,41 @@ export default function SettingsScreen({ navigation }) {
                 </View>
               </View>
               {ae ? (
+                <Row icon="ribbon-outline" label={l('Categoria', 'Rank')}
+                  sub={crewCategory && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : l('A tua categoria', 'Your rank')}
+                  value={crewCategory || l('Por definir', 'Not set')} onPress={() => setCatModal(true)} s={s} C={C} />
+              ) : null}
+              {ae ? (
+                <Row icon="briefcase-outline" label={l('Contrato', 'Contract')}
+                  sub={l('Modalidade — afeta a base proporcional', 'Pattern — affects the pro-rated base')}
+                  value={crewContract ? (ae.contractLabel ? ae.contractLabel(crewContract, lang) : crewContract) : l('Por definir', 'Not set')}
+                  onPress={() => setContractModal(true)} s={s} C={C} />
+              ) : null}
+              {ae ? (
                 <Row icon="location-outline" label={l('Base', 'Base')} sub={l('Onde estás baseado', 'Where you are based')}
                   value={base || l('Por definir', 'Not set')} onPress={() => setBModal(true)} s={s} C={C} />
               ) : null}
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
                   sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
-                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last s={s} C={C} />
+                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle} s={s} C={C} />
+              ) : null}
+              {showLifestyle ? (
+                <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')}
+                  sub={l('Sazonal recebe retenção · estilo de vida não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')}
+                  last s={s} C={C}
+                  right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
               ) : null}
             </View>
             {aeMonth ? (
               <View style={s.aeCard}>
                 <View style={s.aeCardHead}>
                   <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
-                  <Text style={s.aeCardV}>{fmtEur(aeMonth.total)}</Text>
+                  <Text style={s.aeCardV}>{fmtEur(aeTotal)}</Text>
                 </View>
                 <Text style={s.aeCardSub}>
                   {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
-                  {aeMonth.extras ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeMonth.extras)}` : ''}
+                  {aeExtrasShown ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeExtrasShown)}` : ''}
                   {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
                 </Text>
               </View>
@@ -297,6 +343,44 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sdHint}>{l('Per-diem e pernoitas são "fora da base".', 'Per-diem and night stops are "away from base".')}</Text>
         </View>
       </CenterDialog>
+
+      {/* Categoria / rank */}
+      {ae ? (
+        <CenterDialog visible={catModal} onClose={() => setCatModal(false)} title={l('A tua categoria', 'Your rank')} closeLabel={t('common.close', lang)}>
+          <View style={{ padding: 20 }}>
+            <View style={s.baseWrap}>
+              {ae.CATEGORIES.map((id) => {
+                const on = crewCategory === id;
+                return (
+                  <TouchableOpacity key={id} onPress={() => saveCategory(id)} style={[s.baseChip, on && s.baseChipOn]} activeOpacity={0.85}>
+                    <Text style={[s.baseChipTxt, on && s.baseChipTxtOn]}>{id}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={s.sdHint}>{l('Recalcula a partir de agora; o histórico fica estimado com o valor atual.', 'Recomputes from now; history is estimated with the current value.')}</Text>
+          </View>
+        </CenterDialog>
+      ) : null}
+
+      {/* Contrato */}
+      {ae ? (
+        <CenterDialog visible={contractModal} onClose={() => setContractModal(false)} title={l('O teu contrato', 'Your contract')} closeLabel={t('common.close', lang)}>
+          <View style={{ padding: 20 }}>
+            <View style={s.baseWrap}>
+              {ae.CONTRACTS.map((id) => {
+                const on = (crewContract || '12/12') === id;
+                return (
+                  <TouchableOpacity key={id} onPress={() => saveContract(id)} style={[s.baseChip, on && s.baseChipOn]} activeOpacity={0.85}>
+                    <Text style={[s.baseChipTxt, on && s.baseChipTxtOn]}>{id}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={s.sdHint}>{l('Afeta a base proporcional. Recalcula a partir de agora.', 'Affects the pro-rated base. Recomputes from now.')}</Text>
+          </View>
+        </CenterDialog>
+      ) : null}
 
     </SafeAreaView>
   );

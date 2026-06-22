@@ -580,6 +580,9 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
   const [sectors, setSectors] = useState(0);
   const [addCrew, setAddCrew] = useState(1); // pilotos extra (1|2) — tripulação técnica
   const onFdp = (v) => { const m = maskClock(v); if (m == null) return; anim(); setFdp(m); };
+  // Torna a vista por crewType visível: pilotos → PSV reforçado (cockpit); cabine →
+  // repouso mínimo. O regulamento (205c) trata os dois de forma diferente.
+  const inflightTitle = `${t('ftl.calcInflight', lang)} · ${isPilot ? 'cockpit' : (lang === 'en' ? 'cabin' : 'cabine')}`;
 
   const clsSeg = (
     <>
@@ -593,7 +596,7 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
   if (isPilot) {
     const r = computeFlightCrewFdp({ restClass: cls, additionalCrew: addCrew, sectors });
     return (
-      <CalcCard title={t('ftl.calcInflight', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+      <CalcCard title={inflightTitle} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
         {clsSeg}
         <Text style={cs.fieldLabel}>{t('ftl.addCrew', lang)}</Text>
         <Seg options={[{ id: 1, label: t('ftl.addCrew1', lang) }, { id: 2, label: t('ftl.addCrew2', lang) }]}
@@ -620,7 +623,7 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
   const complete = fdpMin != null && sectors >= 1;
 
   return (
-    <CalcCard title={t('ftl.calcInflight', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
+    <CalcCard title={inflightTitle} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
       {clsSeg}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.maxExtFdp', lang)}</Text>

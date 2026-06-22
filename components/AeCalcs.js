@@ -1,7 +1,8 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { monthlyPerDiem, monthlyPerDiemByBand, monthlyAe } from '../data/perdiem';
+import { txv } from '../data/i18n';
 import { AppContext, useTheme } from '../data/appContext';
 
 // Cabeçalhos de grupo do catálogo (CALCS.group em PT) → bilingue.
@@ -17,7 +18,7 @@ const GROUP_LABEL = {
 // pagamento (mockup): chips de categoria/contrato, base + setor nominal, per diem
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
-export default function AeCalcs({ ae, category, contract = '12/12', duties = [] }) {
+export default function AeCalcs({ ae, category, contract = '12/12', duties = [], lifestyle = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
   const { lang, serviceYears } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -43,19 +44,37 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
   }
 
   const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const year = now.getFullYear();
+  const ym = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthName = (() => { const m = now.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
-  const base = ae.monthlyBase(category, { contract });
+  // Indexação 2025+ (Anexo I): fator a aplicar aos valores de 2024. Só os AE com a
+  // mecânica (piloto) a expõem; a cabine já tem os valores indexados em tabela → 1.
+  const index = ae.indexFactor ? ae.indexFactor(year) : 1;
+  const indexEst = !!(ae.isIndexEstimated && ae.isIndexEstimated(year)) && index > 1;
+  const base = ae.monthlyBase(category, { contract, index });
   const cash = ae.cashHandling ? ae.cashHandling(category) : 0;   // só cabine tem abono p/ falhas
-  const pd = monthlyPerDiem(duties, category, ae, { ym });
-  const pdBand = monthlyPerDiemByBand(duties, category, ae, { ym });
+  const pd = monthlyPerDiem(duties, category, ae, { ym, index });
+  const pdBand = monthlyPerDiemByBand(duties, category, ae, { ym, index });
   // Total interligado do motor (base + per-diem + extras dos eventos). Fallback para
   // o cálculo antigo se a AE não expuser computeAeMonth (ex.: cabine). `cash` (abono
   // p/ falhas, só cabine) soma por cima.
-  const month = monthlyAe(duties, category, contract, ae, { ym });
-  const total = (month ? month.total : base + (pd ? pd.total : 0)) + cash;
+  const month = monthlyAe(duties, category, contract, ae, { ym, index });
+  // Extras do mês (Passo 4) — contadores manuais/auto que somam ao total. Só os AE
+  // com a mecânica (piloto) os expõem. Valor por unidade via o próprio motor.
+  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
+  const xRate = (id) => { const r = ae.monthExtras(category, { [id]: 1 }, { index }); return r.items[0] ? r.items[0].each : 0; };
+  const bump = (id, delta) => {
+    if (!onChangeExtras) return;
+    const cap = (ae.EXTRA_KINDS.find((k) => k.id === id) || {}).cap;
+    let next = Math.max(0, Math.floor(+extras[id] || 0) + delta);
+    if (cap) next = Math.min(next, cap);
+    onChangeExtras({ ...extras, [id]: next });
+  };
+  // Total único: monthlyAe.total já inclui o abono (cabine, UMA vez); o `cash` só
+  // entra no fallback (quando não há computeAeMonth). + extras manuais do mês.
+  const total = (month ? month.total : base + (pd ? pd.total : 0) + cash) + (xt ? xt.total : 0);
 
-  const nominal = ae.NOMINAL_SECTOR ? ae.NOMINAL_SECTOR[category] : null;
+  const nominal = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[category] != null) ? +(ae.NOMINAL_SECTOR[category] * index).toFixed(2) : null;
   const catName = ae.categoryLabel ? ae.categoryLabel(category, lang) : category;
   const contractPct = Math.round((ae.contractFactor ? ae.contractFactor(contract) : 1) * 100);
 
@@ -70,8 +89,10 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
   const maxBand = Math.max(1, ...bandDefs.map(([id]) => byBand[id] || 0));
   const activeBands = bandDefs.filter(([id]) => (byBand[id] || 0) > 0);
 
-  // Catálogo agrupado, na ordem de CALCS. A base é a âncora do bloco interligado.
-  const items = (ae.CALCS || []).filter((c) => c.id !== 'base');
+  // Catálogo agrupado. Filtrado por categoria/contrato (esconde o que não pertence:
+  // papéis adicionais, permanência só CPT/SFO, retenção só sazonal). Fallback p/ CALCS.
+  const catalog = ae.catalogFor ? ae.catalogFor(category, contract, { lifestyle }) : (ae.CALCS || []);
+  const items = catalog.filter((c) => c.id !== 'base');
   const groups = [];
   items.forEach((c) => {
     let g = groups.find((x) => x.id === c.group);
@@ -96,6 +117,9 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
         {cash ? <View style={[s.aeline, s.aelineBorder]}><Text style={s.aeK}>{l('+ Abono para falhas', '+ Cash handling')}</Text><Text style={s.aeV}>{fmtEur(cash)}</Text></View> : null}
         {nominal != null ? <View style={[s.aeline, s.aelineBorder]}><Text style={s.aeK}>{l('Setor nominal', 'Nominal sector')}</Text><Text style={s.aeV}>{fmtEur(nominal)}</Text></View> : null}
       </View>
+      {indexEst ? (
+        <Text style={s.note}>{l(`Valores indexados a ${year} · estimativa (piso 1%) — IPC oficial por confirmar.`, `Values indexed to ${year} · estimate (1% floor) — official CPI to be confirmed.`)}</Text>
+      ) : null}
 
       {/* ── Per diem · por setor (barras curto/médio/longo) ── */}
       <Text style={s.group}>{l('PER DIEM · POR SETOR', 'PER DIEM · BY SECTOR')}</Text>
@@ -132,6 +156,50 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
         </Text>
       ) : null}
 
+      {/* ── Extras do mês — contadores que somam ao total (Passo 4) ── */}
+      {xt ? (
+        <>
+          <Text style={s.group}>{l('EXTRAS DO MÊS', 'THIS MONTH’S EXTRAS')}</Text>
+          <View style={s.card}>
+            {ae.EXTRA_KINDS.map((k, i) => {
+              const n = Math.max(0, Math.floor(+extras[k.id] || 0));
+              const each = xRate(k.id);
+              const unit = k.per === 'day' ? l('dia', 'day') : l('evento', 'event');
+              const showSnc = k.id === 'snc' && sncSuggest > 0 && sncSuggest !== n;
+              return (
+                <View key={k.id} style={[s.crow, i > 0 && s.rowBorder]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.cl}>{(k.label && (k.label[lang] || k.label.pt)) || k.id}</Text>
+                    <Text style={s.cs}>
+                      {fmtEur(each)} / {unit}{n > 0 ? ` · = ${fmtEur(+(each * n).toFixed(2))}` : ''}
+                    </Text>
+                    {showSnc ? (
+                      <TouchableOpacity onPress={() => onChangeExtras && onChangeExtras({ ...extras, snc: sncSuggest })}>
+                        <Text style={s.autoHint}>{l(`≈${sncSuggest} detetada(s) na escala · aplicar`, `≈${sncSuggest} detected in roster · apply`)}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  <View style={s.stepper}>
+                    <TouchableOpacity style={s.stepBtn} activeOpacity={0.7} onPress={() => bump(k.id, -1)} disabled={n <= 0} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Text style={[s.stepSign, n <= 0 && s.stepDim]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={s.stepN}>{n}</Text>
+                    <TouchableOpacity style={s.stepBtn} activeOpacity={0.7} onPress={() => bump(k.id, +1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Text style={s.stepSign}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+          <Text style={s.note}>
+            {xt.total > 0
+              ? l(`Soma ${fmtEur(xt.total)} ao total estimado.`, `Adds ${fmtEur(xt.total)} to the estimate.`)
+              : l('Conta dias/eventos do mês que não se inferem da rota (doença, folgas, SNC…).', 'Count this month’s days/events not derived from the route (sick, days off, SNC…).')}
+          </Text>
+        </>
+      ) : null}
+
       {/* ── Catálogo de cálculos avulsos (Anexo I) ── */}
       <Text style={s.group}>{l('CÁLCULOS · ANEXO I', 'CALCULATIONS · APPENDIX I')}</Text>
       {hasLoyalty && serviceYears == null ? (
@@ -142,15 +210,15 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
           <Text style={s.subGroup}>{gx(g.id)}</Text>
           <View style={s.card}>
             {g.items.map((c, i) => {
-              const val = ae.catalogValue ? ae.catalogValue(c.id, { category, contract, years: serviceYears || 0 }) : null;
+              const val = ae.catalogValue ? ae.catalogValue(c.id, { category, contract, index, years: serviceYears || 0 }) : null;
               return (
                 <View key={c.id} style={[s.crow, i > 0 && s.rowBorder]}>
                   <View style={{ flex: 1 }}>
                     <View style={s.clRow}>
-                      <Text style={s.cl}>{c.label}</Text>
+                      <Text style={s.cl}>{txv(c.label, lang)}</Text>
                       {c.linked ? <Text style={s.tag}>{l('NO TOTAL', 'IN TOTAL')}</Text> : null}
                     </View>
-                    <Text style={s.cs}>{c.sub}</Text>
+                    <Text style={s.cs}>{txv(c.sub, lang)}</Text>
                   </View>
                   <Text style={s.cv}>{fmtEur(val)}</Text>
                 </View>
@@ -167,13 +235,13 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [] 
           <Text style={s.subGroup}>{l(`Disponíveis para ${ae.categoryLabel(category, lang)}`, `Available for ${ae.categoryLabel(category, lang)}`)}</Text>
           <View style={s.card}>
             {roles.map((r, i) => {
-              const val = ae.catalogValue ? ae.catalogValue(r.calc, { category, contract, years: serviceYears || 0 }) : null;
+              const val = ae.catalogValue ? ae.catalogValue(r.calc, { category, contract, index, years: serviceYears || 0 }) : null;
               const fallback = ae[r.calc] ? ae[r.calc](category) : null;
               return (
                 <View key={r.id} style={[s.crow, i > 0 && s.rowBorder]}>
                   <View style={{ flex: 1 }}>
                     <Text style={s.cl}>{r.label[lang] || r.label.pt}</Text>
-                    <Text style={s.cs}>{r.sub}</Text>
+                    <Text style={s.cs}>{txv(r.sub, lang)}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={s.cv}>{fmtEur(val != null ? val : fallback)}</Text>
@@ -231,6 +299,13 @@ const makeStyles = (C) => StyleSheet.create({
   cs: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, lineHeight: 15 },
   cv: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
   unit: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
+  // Steppers dos "Extras do mês"
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 4, paddingVertical: 3 },
+  stepBtn: { width: 30, height: 30, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
+  stepSign: { fontSize: 18, lineHeight: 20, fontFamily: FONT.bold, color: C.text },
+  stepDim: { color: C.line },
+  stepN: { minWidth: 26, textAlign: 'center', fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, fontVariant: ['tabular-nums'] },
+  autoHint: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.red, marginTop: 3 },
   tag: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, marginLeft: 2 },
   empty: { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.lg, marginLeft: 2 },

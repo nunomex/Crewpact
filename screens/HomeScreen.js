@@ -6,7 +6,7 @@ import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
 import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
 import { catLabel } from '../data/extras';
-import { monthlyPerDiem } from '../data/perdiem';
+import { monthlyAe, aeMonthTotal } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
 import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import PageHeader from '../components/PageHeader';
@@ -160,7 +160,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot, rosterChanges } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -376,16 +376,18 @@ export default function HomeScreen({ navigation }) {
     const d = new Date();
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const monthName = (() => { const m = d.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
-    const base = ae.monthlyBase(crewCategory, { contract: crewContract || '12/12' });
-    const pd = monthlyPerDiem(duties, crewCategory, ae, { ym });
-    const pdTotal = pd ? pd.total : 0;
-    const total = base + pdTotal;
-    const fill = total > 0 ? Math.min(1, pdTotal / total) : 0;
+    const index = ae.indexFactor ? ae.indexFactor(d.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
+    // Caminho único (= Perfil/Cálculos): monthlyAe (base+abono+per-diem+pernoita+escritório) + extras do mês.
+    const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index });
+    const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
+    const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {} }) || base;
+    const variable = +(total - base).toFixed(2);
+    const fill = total > 0 ? Math.min(1, variable / total) : 0;
     return (
       <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
         <View style={s.ucHead}><View style={[s.ucDot, s.ucDotAe]} /><Text style={s.ucTitle} numberOfLines={1}>AE · {monthName}</Text></View>
         <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>Base ({crewContract || '12/12'})</Text><Text style={s.aeMV}>{fmtEur0(base)}</Text></View>
-        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>Per diem</Text><Text style={[s.aeMV, { color: C.red }]}>+{fmtEur0(pdTotal)}</Text></View>
+        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.red }]}>+{fmtEur0(variable)}</Text></View>
         <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><Text style={s.aeMVtot}>{fmtEur0(total)}</Text></View>
         <MiniBar ratio={fill} color={C.red} track={s.aeMBar} fill={s.aeMBarFill} />
       </TouchableOpacity>

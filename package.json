@@ -15,7 +15,8 @@
     "test:pdf": "node scripts/pdf-roster.test.js",
     "test:stats": "node scripts/stats.test.js",
     "test:diff": "node scripts/roster-diff.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff"
+    "test:caps": "node scripts/capabilities.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

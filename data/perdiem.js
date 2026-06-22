@@ -16,8 +16,15 @@ export const routeDistancesNM = (route) => {
 // filtrado por mês (ym = "YYYY-MM"). duties = mapa { date: { route, deleted? } }.
 // `ae` = módulo do Acordo de Empresa (expõe perDiem). Uma duty sem rota completa
 // (algum aeroporto desconhecido) conta para `missing` e não soma.
+//
+// NB (Art. 37 piloto / Cl. 52 cabine): o per-diem é POR setor voado — TODOS os setores
+// da rota contam (incl. out-and-back no mesmo dia, ex.: LIS-OPO-LIS). O "fora da base"
+// do AE é a NATUREZA do serviço de voo, NÃO um filtro pela base do tripulante; por isso
+// o campo `base` do perfil NÃO entra aqui. A parte "noite fora" é a PERNOITA (toggle
+// nightStop → computeAeMonth), não o per-diem. Exclusões do AE (standby/escritório/
+// formação) são tratadas por tipo de duty em monthlyAe, não aqui.
 // Devolve { total, withRoute, missing, count } ou null se faltar ae/categoria.
-export const monthlyPerDiem = (duties = {}, category, ae, { ym = null } = {}) => {
+export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1 } = {}) => {
   if (!ae || !category) return null;
   let total = 0, withRoute = 0, missing = 0, count = 0;
   for (const date in duties) {
@@ -27,7 +34,7 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null } = {}) =>
     count++;
     const dists = routeDistancesNM(d.route);
     if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
-    total += ae.perDiem(category, dists);
+    total += ae.perDiem(category, dists, index);
     withRoute++;
   }
   return { total: +total.toFixed(2), withRoute, missing, count };
@@ -37,10 +44,10 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null } = {}) =>
 // barras "por setor" dos Cálculos AE. Usa as bandas do próprio módulo `ae`
 // (SECTOR_BANDS + NOMINAL_SECTOR) — aditivo, não mexe no núcleo. Devolve
 // { total, byBand: {<id>: €}, withRoute, missing, count } ou null.
-export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null } = {}) => {
+export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, index = 1 } = {}) => {
   if (!ae || !category || !ae.SECTOR_BANDS) return null;
   const bands = ae.SECTOR_BANDS;
-  const nominal = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[category]) || 0;
+  const nominal = ((ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[category]) || 0) * index;
   const byBand = {};
   bands.forEach((b) => { byBand[b.id] = 0; });
   let total = 0, withRoute = 0, missing = 0, count = 0;
@@ -101,4 +108,16 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index });
   return { ...month, withRoute, missing, count, officeDays, adtyDays, nightStopDays: nightStops };
+};
+
+// CAMINHO ÚNICO do total mensal AE (€) — usado por Home, Perfil e Cálculos para
+// mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
+// + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
+// extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {} } = {}) => {
+  if (!ae || !category) return null;
+  const m = monthlyAe(duties, category, contract, ae, { ym, index });
+  const baseTotal = m ? m.total : (ae.monthlyBase ? ae.monthlyBase(category, { contract, index }) : 0);
+  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
+  return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);
 };
