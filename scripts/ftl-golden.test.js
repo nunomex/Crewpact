@@ -364,6 +364,29 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Registo HTML: voo total 07:00', html.includes('07:00'), true);
 }
 
+// ── reconcileDayLog (#1) — preenche dias FTL em falta a partir das duties (fill-only) ──
+{
+  const { reconcileDayLog } = ftl;
+  const duties = {
+    '2026-06-10': { report_time: '06:00', block_on: '12:00', sectors: 2, flight_minutes: 240, kind: 'flight' },
+    '2026-06-11': { report_time: '08:00', block_on: '16:00', sectors: 2, flight_minutes: 300, kind: 'flight' },
+    '2026-06-12': { deleted: true, report_time: '06:00', block_on: '10:00' },  // apagada → ignorada
+    '2026-06-13': { kind: 'office' },                                           // sem report/block_on → não deriva
+  };
+  const r1 = reconcileDayLog(duties, {});
+  eq('reconcile: 10 derivada (src duty)', (r1['2026-06-10'] || {}).src, 'duty');
+  eq('reconcile: 11 derivada (src duty)', (r1['2026-06-11'] || {}).src, 'duty');
+  eq('reconcile: voo 10 (240→4h)', r1['2026-06-10'].voo, 4);
+  eq('reconcile: ignora apagada 12', r1['2026-06-12'], undefined);
+  eq('reconcile: ignora sem horas 13', r1['2026-06-13'], undefined);
+  // fill-only: não toca em registos existentes + devolve a MESMA ref quando nada falta
+  const manual = { '2026-06-10': { src: 'manual', psv: { result: '10:00' } } };
+  const oneDuty = { '2026-06-10': duties['2026-06-10'] };
+  eq('reconcile: não clobbera manual', reconcileDayLog(oneDuty, manual)['2026-06-10'].src, 'manual');
+  eq('reconcile: ref IGUAL quando nada falta', reconcileDayLog(oneDuty, manual) === manual, true);
+  eq('reconcile: sem duties → ref igual', reconcileDayLog({}, manual) === manual, true);
+}
+
 // ── Resumo ──
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

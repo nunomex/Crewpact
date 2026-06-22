@@ -31,7 +31,7 @@ import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
-import { dutyToFtlDay } from './ftl';
+import { dutyToFtlDay, reconcileDayLog } from './ftl';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -571,6 +571,16 @@ export default function App() {
 
   // Persistir a cache local sempre que mudar (depois de hidratar, com utilizador).
   useEffect(() => { if (dutiesHydrated.current && user?.id) AsyncStorage.setItem(`cp_duties_${user.id}`, JSON.stringify(duties)).catch(() => {}); }, [duties, user?.id]);
+
+  // Reconstrói o histórico FTL (dayLog) a partir das duties SINCRONIZADAS — preenche só
+  // os dias EM FALTA (dispositivo novo / pós-reinstalação: as duties vêm do servidor,
+  // mas o dayLog é local). Corre quando a hidratação terminou (loadedUserId, com o
+  // dayLog em cache já aplicado) e a cada mudança das duties. Fill-only e idempotente
+  // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
+  useEffect(() => {
+    if (!loadedUserId || !dutiesHydrated.current) return;
+    setDayLog(prev => reconcileDayLog(duties, prev));
+  }, [duties, loadedUserId]);
 
   // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
   useEffect(() => {

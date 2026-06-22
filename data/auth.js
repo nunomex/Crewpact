@@ -12,8 +12,6 @@ export const mapUser = (u) => ({
   serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
   lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (Art. 66.9) → sem retenção
-  rank:      u.user_metadata?.rank     || null,
-  contract:  u.user_metadata?.contract || null,
   createdAt: u.created_at?.slice(0, 10) || '',
 });
 

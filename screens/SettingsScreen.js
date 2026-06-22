@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -18,6 +18,7 @@ import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
+import { dataExportJson } from '../data/dataExport';
 
 // Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
 // segmento, um valor + chevron, ou nada. Toca quando há onPress.
@@ -45,7 +46,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -154,6 +155,20 @@ export default function SettingsScreen({ navigation }) {
   const openPdf = async () => {
     const ok = await openFtlPdf();
     if (!ok) Alert.alert(t('ftl.pdfTitle', lang), t('ftl.pdfError', lang));
+  };
+
+  // RGPD — exportar TODOS os meus dados num JSON (conta+perfil+escala+FTL+AE),
+  // partilhado pela folha do sistema (sem sair para servidor; o user escolhe o destino).
+  const exportData = async () => {
+    try {
+      const json = dataExportJson({
+        account: { email: user?.email, name: user?.name },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, base, serviceStart, lifestyle },
+        duties, dayLog, aeExtras,
+      });
+      await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
+      success();
+    } catch { /* cancelado pelo utilizador */ }
   };
 
   const handleChangePw = async () => {
@@ -275,8 +290,18 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        {/* Sobre */}
+        {/* Os meus dados (RGPD) — exportar */}
         <Animated.View style={seg(5)}>
+          <Text style={s.gt}>{l('Os meus dados', 'My data')}</Text>
+          <View style={s.gbox}>
+            <Row icon="download-outline" label={l('Exportar os meus dados', 'Export my data')}
+              sub={l('Perfil + escala + FTL + AE, em JSON (RGPD)', 'Profile + roster + FTL + AE, as JSON (GDPR)')}
+              onPress={exportData} last s={s} C={C} />
+          </View>
+        </Animated.View>
+
+        {/* Sobre */}
+        <Animated.View style={seg(6)}>
           <Text style={s.gt}>{l('Sobre', 'About')}</Text>
           <View style={s.gbox}>
             <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />

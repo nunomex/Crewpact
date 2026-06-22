@@ -84,6 +84,28 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
   };
 };
 
+// Reconstrói as entradas FTL DERIVADAS (src:'duty') em FALTA no `dayLog`, a partir
+// das duties (escala). FILL-ONLY: só preenche dias AUSENTES — nunca toca em entradas
+// existentes (manuais OU derivadas), logo é idempotente e não destrói histórico. Serve
+// a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
+// sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
+// ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
+export const reconcileDayLog = (duties = {}, dayLog = {}) => {
+  let next = dayLog, changed = false;
+  for (const date in duties) {
+    const d = duties[date];
+    if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
+    const entry = dutyToFtlDay({
+      report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
+      sectors: d.sectors, flight_minutes: d.flight_minutes,
+    });
+    if (!entry) continue;                              // sem report/block_on → não deriva
+    if (!changed) { next = { ...dayLog }; changed = true; }
+    next[date] = entry;
+  }
+  return next;
+};
+
 // Índice de risco de fadiga (consultivo) a partir de um resultado de computeDuty.
 // `restMin` default = repouso mínimo calculado após esta duty; `consecutiveDisruptive`
 // = dias disruptivos seguidos (ex.: de computeRestSequence) — 0 se não fornecido.

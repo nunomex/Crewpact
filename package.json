@@ -16,7 +16,8 @@
     "test:stats": "node scripts/stats.test.js",
     "test:diff": "node scripts/roster-diff.test.js",
     "test:caps": "node scripts/capabilities.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps"
+    "test:export": "node scripts/dataexport.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -30,6 +31,7 @@
     "expo": "~54.0.0",
     "expo-asset": "~12.0.13",
     "expo-calendar": "~15.0.8",
+    "expo-dev-client": "~6.0.0",
     "expo-font": "~14.0.12",
     "expo-haptics": "~15.0.8",
     "expo-linear-gradient": "~15.0.8",
