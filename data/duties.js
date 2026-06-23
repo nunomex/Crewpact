@@ -51,8 +51,8 @@ export const upsertDuty = async (userId, d = {}) => {
       notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       kind: d.kind || 'flight',            // tipo de atividade (voo/standby/terra…)
       night_stop: !!d.nightStop,           // paragem nocturna (abono AE, Art. 39)
-      // origem + snapshot da escala (Fase 4) — JSON num só campo
-      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null }),
+      // origem + snapshot da escala (Fase 4) + legs c/ nº de voo (p/ "ao vivo") — JSON num só campo
+      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null, legs: d.legs || null }),
     };
     const up = (p) => supabase.from('duties').upsert(p, { onConflict: 'user_id,duty_date' });
     let { error } = await up(payload);

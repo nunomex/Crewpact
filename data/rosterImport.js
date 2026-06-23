@@ -4,7 +4,7 @@
 import { dutyToFtlDay, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
 
-// Atividade { dateISO, sectors, legs:[{ report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
+// Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
 // → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
 // `route` = cadeia de aeroportos "LIS-OPO-LIS" (null se algum for desconhecido) —
 // alimenta o per diem do AE (distância de grande círculo por setor).
@@ -26,6 +26,9 @@ export const dutyFromActivity = (act) => {
     sectors: act.sectors || act.legs.length,
     flight_minutes: flightMin,
     route,
+    // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
+    // só o essencial por leg — flightNo + aeroportos + horas planeadas.
+    legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null })),
   };
 };
 

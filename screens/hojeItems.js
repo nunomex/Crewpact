@@ -4,6 +4,7 @@
 import { catLabel } from '../data/extras';
 import { t } from '../data/i18n';
 import { legalStatus, headroomStatus, nextDutyStatus, rosterStatus, payStatus } from '../data/today';
+import { validityStatus, validityLabel, sortValidities } from '../data/validities';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
 export const winLbl = (id, days, lang) =>
@@ -31,7 +32,7 @@ export const fmtEur0 = (n, lang) => {
 
 // ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO }
 export function buildTodayItems(ctx, lang) {
-  const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO } = ctx;
+  const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, validities, isPilot, todayISO } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const items = [];
 
@@ -121,6 +122,25 @@ export function buildTodayItems(ctx, lang) {
       suggestion: pay.expired ? l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026') : null,
       raw: pay,
     });
+  }
+
+  // 6 · Validades & Documentos (premium) — só aparece se houver itens registados.
+  if (validities && validities.length) {
+    const RANK = { expired: 0, expiring: 1, valid: 2, none: 3 };
+    const withSt = validities.map((v) => ({ ...v, st: validityStatus(v.expiry) }));
+    const worst = withSt.reduce((a, b) => ((RANK[a.st.band] ?? 3) <= (RANK[b.st.band] ?? 3) ? a : b));
+    const status = worst.st.band === 'expired' ? 'bad' : worst.st.band === 'expiring' ? 'warn' : 'ok';
+    let answer, suggestion = null;
+    if (worst.st.band === 'expired') {
+      answer = `${validityLabel(worst.type, isPilot, lang)} ${l('expirado', 'expired')}`;
+      suggestion = l('Renova com urgência — podes ficar em terra.', 'Renew urgently — you may be grounded.');
+    } else if (worst.st.band === 'expiring') {
+      answer = `${validityLabel(worst.type, isPilot, lang)} ${l('expira em', 'expires in')} ${worst.st.days} d`;
+      suggestion = l('Renova antes de expirar.', 'Renew before it expires.');
+    } else {
+      answer = l('Tudo válido', 'All current');
+    }
+    items.push({ id: 'validades', q: l('Validades em dia?', 'Documents current?'), status, answer, suggestion, raw: { items: sortValidities(withSt), isPilot } });
   }
 
   return items;

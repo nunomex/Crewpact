@@ -7,6 +7,7 @@ import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { catLabel } from '../data/extras';
 import { buildTodayItems, winLbl, dateLbl, fmtEur0 } from './hojeItems';
+import { validityStatus, validityLabel } from '../data/validities';
 import { t } from '../data/i18n';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 
@@ -24,7 +25,8 @@ export default function HojeDetailScreen({ route, navigation }) {
 
   const ctx = {
     ftlSnap: ctxAll.ftlSnap, dayLog: ctxAll.dayLog, duties: ctxAll.duties, rosterChanges: ctxAll.rosterChanges,
-    ae: ctxAll.ae, crewCategory: ctxAll.crewCategory, crewContract: ctxAll.crewContract, aeExtras: ctxAll.aeExtras, todayISO,
+    ae: ctxAll.ae, crewCategory: ctxAll.crewCategory, crewContract: ctxAll.crewContract, aeExtras: ctxAll.aeExtras,
+    validities: ctxAll.validities, isPilot: ctxAll.isPilot, todayISO,
   };
   const items = buildTodayItems(ctx, lang);
   const item = items.find((x) => x.id === route.params?.id) || items[0];
@@ -32,7 +34,7 @@ export default function HojeDetailScreen({ route, navigation }) {
   const raw = item.raw;
 
   const stColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.sub);
-  const isCheck = item.id === 'next' || item.id === 'roster';
+  const isCheck = item.id === 'next' || item.id === 'roster' || item.id === 'validades';
 
   const Row = ({ k, v, color }) => (
     <View style={s.row}>
@@ -131,6 +133,25 @@ export default function HojeDetailScreen({ route, navigation }) {
           <View style={s.totalRow}><Text style={s.totalK}>{l('Total', 'Total')}</Text><Text style={s.totalV}>{fmtEur0(raw.total, lang)}</Text></View>
           {raw.meta && raw.meta.missing ? <Text style={s.muted}>{`${raw.meta.missing} ${l('voo(s) sem rota completa não somam per-diem.', 'flight(s) without a full route add no per-diem.')}`}</Text> : null}
           {raw.expired ? <Text style={s.muted}>{l('Valores de referência · AE até jan-2026.', 'Reference values · agreement to Jan-2026.')}</Text> : null}
+        </>
+      );
+    }
+
+    if (item.id === 'validades') {
+      const list = raw.items || [];
+      const bandColor = (b) => (b === 'valid' ? C.green : b === 'expiring' ? C.warn : b === 'expired' ? C.red : C.sub);
+      const bandTxt = (st) =>
+        st.band === 'expired' ? l(`expirado há ${Math.abs(st.days)} d`, `expired ${Math.abs(st.days)} d ago`) :
+        st.band === 'expiring' ? l(`expira em ${st.days} d`, `expires in ${st.days} d`) :
+        st.band === 'valid' ? l(`válido · ${st.days} d`, `valid · ${st.days} d`) :
+        l('sem data', 'no date');
+      return (
+        <>
+          <Text style={s.note}>{l('As tuas validades e o que está a expirar. Geres em Perfil → Validades.', 'Your documents and what\'s expiring. Manage in Profile → Currency.')}</Text>
+          {list.map((v, i) => {
+            const st = v.st || validityStatus(v.expiry);
+            return <Row key={i} k={validityLabel(v.type, raw.isPilot, lang)} v={bandTxt(st)} color={bandColor(st.band)} />;
+          })}
         </>
       );
     }

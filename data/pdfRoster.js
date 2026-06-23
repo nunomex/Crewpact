@@ -74,6 +74,10 @@ export function parseEasyjetRoster(text, company) {
     const kind = classifyDay(blob, routes, flights, codes);
 
     if (kind === 'flight') {
+      // Nº de voo por leg: o RE_ROUTE já filtra same-airport (ex.: o "LIS-LIS" do
+      // standby), por isso `flights` e `routes` ficam alinhados nos dias mistos.
+      // GUARDA: só ato se as contagens baterem — um nº errado → API errada no "ao vivo".
+      const numbered = flights.length === routes.length;
       const legs = routes.map((r, i) => {
         const lt = legTimes[i];
         const depTime = lt ? lt.off : null;
@@ -81,7 +85,7 @@ export function parseEasyjetRoster(text, company) {
         const startDate = depTime ? mkDate(b.iso, depTime) : null;
         let endDate = arrTime ? mkDate(b.iso, arrTime) : null;
         if (startDate && endDate && endDate < startDate) endDate = new Date(endDate.getTime() + 86400000); // overnight
-        return { depAirport: r[0], arrAirport: r[1], depTime, arrTime, startDate, endDate, report: i === 0 ? report : null };
+        return { flightNo: numbered ? (flights[i] || null) : null, depAirport: r[0], arrAirport: r[1], depTime, arrTime, startDate, endDate, report: i === 0 ? report : null };
       });
       if (legs.length) {
         activities.push({ dateISO: b.iso, sectors: legs.length, legs });

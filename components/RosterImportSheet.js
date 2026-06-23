@@ -114,7 +114,7 @@ export default function RosterImportSheet({ visible, onClose }) {
         saveDuty(c.duty.duty_date, {
           report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
           sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
-          kind: c.kind, nightStop: false, source: src, snap,
+          kind: c.kind, nightStop: false, source: src, snap, legs: c.duty.legs || null,
         });
         if (c.status === 'warn') warn++;
       }

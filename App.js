@@ -45,6 +45,7 @@ import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import ValidadesScreen    from './screens/ValidadesScreen';
 import SearchModal        from './components/SearchModal';
 import ConfirmDialog       from './components/ConfirmDialog';
 import { LinearGradient }  from 'expo-linear-gradient';
@@ -228,6 +229,16 @@ function FloatingTabBar({ state, navigation }) {
   );
 }
 
+// Perfil — definições + sub-ecrãs próprios (ex.: Validades & Documentos, premium).
+function PerfilStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PerfilMain" component={SettingsScreen} />
+      <Stack.Screen name="Validades"  component={ValidadesScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
@@ -235,7 +246,7 @@ function MainTabs() {
       <Tab.Screen name="Início" component={HomeStack} />
       <Tab.Screen name="Escala" component={EscalaStack} />
       <Tab.Screen name="FTL"    component={FtlStack} />
-      <Tab.Screen name="Perfil" component={SettingsScreen} />
+      <Tab.Screen name="Perfil" component={PerfilStack} />
     </Tab.Navigator>
   );
 }
@@ -285,6 +296,7 @@ export default function App() {
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
   const [aeExtras, setAeExtras] = useState({});              // Extras do mês AE { "YYYY-MM": { <id>: n } } — partilhado por Home/Perfil/Cálculos
+  const [validities, setValidities] = useState([]);          // Validades & docs (premium v1) — local: [{ id, type, expiry, note }]
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
@@ -360,10 +372,12 @@ export default function App() {
           route: fields.route || null,        // rota "LIS-OPO-LIS" (per diem AE)
           kind: fields.kind || 'flight',      // tipo de atividade (voo/standby/terra…)
           nightStop: !!fields.nightStop,      // paragem nocturna (abono AE, Art. 39)
-          // ORIGEM imutável + SNAPSHOT (Fase 4): só mudam se vierem nos fields (import);
-          // a edição manual NÃO os toca → uma importada editada continua 'calendar'.
+          // ORIGEM imutável + SNAPSHOT (Fase 4) + LEGS (nº de voo p/ "ao vivo"): só mudam
+          // se vierem nos fields (import); a edição manual NÃO lhes toca → uma importada
+          // editada continua 'calendar' e mantém os números de voo.
           source: fields.source !== undefined ? fields.source : (ex?.source || 'manual'),
           snap: ('snap' in fields) ? fields.snap : (ex?.snap ?? null),
+          legs: ('legs' in fields) ? fields.legs : (ex?.legs ?? null),
           duty_date: date,
           updated_at: new Date().toISOString(),
           dirty: true,
@@ -405,7 +419,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -540,21 +554,23 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setLoadedUserId(null); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setValidities([]); setLoadedUserId(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
           AsyncStorage.getItem(`cp_profile_${user.id}`),
           AsyncStorage.getItem('cp_airlines'),
           AsyncStorage.getItem(`cp_ae_extras_${user.id}`),
+          AsyncStorage.getItem(`cp_validities_${user.id}`),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         try { setAeExtras(ax ? (JSON.parse(ax) || {}) : {}); } catch { setAeExtras({}); }   // extras do mês AE
+        try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
         if (al) setAirlines(JSON.parse(al));
         fetchAirlines().then(fresh => {
@@ -599,6 +615,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
   // Duties: cache local instantânea → merge com o servidor (histórico). Pendentes
@@ -620,13 +637,13 @@ export default function App() {
         for (const row of server) {
           const cur = merged[row.duty_date];
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
-          // roster_meta (Fase 4): JSON { source, snap } — origem + snapshot da escala.
-          let source = 'manual', snap = null;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; } } catch { /* meta inválida */ }
+          // roster_meta (Fase 4): JSON { source, snap, legs } — origem + snapshot + nº de voo.
+          let source = 'manual', snap = null, legs = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -724,12 +741,18 @@ export default function App() {
     return () => sub.remove();
   }, [checkRosterChanges]);
 
+  // Validades & documentos (premium v1) — CRUD local simples.
+  const addValidity = (item) => setValidities((prev) => [...prev, { id: `v${Date.now().toString(36)}${prev.length}`, ...item }]);
+  const updateValidity = (id, patch) => setValidities((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  const removeValidity = (id) => setValidities((prev) => prev.filter((v) => v.id !== id));
+
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
     airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, ae, caps,
     aeExtras, setAeExtras,
+    validities, addValidity, updateValidity, removeValidity,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,

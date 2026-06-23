@@ -73,6 +73,7 @@ function mapFlight(ev, codes) {
   const start = new Date(ev.startDate);
   const finish = new Date(ev.endDate);
   const route = text.match(RE_ROUTE);
+  const flt = codes.flightNo ? text.match(codes.flightNo) : null;   // nº de voo (p/ reconcile "ao vivo")
   const times = text.match(RE_TIMES);
   const ac = text.match(RE_AC);
   const reg = text.match(RE_REG);
@@ -86,6 +87,7 @@ function mapFlight(ev, codes) {
 
   return {
     kind: 'flight',
+    flightNo: flt ? flt[0].toUpperCase().replace(/\s+/g, '') : null,
     dateISO: isoLocal(start),
     date: fmtDate(start),
     report: hhmm(report),

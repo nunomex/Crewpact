@@ -290,6 +290,16 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </Animated.View>
 
+        {/* Pro — Validades & Documentos (radar de validades: médico/recorrentes/licença) */}
+        <Animated.View style={seg(5)}>
+          <Text style={s.gt}>Pro</Text>
+          <View style={s.gbox}>
+            <Row icon="shield-checkmark-outline" label={l('Validades & Documentos', 'Currency & Documents')}
+              sub={l('Médico, recorrentes, licença… com estado e datas', 'Medical, recurrents, licence… with status & dates')}
+              onPress={() => navigation.navigate('Validades')} last s={s} C={C} />
+          </View>
+        </Animated.View>
+
         {/* Os meus dados (RGPD) — exportar */}
         <Animated.View style={seg(5)}>
           <Text style={s.gt}>{l('Os meus dados', 'My data')}</Text>

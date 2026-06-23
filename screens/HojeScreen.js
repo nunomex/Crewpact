@@ -29,7 +29,7 @@ export default function HojeScreen({ navigation }) {
   const ctx = {
     ftlSnap: ctxAll.ftlSnap, dayLog: ctxAll.dayLog, duties: ctxAll.duties, rosterChanges: ctxAll.rosterChanges,
     ae: ctxAll.ae, crewCategory: ctxAll.crewCategory, crewContract: ctxAll.crewContract, aeExtras: ctxAll.aeExtras,
-    todayISO: isoDay(),
+    validities: ctxAll.validities, isPilot: ctxAll.isPilot, todayISO: isoDay(),
   };
   const items = buildTodayItems(ctx, lang);
 

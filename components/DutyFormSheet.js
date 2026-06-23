@@ -249,6 +249,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
               <View style={{ marginTop: 12 }}>
                 <ClockField C={C} s={s} label={t('ftl.flightTime', lang)} value={form.flight} onChange={(v) => setForm((f) => ({ ...f, flight: v }))} />
               </View>
+              <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Vários setores? É a SOMA do block de cada voo — não fim − início do dia (isso incluiria os turnarounds no chão).', 'Multiple sectors? It\'s the SUM of each flight\'s block — not end − start of day (that would include ground turnarounds).')}</Text>
               {prospect ? (
                 <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn, { marginTop: 14 }]}>
                   <View style={s.projHead}>
