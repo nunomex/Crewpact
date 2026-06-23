@@ -14,7 +14,9 @@
       "PowerShell(npx expo start --tunnel --go --port 8092)",
       "Read(//d/d/PROJECTOS/CrewPact/node_modules/@expo/ngrok/**)",
       "Read(//d/d/PROJECTOS/CrewPact/node_modules/@expo/**)",
-      "PowerShell(npx expo start --go)"
+      "PowerShell(npx expo start --go)",
+      "PowerShell($env:ANDROID_HOME=$null; $env:ANDROID_SDK_ROOT=$null; npx expo start --tunnel --go --port 8093)",
+      "PowerShell($env:ANDROID_HOME=\"D:\\\\Android\\\\Sdk\"; $env:ANDROID_SDK_ROOT=\"D:\\\\Android\\\\Sdk\"; $env:Path += \";D:\\\\Android\\\\Sdk\\\\platform-tools\"; npx expo start --tunnel --go --port 8094)"
     ]
   }
 }
