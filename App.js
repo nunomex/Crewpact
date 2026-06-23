@@ -37,6 +37,8 @@ import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
 import HomeScreen         from './screens/HomeScreen';
+import HojeScreen         from './screens/HojeScreen';
+import HojeDetailScreen   from './screens/HojeDetailScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
@@ -65,6 +67,17 @@ export { AppContext, isoDay, useTheme };
 // Bloqueio biometria/PIN (opt-in): re-tranca a app ao voltar de segundo plano
 // se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Hoje — quadro de respostas (pergunta → resposta + "como cheguei aqui") num só lugar.
+// O detalhe abre DENTRO desta aba (não encaminha para outras), por isso é um stack.
+function HojeStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HojeMain"   component={HojeScreen} />
+      <Stack.Screen name="HojeDetail" component={HojeDetailScreen} />
+    </Stack.Navigator>
+  );
+}
 
 function HomeStack() {
   return (
@@ -113,7 +126,8 @@ function FloatingTabBar({ state, navigation }) {
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
-    'Início': ['home', 'home-outline'],
+    'Hoje':   ['home', 'home-outline'],
+    'Início': ['pulse', 'pulse-outline'],
     'Escala': ['calendar', 'calendar-outline'],
     'FTL':    ['time', 'time-outline'],
     'Perfil': ['person', 'person-outline'],
@@ -178,7 +192,7 @@ function FloatingTabBar({ state, navigation }) {
             const [on, off] = ICON[route.name];
             return (
               <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
+                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Hoje' ? 'today' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
                 <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.6)'} />
@@ -198,7 +212,7 @@ function FloatingTabBar({ state, navigation }) {
             </View>
             <TouchableOpacity style={[tbar.mini, SHADOW.md, { backgroundColor: a.danger ? C.red : C.ink }]}
               activeOpacity={0.85} onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
-              <Ionicons name={a.icon} size={20} color="#fff" />
+              <Ionicons name={a.icon} size={22} color="#fff" />
             </TouchableOpacity>
           </Animated.View>
         ))}
@@ -217,6 +231,7 @@ function FloatingTabBar({ state, navigation }) {
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
+      <Tab.Screen name="Hoje"   component={HojeStack} />
       <Tab.Screen name="Início" component={HomeStack} />
       <Tab.Screen name="Escala" component={EscalaStack} />
       <Tab.Screen name="FTL"    component={FtlStack} />
@@ -233,12 +248,14 @@ const tbar = StyleSheet.create({
   // A cor (C.scrim) é aplicada inline (vem do tema, não cabe no StyleSheet estático).
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   scrimFill: { flex: 1 },
-  // Dock (esquerda) + FAB (direita), separados como o mockup — mas maiores.
-  wrap: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  // Dock escuro — 4 ícones, ponto vermelho na ativa
-  dock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 26, paddingHorizontal: 8 },
+  // Dock (esquerda) estica até encostar-se ao FAB (direita, em fabAnchor). O `right`
+  // = FAB (right 20 + largura 64) + folga 16 (GUTTER) → o dock acaba 16px antes do FAB,
+  // em qualquer largura de ecrã (responsivo, em vez do antigo buraco de ~46px).
+  wrap: { position: 'absolute', left: 20, right: 100, flexDirection: 'row', alignItems: 'center' },
+  // Dock escuro — 4 ícones, ponto vermelho na ativa. flex:1 → preenche o `wrap`.
+  dock: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 26, paddingHorizontal: 8 },
   dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.42, shadowRadius: 26, elevation: 14 },
-  tb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+  tb: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
   tbHi: { position: 'absolute', width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
   tbDot: { position: 'absolute', bottom: 8, width: 4, height: 4, borderRadius: 2 },
   // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
@@ -251,7 +268,7 @@ const tbar = StyleSheet.create({
   miniRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   miniLabel: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, marginRight: 12 },
   miniLabelTxt: { fontFamily: FONT.semibold, fontSize: TYPE.label },
-  mini: { width: 52, height: 52, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  mini: { width: 56, height: 56, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
 });
 
 export default function App() {

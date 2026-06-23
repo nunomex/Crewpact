@@ -1,6 +1,5 @@
 import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { FONT } from '../data/constants';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
@@ -9,7 +8,8 @@ import { t } from '../data/i18n';
 // Roda da Escala (mockup): carrossel vertical de dias do mês, com snap nativo.
 // O dia CENTRADO = selecionado (número em círculo vermelho), banda de fundo, e
 // esbatimento das linhas com a distância ao centro. Cartão de detalhe por baixo.
-// É uma VISTA (browse rápido); editar/import/PDF continuam na Lista (toggle).
+// Tocar no dia CENTRADO abre o formulário (editar/inserir); o cartão por baixo é só
+// de leitura. Import/PDF continuam na Lista (toggle).
 const ROWH = 58;
 const VISIBLE = 5;
 const WH = ROWH * VISIBLE; // 290
@@ -110,8 +110,12 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
           {days.map((d, i) => {
             const op = Math.max(0.08, 1 - Math.abs(i - sel) * 0.38); // fade simétrico (mockup: .25/.6/1/.6/.25)
             const on = i === sel;
+            // Só o dia CENTRADO é tocável → abre o formulário (editar/inserir); os
+            // outros dias só rolam. O cartão por baixo da roda é só de leitura.
+            const RowComp = on ? TouchableOpacity : View;
             return (
-              <View key={d.iso} style={[s.row, { opacity: op }]}>
+              <RowComp key={d.iso} style={[s.row, { opacity: op }]}
+                {...(on ? { activeOpacity: 0.7, onPress: () => onAddDuty && onAddDuty(d.iso) } : {})}>
                 <View style={s.fl}>
                   {d.flight ? (
                     <>
@@ -125,21 +129,20 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
                   : <Text style={[s.num, d.isToday && s.numToday]}>{d.day}</Text>}
                 <Text style={[s.wd, on && s.wdOn]}>{d.wd}</Text>
                 <View style={[s.dot, !d.flight && { opacity: 0 }]} />
-              </View>
+              </RowComp>
             );
           })}
         </ScrollView>
       </View>
 
-      {/* Detalhe do dia centrado — toca para inserir/editar */}
-      <TouchableOpacity style={s.det} activeOpacity={0.9} onPress={() => onAddDuty && onAddDuty(cur.iso)}>
+      {/* Detalhe do dia centrado — SÓ LEITURA (editar = tocar no dia na roda, ou na Lista) */}
+      <View style={s.det}>
         <View style={s.detHead}>
           <View style={[s.dc, !cur.flight && s.dcOff]}><Text style={[s.dcTxt, !cur.flight && s.dcTxtOff]}>{cur.day}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={s.detTitle} numberOfLines={1}>{cur.flight ? actLabel(cur.flight) : l('Folga', 'Day off')}</Text>
             <Text style={s.detSub}>{cur.wd} · {cur.day} {curMonthName}{cur.isToday ? ` · ${t('cal.today', lang)}` : ''}{cur.fromCal ? ` · ${l('do calendário', 'from calendar')}` : ''}</Text>
           </View>
-          <Ionicons name={cur.flight ? 'create-outline' : 'add'} size={18} color={C.sub} />
         </View>
         <View style={s.detBody}>
           {cur.flight ? (
@@ -157,7 +160,7 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
             {l('Local', 'Local')} {cur.flight.report_time || '—'}{cur.flight.block_on ? `–${cur.flight.block_on}` : ''}  ·  Zulu {toZulu(cur.iso, cur.flight.report_time) || '—'}Z{cur.flight.block_on ? `–${toZulu(cur.iso, cur.flight.block_on)}Z` : ''}
           </Text>
         ) : null}
-      </TouchableOpacity>
+      </View>
     </View>
   );
 }

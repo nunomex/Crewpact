@@ -1,0 +1,85 @@
+// "Hoje" — respostas DETERMINÍSTICAS às perguntas que um tripulante quer ao entrar.
+// Compõe os motores (ftl/ae) e devolve dados ESTRUTURADOS (status + números + a
+// DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
+// formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
+// "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
+import { computeDutyTime, computeFlightTime } from '../ftl';
+import { monthlyAe, aeMonthTotal } from './perdiem';
+
+const hasFtlData = (dayLog) =>
+  Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0));
+
+const worstByRatio = (windows) =>
+  windows.reduce((a, b) => (b.ratio > a.ratio ? b : a), { ratio: -1 });
+
+// "Estou legal?" — ilegal se o PSV de hoje excede o máximo OU se alguma janela
+// cumulativa está acima do limite. Devolve também psv + todas as janelas (p/ o detalhe).
+export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
+  const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)];
+  const psv = ftlSnap?.psv || null;
+  const psvData = psv ? { result: psv.result, max: psv.max, over: !!psv.over, excess: psv.excess ?? null } : null;
+  if (psv && psv.over) return { id: 'legal', status: 'bad', kind: 'psvOver', excess: psv.excess ?? null, psv: psvData, windows };
+  const overWin = windows.find((w) => w.over);
+  if (overWin) return { id: 'legal', status: 'bad', kind: 'limitOver', cat: overWin.key, windowId: overWin.id, days: overWin.days, psv: psvData, windows };
+  if (!hasFtlData(dayLog) && !psv) return { id: 'legal', status: 'neutral', kind: 'noData', psv: psvData, windows };
+  return { id: 'legal', status: 'ok', kind: 'legal', psv: psvData, windows };
+}
+
+// "Quanto me falta para o limite?" — pior janela por rácio + todas as janelas com a
+// folga (limite − feito) calculada, para o detalhe mostrar a tabela completa.
+export function headroomStatus(dayLog = {}, ref = new Date()) {
+  const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)]
+    .map((w) => ({ ...w, headroom: Math.max(0, w.limit - w.done) }));
+  if (!hasFtlData(dayLog)) return { id: 'headroom', status: 'neutral', kind: 'noData', windows };
+  const w = worstByRatio(windows);
+  const status = w.ratio >= 1 ? 'bad' : w.ratio >= 0.85 ? 'warn' : 'ok';
+  return {
+    id: 'headroom', status, cat: w.key, windowId: w.id, days: w.days,
+    done: w.done, limit: w.limit, headroom: Math.max(0, w.limit - w.done), ratio: w.ratio, windows,
+  };
+}
+
+// "Quando trabalho?" — próximo serviço do store `duties` (>= hoje, não apagado).
+export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
+  let best = null;
+  for (const iso in duties) {
+    const d = duties[iso];
+    if (!d || d.deleted || iso < todayISO) continue;
+    if (!best || iso < best.iso) best = { iso, d };
+  }
+  if (!best) return { id: 'next', status: 'neutral', none: true };
+  const { iso, d } = best;
+  return {
+    id: 'next', status: 'neutral', iso, report: d.report_time || null, blockOff: d.block_off || null, blockOn: d.block_on || null,
+    route: d.route || null, kind: d.kind || 'flight', sectors: d.sectors || null, nightStop: !!d.nightStop,
+  };
+}
+
+// "Mudou a escala?" — alterações detetadas (Fase 4): contagens + as próprias listas.
+export function rosterStatus(rosterChanges) {
+  const counts = rosterChanges?.counts || {};
+  const changed = rosterChanges?.changed || [];
+  const conflict = rosterChanges?.conflict || [];
+  const added = rosterChanges?.added || [];
+  const removed = rosterChanges?.removed || [];
+  const base = { id: 'roster', counts, changed, conflict, added, removed };
+  if (!counts.total) return { ...base, status: 'ok', kind: 'none' };
+  return { ...base, status: 'info' };
+}
+
+// "Quanto recebo?" — total estimado do mês + a decomposição (só companhias AE).
+export function payStatus({ duties = {}, ae, crewCategory, crewContract, aeExtras, now = new Date() } = {}) {
+  if (!ae || !crewCategory) return null;
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const index = ae.indexFactor ? ae.indexFactor(now.getFullYear()) : 1;
+  const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index });
+  const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
+  const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {} }) || base;
+  return {
+    id: 'pay', status: 'neutral', base, total, variable: +(total - base).toFixed(2),
+    perDiem: m ? m.perDiem : 0, nightStops: m ? m.nightStops : 0, extras: m ? m.extras : 0,
+    manualExtras: +(total - (m ? m.total : base)).toFixed(2),
+    meta: m ? { withRoute: m.withRoute, missing: m.missing, count: m.count, officeDays: m.officeDays, adtyDays: m.adtyDays, nightStopDays: m.nightStopDays } : null,
+    expired: !!(ae.isAgreementExpired && ae.isAgreementExpired(now)), contract: crewContract || '12/12', ym,
+  };
+}
