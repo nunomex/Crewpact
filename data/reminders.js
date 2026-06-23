@@ -1,34 +1,51 @@
 // Lembretes LOCAIS (sem servidor) — validades a expirar + report do próximo serviço +
-// alteração de escala. Usa expo-notifications (MÓDULO NATIVO → só corre em DEV BUILD,
-// não em Expo Go). Tudo agendado no dispositivo; nada sai para fora (RGPD-friendly).
+// alteração de escala. Usa expo-notifications (MÓDULO NATIVO → só funciona em DEV BUILD
+// com o módulo compilado; em Expo Go ou num build antigo NÃO há nativo).
+//
+// ROBUSTO: o expo-notifications é carregado PREGUIÇOSAMENTE e dentro de try/catch. Assim,
+// num build/ambiente SEM o módulo nativo a app NÃO crasha — os lembretes ficam inativos
+// (as funções no-op) até reconstruíres o dev build. Tudo local → RGPD-friendly.
 // ⚠️ A forma do `trigger` pode precisar de ajuste fino no dev build conforme a versão.
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { validityLabel } from './validities';
 
-// Mostrar a notificação mesmo com a app aberta. Inclui chaves novas (banner/list) e a
-// antiga (alert) para ser robusto entre versões do expo-notifications.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowAlert: true, shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
-});
+let _N;                 // undefined = ainda não tentado · null = indisponível · módulo = ok
+let _handlerSet = false;
+// Carrega o expo-notifications só quando preciso, sem rebentar se o nativo faltar.
+function N() {
+  if (_N !== undefined) return _N;
+  try {
+    _N = require('expo-notifications');
+    if (_N && !_handlerSet) {
+      _N.setNotificationHandler({
+        handleNotification: async () => ({ shouldShowAlert: true, shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+      });
+      _handlerSet = true;
+    }
+  } catch { _N = null; }
+  return _N;
+}
 
 let channelReady = false;
 async function ensureChannel() {
-  if (Platform.OS !== 'android' || channelReady) return;
+  const n = N();
+  if (!n || Platform.OS !== 'android' || channelReady) return;
   try {
-    await Notifications.setNotificationChannelAsync('reminders', {
-      name: 'Lembretes', importance: (Notifications.AndroidImportance && Notifications.AndroidImportance.DEFAULT) || 3,
+    await n.setNotificationChannelAsync('reminders', {
+      name: 'Lembretes', importance: (n.AndroidImportance && n.AndroidImportance.DEFAULT) || 3,
     });
   } catch { /* noop */ }
   channelReady = true;
 }
 
-// Pede permissão (idempotente). Devolve true se concedida.
+// Pede permissão (idempotente). Devolve true se concedida (false se sem módulo nativo).
 export async function requestRemindersPermission() {
+  const n = N();
+  if (!n) return false;
   try {
-    const cur = await Notifications.getPermissionsAsync();
+    const cur = await n.getPermissionsAsync();
     let granted = cur.granted || cur.status === 'granted';
-    if (!granted) { const req = await Notifications.requestPermissionsAsync(); granted = req.granted || req.status === 'granted'; }
+    if (!granted) { const req = await n.requestPermissionsAsync(); granted = req.granted || req.status === 'granted'; }
     if (granted) await ensureChannel();
     return granted;
   } catch { return false; }
@@ -38,9 +55,10 @@ const atHM = (h, m, base) => { const d = new Date(base); d.setHours(h, m, 0, 0);
 const fmtD = (iso, lang) => new Date(iso + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'short' });
 
 async function schedule(when, title, body, data) {
-  if (!when || when.getTime() <= Date.now()) return;   // só futuro
+  const n = N();
+  if (!n || !when || when.getTime() <= Date.now()) return;   // sem módulo ou já passou
   try {
-    await Notifications.scheduleNotificationAsync({
+    await n.scheduleNotificationAsync({
       content: { title, body, data, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
       trigger: { type: 'date', date: when },
     });
@@ -49,10 +67,9 @@ async function schedule(when, title, body, data) {
 
 // Reagenda TODOS os lembretes (validades + report). Cancela os antigos primeiro.
 export async function syncReminders({ validities = [], isPilot, duties = {}, todayISO, lang = 'pt' } = {}) {
-  try {
-    await ensureChannel();
-    await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch { /* noop */ }
+  const n = N();
+  if (!n) return;
+  try { await ensureChannel(); await n.cancelAllScheduledNotificationsAsync(); } catch { /* noop */ }
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   // ── Validades: 30 d e 7 d antes (09:00) + no dia (09:00) ──
@@ -91,6 +108,8 @@ export async function syncReminders({ validities = [], isPilot, duties = {}, tod
 
 // Alteração de escala detetada → notificação IMEDIATA (o caller faz o dedupe).
 export async function notifyRosterChange(counts = {}, lang = 'pt') {
+  const n = N();
+  if (!n) return;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ch = (counts.changed || 0) + (counts.conflict || 0);
   const parts = [
@@ -100,7 +119,7 @@ export async function notifyRosterChange(counts = {}, lang = 'pt') {
   ].filter(Boolean).join(' · ');
   try {
     await ensureChannel();
-    await Notifications.scheduleNotificationAsync({
+    await n.scheduleNotificationAsync({
       content: { title: l('Escala alterada', 'Roster changed'), body: `${parts}. ${l('Toca para rever.', 'Tap to review.')}`, data: { kind: 'roster' }, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
       trigger: null,   // já
     });
@@ -108,5 +127,7 @@ export async function notifyRosterChange(counts = {}, lang = 'pt') {
 }
 
 export async function cancelAllReminders() {
-  try { await Notifications.cancelAllScheduledNotificationsAsync(); } catch { /* noop */ }
+  const n = N();
+  if (!n) return;
+  try { await n.cancelAllScheduledNotificationsAsync(); } catch { /* noop */ }
 }
