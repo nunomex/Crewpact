@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hoje · 4 estilos para escolher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA;
+    --red:#F5402C; --redsoft:#FDE9E4; --grey:#C2C2C0; --sub:#6B6B66;
+    --green:#1F9E6E; --greensoft:#E2F4EC; --warn:#E8932B; --warnsoft:#FBEAD2;
+    --f:"Inter",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--f);background:#E7E8EA;color:#23262B;padding:48px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 700px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:760px;margin:0 auto 30px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--red);margin-bottom:12px}
+  .intro h1{font-weight:700;font-size:34px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14.5px;line-height:1.6;color:#5C616A}
+  .row{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:50px 40px;justify-content:center;max-width:1500px;margin:30px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:300px}
+  figcaption b{font-weight:800;font-size:16px;color:var(--ink);display:inline-flex;align-items:center;gap:8px}
+  figcaption b em{font-style:normal;font-size:11px;font-weight:800;color:#fff;background:var(--ink);border-radius:7px;padding:3px 8px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72;margin-top:7px}
+
+  .phone{width:328px;height:710px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--paper);border-radius:38px;overflow:hidden;position:relative}
+  .island{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .hdr{padding:52px 20px 14px}
+  .hdr .e{font-weight:800;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px}
+  .hdr .e i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .hdr h2{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink);margin-top:10px}
+  .body{padding:6px 18px;overflow:hidden;height:calc(100% - 132px)}
+  .d{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .green{background:var(--green)} .amber{background:var(--warn)} .red{background:var(--red)} .ink{background:var(--ink)}
+
+  /* ---- A · Atual ---- */
+  .a .card{border:1px solid var(--line);border-radius:18px;padding:14px 15px;margin-bottom:10px;background:#fff}
+  .a .ch{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .a .q{flex:1;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+  .a .cv{color:var(--grey);font-weight:700}
+  .a .ans{font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.01em}
+  .a .ans b{font-variant-numeric:tabular-nums}
+  .a .sug{display:flex;gap:7px;background:var(--soft2);border-radius:11px;padding:9px 10px;margin-top:10px;font-weight:600;font-size:11px;color:var(--sub)}
+
+  /* ---- B · Readout ---- */
+  .b .card{border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:10px;background:#fff}
+  .b .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .b .q{font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+  .b .big{font-weight:700;font-size:34px;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .b .big.green{color:var(--green)} .b .big.amber{color:var(--warn)} .b .big.ink{color:var(--ink)}
+  .b .big .u{font-size:16px;color:var(--grey);font-weight:700;letter-spacing:0}
+  .b .ctx{font-weight:600;font-size:12px;color:var(--sub);margin-top:6px}
+
+  /* ---- C · Lista compacta ---- */
+  .c .lrow{display:flex;align-items:center;gap:11px;padding:14px 4px;border-top:1px solid var(--line)}
+  .c .lrow:first-child{border-top:none}
+  .c .lq{flex:1;font-weight:700;font-size:14px;color:var(--ink)}
+  .c .la{font-weight:800;font-size:13px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  .c .la.green{color:var(--green)} .c .la.amber{color:var(--warn)} .c .la.sub{color:var(--sub)}
+
+  /* ---- D · Cartão a cores ---- */
+  .d2 .tcard{border-radius:18px;padding:14px 15px;margin-bottom:10px;border:1px solid transparent}
+  .d2 .tcard.ok{background:var(--soft2);border-color:var(--line)}
+  .d2 .tcard.gr{background:var(--greensoft);border-color:#CCEBDD}
+  .d2 .tcard.wn{background:var(--warnsoft);border-color:#F2DDB6}
+  .d2 .tq{font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:7px;display:flex;align-items:center;gap:8px}
+  .d2 .ta{font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .d2 .tsug{font-weight:600;font-size:11.5px;color:#7A6A45;margin-top:7px}
+  .d2 .tcard.gr .tq{color:#2A7A5C} .d2 .tcard.wn .tq{color:#9A6B1E}
+
+  /* ---- E · Colapsado ---- */
+  .e .erow{border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:9px;display:flex;align-items:center;gap:11px;background:#fff}
+  .e .erow .eq{flex:1;font-weight:700;font-size:15px;color:var(--ink)}
+  .e .erow .ecv{color:var(--grey);font-weight:800}
+  .e .erow.open{display:block;border-color:var(--ink);box-shadow:0 6px 16px -10px rgba(20,22,26,.3)}
+  .e .erow.open .otop{display:flex;align-items:center;gap:11px}
+  .e .erow.open .ea{font-weight:700;font-size:18px;color:var(--green);margin-top:9px;letter-spacing:-.01em}
+
+  /* ---- F · A + D (cor só onde é preciso) ---- */
+  .f .card{border:1px solid var(--line);border-radius:18px;padding:14px 15px;margin-bottom:10px;background:#fff}
+  .f .card.wn{background:var(--warnsoft);border-color:#F2DDB6}
+  .f .card.rd{background:var(--redsoft);border-color:#F6CFC7}
+  .f .ch{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .f .q{flex:1;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+  .f .card.wn .q{color:#9A6B1E} .f .card.rd .q{color:#9A4034}
+  .f .cv{color:var(--grey);font-weight:700}
+  .f .ans{font-weight:700;font-size:18px;color:var(--ink);letter-spacing:-.01em}
+  .f .ans b{font-variant-numeric:tabular-nums}
+  .f .sug{display:flex;gap:7px;background:rgba(255,255,255,.6);border-radius:11px;padding:9px 10px;margin-top:10px;font-weight:600;font-size:11px;color:#7A6A45}
+
+  .dock{position:absolute;left:16px;right:16px;bottom:20px;display:flex;justify-content:space-around;height:54px;background:var(--ink);border-radius:22px;align-items:center;z-index:40}
+  .dock i{width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,.3)} .dock i.on{background:#fff}
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">Hoje · escolher o estilo</div>
+    <h1>6 maneiras de mostrar o Hoje</h1>
+    <p>A–D mostram a resposta logo; E esconde-a (abres cada uma); <b>F = A + D</b> (limpo, mas só pinta o que precisa de atenção — a minha recomendação ★). Vê qual gostas e diz-me a letra.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- A -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body a">
+        <div class="card"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites · <b>PSV 10:00/12:00</b></div></div>
+        <div class="card"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta p/ limites?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · <b>faltam 5 h de 60 h</b></div><div class="sug">💡 Estás a 92% — um serviço longo pode ultrapassar.</div></div>
+        <div class="card"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · <b>06:05</b> · LIS-LGW</div></div>
+        <div class="card"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans"><b>8 923 €</b> · este mês</div></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>A <em>Atual</em></b><p>O que tens hoje: pergunta pequena + resposta. Familiar, equilibrado.</p></figcaption></figure>
+
+    <!-- B -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body b">
+        <div class="card"><div class="top"><span class="q">Estou legal?</span><span class="d green"></span></div><div class="big green">Sim</div><div class="ctx">PSV 10:00 / 12:00</div></div>
+        <div class="card"><div class="top"><span class="q">Quanto falta p/ limites?</span><span class="d amber"></span></div><div class="big amber">5 h<span class="u"> / 60h</span></div><div class="ctx">serviço 7 dias · 92%</div></div>
+        <div class="card"><div class="top"><span class="q">Quando trabalho?</span><span class="d ink"></span></div><div class="big ink" style="font-size:26px">06:05</div><div class="ctx">amanhã · LIS-LGW · 2 setores</div></div>
+        <div class="card"><div class="top"><span class="q">Quanto recebo?</span><span class="d ink"></span></div><div class="big ink" style="font-size:28px">8 923 €</div><div class="ctx">este mês (estimativa)</div></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>B <em>Readout</em></b><p>O número-chave GIGANTE e a cor do estado. Leitura de instrumento — o que importa salta à vista.</p></figcaption></figure>
+
+    <!-- C -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body c">
+        <div class="lrow"><span class="d green"></span><span class="lq">Estou legal?</span><span class="la green">Sim</span></div>
+        <div class="lrow"><span class="d amber"></span><span class="lq">Quanto falta?</span><span class="la amber">5 h / 60h</span></div>
+        <div class="lrow"><span class="d ink"></span><span class="lq">Tenho descanso?</span><span class="la green">12:00 ✓</span></div>
+        <div class="lrow"><span class="d ink"></span><span class="lq">Quando trabalho?</span><span class="la">amanhã 06:05</span></div>
+        <div class="lrow"><span class="d ink"></span><span class="lq">Mudou a escala?</span><span class="la sub">não</span></div>
+        <div class="lrow"><span class="d ink"></span><span class="lq">Quanto recebo?</span><span class="la">8 923 €</span></div>
+        <div class="lrow"><span class="d amber"></span><span class="lq">Validades?</span><span class="la amber">SEP 25 d</span></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>C <em>Lista</em></b><p>Tudo num relance, denso, sem cartões. Vês as 7 respostas sem fazer scroll.</p></figcaption></figure>
+
+    <!-- D -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body d2">
+        <div class="tcard gr"><div class="tq"><span class="d green"></span>Estou legal?</div><div class="ta">Sim, dentro dos limites</div></div>
+        <div class="tcard wn"><div class="tq"><span class="d amber"></span>Quanto falta?</div><div class="ta">5 h de 60 h · 92%</div><div class="tsug">💡 perto do limite</div></div>
+        <div class="tcard ok"><div class="tq"><span class="d ink"></span>Quando trabalho?</div><div class="ta">Amanhã 06:05 · LIS-LGW</div></div>
+        <div class="tcard ok"><div class="tq"><span class="d ink"></span>Quanto recebo?</div><div class="ta">8 923 € · este mês</div></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>D <em>A cores</em></b><p>O cartão inteiro pinta-se pelo estado (verde/âmbar). O semáforo grita — bom para ver perigo rápido.</p></figcaption></figure>
+
+    <!-- E -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body e">
+        <div class="erow"><span class="d green"></span><span class="eq">Estou legal?</span><span class="ecv">›</span></div>
+        <div class="erow"><span class="d amber"></span><span class="eq">Quanto falta?</span><span class="ecv">›</span></div>
+        <div class="erow open"><div class="otop"><span class="d ink"></span><span class="eq">Tenho descanso?</span><span class="ecv">⌄</span></div><div class="ea">Sim · 12:00 antes do report</div></div>
+        <div class="erow"><span class="d ink"></span><span class="eq">Quando trabalho?</span><span class="ecv">›</span></div>
+        <div class="erow"><span class="d ink"></span><span class="eq">Quanto recebo?</span><span class="ecv">›</span></div>
+        <div class="erow"><span class="d amber"></span><span class="eq">Validades?</span><span class="ecv">›</span></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>E <em>Colapsado</em></b><p>Só as perguntas; abres cada uma para ver a resposta (a 3ª está aberta como exemplo). Mais limpo — mas perdes o "num relance" (tens de tocar).</p></figcaption></figure>
+
+    <!-- F · A + D -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+      <div class="body f">
+        <div class="card"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites · <b>PSV 10:00/12:00</b></div></div>
+        <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta p/ limites?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · <b>5 h de 60 h</b></div><div class="sug">💡 92% — um serviço longo pode ultrapassar.</div></div>
+        <div class="card"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · <b>06:05</b> · LIS-LGW</div></div>
+        <div class="card rd"><div class="ch"><span class="d red"></span><span class="q">Validades?</span><span class="cv">›</span></div><div class="ans" style="color:#C9331F">Dangerous Goods <b>expirado</b></div><div class="sug">💡 Renova com urgência.</div></div>
+        <div class="card"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans"><b>8 923 €</b> · este mês</div></div>
+      </div>
+      <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div><figcaption><b>F <em>A + D</em> ★</b><p>O A limpo, mas só os cartões com aviso/perigo ganham cor (âmbar/vermelho). Calmo por defeito, os problemas saltam. A minha recomendação.</p></figcaption></figure>
+
+  </div>
+  <div class="foot">CrewPact · Hoje — 4 estilos · paleta real · Inter</div>
+</body>
+</html>

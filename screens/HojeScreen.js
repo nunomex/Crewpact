@@ -24,7 +24,9 @@ export default function HojeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter();
 
-  const dotColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.sub);
+  // Estilo D2 ("faixa lateral"): cartão neutro (soft2) com uma risca de cor à
+  // esquerda pelo estado. A risca substitui o ponto — verde/âmbar/vermelho saltam.
+  const stripeColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.lineStrong);
 
   const ctx = {
     ftlSnap: ctxAll.ftlSnap, dayLog: ctxAll.dayLog, duties: ctxAll.duties, rosterChanges: ctxAll.rosterChanges,
@@ -44,9 +46,8 @@ export default function HojeScreen({ navigation }) {
 
         {items.map((it, i) => (
           <Animated.View key={it.id} style={seg(i + 1)}>
-            <TouchableOpacity activeOpacity={0.9} style={s.card} onPress={() => { select(); navigation.navigate('HojeDetail', { id: it.id }); }}>
+            <TouchableOpacity activeOpacity={0.9} style={[s.card, { borderLeftColor: stripeColor(it.status) }]} onPress={() => { select(); navigation.navigate('HojeDetail', { id: it.id }); }}>
               <View style={s.cardHead}>
-                <View style={[s.dot, { backgroundColor: dotColor(it.status) }]} />
                 <Text style={s.q} numberOfLines={1}>{it.q}</Text>
                 <Ionicons name="chevron-forward" size={16} color={C.sub} />
               </View>
@@ -73,11 +74,10 @@ const makeStyles = (C) => StyleSheet.create({
   intro: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: -4, marginBottom: SPACE.md },
 
   card: {
-    backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 16, marginBottom: 11,
+    backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: 20, padding: 16, paddingLeft: 13, marginBottom: 11,
     shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 3,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
-  dot: { width: 9, height: 9, borderRadius: RADIUS.pill, flexShrink: 0 },
   q: { flex: 1, fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub },
   answer: { fontSize: 19, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, lineHeight: 25 },
   sug: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 11, marginTop: 12 },

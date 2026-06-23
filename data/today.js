@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeRest } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 
 const hasFtlData = (dayLog) =>
@@ -53,6 +53,28 @@ export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
     id: 'next', status: 'neutral', iso, report: d.report_time || null, blockOff: d.block_off || null, blockOn: d.block_on || null,
     route: d.route || null, kind: d.kind || 'flight', sectors: d.sectors || null, nightStop: !!d.nightStop,
   };
+}
+
+// "Tenho descanso?" — repouso entre o FIM do serviço anterior e o REPORT do próximo, vs
+// o mínimo (ORO.FTL.235, na base = máx(12 h, duração do serviço anterior)). Consultivo.
+// status: 'ok' | 'bad' | 'neutral' (sem dados para calcular).
+export function restStatus(duties = {}, todayISO, _ref = new Date()) {
+  let next = null;
+  for (const iso in duties) { const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso < todayISO) continue; if (!next || iso < next.iso) next = { iso, d }; }
+  if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
+  let prev = null; // serviço IMEDIATAMENTE anterior (adjacência importa p/ o repouso)
+  for (const iso in duties) { const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso >= next.iso) continue; if (!prev || iso > prev.iso) prev = { iso, d }; }
+  if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
+  if (!prev.d.block_on) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
+  const dt = (iso, hm) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setHours(h || 0, m || 0, 0, 0); return x; };
+  const prevReport = dt(prev.iso, prev.d.report_time);
+  let prevEnd = dt(prev.iso, prev.d.block_on);
+  if (prevEnd.getTime() <= prevReport.getTime()) prevEnd = new Date(prevEnd.getTime() + 86400000); // serviço virou a meia-noite
+  const nextReport = dt(next.iso, next.d.report_time);
+  const prevDutyMin = Math.round((prevEnd.getTime() - prevReport.getTime()) / 60000);
+  const actualMin = Math.round((nextReport.getTime() - prevEnd.getTime()) / 60000);
+  const { restMin: requiredMin, floorMin } = computeRest({ prevDutyMin, inBase: true });
+  return { id: 'rest', status: actualMin < requiredMin ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin, prevIso: prev.iso, nextIso: next.iso };
 }
 
 // "Mudou a escala?" — alterações detetadas (Fase 4): contagens + as próprias listas.

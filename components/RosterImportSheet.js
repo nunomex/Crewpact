@@ -6,6 +6,8 @@ import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { parseEasyjetRoster } from '../data/pdfRoster';
+import { detectRecurrents } from '../data/recurrents';
+import { validityLabel } from '../data/validities';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -31,7 +33,7 @@ const demoCands = () => {
 // (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
 // parcial. Página inteira (Modal slide-up), no estilo da página de duty.
 export default function RosterImportSheet({ visible, onClose }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, validities, addValidity, updateValidity, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -46,6 +48,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   const [diag, setDiag] = useState(null);   // diagnóstico: o que o calendário (eCrew) tem
   const [pasteText, setPasteText] = useState('');
   const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do texto colado
+  const [pasteRecurrents, setPasteRecurrents] = useState([]);  // recorrentes detetados no PDF (v2.1) → propor validades
 
   const load = async (opt) => {
     setLoading(true); setDenied(false);
@@ -61,10 +64,10 @@ export default function RosterImportSheet({ visible, onClose }) {
   };
   useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source]); // eslint-disable-line react-hooks/exhaustive-deps
   // RGPD: ao fechar, descartar o texto colado (não fica nada em memória).
-  useEffect(() => { if (!visible) { setPasteText(''); setPasteDiag(null); } }, [visible]);
+  useEffect(() => { if (!visible) { setPasteText(''); setPasteDiag(null); setPasteRecurrents([]); } }, [visible]);
 
   // Trocar de fonte limpa o preview (não misturar resultados de calendário e colado).
-  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); };
+  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); setPasteRecurrents([]); };
 
   // Colar PDF: parse LOCAL do texto → mesmos candidatos do calendário. RGPD: nada
   // sai do dispositivo; o texto fica só no estado e é limpo ao fechar/limpar.
@@ -74,9 +77,10 @@ export default function RosterImportSheet({ visible, onClose }) {
     const r = parseEasyjetRoster(txt, company?.slug);
     setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog }));
     setPasteDiag(r.diag);
+    setPasteRecurrents(detectRecurrents(txt));   // v2.1 — recorrentes p/ propor validades no fim do import
     success();
   };
-  const clearPaste = () => { select(); setPasteText(''); setCands([]); setPasteDiag(null); };
+  const clearPaste = () => { select(); setPasteText(''); setCands([]); setPasteDiag(null); setPasteRecurrents([]); };
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
@@ -101,6 +105,15 @@ export default function RosterImportSheet({ visible, onClose }) {
   // Linha "antes → depois" dos campos que mudaram (candidatos 'changed').
   const diffLine = (c) => (c.diff || []).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt']} ${f.before == null || f.before === '' ? '—' : f.before}→${f.after == null || f.after === '' ? '—' : f.after}`).join('  ·  ');
 
+  // v2.1 — aplica os recorrentes detetados no PDF às Validades (add ou atualiza por tipo).
+  const applyRecurrents = (recs) => {
+    for (const r of recs) {
+      const existing = (validities || []).find((v) => v.type === r.vid);
+      if (existing) updateValidity(existing.id, { expiry: r.expiry });
+      else addValidity({ type: r.vid, expiry: r.expiry });
+    }
+  };
+
   const doImport = () => {
     if (!selected.length) return;
     const src = source === 'paste' ? 'pdf' : 'calendar';
@@ -121,12 +134,23 @@ export default function RosterImportSheet({ visible, onClose }) {
       success();
       const saved = selected.length - deletes.length;
       const ignored = shown.filter((c) => !c.selected).length;
-      Alert.alert(
-        l('Escala atualizada', 'Roster updated'),
-        l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
-          `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`),
-        [{ text: 'OK', onPress: onClose }],
-      );
+      const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
+        `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`);
+      // v2.1 — só no PDF: se houver recorrentes detetados, propõe atualizar as validades.
+      const recs = source === 'paste' ? pasteRecurrents : [];
+      if (recs && recs.length) {
+        const names = recs.map((r) => validityLabel(r.vid, isPilot, lang)).join(', ');
+        Alert.alert(
+          l('Escala atualizada', 'Roster updated'),
+          `${savedMsg}\n\n${l('Detetei recorrentes', 'Found recurrents')}: ${names}. ${l('Atualizar as validades?', 'Update your documents?')}`,
+          [
+            { text: l('Só a escala', 'Roster only'), onPress: onClose },
+            { text: l('Atualizar validades', 'Update documents'), onPress: () => { applyRecurrents(recs); onClose(); } },
+          ],
+        );
+      } else {
+        Alert.alert(l('Escala atualizada', 'Roster updated'), savedMsg, [{ text: 'OK', onPress: onClose }]);
+      }
     };
     // Confirmação só para o que é destrutivo: apagar cancelados ou sobrepor a tua edição.
     if (deletes.length || conflicts.length) {

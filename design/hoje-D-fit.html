@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hoje · estilo D · Cabine + Piloto · 5/6/7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA;
+    --red:#F5402C; --redsoft:#FDE9E4; --grey:#C2C2C0; --sub:#6B6B66;
+    --green:#1F9E6E; --greensoft:#E2F4EC; --warn:#E8932B; --warnsoft:#FBEAD2;
+    --f:"Inter",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--f);background:#E7E8EA;color:#23262B;padding:48px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 700px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:780px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--red);margin-bottom:12px}
+  .intro h1{font-weight:700;font-size:34px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14.5px;line-height:1.6;color:#5C616A}
+
+  .band{position:relative;z-index:1;max-width:1300px;margin:46px auto 0}
+  .band .lbl{display:flex;align-items:center;gap:12px;margin:0 auto 22px;max-width:1180px}
+  .band .lbl b{font-weight:800;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+  .band .lbl span{font-weight:600;font-size:12.5px;color:#6B7079}
+  .band .lbl hr{flex:1;border:0;border-top:1px solid #D4D6D9}
+
+  .row{display:flex;flex-wrap:wrap;gap:42px 36px;justify-content:center}
+  figure{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0}
+  figcaption{text-align:center;max-width:300px}
+  figcaption b{font-weight:800;font-size:15px;color:var(--ink)}
+  figcaption p{font-size:12px;line-height:1.5;color:#646A72;margin-top:6px}
+
+  .phone{width:318px;height:688px;background:#fff;border-radius:46px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 38px 76px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--paper);border-radius:36px;overflow:hidden;position:relative}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:92px;height:25px;background:#0A0A0A;border-radius:13px;z-index:60}
+  .hdr{padding:48px 18px 8px}
+  .hdr .e{font-weight:800;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px}
+  .hdr .e i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .hdr h2{font-weight:700;font-size:27px;letter-spacing:-.02em;color:var(--ink);margin-top:7px}
+  .d{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .green{background:var(--green)} .amber{background:var(--warn)} .red{background:var(--red)} .ink{background:var(--ink)}
+
+  .body{position:absolute;left:0;right:0;top:116px;bottom:0;padding:2px 17px 80px;overflow:hidden}
+
+  /* estilo D — cartão pintado pelo estado */
+  .card{border-radius:16px;border:1px solid transparent}
+  .card.ok{background:var(--soft2);border-color:var(--line)}
+  .card.gr{background:var(--greensoft);border-color:#CCEBDD}
+  .card.wn{background:var(--warnsoft);border-color:#F2DDB6}
+  .card.rd{background:var(--redsoft);border-color:#F6CFC7}
+  .ch{display:flex;align-items:center;gap:9px}
+  .q{flex:1;font-weight:800;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
+  .card.gr .q{color:#2A7A5C} .card.wn .q{color:#9A6B1E} .card.rd .q{color:#9A4034}
+  .cv{color:var(--grey);font-weight:800}
+  .ans{font-weight:700;color:var(--ink);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .card.rd .ans{color:#C9331F}
+  .sug{display:flex;gap:6px;background:rgba(255,255,255,.55);border-radius:10px;color:#7A6A45;font-weight:600}
+
+  .fit5 .card{padding:12px 14px;margin-bottom:10px}.fit5 .ch{margin-bottom:7px}.fit5 .ans{font-size:16.5px}.fit5 .sug{margin-top:9px;padding:8px 10px;font-size:11px}
+  .fit6 .card{padding:10px 14px;margin-bottom:8px}.fit6 .ch{margin-bottom:6px}.fit6 .ans{font-size:15px}.fit6 .sug{margin-top:7px;padding:7px 9px;font-size:10.5px}
+  .fit7 .card{padding:9px 13px;margin-bottom:7px}.fit7 .ch{margin-bottom:4px}.fit7 .ans{font-size:13.5px}.fit7 .sug{display:none}
+
+  .dock{position:absolute;left:16px;right:16px;bottom:18px;display:flex;justify-content:space-around;height:52px;background:var(--ink);border-radius:21px;align-items:center;z-index:40}
+  .dock i{width:17px;height:17px;border-radius:5px;background:rgba(255,255,255,.3)} .dock i.on{background:#fff}
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:40px;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">Hoje · estilo D (a cores)</div>
+    <h1>D — Cabine e Piloto, nos 5 / 6 / 7</h1>
+    <p>O design é <b>o mesmo</b> para os dois. Só muda o <b>conteúdo</b>: o eyebrow (CABINE/PILOTO), o salário (AE adapta-se: SNPVAC cabine · SPAC piloto) e as validades (Atestado CCA vs Médico Classe 1). Cada cartão pintado pelo estado.</p>
+  </div>
+
+  <!-- ============ CABINE ============ -->
+  <div class="band">
+    <div class="lbl"><b>Cabine</b><span>tripulante de cabine · SNPVAC quando AE</span><hr></div>
+    <div class="row">
+
+      <!-- cabine · 5 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>HI FLY · FTL · CABINE</div><h2>Hoje</h2></div>
+        <div class="body fit5">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta p/ limites?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · 5 h de 60 h</div><div class="sug">💡 92% — um serviço longo pode ultrapassar.</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 05:40 · LIS-PUJ</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 12:00 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Cabine · 5</b><p>Companhia FTL (sem AE) → sem cartão de salário.</p></figcaption></figure>
+
+      <!-- cabine · 6 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>EASYJET · AE · CABINE</div><h2>Hoje</h2></div>
+        <div class="body fit6">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · 5 h de 60 h</div><div class="sug">💡 92% — perto do limite.</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 05:40 · LIS-LGW</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 12:00 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans">2 940 € · este mês</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Cabine · 6</b><p>easyJet (AE) → salário de cabine (SNPVAC), bem diferente do piloto.</p></figcaption></figure>
+
+      <!-- cabine · 7 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>EASYJET · AE · CABINE</div><h2>Hoje</h2></div>
+        <div class="body fit7">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · 5 h de 60 h</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 05:40 · LIS-LGW</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 12:00 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans">2 940 € · este mês</div></div>
+          <div class="card rd"><div class="ch"><span class="d red"></span><span class="q">Validades?</span><span class="cv">›</span></div><div class="ans">Atestado (CCA) expirado</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Cabine · 7</b><p>Validade de cabine: <b>Atestado (CCA)</b> — não existe no piloto.</p></figcaption></figure>
+
+    </div>
+  </div>
+
+  <!-- ============ PILOTO ============ -->
+  <div class="band">
+    <div class="lbl"><b>Piloto</b><span>mesma D · só muda o conteúdo · SPAC quando AE</span><hr></div>
+    <div class="row">
+
+      <!-- piloto · 5 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>EUROATLANTIC · FTL · PILOTO</div><h2>Hoje</h2></div>
+        <div class="body fit5">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta p/ limites?</span><span class="cv">›</span></div><div class="ans">Voo 28d · 88 h de 100 h</div><div class="sug">💡 88% — um voo longo pode ultrapassar.</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 09:20 · LIS-MIA</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 14:30 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Piloto · 5</b><p>Companhia FTL (sem AE) → sem salário. Limite por horas de voo.</p></figcaption></figure>
+
+      <!-- piloto · 6 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+        <div class="body fit6">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · 5 h de 60 h</div><div class="sug">💡 92% — perto do limite.</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 06:05 · LIS-LGW</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 12:00 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans">8 923 € · este mês</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Piloto · 6</b><p>easyJet (AE) → salário de piloto (SPAC).</p></figcaption></figure>
+
+      <!-- piloto · 7 -->
+      <figure><div class="phone"><div class="screen"><div class="island"></div>
+        <div class="hdr"><div class="e"><i></i>EASYJET · AE · PILOTO</div><h2>Hoje</h2></div>
+        <div class="body fit7">
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Estou legal?</span><span class="cv">›</span></div><div class="ans">Sim, dentro dos limites</div></div>
+          <div class="card wn"><div class="ch"><span class="d amber"></span><span class="q">Quanto falta?</span><span class="cv">›</span></div><div class="ans">Serviço 7d · 5 h de 60 h</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quando trabalho?</span><span class="cv">›</span></div><div class="ans">Amanhã · 06:05 · LIS-LGW</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Tenho descanso?</span><span class="cv">›</span></div><div class="ans">Sim · 12:00 antes do report</div></div>
+          <div class="card gr"><div class="ch"><span class="d green"></span><span class="q">Mudou a escala?</span><span class="cv">›</span></div><div class="ans">Sem alterações</div></div>
+          <div class="card ok"><div class="ch"><span class="d ink"></span><span class="q">Quanto recebo?</span><span class="cv">›</span></div><div class="ans">8 923 € · este mês</div></div>
+          <div class="card rd"><div class="ch"><span class="d red"></span><span class="q">Validades?</span><span class="cv">›</span></div><div class="ans">Médico Classe 1 expirado</div></div>
+        </div>
+        <div class="dock"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div></div><figcaption><b>Piloto · 7</b><p>Validade de piloto: <b>Médico Classe 1</b> — diferente da cabine.</p></figcaption></figure>
+
+    </div>
+  </div>
+
+  <div class="foot">CrewPact · Hoje estilo D · Cabine + Piloto · 5 / 6 / 7 perguntas</div>
+</body>
+</html>

@@ -6,7 +6,7 @@ import { RADIUS, TYPE, FONT, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { catLabel } from '../data/extras';
-import { buildTodayItems, winLbl, dateLbl, fmtEur0 } from './hojeItems';
+import { buildTodayItems, winLbl, dateLbl, fmtEur0, hhmm } from './hojeItems';
 import { validityStatus, validityLabel } from '../data/validities';
 import { t } from '../data/i18n';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
@@ -33,7 +33,7 @@ export default function HojeDetailScreen({ route, navigation }) {
   if (!item) return null;
   const raw = item.raw;
 
-  const stColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.sub);
+  const stColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.lineStrong);
   const isCheck = item.id === 'next' || item.id === 'roster' || item.id === 'validades';
 
   const Row = ({ k, v, color }) => (
@@ -155,6 +155,24 @@ export default function HojeDetailScreen({ route, navigation }) {
         </>
       );
     }
+
+    if (item.id === 'rest') {
+      if (raw.status === 'neutral') {
+        const msg = raw.kind === 'noNext' ? l('Não há serviço próximo para calcular o repouso.', 'No upcoming duty to compute rest.')
+          : raw.kind === 'noPrevEnd' ? l('O serviço anterior não tem fim registado para comparar.', 'The previous duty has no recorded end to compare.')
+          : l('Não há serviço anterior para comparar.', 'No previous duty to compare.');
+        return <Text style={s.muted}>{msg}</Text>;
+      }
+      return (
+        <>
+          <Text style={s.note}>{l('Repouso = do fim do serviço anterior até ao report seguinte. Mínimo (ORO.FTL.235, na base) = o maior entre 12 h e a duração do serviço anterior.', 'Rest = from the previous duty\'s end to the next report. Minimum (ORO.FTL.235, at base) = the greater of 12 h and the previous duty length.')}</Text>
+          <Row k={l('Serviço anterior (duração)', 'Previous duty (length)')} v={hhmm(raw.prevDutyMin)} />
+          <Row k={l('Repouso disponível', 'Rest available')} v={hhmm(raw.actualMin)} color={raw.status === 'bad' ? C.red : C.green} />
+          <Row k={l('Repouso mínimo', 'Minimum rest')} v={hhmm(raw.requiredMin)} />
+          <View style={s.concl}><Text style={s.conclTxt}>{raw.status === 'bad' ? l('Abaixo do mínimo.', 'Below the minimum.') : l('Dentro do mínimo.', 'Within the minimum.')}</Text></View>
+        </>
+      );
+    }
     return null;
   };
 
@@ -162,18 +180,16 @@ export default function HojeDetailScreen({ route, navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
-        <View style={s.head}>
-          <View style={[s.dot, { backgroundColor: stColor(item.status) }]} />
+        <View style={[s.headerCard, { borderLeftColor: stColor(item.status) }]}>
           <Text style={s.eyebrow}>{item.q}</Text>
+          <Text style={[s.answer, item.status === 'bad' ? { color: C.red } : null]}>{item.answer}</Text>
+          {item.suggestion ? (
+            <View style={s.sug}>
+              <Ionicons name="bulb-outline" size={15} color={C.sub} style={{ marginTop: 1 }} />
+              <Text style={s.sugTxt}>{item.suggestion}</Text>
+            </View>
+          ) : null}
         </View>
-        <Text style={[s.answer, item.status === 'bad' ? { color: C.red } : null]}>{item.answer}</Text>
-
-        {item.suggestion ? (
-          <View style={s.sug}>
-            <Ionicons name="bulb-outline" size={15} color={C.sub} style={{ marginTop: 1 }} />
-            <Text style={s.sugTxt}>{item.suggestion}</Text>
-          </View>
-        ) : null}
 
         <Text style={s.sectionTitle}>{isCheck ? l('O QUE VERIFIQUEI', 'WHAT I CHECKED') : l('COMO CHEGUEI AQUI', 'HOW I GOT THIS')}</Text>
         <View style={s.panel}>{renderExplanation()}</View>
@@ -188,10 +204,9 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
 
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
-  dot: { width: 9, height: 9, borderRadius: RADIUS.pill },
+  headerCard: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: 18, padding: 16, paddingLeft: 13, marginTop: 6 },
   eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
-  answer: { fontSize: 24, fontFamily: FONT.semibold, letterSpacing: -0.4, color: C.text, lineHeight: 30, marginTop: 6 },
+  answer: { fontSize: 24, fontFamily: FONT.semibold, letterSpacing: -0.4, color: C.text, lineHeight: 30, marginTop: 5 },
 
   sug: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 13, marginTop: 14 },
   sugTxt: { flex: 1, fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub, lineHeight: 19 },

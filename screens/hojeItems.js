@@ -3,7 +3,7 @@
 // EXATAMENTE a mesma nos dois sítios. Formata; o cálculo vive em data/today.js.
 import { catLabel } from '../data/extras';
 import { t } from '../data/i18n';
-import { legalStatus, headroomStatus, nextDutyStatus, rosterStatus, payStatus } from '../data/today';
+import { legalStatus, headroomStatus, nextDutyStatus, restStatus, rosterStatus, payStatus } from '../data/today';
 import { validityStatus, validityLabel, sortValidities } from '../data/validities';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
@@ -29,6 +29,9 @@ export const fmtEur0 = (n, lang) => {
   const g = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
   return lang === 'en' ? `€${g}` : `${g} €`;
 };
+
+// Minutos → "H:MM" (clampa a 0; aguenta > 24 h, ex.: repouso longo).
+export const hhmm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
 
 // ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO }
 export function buildTodayItems(ctx, lang) {
@@ -89,6 +92,22 @@ export function buildTodayItems(ctx, lang) {
       answer = `${dateLbl(next.iso, todayISO, lang)}${next.report ? ` · ${next.report}` : ''} · ${label}`;
     }
     items.push({ id: 'next', q, status: 'neutral', answer, suggestion: null, raw: next });
+  }
+
+  // 3b · Tenho descanso?
+  const rest = restStatus(duties, todayISO);
+  {
+    const q = l('Tenho descanso?', 'Do I have rest?');
+    let answer, suggestion = null;
+    if (rest.status === 'neutral') {
+      answer = l('Sem dados suficientes', 'Not enough data');
+    } else if (rest.status === 'bad') {
+      answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
+      suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');
+    } else {
+      answer = `${l('Sim', 'Yes')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
+    }
+    items.push({ id: 'rest', q, status: rest.status, answer, suggestion, raw: rest });
   }
 
   // 4 · Mudou a escala?

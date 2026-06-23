@@ -29,6 +29,7 @@ export const PALETTE_LIGHT = {
   scrim: "rgba(0,0,0,0.4)", // fundo de overlay de modais
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
+  lineStrong: "#D4D4D1", // risca/separador neutro, mais visível que `line` (risca lateral do Hoje D2)
 };
 
 // Paleta escura — superfícies elevadas sobre canvas, texto quase branco. onDark*
@@ -59,6 +60,7 @@ export const PALETTE_DARK = {
   scrim: "rgba(0,0,0,0.6)",
   green: "#2BB587",
   greenSoft: "#14302A",
+  lineStrong: "#3E3E3E", // par escuro da risca neutra
 };
 
 export const PALETTES = { light: PALETTE_LIGHT, dark: PALETTE_DARK };
