@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { getLocales } from 'expo-localization';
-import { C, RADIUS, PALETTES, FONT } from './data/constants';
+import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE } from './data/constants';
 import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
@@ -101,40 +101,58 @@ function FtlStack() {
   );
 }
 
-// Tab bar flutuante (mockup): dock escuro só-ícones (ponto vermelho na ativa) em
-// baixo à esquerda + FAB vermelho "Simular" à direita. O FAB abre o simulador no
-// stack da aba atual (Início/Escala/FTL têm FtlCalc; no Perfil esconde-se).
+// Tab bar flutuante (mockup): dock escuro só-ícones (ponto vermelho na ativa) à
+// esquerda + FAB vermelho "+" à direita. O "+" é um speed-dial: ao tocar, roda
+// para "×" e expande em 3 mini-FABs — Pesquisa (search FTL), Serviço (nova duty
+// na Escala) e Sair (logout). Igual em todas as abas (substitui os antigos FABs
+// contextuais). Toca fora (scrim) ou no "×" para recolher.
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
+  const { height: winH } = useWindowDimensions();
   const { lang, logout } = useContext(AppContext);
   const C = useTheme();
+  const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
     'Início': ['home', 'home-outline'],
     'Escala': ['calendar', 'calendar-outline'],
     'FTL':    ['time', 'time-outline'],
     'Perfil': ['person', 'person-outline'],
   };
+  const active = state.routes[state.index];
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [open, setOpen] = useState(false);            // speed-dial expandido?
+  const anim = useRef(new Animated.Value(0)).current; // 0=fechado · 1=aberto
+
+  const animateTo = (to) => Animated.spring(anim, { toValue: to, useNativeDriver: true, friction: 8, tension: 90 }).start();
+  const closeMenu = () => { if (open) { setOpen(false); animateTo(0); } };
+  const toggleMenu = () => { const next = !open; setOpen(next); animateTo(next ? 1 : 0); };
+  const fire = (fn) => { closeMenu(); fn(); };
+
   const go = (route, focused) => {
+    closeMenu();
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
     if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
   };
-  const active = state.routes[state.index];
-  const isEscala = active.name === 'Escala';
-  const isFtl = active.name === 'FTL';
-  const isPerfil = active.name === 'Perfil';
-  const l = (pt, en) => (lang === 'en' ? en : pt);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [logoutOpen, setLogoutOpen] = useState(false);
 
-  // FAB contextual (mockup): Escala → "Serviço"; Cálculos → "Pesquisa"; Perfil →
-  // "Sair" (logout, com diálogo de confirmação); Início → "Simular".
-  const onFab = isEscala
-    ? () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } })
-    : isFtl
-      ? () => setSearchOpen(true)
-      : isPerfil
-        ? () => setLogoutOpen(true)
-        : () => navigation.navigate(active.name, { screen: 'FtlCalc', params: { duty: true } });
+  // Ações do speed-dial, na ordem baixo→cima a partir do FAB (Pesquisa mais perto).
+  const ACTIONS = [
+    { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'), run: () => setSearchOpen(true) },
+    { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),    run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
+    { key: 'logout', icon: 'log-out-outline', label: l('Sair', 'Log out'), danger: true, run: () => setLogoutOpen(true) },
+  ];
+
+  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
+  // Cascata: o item mais perto do FAB (i=0) entra primeiro; o de cima (i=2) por último.
+  const itemAnim = (i) => ({
+    opacity: anim.interpolate({ inputRange: [0, 0.12 + i * 0.12, 0.5 + i * 0.12], outputRange: [0, 0, 1], extrapolate: 'clamp' }),
+    transform: [
+      { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+      { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
+    ],
+  });
+
+  const fabBottom = Math.max(insets.bottom, 16) + 4;
 
   return (
     <>
@@ -148,7 +166,12 @@ function FloatingTabBar({ state, navigation }) {
       {/* Degradê de fundo (canvas) — esconde o conteúdo que passa por trás da barra */}
       <LinearGradient pointerEvents="none" colors={[C.canvas + '00', C.canvas + '80', C.canvas]} locations={[0, 0.22, 0.36]}
         start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={tbar.fade} />
-      <View style={[tbar.wrap, { bottom: Math.max(insets.bottom, 16) + 4 }]} pointerEvents="box-none">
+      {/* Scrim — fecha o menu ao tocar fora. Cobre o ecrã todo (ancorado ao fundo).
+          Usa C.scrim (o mesmo overlay dos modais) p/ ser consistente com a app. */}
+      <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[tbar.scrim, { height: winH + 240, backgroundColor: C.scrim, opacity: anim }]}>
+        <TouchableOpacity style={tbar.scrimFill} activeOpacity={1} onPress={closeMenu} />
+      </Animated.View>
+      <View style={[tbar.wrap, { bottom: fabBottom }]} pointerEvents="box-none">
         <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
           {state.routes.map(route => {
             const focused = active.key === route.key;
@@ -164,10 +187,27 @@ function FloatingTabBar({ state, navigation }) {
             );
           })}
         </View>
+      </View>
+      {/* FAB + speed-dial: coluna alta ancorada em baixo-direita (FAB em baixo, mini-FABs
+          por cima) para os mini-FABs ficarem DENTRO da caixa → toque fiável no Android. */}
+      <View style={[tbar.fabAnchor, { bottom: fabBottom }]} pointerEvents="box-none">
+        {ACTIONS.map((a, i) => ({ ...a, i })).reverse().map((a) => (
+          <Animated.View key={a.key} pointerEvents={open ? 'auto' : 'none'} style={[tbar.miniRow, itemAnim(a.i)]}>
+            <View style={[tbar.miniLabel, SHADOW.sm, { backgroundColor: C.card, borderColor: C.line }]}>
+              <Text numberOfLines={1} style={[tbar.miniLabelTxt, { color: C.text }]}>{a.label}</Text>
+            </View>
+            <TouchableOpacity style={[tbar.mini, SHADOW.md, { backgroundColor: a.danger ? C.red : C.ink }]}
+              activeOpacity={0.85} onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
+              <Ionicons name={a.icon} size={20} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+        ))}
         <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: C.red }]} activeOpacity={0.9}
-          onPress={onFab} accessibilityRole="button" accessibilityLabel={isEscala ? (lang === 'en' ? 'New duty' : 'Nova duty') : isFtl ? (lang === 'en' ? 'Search' : 'Pesquisa') : isPerfil ? (lang === 'en' ? 'Log out' : 'Sair') : t('home.dashSim', lang)}>
-          <Text numberOfLines={1} style={[tbar.fabLabel, { color: C.subLight || C.sub }]}>{isEscala ? (lang === 'en' ? 'Duty' : 'Serviço') : isFtl ? (lang === 'en' ? 'Search' : 'Pesquisa') : isPerfil ? (lang === 'en' ? 'Log out' : 'Sair') : t('tab.simulate', lang)}</Text>
-          <Ionicons name={isEscala ? 'add' : isFtl ? 'search' : isPerfil ? 'log-out-outline' : 'play'} size={isEscala ? 24 : isFtl ? 22 : isPerfil ? 20 : 21} color="#fff" />
+          onPress={toggleMenu} accessibilityRole="button" accessibilityState={{ expanded: open }}
+          accessibilityLabel={open ? l('Fechar menu', 'Close menu') : l('Abrir ações', 'Open actions')}>
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Ionicons name="add" size={30} color="#fff" />
+          </Animated.View>
         </TouchableOpacity>
       </View>
     </>
@@ -189,6 +229,10 @@ const tbar = StyleSheet.create({
   // Degradê de fundo atrás da barra (largura toda, do fundo até ~220px) — sólido
   // até ~140px (cobre os nomes do FAB) e desvanece suave (~80px, com easing) acima.
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
+  // Scrim que escurece o ecrã quando o speed-dial está aberto (toca p/ fechar).
+  // A cor (C.scrim) é aplicada inline (vem do tema, não cabe no StyleSheet estático).
+  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  scrimFill: { flex: 1 },
   // Dock (esquerda) + FAB (direita), separados como o mockup — mas maiores.
   wrap: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Dock escuro — 4 ícones, ponto vermelho na ativa
@@ -197,10 +241,17 @@ const tbar = StyleSheet.create({
   tb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   tbHi: { position: 'absolute', width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
   tbDot: { position: 'absolute', bottom: 8, width: 4, height: 4, borderRadius: 2 },
+  // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
+  fabAnchor: { position: 'absolute', right: 20, alignItems: 'flex-end' },
   // FAB vermelho (direita) — maior, a condizer com a dock
   fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  fabLabel: { position: 'absolute', top: -22, left: -60, right: -60, textAlign: 'center', fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase' },
+  // Mini-FAB do speed-dial: rótulo (chip card+hairline, o idiom dos chips da app) +
+  // círculo (RADIUS.pill = redondo, como os botões de ação), alinhado ao centro do FAB.
+  miniRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  miniLabel: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, marginRight: 12 },
+  miniLabelTxt: { fontFamily: FONT.semibold, fontSize: TYPE.label },
+  mini: { width: 52, height: 52, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
 });
 
 export default function App() {
