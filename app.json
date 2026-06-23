@@ -32,6 +32,12 @@
         }
       ],
       "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#F5402C"
+        }
+      ],
       "expo-asset",
       [
         "expo-splash-screen",

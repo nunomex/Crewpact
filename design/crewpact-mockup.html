@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · app toda (UX)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA;
+    --red:#F5402C; --red-d:#E0341F; --redsoft:#FDE9E4; --grey:#C2C2C0; --sub:#6B6B66; --sublt:#97978F; --text:#1B1B1B;
+    --green:#1F9E6E; --greensoft:#E2F4EC; --warn:#E8932B; --warnsoft:#FBEAD2; --info:#2E6BE6; --infosoft:#E4ECFB;
+    --f:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{ font-family:var(--f); background:#E7E8EA; color:#23262B; padding:56px 28px 100px; position:relative; overflow-x:hidden }
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%, #fff, transparent 60%)}
+
+  .intro{ position:relative; z-index:1; text-align:center; margin:0 auto 26px; max-width:860px }
+  .intro .k{ font-weight:800; font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--red); margin-bottom:14px }
+  .intro h1{ font-weight:700; font-size:clamp(28px,4vw,44px); color:#1B1B1B; letter-spacing:-.02em; line-height:1.05 }
+  .intro p{ max-width:70ch; margin:14px auto 0; font-size:15px; line-height:1.6; color:#5C616A }
+  .intro b{ color:#1B1B1B; font-weight:700 }
+  .legend{ display:flex; gap:10px 18px; justify-content:center; flex-wrap:wrap; margin:22px auto 0; max-width:760px }
+  .legend span{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#4A4F57 }
+  .legend i{ width:11px; height:11px; border-radius:4px; display:inline-block; flex:0 0 auto }
+
+  .gallery{ position:relative; z-index:1; max-width:1560px; margin:34px auto 0; display:flex; flex-wrap:wrap; gap:56px 44px; justify-content:center }
+  figure.frame{ display:flex; flex-direction:column; align-items:center; gap:16px; margin:0 }
+  figcaption{ text-align:center; max-width:312px }
+  figcaption b{ display:inline-flex; align-items:center; justify-content:center; gap:7px; font-weight:700; font-size:15px; color:#1B1B1B }
+  figcaption b i{ font-style:normal; font-size:10px; font-weight:800; color:#fff; background:var(--red); border-radius:7px; padding:3px 7px; letter-spacing:.04em }
+  figcaption b i.pro{ background:var(--ink) }
+  figcaption p{ font-size:12.5px; line-height:1.5; color:#646A72; margin-top:6px }
+
+  .phone{ width:332px; height:716px; background:#fff; border-radius:50px; padding:10px; position:relative; flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5), 0 6px 16px -10px rgba(20,22,26,.3) }
+  .screen{ width:100%; height:100%; background:var(--paper); border-radius:40px; overflow:hidden; position:relative }
+  .island{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:98px; height:26px; background:#0A0A0A; border-radius:14px; z-index:60 }
+  .sb{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:17px 30px 0; font-weight:800; font-size:11px; color:var(--ink); z-index:50 }
+  .sb .r{display:flex;gap:5px;align-items:center}
+  .sb .r i{width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.85}
+  .sb .b{width:20px;height:10px;border:1.5px solid var(--ink);border-radius:3px;position:relative}
+  .sb .b::after{content:"";position:absolute;inset:1.5px;width:11px;background:var(--ink);border-radius:1px}
+  .scr{ position:absolute; inset:0; overflow:hidden }
+
+  .hdr{ position:absolute; top:0; left:0; right:0; height:146px; padding:54px 22px 0; background:var(--paper); z-index:30 }
+  .htop{ display:flex; align-items:center; justify-content:space-between; height:36px; margin-bottom:12px }
+  .hlw{ display:flex; align-items:center; gap:8px } .hlw .rd{ width:7px;height:7px;border-radius:50%;background:var(--red); flex:0 0 auto }
+  .hl{ font-weight:800; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub) }
+  .hbtn{ width:36px;height:36px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink); position:relative; flex:0 0 auto }
+  .hbtn svg{ width:17px;height:17px }
+  .hbadge{ position:absolute; top:-4px; right:-4px; min-width:17px; height:17px; border-radius:99px; background:var(--red); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #fff }
+  .ht{ font-weight:700; font-size:30px; letter-spacing:-.02em; color:var(--ink); line-height:1 }
+  .hsub{ font-weight:600; font-size:12.5px; color:var(--sub); margin-top:7px }
+  .view{ position:absolute; left:0; right:0; top:150px; bottom:0; padding:0 20px 100px; overflow:hidden }
+  .view.cta{ padding-bottom:120px }
+  .view.tight{ top:118px }
+
+  .chip{ display:inline-flex; align-items:center; gap:5px; font-weight:800; font-size:11px; border-radius:99px; padding:5px 10px; letter-spacing:.01em }
+  .chip.ftl{ background:var(--soft); color:#3A3A38 } .chip.ok{ background:var(--greensoft); color:var(--green) } .chip.wn{ background:var(--warnsoft); color:var(--warn) }
+
+  /* HOJE — quadro de respostas */
+  .qcard{ border:1px solid var(--line); border-radius:18px; padding:14px 15px; background:#fff; margin-bottom:11px; box-shadow:0 1px 2px rgba(20,22,26,.03) }
+  .qh{ display:flex; align-items:center; gap:9px; margin-bottom:8px }
+  .qh .qd{ width:9px;height:9px;border-radius:50%; flex:0 0 auto }
+  .qh .qq{ flex:1; font-weight:800; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub) }
+  .qh .qc{ color:var(--grey); display:flex } .qh .qc svg{ width:16px;height:16px }
+  .qa{ font-weight:700; font-size:18px; color:var(--ink); letter-spacing:-.01em; line-height:1.18 }
+  .qa .n{ font-variant-numeric:tabular-nums }
+  .qa.bad{ color:var(--red) }
+  .qsug{ display:flex; gap:8px; align-items:flex-start; background:var(--soft2); border-radius:12px; padding:10px 11px; margin-top:11px; font-weight:600; font-size:11.5px; color:var(--sub); line-height:1.45 }
+  .qsug svg{ width:14px;height:14px;flex:0 0 auto;color:var(--warn);margin-top:1px }
+
+  /* HOJE detalhe */
+  .answerbig{ font-weight:700; font-size:25px; letter-spacing:-.02em; line-height:1.1; margin:6px 0 2px }
+  .answerbig.ok{ color:var(--green) } .answerbig.bad{ color:var(--red) }
+  .blk{ border:1px solid var(--line); border-radius:18px; background:#fff; padding:15px; margin-top:13px }
+  .blk .bt{ font-weight:800; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub); margin-bottom:12px }
+  .lim{ margin-bottom:11px } .lim:last-child{ margin-bottom:0 }
+  .lim .ll{ display:flex; justify-content:space-between; align-items:baseline; font-weight:700; font-size:12px; color:var(--sub); margin-bottom:6px } .lim .ll b{ color:var(--ink); font-weight:800; font-variant-numeric:tabular-nums }
+  .lrow{ display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-top:1px solid var(--line) }
+  .lrow:first-child{ border-top:0 } .lrow .a{ font-weight:700; font-size:12px; color:var(--sub) } .lrow .b{ font-weight:800; font-size:12px; font-variant-numeric:tabular-nums }
+  .concl{ background:var(--greensoft); color:var(--ink); border-radius:12px; padding:11px; font-weight:700; font-size:12px; margin-top:12px }
+  .foot-note{ font-weight:600; font-size:11px; color:var(--sub); margin-top:13px }
+
+  /* INÍCIO */
+  .week{ display:flex; gap:6px; justify-content:space-between; margin-bottom:18px }
+  .wd{ flex:1; text-align:center; padding:9px 0; border-radius:14px; background:var(--soft2); border:1px solid var(--line) }
+  .wd .n{ font-weight:600; font-size:17px; color:var(--text); line-height:1 } .wd .d{ font-weight:700; font-size:9px; text-transform:uppercase; color:var(--sub); margin-top:5px }
+  .wd .wdot{ width:5px;height:5px;border-radius:50%;background:var(--red);margin:5px auto 0;opacity:0 } .wd.has .wdot{ opacity:1 }
+  .wd.on{ background:var(--ink); border-color:var(--ink) } .wd.on .n{ color:#fff } .wd.on .d{ color:rgba(255,255,255,.7) } .wd.on .wdot{ background:#fff }
+  .wd.td{ border-color:rgba(245,64,44,.45) } .wd.td .n{ color:var(--red) }
+  .statline{ display:flex; align-items:center; gap:9px; margin-bottom:18px }
+  .statline .dot{ width:9px;height:9px;border-radius:50%;background:var(--green); box-shadow:0 0 0 4px var(--greensoft); flex:0 0 auto }
+  .statline .lb{ font-weight:700; font-size:14px; color:var(--ink) } .statline .cx{ font-weight:700; font-size:11px; color:var(--sub); margin-left:auto; text-transform:uppercase; letter-spacing:.04em }
+  .nd{ display:flex; gap:14px; align-items:flex-start; margin-bottom:16px }
+  .ndc{ width:74px;height:74px;border-radius:37px; background:var(--red); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:0 14px 26px -12px rgba(245,64,44,.5) }
+  .ndc .dnum{ font-weight:700; font-size:29px; color:#fff; line-height:1 } .ndc .dwd{ font-weight:800; font-size:10px; color:rgba(255,255,255,.85); letter-spacing:.06em; margin-top:2px }
+  .ndx{ flex:1; min-width:0; padding-top:2px }
+  .ndeye{ display:flex; align-items:center; justify-content:space-between } .ndeye .e{ font-weight:800; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--sub) } .ndeye .cd{ font-weight:800; font-size:12px; color:var(--red) }
+  .ndrt{ font-weight:700; font-size:21px; color:var(--ink); letter-spacing:-.01em; margin-top:5px; line-height:1 }
+  .ndmeta{ font-weight:600; font-size:13px; color:var(--sub); margin-top:6px } .ndmeta b{ color:var(--ink); font-weight:800 }
+  .ndtags{ display:flex; gap:6px; margin-top:9px }
+  .grid2{ display:flex; gap:11px; align-items:stretch }
+  .uc{ flex:1; border:1px solid var(--line); border-radius:18px; padding:14px; background:#fff }
+  .uc .ut{ font-weight:800; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--sub) }
+  .uc .uwin{ margin-top:12px } .uc .uwl{ display:flex; justify-content:space-between; font-weight:700; font-size:11px; color:var(--sub); margin-bottom:6px } .uc .uwl b{ color:var(--ink); font-weight:800 }
+  .bar{ height:7px; border-radius:99px; background:var(--soft); overflow:hidden } .bar i{ display:block; height:100%; border-radius:99px; background:var(--ink) }
+  .bar i.gr{ background:var(--green) } .bar i.wn{ background:var(--warn) } .bar i.rd{ background:var(--red) }
+  .uc.ae{ background:var(--ink); border-color:var(--ink); display:flex; flex-direction:column; justify-content:center }
+  .uc.ae .ut{ color:rgba(255,255,255,.7) } .uc.ae .big{ font-weight:700; font-size:25px; color:#fff; letter-spacing:-.01em; margin-top:10px; line-height:1 } .uc.ae .big .cur{ color:var(--red) }
+  .uc.ae .sm{ font-weight:600; font-size:11px; color:rgba(255,255,255,.7); margin-top:6px }
+  .sumstrip{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:18px; padding:13px 15px; background:var(--soft2); margin-top:14px }
+  .sumstrip .si{ width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink); flex:0 0 auto } .sumstrip .si svg{ width:18px;height:18px }
+  .sumstrip .st{ flex:1; min-width:0 } .sumstrip .st b{ display:block; font-weight:800; font-size:14px; color:var(--ink) } .sumstrip .st span{ font-weight:600; font-size:11.5px; color:var(--sub) } .sumstrip .st span em{ font-style:normal; color:var(--red); font-weight:800 }
+  .sumstrip .ch{ color:var(--grey); flex:0 0 auto; display:flex }
+
+  /* ESCALA roda */
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px }
+  .seg{ display:inline-flex; background:var(--soft); border-radius:99px; padding:3px }
+  .seg b{ font-weight:700; font-size:13px; color:var(--sub); padding:7px 17px; border-radius:99px } .seg b.on{ background:#fff; color:var(--ink); box-shadow:0 4px 10px -4px rgba(20,22,26,.18) }
+  .tact{ display:flex; gap:8px } .tbtn{ width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink) } .tbtn svg{ width:18px;height:18px }
+  .wheel{ height:226px; position:relative; display:flex; flex-direction:column; justify-content:center; gap:2px; margin:2px 0 10px; -webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent); mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent) }
+  .wband{ position:absolute; left:-4px; right:-4px; top:50%; transform:translateY(-50%); height:50px; border-radius:16px; background:var(--soft2); border:1px solid var(--line) }
+  .wrow{ display:flex; align-items:center; gap:12px; padding:0 10px; height:46px; position:relative; z-index:1 }
+  .wrow .wf{ flex:1; text-align:right; font-weight:700; font-size:12.5px; color:var(--grey) } .wrow .wf s{ text-decoration:none; color:var(--grey); margin-left:8px; font-weight:600 }
+  .wrow .wn{ font-weight:600; font-size:24px; color:var(--grey); min-width:40px; text-align:right }
+  .wrow .ww{ font-weight:700; font-size:12px; color:var(--grey); width:32px }
+  .wrow.on .wf{ color:var(--ink) } .wrow.on .wf s{ color:var(--red) } .wrow.on .ww{ color:var(--ink) }
+  .wrow.on .wn{ width:46px;height:46px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px;min-width:0; box-shadow:0 12px 20px -8px rgba(245,64,44,.55) }
+  .dcard{ border:1px solid var(--line); border-radius:20px; padding:15px; background:#fff; box-shadow:0 1px 2px rgba(20,22,26,.04) }
+  .dch{ display:flex; align-items:center; gap:12px; margin-bottom:13px }
+  .dq{ width:46px;height:46px;border-radius:14px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex:0 0 auto }
+  .dt{ font-weight:700; font-size:17px; color:var(--ink) } .ds{ font-weight:600; font-size:11px; color:var(--sub); margin-top:1px }
+  .dgrid{ display:flex; gap:12px } .dcell{ flex:1; border-left:1px solid var(--line); padding-left:12px } .dcell .k{ font-weight:800; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--sub) } .dcell .v{ font-weight:700; font-size:16px; color:var(--ink); margin-top:4px; font-variant-numeric:tabular-nums }
+  .dtimes{ font-weight:600; font-size:11px; color:var(--sub); margin-top:13px }
+
+  /* ESCALA lista */
+  .row{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:16px; padding:13px; background:#fff; margin-bottom:10px }
+  .row .rl{ flex:1; min-width:0 } .row .rtop{ display:flex; align-items:center; gap:7px }
+  .row .rd{ font-weight:800; font-size:15px; color:var(--ink) } .row .tdot{ width:6px;height:6px;border-radius:50%;background:var(--red); flex:0 0 auto } .row .pdot{ width:6px;height:6px;border-radius:50%;background:var(--warn); flex:0 0 auto }
+  .row .rrt{ margin-left:auto; font-weight:800; font-size:11px; letter-spacing:.04em; color:var(--sub) } .row .rm{ font-weight:600; font-size:12px; color:var(--sub); margin-top:4px } .row .pay{ font-weight:800; font-size:14px; color:var(--red); flex:0 0 auto } .row .pay.off{ color:var(--grey) } .row.off .rd{ color:var(--sub) }
+
+  /* IMPORT */
+  .impban{ border-radius:18px; padding:14px; margin-bottom:14px; display:flex; gap:12px; align-items:center; background:var(--warnsoft); border:1px solid rgba(232,147,43,.32) }
+  .impban .ii{ width:42px;height:42px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--warn);flex:0 0 auto } .impban .ii svg{ width:22px;height:22px }
+  .impban .it b{ display:block; font-weight:800; font-size:15px; color:var(--ink) } .impban .it span{ font-weight:600; font-size:11.5px; color:#7A6A45; margin-top:1px; display:block }
+  .improw{ display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:14px; padding:11px 12px; background:#fff; margin-bottom:9px }
+  .improw .ic{ width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto } .improw .ic.ok{ background:var(--greensoft); color:var(--green) } .improw .ic.bad{ background:var(--warnsoft); color:var(--warn) } .improw .ic svg{ width:14px;height:14px }
+  .improw .il{ flex:1; min-width:0 } .improw .il b{ font-weight:800; font-size:13.5px; color:var(--ink) } .improw .il span{ display:block; font-weight:600; font-size:11.5px; color:var(--sub); margin-top:2px } .improw .ip{ font-weight:800; font-size:13px; color:var(--red); flex:0 0 auto } .improw .ip.off{ color:var(--grey) }
+  .improw.fix{ display:block; border-color:rgba(232,147,43,.5); background:#FFFDF8 } .improw.fix .top{ display:flex; align-items:center; gap:11px }
+  .fixrow{ display:flex; gap:8px; margin-top:10px; align-items:center } .fixin{ flex:1; border:1.5px solid var(--ink); border-radius:11px; padding:9px 12px; font-weight:800; font-size:13px; color:var(--ink); background:#fff; letter-spacing:.04em } .fixin .cur{ color:var(--grey); font-weight:600 } .fixgo{ background:var(--ink); color:#fff; border-radius:11px; padding:10px 15px; font-weight:800; font-size:12px; flex:0 0 auto }
+  .ctabar{ position:absolute; left:0; right:0; bottom:0; padding:14px 20px 26px; background:linear-gradient(transparent, var(--paper) 26%); z-index:36 }
+  .ctabar .cta{ width:100%; background:var(--ink); color:#fff; border-radius:16px; padding:16px; font-weight:800; font-size:14.5px; text-align:center; box-shadow:0 16px 30px -14px rgba(20,22,26,.5) }
+  .ctabar .hint{ text-align:center; font-weight:600; font-size:11.5px; color:var(--sub); margin-top:10px } .ctabar .hint em{ font-style:normal; color:var(--warn); font-weight:800 }
+
+  /* FTL hub */
+  .actbig{ background:var(--ink); color:#fff; border-radius:20px; padding:17px; position:relative; overflow:hidden; margin-bottom:16px }
+  .actbig::after{ content:""; position:absolute; right:-30px; top:-40px; width:150px; height:150px; background:radial-gradient(closest-side,rgba(245,64,44,.5),transparent) }
+  .actbig .ai{ width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;margin-bottom:12px; position:relative; z-index:1 } .actbig .ai svg{ width:22px;height:22px }
+  .actbig h3{ font-weight:700; font-size:19px; letter-spacing:-.01em; position:relative; z-index:1 } .actbig p{ color:rgba(255,255,255,.6); font-weight:500; font-size:12px; margin-top:4px; position:relative; z-index:1 }
+  .glab{ font-weight:800; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--sub); margin:4px 2px 9px }
+  .pills{ display:flex; flex-wrap:wrap; gap:8px } .pill{ border:1px solid var(--line); background:#fff; border-radius:14px; padding:11px 12px; display:flex; flex-direction:column; gap:3px; flex:1; min-width:44% } .pill .c{ font-weight:800; font-size:11px; color:var(--red) } .pill .t{ font-weight:700; font-size:11.5px; color:var(--ink) }
+  .artrow{ display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:14px; padding:12px 13px; background:#fff; margin-top:9px } .artrow .ac{ font-weight:800; font-size:11px; color:var(--red); font-variant-numeric:tabular-nums } .artrow .at{ font-weight:700; font-size:12.5px; color:var(--ink) } .artrow .ach{ margin-left:auto; color:var(--grey); display:flex }
+
+  /* FTL calc */
+  .seg2{ display:flex; gap:6px; margin-bottom:12px } .seg2 b{ flex:1; text-align:center; padding:11px; border-radius:13px; border:1px solid var(--line); background:#fff; font-weight:700; font-size:12px; color:var(--sub) } .seg2 b.on{ background:var(--ink); color:#fff; border-color:var(--ink) }
+  .field{ border:1px solid var(--line); border-radius:14px; padding:13px 15px; margin-bottom:11px; display:flex; align-items:center; justify-content:space-between; background:#fff } .field .fl{ font-weight:600; font-size:12.5px; color:var(--sub) } .field .fv{ font-weight:800; font-size:18px; color:var(--ink); font-variant-numeric:tabular-nums }
+  .result{ background:var(--greensoft); border-radius:18px; padding:16px; margin-top:4px } .result .re{ font-weight:800; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--green) } .result .rv{ font-weight:700; font-size:30px; color:var(--green); letter-spacing:-.02em; margin-top:6px; font-variant-numeric:tabular-nums } .result .rs{ font-weight:600; font-size:12px; color:#3C6E5B; margin-top:4px }
+  .cta2{ background:var(--ink); color:#fff; border-radius:16px; padding:15px; font-weight:800; font-size:14px; text-align:center; margin-top:14px }
+
+  /* VALIDADES */
+  .vrow{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:16px; padding:13px; background:#fff; margin-bottom:10px }
+  .vrow .vd{ width:9px;height:9px;border-radius:50%; flex:0 0 auto } .vrow .vl{ flex:1; min-width:0 } .vrow .vl b{ font-weight:800; font-size:14px; color:var(--ink) } .vrow .vl span{ display:block; font-weight:800; font-size:10.5px; margin-top:3px } .vrow .vdate{ font-weight:700; font-size:11px; color:var(--sub); font-variant-numeric:tabular-nums }
+  .vbtn{ display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--line); border-radius:14px; padding:13px; font-weight:700; font-size:13px; color:var(--ink); background:#fff; margin-bottom:10px } .vbtn svg{ width:17px;height:17px } .vbtn.ghost{ border:0; background:transparent; color:var(--ink) }
+
+  /* NOTIFICAÇÕES */
+  .nrow{ display:flex; gap:12px; padding:14px 2px; border-top:1px solid var(--line) } .nrow:first-child{ border-top:none }
+  .ndotw{ flex:0 0 auto; width:10px; display:flex; justify-content:center; padding-top:6px } .ndt{ width:8px;height:8px;border-radius:50%;background:var(--red) } .ndt.read{ background:var(--line) }
+  .nbody{ flex:1; min-width:0 } .nmeta{ display:flex; align-items:center; gap:8px; margin-bottom:5px } .ntag{ font-weight:800; font-size:9px; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:7px } .ntag.esc{ background:var(--ink); color:#fff } .ntag.ftl{ background:var(--soft); color:#3A3A38 } .ntag.ae{ background:var(--redsoft); color:var(--red-d) }
+  .ntime{ font-weight:700; font-size:11px; color:var(--grey) } .ntitle{ font-weight:800; font-size:13.5px; color:var(--ink); line-height:1.3 } .nsub{ font-weight:600; font-size:12px; color:var(--sub); margin-top:3px; line-height:1.4 }
+
+  /* PERFIL */
+  .idcard{ background:var(--ink); border-radius:22px; padding:16px; margin-bottom:14px } .ideye{ font-weight:800; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6) } .idname{ font-weight:700; font-size:20px; color:#fff; margin-top:7px; letter-spacing:-.01em } .idsub{ font-weight:600; font-size:12px; color:rgba(255,255,255,.7); margin-top:3px }
+  .idstats{ display:flex; gap:22px; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.12) } .idstats div b{ display:block; font-weight:700; font-size:16px; color:#fff } .idstats div b .cur{ color:var(--red) } .idstats div span{ font-weight:700; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:rgba(255,255,255,.55) }
+  .glab2{ font-weight:800; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--sub); margin:4px 2px 9px }
+  .pcard{ border:1px solid var(--line); border-radius:18px; padding:14px 15px; background:#fff; margin-bottom:11px; display:flex; align-items:center; gap:13px }
+  .pico{ width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto } .pico.sh{ background:var(--greensoft); color:var(--green) } .pico.pro{ background:var(--ink); color:#fff } .pico.rc{ background:var(--soft); color:var(--ink) } .pico svg{ width:20px;height:20px }
+  .pc{ flex:1; min-width:0 } .pc b{ display:block; font-weight:800; font-size:14px; color:var(--ink) } .pc span{ font-weight:600; font-size:11.5px; color:var(--sub); margin-top:2px; display:block; line-height:1.4 }
+  .protag{ font-style:normal; font-size:8px; font-weight:800; color:#fff; background:var(--red); border-radius:5px; padding:2px 5px; letter-spacing:.05em; margin-left:6px; vertical-align:middle }
+  .pchev{ color:var(--grey); flex:0 0 auto; display:flex }
+
+  /* LOGIN */
+  .login{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:40px 30px; text-align:center }
+  .lbm{ width:62px;height:62px;border-radius:18px;background:var(--ink);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;position:relative;overflow:hidden;box-shadow:0 22px 40px -18px rgba(20,22,26,.6) }
+  .lbm::after{ content:""; position:absolute; inset:0; background:radial-gradient(64px 64px at 72% 20%, rgba(245,64,44,.6), transparent 70%) } .lbm b{ font-weight:700; font-size:30px; color:#fff; z-index:1 }
+  .login h2{ font-weight:700; font-size:28px; letter-spacing:-.02em; color:var(--ink) } .login p{ font-weight:600; font-size:13px; color:var(--sub); margin:8px 0 26px }
+  .inp{ border:1px solid var(--line); border-radius:14px; padding:15px; text-align:left; font-weight:600; font-size:13px; color:var(--sub); margin-bottom:11px; display:flex; align-items:center; gap:11px; background:#fff } .inp svg{ width:17px;height:17px;color:var(--grey) }
+  .lcta{ background:var(--ink); color:#fff; border-radius:16px; padding:16px; font-weight:800; font-size:15px; margin-top:6px } .login .alt{ font-weight:700; font-size:12.5px; color:var(--sub); margin-top:20px }
+
+  /* ONBOARDING */
+  .obstep{ font-weight:800; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--red) }
+  .obc{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px; background:#fff } .obc.on{ border-color:var(--ink); box-shadow:0 6px 16px -10px rgba(20,22,26,.3) }
+  .oblg{ width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 auto } .obc .tt{ font-weight:800; font-size:14px } .obc .ssub{ font-weight:600; font-size:11px; color:var(--sub) } .obc .ck{ margin-left:auto; color:var(--ink); display:flex } .obc .ck svg{ width:20px;height:20px }
+
+  /* dock + fab */
+  .dock{ position:absolute; left:16px; bottom:24px; height:56px; background:var(--ink); border-radius:24px; display:flex; align-items:center; padding:0 5px; gap:1px; box-shadow:0 20px 36px -16px rgba(20,22,26,.5); z-index:40 }
+  .dock .ti{ width:40px;height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.55); position:relative } .dock .ti.on{ color:#fff; background:rgba(255,255,255,.10) } .dock .ti.on::after{ content:""; position:absolute; bottom:6px; width:4px; height:4px; border-radius:50%; background:var(--red) } .dock .ti svg{ width:20px;height:20px }
+  .fab{ position:absolute; right:16px; bottom:24px; width:56px; height:56px; border-radius:22px; background:var(--red); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 16px 30px -12px rgba(245,64,44,.55); z-index:40 } .fab svg{ width:24px;height:24px }
+  .fablb{ position:absolute; right:6px; bottom:86px; width:76px; text-align:center; font-weight:800; font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--sublt); z-index:40 }
+  .fade{ position:absolute; left:0; right:0; bottom:0; height:118px; background:linear-gradient(transparent, var(--paper) 62%); z-index:35; pointer-events:none }
+  .sectit{ position:relative; z-index:1; max-width:1560px; margin:54px auto 6px; display:flex; align-items:center; gap:14px; padding:0 4px } .sectit .k{ font-weight:800; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#8A9099 } .sectit .l{ height:1px; flex:1; background:linear-gradient(90deg, #CDD0D4, transparent) }
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <div class="k">CrewPact · app toda · direção UX</div>
+    <h1>Legal <span style="color:var(--sub)">+</span> Pago, em cada duty</h1>
+    <p>A app inteira numa linguagem visual única — fiel à app (paleta + ícones reais). Junta o novo (<b>Hoje</b>, <b>Validades Pro</b>, <b>FTL</b>) ao que já gostavas (<b>import à prova de falha</b>, <b>Resumo h+€</b>, <b>notificações</b>, <b>perfil</b>). Cada cartão pensado para responder rápido e nunca trancar a segurança.</p>
+    <div class="legend">
+      <span><i style="background:var(--soft)"></i> FTL · limites/segurança (grátis)</span>
+      <span><i style="background:var(--redsoft)"></i> AE · pagamento</span>
+      <span><i style="background:var(--green)"></i> dentro dos limites</span>
+      <span><i style="background:var(--warn)"></i> aviso / a expirar</span>
+      <span><i style="background:var(--ink)"></i> Pro (premium)</span>
+    </div>
+  </div>
+
+  <div class="sectit"><span class="k">Núcleo da app</span><span class="l"></span></div>
+  <div class="gallery">
+
+    <!-- 1 · HOJE -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">EASYJET · AE · PILOTO</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="hbadge">1</span></div></div>
+          <div class="ht">Hoje</div></div>
+        <div class="view">
+          <div class="qcard"><div class="qh"><span class="qd" style="background:var(--green)"></span><span class="qq">Estou legal?</span><span class="qc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="qa">Sim, dentro dos limites · <span class="n">PSV 10:00/12:00</span></div></div>
+          <div class="qcard"><div class="qh"><span class="qd" style="background:var(--warn)"></span><span class="qq">Quanto falta p/ limites?</span><span class="qc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="qa">Serviço 7d · <span class="n">faltam 5 h de 60 h</span></div>
+            <div class="qsug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 0 0-4-12z"/></svg>Estás a 92% — um serviço longo pode ultrapassar o limite.</div></div>
+          <div class="qcard"><div class="qh"><span class="qd" style="background:var(--ink)"></span><span class="qq">Quando trabalho?</span><span class="qc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="qa">Amanhã · <span class="n">06:05</span> · LIS-LGW</div></div>
+          <div class="qcard"><div class="qh"><span class="qd" style="background:var(--ink)"></span><span class="qq">Quanto recebo?</span><span class="qc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="qa"><span class="n">8 923 €</span> · este mês (estimativa)</div></div>
+          <div class="qcard"><div class="qh"><span class="qd" style="background:var(--warn)"></span><span class="qq">Validades em dia?</span><span class="qc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="qa">SEP expira em <span class="n">25 d</span></div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock">
+          <div class="ti on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        </div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div><figcaption><b>Hoje <i>novo</i></b><p>O ecrã de entrada: pergunta → resposta. Toca para ver a conta. Verde/âmbar/vermelho = semáforo de estado.</p></figcaption></figure>
+
+    <!-- 2 · HOJE detalhe -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Hoje · detalhe</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px var(--greensoft)"></span><span class="hl" style="color:var(--ink)">Estou legal?</span></div>
+          <div class="answerbig ok">Sim, dentro dos limites</div></div>
+        <div class="view tight">
+          <div class="blk"><div class="bt">Como cheguei aqui</div>
+            <div class="lim"><div class="ll"><span>PSV de hoje</span><b style="color:var(--green)">10:00 / 12:00 ✓</b></div></div>
+            <div class="lrow"><span class="a">Serviço · 7 dias</span><span class="b">55 / 60 h ✓</span></div>
+            <div class="lrow"><span class="a">Serviço · 14 dias</span><span class="b">88 / 110 h ✓</span></div>
+            <div class="lrow"><span class="a">Serviço · 28 dias</span><span class="b">150 / 190 h ✓</span></div>
+            <div class="lrow"><span class="a">Voo · 28 dias</span><span class="b">70 / 100 h ✓</span></div>
+            <div class="concl">Nenhum excede → dentro dos limites.</div>
+          </div>
+          <div class="foot-note">Consultivo · confirma sempre com a companhia.</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Hoje · detalhe <i>novo</i></b><p>“Como cheguei aqui”: mostra a conta (PSV + janelas 210) como um readout auditável. Transparência = confiança.</p></figcaption></figure>
+
+    <!-- 3 · INÍCIO -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">EASYJET · AE · PILOTO</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          <div class="ht">Olá, David</div></div>
+        <div class="view">
+          <div class="week"><div class="wd td has"><div class="n">21</div><div class="d">DOM</div><div class="wdot"></div></div><div class="wd on has"><div class="n">22</div><div class="d">SEG</div><div class="wdot"></div></div><div class="wd"><div class="n">23</div><div class="d">TER</div><div class="wdot"></div></div><div class="wd has"><div class="n">24</div><div class="d">QUA</div><div class="wdot"></div></div><div class="wd"><div class="n">25</div><div class="d">QUI</div><div class="wdot"></div></div></div>
+          <div class="statline"><span class="dot"></span><span class="lb">Dentro dos limites</span><span class="cx">CPT · 12/12</span></div>
+          <div class="nd"><div class="ndc"><div class="dnum">24</div><div class="dwd">TER</div></div>
+            <div class="ndx"><div class="ndeye"><span class="e">Próximo serviço</span><span class="cd">em 14h</span></div><div class="ndrt">LIS · LGW</div><div class="ndmeta">2 setores · per diem <b>+48 €</b></div><div class="ndtags"><span class="chip ftl">Report 06:05</span><span class="chip wn">Fadiga média</span></div></div></div>
+          <div class="grid2"><div class="uc"><div class="ut">FTL · Serviço</div><div class="uwin"><div class="uwl"><span>7 dias</span><b>55/60h</b></div><div class="bar"><i class="wn" style="width:92%"></i></div></div><div class="uwin"><div class="uwl"><span>28 dias</span><b>150/190h</b></div><div class="bar"><i class="gr" style="width:79%"></i></div></div></div>
+            <div class="uc ae"><div class="ut">AE · Junho</div><div class="big"><span class="cur"></span>9 535 €</div><div class="sm">base 8 923 € · +612 €</div></div></div>
+          <div class="sumstrip"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 2 4-5"/></svg></div><div class="st"><b>Resumo do mês</b><span>82h voo · 124h serviço · <em>+340 €</em></span></div><div class="ch"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock">
+          <div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div>
+          <div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        </div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div><figcaption><b>Início <i>dashboard</i></b><p>Limite FTL (semáforo) e AE (cartão escuro) lado a lado, próximo serviço com countdown, e a porta para o Resumo.</p></figcaption></figure>
+
+    <!-- 4 · ESCALA roda -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Escala semanal</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div></div>
+          <div class="ht">Junho, 2026</div></div>
+        <div class="view">
+          <div class="seg" style="margin-bottom:14px"><b class="on">Roda</b><b>Lista</b></div>
+          <div class="wheel"><div class="wband"></div>
+            <div class="wrow"><span class="wf">Folga</span><span class="wn">22</span><span class="ww">Dom</span></div>
+            <div class="wrow"><span class="wf">LIS · OPO <s>06:05</s></span><span class="wn">23</span><span class="ww">Seg</span></div>
+            <div class="wrow on"><span class="wf">LIS · LGW <s>06:05</s></span><span class="wn">24</span><span class="ww">Ter</span></div>
+            <div class="wrow"><span class="wf">LIS · FNC <s>13:20</s></span><span class="wn">25</span><span class="ww">Qua</span></div>
+            <div class="wrow"><span class="wf">Folga</span><span class="wn">26</span><span class="ww">Qui</span></div>
+          </div>
+          <div class="dcard"><div class="dch"><div class="dq">24</div><div><div class="dt">LIS · LGW</div><div class="ds">Ter · 24 Junho · do calendário</div></div></div>
+            <div class="dgrid"><div class="dcell"><div class="k">Report</div><div class="v">06:05</div></div><div class="dcell"><div class="k">Setores</div><div class="v">2</div></div><div class="dcell"><div class="k">Block-on</div><div class="v">11:10</div></div></div>
+            <div class="dtimes">Local 06:05–11:10 · Zulu 05:05Z–10:10Z</div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock">
+          <div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+          <div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        </div>
+        <div class="fablb">Serviço</div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div><figcaption><b>Escala · roda</b><p>Browse rápido dia-a-dia. Tocar no dia centrado edita; o cartão por baixo é só leitura. Toggle Roda/Lista.</p></figcaption></figure>
+
+    <!-- 5 · ESCALA lista -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Escala semanal</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          <div class="ht">Junho, 2026</div></div>
+        <div class="view">
+          <div class="toolbar"><div class="seg"><b>Roda</b><b class="on">Lista</b></div>
+            <div class="tact"><div class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5"/><path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-5z"/></svg></div><div class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></div></div></div>
+          <div class="row"><div class="rl"><div class="rtop"><span class="rd">Seg, 22 jun</span><span class="tdot"></span><span class="rrt">LIS-OPO-LIS</span></div><div class="rm">06:05 → 12:30 · 2 setores</div></div><div class="pay">+28 €</div></div>
+          <div class="row"><div class="rl"><div class="rtop"><span class="rd">Qua, 24 jun</span><span class="pdot"></span><span class="rrt">LIS-LGW-LIS</span></div><div class="rm">06:05 → 11:10 · 2 setores</div></div><div class="pay">+48 €</div></div>
+          <div class="row"><div class="rl"><div class="rtop"><span class="rd">Qui, 25 jun</span><span class="rrt">LIS-FNC-LIS</span></div><div class="rm">13:20 → 21:00 · 2 setores</div></div><div class="pay">+44 €</div></div>
+          <div class="row off"><div class="rl"><div class="rtop"><span class="rd">Dom, 28 jun</span><span class="rrt">STANDBY</span></div><div class="rm">Reserva · 06:00 → 14:00</div></div><div class="pay off">— €</div></div>
+          <div class="row"><div class="rl"><div class="rtop"><span class="rd">Ter, 30 jun</span><span class="rrt">LIS-MAD-LIS</span></div><div class="rm">07:00 → 13:10 · 2 setores</div></div><div class="pay">+24 €</div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock"><div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div><div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+        <div class="fablb">Serviço</div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div><figcaption><b>Escala · lista <i>+ €/linha</i></b><p>Cada duty mostra quanto vale. Standby = “— €”. Export CSV/PDF FTL.245 no canto.</p></figcaption></figure>
+
+    <!-- 6 · FTL hub -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Regulamento UE 83/2014</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div></div>
+          <div class="ht">FTL</div><div class="hsub">Calcular e consultar num só sítio.</div></div>
+        <div class="view tight" style="top:130px">
+          <div class="actbig"><div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4l11 2-11 2"/><path d="M4 13l9 1.6"/></svg></div><h3>Cálculo de atividade</h3><p>Uma atividade → PSV, limites e repouso juntos</p></div>
+          <div class="glab">Calcular</div>
+          <div class="pills"><div class="pill"><span class="c">205c</span><span class="t">Repouso a bordo</span></div><div class="pill"><span class="c">225</span><span class="t">Standby</span></div><div class="pill"><span class="c">215</span><span class="t">Posicionamento</span></div><div class="pill"><span class="c">205g</span><span class="t">Report atrasado</span></div></div>
+          <div class="glab">Consultar</div>
+          <div class="artrow"><span class="ac">ORO.FTL.205</span><span class="at">PSV e prolongamentos</span><span class="ach"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock"><div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+        <div class="fablb">Pesquisa</div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+      </div>
+    </div></div><figcaption><b>FTL · hub</b><p>Cartão de ação escuro com glow para a calculadora; ferramentas em pills; artigos do regulamento por baixo.</p></figcaption></figure>
+
+    <!-- 7 · FTL calc -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Regulamento UE 83/2014</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+          <div class="ht">Cálculo de atividade</div></div>
+        <div class="view">
+          <div class="seg2"><b class="on">Aclimatizado</b><b>Desconhecido</b><b>Transição</b></div>
+          <div class="field"><span class="fl">Apresentação</span><span class="fv">06:00</span></div>
+          <div class="field"><span class="fl">Fim de serviço</span><span class="fv">16:00</span></div>
+          <div class="field"><span class="fl">Setores</span><span class="fv">4</span></div>
+          <div class="result"><div class="re">PSV real / máximo</div><div class="rv">10:00 / 12:00</div><div class="rs">Legal · margem 2:00 · repouso ≥ 12 h (base)</div></div>
+          <div class="cta2">Registar no dia ✓</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>FTL · calculadora</b><p>Estado de aclimatização + horas → PSV real/máx com veredito a verde. “Registar” grava no dia.</p></figcaption></figure>
+
+    <!-- 8 · VALIDADES (Pro) -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl" style="color:var(--red)">PRO</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+          <div class="ht">Validades</div><div class="hsub">Acompanha o que expira e renova a tempo.</div></div>
+        <div class="view tight" style="top:130px">
+          <div class="vrow"><span class="vd" style="background:var(--red)"></span><div class="vl"><b>Dangerous Goods</b><span style="color:var(--red)">EXPIRADO há 4 d</span></div><span class="vdate">19 jun 2026</span></div>
+          <div class="vrow"><span class="vd" style="background:var(--warn)"></span><div class="vl"><b>SEP recorrente</b><span style="color:var(--warn)">expira em 25 d</span></div><span class="vdate">17 jul 2026</span></div>
+          <div class="vrow"><span class="vd" style="background:var(--green)"></span><div class="vl"><b>Médico Classe 1</b><span style="color:var(--green)">válido · 81 d</span></div><span class="vdate">12 set 2026</span></div>
+          <div class="vrow"><span class="vd" style="background:var(--green)"></span><div class="vl"><b>CRM</b><span style="color:var(--green)">válido · 540 d</span></div><span class="vdate">17 dez 2027</span></div>
+          <div class="vbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Adicionar validade</div>
+          <div class="vbtn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg>Detetar da escala (colar PDF)</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Validades <i class="pro">PRO</i></b><p>Radar de validades (médico, recorrentes, licença). “Detetar da escala” lê os recorrentes do PDF e propõe as datas.</p></figcaption></figure>
+
+  </div>
+
+  <div class="sectit"><span class="k">Diferenciadores que gostaste</span><span class="l"></span></div>
+  <div class="gallery">
+
+    <!-- 9 · IMPORT -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Escala · Importar</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+          <div class="ht">Confirmar import</div></div>
+        <div class="view cta">
+          <div class="impban"><div class="ii"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div><div class="it"><b>Li 14 atividades</b><span>12 prontas · 2 a corrigir antes de somar ao per-diem</span></div></div>
+          <div class="improw"><div class="ic ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></div><div class="il"><b>Seg 22 · LIS-OPO-LIS</b><span>05:40 → 12:30 · 2 setores</span></div><div class="ip">+28 €</div></div>
+          <div class="improw"><div class="ic ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></div><div class="il"><b>Qua 24 · LIS-FNC-LIS</b><span>06:10 → 13:20 · 2 setores</span></div><div class="ip">+44 €</div></div>
+          <div class="improw fix"><div class="top"><div class="ic bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div class="il"><b>Sex 26 · LIS-XXX</b><span>Aeroporto “XXX” não reconhecido</span></div><div class="ip off">— €</div></div><div class="fixrow"><div class="fixin">LIS-<span class="cur">destino…</span></div><div class="fixgo">Corrigir</div></div></div>
+          <div class="improw"><div class="ic bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div class="il"><b>Dom 28 · standby</b><span>Sem rota — não conta para per-diem</span></div><div class="ip off">— €</div></div>
+        </div>
+        <div class="ctabar"><div class="cta">Confirmar 12 duties · +312 €</div><div class="hint">Corrige as <em>2</em> para somarem ao per-diem</div></div>
+      </div>
+    </div></div><figcaption><b>Import <i>à prova de falha</i></b><p>Preview antes de gravar. Sucesso parcial: grava 12, assinala 2 para corrigir à mão.</p></figcaption></figure>
+
+    <!-- 10 · RESUMO -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Resumo</span></div>
+          <div class="seg" style="transform:scale(.9);transform-origin:right center"><b class="on">Mês</b><b>Ano</b></div></div>
+          <div class="ht">Junho</div></div>
+        <div class="view">
+          <div class="grid2" style="margin-bottom:9px"><div class="uc" style="padding:11px 12px"><div class="ut" style="margin-bottom:6px">Voo</div><div style="font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">82:30<span style="font-size:12px;color:var(--sub)"> h</span></div></div><div class="uc" style="padding:11px 12px"><div class="ut" style="margin-bottom:6px">Serviço</div><div style="font-weight:700;font-size:20px;font-variant-numeric:tabular-nums">124<span style="font-size:12px;color:var(--sub)"> h</span></div></div><div class="uc" style="padding:11px 12px"><div class="ut" style="margin-bottom:6px">Setores</div><div style="font-weight:700;font-size:20px">38</div></div></div>
+          <div class="blk"><div class="bt" style="display:flex;justify-content:space-between"><span>Margem FTL · 28 dias</span><span style="color:var(--green)">folga</span></div>
+            <div class="lim"><div class="ll"><span>Voo</span><b>82 / 100h</b></div><div class="bar"><i class="gr" style="width:82%"></i></div></div>
+            <div class="lim"><div class="ll"><span>Serviço</span><b>124 / 190h</b></div><div class="bar"><i class="gr" style="width:65%"></i></div></div></div>
+          <div class="blk" style="background:var(--ink);border-color:var(--ink)"><div class="bt" style="color:rgba(255,255,255,.7);display:flex;justify-content:space-between"><span>AE · Per diem por setor</span><span style="color:var(--red)">+340 €</span></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-weight:700;font-size:12px;color:rgba(255,255,255,.8);width:48px">curto</span><span style="flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden"><i style="display:block;height:100%;width:54%;background:var(--red);border-radius:99px"></i></span><span style="font-weight:800;font-size:12px;color:#fff;width:46px;text-align:right">132 €</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="font-weight:700;font-size:12px;color:rgba(255,255,255,.8);width:48px">médio</span><span style="flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden"><i style="display:block;height:100%;width:80%;background:var(--red);border-radius:99px"></i></span><span style="font-weight:800;font-size:12px;color:#fff;width:46px;text-align:right">168 €</span></div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.14)"><span style="font-weight:800;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.7)">Total · junho</span><span style="font-weight:700;font-size:25px;color:#fff">9 535 €</span></div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock"><div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div><div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+      </div>
+    </div></div><figcaption><b>Resumo <i>h + €</i></b><p>Horas e dinheiro no mesmo ecrã: stats, margem FTL e per-diem por banda. Premium “Salário Pro”.</p></figcaption></figure>
+
+    <!-- 11 · NOTIFICAÇÕES -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Notificações</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+          <div class="ht">Atualizações</div></div>
+        <div class="view">
+          <div class="nrow"><div class="ndotw"><span class="ndt"></span></div><div class="nbody"><div class="nmeta"><span class="ntag esc">Escala</span><span class="ntime">há 2h</span></div><div class="ntitle">Voo alterado · 5ª LIS-FNC</div><div class="nsub">Report movido para 06:10 (era 05:30). Toca para rever.</div></div></div>
+          <div class="nrow"><div class="ndotw"><span class="ndt"></span></div><div class="nbody"><div class="nmeta"><span class="ntag esc">Escala</span><span class="ntime">ontem</span></div><div class="ntitle">Novo standby · Dom 28 jun</div><div class="nsub">Reserva 06:00–14:00 adicionada à tua escala.</div></div></div>
+          <div class="nrow"><div class="ndotw"><span class="ndt read"></span></div><div class="nbody"><div class="nmeta"><span class="ntag ftl">FTL</span><span class="ntime">há 3 dias</span></div><div class="ntitle">A aproximar-te do limite</div><div class="nsub">92/100h de voo em 28 dias. Margem para 8h.</div></div></div>
+          <div class="nrow"><div class="ndotw"><span class="ndt read"></span></div><div class="nbody"><div class="nmeta"><span class="ntag ae">AE</span><span class="ntime">1 jun</span></div><div class="ntitle">Per-diem de maio fechado</div><div class="nsub">412 € · 14 voos com rota. Vê o detalhe no Resumo.</div></div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock"><div class="ti on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+      </div>
+    </div></div><figcaption><b>Notificações <i>alteração</i></b><p>Deteta mudanças de escala e avisa — e junta avisos FTL e fecho de per-diem AE num só sítio.</p></figcaption></figure>
+
+    <!-- 12 · PERFIL -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr"><div class="htop"><div class="hlw"><span class="rd"></span><span class="hl">Perfil</span></div>
+          <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.2a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4 13H3.8a2 2 0 0 1 0-4H4a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 11 3.8V3.6a2 2 0 0 1 4 0v.2A1.6 1.6 0 0 0 17.7 5l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 20.2 11h.2a2 2 0 0 1 0 4z"/></svg></div></div>
+          <div class="ht">Perfil</div></div>
+        <div class="view">
+          <div class="idcard"><div class="ideye">EASYJET · SPAC · PILOTO</div><div class="idname">David Ramos</div><div class="idsub">CPT · contrato 12/12 · LIS</div>
+            <div class="idstats"><div><b>8 923 €</b><span>Base mensal</span></div><div><b><span class="cur">+</span>612 €</b><span>Variável · jun</span></div></div></div>
+          <div class="glab2">Pro</div>
+          <div class="pcard"><div class="pico pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="pc"><b>Validades & Documentos<i class="protag">PRO</i></b><span>Médico, recorrentes, licença… com estado e datas</span></div><div class="pchev"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></div></div>
+          <div class="glab2">Os meus dados</div>
+          <div class="pcard"><div class="pico rc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="pc"><b>Exportar os meus dados</b><span>Perfil + escala + FTL + AE, em JSON (RGPD)</span></div></div>
+          <div class="pcard"><div class="pico sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg></div><div class="pc"><b>Dados no teu telemóvel</b><span>Offline-first. Sem anúncios, sem venda de dados.</span></div></div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock"><div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div></div>
+        <div class="fablb">Sair</div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
+      </div>
+    </div></div><figcaption><b>Perfil <i>privacy</i></b><p>Identidade AE no topo, entrada Pro (Validades), export RGPD e a mensagem privacy-first.</p></figcaption></figure>
+
+    <!-- 13 · LOGIN -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="login">
+          <div class="lbm"><b>C</b></div>
+          <h2>CrewPact</h2><p>O teu copiloto de FTL e salário.</p>
+          <div class="inp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>email@easyjet.com</div>
+          <div class="inp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>••••••••••</div>
+          <div class="lcta">Entrar</div>
+          <div class="alt">Criar conta · Recuperar acesso</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Login</b><p>Entrada minimalista — logótipo com glow, sessão offline-first guardada localmente.</p></figcaption></figure>
+
+    <!-- 14 · ONBOARDING -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div><div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr" style="height:130px"><div class="obstep">Passo 1 de 3</div><div class="ht" style="margin-top:8px">A tua companhia</div><div class="hsub">Carrega as regras FTL e o acordo certo.</div></div>
+        <div class="view" style="top:134px">
+          <div class="obc on"><div class="oblg" style="background:var(--redsoft);color:var(--red)">eJ</div><div><div class="tt">easyJet</div><div class="ssub">AE · FTL · piloto/cabine</div></div><div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12l5 5L20 6"/></svg></div></div>
+          <div class="obc"><div class="oblg" style="background:var(--infosoft);color:var(--info)">J2</div><div><div class="tt">Jet2</div><div class="ssub">FTL</div></div></div>
+          <div class="obc"><div class="oblg" style="background:var(--redsoft);color:var(--red-d)">V</div><div><div class="tt">Volotea</div><div class="ssub">FTL</div></div></div>
+          <div class="obc"><div class="oblg" style="background:var(--greensoft);color:var(--green)">W</div><div><div class="tt">Wizz Air</div><div class="ssub">FTL</div></div></div>
+          <div class="cta2">Continuar</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Onboarding</b><p>Escolha de companhia → carrega regras FTL + acordo certos. Adapta a app ao perfil (AE/FTL, piloto/cabine).</p></figcaption></figure>
+
+  </div>
+
+  <div style="text-align:center;color:#8A9099;font-size:12px;padding:40px;font-weight:600">CrewPact · mockup de direção — fiel à app (Inter · paleta real · ícones SVG) · 14 ecrãs</div>
+</body>
+</html>

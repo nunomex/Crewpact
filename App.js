@@ -32,6 +32,7 @@ import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, reconcileDayLog } from './ftl';
+import { syncReminders, notifyRosterChange, cancelAllReminders, requestRemindersPermission } from './data/reminders';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -297,6 +298,7 @@ export default function App() {
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
   const [aeExtras, setAeExtras] = useState({});              // Extras do mês AE { "YYYY-MM": { <id>: n } } — partilhado por Home/Perfil/Cálculos
   const [validities, setValidities] = useState([]);          // Validades & docs (premium v1) — local: [{ id, type, expiry, note }]
+  const [remindersOn, setRemindersOn] = useState(false);     // Lembretes locais (premium · #3) — opt-in (precisa permissão + dev build)
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
@@ -554,11 +556,11 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setValidities([]); setLoadedUserId(null); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setValidities([]); setRemindersOn(false); cancelAllReminders(); setLoadedUserId(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd, rm] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -566,11 +568,13 @@ export default function App() {
           AsyncStorage.getItem('cp_airlines'),
           AsyncStorage.getItem(`cp_ae_extras_${user.id}`),
           AsyncStorage.getItem(`cp_validities_${user.id}`),
+          AsyncStorage.getItem(`cp_reminders_${user.id}`),
         ]);
         if (cancelled) return;
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         try { setAeExtras(ax ? (JSON.parse(ax) || {}) : {}); } catch { setAeExtras({}); }   // extras do mês AE
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
+        setRemindersOn(rm === '1');                                                          // lembretes opt-in
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
         if (al) setAirlines(JSON.parse(al));
         fetchAirlines().then(fresh => {
@@ -616,6 +620,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
   // Duties: cache local instantânea → merge com o servidor (histórico). Pendentes
@@ -746,6 +751,28 @@ export default function App() {
   const updateValidity = (id, patch) => setValidities((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
   const removeValidity = (id) => setValidities((prev) => prev.filter((v) => v.id !== id));
 
+  // Lembretes locais (premium · #3) — opt-in. Reagenda quando validades/duties mudam e
+  // notifica quando a escala muda. (isPilot/lang lidos por closure → fora das deps p/ evitar TDZ.)
+  const lastRosterSig = useRef(null);
+  const toggleReminders = async (on) => {
+    if (on) {
+      const granted = await requestRemindersPermission();
+      if (!granted) return;                       // sem permissão → fica desligado
+      setRemindersOn(true);
+      syncReminders({ validities, isPilot, duties, todayISO: isoDay(), lang });
+    } else { setRemindersOn(false); cancelAllReminders(); }
+  };
+  useEffect(() => {
+    if (remindersOn) syncReminders({ validities, isPilot, duties, todayISO: isoDay(), lang });
+  }, [remindersOn, validities, duties]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!remindersOn) return;
+    const rc = rosterChanges;
+    if (!rc || !rc.counts || !rc.counts.total) return;
+    const sig = [...(rc.changed || []), ...(rc.conflict || []), ...(rc.added || []), ...(rc.removed || [])].map((x) => x.date).sort().join(',');
+    if (sig && sig !== lastRosterSig.current) { lastRosterSig.current = sig; notifyRosterChange(rc.counts, lang); }
+  }, [rosterChanges, remindersOn]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const ctx = {
     user, setUser: handleSetUser, logout,
     suppressAuth,
@@ -753,6 +780,7 @@ export default function App() {
     airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, ae, caps,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
+    remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
     theme, setTheme, palette: PALETTES[theme] || PALETTES.light,

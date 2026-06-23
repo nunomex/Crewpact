@@ -46,7 +46,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -267,8 +267,10 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.gbox}>
             <Row icon="language-outline" label={t('profile.language', lang)} s={s} C={C}
               right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
-            <Row icon="contrast-outline" label={t('profile.theme', lang)} last s={s} C={C}
+            <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s} C={C}
               right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
+            <Row icon="notifications-outline" label={l('Lembretes', 'Reminders')} sub={l('Validades, próximo serviço e alterações de escala', 'Documents, next duty and roster changes')} last s={s} C={C}
+              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={remindersOn ? 'on' : 'off'} setValue={(v) => toggleReminders(v === 'on')} />} />
           </View>
         </Animated.View>
 
