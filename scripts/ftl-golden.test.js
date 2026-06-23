@@ -146,6 +146,11 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
   // (b)(9): standby iniciado entre 23:00–07:00 → a parte na janela não conta p/ a redução.
   eq('SB outro 23:30 (noturno) → janela não conta', computeStandby({ type: 'other', standbyH: 10, startMin: M('23:30'), maxFdpMin: M('13:00') }).reductionMin, 0);
   eq('SB outro 10:00 (fora da janela) → conta tudo', computeStandby({ type: 'other', standbyH: 10, startMin: M('10:00'), maxFdpMin: M('13:00') }).reductionMin, M('04:00'));
+  // Combinado standby+PSV (aeroporto ≤16h) e "acordado" (outro >18h) — agora com flag.
+  eq('SB aeroporto 6h + PSV 11h = 17h > 16h → combinedOver', computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('11:00') }).combinedOver, true);
+  eq('SB aeroporto 4h + PSV 11h = 15h ≤ 16h → não', computeStandby({ type: 'airport', standbyH: 4, maxFdpMin: M('11:00') }).combinedOver, false);
+  eq('SB outro 8h + PSV 13h = 21h > 18h → awakeOver', computeStandby({ type: 'other', standbyH: 8, maxFdpMin: M('13:00') }).awakeOver, true);
+  eq('SB outro 4h + PSV 10h = 14h ≤ 18h → não', computeStandby({ type: 'other', standbyH: 4, maxFdpMin: M('10:00') }).awakeOver, false);
 }
 
 // ─────────────────────────────── Discrição do comandante (ORO.FTL.205(f)) ──────────────────
@@ -237,6 +242,22 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Adapter serviço ilegal (h)', il.servico, 14);
   // Sem on-block → null (sem dados FTL).
   eq('Adapter sem block_on → null', dutyToFtlDay({ report_time: '06:00' }), null);
+}
+
+// ─────────── 205(d)(1) — prolongamento inferido + frequência (máx 2/7d) ───────────
+{
+  const { dutyToFtlDay, computeExtensionUsage } = ftl;
+  // 07:00 / 1 setor: PSV básico 13:00, estendido 14:00 (banda permite extensão).
+  const extDuty = dutyToFtlDay({ report_time: '07:00', block_on: '20:30', sectors: 1, flight_minutes: 600 }); // 13:30
+  eq('Ext-infer: 13:30 (>básico, ≤estendido) → extended', extDuty.psv.extended, true);
+  eq('Ext-infer: 12:30 (cabe no básico) → não', dutyToFtlDay({ report_time: '07:00', block_on: '19:30', sectors: 1 }).psv.extended, false);
+  eq('Ext-infer: 14:30 (>estendido) → não (ilegal/discrição)', dutyToFtlDay({ report_time: '07:00', block_on: '21:30', sectors: 1 }).psv.extended, false);
+  eq('Ext-infer: banda 06:00 não permite extensão → não', dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 1 }).psv.extended, false);
+  // Frequência na janela de 7 dias que termina na referência.
+  const noExt = dutyToFtlDay({ report_time: '07:00', block_on: '19:30', sectors: 1 });
+  eq('Ext-freq: 1 prolongamento → novo não excede', computeExtensionUsage({ '2026-06-05': extDuty }, '2026-06-05').count, 1);
+  eq('Ext-freq: 2 prolongamentos → novo excederia', computeExtensionUsage({ '2026-06-03': extDuty, '2026-06-05': extDuty }, '2026-06-05').wouldExceed, true);
+  eq('Ext-freq: 0 prolongamentos → não excede', computeExtensionUsage({ '2026-06-05': noExt }, '2026-06-05').wouldExceed, false);
 }
 
 // ─────────── 235(b)(3)(ii) — repouso fora-base com fuso ≥ 4 h (piso 14 h) ───────────

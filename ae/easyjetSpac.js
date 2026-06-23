@@ -214,7 +214,7 @@ export const CALCS = [
   { id: 'pregnancy', group: 'Subsídios', linked: false, label: 'Complemento de gravidez',    sub: '35% da base mensal (Anexo I.11)' },
   { id: 'retention', group: 'Subsídios', linked: false, label: 'Retenção (contrato sazonal)', sub: '€/ano · só sazonal, não estilo de vida (Anexo I.15 / Art. 66.9)', when: ({ contract, lifestyle }) => isSeasonalContract(contract) && !lifestyle },
   { id: 'loyalty',   group: 'Subsídios', linked: false, label: 'Prémio de permanência',      sub: '% da base anual por antiguidade (Anexo I.9)', when: ({ category }) => loyaltyPct(category, 99) > 0 },
-  { id: 'bonus',     group: 'Subsídios', linked: false, label: 'Bónus de performance anual',  sub: '% da base anual · alvo, por categoria (Art. 46)' },
+  { id: 'bonus',     group: 'Subsídios', linked: false, label: 'Bónus de performance anual',  sub: 'ALVO · estimativa — varia (Art. 46)' },
 ];
 
 // Catálogo APLICÁVEL a uma categoria/contrato — esconde o que não pertence:

@@ -70,13 +70,20 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
   const vooH = duty.flight_minutes ? toH(duty.flight_minutes) : 0;
   const place = inBase ? 'base' : 'away';
   const repMin = parseHhmm(duty.report_time), endMin = parseHhmm(duty.block_on);
+  // Prolongamento PLANEADO (CS FTL.1.205(d)(1)): o PSV planeado excede o BÁSICO mas cabe
+  // no ESTENDIDO, numa banda que permite extensão → conta p/ "máx 2 em 7 dias". Heurística:
+  // da escala não se distingue planeado de discrição; marca-se quando CABE na extensão
+  // (direção segura — antes avisar a mais). Acima do estendido = ilegal/discrição, não conta.
+  const extFdp = computeFdp({ state, reportMin: repMin, sectors: duty.sectors || 0, extended: true });
+  const usedExtension = !!d.fdp.over && repMin != null && !extFdp.notAllowed
+    && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
   return {
     src: 'duty',
     psv: {
       state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: d.fdp.maxFdpStr,
       band: d.fdp.band, start: duty.report_time, end: duty.block_on,
       endNextDay: repMin != null && endMin != null && endMin < repMin,
-      over: d.fdp.over, excess: d.fdp.excessStr, extended: false, ts: Date.now(),
+      over: d.fdp.over, excess: d.fdp.excessStr, extended: usedExtension, ts: Date.now(),
     },
     servico: servicoH,
     voo: vooH,

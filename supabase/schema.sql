@@ -241,3 +241,20 @@ begin
     alter table public.duties add column roster_meta text;
   end if;
 end $$;
+
+
+-- ── 13. airlines.long_haul — operação de longo-curso/multi-fuso ──────────────
+-- O cálculo FTL automático assume aclimatizado + na-base (válido p/ curto-curso).
+-- Para companhias de longo-curso (multi-fuso, fora-base) esse pressuposto pode estar
+-- errado → a app avisa e remete p/ a calculadora manual (data/capabilities.js →
+-- isLongHaulCompany lê esta flag, com fallback por nome enquanto a coluna não existir).
+-- Hoje só a Hi Fly (ACMI/wet-lease). Default false. Idempotente.
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='airlines' and column_name='long_haul') then
+    alter table public.airlines add column long_haul boolean not null default false;
+  end if;
+end $$;
+update public.airlines set long_haul = true
+  where lower(slug) = 'hifly' or name ilike '%hi fly%' or name ilike '%hifly%';

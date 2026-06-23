@@ -710,7 +710,10 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
             <Text style={cs.dutyVal}>{r.dutyCountStr}{isAirport ? '' : ` · 25%`}</Text>
           </View>
           {isAirport
-            ? <Text style={cs.note}>{t('ftl.sbCombinedNote', lang)} {r.combinedMaxStr}</Text>
+            ? <>
+                <Text style={cs.note}>{t('ftl.sbCombinedNote', lang)} {r.combinedMaxStr}</Text>
+                {r.combinedOver && <Text style={cs.errNote}>{t('ftl.sbCombinedOver', lang)}</Text>}
+              </>
             : <>
                 {r.overMaxStandby && <Text style={cs.errNote}>{t('ftl.sbOverMax', lang)}</Text>}
                 {r.awakeOver && <Text style={cs.warnNote}>{t('ftl.sbAwakeOver', lang)}</Text>}

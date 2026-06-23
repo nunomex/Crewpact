@@ -185,7 +185,7 @@ export const CALCS = [
   { id: 'holiday',  group: 'Subsídios',   linked: false, label: 'Dia de férias',            sub: '2 setores nominais (Art. 60)' },
   { id: 'lang',     group: 'Subsídios',   linked: false, label: 'Domínio de língua',        sub: '€350 + €50/língua (Art. 65)' },
   { id: 'benefits', group: 'Subsídios',   linked: false, label: 'Abono para benefícios',    sub: '€425/ano (Art. 62)' },
-  { id: 'bonus',    group: 'Subsídios',   linked: false, label: 'Bónus de performance anual', sub: 'alvo: 2 semanas de base (Cl. 63)' },
+  { id: 'bonus',    group: 'Subsídios',   linked: false, label: 'Bónus de performance anual', sub: 'ALVO · estimativa: 2 semanas de base (Cl. 63)' },
   { id: 'sick',     group: 'Subsídios',   linked: false, label: 'Complemento de doença',    sub: '45% base diária (Art. 61)' },
   { id: 'snc',      group: 'Perturbação', linked: false, label: 'Alteração curta (SNC)',    sub: '€20/evento (Art. 66)' },
   { id: 'rdp',      group: 'Perturbação', linked: false, label: 'Irregularidade (RDP)',     sub: '1 setor nominal (Art. 67)' },

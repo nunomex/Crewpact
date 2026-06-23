@@ -9,6 +9,7 @@ import { catLabel } from '../data/extras';
 import { monthlyAe, aeMonthTotal } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
 import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
+import { isLongHaulCompany } from '../data/capabilities';
 import PageHeader from '../components/PageHeader';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import Skeleton from '../components/Skeleton';
@@ -449,6 +450,19 @@ export default function HomeScreen({ navigation }) {
           <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>
           <Text style={s.statCtx} numberOfLines={1}>{crewCategory ? `${crewCategory}${crewContract ? ' · ' + crewContract : ''}` : (stateReason || '')}</Text>
         </Animated.View>
+
+        {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso. Em
+            longo-curso (Hi Fly) avisa e remete p/ a calculadora manual. */}
+        {isLongHaulCompany(company) ? (
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }} style={s.rcBanner}>
+            <Ionicons name="information-circle" size={22} color={C.warn || C.red} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.rcTitle}>{l('Cálculo FTL automático', 'Automatic FTL calculation')}</Text>
+              <Text style={s.rcSub} numberOfLines={2}>{l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.sub} />
+          </TouchableOpacity>
+        ) : null}
 
         {/* Alterações de escala (Fase 4) — aviso quando o calendário difere do guardado */}
         {(() => {

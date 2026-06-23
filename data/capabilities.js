@@ -8,6 +8,14 @@
 // O FTL (EASA) aplica-se SEMPRE; estas flags só decidem o que cada ecrã apresenta.
 import { getAeForProfile } from '../ae';
 
+// A companhia opera longo-curso / multi-fuso? O FTL automático assume aclimatizado +
+// na-base (válido p/ curto-curso); para estas o pressuposto pode estar errado → a UI
+// avisa e remete p/ a calculadora manual. Preferir a flag da BD (airlines.long_haul);
+// fallback por nome/slug enquanto a coluna não existir na BD.
+export const isLongHaulCompany = (company) =>
+  !!company && (company.long_haul === true ||
+    /hi.?fly/i.test(`${company.slug || ''} ${company.name || ''}`));
+
 // NB: o wording (rótulos pt/en) vive no i18n (data/i18n.js), NÃO aqui — a matriz só
 // decide O QUE aparece (comportamento/feature-gating), não COMO se chama.
 export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract = '12/12', lifestyle = false } = {}) => {
@@ -36,5 +44,8 @@ export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract =
     // Report offset (cabine) no FTL: 0 — o PSV começa na hora de report da escala, que
     // o utilizador insere tal como vem (sem offset sintético piloto↔cabine). Decisão Passo 5.
     reportOffsetMin: 0,
+    // Operação de longo-curso/multi-fuso (Hi Fly) → o FTL automático (acc/na-base)
+    // pode estar errado; a UI avisa e remete p/ a calculadora manual.
+    longHaul: isLongHaulCompany(company),
   };
 };

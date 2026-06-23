@@ -22,7 +22,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { capabilitiesFor } = require(path.resolve('data/capabilities.js'));
+const { capabilitiesFor, isLongHaulCompany } = require(path.resolve('data/capabilities.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => {
@@ -92,6 +92,17 @@ const FTL = { slug: 'someftl', rule_type: 'FTL' };
   eq('sem companhia: hasAe', c.hasAe, false);
   eq('sem companhia: pay', c.pay, false);
 }
+
+// ── Longo-curso (isLongHaulCompany): data-driven (flag BD) com fallback por nome ──
+eq('longHaul: Hi Fly por flag da BD', isLongHaulCompany({ slug: 'hifly', long_haul: true }), true);
+eq('longHaul: Hi Fly por nome (fallback)', isLongHaulCompany({ slug: 'x', name: 'Hi Fly' }), true);
+eq('longHaul: Hi Fly por slug (fallback)', isLongHaulCompany({ slug: 'hifly', name: 'Hi Fly Airline' }), true);
+eq('longHaul: easyJet não', isLongHaulCompany({ slug: 'easyjet', name: 'easyJet' }), false);
+eq('longHaul: jet2 não', isLongHaulCompany({ slug: 'jet2', name: 'Jet2' }), false);
+eq('longHaul: flag sobrepõe (nova companhia)', isLongHaulCompany({ slug: 'newco', name: 'New Co', long_haul: true }), true);
+eq('longHaul: sem companhia → false', isLongHaulCompany(null), false);
+eq('longHaul: na matriz (Hi Fly)', capabilitiesFor({ company: { slug: 'hifly', name: 'Hi Fly', rule_type: 'FTL' } }).longHaul, true);
+eq('longHaul: na matriz (easyJet) → false', capabilitiesFor({ company: { slug: 'easyjet', rule_type: 'AE' } }).longHaul, false);
 
 console.log(`\nCapabilities — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

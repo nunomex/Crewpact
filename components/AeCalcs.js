@@ -214,6 +214,10 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
           <View style={s.card}>
             {g.items.map((c, i) => {
               const val = ae.catalogValue ? ae.catalogValue(c.id, { category, contract, index, years: serviceYears || 0 }) : null;
+              // Bónus de performance: mostrar o TETO (o alvo varia até ao máximo). Só
+              // pilotos têm máx ≠ alvo (Art. 46); na cabine (Cl. 63) é só alvo → nada.
+              const bonusMax = (c.id === 'bonus' && ae.perfBonus) ? ae.perfBonus(category, { contract, index, max: true }) : null;
+              const showMax = bonusMax != null && val != null && bonusMax > val;
               return (
                 <View key={c.id} style={[s.crow, i > 0 && s.rowBorder]}>
                   <View style={{ flex: 1 }}>
@@ -223,7 +227,10 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
                     </View>
                     <Text style={s.cs}>{txv(c.sub, lang)}</Text>
                   </View>
-                  <Text style={s.cv}>{fmtEur(val)}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={s.cv}>{fmtEur(val)}</Text>
+                    {showMax ? <Text style={s.cvMax}>{l(`máx ${fmtEur(bonusMax)}`, `max ${fmtEur(bonusMax)}`)}</Text> : null}
+                  </View>
                 </View>
               );
             })}
@@ -301,6 +308,7 @@ const makeStyles = (C) => StyleSheet.create({
   cl: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.bold },
   cs: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, lineHeight: 15 },
   cv: { fontSize: TYPE.body, color: C.text, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
+  cvMax: { fontSize: TYPE.micro, color: C.sub, marginTop: 1, fontVariant: ['tabular-nums'] },
   unit: { fontSize: TYPE.micro, color: C.sub, marginTop: 1 },
   // Steppers dos "Extras do mês"
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 4, paddingVertical: 3 },
