@@ -10,6 +10,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "sim": "node scripts/simulate.js",
     "test:ftl": "node scripts/ftl-golden.test.js",
     "test:ae": "node scripts/ae-golden.test.js",
     "test:pdf": "node scripts/pdf-roster.test.js",
