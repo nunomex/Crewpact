@@ -39,7 +39,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
-export default function DutyFormSheet({ visible, onClose, date, onSaved }) {
+export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
   const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, base, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -55,10 +55,12 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved }) {
       ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop }
       : { ...EMPTY, date: iso };
   };
+  // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop });
   useEffect(() => {
     if (!visible) return;
-    setForm(loadFor(date || isoDay()));
-  }, [visible, date]); // eslint-disable-line react-hooks/exhaustive-deps
+    setForm(candidate ? formFromCand(candidate) : loadFor(date || isoDay()));
+  }, [visible, date, candidate]); // eslint-disable-line react-hooks/exhaustive-deps
   const goDate = (delta) => { select(); setForm(loadFor(addDays(form.date, delta))); };
 
   // Revelação em cascata das secções (uma Animated.Value 0→1 mapeada por índice).
@@ -137,12 +139,21 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved }) {
 
   const onSave = () => {
     if (!canSave) return;
-    saveDuty(form.date, {
+    const fields = {
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
       sectors: isFlight ? form.sectors : 0, flight_minutes: isFlight ? hhmmToMin(form.flight) : 0,
       route: isFlight ? (form.route.trim() || null) : null,
       kind: form.kind || 'flight', nightStop: showNightStop ? !!form.nightStop : false,
-    });
+    };
+    if (onCandidate) {
+      // Correção no import: devolve o candidato corrigido — NÃO grava no `duties` (só o
+      // "Confirmar import" grava). Volta à página de import, que reavalia estado/per-diem.
+      onCandidate({ duty_date: form.date, ...fields });
+      success();
+      onClose && onClose();
+      return;
+    }
+    saveDuty(form.date, fields);
     success();
     notify && notify(l('Serviço guardado', 'Duty saved'));
     onSaved && onSaved(form.date);
@@ -159,7 +170,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved }) {
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}>
               <View style={s.eyebrowDot} />
-              <Text style={s.eyebrow}>{l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
+              <Text style={s.eyebrow}>{onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
             </View>
             <Text style={s.h1}>Duty</Text>
           </View>

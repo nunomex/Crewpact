@@ -6,8 +6,14 @@ import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { parseEasyjetRoster } from '../data/pdfRoster';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
+// expo-pdf-text-extract é NATIVO (não existe em Expo Go) → require LAZY dentro de pickPdf,
+// para o arranque da app NÃO rebentar em Expo Go (só se avalia ao escolher um PDF).
 import { detectRecurrents } from '../data/recurrents';
 import { validityLabel } from '../data/validities';
+import { airportCoord, sectorDistanceNM } from '../data/airports';
+import DutyFormSheet from './DutyFormSheet';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -33,7 +39,7 @@ const demoCands = () => {
 // (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
 // parcial. Página inteira (Modal slide-up), no estilo da página de duty.
 export default function RosterImportSheet({ visible, onClose }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, validities, addValidity, updateValidity, isPilot } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -49,6 +55,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   const [pasteText, setPasteText] = useState('');
   const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do texto colado
   const [pasteRecurrents, setPasteRecurrents] = useState([]);  // recorrentes detetados no PDF (v2.1) → propor validades
+  const [correcting, setCorrecting] = useState(null);          // candidato em correção (modo candidato do DutyFormSheet)
 
   const load = async (opt) => {
     setLoading(true); setDenied(false);
@@ -82,6 +89,33 @@ export default function RosterImportSheet({ visible, onClose }) {
   };
   const clearPaste = () => { select(); setPasteText(''); setCands([]); setPasteDiag(null); setPasteRecurrents([]); };
 
+  // PDF por UPLOAD de ficheiro: escolher → extrair texto ON-DEVICE (nativo PDFKit/PDFBox) →
+  // APAGAR já a cópia local (RGPD: nada sai do telemóvel) → mesmos candidatos do calendário.
+  const pickPdf = async () => {
+    let pdf = null;
+    try { pdf = require('expo-pdf-text-extract'); } catch { pdf = null; }
+    if (!pdf || (typeof pdf.isAvailable === 'function' && !pdf.isAvailable())) {
+      Alert.alert(l('PDF', 'PDF'), l('A leitura de PDF precisa do dev build (não funciona no Expo Go).', 'PDF reading needs the dev build (not Expo Go).'));
+      return;
+    }
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+      if (res.canceled || !res.assets || !res.assets.length) return;
+      const uri = res.assets[0].uri;
+      setLoading(true);
+      const text = await pdf.extractText(uri);
+      try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
+      const r = parseEasyjetRoster(text, company?.slug);
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog }));
+      setPasteDiag(r.diag);
+      setPasteRecurrents(detectRecurrents(text));
+      success();
+    } catch {
+      Alert.alert(l('PDF', 'PDF'), l('Não consegui ler este PDF. Confirma que é a escala em PDF.', 'Could not read this PDF. Make sure it is the roster PDF.'));
+    }
+    setLoading(false);
+  };
+
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
   // Alterna pela IDENTIDADE do candidato (data+kind) — a lista mostrada é filtrada/
@@ -93,6 +127,41 @@ export default function RosterImportSheet({ visible, onClose }) {
   // → alterado → novo) já vem do buildImportCandidates.
   const shown = cands.filter((c) => c.status !== 'same');
   const sameCount = cands.length - shown.length;
+
+  // ── "À prova de falha": estado per-candidato p/ o per-diem (decisão do user) ──
+  //   ready   = voo com rota reconhecida → conta para o per-diem (✓ verde, +€)
+  //   fix     = voo sem rota OU aeroporto não reconhecido → a corrigir (⏱ âmbar, "Corrigir")
+  //   info    = não-voo (standby/terra) → importável, sem per-diem (⏱ âmbar, — €)
+  //   removed = cancelado
+  const fmtEur0n = (n) => (lang === 'en' ? `€${Math.round(n)}` : `${Math.round(n)} €`);
+  const apsOf = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+  const candInfo = (c) => {
+    if (c.action === 'delete') return { kind: 'removed', perDiem: null, badAp: null };
+    if (c.kind !== 'flight') return { kind: 'info', perDiem: null, badAp: null };
+    const aps = apsOf(c.duty.route);
+    if (aps.length < 2) return { kind: 'fix', perDiem: null, badAp: null };
+    const bad = aps.find((a) => airportCoord(a) == null);
+    if (bad) return { kind: 'fix', perDiem: null, badAp: bad };
+    let perDiem = null;
+    if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds); }
+    return { kind: 'ready', perDiem, badAp: null };
+  };
+  const infos = shown.map((c) => ({ c, info: candInfo(c) }));
+  const fixCount = infos.filter((x) => x.info.kind === 'fix').length;
+  // Entra no import = selecionado E não está "a corrigir" (esses só contam depois de corrigidos).
+  const importable = infos.filter((x) => x.info.kind !== 'fix');   // entram no import (saves + cancelados); os "fix" só após corrigir
+  const saveCount = importable.filter((x) => x.c.action !== 'delete').length;
+  const perDiemTotal = importable.reduce((sum, x) => sum + (x.info.perDiem || 0), 0);
+  // Corrigir um candidato (aeroporto não reconhecido / sem rota): abre o DutyFormSheet em
+  // MODO CANDIDATO (pré-preenchido) → ao guardar devolve aqui o candidato corrigido (NÃO grava
+  // no `duties`) → reavaliamos estado/per-diem. O gravar real é só no "Confirmar import".
+  const correct = (c) => setCorrecting(c);
+  const applyCorrection = (corrected) => {
+    setCands((cs) => cs.map((c) => (correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind
+      ? { ...c, duty: { ...c.duty, ...corrected }, kind: corrected.kind || c.kind }
+      : c)));
+    setCorrecting(null);
+  };
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
   const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
@@ -115,13 +184,14 @@ export default function RosterImportSheet({ visible, onClose }) {
   };
 
   const doImport = () => {
-    if (!selected.length) return;
+    const items = importable.map((x) => x.c);   // tudo o que não está "a corrigir" (sem checkbox)
+    if (!items.length) return;
     const src = source === 'paste' ? 'pdf' : 'calendar';
-    const deletes = selected.filter((c) => c.action === 'delete');     // cancelados → apagar
-    const conflicts = selected.filter((c) => c.status === 'conflict');  // sobrepõem a tua edição
+    const deletes = items.filter((c) => c.action === 'delete');     // cancelados → apagar
+    const conflicts = items.filter((c) => c.status === 'conflict');  // sobrepõem a tua edição
     const run = () => {
       let warn = 0;
-      for (const c of selected) {
+      for (const c of items) {
         if (c.action === 'delete') { removeDuty(c.duty.duty_date); continue; }
         const snap = { report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on, route: c.duty.route, sectors: c.duty.sectors, kind: c.kind };
         saveDuty(c.duty.duty_date, {
@@ -132,8 +202,8 @@ export default function RosterImportSheet({ visible, onClose }) {
         if (c.status === 'warn') warn++;
       }
       success();
-      const saved = selected.length - deletes.length;
-      const ignored = shown.filter((c) => !c.selected).length;
+      const saved = items.length - deletes.length;
+      const ignored = fixCount;   // os "a corrigir" ficaram de fora
       const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
         `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`);
       // v2.1 — só no PDF: se houver recorrentes detetados, propõe atualizar as validades.
@@ -172,14 +242,14 @@ export default function RosterImportSheet({ visible, onClose }) {
         <View style={s.head}>
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{l('Escala · Importar', 'Roster · Import')}</Text></View>
-            <Text style={s.h1}>{l('Importar', 'Import')}</Text>
+            <Text style={s.h1}>{l('Confirmar import', 'Confirm import')}</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
         </View>
 
         {/* Fonte da escala: calendário do telemóvel ou texto colado do PDF */}
         <View style={s.ranges}>
-          {[{ id: 'calendar', ic: 'calendar-outline', label: l('Calendário', 'Calendar') }, { id: 'paste', ic: 'clipboard-outline', label: l('Colar PDF', 'Paste PDF') }].map((src) => {
+          {[{ id: 'calendar', ic: 'calendar-outline', label: l('Calendário', 'Calendar') }, { id: 'paste', ic: 'document-outline', label: 'PDF' }].map((src) => {
             const on = source === src.id;
             return (
               <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
@@ -203,29 +273,14 @@ export default function RosterImportSheet({ visible, onClose }) {
             })}
           </View>
         ) : (
-          /* Colar texto do PDF (parse 100% local) */
+          /* Upload do PDF — extração 100% LOCAL (nativo PDFKit/PDFBox). RGPD: o ficheiro é lido
+             no telemóvel e a cópia é APAGADA logo a seguir; nada sai do dispositivo. */
           <View style={s.pasteWrap}>
-            <TextInput
-              value={pasteText}
-              onChangeText={setPasteText}
-              multiline
-              placeholder={l('Cola aqui a escala copiada do PDF easyJet…', 'Paste your easyJet PDF roster here…')}
-              placeholderTextColor={C.sub}
-              style={s.pasteInput}
-              textAlignVertical="top"
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            <View style={s.pasteBtns}>
-              <TouchableOpacity onPress={clearPaste} activeOpacity={0.85} style={[s.parseBtn, s.parseBtnGhost]} disabled={!pasteText}>
-                <Text style={[s.parseGhostTxt, !pasteText && { opacity: 0.4 }]}>{l('Limpar', 'Clear')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={parsePaste} activeOpacity={0.9} style={[s.parseBtn, { flex: 1, backgroundColor: pasteText.trim() ? C.ink : C.soft }]} disabled={!pasteText.trim()}>
-                <Ionicons name="reader-outline" size={15} color={pasteText.trim() ? '#fff' : C.sub} />
-                <Text style={[s.parseTxt, { color: pasteText.trim() ? '#fff' : C.sub }]}>{l('Ler escala', 'Read roster')}</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={s.pasteNote}>{l('🔒 Nada sai do telemóvel — o texto é lido aqui e apagado. Sem ficheiro guardado.', '🔒 Nothing leaves your phone — the text is read here and discarded. No file stored.')}</Text>
+            <TouchableOpacity onPress={pickPdf} activeOpacity={0.9} style={s.pdfBtn}>
+              <Ionicons name="document-attach-outline" size={18} color="#fff" />
+              <Text style={s.pdfBtnTxt}>{l('Escolher PDF da escala', 'Choose roster PDF')}</Text>
+            </TouchableOpacity>
+            <Text style={s.pasteNote}>{l('🔒 O PDF é lido no telemóvel (nativo) e a cópia apagada logo a seguir. Nada sai do dispositivo. Precisa de dev build.', '🔒 The PDF is read on-device (native) and the copy deleted right after. Nothing leaves your device. Requires a dev build.')}</Text>
           </View>
         )}
 
@@ -244,30 +299,41 @@ export default function RosterImportSheet({ visible, onClose }) {
               <Text style={s.dim}>{cands.length
                 ? l('Sem alterações — a escala está igual ao guardado.', 'No changes — your roster matches what you have.')
                 : source === 'paste'
-                  ? l('Cola a tua escala em cima e carrega em "Ler escala".', 'Paste your roster above and tap "Read roster".')
+                  ? l('Escolhe o PDF da escala em cima.', 'Choose your roster PDF above.')
                   : l('Sem atividades no calendário neste intervalo.', 'No calendar activities in this range.')}</Text>
             </View>
           ) : (
             <>
-              <Text style={s.hint}>
-                {l('🔴 Cancelado · ⚠️ Conflito (editaste) · 🟠 Alterado (antes→depois) · 🟢 Novo — marca o que aplicar.', '🔴 Cancelled · ⚠️ Conflict (you edited) · 🟠 Changed (before→after) · 🟢 New — check what to apply.')}
-                {sameCount ? l(` · ${sameCount} já iguais (escondidas)`, ` · ${sameCount} unchanged (hidden)`) : ''}
-              </Text>
-              {shown.map((c) => {
-                const b = badge(c.status);
+              {/* Resumo "à prova de falha": leu X · Y prontas · Z a corrigir */}
+              <View style={[s.summ, fixCount ? s.summWarn : null]}>
+                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? C.warn : C.green} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.summT}>{l(`Li ${shown.length} atividades`, `Read ${shown.length} activities`)}</Text>
+                  <Text style={[s.summS, fixCount ? { color: C.warnText } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}</Text>
+                </View>
+              </View>
+              {infos.map(({ c, info }) => {
+                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: C.greenSoft || C.soft, fg: C.green }
+                  : info.kind === 'removed' ? { name: 'close', bg: C.redSoft || C.soft, fg: C.red }
+                  : { name: 'time-outline', bg: C.warnSoft || C.soft, fg: C.warn };
+                const issue = info.kind === 'fix'
+                  ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`) : l('Sem rota — corrige para somar', 'No route — fix to count'))
+                  : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
                 return (
-                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => toggle(c)} activeOpacity={0.8} style={s.crow}>
-                    <View style={[s.check, c.selected && { backgroundColor: C.ink, borderColor: C.ink }]}>{c.selected ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}</View>
-                    <Ionicons name={KIND_ICON[c.kind] || 'ellipse-outline'} size={16} color={C.red} />
-                    <View style={{ flex: 1 }}>
+                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : null)} activeOpacity={info.kind === 'fix' ? 0.85 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix]}>
+                    <View style={[s.statIc, { backgroundColor: ic.bg }]}><Ionicons name={ic.name} size={18} color={ic.fg} /></View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
                         ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
-                        : c.status === 'removed'
-                          ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}{c.duty.report_time ? ` · ${l('era', 'was')} ${c.duty.report_time}` : ''}</Text>
-                          : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
+                        : issue ? <Text style={[s.cMeta, info.kind === 'fix' && s.cIssue]} numberOfLines={1}>{issue}</Text>
+                          : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}</Text>
+                            : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                     </View>
-                    <View style={[s.badge, { backgroundColor: b.bg }]}><Text style={[s.badgeTxt, { color: b.fg }]}>{b.txt}</Text></View>
+                    {info.kind === 'fix'
+                      ? <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
+                      : info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text>
+                        : <Text style={s.cEurMuted}>— €</Text>}
                   </TouchableOpacity>
                 );
               })}
@@ -302,10 +368,14 @@ export default function RosterImportSheet({ visible, onClose }) {
         </ScrollView>
 
         <View style={s.foot}>
-          <TouchableOpacity onPress={doImport} disabled={!selected.length} activeOpacity={0.9} style={[s.save, { backgroundColor: selected.length ? C.ink : C.soft }]}>
-            <Text style={[s.saveTxt, { color: selected.length ? '#fff' : C.sub }]}>{l(`Importar (${selected.length})`, `Import (${selected.length})`)}</Text>
+          <TouchableOpacity onPress={doImport} disabled={!saveCount} activeOpacity={0.9} style={[s.save, { backgroundColor: saveCount ? C.ink : C.soft }]}>
+            <Text style={[s.saveTxt, { color: saveCount ? '#fff' : C.sub }]}>{l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}{perDiemTotal ? `  ·  +${fmtEur0n(perDiemTotal)}` : ''}</Text>
           </TouchableOpacity>
+          {fixCount ? <Text style={s.fixHint}>{l(`Corrige as ${fixCount} para somarem ao per-diem`, `Fix the ${fixCount} so they count`)}</Text> : null}
         </View>
+
+        {/* Correção no import — DutyFormSheet em modo CANDIDATO (devolve o corrigido, não grava). */}
+        <DutyFormSheet visible={!!correcting} candidate={correcting ? { ...correcting.duty, kind: correcting.kind } : null} onCandidate={applyCorrection} onClose={() => setCorrecting(null)} />
       </View>
     </Modal>
   );
@@ -333,6 +403,8 @@ const makeStyles = (C) => StyleSheet.create({
   parseTxt: { fontSize: 13, fontFamily: FONT.semibold },
   parseGhostTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
   pasteNote: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 10, lineHeight: 16 },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 16 },
+  pdfBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
   dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },
@@ -344,13 +416,26 @@ const makeStyles = (C) => StyleSheet.create({
   diagBox: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 12, marginTop: 4 },
   diagHead: { fontSize: 11, fontFamily: FONT.bold, color: C.text, marginBottom: 8 },
   diagItem: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, paddingVertical: 3 },
-  crow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, borderTopWidth: 1, borderTopColor: C.line },
+  crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: 11 },
+  crowFix: { backgroundColor: C.warnSoft, borderColor: C.warn },
   check: { width: 24, height: 24, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
   cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
   badge: { borderRadius: RADIUS.xs, paddingHorizontal: 8, paddingVertical: 4 },
   badgeTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase' },
+  // "à prova de falha" — ícone de estado + per-diem + resumo
+  statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cEur: { fontSize: 16, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
+  cEurMuted: { fontSize: 15, fontFamily: FONT.display, color: C.lineStrong, fontVariant: ['tabular-nums'] },
+  cFix: { fontSize: 13, fontFamily: FONT.heavy, color: C.warnText },
+  cIssue: { color: C.warnText, fontFamily: FONT.semibold },
+  summ: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft, borderRadius: RADIUS.lg, padding: 13, marginBottom: 14 },
+  summWarn: { backgroundColor: C.warnSoft },
+  summIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  summT: { fontSize: TYPE.value, fontFamily: FONT.heavy, color: C.text },
+  summS: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.sub, marginTop: 2, lineHeight: 17 },
+  fixHint: { fontSize: 12, fontFamily: FONT.medium, color: C.warnText, textAlign: 'center', marginTop: 10 },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
   save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
   saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },

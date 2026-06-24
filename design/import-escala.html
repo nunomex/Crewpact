@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Importar escala — estilo lista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:820px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;max-width:760px;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0}
+  figcaption{text-align:center;max-width:330px}
+  figcaption b{font-weight:800;font-size:15px;color:var(--ink)}
+  figcaption p{font-size:12px;line-height:1.5;color:#646A72;margin-top:6px}
+
+  .phone{width:360px;height:760px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 38px 76px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .body{flex:1;padding:50px 18px 0;overflow:hidden;display:flex;flex-direction:column}
+
+  /* topo: voltar + eyebrow + título */
+  .nav{display:flex;align-items:center;gap:12px;padding:4px 0 6px}
+  .back{width:38px;height:38px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink)}
+  .eyebrow{font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px}
+  .eyebrow i{width:8px;height:8px;border-radius:50%;background:var(--brand)}
+  .h1{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink);margin-top:5px}
+
+  /* resumo */
+  .sum{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+  .chip{font-weight:800;font-size:11px;letter-spacing:.02em;padding:5px 11px;border-radius:99px;display:inline-flex;align-items:center;gap:6px}
+  .chip .d{width:7px;height:7px;border-radius:50%}
+  .chip.n{background:var(--greensoft);color:var(--greentext)} .chip.n .d{background:var(--green)}
+  .chip.s{background:var(--warnsoft);color:var(--warntext)} .chip.s .d{background:var(--warn)}
+  .chip.x{background:var(--redsoft);color:var(--red)} .chip.x .d{background:var(--red)}
+
+  /* lista (estilo da foto) */
+  .list{flex:1;overflow:hidden;padding-top:8px;display:flex;flex-direction:column;gap:11px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;position:relative;box-shadow:0 4px 14px -10px rgba(20,22,26,.14)}
+  .ctop{display:flex;align-items:center;gap:9px}
+  .date{font-family:var(--inter);font-weight:800;font-size:16px;color:var(--ink)}
+  .sdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .sdot.n{background:var(--green)} .sdot.s{background:var(--warn)} .sdot.x{background:var(--red)}
+  .route{font-family:var(--inter);font-weight:800;font-size:12px;letter-spacing:.04em;color:var(--sub);flex:1;text-align:left;margin-left:2px}
+  .eur{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--red);font-variant-numeric:tabular-nums}
+  .eur.muted{color:var(--linestrong)}
+  .csub{font-family:var(--inter);font-weight:600;font-size:13.5px;color:var(--sub);margin-top:6px;font-variant-numeric:tabular-nums}
+  .hint{font-family:var(--inter);font-weight:700;font-size:11.5px;margin-top:7px;display:flex;align-items:center;gap:6px}
+  .hint.n{color:var(--greentext)} .hint.s{color:var(--warntext)} .hint.x{color:var(--red)}
+  .hint del{color:var(--linestrong);font-weight:600}
+  .card.cancel{opacity:.7}
+  .card.cancel .date{text-decoration:line-through;color:var(--sub)}
+
+  /* botão confirmar (sticky) */
+  .foot{padding:14px 18px 18px;background:linear-gradient(to top,#fff 70%,transparent)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--red);color:#fff;border-radius:16px;padding:16px;
+    font-family:var(--inter);font-weight:800;font-size:15px;box-shadow:0 12px 26px -10px rgba(245,64,44,.5)}
+  .btn small{font-weight:700;opacity:.85;font-size:13px}
+
+  .pgfoot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600;position:relative;z-index:1}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · página de import</div>
+    <h1>Importar escala — no estilo da tua lista</h1>
+    <p>O calendário deteta (ou fazes upload do PDF) → esta página mostra os serviços a entrar com o aspeto da <b>Lista</b>: data · dot · rota · +€ / horas · setores. Cada um diz o <b>estado</b> (novo · substitui · cancelado · conflito). Confirmas em baixo → grava.</p>
+  </div>
+
+  <div class="row">
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="nav">
+          <div class="back">‹</div>
+          <div>
+            <div class="eyebrow"><i></i>Importar · do calendário</div>
+            <div class="h1">Junho, 2026</div>
+          </div>
+        </div>
+
+        <div class="sum">
+          <span class="chip n"><span class="d"></span>3 novos</span>
+          <span class="chip s"><span class="d"></span>1 substitui</span>
+          <span class="chip x"><span class="d"></span>1 cancelado</span>
+        </div>
+
+        <div class="list">
+          <!-- NOVO -->
+          <div class="card">
+            <div class="ctop">
+              <span class="date">Seg, 22 jun</span><span class="sdot n"></span>
+              <span class="route">LIS-OPO-LIS</span>
+              <span class="eur">+28 €</span>
+            </div>
+            <div class="csub">05:40 → 12:30 · 2 setores</div>
+          </div>
+
+          <!-- SUBSTITUI (alterado) -->
+          <div class="card">
+            <div class="ctop">
+              <span class="date">Qua, 24 jun</span><span class="sdot s"></span>
+              <span class="route">LIS-FNC-LIS</span>
+              <span class="eur">+44 €</span>
+            </div>
+            <div class="csub">06:10 → 13:20 · 2 setores</div>
+            <div class="hint s">↻ substitui · report <del>05:40</del> → 06:10</div>
+          </div>
+
+          <!-- NOVO -->
+          <div class="card">
+            <div class="ctop">
+              <span class="date">Sáb, 27 jun</span><span class="sdot n"></span>
+              <span class="route">OPO-LIS</span>
+              <span class="eur">+14 €</span>
+            </div>
+            <div class="csub">14:20 → 17:40 · 1 setor</div>
+          </div>
+
+          <!-- NOVO · standby -->
+          <div class="card">
+            <div class="ctop">
+              <span class="date">Dom, 28 jun</span><span class="sdot n"></span>
+              <span class="route">STANDBY</span>
+              <span class="eur muted">— €</span>
+            </div>
+            <div class="csub">Reserva · 06:00 → 14:00</div>
+          </div>
+
+          <!-- CANCELADO -->
+          <div class="card cancel">
+            <div class="ctop">
+              <span class="date">Ter, 30 jun</span><span class="sdot x"></span>
+              <span class="route">LIS-MAD-LIS</span>
+              <span class="eur muted">—</span>
+            </div>
+            <div class="csub">07:00 → 13:10 · 2 setores</div>
+            <div class="hint x">✕ cancelado no calendário</div>
+          </div>
+        </div>
+
+        <div class="foot">
+          <div class="btn">Importar <small>· 4 serviços + 1 cancelado</small></div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Página de import (estilo lista)</b><p>Mesma forma de cartão da tua foto. Dot de estado (verde novo · âmbar substitui · vermelho conflito/cancelado), e o que substitui aparece em baixo. Confirmas → grava.</p></figcaption></figure>
+  </div>
+
+  <div class="pgfoot">CrewPact · página de import · calendário deteta / PDF upload · sem colar-PDF · confirmar→grava</div>
+</body>
+</html>

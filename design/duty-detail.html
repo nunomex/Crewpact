@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DutyDetailScreen · ver serviço (read-only)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:880px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;max-width:1180px;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0}
+  figcaption{text-align:center;max-width:320px}
+  figcaption b{font-weight:800;font-size:15px;color:var(--ink)}
+  figcaption p{font-size:12px;line-height:1.5;color:#646A72;margin-top:6px}
+
+  .phone{width:340px;height:724px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 38px 76px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:38px;overflow:hidden;position:relative}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .body{position:absolute;inset:0;padding:50px 16px 16px;overflow:hidden;display:flex;flex-direction:column}
+
+  /* Barra de voltar (DetailTopBar) */
+  .top{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
+  .back{width:38px;height:38px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink);flex:0 0 auto}
+  .toptitle{font-family:var(--inter);font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub)}
+
+  .scroll{flex:1;overflow:hidden}
+
+  /* Cartão-cabeçalho com risca lateral (verde = dentro dos limites) */
+  .hcard{position:relative;background:var(--card);border-radius:16px;padding:16px 16px 16px 18px;overflow:hidden;
+    box-shadow:0 8px 22px -12px rgba(20,22,26,.16);margin-bottom:18px}
+  .hcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green)}
+  .hc-eye{font-family:var(--inter);font-weight:800;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub)}
+  .hc-main{font-family:var(--disp);font-weight:600;font-size:27px;letter-spacing:-.015em;color:var(--ink);margin-top:6px;line-height:1.05}
+  .hc-sub{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:3px 10px 3px 8px;font-family:var(--inter);font-weight:800;font-size:11px}
+  .pill .dot{width:7px;height:7px;border-radius:50%}
+  .pill.ok{background:var(--greensoft);color:var(--greentext)} .pill.ok .dot{background:var(--green)}
+  .pill.cd{background:var(--soft);color:var(--ink)}
+
+  /* Secções: título + painel de linhas */
+  .sec{font-family:var(--inter);font-weight:800;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);margin:0 2px 9px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 14px;margin-bottom:16px}
+  .r{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .r:last-child{border-bottom:none}
+  .r .k{font-family:var(--inter);font-weight:600;font-size:13px;color:var(--sub)}
+  .r .v{font-family:var(--disp);font-weight:600;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+  .r .v small{font-family:var(--inter);font-weight:600;font-size:11px;color:var(--sub)}
+  .r .v.green{color:var(--greentext)}
+  .fat{display:inline-flex;align-items:center;gap:5px;background:var(--greensoft);border-radius:99px;padding:3px 10px 3px 8px}
+  .fat .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .fat span{font-family:var(--inter);font-weight:800;font-size:11px;color:var(--greentext)}
+
+  /* Botão Editar */
+  .edit{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--ink);color:#fff;border-radius:16px;padding:15px;margin-top:2px;
+    font-family:var(--inter);font-weight:800;font-size:14px;box-shadow:0 10px 22px -10px rgba(20,22,26,.4)}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:40px;font-weight:600;position:relative;z-index:1}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · novo ecrã</div>
+    <h1>DutyDetailScreen — ver um serviço (read-only)</h1>
+    <p>Abre ao <b>tocar</b> num serviço na Escala. Mostra <b>tudo</b> (rota, horas, Zulu, FDP/PSV, serviço, repouso, fadiga, setores, per-diem, fonte) <b>sem editar</b>. Editar fica num <b>botão</b>. Estilo dos ecrãs-detalhe da app: barra de voltar + cartão-cabeçalho com risca lateral + secções de linhas.</p>
+  </div>
+
+  <div class="row">
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="top">
+          <div class="back">‹</div>
+          <div class="toptitle">Serviço</div>
+        </div>
+
+        <div class="scroll">
+          <!-- Cabeçalho -->
+          <div class="hcard">
+            <div class="hc-eye">Voo · Qui, 15 Jun</div>
+            <div class="hc-main tab">LIS → LGW → LIS</div>
+            <div class="hc-sub">
+              <span class="pill ok"><span class="dot"></span>Dentro dos limites</span>
+              <span class="pill cd">em 14 h</span>
+            </div>
+          </div>
+
+          <!-- Horário -->
+          <div class="sec">Horário</div>
+          <div class="panel">
+            <div class="r"><div class="k">Report</div><div class="v tab">06:05 <small>· 05:05Z</small></div></div>
+            <div class="r"><div class="k">Block off</div><div class="v tab">06:35 <small>· 05:35Z</small></div></div>
+            <div class="r"><div class="k">Block on</div><div class="v tab">13:40 <small>· 12:40Z</small></div></div>
+            <div class="r"><div class="k">Tempo de serviço</div><div class="v tab">08:35</div></div>
+            <div class="r"><div class="k">Tempo de voo</div><div class="v tab">06:10</div></div>
+          </div>
+
+          <!-- FTL · Segurança -->
+          <div class="sec">FTL · Segurança</div>
+          <div class="panel">
+            <div class="r"><div class="k">FDP realizado</div><div class="v tab">07:35</div></div>
+            <div class="r"><div class="k">PSV máx (FDP)</div><div class="v tab">13:00</div></div>
+            <div class="r"><div class="k">Repouso mínimo após</div><div class="v tab">12:00</div></div>
+            <div class="r"><div class="k">Fadiga</div><div class="v"><span class="fat"><span class="dot"></span>Baixa</span></div></div>
+          </div>
+
+          <!-- Pagamento + detalhes -->
+          <div class="sec">Pagamento · detalhes</div>
+          <div class="panel">
+            <div class="r"><div class="k">Per-diem (AE)</div><div class="v green tab">+48 €</div></div>
+            <div class="r"><div class="k">Setores</div><div class="v tab">2</div></div>
+            <div class="r"><div class="k">Paragem nocturna</div><div class="v">Não</div></div>
+            <div class="r"><div class="k">Fonte</div><div class="v">Calendário</div></div>
+          </div>
+
+          <div class="edit">✎ Editar serviço</div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Voo (read-only)</b><p>Toda a info do serviço numa vista de leitura. Risca verde = dentro dos limites (fica vermelha se exceder FDP).</p></figcaption></figure>
+  </div>
+
+  <div class="foot">CrewPact · DutyDetailScreen · ver ≠ editar · estilo HojeDetail · Space Grotesk nos números</div>
+</body>
+</html>

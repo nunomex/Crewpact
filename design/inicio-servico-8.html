@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Início · Serviço (card COM fundo + grelha)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:880px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;max-width:1180px;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0}
+  figcaption{text-align:center;max-width:320px}
+  figcaption b{font-weight:800;font-size:15px;color:var(--ink)}
+  figcaption p{font-size:12px;line-height:1.5;color:#646A72;margin-top:6px}
+
+  .phone{width:340px;height:724px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 38px 76px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:38px;overflow:hidden;position:relative}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .body{position:absolute;inset:0;padding:52px 18px 18px;overflow:hidden}
+
+  .eye{font-family:var(--inter);font-weight:800;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px}
+  .eye i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .h2{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink);margin-top:7px}
+  .tab{font-variant-numeric:tabular-nums lining-nums}
+  .sec{font-family:var(--inter);font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:20px 0 12px}
+
+  /* CARD COM FUNDO + borda (o "fundo" que o user quer de volta) */
+  .svc{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:18px;
+    box-shadow:0 6px 18px -12px rgba(20,22,26,.16)}
+  .nd{display:flex;gap:15px;align-items:center}
+  /* badge quadrado-arredondado (igual à app), ink + sombra própria */
+  .badge{width:68px;height:68px;border-radius:16px;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;
+    box-shadow:0 9px 18px -7px rgba(20,22,26,.30)}
+  .badge .d{font-family:var(--disp);font-weight:700;font-size:36px;line-height:.95;letter-spacing:-.03em;text-align:center}
+  .badge .m{font-family:var(--inter);font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.82;margin-top:2px}
+  .ndx{flex:1;min-width:0}
+  .ndtype{font-family:var(--inter);font-weight:800;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--sub)}
+  .route{font-family:var(--disp);font-weight:600;font-size:26px;letter-spacing:-.015em;color:var(--ink);line-height:1.06;margin-top:4px;white-space:nowrap;overflow:hidden}
+  .route.long{font-size:17px}
+  .cd{font-family:var(--inter);font-weight:700;font-size:12.5px;color:var(--ink);margin-top:5px}
+  .cd .day{color:var(--sub)}
+
+  /* divisória + grelha 3 colunas */
+  .div{height:1px;background:var(--line);margin:16px -18px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px 8px;margin-top:16px}
+  .cell .l{font-family:var(--inter);font-weight:800;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:4px}
+  .cell .v{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .cell .v small{font-family:var(--inter);font-weight:600;font-size:11px;color:var(--sub)}
+  .cell .v.green{color:var(--greentext)}
+  .pill{display:inline-flex;align-items:center;gap:5px;background:var(--greensoft);border-radius:99px;padding:2px 9px 2px 7px}
+  .pill.w{background:var(--warnsoft)} .pill.w .dot{background:var(--warn)} .pill.w span{color:var(--warntext)}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .pill span{font-family:var(--inter);font-weight:800;font-size:11px;color:var(--greentext)}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:40px;font-weight:600;position:relative;z-index:1}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">Início · serviço — card COM fundo</div>
+    <h1>De volta ao card com fundo + grelha</h1>
+    <p>O cartão volta a ter <b>fundo</b> (preenchimento `soft2`) + borda. Badge quadrado-arredondado (igual à app), <b>"Amanhã · em 3 h 20 min"</b> por baixo da rota, risca, e a <b>grelha 3-colunas</b> (Report·Zulu·PSV / Setores·Per-diem·Fadiga).</p>
+  </div>
+
+  <div class="row">
+
+    <!-- VOO -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge"><span class="d tab">15</span><span class="m">Qui</span></div>
+            <div class="ndx">
+              <div class="ndtype">Voo</div>
+              <div class="route tab">LIS → LGW</div>
+              <div class="cd"><span class="day">Amanhã</span> · em 3 h 20 min</div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="grid">
+            <div class="cell"><div class="l">Report</div><div class="v tab">06:05 <small>local</small></div></div>
+            <div class="cell"><div class="l">Zulu</div><div class="v tab">05:05<small>Z</small></div></div>
+            <div class="cell"><div class="l">PSV máx</div><div class="v tab">13:00</div></div>
+            <div class="cell"><div class="l">Setores</div><div class="v tab">2</div></div>
+            <div class="cell"><div class="l">Per-diem</div><div class="v green tab">+48 <small>€</small></div></div>
+            <div class="cell"><div class="l">Fadiga</div><div class="v"><span class="pill"><span class="dot"></span><span>Baixa</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Voo</b><p>Card com fundo + borda. Badge squircle, "Amanhã · em 3h20" sob a rota, grelha 3-col.</p></figcaption></figure>
+
+    <!-- MULTI-LEG -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge"><span class="d tab">15</span><span class="m">Qui</span></div>
+            <div class="ndx">
+              <div class="ndtype">Voo</div>
+              <div class="route long tab">LIS → LGW → FNC → LIS</div>
+              <div class="cd"><span class="day">Amanhã</span> · em 3 h 20 min</div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="grid">
+            <div class="cell"><div class="l">Report</div><div class="v tab">06:05 <small>local</small></div></div>
+            <div class="cell"><div class="l">Zulu</div><div class="v tab">05:05<small>Z</small></div></div>
+            <div class="cell"><div class="l">PSV máx</div><div class="v tab">13:00</div></div>
+            <div class="cell"><div class="l">Setores</div><div class="v tab">3</div></div>
+            <div class="cell"><div class="l">Per-diem</div><div class="v green tab">+72 <small>€</small></div></div>
+            <div class="cell"><div class="l">Fadiga</div><div class="v"><span class="pill w"><span class="dot"></span><span>Elevada</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Multi-leg</b><p>Rota encolhe ao lado do badge (não quebra). Grelha igual.</p></figcaption></figure>
+
+    <!-- RESERVA -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge"><span class="d tab">16</span><span class="m">Sex</span></div>
+            <div class="ndx">
+              <div class="ndtype">Reserva</div>
+              <div class="route tab">06:00 – 14:00</div>
+              <div class="cd"><span class="day">Em 2 dias</span> · standby aeroporto</div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="grid">
+            <div class="cell"><div class="l">Início</div><div class="v tab">06:00</div></div>
+            <div class="cell"><div class="l">Fim</div><div class="v tab">14:00</div></div>
+            <div class="cell"><div class="l">PSV s/ chamado</div><div class="v tab">13:00</div></div>
+            <div class="cell"><div class="l">Fadiga</div><div class="v"><span class="pill"><span class="dot"></span><span>Baixa</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Reserva</b><p>Janela de horas; grelha adapta-se (Início·Fim·PSV·Fadiga).</p></figcaption></figure>
+
+  </div>
+
+  <div class="foot">CrewPact · Início · card COM fundo + grelha 3-col · badge squircle · Space Grotesk</div>
+</body>
+</html>

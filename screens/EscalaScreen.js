@@ -78,6 +78,16 @@ export default function EscalaScreen({ navigation, route }) {
     if (route.params?.review) { setView((v) => (v === 'month' ? 'wheel' : v)); setImportOpen(true); }
   }, [route.params?.review]);
 
+  // Voltou do DutyDetailScreen após editar → re-acende o realce (flash) da linha editada.
+  const lastFlash = useRef(null);
+  useEffect(() => {
+    const fd = route.params?.flashDuty, ts = route.params?.flashTs;
+    if (fd && ts && ts !== lastFlash.current) {
+      lastFlash.current = ts;
+      setFlashIso(fd); setTimeout(() => setFlashIso(null), 900);
+    }
+  }, [route.params?.flashDuty, route.params?.flashTs]);
+
   // Título segue o mês do dia centrado na roda (selIso); fallback = hoje.
   const monthLabel = (() => {
     const base = selIso ? new Date(`${selIso}T00:00:00`) : new Date();
@@ -221,7 +231,9 @@ export default function EscalaScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
             ) : listRows.map(([date, d]) => (
-              <TouchableOpacity key={date} style={[s.row, date === flashIso && s.rowFlash]} activeOpacity={0.7} onPress={() => setDutyDate(date)}>
+              <TouchableOpacity key={date} style={[s.row, date === flashIso && s.rowFlash]} activeOpacity={0.7}
+                onPress={() => navigation.navigate('DutyDetail', { date })}
+                onLongPress={() => { select(); setDutyDate(date); }}>
                 <View style={{ flex: 1 }}>
                   <View style={s.rowTop}>
                     <Text style={s.rowDate}>{fmtDate(date)}</Text>
@@ -242,7 +254,7 @@ export default function EscalaScreen({ navigation, route }) {
           </ScrollView>
         ) : (
           <View style={[s.wheelWrap, { paddingBottom: tabSpace }]}>
-            <EscalaWheel onAddDuty={(iso) => setDutyDate(iso)} onSelect={setSelIso} />
+            <EscalaWheel onSelect={setSelIso} onViewDuty={(iso) => navigation.navigate('DutyDetail', { date: iso })} />
           </View>
         )}
       </View>

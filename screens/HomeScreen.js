@@ -131,8 +131,8 @@ function dutyToFlight(iso, d) {
   };
 }
 
-// Próximo voo efetivo = o mais próximo entre o duty manual (store) e o voo do
-// calendário. Empate de dia → o manual ganha (mesmo critério da roda da Escala).
+// Próximo voo efetivo = o mais próximo entre o duty GUARDADO (store) e o voo do
+// calendário ao vivo. Empate de dia → o guardado ganha (offline-first; mesmo critério da roda).
 function mergeNextFlight(calFlight, duties, now) {
   let best = null;
   for (const iso in duties) {
@@ -145,7 +145,7 @@ function mergeNextFlight(calFlight, duties, now) {
   if (!calFlight) return best;
   if (best.dateISO < calFlight.dateISO) return best;
   if (best.dateISO > calFlight.dateISO) return calFlight;
-  return calFlight; // mesmo dia → calendário ganha (eCrew tem prioridade)
+  return best; // mesmo dia → o GUARDADO ganha (offline-first; já inclui o calendário auto-gravado + os teus edits)
 }
 
 // Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com
@@ -327,14 +327,24 @@ export default function HomeScreen({ navigation }) {
   // acesso ao calendário) — não no estado "sem voo" nem no pedido de permissão.
   const loadingFlight = !flight && syncing && !syncDone && calOk;
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
-  // Campos da grelha do serviço (só os que têm dados — adapta-se a voo / não-voo).
-  const ndCells = flight ? [
-    { l: isNonFlight ? l('Início', 'Start') : l('Report', 'Report'), v: flight.report || '—' },
-    isNonFlight ? { l: l('Fim', 'End'), v: flight.arrTime || '—' } : { l: 'Zulu', v: ndReportZ ? `${ndReportZ}Z` : '—' },
+  // Dia relativo p/ a sub-linha "quando" (Hoje/Amanhã; senão usa só a contagem).
+  const ndWhen = flight ? (() => {
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const diff = Math.round((new Date(flight.dateISO + 'T00:00:00').getTime() - t0.getTime()) / 86400000);
+    return diff === 0 ? l('Hoje', 'Today') : diff === 1 ? l('Amanhã', 'Tomorrow') : null;
+  })() : null;
+  // Grelha 3-col: campos do serviço (só os que têm dados — adapta-se a voo / não-voo).
+  const ndCells = flight ? (isNonFlight ? [
+    { l: l('Início', 'Start'), v: flight.report || '—' },
+    (flight.arrTime && flight.arrTime !== flight.report) ? { l: l('Fim', 'End'), v: flight.arrTime } : null,
+    ndPsvMax ? { l: l('PSV s/ chamado', 'FDP if called'), v: ndPsvMax } : null,
+  ] : [
+    { l: l('Report', 'Report'), v: flight.report || '—', sub: l('local', 'local') },
+    ndReportZ ? { l: 'Zulu', v: ndReportZ, sub: 'Z' } : null,
     ndPsvMax ? { l: l('PSV máx', 'FDP max'), v: ndPsvMax } : null,
-    (!isNonFlight && ndSectors) ? { l: l('Setores', 'Sectors'), v: String(ndSectors) } : null,
-    (!isNonFlight && aeNextPd != null) ? { l: 'Per-diem', v: fmtEur0(aeNextPd) } : null,
-  ].filter(Boolean) : [];
+    ndSectors ? { l: l('Setores', 'Sectors'), v: String(ndSectors) } : null,
+    aeNextPd != null ? { l: 'Per-diem', v: `+${fmtEur0(aeNextPd)}`, green: true } : null,
+  ]).filter(Boolean) : [];
 
   const nextDutyEl = flight ? (
     <View>
@@ -343,7 +353,7 @@ export default function HomeScreen({ navigation }) {
         <View style={s.svcNd}>
           <View style={s.svcBadgeWrap}>
             {(stateLevel === 'over' || stateLevel === 'warn') ? (
-              <PulseRing size={62} radius={RADIUS.lg} color={C.red} border={stateLevel === 'warn'} duration={2600} />
+              <PulseRing size={68} radius={RADIUS.lg} color={C.red} border={stateLevel === 'warn'} duration={2600} />
             ) : null}
             <View style={[s.svcBadge, { backgroundColor: badgeColor, shadowColor: badgeColor, shadowOpacity: stateLevel === 'over' ? 0.42 : 0.18 }]}>
               <Text style={s.svcBadgeDay}>{ndDayNum}</Text>
@@ -351,24 +361,25 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
           <View style={s.svcNdx}>
-            {/* Linha de topo: tipo de serviço (esq) + tempo que falta (dir) */}
-            <View style={s.svcTop}>
-              <Text style={s.svcType} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
-              {countdownStr ? <Text style={s.svcCd}>{countdownStr}</Text> : null}
-            </View>
-            {/* Rota grande (voo) ou janela de horas (não-voo) — encolhe p/ caber ao lado do badge, NUNCA quebra. */}
+            <Text style={s.svcType} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
+            {/* Rota grande — encolhe p/ caber ao lado do badge, NUNCA quebra. */}
             <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isNonFlight
               ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
               : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`)}</Text>
+            {/* Sub-linha "quando": dia relativo (sub) + contagem */}
+            {countdownStr ? (
+              <Text style={s.svcCd} numberOfLines={1}>{ndWhen ? <Text style={s.svcCdDay}>{ndWhen} · </Text> : null}{countdownStr}</Text>
+            ) : null}
             {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
           </View>
         </View>
         <View style={s.svcDiv} />
+        {/* Grelha 3 colunas com a info do serviço */}
         <View style={s.svcGrid}>
           {ndCells.map((c, i) => (
             <View key={i} style={s.svcCell}>
               <Text style={s.svcCellL} numberOfLines={1}>{c.l}</Text>
-              <Text style={s.svcCellV} numberOfLines={1}>{c.v}</Text>
+              <Text style={[s.svcCellV, c.green ? { color: C.greenText } : null]} numberOfLines={1}>{c.v}{c.sub ? <Text style={s.svcCellSub}> {c.sub}</Text> : null}</Text>
             </View>
           ))}
           {ndFat ? (
@@ -588,28 +599,31 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Serviço — cartão herói do próximo serviço (badge + linha principal largura-toda + grelha)
   svcSec: { fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, marginBottom: 12 },
-  // Cartão por SOMBRA: branco sobre canvas branco (C.card = canvas no claro), sem borda nem
-  // tom de fundo — só a sombra suave o levanta. Em dark, C.card é superfície elevada.
-  svc: { backgroundColor: C.card, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
-    shadowColor: '#14161A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 7 },
-  svcNd: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },   // dia à esquerda · coluna direita
+  // Card COM fundo (preenchimento soft2) + borda + sombra subtil — o "fundo" que o user quer
+  svc: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
+    shadowColor: '#14161A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 3 },
+  svcNd: { flexDirection: 'row', alignItems: 'center', gap: 16 },   // dia (círculo) à esquerda · coluna direita, centrados
   svcNdx: { flex: 1, minWidth: 0 },
   svcTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },  // tipo (esq) + tempo que falta (dir)
-  svcBadgeWrap: { width: 62, height: 62, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  svcBadge: { width: 62, height: 62, borderRadius: RADIUS.lg, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    shadowColor: C.ink, shadowOpacity: 0.20, shadowRadius: 16, shadowOffset: { width: 0, height: 9 }, elevation: 7 },
-  svcBadgeDay: { fontSize: 30, fontFamily: FONT.display, color: '#fff', lineHeight: 32, letterSpacing: -0.5 },
-  svcBadgeWd: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },
+  svcBadgeWrap: { width: 68, height: 68, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  svcBadge: { width: 68, height: 68, borderRadius: RADIUS.lg, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,   // quadrado-arredondado (= cartões) p/ combinar com a app
+    shadowColor: C.ink, shadowOpacity: 0.20, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 7 },
+  // número justo e centrado (includeFontPadding:false + lineHeight≈fontSize ⇒ não fica torto)
+  svcBadgeDay: { fontSize: 36, fontFamily: FONT.display, color: '#fff', lineHeight: 36, letterSpacing: -0.5, textAlign: 'center', includeFontPadding: false },
+  svcBadgeWd: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },
   svcType: { flex: 1, fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.5, textTransform: 'uppercase', color: C.sub },
-  svcCd: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, flexShrink: 0 },
+  svcCd: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, marginTop: 6 },   // sub-linha "quando"
+  svcCdDay: { color: C.sub, fontFamily: FONT.bold },
   // Rota grande — numberOfLines=1 + adjustsFontSizeToFit ⇒ encolhe p/ caber ao lado do badge, nunca quebra
-  svcMain: { fontSize: 27, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 6, lineHeight: 30 },
+  svcMain: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 9, lineHeight: 30 },
   svcNight: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 5 },
-  svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },  // risca leve full-bleed
-  svcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 15, marginTop: 15 },
+  // risca full-bleed + grelha 3 colunas (Report·Zulu·PSV / Setores·Per-diem·Fadiga)
+  svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },
+  svcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 15, marginTop: 16 },
   svcCell: { width: '33.33%', paddingRight: 8 },
-  svcCellL: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub, marginBottom: 4 },
-  svcCellV: { fontSize: 17, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
+  svcCellL: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub, marginBottom: 4 },
+  svcCellV: { fontSize: 16, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
+  svcCellSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub },
   svcFat: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3, marginTop: 1 },
   svcFatDot: { width: 7, height: 7, borderRadius: 99 },
   svcFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },

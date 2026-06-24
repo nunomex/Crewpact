@@ -21,7 +21,17 @@
       "Bash(python3 -)",
       "Bash(python3 -c ' *)",
       "Bash(D:/Android/Sdk/platform-tools/adb.exe devices *)",
-      "Bash(adb devices *)"
+      "Bash(adb devices *)",
+      "Bash(cd /d D:\\\\PROJECTOS\\\\CrewPact)",
+      "Bash(findstr /rn \"saveDuty\\\\s*=\" *.js app\\\\*.js screens\\\\*.js components\\\\*.js data\\\\*.js)",
+      "Bash(grep -n \"const { lang, duties\" \"D:\\\\PROJECTOS\\\\CrewPact\\\\screens\\\\EscalaScreen.js\")",
+      "Bash(cat)",
+      "Bash(node /tmp/test_date.js)",
+      "Bash(node /tmp/test_isnan.js)",
+      "Bash(cd d:\\\\\\\\PROJECTOS\\\\\\\\CrewPact)",
+      "Bash(git diff *)",
+      "Read(//dev/**)",
+      "WebFetch(domain:pathikgandhi.com)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp"

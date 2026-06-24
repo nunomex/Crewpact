@@ -1,5 +1,6 @@
 import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { FONT, RADIUS } from '../data/constants';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
@@ -27,7 +28,7 @@ function Detail({ s, k, v }) {
   );
 }
 
-export default function EscalaWheel({ onAddDuty, onSelect }) {
+export default function EscalaWheel({ onSelect, onViewDuty }) {
   const { duties, lang } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -76,9 +77,10 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
     const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
     const iso = isoDay(d);
     const reg = duties[iso];
-    // Calendário (eCrew) TEM PRIORIDADE (decisão "em ambos"); senão, o duty manual.
+    // GUARDADO (manual/importado/auto-gravado) TEM PRIORIDADE (offline-first); o calendário
+    // ao vivo só preenche dias ainda NÃO gravados (ex.: antes de o auto-gravar correr).
     const manual = reg && !reg.deleted && reg.report_time ? reg : null;
-    const flight = cal[iso] || manual || demoDuties[iso] || null;
+    const flight = manual || cal[iso] || demoDuties[iso] || null;
     const wd = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
     return { day: d.getDate(), iso, wd: wd.charAt(0).toUpperCase() + wd.slice(1), flight, fromCal: !!cal[iso], isToday: iso === todayISO };
   }), [duties, cal, demoDuties, monthKey, totalDays, locale]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -100,6 +102,12 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
   // Reporta o dia centrado para cima (FAB "Nova duty" + título do mês na Escala).
   useEffect(() => { onSelect && onSelect(cur?.iso); }, [cur?.iso]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cartão de detalhe TOCÁVEL → abre o ecrã de detalhe; só se houver serviço GUARDADO nesse
+  // dia (voos só-do-calendário não estão em `duties` → sem detalhe). A roda é só visual.
+  const stored = cur ? duties[cur.iso] : null;
+  const canView = !!(stored && !stored.deleted && stored.report_time);
+  const DetWrap = canView ? TouchableOpacity : View;
+
   return (
     <View>
       <View style={s.wheel}>
@@ -110,12 +118,10 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
           {days.map((d, i) => {
             const op = Math.max(0.08, 1 - Math.abs(i - sel) * 0.38); // fade simétrico (mockup: .25/.6/1/.6/.25)
             const on = i === sel;
-            // Só o dia CENTRADO é tocável → abre o formulário (editar/inserir); os
-            // outros dias só rolam. O cartão por baixo da roda é só de leitura.
-            const RowComp = on ? TouchableOpacity : View;
+            // A roda é só VISUALIZAÇÃO — os dias NÃO são tocáveis (ver detalhe = tocar no
+            // cartão por baixo; adicionar = FAB "Serviço"). Só rolam.
             return (
-              <RowComp key={d.iso} style={[s.row, { opacity: op }]}
-                {...(on ? { activeOpacity: 0.7, onPress: () => onAddDuty && onAddDuty(d.iso) } : {})}>
+              <View key={d.iso} style={[s.row, { opacity: op }]}>
                 <View style={s.fl}>
                   {d.flight ? (
                     <>
@@ -129,20 +135,21 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
                   : <Text style={[s.num, d.isToday && s.numToday]}>{d.day}</Text>}
                 <Text style={[s.wd, on && s.wdOn]}>{d.wd}</Text>
                 <View style={[s.dot, !d.flight && { opacity: 0 }]} />
-              </RowComp>
+              </View>
             );
           })}
         </ScrollView>
       </View>
 
-      {/* Detalhe do dia centrado — SÓ LEITURA (editar = tocar no dia na roda, ou na Lista) */}
-      <View style={s.det}>
+      {/* Cartão do dia centrado — TOCAR abre o detalhe (só se houver serviço guardado) */}
+      <DetWrap style={s.det} {...(canView ? { activeOpacity: 0.75, onPress: () => onViewDuty && onViewDuty(cur.iso) } : {})}>
         <View style={s.detHead}>
           <View style={[s.dc, !cur.flight && s.dcOff]}><Text style={[s.dcTxt, !cur.flight && s.dcTxtOff]}>{cur.day}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={s.detTitle} numberOfLines={1}>{cur.flight ? actLabel(cur.flight) : l('Folga', 'Day off')}</Text>
             <Text style={s.detSub}>{cur.wd} · {cur.day} {curMonthName}{cur.isToday ? ` · ${t('cal.today', lang)}` : ''}{cur.fromCal ? ` · ${l('do calendário', 'from calendar')}` : ''}</Text>
           </View>
+          {canView ? <Ionicons name="chevron-forward" size={18} color={C.sub} /> : null}
         </View>
         <View style={s.detBody}>
           {cur.flight ? (
@@ -160,7 +167,7 @@ export default function EscalaWheel({ onAddDuty, onSelect }) {
             {l('Local', 'Local')} {cur.flight.report_time || '—'}{cur.flight.block_on ? `–${cur.flight.block_on}` : ''}  ·  Zulu {toZulu(cur.iso, cur.flight.report_time) || '—'}Z{cur.flight.block_on ? `–${toZulu(cur.iso, cur.flight.block_on)}Z` : ''}
           </Text>
         ) : null}
-      </View>
+      </DetWrap>
     </View>
   );
 }

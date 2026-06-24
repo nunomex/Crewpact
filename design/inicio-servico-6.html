@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Início · Serviço (nº maior + lado direito arrumado)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:880px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;max-width:1180px;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0}
+  figcaption{text-align:center;max-width:320px}
+  figcaption b{font-weight:800;font-size:15px;color:var(--ink)}
+  figcaption p{font-size:12px;line-height:1.5;color:#646A72;margin-top:6px}
+
+  .phone{width:340px;height:724px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 38px 76px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:38px;overflow:hidden;position:relative}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .body{position:absolute;inset:0;padding:52px 18px 18px;overflow:hidden}
+
+  .eye{font-family:var(--inter);font-weight:800;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px}
+  .eye i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .h2{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink);margin-top:7px}
+  .tab{font-variant-numeric:tabular-nums lining-nums}
+  .sec{font-family:var(--inter);font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:20px 0 12px}
+
+  /* CARTÃO por sombra · badge à esquerda, NÚMERO MAIOR */
+  .svc{background:var(--card);border-radius:16px;padding:18px;
+    box-shadow:0 8px 24px -10px rgba(20,22,26,.18), 0 2px 6px -3px rgba(20,22,26,.10)}
+  .nd{display:flex;gap:15px;align-items:center}
+  .badge{width:70px;height:70px;border-radius:50%;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;
+    box-shadow:0 10px 20px -7px rgba(20,22,26,.34)}
+  .badge.over{background:var(--red);box-shadow:0 10px 24px -6px rgba(245,64,44,.55)}
+  .badge .d{font-family:var(--disp);font-weight:700;font-size:38px;line-height:1;letter-spacing:-.03em}
+  .badge .m{font-family:var(--inter);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.82;margin-top:2px}
+  .ndx{flex:1;min-width:0}
+  .ndtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .ndtype{font-family:var(--inter);font-weight:800;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--sub)}
+  .cd{font-family:var(--inter);font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;flex:0 0 auto}
+  .cd.red{color:var(--red)}
+  .route{font-family:var(--disp);font-weight:600;font-size:26px;letter-spacing:-.015em;color:var(--ink);line-height:1.08;margin-top:5px;white-space:nowrap;overflow:hidden}
+  .route.long{font-size:17px}
+  .meta{font-family:var(--inter);font-weight:700;font-size:12.5px;color:var(--sub);margin-top:6px}
+  .meta b{color:var(--greentext);font-weight:800}
+
+  /* CHIPS full-width por baixo (estilo da foto: rótulo + valor) — usa a largura toda */
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+  .chip{flex:1 1 calc(50% - 5px);min-width:0;background:var(--soft);border-radius:13px;padding:9px 12px}
+  .chip .cl{font-family:var(--inter);font-weight:800;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:3px}
+  .chip .cv{font-family:var(--disp);font-weight:600;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .chip.green{background:var(--greensoft)} .chip.green .cv{color:var(--greentext)} .chip.green .cl{color:var(--greentext);opacity:.85}
+  .chip.warn{background:var(--warnsoft)} .chip.warn .cv{color:var(--warntext)} .chip.warn .cl{color:var(--warntext);opacity:.85}
+
+  .note{position:relative;z-index:1;max-width:760px;margin:34px auto 0;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .note b{font-weight:800;color:var(--ink)} .note p{font-size:13px;line-height:1.6;color:#5C616A;margin-top:4px}
+  .note .q{color:var(--brand);font-weight:800}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:40px;font-weight:600;position:relative;z-index:1}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">Início · serviço — reparo</div>
+    <h1>Número maior + lado direito arrumado</h1>
+    <p>Número do dia <b>grande</b> como na tua foto (badge 70px · nº 38px). À direita: <b>tipo + tempo que falta</b>, <b>rota grande</b>, e a linha <b>"2 setores · per diem"</b>. Os detalhes descem para <b>chips</b> (estilo da foto) que usam a <b>largura toda</b> por baixo. Tamanhos e espaços afinados.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- VOO (dados iguais à foto) -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge"><span class="d tab">22</span><span class="m">Seg</span></div>
+            <div class="ndx">
+              <div class="ndtop"><div class="ndtype">Voo</div><div class="cd">em 14 h</div></div>
+              <div class="route tab">LIS → OPO</div>
+              <div class="meta">2 setores · per diem <b>+28 €</b></div>
+            </div>
+          </div>
+          <div class="chips">
+            <div class="chip"><div class="cl">Report</div><div class="cv tab">05:40</div></div>
+            <div class="chip"><div class="cl">Zulu</div><div class="cv tab">04:40Z</div></div>
+            <div class="chip"><div class="cl">PSV máx</div><div class="cv tab">13:00</div></div>
+            <div class="chip green"><div class="cl">Fadiga</div><div class="cv">Baixa</div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Voo (dados da tua foto)</b><p>Número grande; topo tipo+tempo; rota; "2 setores · per diem +28 €"; chips full-width em baixo.</p></figcaption></figure>
+
+    <!-- MULTI-LEG -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge"><span class="d tab">15</span><span class="m">Qui</span></div>
+            <div class="ndx">
+              <div class="ndtop"><div class="ndtype">Voo</div><div class="cd">em 3 h 20 min</div></div>
+              <div class="route long tab">LIS → LGW → FNC → LIS</div>
+              <div class="meta">3 setores · per diem <b>+72 €</b></div>
+            </div>
+          </div>
+          <div class="chips">
+            <div class="chip"><div class="cl">Report</div><div class="cv tab">06:05</div></div>
+            <div class="chip"><div class="cl">Zulu</div><div class="cv tab">05:05Z</div></div>
+            <div class="chip"><div class="cl">PSV máx</div><div class="cv tab">13:00</div></div>
+            <div class="chip warn"><div class="cl">Fadiga</div><div class="cv">Elevada</div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Multi-leg</b><p>Rota encolhe p/ caber ao lado do nº grande (não quebra). Chips iguais.</p></figcaption></figure>
+
+    <!-- RESERVA + badge aceso (over) -->
+    <figure><div class="phone"><div class="screen"><div class="island"></div>
+      <div class="body">
+        <div class="eye"><i></i>EASYJET · AE · PILOTO</div>
+        <div class="h2">Olá, Nuno</div>
+        <div class="sec">Serviço</div>
+        <div class="svc">
+          <div class="nd">
+            <div class="badge over"><span class="d tab">28</span><span class="m">Dom</span></div>
+            <div class="ndx">
+              <div class="ndtop"><div class="ndtype">Reserva</div><div class="cd">em 2 dias</div></div>
+              <div class="route tab">06:00 – 14:00</div>
+              <div class="meta">Standby aeroporto</div>
+            </div>
+          </div>
+          <div class="chips">
+            <div class="chip"><div class="cl">Início</div><div class="cv tab">06:00</div></div>
+            <div class="chip"><div class="cl">Fim</div><div class="cv tab">14:00</div></div>
+            <div class="chip"><div class="cl">PSV se chamado</div><div class="cv tab">13:00</div></div>
+            <div class="chip green"><div class="cl">Fadiga</div><div class="cv">Baixa</div></div>
+          </div>
+        </div>
+      </div>
+    </div></div><figcaption><b>Reserva + badge aceso</b><p>Janela de horas; chips adaptam-se. Badge vermelho = acima do limite (o acender mantém-se).</p></figcaption></figure>
+
+  </div>
+
+  <div class="note">
+    <b>2 coisas onde me afastei da foto — diz-me se queres como na foto:</b>
+    <p>1. <span class="q">Badge</span> — na foto é <b>círculo vermelho</b>; eu mantive <b>quadrado-arredondado ink</b> (que aprovaste, com o acender a vermelho só perto do limite). Queres o <b>círculo vermelho</b> de volta?</p>
+    <p>2. <span class="q">"em 14 h"</span> (tempo que falta) — na foto é <b>vermelho</b>; eu pus <b>ink</b> (para o vermelho ficar só para perigo). Queres <b>vermelho</b> como na foto?</p>
+  </div>
+
+  <div class="foot">CrewPact · Início · número maior + lado direito arrumado · cartão por sombra · Space Grotesk</div>
+</body>
+</html>

@@ -42,6 +42,7 @@ import HomeScreen         from './screens/HomeScreen';
 import HojeScreen         from './screens/HojeScreen';
 import HojeDetailScreen   from './screens/HojeDetailScreen';
 import EscalaScreen       from './screens/EscalaScreen';
+import DutyDetailScreen   from './screens/DutyDetailScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import FtlCalcScreen      from './screens/FtlCalcScreen';
@@ -98,6 +99,7 @@ function EscalaStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EscalaMain" component={EscalaScreen} />
+      <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -265,15 +267,15 @@ const tbar = StyleSheet.create({
   tbDot: { position: 'absolute', bottom: 8, width: 4, height: 4, borderRadius: 2 },
   // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
   fabAnchor: { position: 'absolute', right: 20, alignItems: 'flex-end' },
-  // FAB vermelho (direita) — maior, a condizer com a dock
-  fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  // FAB vermelho (direita) — maior, quadrado-arredondado a condizer com a dock (raio 26, não círculo)
+  fab: { width: 64, height: 64, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
   // Mini-FAB do speed-dial: rótulo (chip card+hairline, o idiom dos chips da app) +
-  // círculo (RADIUS.pill = redondo, como os botões de ação), alinhado ao centro do FAB.
+  // quadrado-arredondado (RADIUS.xl, a condizer com a dock/FAB — não círculo), alinhado ao centro do FAB.
   miniRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   miniLabel: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, marginRight: 12 },
   miniLabelTxt: { fontFamily: FONT.semibold, fontSize: TYPE.label },
-  mini: { width: 56, height: 56, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
+  mini: { width: 56, height: 56, borderRadius: RADIUS.xl, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
 });
 
 export default function App() {
@@ -731,6 +733,8 @@ export default function App() {
       if (!fl.ok && !nf.ok) return;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
       const window = { start: isoDay(start), end: isoDay(end) };
+      // SÓ DETETA (não grava): expõe o diff p/ o user rever e CONFIRMAR no import (decisão do
+      // user — nada entra no `duties` sem confirmação). Gravar = RosterImportSheet → saveDuty.
       setRosterChanges(diffRoster({ incoming, duties: dutiesRef.current, window }));
     } catch { /* best-effort */ }
   }, [company]);
