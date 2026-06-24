@@ -128,8 +128,8 @@ function FloatingTabBar({ state, navigation }) {
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
-    'Hoje':   ['home', 'home-outline'],
-    'Início': ['pulse', 'pulse-outline'],
+    'Hoje':   ['pulse', 'pulse-outline'],
+    'Início': ['home', 'home-outline'],
     'Escala': ['calendar', 'calendar-outline'],
     'FTL':    ['time', 'time-outline'],
     'Perfil': ['person', 'person-outline'],
@@ -236,8 +236,8 @@ function PerfilStack() {
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
-      <Tab.Screen name="Hoje"   component={HojeStack} />
       <Tab.Screen name="Início" component={HomeStack} />
+      <Tab.Screen name="Hoje"   component={HojeStack} />
       <Tab.Screen name="Escala" component={EscalaStack} />
       <Tab.Screen name="FTL"    component={FtlStack} />
       <Tab.Screen name="Perfil" component={PerfilStack} />

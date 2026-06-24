@@ -28,7 +28,7 @@ const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C
 
 // Anel a pulsar (escala 1→1.7 + desvanece, em loop) — atrás do ponto de estado e
 // do badge do report, como o mockup (@keyframes ring).
-function PulseRing({ size, color, border = false, duration = 2400 }) {
+function PulseRing({ size, color, border = false, duration = 2400, radius }) {
   const v = useRef(new Animated.Value(0)).current;
   const reduce = useReduceMotion();
   useEffect(() => {
@@ -41,7 +41,7 @@ function PulseRing({ size, color, border = false, duration = 2400 }) {
   if (reduce) {
     return (
       <View pointerEvents="none" style={{
-        position: 'absolute', width: size, height: size, borderRadius: size / 2,
+        position: 'absolute', width: size, height: size, borderRadius: radius != null ? radius : size / 2,
         ...(border ? { borderWidth: 2, borderColor: color } : { backgroundColor: color }), opacity: 0.35,
       }} />
     );
@@ -124,6 +124,7 @@ function dutyToFlight(iso, d) {
     depTime: d.block_off || d.report_time,
     arrTime: d.block_on || d.report_time,
     depAirport: dep, arrAirport: arr,
+    stations: ap.length ? ap : [dep],  // cadeia completa de escalas (multi-leg) p/ a linha principal da Home
     sectors: d.sectors || null,
     startDate: new Date(reportInstant.getTime() + 60 * 60 * 1000),
     endDate,
@@ -217,8 +218,9 @@ export default function HomeScreen({ navigation }) {
     : stateLevel === 'ok' ? t('home.statusOk', lang)
     : t('home.dashNoData', lang);
   const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
-  // Disciplina do vermelho (Flight Deck): o badge do próximo voo é NEUTRO (ink) por defeito;
-  // só acende a vermelho + glow quando o estado FTL está ACIMA do limite (perigo real).
+  // Disciplina do vermelho (Flight Deck): badge NEUTRO (ink) + sombra suave por defeito; PERTO
+  // do limite (warn, ≥85%) acende com anel vermelho a pulsar; ACIMA (over, ≥100%) enche-se de
+  // vermelho + glow. Texto branco legível sobre ink (warn) e sobre vermelho grande (over).
   const badgeColor = stateLevel === 'over' ? C.red : C.ink;
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
@@ -324,58 +326,61 @@ export default function HomeScreen({ navigation }) {
   // Skeleton só no 1º carregamento real (a sincronizar, ainda sem resultado e com
   // acesso ao calendário) — não no estado "sem voo" nem no pedido de permissão.
   const loadingFlight = !flight && syncing && !syncDone && calOk;
+  const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
+  // Campos da grelha do serviço (só os que têm dados — adapta-se a voo / não-voo).
+  const ndCells = flight ? [
+    { l: isNonFlight ? l('Início', 'Start') : l('Report', 'Report'), v: flight.report || '—' },
+    isNonFlight ? { l: l('Fim', 'End'), v: flight.arrTime || '—' } : { l: 'Zulu', v: ndReportZ ? `${ndReportZ}Z` : '—' },
+    ndPsvMax ? { l: l('PSV máx', 'FDP max'), v: ndPsvMax } : null,
+    (!isNonFlight && ndSectors) ? { l: l('Setores', 'Sectors'), v: String(ndSectors) } : null,
+    (!isNonFlight && aeNextPd != null) ? { l: 'Per-diem', v: fmtEur0(aeNextPd) } : null,
+  ].filter(Boolean) : [];
+
   const nextDutyEl = flight ? (
-    <View style={s.nd}>
-      <View style={s.ndCircWrap}>
-        {stateLevel === 'over' && <PulseRing size={78} color={C.red} border duration={2800} />}
-        <View style={[s.ndCirc, { backgroundColor: badgeColor, shadowColor: badgeColor, shadowOpacity: stateLevel === 'over' ? 0.45 : 0.16 }]}>
-          <Text style={s.ndCircDay}>{ndDayNum}</Text>
-          <Text style={s.ndCircLbl}>{ndDayWd}</Text>
-        </View>
-      </View>
-      <View style={s.ndX}>
-        <View style={s.ndXTop}>
-          <Text style={s.ndXEyebrow}>{flight.kind && flight.kind !== 'flight' ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
-          {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
-        </View>
-        <Text style={s.ndRoute} numberOfLines={1}>{flight.kind && flight.kind !== 'flight'
-          ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
-          : `${flight.depAirport} · ${flight.arrAirport}`}</Text>
-        {flight.nightStop ? <Text style={{ fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 2 }}>🌙 {lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text> : null}
-        <Text style={s.ndMeta} numberOfLines={1}>
-          {ndSectors ? `${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
-          {aeNextPd != null ? <Text>{ndSectors ? ' · ' : ''}per diem <Text style={s.ndMetaEm}>{fmtEur0(aeNextPd)}</Text></Text> : null}
-        </Text>
-        <View style={s.ndTags}>
-          {/* Linha 1 — origem do voo + report */}
-          <View style={s.ndTagRow}>
-            <View style={s.ndSrc}>
-              <Ionicons name="calendar-outline" size={10} color={C.sub} />
-              <Text style={s.ndSrcTxt}>{lang === 'en' ? 'from calendar' : 'do calendário'}</Text>
-            </View>
-            <View style={s.ndSrc}>
-              <Ionicons name="time-outline" size={10} color={C.sub} />
-              <Text style={s.ndSrcTxt}>Report <Text style={s.ndSrcEm}>{flight.report}</Text></Text>
+    <View>
+      <Text style={s.svcSec}>{l('Serviço', 'Duty')}</Text>
+      <View style={s.svc}>
+        <View style={s.svcNd}>
+          <View style={s.svcBadgeWrap}>
+            {(stateLevel === 'over' || stateLevel === 'warn') ? (
+              <PulseRing size={62} radius={RADIUS.lg} color={C.red} border={stateLevel === 'warn'} duration={2600} />
+            ) : null}
+            <View style={[s.svcBadge, { backgroundColor: badgeColor, shadowColor: badgeColor, shadowOpacity: stateLevel === 'over' ? 0.42 : 0.18 }]}>
+              <Text style={s.svcBadgeDay}>{ndDayNum}</Text>
+              <Text style={s.svcBadgeWd}>{ndDayWd}</Text>
             </View>
           </View>
-          {/* Linha 2 — fadiga + PSV máx */}
-          {(ndFat || ndPsvMax) ? (
-            <View style={s.ndTagRow}>
-              {ndFat ? (
-                <View style={[s.ndFat, { backgroundColor: fatBg(ndFat.band) }]}>
-                  <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
-                  <Text style={[s.ndFatTxt, { color: fatTextColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
-                </View>
-              ) : null}
-              {ndPsvMax ? (
-                <View style={s.ndSrc}>
-                  <Text style={s.ndSrcTxt}>{t('home.fdpMax', lang)} {ndPsvMax}</Text>
-                </View>
-              ) : null}
+          <View style={s.svcNdx}>
+            {/* Linha de topo: tipo de serviço (esq) + tempo que falta (dir) */}
+            <View style={s.svcTop}>
+              <Text style={s.svcType} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
+              {countdownStr ? <Text style={s.svcCd}>{countdownStr}</Text> : null}
+            </View>
+            {/* Rota grande (voo) ou janela de horas (não-voo) — encolhe p/ caber ao lado do badge, NUNCA quebra. */}
+            <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isNonFlight
+              ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
+              : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`)}</Text>
+            {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
+          </View>
+        </View>
+        <View style={s.svcDiv} />
+        <View style={s.svcGrid}>
+          {ndCells.map((c, i) => (
+            <View key={i} style={s.svcCell}>
+              <Text style={s.svcCellL} numberOfLines={1}>{c.l}</Text>
+              <Text style={s.svcCellV} numberOfLines={1}>{c.v}</Text>
+            </View>
+          ))}
+          {ndFat ? (
+            <View style={s.svcCell}>
+              <Text style={s.svcCellL} numberOfLines={1}>{l('Fadiga', 'Fatigue')}</Text>
+              <View style={[s.svcFat, { backgroundColor: fatBg(ndFat.band) }]}>
+                <View style={[s.svcFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
+                <Text style={[s.svcFatTxt, { color: fatTextColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
+              </View>
             </View>
           ) : null}
         </View>
-        <Text style={s.ndTimes} numberOfLines={1}>Local {flight.report}  ·  Zulu {ndReportZ || '—'}Z</Text>
       </View>
     </View>
   ) : loadingFlight ? (
@@ -486,16 +491,6 @@ export default function HomeScreen({ navigation }) {
           right={<NotificationsBell />}
         />
 
-        {/* Estado FTL — linha de estado (ponto semáforo a pulsar + contexto à direita) */}
-        <Animated.View style={[s.statline, seg(1)]}>
-          <View style={s.statDotWrap}>
-            {(stateLevel === 'over' || stateLevel === 'warn') && <PulseRing size={9} color={stateColor} duration={2400} />}
-            <View style={[s.statDot, { backgroundColor: stateColor }]} />
-          </View>
-          <Text style={s.statLabel} numberOfLines={1}>{stateLabel}</Text>
-          <Text style={s.statCtx} numberOfLines={1}>{crewCategory ? `${crewCategory}${crewContract ? ' · ' + crewContract : ''}` : (stateReason || '')}</Text>
-        </Animated.View>
-
         {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso. Em
             longo-curso (Hi Fly) avisa e remete p/ a calculadora manual. */}
         {isLongHaulCompany(company) ? (
@@ -590,6 +585,34 @@ const makeStyles = (C) => StyleSheet.create({
   ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
   ndFatDot: { width: 7, height: 7, borderRadius: 99 },
   ndFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
+
+  // Serviço — cartão herói do próximo serviço (badge + linha principal largura-toda + grelha)
+  svcSec: { fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, marginBottom: 12 },
+  // Cartão por SOMBRA: branco sobre canvas branco (C.card = canvas no claro), sem borda nem
+  // tom de fundo — só a sombra suave o levanta. Em dark, C.card é superfície elevada.
+  svc: { backgroundColor: C.card, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
+    shadowColor: '#14161A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 7 },
+  svcNd: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },   // dia à esquerda · coluna direita
+  svcNdx: { flex: 1, minWidth: 0 },
+  svcTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },  // tipo (esq) + tempo que falta (dir)
+  svcBadgeWrap: { width: 62, height: 62, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  svcBadge: { width: 62, height: 62, borderRadius: RADIUS.lg, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    shadowColor: C.ink, shadowOpacity: 0.20, shadowRadius: 16, shadowOffset: { width: 0, height: 9 }, elevation: 7 },
+  svcBadgeDay: { fontSize: 30, fontFamily: FONT.display, color: '#fff', lineHeight: 32, letterSpacing: -0.5 },
+  svcBadgeWd: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },
+  svcType: { flex: 1, fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.5, textTransform: 'uppercase', color: C.sub },
+  svcCd: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, flexShrink: 0 },
+  // Rota grande — numberOfLines=1 + adjustsFontSizeToFit ⇒ encolhe p/ caber ao lado do badge, nunca quebra
+  svcMain: { fontSize: 27, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 6, lineHeight: 30 },
+  svcNight: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 5 },
+  svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },  // risca leve full-bleed
+  svcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 15, marginTop: 15 },
+  svcCell: { width: '33.33%', paddingRight: 8 },
+  svcCellL: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub, marginBottom: 4 },
+  svcCellV: { fontSize: 17, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
+  svcFat: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3, marginTop: 1 },
+  svcFatDot: { width: 7, height: 7, borderRadius: 99 },
+  svcFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
 
   // Grelha 2-col (mockup .grid2/.uc/.win/.wbar)
   grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
