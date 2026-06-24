@@ -103,7 +103,7 @@ export default function StatsScreen({ navigation }) {
             {years.map((y) => {
               const on = y === year;
               return (
-                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]}>
+                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
                   <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
                 </TouchableOpacity>
               );

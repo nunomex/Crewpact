@@ -379,7 +379,7 @@ export default function HomeScreen({ navigation }) {
           <Ionicons name="calendar-outline" size={18} color={C.sub} />
           <View style={{ flex: 1 }}>
             <Text style={s.flightEmptyTxt}>{t('cal.permission', lang)}</Text>
-            <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn}>
+            <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
               <Ionicons name="calendar-outline" size={15} color="#fff" />
               <Text style={s.grantBtnTxt}>{t('cal.grant', lang)}</Text>
             </TouchableOpacity>

@@ -104,7 +104,7 @@ export default function ValidadesScreen({ navigation }) {
           <Ionicons name="add" size={18} color={C.text} />
           <Text style={s.addTxt}>{l('Adicionar validade', 'Add item')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} onPress={() => { select(); setScan({ text: '', results: null }); }}>
+        <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }} onPress={() => { select(); setScan({ text: '', results: null }); }}>
           <Ionicons name="scan-outline" size={17} color={C.ink} />
           <Text style={s.scanTxt}>{l('Detetar da escala (colar PDF)', 'Detect from roster (paste PDF)')}</Text>
         </TouchableOpacity>
@@ -129,7 +129,7 @@ export default function ValidadesScreen({ navigation }) {
                   {catalog.map((tp) => {
                     const on = editing?.type === tp.id;
                     return (
-                      <TouchableOpacity key={tp.id} onPress={() => { select(); setEditing((e) => ({ ...e, type: tp.id })); }} style={[s.chip, on && s.chipOn]} activeOpacity={0.85}>
+                      <TouchableOpacity key={tp.id} onPress={() => { select(); setEditing((e) => ({ ...e, type: tp.id })); }} style={[s.chip, on && s.chipOn]} activeOpacity={0.85} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}>
                         <Text style={[s.chipTxt, on && s.chipTxtOn]}>{validityLabel(tp.id, isPilot, lang)}</Text>
                       </TouchableOpacity>
                     );
@@ -156,7 +156,7 @@ export default function ValidadesScreen({ navigation }) {
               <Text style={[s.saveTxt, { color: formISO ? '#fff' : C.sub }]}>{t('common.save', lang)}</Text>
             </TouchableOpacity>
             {editing?.id ? (
-              <TouchableOpacity onPress={deleteEditing} activeOpacity={0.85} style={s.delBtn}>
+              <TouchableOpacity onPress={deleteEditing} activeOpacity={0.85} style={s.delBtn} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
                 <Ionicons name="trash-outline" size={16} color={C.red} />
                 <Text style={s.delTxt}>{l('Apagar', 'Delete')}</Text>
               </TouchableOpacity>

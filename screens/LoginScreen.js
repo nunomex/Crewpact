@@ -46,7 +46,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
           autoFocus={autoFocus}
         />
         {secure && (
-          <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn}>
+          <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn} hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}>
             <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
           </TouchableOpacity>
         )}
@@ -317,13 +317,13 @@ export default function LoginScreen() {
                 <Field value={lPw} onChangeText={v => { setLPw(v); setLErrPw(''); }}
                   placeholder={t('login.password', lang)} error={lErrPw} secure icon="lock-closed-outline"
                   returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
-                <TouchableOpacity style={s.forgotBtn} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
+                <TouchableOpacity style={s.forgotBtn} hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
                   <Text style={s.forgotTxt}>{t('login.forgot', lang)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleLogin} disabled={loading} style={s.btnMain}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnLogin', lang)}</Text>}
                 </TouchableOpacity>
-                <TouchableOpacity style={s.switchRow} onPress={() => setSignupMode(true)}>
+                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => setSignupMode(true)}>
                   <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
                   <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
                 </TouchableOpacity>
@@ -346,7 +346,7 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={handleRequestReset} disabled={loading} style={s.btnMain}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnSendCode', lang)}</Text>}
                 </TouchableOpacity>
-                <TouchableOpacity style={s.linkRow} onPress={() => navigateTo('login', false)}>
+                <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => navigateTo('login', false)}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
                   <Text style={s.linkTxt}>{t('login.backToLogin', lang)}</Text>
                 </TouchableOpacity>
@@ -374,7 +374,7 @@ export default function LoginScreen() {
                 <TouchableOpacity onPress={handleVerifyCode} disabled={loading || code.length < 8} style={[s.btnMain, code.length < 8 && { opacity: 0.4 }]}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnVerify', lang)}</Text>}
                 </TouchableOpacity>
-                <TouchableOpacity style={s.linkRow} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
+                <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
                   <Text style={s.linkTxt}>{t('login.resend', lang)}</Text>
                 </TouchableOpacity>

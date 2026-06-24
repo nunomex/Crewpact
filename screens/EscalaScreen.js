@@ -168,7 +168,7 @@ export default function EscalaScreen({ navigation, route }) {
             {[['wheel', l('Roda', 'Wheel')], ['list', l('Lista', 'List')]].map(([id, label]) => {
               const on = view === id;
               return (
-                <TouchableOpacity key={id} onPress={() => { select(); setView(id); }} style={[s.seg, on && s.segOn]} activeOpacity={0.85}>
+                <TouchableOpacity key={id} onPress={() => { select(); setView(id); }} style={[s.seg, on && s.segOn]} activeOpacity={0.85} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}>
                   <Text style={[s.segTxt, on && s.segTxtOn]}>{label}</Text>
                 </TouchableOpacity>
               );

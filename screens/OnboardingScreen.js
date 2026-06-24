@@ -212,7 +212,7 @@ export default function OnboardingScreen({ signup = false }) {
             <View style={styles.pwRow}>
               <TextInput value={draft.password} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, password: v }); }}
                 placeholder={lang === 'en' ? 'Password' : 'Palavra-passe'} placeholderTextColor={C.sub} secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} style={styles.pwInput} />
-              <TouchableOpacity onPress={() => setShowPw((x) => !x)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setShowPw((x) => !x)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.sub} />
               </TouchableOpacity>
             </View>

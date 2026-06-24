@@ -182,7 +182,7 @@ export default function RosterImportSheet({ visible, onClose }) {
           {[{ id: 'calendar', ic: 'calendar-outline', label: l('Calendário', 'Calendar') }, { id: 'paste', ic: 'clipboard-outline', label: l('Colar PDF', 'Paste PDF') }].map((src) => {
             const on = source === src.id;
             return (
-              <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]}>
+              <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
                 <Ionicons name={src.ic} size={15} color={on ? '#fff' : C.sub} />
                 <Text style={[s.rTxt, on && s.rTxtOn]}>{src.label}</Text>
               </TouchableOpacity>
@@ -196,7 +196,7 @@ export default function RosterImportSheet({ visible, onClose }) {
             {RANGES.map((r) => {
               const on = range === r.id;
               return (
-                <TouchableOpacity key={r.id} onPress={() => { select(); setRange(r.id); }} activeOpacity={0.85} style={[s.rChip, on && s.rChipOn]}>
+                <TouchableOpacity key={r.id} onPress={() => { select(); setRange(r.id); }} activeOpacity={0.85} style={[s.rChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
                   <Text style={[s.rTxt, on && s.rTxtOn]}>{r.id === 'month' ? l('Próximo mês', 'Next month') : `${r.d} ${l('dias', 'days')}`}</Text>
                 </TouchableOpacity>
               );
@@ -277,7 +277,7 @@ export default function RosterImportSheet({ visible, onClose }) {
           {/* Diagnóstico do calendário — o que o eCrew tem e como o parser o classifica */}
           {source === 'calendar' ? (
             <>
-              <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn}>
+              <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn} hitSlop={{ top: 5, bottom: 5, left: 8, right: 8 }}>
                 <Ionicons name="construct-outline" size={14} color={C.sub} />
                 <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
               </TouchableOpacity>

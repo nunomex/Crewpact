@@ -177,7 +177,7 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
                       {fmtEur(each)} / {unit}{n > 0 ? ` · = ${fmtEur(+(each * n).toFixed(2))}` : ''}
                     </Text>
                     {showSnc ? (
-                      <TouchableOpacity onPress={() => onChangeExtras && onChangeExtras({ ...extras, snc: sncSuggest })}>
+                      <TouchableOpacity onPress={() => onChangeExtras && onChangeExtras({ ...extras, snc: sncSuggest })} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
                         <Text style={s.autoHint}>{l(`≈${sncSuggest} detetada(s) na escala · aplicar`, `≈${sncSuggest} detected in roster · apply`)}</Text>
                       </TouchableOpacity>
                     ) : null}

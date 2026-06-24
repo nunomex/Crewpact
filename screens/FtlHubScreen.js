@@ -35,7 +35,7 @@ function Glow() {
 // Pill de ferramenta (mockup .pills .p): código a vermelho + rótulo.
 function Pill({ code, label, onPress, s }) {
   return (
-    <TouchableOpacity style={s.pill} activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity style={s.pill} activeOpacity={0.8} onPress={onPress} hitSlop={{ top: 5, bottom: 5, left: 4, right: 4 }}>
       <Text style={s.pillCode}>{code}</Text>
       <Text style={s.pillTxt} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
@@ -141,7 +141,7 @@ export default function FtlHubScreen({ navigation }) {
         <Animated.View style={seg(2)}>
         <View style={s.consultHead}>
           <Text style={[s.sec, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
-          <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openPdf}>
+          <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openPdf} hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}>
             <Ionicons name="document-text-outline" size={14} color={C.text} />
             <Text style={s.pdfBtnTxt}>PDF</Text>
             <Ionicons name="open-outline" size={13} color={C.sub} />

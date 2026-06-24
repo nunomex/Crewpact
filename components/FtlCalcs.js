@@ -40,7 +40,7 @@ function ChipRow({ items, value, onChange }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
       {items.map((label, i) => (
-        <TouchableOpacity key={label} onPress={() => onChange(i)} style={[cs.chip, { backgroundColor: value === i ? C.ink : C.soft }]}>
+        <TouchableOpacity key={label} onPress={() => onChange(i)} style={[cs.chip, { backgroundColor: value === i ? C.ink : C.soft }]} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
           <Text style={[cs.chipTxt, { color: value === i ? '#fff' : C.sub }]}>{label}</Text>
         </TouchableOpacity>
       ))}
@@ -164,7 +164,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
           <Text style={cs.fieldLabel}>{t('ftl.psvStart', lang)}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
             {PSV_ACCLIMATISED.map((r, i) => (
-              <TouchableOpacity key={r.start} onPress={() => pickBand(i)} style={[cs.chip, { backgroundColor: startIdx === i ? C.ink : C.soft }]}>
+              <TouchableOpacity key={r.start} onPress={() => pickBand(i)} style={[cs.chip, { backgroundColor: startIdx === i ? C.ink : C.soft }]} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                 <Text style={[cs.chipTxt, { color: startIdx === i ? '#fff' : C.sub }]}>{r.start}</Text>
               </TouchableOpacity>
             ))}

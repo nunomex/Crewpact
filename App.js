@@ -5,9 +5,9 @@ import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet,
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
 // altura fixa (inputs, badges, cartões).
 Text.defaultProps = Text.defaultProps || {};
-Text.defaultProps.maxFontSizeMultiplier = 1.6;
+Text.defaultProps.maxFontSizeMultiplier = 1.4;
 TextInput.defaultProps = TextInput.defaultProps || {};
-TextInput.defaultProps.maxFontSizeMultiplier = 1.6;
+TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';

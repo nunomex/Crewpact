@@ -183,7 +183,7 @@ export default function DutyFormSheet({ visible, onClose, date }) {
               {DUTY_KINDS.map((k) => {
                 const on = form.kind === k;
                 return (
-                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85}>
+                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                     <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
                   </TouchableOpacity>
                 );

@@ -81,7 +81,7 @@ export default function SearchModal({ visible, onClose, navigation }) {
                 <TextInput ref={inputRef} value={query} onChangeText={setQuery}
                   placeholder={l('Pesquisar artigos ou cálculos…', 'Search articles or calculations…')}
                   placeholderTextColor={C.sub} style={s.input} autoCorrect={false} autoCapitalize="characters" returnKeyType="search" />
-                {q ? <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={C.sub} /></TouchableOpacity> : null}
+                {q ? <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}><Ionicons name="close-circle" size={18} color={C.sub} /></TouchableOpacity> : null}
               </View>
               <TouchableOpacity onPress={requestClose} hitSlop={8}><Text style={s.cancel}>{l('Cancelar', 'Cancel')}</Text></TouchableOpacity>
             </View>
@@ -94,7 +94,7 @@ export default function SearchModal({ visible, onClose, navigation }) {
                   <Text style={s.groupHd}>{l('Sugestões', 'Suggestions')}</Text>
                   <View style={s.chips}>
                     {suggestions.map((sg) => (
-                      <TouchableOpacity key={sg} style={s.chip} activeOpacity={0.8} onPress={() => { select(); setQuery(sg); }}>
+                      <TouchableOpacity key={sg} style={s.chip} activeOpacity={0.8} hitSlop={{ top: 5, bottom: 5, left: 4, right: 4 }} onPress={() => { select(); setQuery(sg); }}>
                         <Text style={s.chipTxt}>{sg}</Text>
                       </TouchableOpacity>
                     ))}

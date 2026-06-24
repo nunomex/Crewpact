@@ -221,7 +221,7 @@ export default function CalendarScreen({ navigation, embedded }) {
         {/* Voos (leitura) */}
         <View style={s.flightsHead}>
           <Text style={[s.secHd, { marginTop: 0, marginBottom: 0 }]}>{t('cal.flights', lang)}</Text>
-          <TouchableOpacity style={s.importBtn} onPress={onImport} disabled={importing} activeOpacity={0.85} accessibilityLabel={t('cal.import', lang)}>
+          <TouchableOpacity style={s.importBtn} onPress={onImport} disabled={importing} activeOpacity={0.85} accessibilityLabel={t('cal.import', lang)} hitSlop={{ top: 7, bottom: 7, left: 6, right: 6 }}>
             {importing ? <ActivityIndicator size="small" color={C.sub} />
               : <><Ionicons name="download-outline" size={14} color={C.text} /><Text style={s.importBtnTxt}>{t('cal.import', lang)}</Text></>}
           </TouchableOpacity>
@@ -231,7 +231,7 @@ export default function CalendarScreen({ navigation, embedded }) {
             <Ionicons name="information-circle-outline" size={16} color={C.sub} />
             <View style={{ flex: 1 }}>
               <Text style={s.noteTxt}>{t('cal.permission', lang)}</Text>
-              <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn}>
+              <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                 <Ionicons name="calendar-outline" size={15} color="#fff" />
                 <Text style={s.grantBtnTxt}>{t('cal.grant', lang)}</Text>
               </TouchableOpacity>

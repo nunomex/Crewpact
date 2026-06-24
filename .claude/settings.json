@@ -19,7 +19,9 @@
       "PowerShell($env:ANDROID_HOME=\"D:\\\\Android\\\\Sdk\"; $env:ANDROID_SDK_ROOT=\"D:\\\\Android\\\\Sdk\"; $env:Path += \";D:\\\\Android\\\\Sdk\\\\platform-tools\"; npx expo start --tunnel --go --port 8094)",
       "Bash(T=\"/c/Users/funsn/AppData/Local/Temp\"; rm -rf \"$T\"/metro-* \"$T\"/haste-* \"$T\"/metro-cache 2>/dev/null; echo \"cache do Metro limpa em $T\"; ls \"$T\" | grep -iE \"metro|haste\" || echo \"\\(sem restos metro/haste\\)\")",
       "Bash(python3 -)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(D:/Android/Sdk/platform-tools/adb.exe devices *)",
+      "Bash(adb devices *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp"
