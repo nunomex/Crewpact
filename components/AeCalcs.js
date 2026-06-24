@@ -299,7 +299,7 @@ const makeStyles = (C) => StyleSheet.create({
   // Total estimado — cartão escuro (mockup .aetotal)
   aetotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.brand, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
   aetotalK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', maxWidth: 150, lineHeight: 13 },
-  aetotalV: { fontFamily: FONT.semibold, fontSize: 30, color: '#fff', fontVariant: ['tabular-nums'] },
+  aetotalV: { fontFamily: FONT.display, fontSize: 30, color: '#fff', fontVariant: ['tabular-nums'] },
 
   // Catálogo Anexo I
   rowBorder: { borderTopWidth: 1, borderTopColor: C.line },

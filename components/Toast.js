@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
 import { useTheme } from '../data/appContext';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { t } from '../data/i18n';
 
 // Toast global de feedback de sincronização (duties → Supabase). Desliza de cima,
@@ -20,14 +21,20 @@ export default function Toast({ toast, lang, onHide }) {
   const C = useTheme();
   const insets = useSafeAreaInsets();
   const s = makeStyles(C);
+  const reduce = useReduceMotion();
   const y = useRef(new Animated.Value(-160)).current;
   const timer = useRef(null);
 
   useEffect(() => {
     if (!toast) return;
+    clearTimeout(timer.current);
+    if (reduce) { // reduz-movimento: aparece/sai sem deslizar (o sinal mantém-se pelo ícone+texto)
+      y.setValue(0);
+      timer.current = setTimeout(() => { y.setValue(-160); onHide && onHide(); }, 2200);
+      return () => clearTimeout(timer.current);
+    }
     y.setValue(-160);
     Animated.spring(y, { toValue: 0, friction: 9, tension: 80, useNativeDriver: true }).start();
-    clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       Animated.timing(y, { toValue: -160, duration: 260, useNativeDriver: true })
         .start(({ finished }) => { if (finished && onHide) onHide(); });
@@ -37,8 +44,8 @@ export default function Toast({ toast, lang, onHide }) {
 
   if (!toast) return null;
   const m = META[toast.kind] || META.ok;
-  const title = toast.kind === 'warn' ? t('sync.offline', lang) : t('sync.done', lang);
-  const sub = toast.kind === 'warn' ? t('sync.offlineSub', lang) : null;
+  const title = toast.title || (toast.kind === 'warn' ? t('sync.offline', lang) : t('sync.done', lang));
+  const sub = toast.sub !== undefined ? toast.sub : (toast.kind === 'warn' ? t('sync.offlineSub', lang) : null);
 
   return (
     <Animated.View pointerEvents="none" style={[s.toast, { top: insets.top + 8, transform: [{ translateY: y }] }]}>

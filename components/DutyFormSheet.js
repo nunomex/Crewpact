@@ -39,8 +39,8 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
-export default function DutyFormSheet({ visible, onClose, date }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, base } = useContext(AppContext);
+export default function DutyFormSheet({ visible, onClose, date, onSaved }) {
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, base, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -144,6 +144,8 @@ export default function DutyFormSheet({ visible, onClose, date }) {
       kind: form.kind || 'flight', nightStop: showNightStop ? !!form.nightStop : false,
     });
     success();
+    notify && notify(l('Serviço guardado', 'Duty saved'));
+    onSaved && onSaved(form.date);
     onClose && onClose();
   };
 

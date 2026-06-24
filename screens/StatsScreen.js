@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
+import CountUp from '../components/CountUp';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -15,10 +17,13 @@ const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C
 
 // Barra que enche de 0 → valor ao montar (mesma sensação das barras da Home).
 function GrowBar({ ratio, color, track, fill, delay = 200 }) {
+  const reduce = useReduceMotion();
+  const target = Math.max(0, Math.min(1, ratio || 0));
   const w = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(w, { toValue: Math.max(0, Math.min(1, ratio || 0)), duration: 800, delay, useNativeDriver: false }).start();
-  }, [ratio, w, delay]);
+    if (reduce) { w.setValue(target); return; }
+    Animated.timing(w, { toValue: target, duration: 800, delay, useNativeDriver: false }).start();
+  }, [target, w, delay, reduce]);
   return (
     <View style={track}>
       <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
@@ -28,10 +33,13 @@ function GrowBar({ ratio, color, track, fill, delay = 200 }) {
 
 // Barra vertical (gráfico mensal) que cresce em altura ao montar.
 function MonthBar({ ratio, color, delay }) {
+  const reduce = useReduceMotion();
+  const target = Math.max(0.02, Math.min(1, ratio || 0));
   const h = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(h, { toValue: Math.max(0.02, Math.min(1, ratio || 0)), duration: 700, delay, useNativeDriver: false }).start();
-  }, [ratio, h, delay]);
+    if (reduce) { h.setValue(target); return; }
+    Animated.timing(h, { toValue: target, duration: 700, delay, useNativeDriver: false }).start();
+  }, [target, h, delay, reduce]);
   return <Animated.View style={{ width: '64%', borderRadius: 4, backgroundColor: color, height: h.interpolate({ inputRange: [0, 1], outputRange: ['2%', '100%'] }) }} />;
 }
 
@@ -127,7 +135,7 @@ export default function StatsScreen({ navigation }) {
                 <Text style={s.heroPct}>{Math.round(flightRatio * 100)}%</Text>
               </View>
               <View style={s.heroNumRow}>
-                <Text style={s.heroNum}>{st.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })}</Text>
+                <CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.heroNum} delay={250} />
                 <Text style={s.heroUnit}>{l('h voadas', 'h flown')}</Text>
               </View>
               <GrowBar ratio={flightRatio} color={barColor(flightRatio, C)} track={s.heroBar} fill={s.heroBarFill} />
@@ -196,7 +204,7 @@ export default function StatsScreen({ navigation }) {
                 <View style={s.aeHead}><View style={s.aeDot} /><Text style={s.cardTitle}>{l('AE · ganhos no ano (est.)', 'AE · earnings this year (est.)')}</Text></View>
                 <View style={s.aeRow}><Text style={s.aeK}>{l('Base', 'Base')} ({st.aeYtd.monthsElapsed} {l('meses', 'months')})</Text><Text style={s.aeV}>{fmtEur0(st.aeYtd.base)}</Text></View>
                 <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Per diem', 'Per diem')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(st.aeYtd.perDiem)}</Text></View>
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><Text style={s.aeVtot}>{fmtEur0(st.aeYtd.total)}</Text></View>
+                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={st.aeYtd.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
                 {st.aeYtd.missing ? <Text style={s.aeMiss}>{st.aeYtd.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
               </Animated.View>
             ) : null}
@@ -244,7 +252,7 @@ const makeStyles = (C) => StyleSheet.create({
   heroEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   heroPct: { marginLeft: 'auto', fontSize: 12, fontFamily: FONT.bold, color: C.sub, fontVariant: ['tabular-nums'] },
   heroNumRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 10, marginBottom: 12 },
-  heroNum: { fontSize: 48, fontFamily: FONT.heavy, letterSpacing: -1.5, color: C.text, lineHeight: 50, fontVariant: ['tabular-nums'] },
+  heroNum: { fontSize: 48, fontFamily: FONT.displayBold, letterSpacing: -1.2, color: C.text, lineHeight: 50, fontVariant: ['tabular-nums'] },
   heroUnit: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
   heroBar: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
   heroBarFill: { height: '100%', borderRadius: RADIUS.pill },
@@ -253,7 +261,7 @@ const makeStyles = (C) => StyleSheet.create({
   // Tiles 2×2
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: SPACE.md },
   tile: { width: '47%', flexGrow: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15, gap: 7 },
-  tileVal: { fontSize: 22, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  tileVal: { fontSize: 22, fontFamily: FONT.displayBold, color: C.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   tileLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
 
   // Cartões genéricos

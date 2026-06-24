@@ -141,7 +141,7 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: TYPE.eyebrow, color: C.sub, letterSpacing: 1.3, fontFamily: FONT.heavy, textTransform: 'uppercase', marginBottom: 4 },
-  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.medium },
+  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.display },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4 },
   sub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 14 },
   logForRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 18 },

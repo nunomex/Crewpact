@@ -37,7 +37,7 @@ const makeStyles = (C) => StyleSheet.create({
   hlw: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   hrd: { width: 7, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.red },
   hl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.3, color: C.sub, textTransform: 'uppercase', flexShrink: 1 },
-  ht: { fontSize: 30, fontFamily: FONT.heavy, letterSpacing: -0.6, color: C.text, lineHeight: 32, marginBottom: 24 },
+  ht: { fontSize: 30, fontFamily: FONT.displayBold, letterSpacing: -0.5, color: C.text, lineHeight: 34, marginBottom: 24 },
   htRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 24 },
   htRowText: { marginBottom: 0 },
   htCaret: { marginTop: 3 },

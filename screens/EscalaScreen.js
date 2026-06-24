@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +33,7 @@ const buildDutiesCsv = (duties) => {
 // edição passa pelo DutyFormSheet partilhado (um só formulário, com rota+per-diem).
 // Na Lista, o cabeçalho traz o export: CSV + PDF do registo ORO.FTL.245.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, removeDuty, dayLog, user, company, rosterChanges, checkRosterChanges } = useContext(AppContext);
+  const { lang, duties, removeDuty, dayLog, user, company, rosterChanges, checkRosterChanges, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -49,6 +49,8 @@ export default function EscalaScreen({ navigation, route }) {
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
   const [recOpen, setRecOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: reverifica a escala
+  const [flashIso, setFlashIso] = useState(null);       // realce breve da linha após guardar
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   useEffect(() => {
     if (!user?.id) return;
@@ -94,7 +96,7 @@ export default function EscalaScreen({ navigation, route }) {
   const confirmDelete = (date) => {
     Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
       { text: t('common.cancel', lang), style: 'cancel' },
-      { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty(date); } },
+      { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty(date); notify && notify(l('Serviço apagado', 'Duty deleted')); } },
     ]);
   };
 
@@ -126,6 +128,7 @@ export default function EscalaScreen({ navigation, route }) {
       });
       await printToPdfAndShare(recordHtml(model, lang), 'CrewPact · FTL.245');
       success();
+      notify && notify(l('Registo gerado', 'Record generated'));
     } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
   };
 
@@ -201,7 +204,14 @@ export default function EscalaScreen({ navigation, route }) {
         ) : null}
 
         {view === 'list' ? (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
+            refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
+              onRefresh={async () => {
+                setRefreshing(true); const t0 = Date.now();
+                try { await checkRosterChanges?.(); } catch { /* ignora */ }
+                const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
+                setRefreshing(false);
+              }} />}>
             {listRows.length === 0 ? (
               <View style={s.emptyWrap}>
                 <Text style={s.empty}>{t('duties.empty', lang)}</Text>
@@ -211,7 +221,7 @@ export default function EscalaScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
             ) : listRows.map(([date, d]) => (
-              <TouchableOpacity key={date} style={s.row} activeOpacity={0.7} onPress={() => setDutyDate(date)}>
+              <TouchableOpacity key={date} style={[s.row, date === flashIso && s.rowFlash]} activeOpacity={0.7} onPress={() => setDutyDate(date)}>
                 <View style={{ flex: 1 }}>
                   <View style={s.rowTop}>
                     <Text style={s.rowDate}>{fmtDate(date)}</Text>
@@ -237,7 +247,8 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate} />
+      <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate}
+        onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
       {/* Registo ORO.FTL.245 (PDF assinável) */}
@@ -292,6 +303,7 @@ const makeStyles = (C) => StyleSheet.create({
   emptyImportBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingVertical: 13, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   emptyImportTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
+  rowFlash: { backgroundColor: C.greenSoft, borderColor: C.green }, // realce ~900ms ao guardar
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowDate: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
   todayDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red },

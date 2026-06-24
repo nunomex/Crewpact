@@ -198,7 +198,7 @@ const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
   eyebrow: { fontSize: TYPE.eyebrow, color: C.sub, letterSpacing: 1.3, fontFamily: FONT.heavy, textTransform: 'uppercase', marginBottom: 4 },
-  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.medium },
+  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.display },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
   paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },
   box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden' },

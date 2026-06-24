@@ -114,7 +114,7 @@ const makeC = (C) => StyleSheet.create({
   accBody: { marginTop: 12 },
   result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
   resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontFamily: FONT.semibold, textTransform: 'uppercase' },
-  resVal: { color: C.red, fontFamily: FONT.semibold, marginTop: 2, fontVariant: ['tabular-nums'] },
+  resVal: { color: C.red, fontFamily: FONT.display, marginTop: 2, fontVariant: ['tabular-nums'] },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 
   validRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },

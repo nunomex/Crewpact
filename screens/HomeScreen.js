@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
@@ -21,6 +21,7 @@ import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme, toZulu } from '../data/appContext';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
+import CountUp from '../components/CountUp';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
 const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
@@ -261,6 +262,16 @@ export default function HomeScreen({ navigation }) {
   // como a roda da Escala). Resolve "inseri um duty e não aparece na Home".
   const flight = useMemo(() => mergeNextFlight(calFlight, duties, Date.now()), [calFlight, duties]);
 
+  // Countdown VIVO: re-renderiza a cada 30s enquanto o ecrã está focado, para o
+  // "em X min" não congelar. Limpa o intervalo ao sair de foco (não é enfeite — é
+  // dado vivo; o `now` abaixo recalcula a cada tick).
+  const [, setNowTick] = useState(0);
+  useFocusEffect(useCallback(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, []));
+  const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: relê o calendário a pedido
+
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
   const reportMs = flight ? flight.startDate.getTime() - 60 * 60 * 1000 : null; // apresentação ≈ partida − 1 h
@@ -324,10 +335,12 @@ export default function HomeScreen({ navigation }) {
       </View>
       <View style={s.ndX}>
         <View style={s.ndXTop}>
-          <Text style={s.ndXEyebrow}>{t('home.nextDuty', lang)}</Text>
+          <Text style={s.ndXEyebrow}>{flight.kind && flight.kind !== 'flight' ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
           {countdownStr ? <Text style={s.ndCountdown}>{countdownStr}</Text> : null}
         </View>
-        <Text style={s.ndRoute} numberOfLines={1}>{flight.kind && flight.kind !== 'flight' ? t('duties.kind.' + flight.kind, lang) : `${flight.depAirport} · ${flight.arrAirport}`}</Text>
+        <Text style={s.ndRoute} numberOfLines={1}>{flight.kind && flight.kind !== 'flight'
+          ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
+          : `${flight.depAirport} · ${flight.arrAirport}`}</Text>
         {flight.nightStop ? <Text style={{ fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 2 }}>🌙 {lang === 'en' ? 'Night stop' : 'Paragem nocturna'}</Text> : null}
         <Text style={s.ndMeta} numberOfLines={1}>
           {ndSectors ? `${ndSectors} ${t('duties.sectorsShort', lang)}` : ''}
@@ -414,7 +427,7 @@ export default function HomeScreen({ navigation }) {
         <View style={s.ucHead}><View style={[s.ucDot, s.ucDotAe]} /><Text style={s.ucTitle} numberOfLines={1}>AE · {monthName}</Text></View>
         <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>Base ({crewContract || '12/12'})</Text><Text style={s.aeMV}>{fmtEur0(base)}</Text></View>
         <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.greenText }]}>+{fmtEur0(variable)}</Text></View>
-        <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><Text style={s.aeMVtot}>{fmtEur0(total)}</Text></View>
+        <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><CountUp value={total} format={fmtEur0} style={s.aeMVtot} delay={300} /></View>
         <MiniBar ratio={fill} color={C.green} track={s.aeMBar} fill={s.aeMBarFill} />
         {ae.isAgreementExpired && ae.isAgreementExpired(d) ? (
           <Text style={s.aeMNote}>{l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026')}</Text>
@@ -436,7 +449,7 @@ export default function HomeScreen({ navigation }) {
       <View style={s.ucHead}><View style={s.ucDot} /><Text style={s.ucTitle} numberOfLines={1}>{l('Estatísticas', 'Statistics')} · {new Date().getFullYear()}</Text></View>
       <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>{l('Setores', 'Sectors')}</Text><Text style={s.aeMV}>{statsYtd.sectors}</Text></View>
       <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{l('Dias de escala', 'Duty days')}</Text><Text style={s.aeMV}>{statsYtd.count}</Text></View>
-      <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{l('Voo (ano)', 'Flight (yr)')}</Text><Text style={s.aeMVtot}>{statsYtd.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })} h</Text></View>
+      <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{l('Voo (ano)', 'Flight (yr)')}</Text><CountUp value={statsYtd.flightHours} format={(n) => `${n.toLocaleString(locale, { maximumFractionDigits: 1 })} h`} style={s.aeMVtot} delay={300} /></View>
       <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.aeMBar} fill={s.aeMBarFill} mark={0.9} />
     </TouchableOpacity>
   ) : null;
@@ -457,7 +470,14 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
+          onRefresh={async () => {
+            setRefreshing(true); const t0 = Date.now();
+            try { await syncFlight(); } catch { /* ignora */ }
+            const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
+            setRefreshing(false);
+          }} />}>
 
         {/* Cabeçalho claro (PageHeader) — eyebrow do operador + sino + saudação */}
         <PageHeader
@@ -552,13 +572,13 @@ const makeStyles = (C) => StyleSheet.create({
   ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     shadowColor: C.ink, shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
-  ndCircDay: { fontSize: 32, fontFamily: FONT.semibold, color: '#fff', lineHeight: 34, letterSpacing: -0.5, textAlign: 'center' },
+  ndCircDay: { fontSize: 32, fontFamily: FONT.display, color: '#fff', lineHeight: 34, letterSpacing: -0.5, textAlign: 'center' },
   ndCircLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.85, textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', marginTop: 1, textAlign: 'center', includeFontPadding: false },
   ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
   ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ndXEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
   ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
-  ndRoute: { fontSize: 26, fontFamily: FONT.semibold, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
+  ndRoute: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
   ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
   ndMetaEm: { color: C.red, fontFamily: FONT.bold },
   ndTags: { marginTop: 9, gap: 7 },
@@ -592,7 +612,7 @@ const makeStyles = (C) => StyleSheet.create({
   aeMK: { fontFamily: FONT.bold, fontSize: 11, color: C.sub, flexShrink: 1 },
   aeMV: { fontFamily: FONT.semibold, fontSize: 13, color: C.text, fontVariant: ['tabular-nums'] },
   aeMKtot: { fontFamily: FONT.heavy, fontSize: 11, color: C.text },
-  aeMVtot: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
+  aeMVtot: { fontFamily: FONT.display, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
   aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
   aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.green },
   aeMNote: { fontFamily: FONT.regular, fontSize: 10, color: C.sub, marginTop: 9, lineHeight: 13 },

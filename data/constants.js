@@ -125,6 +125,10 @@ export const FONT = {
   semibold: "Inter_600SemiBold",
   bold:     "Inter_700Bold",
   heavy:    "Inter_800ExtraBold",
+  // Fonte de DISPLAY (Sistema A "Instrumento", Space Grotesk) — SÓ números grandes + títulos
+  // de ecrã. A UI/corpo/rótulos ficam Inter. Carregada no App.js.
+  display:     "SpaceGrotesk_600SemiBold",
+  displayBold: "SpaceGrotesk_700Bold",
 };
 // LetterSpacing recomendado para títulos display (negativo = mais apertado/premium).
 export const TRACK_DISPLAY = -0.4;

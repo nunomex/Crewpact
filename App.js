@@ -18,6 +18,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
+import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { getLocales } from 'expo-localization';
 import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE } from './data/constants';
 import { AppContext, isoDay, useTheme } from './data/appContext';
@@ -281,7 +282,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   // Fonte Inter (1:1 com o mockup, igual em iOS+Android). Carrega os pesos que o
   // design usa; aplica-se por ecrã via FONT (fontFamily) à medida que se porta.
-  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold });
   const fontsReady = fontsLoaded || !!fontError; // erro a carregar → arranca na mesma (fonte do sistema)
   const suppressAuth = useRef(false);
   const hydrated = useRef(false);
@@ -349,6 +350,8 @@ export default function App() {
 
   // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
   const [toast, setToast] = useState(null);
+  // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
+  const notify = (title, sub) => setToast({ kind: 'ok', title, sub: sub || null, ts: Date.now() });
 
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.
@@ -780,6 +783,7 @@ export default function App() {
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
     duties, saveDuty, removeDuty,
+    notify,
     rosterChanges, checkRosterChanges,
     onboarded, setOnboarded,
     signupMode, setSignupMode,
