@@ -282,7 +282,7 @@ const makeStyles = (C) => StyleSheet.create({
   iconBtnSm: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
 
   // Alterações de escala (Fase 4) — banner
-  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: 14, padding: 12, marginBottom: 14 },
+  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 14 },
   rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
   rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
 

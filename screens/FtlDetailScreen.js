@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { TYPE, GUTTER, TRACK_DISPLAY, FONT } from '../data/constants';
+import { TYPE, GUTTER, TRACK_DISPLAY, FONT, RADIUS } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
@@ -177,7 +177,7 @@ export default function FtlDetailScreen({ route, navigation }) {
 }
 
 const makeTb = (C) => StyleSheet.create({
-  block: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
+  block: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden' },
   titleBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, paddingHorizontal: 10, paddingVertical: 10 },
   blockTitle: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.8)', fontFamily: FONT.semibold },
   row: { flexDirection: 'row' },
@@ -201,7 +201,7 @@ const makeD = (C) => StyleSheet.create({
   code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.medium },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
   paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },
-  box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: 12, overflow: 'hidden' },
+  box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden' },
   boxTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.8)', fontFamily: FONT.semibold, backgroundColor: C.ink, padding: 10 },
   boxRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11 },
   boxRowCol: { paddingHorizontal: 12, paddingVertical: 11 },

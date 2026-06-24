@@ -237,7 +237,7 @@ const makeStyles = (C) => StyleSheet.create({
   emptySub: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center', paddingHorizontal: 20, lineHeight: 18 },
 
   // HERO
-  hero: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 18, marginBottom: SPACE.md,
+  hero: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
     shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 12 }, elevation: 3 },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.red },
@@ -252,12 +252,12 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Tiles 2×2
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: SPACE.md },
-  tile: { width: '47%', flexGrow: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 15, gap: 7 },
+  tile: { width: '47%', flexGrow: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15, gap: 7 },
   tileVal: { fontSize: 22, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
   tileLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
 
   // Cartões genéricos
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 16, marginBottom: SPACE.md },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: SPACE.md },
   cardTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, marginBottom: 12 },
 
   // Gráfico mensal

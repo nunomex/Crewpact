@@ -269,7 +269,8 @@ export default function HomeScreen({ navigation }) {
     : cdMin <= 0 ? t('home.dutyNow', lang)
     : cdMin >= 2880 ? `${t('home.in', lang)} ${Math.round(cdMin / 1440)} ${t('home.days', lang)}` // ≥ 48 h → dias
     : `${t('home.in', lang)} ${Math.floor(cdMin / 60) > 0 ? `${Math.floor(cdMin / 60)} h ` : ''}${cdMin % 60} min`;
-  const fatColor = (b) => b === 'high' ? C.red : b === 'elevated' ? C.warn : b === 'low' ? C.green : C.onDarkSub;
+  const fatColor = (b) => b === 'high' ? C.red : b === 'elevated' ? C.warn : b === 'low' ? C.green : C.onDarkSub; // fill (dot)
+  const fatTextColor = (b) => b === 'high' ? C.redText : b === 'elevated' ? C.warnText : b === 'low' ? C.greenText : C.sub; // texto acessível sobre fatBg (*Soft)
   const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
   // PSV máx + fadiga: se houver duty registada nesse dia, usa-a (exata); senão estima pelo voo (1 setor).
   let ndPsvMax = null, ndFat = null, ndSectors = null;
@@ -350,7 +351,7 @@ export default function HomeScreen({ navigation }) {
               {ndFat ? (
                 <View style={[s.ndFat, { backgroundColor: fatBg(ndFat.band) }]}>
                   <View style={[s.ndFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
-                  <Text style={[s.ndFatTxt, { color: fatColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
+                  <Text style={[s.ndFatTxt, { color: fatTextColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
                 </View>
               ) : null}
               {ndPsvMax ? (
@@ -479,7 +480,7 @@ export default function HomeScreen({ navigation }) {
             longo-curso (Hi Fly) avisa e remete p/ a calculadora manual. */}
         {isLongHaulCompany(company) ? (
           <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }} style={s.rcBanner}>
-            <Ionicons name="information-circle" size={22} color={C.warn || C.red} />
+            <Ionicons name="information-circle" size={22} color={C.warnText} />
             <View style={{ flex: 1 }}>
               <Text style={s.rcTitle}>{l('Cálculo FTL automático', 'Automatic FTL calculation')}</Text>
               <Text style={s.rcSub} numberOfLines={2}>{l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}</Text>
@@ -496,7 +497,7 @@ export default function HomeScreen({ navigation }) {
           const parts = [ch ? `${ch} ${l('alterada(s)', 'changed')}` : null, rc.added ? `${rc.added} ${l('nova(s)', 'new')}` : null, rc.removed ? `${rc.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ');
           return (
             <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Escala'); }} style={s.rcBanner}>
-              <Ionicons name="sync-circle" size={22} color={C.warn || C.red} />
+              <Ionicons name="sync-circle" size={22} color={C.warnText} />
               <View style={{ flex: 1 }}>
                 <Text style={s.rcTitle}>{l('Alterações na escala', 'Roster changes')}</Text>
                 <Text style={s.rcSub} numberOfLines={1}>{parts}</Text>
@@ -573,8 +574,7 @@ const makeStyles = (C) => StyleSheet.create({
   // Grelha 2-col (mockup .grid2/.uc/.win/.wbar)
   grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
   gridHint: { fontSize: TYPE.micro, color: C.sub, marginTop: -8, marginBottom: SPACE.md, paddingHorizontal: 2, lineHeight: 16 },
-  uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 15,
-    shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
+  uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15 },
   ucHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
   ucDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.ink },
   ucTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, flexShrink: 1 },
@@ -608,7 +608,7 @@ const makeStyles = (C) => StyleSheet.create({
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
   // Alterações de escala (Fase 4) — banner de aviso
-  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: 16, padding: 13, marginBottom: SPACE.md },
+  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: SPACE.md },
   rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
   rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
 

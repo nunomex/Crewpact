@@ -448,8 +448,8 @@ const makeStyles = (C) => StyleSheet.create({
   userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
   gt: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
-  gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, overflow: 'hidden', marginBottom: 13 },
-  aeCard: { backgroundColor: C.ink, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
+  gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden', marginBottom: 13 },
+  aeCard: { backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
   aeCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   aeCardK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', flex: 1, marginRight: 10 },
   aeCardV: { fontFamily: FONT.semibold, fontSize: 24, color: '#fff', fontVariant: ['tabular-nums'] },

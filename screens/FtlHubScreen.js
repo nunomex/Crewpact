@@ -175,7 +175,7 @@ const makeStyles = (C) => StyleSheet.create({
   subGroup: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: C.sub, fontFamily: FONT.semibold, marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
   // Atividade (mockup .actbig) — cartão escuro + glow radial + ícone vermelho
-  actbig: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: C.ink, borderRadius: 24, padding: 19, marginBottom: 20, overflow: 'hidden' },
+  actbig: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: C.ink, borderRadius: RADIUS.lg, padding: 19, marginBottom: 20, overflow: 'hidden' },
   actIc: { width: 50, height: 50, borderRadius: 16, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   actTitle: { fontFamily: FONT.semibold, fontSize: 19, color: '#fff' },
   actSub: { fontFamily: FONT.medium, fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 1 },

@@ -96,7 +96,7 @@ const makeStyles = (C) => StyleSheet.create({
   intro: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: -4, marginBottom: SPACE.md },
 
   card: {
-    backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: 20, padding: 16, paddingLeft: 13, marginBottom: 11,
+    backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: RADIUS.lg, padding: 16, paddingLeft: 13, marginBottom: 11,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
   q: { flex: 1, fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub },

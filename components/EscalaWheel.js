@@ -1,6 +1,6 @@
 import React, { useContext, useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { FONT } from '../data/constants';
+import { FONT, RADIUS } from '../data/constants';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { getDutiesInRange } from '../data/calendar';
 import { t } from '../data/i18n';
@@ -185,9 +185,7 @@ const makeStyles = (C) => StyleSheet.create({
   wdOn: { color: C.text, fontFamily: FONT.heavy },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: C.red },
   // Detalhe
-  det: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16, marginTop: 12,
-    // offset vertical 0 → sombra suave igual em CIMA e em BAIXO do cartão.
-    shadowColor: '#14161A', shadowOpacity: 0.16, shadowRadius: 13, shadowOffset: { width: 0, height: 0 }, elevation: 3 },
+  det: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 12 },
   detHead: { flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 13 },
   dc: { width: 46, height: 46, borderRadius: 14, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
   dcOff: { backgroundColor: C.soft },

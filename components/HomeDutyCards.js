@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FONT, TYPE } from '../data/constants';
+import { FONT, TYPE, RADIUS } from '../data/constants';
 import { useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
 
@@ -43,7 +43,7 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4 }) {
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 16, marginBottom: 13 },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 13 },
   eyebrow: { fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy, marginBottom: 6 },
   empty: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, paddingVertical: 4 },
   lrow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },

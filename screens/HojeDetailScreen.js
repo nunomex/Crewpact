@@ -204,7 +204,7 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
 
-  headerCard: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: 18, padding: 16, paddingLeft: 13, marginTop: 6 },
+  headerCard: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: RADIUS.lg, padding: 16, paddingLeft: 13, marginTop: 6 },
   eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   answer: { fontSize: 24, fontFamily: FONT.semibold, letterSpacing: -0.4, color: C.text, lineHeight: 30, marginTop: 5 },
 
@@ -212,7 +212,7 @@ const makeStyles = (C) => StyleSheet.create({
   sugTxt: { flex: 1, fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub, lineHeight: 19 },
 
   sectionTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.2, textTransform: 'uppercase', color: C.sub, marginTop: 24, marginBottom: 10 },
-  panel: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 16 },
+  panel: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16 },
 
   note: { fontSize: TYPE.sub, color: C.sub, lineHeight: 19, marginBottom: 6 },
   subTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.text, marginTop: 14, marginBottom: 2 },
