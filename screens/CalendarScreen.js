@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, AppState, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, GUTTER, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, GUTTER, TRACK_DISPLAY, FONT } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { fmtVal } from '../data/extras';

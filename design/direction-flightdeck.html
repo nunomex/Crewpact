@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Direção: Flight Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ── paleta real CrewPact (claro) ── */
+    --canvas:#FFFFFF; --card:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D9D9D6;
+    --ink:#1B1B1B; --sub:#6B6B66;
+    --red:#F5402C; --redsoft:#FDE9E4;
+    --green:#1F9E6E; --greensoft:#E2F4EC;
+    --warn:#E8932B; --warnsoft:#FBEAD2;
+    --info:#2E6BE6;
+    /* ── tokens de TEXTO acessível (>=4.5 sobre o *Soft) ── */
+    --redtext:#C9331F; --warntext:#9A6B1E; --greentext:#2A7A5C;
+    /* ── brand · azul-de-instrumento (cirúrgico: identidade) ── */
+    --brand:#1F4E79; --brand2:#2C6097; --brandsoft:#E6EEF6;
+    --inter:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{ font-family:var(--inter); background:#E7E8EA; color:#23262B; padding:52px 24px 96px; position:relative; overflow-x:hidden }
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -8%,#fff,transparent 62%)}
+
+  /* tabular em TODOS os números */
+  .tab{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:"tnum" 1,"lnum" 1 }
+
+  /* ── intro ── */
+  .intro{ position:relative; z-index:1; text-align:center; margin:0 auto 6px; max-width:880px }
+  .intro .k{ display:inline-flex; align-items:center; gap:9px; font-weight:800; font-size:11px; letter-spacing:.30em; text-transform:uppercase; color:var(--brand); margin-bottom:18px }
+  .intro .k i{ width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px var(--redsoft) }
+  .intro h1{ font-weight:700; font-size:clamp(30px,4.4vw,48px); color:var(--ink); letter-spacing:-.02em; line-height:1.04 }
+  .intro h1 span{ color:var(--sub); font-weight:500 }
+  .intro p{ max-width:66ch; margin:16px auto 0; font-size:15px; line-height:1.66; color:#5C616A }
+  .intro b{ color:var(--ink); font-weight:700 }
+
+  /* legenda da regra das 3 cores */
+  .rule{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:26px auto 0; max-width:840px }
+  .rule .r{ display:flex; align-items:center; gap:10px; padding:9px 14px 9px 11px; border:1px solid var(--line); background:#fff; border-radius:99px; box-shadow:0 1px 2px rgba(20,22,26,.04) }
+  .rule .r i{ width:12px; height:12px; border-radius:4px; flex:0 0 auto }
+  .rule .r .t{ font-size:12.5px; font-weight:700; color:var(--ink) }
+  .rule .r .t b{ color:var(--sub); font-weight:600 }
+  .rule .ident i{ background:var(--brand) } .rule .action i{ background:var(--red) }
+  .rule .danger i{ background:var(--red); box-shadow:0 0 0 3px var(--redsoft) } .rule .struct i{ background:var(--ink) }
+
+  /* ── galeria ── */
+  .gallery{ position:relative; z-index:1; max-width:780px; margin:46px auto 0; display:flex; flex-wrap:wrap; gap:56px 48px; justify-content:center }
+  figure.frame{ display:flex; flex-direction:column; align-items:center; gap:18px; margin:0 }
+  figcaption{ text-align:center; max-width:312px }
+  figcaption b{ display:inline-flex; align-items:center; justify-content:center; gap:9px; font-weight:700; font-size:17px; color:var(--ink) }
+  figcaption .tag{ font-style:normal; font-family:var(--inter); font-size:9px; font-weight:800; color:#fff; background:var(--brand); border-radius:7px; padding:3px 7px; letter-spacing:.06em; text-transform:uppercase }
+  figcaption p{ font-size:12.5px; line-height:1.55; color:#646A72; margin-top:8px }
+
+  /* ── phone shell ── */
+  .phone{ width:336px; height:724px; background:#fff; border-radius:50px; padding:10px; position:relative; flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5), 0 6px 16px -10px rgba(20,22,26,.3) }
+  .screen{ width:100%; height:100%; background:var(--canvas); border-radius:40px; overflow:hidden; position:relative }
+  .island{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:98px; height:26px; background:#0A0A0A; border-radius:14px; z-index:60 }
+  .sb{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:17px 30px 0; font-weight:700; font-size:11px; color:var(--ink); z-index:50 }
+  .sb .r{display:flex;gap:5px;align-items:center}
+  .sb .r svg{width:16px;height:11px;color:var(--ink)}
+  .sb .b{width:20px;height:10px;border:1.5px solid var(--ink);border-radius:3px;position:relative}
+  .sb .b::after{content:"";position:absolute;top:1.5px;bottom:1.5px;left:1.5px;width:11px;background:var(--ink);border-radius:1px}
+
+  /* ── header de ecrã (Inter bold, NADA de serif) ── */
+  .hdr{ position:absolute; top:0; left:0; right:0; padding:54px 22px 0; background:var(--canvas); z-index:30 }
+  .htop{ display:flex; align-items:center; justify-content:space-between; height:38px; margin-bottom:16px }
+  .hlw{ display:flex; align-items:center; gap:9px }
+  /* anel do logo = superfície de IDENTIDADE → brand */
+  .logoring{ width:27px; height:27px; border-radius:50%; background:var(--brand); display:flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:0 0 0 3px var(--brandsoft) }
+  .logoring svg{ width:15px; height:15px; color:#fff }
+  .hl{ font-weight:800; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--sub) }
+  .hbtn{ width:36px;height:36px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink); position:relative; flex:0 0 auto }
+  .hbtn svg{ width:18px;height:18px }
+  /* badge do sino = PERIGO real → vermelho */
+  .hbadge{ position:absolute; top:-3px; right:-3px; min-width:17px; height:17px; border-radius:99px; background:var(--red); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #fff }
+  /* eyebrow heavy maiúsculas + dot vermelho */
+  .heye{ display:flex; align-items:center; gap:8px; margin-bottom:8px }
+  .heye i{ width:6px;height:6px;border-radius:50%;background:var(--red) }
+  .heye span{ font-weight:800; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--sub) }
+  .ht{ font-weight:700; font-size:32px; letter-spacing:-.02em; color:var(--ink); line-height:1 }
+  .ruler{ height:1px; background:linear-gradient(90deg,var(--linestrong),transparent); margin-top:18px }
+
+  .view{ position:absolute; left:0; right:0; bottom:0; padding:0 20px 92px; overflow:hidden }
+
+  /* ════════════════════ ECRÃ 1 · INÍCIO ════════════════════ */
+  /* statline de legalidade FTL — a pergunta "estou legal?" */
+  .statline{ display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:16px; padding:13px 14px; background:var(--soft2); margin:18px 0 14px }
+  .statline .dot{ width:10px;height:10px;border-radius:50%;background:var(--green); box-shadow:0 0 0 4px var(--greensoft); flex:0 0 auto }
+  .statline .lb{ font-weight:700; font-size:15.5px; color:var(--ink); letter-spacing:-.01em }
+  .statline .cx{ font-weight:700; font-size:11px; color:var(--sub); margin-left:auto; text-transform:uppercase; letter-spacing:.05em }
+
+  /* cartão PRÓXIMO VOO — badge NEUTRO por defeito */
+  .nd{ display:flex; gap:14px; align-items:stretch; border:1px solid var(--line); border-radius:16px; padding:14px; background:#fff; margin-bottom:14px }
+  .ndc{ width:76px;height:76px;border-radius:16px; background:var(--soft); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto }
+  .ndc .dnum{ font-weight:700; font-size:30px; color:var(--ink); line-height:1; letter-spacing:-.02em }
+  .ndc .dwd{ font-weight:800; font-size:9.5px; color:var(--sub); letter-spacing:.10em; margin-top:4px; text-transform:uppercase }
+  /* estado "perto do limite" → ACENDE vermelho + glow (a regra do Flight Deck) */
+  .ndc.hot{ background:var(--red); border-color:var(--red); box-shadow:0 12px 24px -10px rgba(245,64,44,.55) }
+  .ndc.hot .dnum{ color:#fff } .ndc.hot .dwd{ color:rgba(255,255,255,.85) }
+  .ndx{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center }
+  .ndeye{ display:flex; align-items:center; justify-content:space-between; margin-bottom:7px }
+  .ndeye .e{ font-weight:800; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub) }
+  /* badge contagem report — NEUTRO (soft/ink), nada de vermelho */
+  .cdpill{ display:inline-flex; align-items:center; gap:5px; font-weight:800; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:#fff; background:var(--ink); border-radius:99px; padding:4px 9px }
+  .cdpill svg{ width:10px;height:10px }
+  .ndroute{ font-weight:700; font-size:20px; color:var(--ink); letter-spacing:-.01em; line-height:1.1 }
+  .ndsub{ font-weight:600; font-size:12.5px; color:var(--sub); margin-top:5px }
+  .ndsub b{ color:var(--ink); font-weight:700 }
+
+  /* mini-barras de limites cumulativos */
+  .limits{ border:1px solid var(--line); border-radius:16px; padding:14px 14px 6px; background:#fff; margin-bottom:14px }
+  .limits .lh{ display:flex; align-items:center; justify-content:space-between; margin-bottom:13px }
+  .limits .lh .e{ font-weight:800; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub) }
+  .limits .lh .ok{ font-weight:700; font-size:10px; color:var(--greentext); text-transform:uppercase; letter-spacing:.05em }
+  .lim{ margin-bottom:13px }
+  .lim .top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:7px }
+  .lim .top .nm{ font-weight:600; font-size:12.5px; color:var(--ink) }
+  .lim .top .vl{ font-weight:700; font-size:12.5px; color:var(--sub) }
+  .lim .top .vl b{ color:var(--ink) }
+  .lim .top .pct{ font-weight:800; font-size:11px; color:var(--sub); margin-left:8px }
+  .track{ position:relative; height:7px; border-radius:99px; background:var(--soft); overflow:visible }
+  .track .fill{ position:absolute; top:0; left:0; bottom:0; border-radius:99px; background:var(--ink) }
+  .track .fill.warnfill{ background:var(--warn) }
+  .track .fill.redfill{ background:var(--red) }
+  /* tick fino a 90% — redundância (não só cor) */
+  .track .tick{ position:absolute; top:-2px; bottom:-2px; width:1.5px; background:var(--linestrong); left:90% }
+  .lim .pcthi{ color:var(--warntext) }
+
+  /* cartão AE (salário) = âncora ESCURA na cor brand (identidade) */
+  .ae{ position:relative; border-radius:18px; padding:17px 18px; background:var(--brand); color:#fff; overflow:hidden; margin-bottom:6px;
+       box-shadow:0 18px 34px -16px rgba(31,78,121,.6) }
+  .ae::after{ content:""; position:absolute; right:-40px; top:-40px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,.05) }
+  .ae .aeh{ display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1 }
+  .ae .aeh .e{ font-weight:800; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.66) }
+  .ae .aeh .mo{ font-weight:700; font-size:10.5px; color:rgba(255,255,255,.82); background:rgba(255,255,255,.12); border-radius:99px; padding:4px 9px; letter-spacing:.02em }
+  .ae .aev{ font-weight:700; font-size:38px; letter-spacing:-.025em; line-height:1; margin:12px 0 0; position:relative; z-index:1 }
+  .ae .aerow{ display:flex; align-items:center; gap:14px; margin-top:11px; position:relative; z-index:1 }
+  .ae .aerow .it{ display:flex; align-items:center; gap:6px; font-weight:700; font-size:12.5px; color:rgba(255,255,255,.85) }
+  .ae .aerow .it .vg{ color:#7FE3B8 } /* verde-texto sobre escuro (não vermelho) */
+  .ae .aerow .it svg{ width:13px;height:13px }
+  .ae .aerow .sep{ width:1px; height:14px; background:rgba(255,255,255,.18) }
+
+  /* ════════════════════ ECRÃ 2 · HOJE ════════════════════ */
+  .todayhead{ margin:18px 0 4px }
+  .todayhead .q{ font-weight:600; font-size:12.5px; color:var(--sub); line-height:1.45 }
+  .todayhead .q b{ color:var(--ink); font-weight:700 }
+
+  /* board pergunta→resposta · cartão D2 com risca lateral 4px */
+  .board{ display:flex; flex-direction:column; gap:10px; margin-top:14px }
+  .qa{ position:relative; border:1px solid var(--line); border-radius:14px; padding:13px 15px 13px 17px; background:var(--soft2); overflow:hidden }
+  .qa::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--linestrong) }
+  .qa .eye{ font-weight:800; font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--sub); margin-bottom:6px }
+  .qa .ans{ font-weight:700; font-size:19px; color:var(--ink); letter-spacing:-.01em; line-height:1.18 }
+  .qa .meta{ font-weight:600; font-size:12px; color:var(--sub); margin-top:5px }
+  .qa .meta b{ color:var(--ink); font-weight:700 }
+
+  /* estado: bad → tint MUITO leve + risca + resposta redText */
+  .qa.bad{ background:var(--redsoft); border-color:#F7CFC5 }
+  .qa.bad::before{ background:var(--red) }
+  .qa.bad .eye{ color:var(--redtext) }
+  .qa.bad .ans{ color:var(--redtext) }
+  .qa.bad .pill{ display:inline-flex; align-items:center; gap:5px; margin-top:9px; font-weight:800; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:#fff; background:var(--red); border-radius:99px; padding:4px 9px }
+  .qa.bad .pill svg{ width:10px;height:10px }
+
+  /* warn → tint leve + risca âmbar + warnText */
+  .qa.warn{ background:var(--warnsoft); border-color:#F3D9AE }
+  .qa.warn::before{ background:var(--warn) }
+  .qa.warn .eye{ color:var(--warntext) }
+  .qa.warn .ans{ color:var(--ink) }
+  .qa.warn .ans em{ font-style:normal; color:var(--warntext) }
+  /* mini track dentro do warn */
+  .qa .miniwrap{ margin-top:10px }
+  .qa .minitrack{ height:6px; border-radius:99px; background:rgba(154,107,30,.16); position:relative; overflow:hidden }
+  .qa .minitrack .mf{ position:absolute; left:0; top:0; bottom:0; border-radius:99px; background:var(--warn) }
+
+  /* info → risca azul-info, fundo neutro */
+  .qa.info::before{ background:var(--info) }
+  .qa.info .eye{ color:#2A5BBF }
+
+  /* ok → risca verde, fundo neutro soft2 (sem tint forte) */
+  .qa.ok::before{ background:var(--green) }
+  .qa.ok .eye{ color:var(--greentext) }
+  .qa.ok .ans{ display:flex; align-items:center; gap:9px }
+  .qa.ok .ans .gd{ width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px var(--greensoft);flex:0 0 auto }
+
+  /* neutral → risca cinza, fundo soft2 */
+  .qa.neutral::before{ background:var(--linestrong) }
+  .qa.neutral .ans .cur{ color:var(--sub); font-weight:700 }
+
+  /* FAB = AÇÃO → vermelho-marca */
+  .fab{ position:absolute; right:18px; bottom:78px; width:54px; height:54px; border-radius:50%; background:var(--red); display:flex; align-items:center; justify-content:center; z-index:40;
+        box-shadow:0 14px 26px -10px rgba(245,64,44,.6) }
+  .fab svg{ width:24px;height:24px;color:#fff }
+
+  /* ── tab bar ── */
+  .tabbar{ position:absolute; left:0; right:0; bottom:0; height:74px; background:rgba(255,255,255,.92); backdrop-filter:saturate(1.4) blur(8px); border-top:1px solid var(--line); display:flex; align-items:flex-start; justify-content:space-around; padding:11px 8px 0; z-index:35 }
+  .tab{ display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--sub); flex:1 }
+  .tab svg{ width:21px;height:21px }
+  .tab .tl{ font-weight:700; font-size:9.5px; letter-spacing:.02em }
+  .tab.on{ color:var(--ink) }
+  .tab.on svg{ color:var(--brand) }
+</style>
+</head>
+<body>
+
+  <!-- ── INTRO ── -->
+  <section class="intro">
+    <div class="k"><i></i>Direção visual · CrewPact</div>
+    <h1>Flight Deck <span>— a cabine em descanso.</span></h1>
+    <p>
+      Calmo, instrumental, de confiança. Silencioso por defeito; <b>um único alarme vermelho</b> que só
+      acende quando há perigo. O premium nasce da <b>disciplina cromática</b>, não da decoração — e da
+      <b>regra de três cores</b>:
+    </p>
+    <div class="rule">
+      <div class="r ident"><i></i><span class="t">Identidade <b>· azul-instrumento, só logo / perfil / salário</b></span></div>
+      <div class="r action"><i></i><span class="t">Ação <b>· vermelho-marca no CTA e FAB</b></span></div>
+      <div class="r danger"><i></i><span class="t">Perigo <b>· o MESMO vermelho = ilegal / expirado / fora do limite</b></span></div>
+      <div class="r struct"><i></i><span class="t">Estrutura <b>· tinta + cinzentos quentes</b></span></div>
+    </div>
+  </section>
+
+  <!-- ── GALERIA ── -->
+  <div class="gallery">
+
+    <!-- ════════════ ECRÃ 1 · INÍCIO ════════════ -->
+    <figure class="frame">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="sb tab">
+            <span>9:41</span>
+            <div class="r">
+              <svg viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+              <div class="b"></div>
+            </div>
+          </div>
+
+          <!-- header -->
+          <div class="hdr">
+            <div class="htop">
+              <div class="hlw">
+                <div class="logoring">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-4.5z"/></svg>
+                </div>
+                <span class="hl">CrewPact</span>
+              </div>
+              <div class="hbtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                <span class="hbadge tab">1</span>
+              </div>
+            </div>
+            <div class="heye"><i></i><span>EasyJet · AE · Piloto</span></div>
+            <h1 class="ht">Olá, Nuno</h1>
+            <div class="ruler"></div>
+          </div>
+
+          <!-- view -->
+          <div class="view">
+
+            <!-- estou legal? -->
+            <div class="statline">
+              <span class="dot"></span>
+              <span class="lb">Dentro dos limites</span>
+              <span class="cx tab">FTL OK</span>
+            </div>
+
+            <!-- próximo voo · badge NEUTRO -->
+            <div class="nd">
+              <div class="ndc">
+                <span class="dnum tab">25</span>
+                <span class="dwd">Qui</span>
+              </div>
+              <div class="ndx">
+                <div class="ndeye">
+                  <span class="e">Próximo voo</span>
+                  <span class="cdpill tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Report 21h&nbsp;35m</span>
+                </div>
+                <div class="ndroute tab">LIS → LGW</div>
+                <div class="ndsub tab">Amanhã · <b>06:05</b> · EJU8412</div>
+              </div>
+            </div>
+
+            <!-- limites cumulativos -->
+            <div class="limits">
+              <div class="lh">
+                <span class="e">Limites cumulativos</span>
+                <span class="ok">Tudo dentro</span>
+              </div>
+              <div class="lim">
+                <div class="top">
+                  <span class="nm">Serviço · 7 dias</span>
+                  <span class="vl tab"><b>48</b> / 60 h <span class="pct tab">80%</span></span>
+                </div>
+                <div class="track"><div class="fill" style="width:80%"></div><div class="tick"></div></div>
+              </div>
+              <div class="lim">
+                <div class="top">
+                  <span class="nm">Voo · 28 dias</span>
+                  <span class="vl tab"><b>76</b> / 100 h <span class="pct tab">76%</span></span>
+                </div>
+                <div class="track"><div class="fill" style="width:76%"></div><div class="tick"></div></div>
+              </div>
+              <div class="lim">
+                <div class="top">
+                  <span class="nm">Voo · 12 meses</span>
+                  <span class="vl tab"><b>812</b> / 900 h <span class="pct pcthi tab">90%</span></span>
+                </div>
+                <div class="track"><div class="fill warnfill" style="width:90%"></div><div class="tick"></div></div>
+              </div>
+            </div>
+
+            <!-- cartão AE · âncora escura brand -->
+            <div class="ae">
+              <div class="aeh">
+                <span class="e">Salário estimado · AE</span>
+                <span class="mo tab">Junho</span>
+              </div>
+              <div class="aev tab">8 923 €</div>
+              <div class="aerow">
+                <span class="it tab"><svg viewBox="0 0 24 24" fill="none" stroke="#7FE3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg><span class="vg tab">+ 640 € variável</span></span>
+                <span class="sep"></span>
+                <span class="it tab">74 h voadas</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- tab bar -->
+          <div class="tabbar">
+            <div class="tab on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 21V12h6v9"/></svg>
+              <span class="tl">Início</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="tl">Roster</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="tl">Hoje</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6z"/></svg>
+              <span class="tl">Validades</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span class="tl">Perfil</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <figcaption>
+        <b><span class="tag">01</span>Início</b>
+        <p>Tudo neutro: o badge do voo é escuro porque está OK; o brand azul aparece só no logo e no cartão de salário. O único vermelho é o ponto da eyebrow.</p>
+      </figcaption>
+    </figure>
+
+    <!-- ════════════ ECRÃ 2 · HOJE ════════════ -->
+    <figure class="frame">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="sb tab">
+            <span>9:41</span>
+            <div class="r">
+              <svg viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+              <div class="b"></div>
+            </div>
+          </div>
+
+          <!-- header -->
+          <div class="hdr">
+            <div class="htop">
+              <div class="hlw">
+                <div class="logoring">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-4.5z"/></svg>
+                </div>
+                <span class="hl">CrewPact</span>
+              </div>
+              <div class="hbtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                <span class="hbadge tab">1</span>
+              </div>
+            </div>
+            <div class="heye"><i></i><span>Quarta · 24 Jun</span></div>
+            <h1 class="ht">Hoje</h1>
+            <div class="ruler"></div>
+          </div>
+
+          <!-- view -->
+          <div class="view">
+            <div class="todayhead">
+              <div class="q">Perguntas que importam, <b>respondidas</b> — perigo primeiro.</div>
+            </div>
+
+            <div class="board">
+
+              <!-- bad (topo, tem de saltar) -->
+              <div class="qa bad">
+                <div class="eye">Validades?</div>
+                <div class="ans tab">Médico Classe 1 expirado</div>
+                <div class="meta tab">Expirou há <b>2 dias</b> · não podes voar</div>
+                <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Resolver agora</span>
+              </div>
+
+              <!-- warn -->
+              <div class="qa warn">
+                <div class="eye">Quanto falta?</div>
+                <div class="ans tab">Serviço 7d · <em>5 h de 60 h</em></div>
+                <div class="miniwrap"><div class="minitrack"><div class="mf" style="width:92%"></div></div></div>
+                <div class="meta tab">A <b>8%</b> do limite — cuidado com extensões</div>
+              </div>
+
+              <!-- info -->
+              <div class="qa info">
+                <div class="eye">Quando trabalho?</div>
+                <div class="ans tab">Amanhã · report 06:05</div>
+                <div class="meta tab">LIS → LGW → LIS · <b>2 legs</b> · folga 26</div>
+              </div>
+
+              <!-- ok -->
+              <div class="qa ok">
+                <div class="eye">Estou legal?</div>
+                <div class="ans tab"><span class="gd"></span>Sim, dentro dos limites</div>
+                <div class="meta tab">Descanso mínimo cumprido · sem conflitos</div>
+              </div>
+
+              <!-- neutral · salário -->
+              <div class="qa neutral">
+                <div class="eye">Quanto recebo?</div>
+                <div class="ans tab">8 923 € <span class="cur">estimado</span></div>
+                <div class="meta tab">Junho · <b>+ 640 €</b> variável até agora</div>
+              </div>
+
+              <!-- neutral · próxima folga -->
+              <div class="qa neutral">
+                <div class="eye">Quando descanso?</div>
+                <div class="ans tab">Sábado · folga completa</div>
+                <div class="meta tab">2 dias livres · próximo bloco a 28</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- FAB = ação -->
+          <div class="fab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+
+          <!-- tab bar -->
+          <div class="tabbar">
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 21V12h6v9"/></svg>
+              <span class="tl">Início</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="tl">Roster</span>
+            </div>
+            <div class="tab on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="tl">Hoje</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6z"/></svg>
+              <span class="tl">Validades</span>
+            </div>
+            <div class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span class="tl">Perfil</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <figcaption>
+        <b><span class="tag">02</span>Hoje</b>
+        <p>Board pergunta→resposta ordenado por severidade. A risca lateral de 4px dá o estado; só o cartão "bad" tem tint e vermelho — salta à vista no topo.</p>
+      </figcaption>
+    </figure>
+
+  </div>
+
+</body>
+</html>

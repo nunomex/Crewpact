@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, TYPE, RADIUS, WEIGHT, TRACK_DISPLAY, FONT } from '../data/constants';
+import { TYPE, RADIUS, TRACK_DISPLAY, FONT } from '../data/constants';
 import { AppContext, useTheme } from '../data/appContext';
 import { updateProfile, register, validateName, validateEmail, validatePassword } from '../data/auth';
 import { upsertProfile } from '../data/db';

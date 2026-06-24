@@ -15,12 +15,13 @@ export const PALETTE_LIGHT = {
   danger: "#F5402C",
   info: "#2E6BE6",       // azul — sinal neutro de relevância
   infoSoft: "#E4ECFB",
+  brand: "#1F4E79",      // azul-instrumento (Flight Deck) — IDENTIDADE (logo/idcard); distinto do info
   warn: "#E8932B",       // âmbar — aviso/aproximação ao limite
   warnSoft: "#FBEAD2",
   line: "#ECECEA",
   text: "#1B1B1B",
   sub: "#6B6B66", // cinzento secundário (≈ 5:1 sobre branco — passa WCAG AA)
-  subLight: "#97978F", // tom decorativo do mockup: rótulos discretos/eyebrows (não texto corrido)
+  subLight: "#7A7A73", // rótulos discretos (escurecido p/ contraste AA — antes #97978F falhava)
   // Tons sobre fundo escuro (ink).
   onDark: "#FFFFFF",
   onDarkSub: "rgba(255,255,255,0.7)", // texto secundário sobre fundo preto
@@ -30,6 +31,9 @@ export const PALETTE_LIGHT = {
   green: "#1F9E6E",
   greenSoft: "#E2F4EC",
   lineStrong: "#D4D4D1", // risca/separador neutro, mais visível que `line` (risca lateral do Hoje D2)
+  // Cores de TEXTO acessível (≥4.5:1) — usar em texto <18px; as vivas (red/warn/green)
+  // ficam só para fills ≥3px e números display ≥24px. (Flight Deck — pass sénior.)
+  redText: "#C9331F", warnText: "#9A6B1E", greenText: "#2A7A5C",
 };
 
 // Paleta escura — superfícies elevadas sobre canvas, texto quase branco. onDark*
@@ -47,12 +51,13 @@ export const PALETTE_DARK = {
   danger: "#FF5547",
   info: "#5B8DEF",
   infoSoft: "#1B2A4A",
+  brand: "#2C6097",      // par escuro do brand (mais claro p/ não desaparecer no canvas #141414)
   warn: "#F0A949",
   warnSoft: "#3A2E1A",
   line: "#2C2C2C",
   text: "#F2F2F2",
   sub: "#9A9A94",
-  subLight: "#6F6F6A",
+  subLight: "#8A8A84", // par escuro clareado p/ contraste no card #1E1E1E
   onDark: "#FFFFFF",
   onDarkSub: "rgba(255,255,255,0.7)",
   onDarkFaint: "rgba(255,255,255,0.6)",
@@ -61,6 +66,8 @@ export const PALETTE_DARK = {
   green: "#2BB587",
   greenSoft: "#14302A",
   lineStrong: "#3E3E3E", // par escuro da risca neutra
+  // Texto acessível no escuro (sobre card #1E1E1E) — alvos calibrados, verificar no device.
+  redText: "#FF6B5E", warnText: "#E2A24E", greenText: "#5FC2A0",
 };
 
 export const PALETTES = { light: PALETTE_LIGHT, dark: PALETTE_DARK };

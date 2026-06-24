@@ -32,7 +32,8 @@ export default function ValidadesScreen({ navigation }) {
     setEditing({ id: item.id, type: item.type, d: p[2] || '', m: p[1] || '', y: p[0] || '' });
   };
 
-  const bandColor = (b) => (b === 'valid' ? C.green : b === 'expiring' ? C.warn : b === 'expired' ? C.red : C.sub);
+  const bandColor = (b) => (b === 'valid' ? C.green : b === 'expiring' ? C.warn : b === 'expired' ? C.red : C.sub); // fill (dot)
+  const bandTextColor = (b) => (b === 'valid' ? C.greenText : b === 'expiring' ? C.warnText : b === 'expired' ? C.redText : C.sub); // texto acessível
   const bandLabel = (st) =>
     st.band === 'none' ? l('sem data', 'no date') :
     st.band === 'expired' ? l(`expirado há ${Math.abs(st.days)} d`, `expired ${Math.abs(st.days)} d ago`) :
@@ -91,7 +92,7 @@ export default function ValidadesScreen({ navigation }) {
               <View style={[s.dot, { backgroundColor: bandColor(st.band) }]} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={s.itemLabel} numberOfLines={1}>{validityLabel(item.type, isPilot, lang)}</Text>
-                <Text style={[s.itemStatus, { color: bandColor(st.band) }]} numberOfLines={1}>{bandLabel(st)}</Text>
+                <Text style={[s.itemStatus, { color: bandTextColor(st.band) }]} numberOfLines={1}>{bandLabel(st)}</Text>
               </View>
               <Text style={s.itemDate}>{fmtDate(item.expiry)}</Text>
               <Ionicons name="chevron-forward" size={16} color={C.sub} />

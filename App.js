@@ -5,9 +5,9 @@ import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet,
 // ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
 // altura fixa (inputs, badges, cartões).
 Text.defaultProps = Text.defaultProps || {};
-Text.defaultProps.maxFontSizeMultiplier = 1.3;
+Text.defaultProps.maxFontSizeMultiplier = 1.6;
 TextInput.defaultProps = TextInput.defaultProps || {};
-TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
+TextInput.defaultProps.maxFontSizeMultiplier = 1.6;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -48,7 +48,6 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import SearchModal        from './components/SearchModal';
-import ConfirmDialog       from './components/ConfirmDialog';
 import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
 import Toast              from './components/Toast';
@@ -124,7 +123,7 @@ function FtlStack() {
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
-  const { lang, logout } = useContext(AppContext);
+  const { lang } = useContext(AppContext);
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
@@ -136,7 +135,6 @@ function FloatingTabBar({ state, navigation }) {
   };
   const active = state.routes[state.index];
   const [searchOpen, setSearchOpen] = useState(false);
-  const [logoutOpen, setLogoutOpen] = useState(false);
   const [open, setOpen] = useState(false);            // speed-dial expandido?
   const anim = useRef(new Animated.Value(0)).current; // 0=fechado · 1=aberto
 
@@ -155,7 +153,7 @@ function FloatingTabBar({ state, navigation }) {
   const ACTIONS = [
     { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'), run: () => setSearchOpen(true) },
     { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),    run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
-    { key: 'logout', icon: 'log-out-outline', label: l('Sair', 'Log out'), danger: true, run: () => setLogoutOpen(true) },
+    { key: 'import', icon: 'download-outline', label: l('Importar', 'Import'), run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
   ];
 
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
@@ -173,12 +171,6 @@ function FloatingTabBar({ state, navigation }) {
   return (
     <>
       <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
-      <ConfirmDialog visible={logoutOpen} danger icon="log-out-outline"
-        title={l('Terminar sessão?', 'Log out?')}
-        message={l('Vais sair da tua conta neste dispositivo.', 'You will be logged out on this device.')}
-        cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
-        onCancel={() => setLogoutOpen(false)}
-        onConfirm={() => { setLogoutOpen(false); logout(); }} />
       {/* Degradê de fundo (canvas) — esconde o conteúdo que passa por trás da barra */}
       <LinearGradient pointerEvents="none" colors={[C.canvas + '00', C.canvas + '80', C.canvas]} locations={[0, 0.22, 0.36]}
         start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={tbar.fade} />
@@ -188,7 +180,7 @@ function FloatingTabBar({ state, navigation }) {
         <TouchableOpacity style={tbar.scrimFill} activeOpacity={1} onPress={closeMenu} />
       </Animated.View>
       <View style={[tbar.wrap, { bottom: fabBottom }]} pointerEvents="box-none">
-        <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.ink }]}>
+        <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.brand }]}>
           {state.routes.map(route => {
             const focused = active.key === route.key;
             const [on, off] = ICON[route.name];

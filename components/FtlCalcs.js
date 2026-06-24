@@ -353,7 +353,7 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
             <Text style={cs.dutyLbl}>{l('PSV (205)', 'FDP (205)')}{ext ? ' +205(d)' : ''}</Text>
-            <Text style={[cs.dutyVal, (psvOver || notAllowed) && !discUsed && { color: C.red }, discUsed && { color: C.warn }]}>{notAllowed ? '—' : `${fdpDisp} / ${psvMaxDisp}`}</Text>
+            <Text style={[cs.dutyVal, (psvOver || notAllowed) && !discUsed && { color: C.redText }, discUsed && { color: C.warnText }]}>{notAllowed ? '—' : `${fdpDisp} / ${psvMaxDisp}`}</Text>
           </View>
           {discr && !notAllowed && discOv.maxStr ? (
             <View style={cs.dutyRow}>
@@ -606,7 +606,7 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
             <Text style={cs.dutyLbl}>{t('ftl.fcMaxFdp', lang)}</Text>
-            <Text style={[cs.dutyVal, !r.allowed && { color: C.red }]}>{r.allowed ? r.maxFdpStr : '—'}</Text>
+            <Text style={[cs.dutyVal, !r.allowed && { color: C.redText }]}>{r.allowed ? r.maxFdpStr : '—'}</Text>
           </View>
           {r.overSectors
             ? <Text style={cs.errNote}>{t('ftl.inflightSectors', lang)}</Text>
@@ -636,7 +636,7 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
             <Text style={cs.dutyLbl}>{t('ftl.minInflightRest', lang)}</Text>
-            <Text style={[cs.dutyVal, !r.allowed && { color: C.red }]}>{r.allowed ? r.minRestStr : '—'}</Text>
+            <Text style={[cs.dutyVal, !r.allowed && { color: C.redText }]}>{r.allowed ? r.minRestStr : '—'}</Text>
           </View>
           {r.overSectors
             ? <Text style={cs.errNote}>{t('ftl.inflightSectors', lang)}</Text>
@@ -697,7 +697,7 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
         <View style={cs.dutyResult}>
           <View style={cs.dutyRow}>
             <Text style={cs.dutyLbl}>{t('ftl.sbReduction', lang)}</Text>
-            <Text style={[cs.dutyVal, r.reductionMin > 0 && { color: C.warn }]}>{r.reductionMin > 0 ? `−${r.reductionStr}` : '0:00'}</Text>
+            <Text style={[cs.dutyVal, r.reductionMin > 0 && { color: C.warnText }]}>{r.reductionMin > 0 ? `−${r.reductionStr}` : '0:00'}</Text>
           </View>
           {fdpMin != null && (
             <View style={[cs.dutyRow, cs.dutyDivider]}>
@@ -832,11 +832,11 @@ const makeCs = (C) => StyleSheet.create({
   extVal: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginTop: 4 },
   timeLbl: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
-  timeInput: { width: 84, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
-  timeInputErr: { borderColor: C.red, color: C.red, backgroundColor: C.redSoft },
-  errNote: { fontSize: TYPE.micro, color: C.red, marginTop: 4, fontFamily: FONT.semibold },
-  okNote: { fontSize: TYPE.micro, color: C.green, marginTop: 4, fontFamily: FONT.semibold },
-  warnNote: { fontSize: TYPE.micro, color: C.warn, marginTop: 4, fontFamily: FONT.semibold },
+  timeInput: { width: 84, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1.5, borderColor: C.line, color: C.text },
+  timeInputErr: { borderColor: C.red, color: C.redText, backgroundColor: C.redSoft },
+  errNote: { fontSize: TYPE.micro, color: C.redText, marginTop: 4, fontFamily: FONT.semibold },
+  okNote: { fontSize: TYPE.micro, color: C.greenText, marginTop: 4, fontFamily: FONT.semibold },
+  warnNote: { fontSize: TYPE.micro, color: C.warnText, marginTop: 4, fontFamily: FONT.semibold },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },
   advToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 4, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line },

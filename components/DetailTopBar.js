@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS } from '../data/constants';
+import { RADIUS } from '../data/constants';
 import { useTheme } from '../data/appContext';
 
 // Barra superior dos ecrãs de detalhe (voltar à esquerda, slot opcional à direita).

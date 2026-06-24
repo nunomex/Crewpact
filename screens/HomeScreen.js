@@ -15,6 +15,7 @@ import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -28,11 +29,22 @@ const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C
 // do badge do report, como o mockup (@keyframes ring).
 function PulseRing({ size, color, border = false, duration = 2400 }) {
   const v = useRef(new Animated.Value(0)).current;
+  const reduce = useReduceMotion();
   useEffect(() => {
+    if (reduce) return;
     const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration, easing: Easing.out(Easing.ease), useNativeDriver: true }));
     loop.start();
     return () => loop.stop();
-  }, [v, duration]);
+  }, [v, duration, reduce]);
+  // Reduz-movimento: anel ESTÁTICO (o sinal de perigo mantém-se pela cor/borda, sem pulsar).
+  if (reduce) {
+    return (
+      <View pointerEvents="none" style={{
+        position: 'absolute', width: size, height: size, borderRadius: size / 2,
+        ...(border ? { borderWidth: 2, borderColor: color } : { backgroundColor: color }), opacity: 0.35,
+      }} />
+    );
+  }
   return (
     <Animated.View pointerEvents="none" style={{
       position: 'absolute', width: size, height: size, borderRadius: size / 2,
@@ -44,14 +56,23 @@ function PulseRing({ size, color, border = false, duration = 2400 }) {
 }
 
 // Mini-barra que enche de 0 → valor ao montar (mockup .wbar i com transição).
-function MiniBar({ ratio, color, track, fill }) {
+// `mark` (0–1) = marca fina no limite → dupla-codificação: a proximidade do limite
+// lê-se SEM depender da cor (p/ daltónicos). Respeita reduz-movimento (salta ao valor).
+function MiniBar({ ratio, color, track, fill, mark }) {
+  const C = useTheme();
+  const reduce = useReduceMotion();
+  const target = Math.max(0, Math.min(1, ratio || 0));
   const w = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(w, { toValue: Math.max(0, Math.min(1, ratio || 0)), duration: 800, delay: 300, useNativeDriver: false }).start();
-  }, [ratio, w]);
+    if (reduce) { w.setValue(target); return; }
+    Animated.timing(w, { toValue: target, duration: 800, delay: 300, useNativeDriver: false }).start();
+  }, [target, w, reduce]);
   return (
     <View style={track}>
       <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
+      {mark != null ? (
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: `${Math.round(mark * 100)}%`, width: 2, marginLeft: -1, backgroundColor: C.ink, opacity: 0.4 }} />
+      ) : null}
     </View>
   );
 }
@@ -140,9 +161,9 @@ function LimitCard({ title, windows, limLabel, s, C }) {
           <View key={w.id} style={s.ucWin}>
             <View style={s.ucWl}>
               <Text style={s.ucA} numberOfLines={1}>{limLabel(w)}</Text>
-              <Text style={s.ucB} numberOfLines={1}><Text style={s.ucBnum}>{Math.round(w.done)}</Text>/{Math.round(w.limit)}h</Text>
+              <Text style={s.ucB} numberOfLines={1}>{Math.round(r * 100)}% · <Text style={s.ucBnum}>{Math.round(w.done)}</Text>/{Math.round(w.limit)}h</Text>
             </View>
-            <MiniBar ratio={r} color={barColor(r, C)} track={s.ucBar} fill={s.ucBarFill} />
+            <MiniBar ratio={r} color={barColor(r, C)} track={s.ucBar} fill={s.ucBarFill} mark={0.9} />
           </View>
         );
       })}
@@ -195,6 +216,9 @@ export default function HomeScreen({ navigation }) {
     : stateLevel === 'ok' ? t('home.statusOk', lang)
     : t('home.dashNoData', lang);
   const stateColor = stateLevel === 'over' ? C.red : stateLevel === 'warn' ? C.warn : stateLevel === 'neutral' ? C.onDarkSub : C.green;
+  // Disciplina do vermelho (Flight Deck): o badge do próximo voo é NEUTRO (ink) por defeito;
+  // só acende a vermelho + glow quando o estado FTL está ACIMA do limite (perigo real).
+  const badgeColor = stateLevel === 'over' ? C.red : C.ink;
 
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
   const [calFlight, setCalFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
@@ -292,7 +316,7 @@ export default function HomeScreen({ navigation }) {
     <View style={s.nd}>
       <View style={s.ndCircWrap}>
         {stateLevel === 'over' && <PulseRing size={78} color={C.red} border duration={2800} />}
-        <View style={s.ndCirc}>
+        <View style={[s.ndCirc, { backgroundColor: badgeColor, shadowColor: badgeColor, shadowOpacity: stateLevel === 'over' ? 0.45 : 0.16 }]}>
           <Text style={s.ndCircDay}>{ndDayNum}</Text>
           <Text style={s.ndCircLbl}>{ndDayWd}</Text>
         </View>
@@ -388,9 +412,9 @@ export default function HomeScreen({ navigation }) {
       <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
         <View style={s.ucHead}><View style={[s.ucDot, s.ucDotAe]} /><Text style={s.ucTitle} numberOfLines={1}>AE · {monthName}</Text></View>
         <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>Base ({crewContract || '12/12'})</Text><Text style={s.aeMV}>{fmtEur0(base)}</Text></View>
-        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.red }]}>+{fmtEur0(variable)}</Text></View>
+        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.greenText }]}>+{fmtEur0(variable)}</Text></View>
         <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><Text style={s.aeMVtot}>{fmtEur0(total)}</Text></View>
-        <MiniBar ratio={fill} color={C.red} track={s.aeMBar} fill={s.aeMBarFill} />
+        <MiniBar ratio={fill} color={C.green} track={s.aeMBar} fill={s.aeMBarFill} />
         {ae.isAgreementExpired && ae.isAgreementExpired(d) ? (
           <Text style={s.aeMNote}>{l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026')}</Text>
         ) : null}
@@ -412,7 +436,7 @@ export default function HomeScreen({ navigation }) {
       <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>{l('Setores', 'Sectors')}</Text><Text style={s.aeMV}>{statsYtd.sectors}</Text></View>
       <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{l('Dias de escala', 'Duty days')}</Text><Text style={s.aeMV}>{statsYtd.count}</Text></View>
       <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{l('Voo (ano)', 'Flight (yr)')}</Text><Text style={s.aeMVtot}>{statsYtd.flightHours.toLocaleString(locale, { maximumFractionDigits: 1 })} h</Text></View>
-      <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.aeMBar} fill={s.aeMBarFill} />
+      <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.aeMBar} fill={s.aeMBarFill} mark={0.9} />
     </TouchableOpacity>
   ) : null;
 
@@ -525,8 +549,8 @@ const makeStyles = (C) => StyleSheet.create({
   // Próximo voo — badge circular do report + texto
   nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
   ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    shadowColor: C.red, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
+  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    shadowColor: C.ink, shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
   ndCircDay: { fontSize: 32, fontFamily: FONT.semibold, color: '#fff', lineHeight: 34, letterSpacing: -0.5, textAlign: 'center' },
   ndCircLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.85, textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', marginTop: 1, textAlign: 'center', includeFontPadding: false },
   ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
@@ -562,7 +586,7 @@ const makeStyles = (C) => StyleSheet.create({
   ucBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
   ucBarFill: { height: '100%', borderRadius: RADIUS.pill },
   // AE compacto (cartão direito da grelha, mockup .uc.ae)
-  ucDotAe: { backgroundColor: C.red },
+  ucDotAe: { backgroundColor: C.green },
   aeMRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, paddingVertical: 7, borderTopWidth: 1, borderTopColor: C.line },
   aeMRow0: { borderTopWidth: 0 },
   aeMK: { fontFamily: FONT.bold, fontSize: 11, color: C.sub, flexShrink: 1 },
@@ -570,7 +594,7 @@ const makeStyles = (C) => StyleSheet.create({
   aeMKtot: { fontFamily: FONT.heavy, fontSize: 11, color: C.text },
   aeMVtot: { fontFamily: FONT.semibold, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
   aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
-  aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
+  aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.green },
   aeMNote: { fontFamily: FONT.regular, fontSize: 10, color: C.sub, marginTop: 9, lineHeight: 13 },
 
   // Próximo duty — estado vazio / sem permissão (cartão claro)

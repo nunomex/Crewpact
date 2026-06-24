@@ -172,7 +172,7 @@ export const STRINGS = {
   pt: {
     // Tabs
     'tab.home': 'Início',
-    'tab.today': 'Hoje',
+    'tab.today': 'Briefing',
     'tab.agreement': 'AE/FTL',
     'tab.ae': 'AE',
     'tab.ftl': 'FTL',
@@ -661,7 +661,7 @@ export const STRINGS = {
   en: {
     // Tabs
     'tab.home': 'Home',
-    'tab.today': 'Today',
+    'tab.today': 'Briefing',
     'tab.agreement': 'CLA/FTL',
     'tab.ae': 'CLA',
     'tab.ftl': 'FTL',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { C as _C, RADIUS, SPACE, TYPE, FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import Eyebrow from './Eyebrow';
 import { useTheme } from '../data/appContext';
 

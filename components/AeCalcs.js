@@ -127,7 +127,7 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
       {/* ── Per diem · por setor (barras curto/médio/longo) ── */}
       <Text style={s.group}>{l('PER DIEM · POR SETOR', 'PER DIEM · BY SECTOR')}</Text>
       <View style={s.aebox}>
-        <View style={s.aeline}><Text style={s.aeK}>{l('Total do mês', 'Month total')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur(pdBand ? pdBand.total : (pd ? pd.total : 0))}</Text></View>
+        <View style={s.aeline}><Text style={s.aeK}>{l('Total do mês', 'Month total')}</Text><Text style={[s.aeV, { color: C.greenText }]}>+{fmtEur(pdBand ? pdBand.total : (pd ? pd.total : 0))}</Text></View>
         {activeBands.map(([id, label]) => {
           const v = byBand[id];
           return (
@@ -277,7 +277,7 @@ const makeStyles = (C) => StyleSheet.create({
   // Chips de categoria + contrato (mockup .aehead .chip)
   aehead: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
   chip: { backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  chipRed: { backgroundColor: C.red },
+  chipRed: { backgroundColor: C.brand },
   chipTxt: { fontFamily: FONT.bold, fontSize: 11.5, color: C.text },
   chipTxtRed: { color: '#fff' },
 
@@ -292,12 +292,12 @@ const makeStyles = (C) => StyleSheet.create({
   pdrow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line },
   pdLab: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub, width: 46 },
   pdTrack: { flex: 1, height: 7, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  pdFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.red },
+  pdFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.green },
   pdVal: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text, fontVariant: ['tabular-nums'], width: 56, textAlign: 'right' },
   pdfoot: { fontSize: TYPE.micro, color: C.sub, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line },
 
   // Total estimado — cartão escuro (mockup .aetotal)
-  aetotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
+  aetotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.brand, borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
   aetotalK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', maxWidth: 150, lineHeight: 13 },
   aetotalV: { fontFamily: FONT.semibold, fontSize: 30, color: '#fff', fontVariant: ['tabular-nums'] },
 
@@ -316,8 +316,8 @@ const makeStyles = (C) => StyleSheet.create({
   stepSign: { fontSize: 18, lineHeight: 20, fontFamily: FONT.bold, color: C.text },
   stepDim: { color: C.line },
   stepN: { minWidth: 26, textAlign: 'center', fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, fontVariant: ['tabular-nums'] },
-  autoHint: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.red, marginTop: 3 },
-  tag: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.red, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
+  autoHint: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.redText, marginTop: 3 },
+  tag: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.brand, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, marginLeft: 2 },
   empty: { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.lg, marginLeft: 2 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },

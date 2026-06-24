@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
@@ -11,7 +12,7 @@ import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { C, RADIUS, TYPE, FONT } from '../data/constants';
+import { RADIUS, TYPE, FONT } from '../data/constants';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
@@ -46,12 +47,13 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   // Estimativa AE do mês (cartão da secção Companhia) — total interligado do motor.
   const now = new Date();
@@ -319,7 +321,20 @@ export default function SettingsScreen({ navigation }) {
             <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />
           </View>
         </Animated.View>
+
+        <Animated.View style={seg(7)}>
+          <View style={s.gbox}>
+            <Row icon="log-out-outline" label={l('Terminar sessão', 'Log out')} danger onPress={() => setLogoutOpen(true)} last s={s} C={C} />
+          </View>
+        </Animated.View>
       </ScrollView>
+
+      <ConfirmDialog visible={logoutOpen} danger icon="log-out-outline"
+        title={l('Terminar sessão?', 'Log out?')}
+        message={l('Vais sair da tua conta neste dispositivo.', 'You will be logged out on this device.')}
+        cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={() => { setLogoutOpen(false); logout(); }} />
 
       {/* Change password modal */}
       <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)} closeLabel={t('common.close', lang)}>
@@ -426,8 +441,8 @@ export default function SettingsScreen({ navigation }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   // User card escuro (mockup .uca)
-  userCard: { flexDirection: 'row', alignItems: 'center', gap: 15, borderRadius: 24, padding: 18, marginBottom: 14, backgroundColor: C.ink },
-  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  userCard: { flexDirection: 'row', alignItems: 'center', gap: 15, borderRadius: 24, padding: 18, marginBottom: 14, backgroundColor: C.brand },
+  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   avatarTxt: { color: '#fff', fontSize: 24, fontFamily: FONT.semibold },
   userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
   userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.7)', marginTop: 1 },

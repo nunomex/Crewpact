@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Direção: Documento Oficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* paleta real CrewPact (claro) */
+    --ink:#1B1B1B; --inksoft:#2A2A2A; --paper:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --red-d:#E0341F; --redsoft:#FDE9E4;
+    --green:#1F9E6E; --greensoft:#E2F4EC; --warn:#E8932B; --warnsoft:#FBEAD2;
+    --grey:#C2C2C0; --sub:#6B6B66; --sublt:#97978F;
+    /* NOVO · tokens de TEXTO acessível (>=4.5 sobre o *Soft) */
+    --redtext:#C9331F; --warntext:#9A6B1E; --greentext:#2A7A5C;
+    /* NOVO · brand azul-instrumento (cirúrgico: identidade) */
+    --brand:#1F4E79; --brand-2:#2C6097; --brandsoft:#E6EEF6;
+    --inter:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{ font-family:var(--inter); background:#E9EAEC; color:#23262B; padding:54px 28px 96px; position:relative; overflow-x:hidden }
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+
+  /* tabular para todos os números display */
+  .tab{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:"tnum" 1,"lnum" 1 }
+  .serif{ font-family:var(--serif) }
+
+  .intro{ position:relative; z-index:1; text-align:center; margin:0 auto 8px; max-width:880px }
+  .intro .k{ font-family:var(--inter); font-weight:800; font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--brand); margin-bottom:16px }
+  .intro h1{ font-family:var(--serif); font-weight:600; font-size:clamp(30px,4.4vw,50px); color:var(--ink); letter-spacing:-.015em; line-height:1.04 }
+  .intro h1 em{ font-style:italic; color:var(--sub); font-weight:500 }
+  .intro p{ max-width:64ch; margin:16px auto 0; font-size:15px; line-height:1.65; color:#5C616A }
+  .intro b{ color:var(--ink); font-weight:700 }
+  .legend{ display:flex; gap:10px 18px; justify-content:center; flex-wrap:wrap; margin:24px auto 0; max-width:820px }
+  .legend span{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:#4A4F57 }
+  .legend i{ width:11px; height:11px; border-radius:4px; display:inline-block; flex:0 0 auto }
+
+  .stamp{ position:relative; z-index:1; margin:30px auto 0; max-width:880px; border:1px solid var(--line); background:#fff; border-radius:16px; padding:18px 22px; display:flex; gap:26px; flex-wrap:wrap; justify-content:center; box-shadow:0 1px 2px rgba(20,22,26,.04) }
+  .stamp .it{ display:flex; flex-direction:column; gap:4px; min-width:150px }
+  .stamp .it .l{ font-weight:800; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub) }
+  .stamp .it .v{ font-size:13px; color:var(--ink); font-weight:600; line-height:1.45 }
+  .stamp .it .v.s{ font-family:var(--serif); font-size:18px; font-weight:600 }
+  .stamp .it .v .c{ display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px; margin-right:5px }
+
+  .gallery{ position:relative; z-index:1; max-width:760px; margin:44px auto 0; display:flex; flex-wrap:wrap; gap:54px 44px; justify-content:center }
+  figure.frame{ display:flex; flex-direction:column; align-items:center; gap:18px; margin:0 }
+  figcaption{ text-align:center; max-width:312px }
+  figcaption b{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--serif); font-weight:600; font-size:17px; color:var(--ink) }
+  figcaption p{ font-size:12.5px; line-height:1.55; color:#646A72; margin-top:7px }
+  figcaption .tag{ font-style:normal; font-family:var(--inter); font-size:9px; font-weight:800; color:#fff; background:var(--brand); border-radius:7px; padding:3px 7px; letter-spacing:.06em; text-transform:uppercase }
+
+  /* ── phone shell ── */
+  .phone{ width:336px; height:724px; background:#fff; border-radius:50px; padding:10px; position:relative; flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5), 0 6px 16px -10px rgba(20,22,26,.3) }
+  .screen{ width:100%; height:100%; background:var(--paper); border-radius:40px; overflow:hidden; position:relative }
+  .island{ position:absolute; top:13px; left:50%; transform:translateX(-50%); width:98px; height:26px; background:#0A0A0A; border-radius:14px; z-index:60 }
+  .sb{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:17px 30px 0; font-weight:700; font-size:11px; color:var(--ink); z-index:50 }
+  .sb .r{display:flex;gap:5px;align-items:center}
+  .sb .r i{width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.85}
+  .sb .b{width:20px;height:10px;border:1.5px solid var(--ink);border-radius:3px;position:relative}
+  .sb .b::after{content:"";position:absolute;inset:1.5px;width:11px;background:var(--ink);border-radius:1px}
+  .scr{ position:absolute; inset:0; overflow:hidden }
+
+  /* ── header (título de ecrã = SERIF display) ── */
+  .hdr{ position:absolute; top:0; left:0; right:0; padding:54px 22px 0; background:var(--paper); z-index:30 }
+  .htop{ display:flex; align-items:center; justify-content:space-between; height:38px; margin-bottom:14px }
+  .hlw{ display:flex; align-items:center; gap:9px }
+  /* anel do logo = superfície de IDENTIDADE → brand azul-instrumento */
+  .logoring{ width:26px; height:26px; border-radius:50%; background:var(--brand); display:flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:0 0 0 3px var(--brandsoft) }
+  .logoring svg{ width:14px; height:14px; color:#fff }
+  .hl{ font-weight:800; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--sub) }
+  .hbtn{ width:36px;height:36px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink); position:relative; flex:0 0 auto }
+  .hbtn svg{ width:17px;height:17px }
+  /* badge de sino = perigo real → mantém vermelho */
+  .hbadge{ position:absolute; top:-4px; right:-4px; min-width:17px; height:17px; border-radius:99px; background:var(--red); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #fff }
+  .ht{ font-family:var(--serif); font-weight:600; font-size:34px; letter-spacing:-.015em; color:var(--ink); line-height:1 }
+  .hsub{ font-weight:600; font-size:12.5px; color:var(--sub); margin-top:8px }
+  .ruler{ height:1px; background:linear-gradient(90deg,var(--linestrong),transparent); margin-top:16px }
+
+  .view{ position:absolute; left:0; right:0; bottom:0; padding:0 20px 96px; overflow:hidden }
+
+  .chip{ display:inline-flex; align-items:center; gap:5px; font-weight:800; font-size:10.5px; border-radius:99px; padding:5px 10px; letter-spacing:.02em }
+  .chip.ftl{ background:var(--soft); color:#3A3A38 }
+  .chip.ok{ background:var(--greensoft); color:var(--greentext) }
+  .chip.wn{ background:var(--warnsoft); color:var(--warntext) }
+
+  /* ════════ INÍCIO ════════ */
+  /* semana — número do dia em SERIF tabular; "hoje" NÃO usa vermelho de fundo */
+  .week{ display:flex; gap:6px; justify-content:space-between; margin:18px 0 16px }
+  .wd{ flex:1; text-align:center; padding:9px 0; border-radius:14px; background:var(--soft2); border:1px solid var(--line) }
+  .wd .n{ font-family:var(--serif); font-weight:600; font-size:18px; color:var(--ink); line-height:1 }
+  .wd .d{ font-weight:700; font-size:9px; text-transform:uppercase; color:var(--sub); margin-top:6px; letter-spacing:.04em }
+  .wd .wdot{ width:5px;height:5px;border-radius:50%;background:var(--ink);margin:6px auto 0;opacity:0 } .wd.has .wdot{ opacity:.55 }
+  .wd.on{ background:var(--ink); border-color:var(--ink) } .wd.on .n{ color:#fff } .wd.on .d{ color:rgba(255,255,255,.7) } .wd.on .wdot{ background:#fff;opacity:1 }
+  /* hoje = anel de tinta, número fica ink (era vermelho → remapeado) */
+  .wd.td{ border-color:var(--linestrong); box-shadow:inset 0 0 0 1px var(--ink) } .wd.td .n{ color:var(--ink) } .wd.td .d{ color:var(--ink) }
+
+  /* statline legalidade */
+  .statline{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:14px; padding:11px 13px; background:var(--soft2); margin-bottom:14px }
+  .statline .dot{ width:9px;height:9px;border-radius:50%;background:var(--green); box-shadow:0 0 0 4px var(--greensoft); flex:0 0 auto }
+  .statline .lb{ font-weight:700; font-size:14px; color:var(--ink) }
+  .statline .cx{ font-weight:700; font-size:11px; color:var(--sub); margin-left:auto; text-transform:uppercase; letter-spacing:.05em; font-variant-numeric:tabular-nums }
+
+  /* próximo serviço — badge NEUTRO por defeito; número em SERIF tabular */
+  .nd{ display:flex; gap:14px; align-items:flex-start; border:1px solid var(--line); border-radius:16px; padding:14px; background:#fff; margin-bottom:14px }
+  .ndc{ width:74px;height:74px;border-radius:18px; background:var(--soft); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto }
+  .ndc .dnum{ font-family:var(--serif); font-weight:600; font-size:30px; color:var(--ink); line-height:1 }
+  .ndc .dwd{ font-weight:800; font-size:10px; color:var(--sub); letter-spacing:.08em; margin-top:3px }
+  /* estado "perto do limite" → acende vermelho + glow (estende stateLevel ao fundo) */
+  .ndc.hot{ background:var(--red); border-color:var(--red); box-shadow:0 12px 24px -10px rgba(245,64,44,.55) }
+  .ndc.hot .dnum{ color:#fff } .ndc.hot .dwd{ color:rgba(255,255,255,.85) }
+  .ndx{ flex:1; min-width:0; padding-top:1px }
+  .ndeye{ display:flex; align-items:center; justify-content:space-between }
+  .ndeye .e{ font-weight:800; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--sub) }
+  /* countdown neutro (era vermelho) — só info */
+  .ndeye .cd{ font-weight:800; font-size:12px; color:var(--ink); font-variant-numeric:tabular-nums }
+  .ndrt{ font-family:var(--serif); font-weight:600; font-size:22px; color:var(--ink); letter-spacing:-.01em; margin-top:6px; line-height:1 }
+  .ndmeta{ font-weight:600; font-size:13px; color:var(--sub); margin-top:7px } .ndmeta b{ color:var(--ink); font-weight:800 }
+  .ndtags{ display:flex; gap:6px; margin-top:10px }
+
+  .grid2{ display:flex; gap:11px; align-items:stretch }
+  .uc{ flex:1; border:1px solid var(--line); border-radius:16px; padding:14px; background:#fff }
+  .uc .ut{ font-weight:800; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--sub) }
+  .uc .uwin{ margin-top:13px } .uc .uwl{ display:flex; justify-content:space-between; font-weight:700; font-size:11px; color:var(--sub); margin-bottom:6px } .uc .uwl b{ color:var(--ink); font-weight:800; font-variant-numeric:tabular-nums }
+  .bar{ height:7px; border-radius:99px; background:var(--soft); overflow:hidden } .bar i{ display:block; height:100%; border-radius:99px; background:var(--ink) }
+  .bar i.gr{ background:var(--green) } .bar i.wn{ background:var(--warn) } .bar i.rd{ background:var(--red) }
+  /* cartão AE — total € em SERIF tabular; "+variável" remapeado de vermelho → verde (ganho) */
+  .uc.ae{ background:var(--ink); border-color:var(--ink); display:flex; flex-direction:column; justify-content:center }
+  .uc.ae .ut{ color:rgba(255,255,255,.7) }
+  .uc.ae .big{ font-family:var(--serif); font-weight:600; font-size:27px; color:#fff; letter-spacing:-.01em; margin-top:11px; line-height:1 }
+  .uc.ae .big .cur{ color:rgba(255,255,255,.55); font-weight:500 }
+  .uc.ae .sm{ font-weight:600; font-size:11px; color:rgba(255,255,255,.7); margin-top:7px } .uc.ae .sm em{ font-style:normal; color:#7FD8B4; font-weight:800 }
+
+  .sumstrip{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:16px; padding:13px 15px; background:var(--soft2); margin-top:14px }
+  .sumstrip .si{ width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink); flex:0 0 auto } .sumstrip .si svg{ width:18px;height:18px }
+  .sumstrip .st{ flex:1; min-width:0 } .sumstrip .st b{ display:block; font-weight:800; font-size:14px; color:var(--ink) } .sumstrip .st span{ font-weight:600; font-size:11.5px; color:var(--sub); font-variant-numeric:tabular-nums } .sumstrip .st span em{ font-style:normal; color:var(--greentext); font-weight:800 }
+  .sumstrip .ch{ color:var(--grey); flex:0 0 auto; display:flex }
+
+  /* ════════ HOJE (D2 reforçado) ════════ */
+  /* ordenado por severidade: bad → warn → info → ok → neutral */
+  .qcard{ position:relative; overflow:hidden; border:1px solid var(--line); border-radius:16px; padding:12px 14px 12px 17px; background:var(--soft2); margin-bottom:9px }
+  .qcard::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--linestrong) }
+  .qh{ display:flex; align-items:center; gap:9px; margin-bottom:7px }
+  .qh .qq{ flex:1; font-weight:800; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--sub) }
+  .qh .qc{ color:var(--grey); display:flex; font-weight:800; font-size:17px; line-height:1 }
+  .qa{ font-weight:700; font-size:15px; color:var(--ink); letter-spacing:-.01em; line-height:1.22 }
+  .qa .n{ font-family:var(--serif); font-weight:600; font-variant-numeric:tabular-nums }
+  /* estados — risca por cor; fundo de alerta MUITO leve só em bad/warn; texto a cor em bad+warn */
+  .qcard.rd{ background:var(--redsoft); border-color:#F6CFC7 } .qcard.rd::before{ background:var(--red) } .qcard.rd .qa{ color:var(--redtext) } .qcard.rd .qq{ color:#9A4034 }
+  .qcard.wn{ background:var(--warnsoft); border-color:#F2DDB6 } .qcard.wn::before{ background:var(--warn) } .qcard.wn .qa{ color:var(--warntext) } .qcard.wn .qq{ color:var(--warntext) }
+  .qcard.in::before{ background:var(--brand) }
+  .qcard.gr::before{ background:var(--green) }
+  .qcard.ok::before{ background:var(--linestrong) }
+  /* nota consultiva dentro do cartão crítico */
+  .qsug{ display:flex; gap:8px; align-items:flex-start; background:rgba(255,255,255,.55); border:1px solid rgba(154,107,30,.22); border-radius:11px; padding:9px 10px; margin-top:10px; font-weight:600; font-size:11.5px; color:var(--warntext); line-height:1.45 }
+  .qsug svg{ width:14px;height:14px;flex:0 0 auto;color:var(--warntext);margin-top:1px }
+
+  /* rodapé consultivo */
+  .ftnote{ display:flex; align-items:center; gap:7px; justify-content:center; margin-top:14px; font-weight:600; font-size:11px; color:var(--sub) }
+  .ftnote svg{ width:13px;height:13px;color:var(--sub) }
+
+  /* ── dock + fab ── */
+  .fade{ position:absolute; left:0; right:0; bottom:0; height:118px; background:linear-gradient(transparent, var(--paper) 62%); z-index:35; pointer-events:none }
+  .dock{ position:absolute; left:16px; bottom:24px; height:56px; background:var(--ink); border-radius:24px; display:flex; align-items:center; padding:0 5px; gap:1px; box-shadow:0 20px 36px -16px rgba(20,22,26,.5); z-index:40 }
+  .dock .ti{ width:40px;height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.55); position:relative } .dock .ti.on{ color:#fff; background:rgba(255,255,255,.10) }
+  /* indicador da aba ativa — brand (identidade), não vermelho */
+  .dock .ti.on::after{ content:""; position:absolute; bottom:6px; width:4px; height:4px; border-radius:50%; background:var(--brand-2) } .dock .ti svg{ width:20px;height:20px }
+  /* FAB = AÇÃO → mantém vermelho (não mexer) */
+  .fab{ position:absolute; right:16px; bottom:24px; width:56px; height:56px; border-radius:22px; background:var(--red); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 16px 30px -12px rgba(245,64,44,.55); z-index:40 } .fab svg{ width:24px;height:24px }
+
+  .sectit{ position:relative; z-index:1; max-width:760px; margin:56px auto 8px; display:flex; align-items:center; gap:14px; padding:0 4px }
+  .sectit .k{ font-weight:800; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:#8A9099 } .sectit .l{ height:1px; flex:1; background:linear-gradient(90deg,#CDD0D4,transparent) }
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <div class="k">CrewPact · Direção visual proposta</div>
+    <h1>Documento <em>Oficial</em></h1>
+    <p>A legalidade e o salário leem-se como um <b>certificado que se assina</b>, não mais um dashboard. A distinção vem da <b>tipografia</b> — títulos e readouts críticos em serif de display tabular (Fraunces) — não da cor. O vermelho fica <b>disciplinado</b> (só perigo); a identidade ganha um <b>azul-instrumento</b> cirúrgico.</p>
+    <div class="legend">
+      <span><i style="background:var(--soft)"></i> FTL · limites (neutro)</span>
+      <span><i style="background:var(--brand)"></i> Identidade (azul-instrumento)</span>
+      <span><i style="background:var(--green)"></i> dentro dos limites</span>
+      <span><i style="background:var(--warn)"></i> aviso / aproximação</span>
+      <span><i style="background:var(--red)"></i> perigo (só aqui)</span>
+    </div>
+  </div>
+
+  <div class="stamp">
+    <div class="it"><span class="l">Display</span><span class="v s tab">Fraunces · 8 923 €</span></div>
+    <div class="it"><span class="l">UI / corpo</span><span class="v">Inter 400–800</span></div>
+    <div class="it"><span class="l">Texto acessível</span>
+      <span class="v"><span class="c" style="background:var(--redtext)"></span>redText #C9331F</span>
+      <span class="v"><span class="c" style="background:var(--warntext)"></span>warnText #9A6B1E</span>
+      <span class="v"><span class="c" style="background:var(--greentext)"></span>greenText #2A7A5C</span></div>
+    <div class="it"><span class="l">Brand novo</span><span class="v"><span class="c" style="background:var(--brand)"></span>brand #1F4E79 (AA s/ branco)</span></div>
+  </div>
+
+  <div class="sectit"><span class="k">Dois ecrãs · mesma direção</span><span class="l"></span></div>
+
+  <div class="gallery">
+
+    <!-- ════════ INÍCIO ════════ -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr">
+          <div class="htop">
+            <div class="hlw">
+              <span class="logoring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 16l20-7-9 13-2-5-9-1z"/></svg></span>
+              <span class="hl">Easyjet · AE · Piloto</span>
+            </div>
+            <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="hbadge">1</span></div>
+          </div>
+          <div class="ht">Olá, David</div>
+          <div class="hsub">Domingo · 22 de junho · período de serviço aberto</div>
+          <div class="ruler"></div>
+        </div>
+        <div class="view">
+          <div class="week">
+            <div class="wd td has"><div class="n tab">22</div><div class="d">Dom</div><div class="wdot"></div></div>
+            <div class="wd has"><div class="n tab">23</div><div class="d">Seg</div><div class="wdot"></div></div>
+            <div class="wd on has"><div class="n tab">24</div><div class="d">Ter</div><div class="wdot"></div></div>
+            <div class="wd has"><div class="n tab">25</div><div class="d">Qua</div><div class="wdot"></div></div>
+            <div class="wd"><div class="n tab">26</div><div class="d">Qui</div><div class="wdot"></div></div>
+          </div>
+
+          <div class="statline"><span class="dot"></span><span class="lb">Dentro dos limites</span><span class="cx">CPT · 12 / 12 voos</span></div>
+
+          <!-- badge NEUTRO: este duty NÃO está perto do limite -->
+          <div class="nd">
+            <div class="ndc"><div class="dnum tab">24</div><div class="dwd">TER</div></div>
+            <div class="ndx">
+              <div class="ndeye"><span class="e">Próximo serviço</span><span class="cd">em 14h</span></div>
+              <div class="ndrt">LIS · LGW</div>
+              <div class="ndmeta">2 setores · per diem <b>+48 €</b></div>
+              <div class="ndtags"><span class="chip ftl">Report 06:05</span><span class="chip wn">Fadiga média</span></div>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="uc">
+              <div class="ut">FTL · Serviço</div>
+              <div class="uwin"><div class="uwl"><span>7 dias</span><b>55 / 60h</b></div><div class="bar"><i class="wn" style="width:92%"></i></div></div>
+              <div class="uwin"><div class="uwl"><span>28 dias</span><b>150 / 190h</b></div><div class="bar"><i class="gr" style="width:79%"></i></div></div>
+            </div>
+            <div class="uc ae">
+              <div class="ut">AE · Junho</div>
+              <div class="big tab"><span class="cur">€ </span>8 923</div>
+              <div class="sm">base · variável <em>+612 €</em></div>
+            </div>
+          </div>
+
+          <div class="sumstrip">
+            <div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 2 4-5"/></svg></div>
+            <div class="st"><b>Resumo do mês</b><span>82h voo · 124h serviço · <em>+340 €</em></span></div>
+            <div class="ch"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></div>
+          </div>
+
+          <div class="ftnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Consultivo · confirma sempre com a companhia.</div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock">
+          <div class="ti on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        </div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div>
+    <figcaption><b><span class="tag">Início</span> Estado FTL + AE</b><p>Título e números display em serif tabular. Badge do próximo voo neutro (não está perto do limite). Anel do logo a azul-instrumento; total € lê como um extrato.</p></figcaption></figure>
+
+    <!-- ════════ HOJE (D2 reforçado, ordenado por severidade) ════════ -->
+    <figure class="frame"><div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="r"><i></i><i></i><i></i><span class="b"></span></span></div>
+      <div class="scr">
+        <div class="hdr">
+          <div class="htop">
+            <div class="hlw">
+              <span class="logoring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 16l20-7-9 13-2-5-9-1z"/></svg></span>
+              <span class="hl">Easyjet · AE · Piloto</span>
+            </div>
+            <div class="hbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="hbadge">1</span></div>
+          </div>
+          <div class="ht">Hoje</div>
+          <div class="hsub">Pergunta · resposta · conselho — tudo factual</div>
+          <div class="ruler"></div>
+        </div>
+        <div class="view">
+          <!-- ORDENADOS por severidade: bad → warn → info → ok → neutral -->
+
+          <!-- BAD -->
+          <div class="qcard rd">
+            <div class="qh"><span class="qq">Validades em dia?</span><span class="qc">&#8250;</span></div>
+            <div class="qa">Não · Médico Classe 1 <span class="n">expirado há 2 d</span></div>
+          </div>
+
+          <!-- WARN (com nota consultiva) -->
+          <div class="qcard wn">
+            <div class="qh"><span class="qq">Quanto falta p/ limites?</span><span class="qc">&#8250;</span></div>
+            <div class="qa">Serviço 7 d · faltam <span class="n">5 h de 60 h</span></div>
+            <div class="qsug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 0 0-4-12z"/></svg>Estás a 92% — um serviço longo pode ultrapassar o limite.</div>
+          </div>
+
+          <!-- INFO (brand) -->
+          <div class="qcard in">
+            <div class="qh"><span class="qq">Quando trabalho?</span><span class="qc">&#8250;</span></div>
+            <div class="qa">Amanhã · <span class="n">06:05</span> · LIS-LGW</div>
+          </div>
+
+          <!-- OK (verde) -->
+          <div class="qcard gr">
+            <div class="qh"><span class="qq">Estou legal?</span><span class="qc">&#8250;</span></div>
+            <div class="qa">Sim · PSV <span class="n">10:00 / 12:00</span></div>
+          </div>
+
+          <!-- OK (verde) -->
+          <div class="qcard gr">
+            <div class="qh"><span class="qq">Tenho descanso?</span><span class="qc">&#8250;</span></div>
+            <div class="qa">Sim · <span class="n">12:00</span> antes do report</div>
+          </div>
+
+          <!-- NEUTRAL (sem estado) -->
+          <div class="qcard ok">
+            <div class="qh"><span class="qq">Quanto recebo?</span><span class="qc">&#8250;</span></div>
+            <div class="qa"><span class="n">8 923 €</span> · este mês (estimativa)</div>
+          </div>
+
+          <div class="ftnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Consultivo · confirma sempre com a companhia.</div>
+        </div>
+        <div class="fade"></div>
+        <div class="dock">
+          <div class="ti"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3z"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+          <div class="ti on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        </div>
+        <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </div></div>
+    <figcaption><b><span class="tag">Hoje</span> Pergunta → resposta (D2)</b><p>Cartões ordenados por severidade (perigo no topo). Risca lateral 4px sempre; fundo de alerta muito leve só em bad/warn, com texto à cor acessível. Números das respostas em serif tabular.</p></figcaption></figure>
+
+  </div>
+
+</body>
+</html>

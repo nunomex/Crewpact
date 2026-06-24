@@ -203,7 +203,13 @@ export default function EscalaScreen({ navigation, route }) {
         {view === 'list' ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
             {listRows.length === 0 ? (
-              <Text style={s.empty}>{t('duties.empty', lang)}</Text>
+              <View style={s.emptyWrap}>
+                <Text style={s.empty}>{t('duties.empty', lang)}</Text>
+                <TouchableOpacity activeOpacity={0.9} style={s.emptyImportBtn} onPress={() => { select(); setImportOpen(true); }}>
+                  <Ionicons name="download-outline" size={18} color="#fff" />
+                  <Text style={s.emptyImportTxt}>{l('Importar escala', 'Import roster')}</Text>
+                </TouchableOpacity>
+              </View>
             ) : listRows.map(([date, d]) => (
               <TouchableOpacity key={date} style={s.row} activeOpacity={0.7} onPress={() => setDutyDate(date)}>
                 <View style={{ flex: 1 }}>
@@ -282,6 +288,9 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Lista de duties
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.md },
+  emptyWrap: { alignItems: 'flex-start' },
+  emptyImportBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingVertical: 13, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  emptyImportTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowDate: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FONT, SPACE, SHADOW } from '../data/constants';
+import { FONT, SPACE, SHADOW, RADIUS, TYPE } from '../data/constants';
 import { useTheme } from '../data/appContext';
 
 // Diálogo de confirmação centrado (popup) — ícone num círculo suave + título +
@@ -38,13 +38,13 @@ export default function ConfirmDialog({ visible, onCancel, onConfirm, icon = 'he
 
 const makeStyles = (C) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 8 },
-  card: { width: '100%', maxWidth: 380, backgroundColor: C.card, borderRadius: 28, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 18, alignItems: 'center',
-    ...SHADOW.xl },
+  card: { width: '100%', maxWidth: 380, backgroundColor: C.card, borderRadius: RADIUS.xxl, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 18, alignItems: 'center',
+    ...SHADOW.lg },
   iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  title: { fontFamily: FONT.heavy, fontSize: 22, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
+  title: { fontFamily: FONT.heavy, fontSize: TYPE.heading, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
   msg: { fontFamily: FONT.medium, fontSize: 14.5, color: C.sub, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   btns: { flexDirection: 'row', gap: 11, marginTop: 22, alignSelf: 'stretch' },
-  btn: { flex: 1, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  btn: { flex: 1, height: 52, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center' },
   btnCancel: { backgroundColor: C.soft },
   btnCancelTxt: { fontFamily: FONT.bold, fontSize: 15.5, color: C.text },
   btnConfirmTxt: { fontFamily: FONT.bold, fontSize: 15.5, color: '#fff' },

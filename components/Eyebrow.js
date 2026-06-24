@@ -7,5 +7,5 @@ import { useTheme } from '../data/appContext';
 // `dark` para fundos escuros. Aceita `style` para margens/cor pontuais.
 export default function Eyebrow({ children, dark, style }) {
   const C = useTheme();
-  return <Text style={[{ fontSize: TYPE.eyebrow, letterSpacing: 2, color: dark ? C.onDarkSub : C.sub, fontFamily: FONT.semibold, textTransform: 'uppercase' }, style]}>{children}</Text>;
+  return <Text style={[{ fontSize: TYPE.eyebrow, letterSpacing: 1.3, color: dark ? C.onDarkSub : C.sub, fontFamily: FONT.heavy, textTransform: 'uppercase' }, style]}>{children}</Text>;
 }

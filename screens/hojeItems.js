@@ -33,6 +33,10 @@ export const fmtEur0 = (n, lang) => {
 // Minutos → "H:MM" (clampa a 0; aguenta > 24 h, ex.: repouso longo).
 export const hhmm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
 
+// Há dados de escala/FTL? Decide o empty-state de 1º uso do Briefing. `duties` é a fonte;
+// `dayLog` é reconciliado dela — basta um ter conteúdo.
+export const hasAnyData = (ctx) => !!(ctx && ((ctx.duties && ctx.duties.length) || (ctx.dayLog && Object.keys(ctx.dayLog).length)));
+
 // ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO }
 export function buildTodayItems(ctx, lang) {
   const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, validities, isPilot, todayISO } = ctx;
@@ -162,5 +166,11 @@ export function buildTodayItems(ctx, lang) {
     items.push({ id: 'validades', q: l('Validades em dia?', 'Documents current?'), status, answer, suggestion, raw: { items: sortValidities(withSt), isPilot } });
   }
 
-  return items;
+  // Ordenar por severidade (o que exige ação ao topo): bad → warn → info → ok → neutral.
+  // Estável: dentro do mesmo nível mantém a ordem-tópico de construção.
+  const RANK = { bad: 0, warn: 1, info: 2, ok: 3, neutral: 4 };
+  return items
+    .map((it, i) => [it, i])
+    .sort((a, b) => ((RANK[a[0].status] ?? 9) - (RANK[b[0].status] ?? 9)) || (a[1] - b[1]))
+    .map((x) => x[0]);
 }

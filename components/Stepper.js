@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { C as _C, RADIUS, TYPE, PALETTE_DARK, FONT } from '../data/constants';
+import { RADIUS, TYPE, PALETTE_DARK, FONT } from '../data/constants';
 import { tap, select } from '../data/haptics';
 import { useTheme } from '../data/appContext';
 
@@ -52,7 +52,7 @@ const makeSt = (C) => StyleSheet.create({
   stepControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBtn: { width: 40, height: 40, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   stepBtnTxt: { fontSize: 20, color: C.text, lineHeight: 24 },
-  stepInput: { width: 56, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1, borderColor: C.line, color: C.text },
+  stepInput: { width: 56, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1.5, borderColor: C.line, color: C.text },
   segWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   segBtn: { borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 0, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   segTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold },
