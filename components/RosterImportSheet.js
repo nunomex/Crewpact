@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
@@ -18,7 +18,6 @@ import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
-const KIND_ICON = { flight: 'airplane', standby_airport: 'time-outline', standby_home: 'home-outline', positioning: 'swap-horizontal', office: 'business-outline', training: 'school-outline' };
 const RANGES = [{ id: '14', d: 14 }, { id: '28', d: 28 }, { id: 'month', d: 30 }];
 
 // ⚠️ TEMPORÁRIO — candidatos de EXEMPLO para ver o preview sem eventos no
@@ -35,9 +34,9 @@ const demoCands = () => {
   ];
 };
 
-// Importação de escala do calendário do telemóvel: seletor de intervalo → preview
-// (candidatos com estado ok/aviso/já-existe + checkbox) → importar com sucesso
-// parcial. Página inteira (Modal slide-up), no estilo da página de duty.
+// Importação de escala (calendário do telemóvel ou PDF): seletor de intervalo → página
+// "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
+// inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose }) {
   const { lang, duties, dayLog, saveDuty, removeDuty, company, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
@@ -52,8 +51,7 @@ export default function RosterImportSheet({ visible, onClose }) {
   const [denied, setDenied] = useState(false);
   const [cands, setCands] = useState([]);
   const [diag, setDiag] = useState(null);   // diagnóstico: o que o calendário (eCrew) tem
-  const [pasteText, setPasteText] = useState('');
-  const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do texto colado
+  const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do PDF lido
   const [pasteRecurrents, setPasteRecurrents] = useState([]);  // recorrentes detetados no PDF (v2.1) → propor validades
   const [correcting, setCorrecting] = useState(null);          // candidato em correção (modo candidato do DutyFormSheet)
 
@@ -70,24 +68,11 @@ export default function RosterImportSheet({ visible, onClose }) {
     setLoading(false);
   };
   useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source]); // eslint-disable-line react-hooks/exhaustive-deps
-  // RGPD: ao fechar, descartar o texto colado (não fica nada em memória).
-  useEffect(() => { if (!visible) { setPasteText(''); setPasteDiag(null); setPasteRecurrents([]); } }, [visible]);
+  // RGPD: ao fechar, descartar o que foi lido do PDF (não fica nada em memória).
+  useEffect(() => { if (!visible) { setPasteDiag(null); setPasteRecurrents([]); } }, [visible]);
 
   // Trocar de fonte limpa o preview (não misturar resultados de calendário e colado).
   const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); setPasteRecurrents([]); };
-
-  // Colar PDF: parse LOCAL do texto → mesmos candidatos do calendário. RGPD: nada
-  // sai do dispositivo; o texto fica só no estado e é limpo ao fechar/limpar.
-  const parsePaste = () => {
-    const txt = pasteText.trim();
-    if (!txt) return;
-    const r = parseEasyjetRoster(txt, company?.slug);
-    setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog }));
-    setPasteDiag(r.diag);
-    setPasteRecurrents(detectRecurrents(txt));   // v2.1 — recorrentes p/ propor validades no fim do import
-    success();
-  };
-  const clearPaste = () => { select(); setPasteText(''); setCands([]); setPasteDiag(null); setPasteRecurrents([]); };
 
   // PDF por UPLOAD de ficheiro: escolher → extrair texto ON-DEVICE (nativo PDFKit/PDFBox) →
   // APAGAR já a cópia local (RGPD: nada sai do telemóvel) → mesmos candidatos do calendário.
@@ -118,11 +103,7 @@ export default function RosterImportSheet({ visible, onClose }) {
 
   const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
-  // Alterna pela IDENTIDADE do candidato (data+kind) — a lista mostrada é filtrada/
-  // reordenada, por isso o índice já não serve.
-  const toggle = (cand) => { select(); setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c))); };
 
-  const selected = cands.filter((c) => c.selected);
   // Revisão focada: esconder os "igual" (nada a fazer). A ordem (cancelado → conflito
   // → alterado → novo) já vem do buildImportCandidates.
   const shown = cands.filter((c) => c.status !== 'same');
@@ -165,12 +146,6 @@ export default function RosterImportSheet({ visible, onClose }) {
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
   const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
-  const badge = (st) => st === 'removed' ? { bg: C.redSoft || C.soft, fg: C.red, txt: l('cancelado', 'cancelled') }
-    : st === 'conflict' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('conflito', 'conflict') }
-    : st === 'changed' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('alterado', 'changed') }
-    : st === 'same' ? { bg: C.soft, fg: C.sub, txt: l('igual', 'same') }
-    : st === 'warn' ? { bg: C.warnSoft || C.soft, fg: C.warn || C.text, txt: l('aviso', 'warning') }
-    : { bg: C.greenSoft || C.soft, fg: C.green || C.text, txt: 'OK' };
   // Linha "antes → depois" dos campos que mudaram (candidatos 'changed').
   const diffLine = (c) => (c.diff || []).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt']} ${f.before == null || f.before === '' ? '—' : f.before}→${f.after == null || f.after === '' ? '—' : f.after}`).join('  ·  ');
 
@@ -396,12 +371,6 @@ const makeStyles = (C) => StyleSheet.create({
   rTxt: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub },
   rTxtOn: { color: '#fff' },
   pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
-  pasteInput: { minHeight: 150, maxHeight: 230, borderWidth: 1.5, borderColor: C.line, borderRadius: 16, backgroundColor: C.card, padding: 14, fontSize: 13, lineHeight: 19, fontFamily: FONT.medium, color: C.text },
-  pasteBtns: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  parseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 16 },
-  parseBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
-  parseTxt: { fontSize: 13, fontFamily: FONT.semibold },
-  parseGhostTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
   pasteNote: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 10, lineHeight: 16 },
   pdfBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 16 },
   pdfBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
@@ -410,7 +379,6 @@ const makeStyles = (C) => StyleSheet.create({
   dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },
   grantBtn: { marginTop: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11 },
   grantTxt: { color: '#fff', fontSize: TYPE.label, fontFamily: FONT.semibold },
-  hint: { fontSize: 11.5, color: C.sub, fontFamily: FONT.medium, marginBottom: 10 },
   diagBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
   diagBtnTxt: { fontSize: 12, color: C.sub, fontFamily: FONT.semibold },
   diagBox: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 12, marginTop: 4 },
@@ -418,12 +386,9 @@ const makeStyles = (C) => StyleSheet.create({
   diagItem: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, paddingVertical: 3 },
   crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: 11 },
   crowFix: { backgroundColor: C.warnSoft, borderColor: C.warn },
-  check: { width: 24, height: 24, borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
   cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
-  badge: { borderRadius: RADIUS.xs, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase' },
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cEur: { fontSize: 16, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },

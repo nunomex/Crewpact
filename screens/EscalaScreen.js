@@ -104,7 +104,14 @@ export default function EscalaScreen({ navigation, route }) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
   const confirmDelete = (date) => {
-    Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
+    // eCrew é editável: apagar na app um serviço do calendário não o tira do eCrew →
+    // o próximo sync deteta-o como "novo". Avisa p/ o user o remover também na fonte.
+    const fromCal = duties[date]?.source === 'calendar';
+    const msg = fromCal
+      ? l('Este serviço também está no calendário do eCrew. Apaga-o lá também, senão volta na próxima sincronização.',
+          'This duty is also in your eCrew calendar. Delete it there too, or it will return on the next sync.')
+      : t('duties.delMsg', lang);
+    Alert.alert(t('duties.delTitle', lang), msg, [
       { text: t('common.cancel', lang), style: 'cancel' },
       { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty(date); notify && notify(l('Serviço apagado', 'Duty deleted')); } },
     ]);
