@@ -244,6 +244,24 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Adapter sem block_on → null', dutyToFtlDay({ report_time: '06:00' }), null);
 }
 
+// ─────────── Standby de casa: 25% conta p/ cumulativos (CS FTL.1.225(b)(3) + GM1(c)) ───────────
+{
+  const { dutyToFtlDay } = ftl;
+  // 08:00→20:00 = 12h. Standby de CASA (other standby) → 25% = 3.0h p/ os 60/110/190h (ORO.FTL.210).
+  const home = dutyToFtlDay({ report_time: '08:00', block_on: '20:00', sectors: 0, kind: 'standby_home' });
+  eq('SB casa: 25% no serviço (12h → 3.0h)', home.servico, 3);
+  eq('SB casa: voo = 0', home.voo, 0);
+  // Standby de AEROPORTO → 100% (ORO.FTL.225(c), sem margem do operador).
+  const apt = dutyToFtlDay({ report_time: '08:00', block_on: '20:00', sectors: 0, kind: 'standby_airport' });
+  eq('SB aeroporto: 100% no serviço (12h)', apt.servico, 12);
+  // O REPOUSO (ORO.FTL.235) NÃO é reduzido pelos 25% — usa a duração TOTAL (GM1 CS FTL.1.225(c)).
+  // Trava a distinção: serviço=25% (limites) mas rest.basePrev=100% (repouso).
+  eq('SB casa: rest.basePrev = 12.0 (duração total, não 25%)', home.rest.basePrev, 12);
+  eq('SB aeroporto: rest.basePrev = 12.0', apt.rest.basePrev, 12);
+  // Voo / sem kind → 100% (regressão: o scaling é SÓ no standby de casa).
+  eq('Sem kind (voo): 100% no serviço (12h)', dutyToFtlDay({ report_time: '08:00', block_on: '20:00', sectors: 1 }).servico, 12);
+}
+
 // ─────────── 205(d)(1) — prolongamento inferido + frequência (máx 2/7d) ───────────
 {
   const { dutyToFtlDay, computeExtensionUsage } = ftl;

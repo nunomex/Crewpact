@@ -66,7 +66,14 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
   const d = computeDuty({ state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: 0 });
   if (d.fdp.actualFdpMin == null) return null;
   const toH = (m) => +(m / 60).toFixed(1);
-  const servicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
+  const fullServicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
+  // Standby de CASA (other standby): só 25% do tempo conta p/ os limites CUMULATIVOS (60/110/190h)
+  // — CS FTL.1.225(b)(3) + GM1(c) (conta p/ ORO.FTL.210, NÃO p/ repouso 235). Standby de aeroporto
+  // e os outros tipos contam 100%. As REDUÇÕES do PSV (standby >4h/6h) exigem standby+PSV no mesmo
+  // serviço (o modelo 1-duty/dia não os liga) → vivem no StandbyCalc (calculadora), não aqui.
+  const servicoH = duty.kind === 'standby_home'
+    ? toH(computeStandby({ type: 'other', standbyH: (d.dutyPeriodMin || 0) / 60 }).dutyCountMin)
+    : fullServicoH;
   const vooH = duty.flight_minutes ? toH(duty.flight_minutes) : 0;
   const place = inBase ? 'base' : 'away';
   const repMin = parseHhmm(duty.report_time), endMin = parseHhmm(duty.block_on);
@@ -87,7 +94,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
     },
     servico: servicoH,
     voo: vooH,
-    rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: servicoH, ts: Date.now() },
+    rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: fullServicoH, ts: Date.now() },
   };
 };
 
@@ -104,7 +111,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}) => {
     if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
     const entry = dutyToFtlDay({
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
-      sectors: d.sectors, flight_minutes: d.flight_minutes,
+      sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind,
     });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }

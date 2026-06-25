@@ -388,7 +388,7 @@ export default function App() {
     // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
     const entry = dutyToFtlDay({
       report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
-      sectors: fields.sectors, flight_minutes: fields.flight_minutes,
+      sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind,
     });
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };

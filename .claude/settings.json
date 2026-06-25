@@ -37,11 +37,25 @@
       "Bash(xargs grep -l \"useTheme\\\\|greenText\")",
       "Bash(grep -v \"//\")",
       "Bash(xargs grep -l \"RosterImportSheet\\\\|cPay\\\\|narrow\\\\|280\")",
-      "Bash(grep -n \"nsEur\">+\" \"D:\\\\PROJECTOS\\\\CrewPact\\\\components\\\\DutyFormSheet.js\")"
+      "Bash(grep -n \"nsEur\">+\" \"D:\\\\PROJECTOS\\\\CrewPact\\\\components\\\\DutyFormSheet.js\")",
+      "WebFetch(domain:www.easa.europa.eu)",
+      "WebFetch(domain:understandingeasa2016ftl.wordpress.com)",
+      "WebFetch(domain:www.luftfartstilsynet.no)",
+      "WebFetch(domain:regulatorylibrary.caa.co.uk)",
+      "WebFetch(domain:norseafa.org)",
+      "Bash(ls -la *.pdf)",
+      "Bash(which pdftotext *)",
+      "WebFetch(domain:www.caa.co.uk)",
+      "Bash(node /tmp/test_calc.js)",
+      "Bash(xargs grep -l \"const computeDuty\\\\|function computeDuty\")",
+      "Bash(cat > *)",
+      "Bash(grep -rn \"\\\\\\\\[place\\\\\\\\]Prev\\\\|Prev\\\\\\\\]\" \"D:\\\\PROJECTOS\\\\CrewPact\" --include=\"*.js\")",
+      "Bash(node /tmp/edge_cases.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",
-      "D:\\PROJECTOS\\CrewPact"
+      "D:\\PROJECTOS\\CrewPact",
+      "\\tmp"
     ]
   }
 }

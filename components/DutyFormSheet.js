@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
@@ -23,7 +23,10 @@ const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight' };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false };
+// Tipos NÃO-VOO onde PODES acabar fora da base e pernoitar (decisão do user) → toggle manual de
+// pernoita. Standby de casa (estás em casa) e escritório (estás na base) ficam de fora. Voo = auto.
+const NIGHTSTOP_KINDS = ['positioning', 'training', 'standby_airport'];
 
 // Campo "HH:MM" — rótulo em cima, campo a toda a largura (`flex` para par lado-a-lado).
 function ClockField({ label, value, onChange, C, s, flex }) {
@@ -52,11 +55,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight' }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight' });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop });
   useEffect(() => {
     if (!visible) return;
     setForm(candidate ? formFromCand(candidate) : loadFor(date || isoDay()));
@@ -77,20 +80,24 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
     };
   };
-  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k })); };
+  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: NIGHTSTOP_KINDS.includes(k) ? f.nightStop : false })); };
 
   const isFlight = form.kind === 'flight';
-  // Pernoita = PARIDADE dos setores (regra do utilizador): ÍMPAR → pernoita (forçada,
-  // sem toggle); PAR → sem pernoita. Derivada da rota/setores, não editável à mão.
+  // Pernoita: VOO → derivada da PARIDADE dos setores (ímpar=pernoita, par=não; sem toggle).
+  // POSICIONAMENTO/FORMAÇÃO/STANDBY AEROPORTO → toggle MANUAL (podes acabar fora da base; não há
+  // setores p/ derivar). O motor paga-a IGUAL p/ qualquer tipo (perdiem conta independente do kind).
+  const canNightStop = NIGHTSTOP_KINDS.includes(form.kind);
   const flightNs = isFlight && Number(form.sectors) % 2 === 1;
-  // Valor € da pernoita (Art. 39): piloto = ae.nightStop(cat); cabine = €46 fixos. index=1,
-  // igual ao per-diem do preview (a indexação só entra no cálculo mensal).
-  const nsEur = (flightNs && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  const manualNs = canNightStop && !!form.nightStop;
+  const hasNs = flightNs || manualNs;
+  // Valor € da pernoita (Art. 39, igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
+  // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
+  const nsEur = (hasNs && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
   const kindInfo = !ae ? null : ({
     flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
     standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
     office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
-    positioning:     l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+    positioning:     l('Conta para FTL · sem abono (pernoita à parte)', 'Counts for FTL · no allowance (night stop apart)'),
     standby_home:    l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
     training:        l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
   })[form.kind] || null;
@@ -138,10 +145,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const onSave = () => {
     if (!canSave) return;
     const fields = {
-      report_time: form.report, block_off: form.off || null, block_on: form.on || null,
+      report_time: form.report, block_off: isFlight ? (form.off || null) : null, block_on: form.on || null,
       sectors: isFlight ? form.sectors : 0, flight_minutes: isFlight ? hhmmToMin(form.flight) : 0,
       route: isFlight ? (form.route.trim() || null) : null,
-      kind: form.kind || 'flight', nightStop: flightNs,
+      kind: form.kind || 'flight', nightStop: hasNs,
     };
     if (onCandidate) {
       // Correção no import: devolve o candidato corrigido — NÃO grava no `duties` (só o
@@ -238,14 +245,37 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             </Animated.View>
           ) : null}
 
-          {/* Horas */}
+          {/* Horas — voo: report + off-block + on-block; não-voo: só Início + Fim (não há
+              avião → sem off-block; o FTL conta início→fim na mesma). */}
           <Animated.View style={[s.sec, secStyle(4)]}>
-            <ClockField C={C} s={s} label={t('duties.report', lang)} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
-            <View style={[s.row2, { marginTop: 12 }]}>
-              <ClockField C={C} s={s} flex label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm((f) => ({ ...f, off: v }))} />
-              <ClockField C={C} s={s} flex label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
-            </View>
+            <ClockField C={C} s={s} label={isFlight ? t('duties.report', lang) : l('Início', 'Start')} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
+            {isFlight ? (
+              <View style={[s.row2, { marginTop: 12 }]}>
+                <ClockField C={C} s={s} flex label={t('duties.blockOff', lang)} value={form.off} onChange={(v) => setForm((f) => ({ ...f, off: v }))} />
+                <ClockField C={C} s={s} flex label={t('duties.blockOn', lang)} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+              </View>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <ClockField C={C} s={s} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+              </View>
+            )}
           </Animated.View>
+
+          {/* Pernoita (NÃO-VOO) — toggle manual só onde podes acabar fora da base (posicionamento,
+              formação, standby aeroporto). O voo deriva da paridade dos setores. */}
+          {canNightStop ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <View style={s.nsRow}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.lbl}>{l('Pernoita', 'Night stop')}</Text>
+                  <Text style={s.nsHint}>{l('Liga se pernoitares fora da base · abono AE (Art. 39)', 'Turn on if you overnight away from base · AE allowance (Art. 39)')}</Text>
+                </View>
+                {manualNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
+                <Switch value={!!form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+            </Animated.View>
+          ) : null}
 
           {/* Setores + tempo de voo + projeção FTL — só voo */}
           {isFlight ? (
@@ -322,6 +352,7 @@ const makeStyles = (C) => StyleSheet.create({
   nsCardOn: { borderColor: C.ink },
   nsCardT: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
   nsEur: { fontSize: 15, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'], marginLeft: 8 },
+  nsRow: { flexDirection: 'row', alignItems: 'center' },
   proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
   projOk: { borderColor: C.line, backgroundColor: C.soft },
   projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },
