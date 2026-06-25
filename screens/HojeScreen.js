@@ -24,13 +24,13 @@ export default function HojeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter();
 
-  // Estilo D2 ("faixa lateral"): cartão neutro (soft2) com uma risca de cor à
-  // esquerda pelo estado. A risca substitui o ponto — verde/âmbar/vermelho saltam.
-  const stripeColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.lineStrong);
-  // Reforço do estado crítico: fundo de alerta MUITO leve só em bad/warn; resto fica neutro
-  // (soft2) para o vermelho saltar. Texto da resposta usa o tom acessível por estado.
-  const cardBg = (st) => (st === 'bad' ? C.redSoft : st === 'warn' ? C.warnSoft : C.soft2);
-  const ansColor = (st) => (st === 'bad' ? C.redText : st === 'warn' ? C.warnText : null);
+  // Estilo D1 ("verde calmo"): só o AVISO e o PERIGO ficam CHEIOS (warnSoft/redSoft) com o título
+  // a cor; o bom/verde e o neutro RECUAM para branco (a cor do estado vem só do PONTO) — assim o
+  // vermelho GRITA sem o ecrã virar uma parede de cor. A resposta fica a tinta, exceto perigo.
+  const cardBg = (st) => (st === 'bad' ? C.redSoft : st === 'warn' ? C.warnSoft : C.card);
+  const dotColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.ink : C.lineStrong);
+  const titleColor = (st) => (st === 'warn' ? C.warnText : st === 'bad' ? C.redText : C.sub);
+  const ansColor = (st) => (st === 'bad' ? C.redText : null);
 
   const ctx = {
     ftlSnap: ctxAll.ftlSnap, dayLog: ctxAll.dayLog, duties: ctxAll.duties, rosterChanges: ctxAll.rosterChanges,
@@ -52,7 +52,7 @@ export default function HojeScreen({ navigation }) {
 
         {!hasData ? (
           <Animated.View style={seg(1)}>
-            <View style={[s.card, { borderLeftColor: C.info }]}>
+            <View style={s.card}>
               <Text style={s.emptyEye}>{l('COMEÇAR', 'GET STARTED')}</Text>
               <Text style={s.emptyTitle}>{l('Vamos pôr a tua escala aqui', 'Let’s get your roster in')}</Text>
               <Text style={s.emptySub}>{l('Com a tua escala, isto ganha vida: estado FTL, salário e o teu próximo voo — num relance.', 'With your roster, this comes alive: FTL status, pay and your next flight — at a glance.')}</Text>
@@ -68,9 +68,10 @@ export default function HojeScreen({ navigation }) {
           </Animated.View>
         ) : items.map((it, i) => (
           <Animated.View key={it.id} style={seg(i + 1)}>
-            <TouchableOpacity activeOpacity={0.9} style={[s.card, { backgroundColor: cardBg(it.status), borderLeftColor: stripeColor(it.status) }]} onPress={() => { select(); navigation.navigate('HojeDetail', { id: it.id }); }}>
+            <TouchableOpacity activeOpacity={0.9} style={[s.card, { backgroundColor: cardBg(it.status) }]} onPress={() => { select(); navigation.navigate('HojeDetail', { id: it.id }); }}>
               <View style={s.cardHead}>
-                <Text style={s.q} numberOfLines={1}>{it.q}</Text>
+                <View style={[s.dot, { backgroundColor: dotColor(it.status) }]} />
+                <Text style={[s.q, { color: titleColor(it.status) }]} numberOfLines={1}>{it.q}</Text>
                 <Ionicons name="chevron-forward" size={16} color={C.sub} />
               </View>
               <Text style={[s.answer, ansColor(it.status) ? { color: ansColor(it.status) } : null]}>{it.answer}</Text>
@@ -96,9 +97,10 @@ const makeStyles = (C) => StyleSheet.create({
   intro: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: -4, marginBottom: SPACE.md },
 
   card: {
-    backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: RADIUS.lg, padding: 16, paddingLeft: 13, marginBottom: 11,
+    backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 11,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
+  dot: { width: 8, height: 8, borderRadius: 99, flexShrink: 0 },
   q: { flex: 1, fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub },
   answer: { fontSize: 19, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, lineHeight: 25 },
   sug: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 11, marginTop: 12 },
