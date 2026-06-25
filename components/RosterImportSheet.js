@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
-import { getDutiesInRange, getNonFlightInRange, requestCalendarAccess, diagnoseEvents } from '../data/calendar';
+import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
 import { parseEasyjetRoster } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
@@ -37,8 +37,8 @@ const demoCands = () => {
 // Importação de escala (calendário do telemóvel ou PDF): seletor de intervalo → página
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
-export default function RosterImportSheet({ visible, onClose }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
+export default function RosterImportSheet({ visible, onClose, onConnect }) {
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -59,7 +59,7 @@ export default function RosterImportSheet({ visible, onClose }) {
     setLoading(true); setDenied(false);
     const { start, end } = rangeFromOption(opt);
     const co = company?.slug;
-    const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co), getNonFlightInRange(start, end, co)]);
+    const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
     const window = { start: isoDay(start), end: isoDay(end) };  // p/ detetar cancelados na janela
     let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
@@ -67,7 +67,7 @@ export default function RosterImportSheet({ visible, onClose }) {
     setCands(next);
     setLoading(false);
   };
-  useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source, calendarId]); // eslint-disable-line react-hooks/exhaustive-deps
   // RGPD: ao fechar, descartar o que foi lido do PDF (não fica nada em memória).
   useEffect(() => { if (!visible) { setPasteDiag(null); setPasteRecurrents([]); } }, [visible]);
 
@@ -101,8 +101,9 @@ export default function RosterImportSheet({ visible, onClose }) {
     setLoading(false);
   };
 
-  const grant = async () => { const ok = await requestCalendarAccess(); if (ok) load(range); };
-  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug)); };
+  // Ligar/escolher calendário é na Escala — o botão delega no fluxo do EscalaScreen (onConnect).
+  const grant = () => { onConnect && onConnect(); };
+  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug, calendarId)); };
 
   // Revisão focada: esconder os "igual" (nada a fazer). A ordem (cancelado → conflito
   // → alterado → novo) já vem do buildImportCandidates.
@@ -277,8 +278,8 @@ export default function RosterImportSheet({ visible, onClose }) {
           ) : denied && source === 'calendar' ? (
             <View style={s.center}>
               <Ionicons name="calendar-outline" size={26} color={C.sub} />
-              <Text style={s.dim}>{l('Sem acesso ao calendário.', 'No calendar access.')}</Text>
-              <TouchableOpacity onPress={grant} style={s.grantBtn}><Text style={s.grantTxt}>{l('Dar acesso', 'Grant access')}</Text></TouchableOpacity>
+              <Text style={s.dim}>{l('Liga o calendário do telemóvel para importar a escala.', 'Connect your phone calendar to import the roster.')}</Text>
+              <TouchableOpacity onPress={grant} style={s.grantBtn}><Text style={s.grantTxt}>{l('Ligar ao calendário', 'Connect calendar')}</Text></TouchableOpacity>
             </View>
           ) : !shown.length ? (
             <View style={s.center}>

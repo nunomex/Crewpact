@@ -1,10 +1,10 @@
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, Linking, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
-import { getUpcomingFlight, requestCalendarAccess } from '../data/calendar';
+import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { monthlyAe, aeMonthTotal } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
@@ -184,7 +184,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, ae, crewCategory, crewContract, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -234,20 +234,16 @@ export default function HomeScreen({ navigation }) {
     syncingRef.current = true;
     setSyncing(true);
     try {
-      const res = await getUpcomingFlight();
+      // Só lê o calendário se houver um LIGADO (sem prompt; sem leitura "às cegas").
+      const res = calendarId ? await getUpcomingFlight(company, calendarId) : { ok: false, flight: null };
       setCalOk(res.ok);
       setCalFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null)); // sem voo real → mostra o exemplo
     } catch { setCalFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
   };
-  // Pede acesso ao calendário; se já recusado de vez, abre as Definições.
-  const requestAccess = async () => {
-    select();
-    const res = await requestCalendarAccess();
-    if (res?.granted) syncFlight();
-    else if (res && res.canAskAgain === false) Linking.openSettings();
-  };
+  // Ligar é na Escala (cartão "Ligar" + escolha do calendário). Daqui só encaminha para lá.
+  const requestAccess = () => { select(); navigation.navigate('Escala'); };
   // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
   // para o cartão refletir alterações da escala sem reabrir a app.
   useFocusEffect(useCallback(() => { syncFlight(); }, []));

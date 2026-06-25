@@ -50,7 +50,14 @@
       "Bash(xargs grep -l \"const computeDuty\\\\|function computeDuty\")",
       "Bash(cat > *)",
       "Bash(grep -rn \"\\\\\\\\[place\\\\\\\\]Prev\\\\|Prev\\\\\\\\]\" \"D:\\\\PROJECTOS\\\\CrewPact\" --include=\"*.js\")",
-      "Bash(node /tmp/edge_cases.js)"
+      "Bash(node /tmp/edge_cases.js)",
+      "Bash(git -C \"D:/PROJECTOS/CrewPact\" diff --stat)",
+      "Bash(git -C \"D:/PROJECTOS/CrewPact\" diff)",
+      "Bash(awk '/requestCalendarAccess/,/^/{if\\(/requestCalendarAccess/\\) print NR\": \"$0}' screens/HomeScreen.js)",
+      "Bash(awk '/requestCalendarAccess/,/^/{if\\(/requestCalendarAccess/\\) print NR\": \"$0}' screens/CalendarScreen.js)",
+      "Bash(grep -v \"//\\\\|node_modules\")",
+      "Bash(grep -v \"export\\\\|import\\\\|function\\\\|//\")",
+      "Bash(grep -n \"const { profile, user, lang, readNotifIds\" screens/HomeScreen.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

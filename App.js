@@ -294,6 +294,8 @@ export default function App() {
   const [aeExtras, setAeExtras] = useState({});              // Extras do mês AE { "YYYY-MM": { <id>: n } } — partilhado por Home/Perfil/Cálculos
   const [validities, setValidities] = useState([]);          // Validades & docs (premium v1) — local: [{ id, type, expiry, note }]
   const [remindersOn, setRemindersOn] = useState(false);     // Lembretes locais (premium · #3) — opt-in (precisa permissão + dev build)
+  const [calendarId, setCalendarId] = useState(null);        // calendário do telemóvel ESCOLHIDO (id); null = não ligado. Lemos SÓ este.
+  const [calendarName, setCalendarName] = useState(null);    // nome do calendário escolhido — só para o selo "Calendário · <nome>"
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
@@ -553,11 +555,11 @@ export default function App() {
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
     hydrated.current = false;
-    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setValidities([]); setRemindersOn(false); cancelAllReminders(); setLoadedUserId(null); return; }
+    if (!user?.id) { setReadNotifIds(new Set()); setDayLog({}); setValidities([]); setRemindersOn(false); setCalendarId(null); setCalendarName(null); cancelAllReminders(); setLoadedUserId(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd, rm] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -566,8 +568,12 @@ export default function App() {
           AsyncStorage.getItem(`cp_ae_extras_${user.id}`),
           AsyncStorage.getItem(`cp_validities_${user.id}`),
           AsyncStorage.getItem(`cp_reminders_${user.id}`),
+          AsyncStorage.getItem(`cp_calendar_id_${user.id}`),
+          AsyncStorage.getItem(`cp_calendar_name_${user.id}`),
         ]);
         if (cancelled) return;
+        setCalendarId(ci || null);   // calendário do telemóvel escolhido (id) ou null = não ligado
+        setCalendarName(cn || null); // nome do calendário (para o selo "Calendário · <nome>")
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
         try { setAeExtras(ax ? (JSON.parse(ax) || {}) : {}); } catch { setAeExtras({}); }   // extras do mês AE
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
@@ -618,6 +624,8 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
+  useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarId) AsyncStorage.setItem(`cp_calendar_id_${user.id}`, calendarId).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_id_${user.id}`).catch(() => {}); }, [calendarId, user?.id]);
+  useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarName) AsyncStorage.setItem(`cp_calendar_name_${user.id}`, calendarName).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_name_${user.id}`).catch(() => {}); }, [calendarName, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id && profile?.company) AsyncStorage.setItem(`cp_profile_${user.id}`, JSON.stringify(profile)).catch(() => {}); }, [profile, user?.id]);
 
   // Duties: cache local instantânea → merge com o servidor (histórico). Pendentes
@@ -726,10 +734,11 @@ export default function App() {
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
   // permissão de calendário → não faz nada. NÃO altera nada (o utilizador revê/aplica).
   const checkRosterChanges = useCallback(async () => {
+    if (!calendarId) return;   // só deteta se houver calendário LIGADO (sem prompt; sem leitura "às cegas")
     try {
       const co = company?.slug;
       const { start, end } = rangeFromOption('month');
-      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co), getNonFlightInRange(start, end, co)]);
+      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
       if (!fl.ok && !nf.ok) return;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
       const window = { start: isoDay(start), end: isoDay(end) };
@@ -737,9 +746,9 @@ export default function App() {
       // user — nada entra no `duties` sem confirmação). Gravar = RosterImportSheet → saveDuty.
       setRosterChanges(diffRoster({ incoming, duties: dutiesRef.current, window }));
     } catch { /* best-effort */ }
-  }, [company]);
-  // Corre quando o perfil fica pronto e ao voltar ao foreground (auto, ao focar).
-  useEffect(() => { if (onboarded && company) checkRosterChanges(); }, [onboarded, company, checkRosterChanges]);
+  }, [company, calendarId]);
+  // Corre quando o perfil fica pronto e ao voltar ao foreground (auto, ao focar) — SÓ se ligado.
+  useEffect(() => { if (onboarded && company && calendarId) checkRosterChanges(); }, [onboarded, company, calendarId, checkRosterChanges]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => { if (st === 'active') checkRosterChanges(); });
     return () => sub.remove();
@@ -789,6 +798,8 @@ export default function App() {
     duties, saveDuty, removeDuty,
     notify,
     rosterChanges, checkRosterChanges,
+    calendarId, setCalendarId,
+    calendarName, setCalendarName,
     onboarded, setOnboarded,
     signupMode, setSignupMode,
     online,

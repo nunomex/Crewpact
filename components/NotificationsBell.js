@@ -31,7 +31,7 @@ export default function NotificationsBell() {
   const notifs = buildNotifications(profile, lang, { rosterChanges });
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
   const close = () => { setOpen(false); setReadNotifIds(new Set(notifs.map(n => n.id))); };
-  const openRoster = () => { close(); navigation.navigate('Escala', { review: Date.now() }); };
+  const openRoster = () => { close(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); };
 
   return (
     <>

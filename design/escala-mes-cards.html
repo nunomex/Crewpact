@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Escala por mês — cards de dia (serviços + folgas)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:820px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;justify-content:center;gap:46px;flex-wrap:wrap;margin:44px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:330px}
+  figcaption .tag{display:inline-block;font-weight:800;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:99px;padding:4px 10px;margin-bottom:7px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72}
+  figcaption b{color:var(--ink)}
+
+  .phone{width:346px;height:760px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:39px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:110px;height:28px;background:#0A0A0A;border-radius:15px;z-index:60}
+  .stat{position:absolute;top:17px;left:28px;right:26px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink);z-index:55}
+  .body{flex:1;padding:54px 18px 0;overflow:hidden;display:flex;flex-direction:column}
+
+  /* cabeçalho — eyebrow + seletor de mês ‹ Junho 2026 › */
+  .nav{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .eyebrow{font-weight:800;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px;margin-bottom:6px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .toolbtns{display:flex;gap:8px}
+  .ib{width:36px;height:36px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .month{display:flex;align-items:center;gap:14px;margin-top:4px}
+  .marrow{width:36px;height:36px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .mlabel{font-family:var(--disp);font-weight:700;font-size:27px;letter-spacing:-.02em;color:var(--ink);flex:1;text-align:center}
+
+  /* estado do calendário ligado */
+  .calst{display:flex;align-items:center;gap:8px;background:var(--greensoft);border-radius:12px;padding:9px 13px;margin-top:14px}
+  .calst .t{flex:1;font-weight:700;font-size:12.5px;color:var(--greentext)}
+  .calst .chg{font-weight:800;font-size:12px;color:var(--ink)}
+
+  .list{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:8px;margin-top:14px}
+
+  /* card de SERVIÇO (dia com duty) */
+  .day{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px 14px;box-shadow:0 4px 14px -12px rgba(20,22,26,.14)}
+  .dnum{width:42px;flex:0 0 auto;text-align:center}
+  .dwd{font-weight:700;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+  .dd{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--ink);line-height:1}
+  .dmid{flex:1;min-width:0}
+  .drow{display:flex;align-items:center;gap:8px}
+  .dkind{font-weight:800;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#fff;border-radius:6px;padding:2px 6px}
+  .k-flight{background:var(--brand)} .k-sby{background:var(--warntext)} .k-pos{background:#6B6B66}
+  .droute{font-weight:800;font-size:15px;color:var(--ink);letter-spacing:-.01em}
+  .dmeta{font-size:12px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
+  .deur{font-family:var(--disp);font-weight:700;font-size:14px;color:var(--greentext);flex:0 0 auto}
+  .today{position:relative}
+  .today .dd{color:var(--red)}
+  .todaydot{width:5px;height:5px;border-radius:50%;background:var(--red);margin:3px auto 0}
+
+  /* card de FOLGA (dia sem serviço) — discreto */
+  .off{display:flex;align-items:center;gap:13px;background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:9px 14px}
+  .off .dnum .dd{color:var(--linestrong)}
+  .off .dnum .dwd{color:var(--linestrong)}
+  .offlbl{flex:1;font-weight:700;font-size:13px;color:var(--sub)}
+  .offlbl b{font-weight:800;color:var(--sub)}
+  .moon{color:var(--linestrong)}
+
+  /* variante COMPACTA — o mês TODO em cards pequenos (2 colunas, 1 linha cada) */
+  .mlist{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;margin-top:12px}
+  .mc{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:9px;padding:6px 9px}
+  .mn{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--ink);min-width:17px;text-align:center;flex:0 0 auto}
+  .mwd{font-size:8px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--sub);flex:0 0 auto}
+  .mct{flex:1;min-width:0;font-size:10.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mc.flight{border-left-color:var(--brand)} .mc.sby{border-left-color:var(--warn)} .mc.pos{border-left-color:var(--linestrong)}
+  .mc.off{background:var(--soft2);border-left-color:transparent}
+  .mc.off .mn,.mc.off .mwd{color:var(--linestrong)} .mc.off .mct{color:var(--sub);font-weight:600}
+  .mc.now{box-shadow:0 0 0 2px var(--red) inset;border-left-color:var(--red)} .mc.now .mn{color:var(--red)}
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · Escala por mês</div>
+    <h1>Escala por mês — duas densidades</h1>
+    <p>Mesmo mês nas duas. À <b>esquerda</b>: cards grandes (mais detalhe, faz scroll). À <b>direita</b>: o <b>mês TODO numa página</b>, em cards pequenos (vês tudo de relance, sem scroll). Em ambas: <b>serviço</b> (voo/standby/posic.) ou <b>folga</b>.</p>
+  </div>
+
+  <div class="row">
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="nav">
+            <div>
+              <div class="eyebrow"><i></i>A tua escala</div>
+            </div>
+            <div class="toolbtns">
+              <div class="ib"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+              <div class="ib"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+            </div>
+          </div>
+
+          <div class="month">
+            <div class="marrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+            <div class="mlabel">Junho 2026</div>
+            <div class="marrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="calst">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2A7A5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+            <span class="t">Calendário ligado</span>
+            <span class="chg">Mudar</span>
+          </div>
+
+          <div class="list">
+            <!-- folga -->
+            <div class="off"><div class="dnum"><div class="dwd">Dom</div><div class="dd">1</div></div>
+              <span class="offlbl">Folga</span>
+              <svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+            </div>
+            <!-- serviço: voo (hoje) -->
+            <div class="day today"><div class="dnum"><div class="dwd">Seg</div><div class="dd">2</div><div class="todaydot"></div></div>
+              <div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-LGW-LIS</span></div>
+                <div class="dmeta">Report 05:40 → 12:30 · 2 setores</div></div>
+              <span class="deur">+44 €</span>
+            </div>
+            <!-- serviço: voo -->
+            <div class="day"><div class="dnum"><div class="dwd">Ter</div><div class="dd">3</div></div>
+              <div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-FNC-LIS</span></div>
+                <div class="dmeta">Report 06:10 → 13:20 · 2 setores</div></div>
+              <span class="deur">+78 €</span>
+            </div>
+            <!-- folga -->
+            <div class="off"><div class="dnum"><div class="dwd">Qua</div><div class="dd">4</div></div>
+              <span class="offlbl">Folga</span>
+              <svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+            </div>
+            <!-- serviço: standby -->
+            <div class="day"><div class="dnum"><div class="dwd">Qui</div><div class="dd">5</div></div>
+              <div class="dmid"><div class="drow"><span class="dkind k-sby">Standby aero.</span></div>
+                <div class="dmeta">Início 08:00 → Fim 16:00</div></div>
+            </div>
+            <!-- serviço: posicionamento -->
+            <div class="day"><div class="dnum"><div class="dwd">Sex</div><div class="dd">6</div></div>
+              <div class="dmid"><div class="drow"><span class="dkind k-pos">Posicionamento</span></div>
+                <div class="dmeta">Início 14:20 → Fim 17:40 · 🌙 pernoita</div></div>
+              <span class="deur">+78 €</span>
+            </div>
+            <!-- folga -->
+            <div class="off"><div class="dnum"><div class="dwd">Sáb</div><div class="dd">7</div></div>
+              <span class="offlbl">Folga</span>
+              <svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">A · cards grandes</span><p>Mês navegável (‹ Junho 2026 ›) + cards por dia. <b>Serviços</b> fortes (tipo, rota, horas, €); <b>folgas</b> discretas. Tocar num serviço → detalhe; numa folga → adicionar.</p></figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="nav">
+            <div><div class="eyebrow"><i></i>A tua escala</div></div>
+            <div class="toolbtns">
+              <div class="ib"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+              <div class="ib"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+            </div>
+          </div>
+          <div class="month">
+            <div class="marrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+            <div class="mlabel">Junho 2026</div>
+            <div class="marrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="mlist" id="miniBody"></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">B · mês todo na página</span><p>O <b>mês inteiro</b> em cards pequenos (2 colunas) — vês tudo <b>sem scroll</b>. Risca de cor à esquerda por tipo (voo/standby/posic.); folgas a cinza. <b>Hoje</b> com anel vermelho.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="foot">CrewPact · Escala por mês · serviços + folgas</div>
+
+<script>
+  var M = [
+    {wd:'Dom'},{wd:'Seg',k:'flight',r:'LIS-LGW-LIS',now:true},{wd:'Ter',k:'flight',r:'LIS-FNC-LIS'},{wd:'Qua'},
+    {wd:'Qui',k:'sby',r:'Standby aero.'},{wd:'Sex',k:'pos',r:'Posicionamento'},{wd:'Sáb'},{wd:'Dom'},
+    {wd:'Seg',k:'flight',r:'LIS-AGP-LIS'},{wd:'Ter',k:'flight',r:'LIS-OPO-LIS'},{wd:'Qua'},{wd:'Qui'},
+    {wd:'Sex',k:'flight',r:'LIS-CDG'},{wd:'Sáb',k:'flight',r:'CDG-LIS'},{wd:'Dom'},{wd:'Seg'},
+    {wd:'Ter',k:'sby',r:'Standby aero.'},{wd:'Qua',k:'flight',r:'LIS-MAD-LIS'},{wd:'Qui'},{wd:'Sex'},
+    {wd:'Sáb'},{wd:'Dom'},{wd:'Seg',k:'flight',r:'LIS-BCN-LIS'},{wd:'Ter',k:'flight',r:'LIS-FAO-LIS'},
+    {wd:'Qua'},{wd:'Qui',k:'pos',r:'Posicionamento'},{wd:'Sex'},{wd:'Sáb'},{wd:'Dom'},{wd:'Seg',k:'flight',r:'LIS-LGW'}
+  ];
+  var html = M.map(function(d, i){
+    var n = i + 1;
+    if (!d.k) return '<div class="mc off"><span class="mn">'+n+'</span><span class="mwd">'+d.wd+'</span><span class="mct">Folga</span></div>';
+    return '<div class="mc '+d.k+(d.now?' now':'')+'"><span class="mn">'+n+'</span><span class="mwd">'+d.wd+'</span><span class="mct">'+d.r+'</span></div>';
+  }).join('');
+  document.getElementById('miniBody').innerHTML = html;
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,13 +9,13 @@ import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { printToPdfAndShare } from '../data/pdf';
-import PageHeader from '../components/PageHeader';
+import { requestCalendarAccess } from '../data/calendar';
+import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
 import NotificationsBell from '../components/NotificationsBell';
-import EscalaWheel from '../components/EscalaWheel';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
+import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import BottomSheet from '../components/BottomSheet';
-import CalendarScreen from './CalendarScreen';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -28,104 +28,117 @@ const buildDutiesCsv = (duties) => {
   return [head, ...body].join('\n');
 };
 
-// Aba Escala: RODA (browse rápido, dia a dia) ⇄ LISTA (varrer/editar muitos dias)
-// num toggle; o calendário do mês abre como overlay (toque no título). TODA a
-// edição passa pelo DutyFormSheet partilhado (um só formulário, com rota+per-diem).
-// Na Lista, o cabeçalho traz o export: CSV + PDF do registo ORO.FTL.245.
+// Aba Escala: o MÊS em cards de dia (um por dia). Mês navegável ‹ › + resumo no topo
+// (serviços/folgas/per-diem). A lista começa no dia de hoje (mês atual) e mostra TODOS
+// os dias — serviço (tipo+rota+horas+€, com pílula 🌙 da pernoita) ou folga (dia vazio).
+// Tocar num serviço → DutyDetail; tocar numa folga → DutyFormSheet (inserir nesse dia).
+// Apagar manuais vive no DutyDetail. Per-diem/pernoita derivados do motor AE (ae.perDiem/
+// ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
+// alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, removeDuty, dayLog, user, company, rosterChanges, checkRosterChanges, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, user, company, ae, crewCategory, rosterChanges, checkRosterChanges, notify,
+    calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
-  const [view, setView] = useState(route.params?.view === 'month' ? 'month' : 'wheel');
+  // Mês visível (1.º dia). Default = mês de hoje.
+  const [monthDate, setMonthDate] = useState(() => { const t0 = new Date(); return new Date(t0.getFullYear(), t0.getMonth(), 1); });
   const [dutyDate, setDutyDate] = useState(null); // dia a inserir/editar → popup
-  const [selIso, setSelIso] = useState(null);      // dia centrado na roda (para o FAB)
   const lastNewDuty = useRef(null);
-  const viewBeforeMonth = useRef('wheel');
 
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
   const [recOpen, setRecOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [calPickerOpen, setCalPickerOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: reverifica a escala
-  const [flashIso, setFlashIso] = useState(null);       // realce breve da linha após guardar
+  const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   useEffect(() => {
     if (!user?.id) return;
     AsyncStorage.getItem(`cp_record_${user.id}`).then(v => { if (v) { try { setRecForm(JSON.parse(v)); } catch { /* corrompido */ } } }).catch(() => {});
   }, [user?.id]);
 
-  // Atalho do Início (tira de dias) pode pedir já a vista de mês.
-  useEffect(() => {
-    if (route.params?.view) setView(route.params.view === 'month' ? 'month' : 'wheel');
-  }, [route.params?.view]);
-
-  // FAB "Serviço" (tab bar) → abre o popup. Se estiver no calendário, sai dele
-  // para o formulário aparecer; na roda/lista mantém a vista.
+  // FAB "Serviço" (tab bar) → salta para o mês de hoje e abre o popup do novo serviço (hoje).
   useEffect(() => {
     const n = route.params?.newDuty;
     if (n && n !== lastNewDuty.current) {
       lastNewDuty.current = n;
-      setView((v) => (v === 'month' ? 'wheel' : v));
-      setDutyDate(selIso || isoDay());
+      const t0 = new Date(); setMonthDate(new Date(t0.getFullYear(), t0.getMonth(), 1));
+      setDutyDate(isoDay());
     }
-  }, [route.params?.newDuty, selIso]);
+  }, [route.params?.newDuty]);
 
   // Vindo do sino/banner "Alterações na escala" → abre a folha de revisão (import).
   useEffect(() => {
-    if (route.params?.review) { setView((v) => (v === 'month' ? 'wheel' : v)); setImportOpen(true); }
+    if (route.params?.review) setImportOpen(true);
   }, [route.params?.review]);
 
-  // Voltou do DutyDetailScreen após editar → re-acende o realce (flash) da linha editada.
+  // Voltou do DutyDetailScreen após editar → salta para o mês do serviço e re-acende o realce.
   const lastFlash = useRef(null);
   useEffect(() => {
     const fd = route.params?.flashDuty, ts = route.params?.flashTs;
     if (fd && ts && ts !== lastFlash.current) {
       lastFlash.current = ts;
+      const [yy, mm] = String(fd).split('-');
+      if (yy && mm) setMonthDate(new Date(Number(yy), Number(mm) - 1, 1));
       setFlashIso(fd); setTimeout(() => setFlashIso(null), 900);
     }
   }, [route.params?.flashDuty, route.params?.flashTs]);
 
-  // Título segue o mês do dia centrado na roda (selIso); fallback = hoje.
-  const monthLabel = (() => {
-    const base = selIso ? new Date(`${selIso}T00:00:00`) : new Date();
-    const m = base.toLocaleDateString(locale, { month: 'long' });
-    return `${m.charAt(0).toUpperCase() + m.slice(1)}, ${base.getFullYear()}`;
-  })();
-
-  const openMonth = () => { select(); viewBeforeMonth.current = view === 'month' ? 'wheel' : view; setView('month'); };
-
-  const fmtDate = (iso) => {
-    const d = new Date(`${iso}T00:00:00`);
-    if (isNaN(d)) return iso;
-    const str = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
-  // O lixo só aparece nos manuais (os de calendário/PDF cancelam-se pela própria fonte),
-  // por isso o apagar aqui nunca toca em serviços importados → sem risco de ressurreição.
-  const confirmDelete = (date) => {
-    Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
-      { text: t('common.cancel', lang), style: 'cancel' },
-      { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty(date); notify && notify(l('Serviço apagado', 'Duty deleted')); } },
-    ]);
+  // Ligar ao calendário do telemóvel: o prompt do sistema dispara SÓ aqui (não ao abrir a aba).
+  // Concedido → abre o picker p/ escolher qual calendário tem a escala. Negado p/ sempre → Definições.
+  const connectCalendar = async () => {
+    select();
+    const res = await requestCalendarAccess();
+    if (res?.granted) setCalPickerOpen(true);
+    else if (res && res.canAskAgain === false) Linking.openSettings();
   };
 
-  // Lista: próximos primeiro (hoje/futuro ascendente), depois passado (descendente).
+  // ── € (cêntimos, NUNCA arredonda — money-no-rounding) ──
+  const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
+
   const today = isoDay();
-  const all = Object.entries(duties).filter(([, d]) => d && !d.deleted && d.report_time);
-  const upcoming = all.filter(([iso]) => iso >= today).sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  const past = all.filter(([iso]) => iso < today).sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  const listRows = [...upcoming, ...past];
+  const anyDuty = Object.values(duties).some((d) => d && !d.deleted && d.report_time);
+
+  // ── Mês visível: rótulo, dias, e a lista (começa em hoje no mês atual) ──
+  const y = monthDate.getFullYear(), m0 = monthDate.getMonth();
+  const ym = `${y}-${String(m0 + 1).padStart(2, '0')}`;
+  const daysInMonth = new Date(y, m0 + 1, 0).getDate();
+  const isCurrentMonth = today.startsWith(ym);
+  // Mês atual: o mês TODO, mas ordenado a começar em HOJE (hoje→fim, depois 1→ontem) — nada
+  // fica escondido e hoje lidera. Outros meses: 1→fim (cronológico).
+  const upcomingDays = [], pastDays = [];
+  if (isCurrentMonth) {
+    const td = Number(today.slice(8, 10));
+    for (let dn = td; dn <= daysInMonth; dn++) upcomingDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
+    for (let dn = 1; dn < td; dn++) pastDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
+  } else {
+    for (let dn = 1; dn <= daysInMonth; dn++) upcomingDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
+  }
+  const monthName = monthDate.toLocaleDateString(locale, { month: 'long' });
+  const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`;
+  const shiftMonth = (delta) => { select(); setMonthDate(new Date(y, m0 + delta, 1)); };
+
+  // Resumo do mês: serviços (duties), folgas (dias vazios), per-diem (rota → ae.perDiem).
+  const serviceCount = Object.entries(duties).filter(([iso, d]) => iso.startsWith(ym) && d && !d.deleted && d.report_time).length;
+  const folgaCount = Math.max(0, daysInMonth - serviceCount);
+  const pd = (ae && crewCategory) ? monthlyPerDiem(duties, crewCategory, ae, { ym }) : null;
+  const perDiemTotal = pd ? pd.total : null;
+
+  const weekdayShort = (iso) => { const dt = new Date(`${iso}T00:00:00`); if (isNaN(dt)) return ''; const str = dt.toLocaleDateString(locale, { weekday: 'short' }).replace('.', ''); return str.charAt(0).toUpperCase() + str.slice(1); };
+  const kindLabel = (kind) => (kind === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang));
+  const kindColor = (kind) => (kind === 'flight' ? C.brand : (kind === 'standby_airport' || kind === 'standby_home') ? C.warnText : C.sub);
 
   // ── Export ──
   const onExport = async () => {
-    if (!listRows.length) { Alert.alert(t('duties.title', lang), t('duties.exportEmpty', lang)); return; }
+    if (!anyDuty) { Alert.alert(t('duties.title', lang), t('duties.exportEmpty', lang)); return; }
     try { await Share.share({ message: buildDutiesCsv(duties), title: 'CrewPact — duties (CSV)' }); } catch { /* cancelado */ }
   };
   const openPdf = () => {
-    if (!listRows.length) { Alert.alert(t('duties.exportPdf', lang), t('duties.exportEmpty', lang)); return; }
+    if (!anyDuty) { Alert.alert(t('duties.exportPdf', lang), t('duties.exportEmpty', lang)); return; }
     select(); setRecOpen(true);
   };
   const onGeneratePdf = async () => {
@@ -144,79 +157,144 @@ export default function EscalaScreen({ navigation, route }) {
     } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
   };
 
-  // ── Vista de mês (calendário) — overlay com ✕ para voltar à vista anterior ──
-  if (view === 'month') {
-    return (
-      <SafeAreaView style={s.safe} edges={['top']}>
-        <View style={s.monthBar}>
-          <Text style={s.monthBarTitle}>{l('Calendário', 'Calendar')}</Text>
-          <TouchableOpacity onPress={() => { select(); setView(viewBeforeMonth.current || 'wheel'); }} hitSlop={8} style={s.iconBtn} accessibilityLabel={t('common.close', lang)}>
-            <Ionicons name="close" size={20} color={C.text} />
-          </TouchableOpacity>
-        </View>
-        <CalendarScreen navigation={navigation} embedded />
-      </SafeAreaView>
-    );
-  }
+  // ── Card de um dia: serviço (tipo+rota+horas+€, pílula 🌙) ou folga (dia vazio) ──
+  const renderDay = (iso) => {
+    const d = duties[iso];
+    const isToday = iso === today;
+    const dd = Number(iso.slice(8, 10));
+    const wd = weekdayShort(iso);
+    const isDuty = d && !d.deleted && d.report_time;
 
-  // ── Vista principal: roda ⇄ lista ──
+    if (!isDuty) {
+      return (
+        <TouchableOpacity key={iso} style={s.off} activeOpacity={0.75} onPress={() => { select(); setDutyDate(iso); }}>
+          <View style={s.dnum}>
+            <Text style={[s.dwd, s.dwdOff]}>{wd}</Text>
+            <Text style={[s.dd, isToday ? s.ddToday : s.ddOff]}>{dd}</Text>
+            {isToday ? <View style={s.todaydot} /> : null}
+          </View>
+          <Text style={s.offlbl}>{l('Folga', 'Day off')}</Text>
+          <Ionicons name="moon-outline" size={15} color={C.lineStrong} />
+        </TouchableOpacity>
+      );
+    }
+
+    const kind = d.kind || 'flight';
+    const isFlight = kind === 'flight';
+    let perDiem = null;
+    if (ae && crewCategory && isFlight) {
+      const dists = routeDistancesNM(d.route);
+      if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(crewCategory, dists, 1);
+    }
+    const nsEur = (d.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+    const meta = isFlight
+      ? `${d.report_time || '--:--'} → ${d.block_on || '--:--'} · ${d.sectors || 0} ${t('duties.sectorsShort', lang)}${d.flight_minutes ? ` · ${minToHhmm(d.flight_minutes)} ${t('duties.flightShort', lang)}` : ''}`
+      : (d.block_on && d.block_on !== d.report_time ? `${d.report_time} – ${d.block_on}` : (d.report_time || '—'));
+
+    return (
+      <TouchableOpacity key={iso} style={[s.day, iso === flashIso && s.dayFlash]} activeOpacity={0.7}
+        onPress={() => navigation.navigate('DutyDetail', { date: iso })}
+        onLongPress={() => { select(); setDutyDate(iso); }}>
+        <View style={s.dnum}>
+          <Text style={s.dwd}>{wd}</Text>
+          <Text style={[s.dd, isToday && s.ddToday]}>{dd}</Text>
+          {isToday ? <View style={s.todaydot} /> : null}
+        </View>
+        <View style={s.dmid}>
+          <View style={s.drow}>
+            <View style={[s.badge, { backgroundColor: kindColor(kind) }]}><Text style={s.badgeTxt} numberOfLines={1}>{kindLabel(kind)}</Text></View>
+            {isFlight && d.route ? <Text style={s.route} numberOfLines={1}>{d.route}</Text> : null}
+            {d.nightStop ? (
+              <View style={s.nschip}>
+                <Ionicons name="moon" size={10} color={C.info} />
+                {nsEur != null ? <Text style={s.nschipTxt}>+{fmtEur(nsEur)}</Text> : null}
+              </View>
+            ) : null}
+            {d.dirty ? <View style={s.pendDot} accessibilityLabel={t('duties.pending', lang)} /> : null}
+          </View>
+          <Text style={s.meta} numberOfLines={1}>{meta}</Text>
+        </View>
+        {perDiem != null ? <Text style={s.eur}>+{fmtEur(perDiem)}</Text> : null}
+      </TouchableOpacity>
+    );
+  };
+
+  // ── Banner "alterações na escala" (azul, informativo) ──
+  const rcCounts = rosterChanges?.counts;
+  const rcSub = rcCounts ? [
+    ((rcCounts.changed || 0) + (rcCounts.conflict || 0)) ? `${(rcCounts.changed || 0) + (rcCounts.conflict || 0)} ${l('alterada(s)', 'changed')}` : null,
+    rcCounts.added ? `${rcCounts.added} ${l('nova(s)', 'new')}` : null,
+    rcCounts.removed ? `${rcCounts.removed} ${l('cancelada(s)', 'cancelled')}` : null,
+  ].filter(Boolean).join(' · ') : '';
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.body}>
-        <PageHeader
-          eyebrow={l('Escala semanal', 'Weekly schedule')}
-          title={monthLabel}
-          onTitlePress={openMonth}
-          right={
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TouchableOpacity onPress={() => { select(); setImportOpen(true); }} hitSlop={8} style={s.iconBtnSm} accessibilityLabel={l('Importar escala', 'Import roster')}>
-                <Ionicons name="download-outline" size={18} color={C.text} />
-              </TouchableOpacity>
-              <NotificationsBell />
-            </View>
-          }
-        />
-
-        {/* Toolbar — toggle Roda|Lista (esq.) + export na Lista (dir.) */}
-        <View style={s.toolbar}>
-          <View style={s.segWrap}>
-            {[['wheel', l('Roda', 'Wheel')], ['list', l('Lista', 'List')]].map(([id, label]) => {
-              const on = view === id;
-              return (
-                <TouchableOpacity key={id} onPress={() => { select(); setView(id); }} style={[s.seg, on && s.segOn]} activeOpacity={0.85} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}>
-                  <Text style={[s.segTxt, on && s.segTxtOn]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+        {/* Cabeçalho — eyebrow + ações (export/import/sino) */}
+        <View style={s.eyeRow}>
+          <View style={s.eyebrowWrap}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{l('A tua escala', 'Your roster')}</Text></View>
+          <View style={s.tools}>
+            {anyDuty ? (
+              <>
+                <TouchableOpacity onPress={openPdf} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.exportPdf', lang)}><Ionicons name="document-text-outline" size={17} color={C.text} /></TouchableOpacity>
+                <TouchableOpacity onPress={onExport} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.export', lang)}><Ionicons name="share-outline" size={17} color={C.text} /></TouchableOpacity>
+              </>
+            ) : null}
+            <TouchableOpacity onPress={() => { select(); setImportOpen(true); }} hitSlop={6} style={s.ib} accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
+            <NotificationsBell />
           </View>
-          {view === 'list' && listRows.length > 0 ? (
-            <View style={s.exportRow}>
-              <TouchableOpacity onPress={openPdf} hitSlop={8} style={s.iconBtnSm} accessibilityLabel={t('duties.exportPdf', lang)}>
-                <Ionicons name="document-text-outline" size={18} color={C.text} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onExport} hitSlop={8} style={s.iconBtnSm} accessibilityLabel={t('duties.export', lang)}>
-                <Ionicons name="share-outline" size={18} color={C.text} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
         </View>
 
-        {/* Alterações de escala (Fase 4) — banner que abre a revisão (import) */}
-        {rosterChanges?.counts?.total ? (
-          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportOpen(true); }} style={s.rcBanner}>
-            <Ionicons name="sync-circle" size={20} color={C.warn || C.red} />
+        {/* Mês navegável ‹ Junho 2026 › */}
+        <View style={s.monthBar}>
+          <TouchableOpacity onPress={() => shiftMonth(-1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês anterior', 'Previous month')}><Ionicons name="chevron-back" size={18} color={C.text} /></TouchableOpacity>
+          <Text style={s.monthLabel}>{monthLabel}</Text>
+          <TouchableOpacity onPress={() => shiftMonth(1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês seguinte', 'Next month')}><Ionicons name="chevron-forward" size={18} color={C.text} /></TouchableOpacity>
+        </View>
+
+        {/* Selo A — calendário ligado (nome + ✓ + Mudar) OU cartão para ligar */}
+        {!calendarId ? (
+          <View style={s.connectCard}>
+            <View style={s.connectIc}><Ionicons name="calendar-outline" size={21} color={C.text} /></View>
             <View style={{ flex: 1 }}>
-              <Text style={s.rcTitle}>{l('Alterações na escala', 'Roster changes')}</Text>
-              <Text style={s.rcSub} numberOfLines={1}>
-                {[((rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)) ? `${(rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)} ${l('alterada(s)', 'changed')}` : null, rosterChanges.counts.added ? `${rosterChanges.counts.added} ${l('nova(s)', 'new')}` : null, rosterChanges.counts.removed ? `${rosterChanges.counts.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ')} · {l('rever', 'review')}
-              </Text>
+              <Text style={s.connectT}>{l('Liga o teu calendário', 'Connect your calendar')}</Text>
+              <Text style={s.connectS}>{l('Importamos a tua escala do calendário do telemóvel. Só de leitura.', 'We import your roster from the phone calendar. Read-only.')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={C.sub} />
+            <TouchableOpacity onPress={connectCalendar} activeOpacity={0.9} style={s.connectBtn}><Text style={s.connectBtnTxt}>{l('Ligar', 'Connect')}</Text></TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity activeOpacity={0.8} onPress={() => { select(); setCalPickerOpen(true); }} style={s.selo}>
+            <Ionicons name="calendar-outline" size={14} color={C.sub} />
+            <Text style={s.seloT} numberOfLines={1}>{l('Calendário', 'Calendar')}{calendarName ? ` · ${calendarName}` : ''}</Text>
+            <Ionicons name="checkmark-circle" size={14} color={C.greenText} />
+            <View style={{ flex: 1 }} />
+            <Text style={s.seloChg}>{l('Mudar', 'Change')}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Alterações de escala (Fase 4) — banner AZUL (informativo) que abre a revisão */}
+        {rcCounts?.total ? (
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportOpen(true); }} style={s.rcBanner}>
+            <Ionicons name="sync-circle" size={20} color={C.info} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.rcTitle}>{l('A escala mudou no calendário', 'Roster changed in calendar')}</Text>
+              <Text style={s.rcSub} numberOfLines={1}>{rcSub}{rcSub ? ' · ' : ''}{l('rever', 'review')}</Text>
+            </View>
+            <View style={s.rcGo}><Text style={s.rcGoTxt}>{l('Rever', 'Review')}</Text></View>
           </TouchableOpacity>
         ) : null}
 
-        {view === 'list' ? (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
+        {/* Resumo do mês — tipografia com separadores, no topo */}
+        <View style={s.summ}>
+          <View style={s.si}><Text style={s.siLbl}>{l('Serviços', 'Duties')}</Text><Text style={s.siVal}>{serviceCount}</Text></View>
+          <View style={s.sep} />
+          <View style={s.si}><Text style={s.siLbl}>{l('Folgas', 'Days off')}</Text><Text style={s.siVal}>{folgaCount}</Text></View>
+          <View style={s.sep} />
+          <View style={s.si}><Text style={s.siLbl}>{l('Per-diem', 'Per diem')}</Text><Text style={[s.siVal, s.siEur]}>{fmtEur(perDiemTotal)}</Text></View>
+        </View>
+
+        {/* Lista de cards de dia (faz scroll) */}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
             refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
               onRefresh={async () => {
                 setRefreshing(true); const t0 = Date.now();
@@ -224,48 +302,36 @@ export default function EscalaScreen({ navigation, route }) {
                 const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
                 setRefreshing(false);
               }} />}>
-            {listRows.length === 0 ? (
-              <View style={s.emptyWrap}>
-                <Text style={s.empty}>{t('duties.empty', lang)}</Text>
-                <TouchableOpacity activeOpacity={0.9} style={s.emptyImportBtn} onPress={() => { select(); setImportOpen(true); }}>
-                  <Ionicons name="download-outline" size={18} color="#fff" />
-                  <Text style={s.emptyImportTxt}>{l('Importar escala', 'Import roster')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : listRows.map(([date, d]) => (
-              <TouchableOpacity key={date} style={[s.row, date === flashIso && s.rowFlash]} activeOpacity={0.7}
-                onPress={() => navigation.navigate('DutyDetail', { date })}
-                onLongPress={() => { select(); setDutyDate(date); }}>
-                <View style={{ flex: 1 }}>
-                  <View style={s.rowTop}>
-                    <Text style={s.rowDate}>{fmtDate(date)}</Text>
-                    {date === today ? <View style={s.todayDot} /> : null}
-                    {d.dirty ? <View style={s.pendDot} accessibilityLabel={t('duties.pending', lang)} /> : null}
-                    {d.route ? <Text style={s.rowRoute} numberOfLines={1}>{d.route}</Text> : null}
-                  </View>
-                  <Text style={s.rowMeta}>
-                    {(d.report_time || '--:--')} → {(d.block_on || '--:--')} · {d.sectors || 0} {t('duties.sectorsShort', lang)}{d.flight_minutes ? ` · ${minToHhmm(d.flight_minutes)} ${t('duties.flightShort', lang)}` : ''}
-                  </Text>
-                </View>
-                {(!d.source || d.source === 'manual') ? (
-                  <TouchableOpacity onPress={() => confirmDelete(date)} hitSlop={8} style={s.delBtn} accessibilityLabel={t('duties.delConfirm', lang)}>
-                    <Ionicons name="trash-outline" size={17} color={C.sub} />
-                  </TouchableOpacity>
-                ) : null}
+          {!anyDuty ? (
+            <View style={s.emptyWrap}>
+              <Text style={s.empty}>{t('duties.empty', lang)}</Text>
+              <TouchableOpacity activeOpacity={0.9} style={s.emptyImportBtn} onPress={() => { select(); setImportOpen(true); }}>
+                <Ionicons name="download-outline" size={18} color="#fff" />
+                <Text style={s.emptyImportTxt}>{l('Importar escala', 'Import roster')}</Text>
               </TouchableOpacity>
-            ))}
-            {listRows.length > 0 ? <Text style={s.foot}>{t('duties.syncHint', lang)}</Text> : null}
-          </ScrollView>
-        ) : (
-          <View style={[s.wheelWrap, { paddingBottom: tabSpace }]}>
-            <EscalaWheel onSelect={setSelIso} onViewDuty={(iso) => navigation.navigate('DutyDetail', { date: iso })} />
-          </View>
-        )}
+            </View>
+          ) : (
+            <>
+              {upcomingDays.map(renderDay)}
+              {pastDays.length > 0 ? (
+                <View style={s.divider}>
+                  <View style={s.dividerLine} />
+                  <Text style={s.dividerTxt}>{l('Anteriores este mês', 'Earlier this month')}</Text>
+                  <View style={s.dividerLine} />
+                </View>
+              ) : null}
+              {pastDays.map(renderDay)}
+              <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
+            </>
+          )}
+        </ScrollView>
       </View>
 
       <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
-      <RosterImportSheet visible={importOpen} onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
+      <RosterImportSheet visible={importOpen} onConnect={connectCalendar} onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
+      <CalendarPickerSheet visible={calPickerOpen} onClose={() => setCalPickerOpen(false)} currentId={calendarId}
+        onSelect={(id, name) => { setCalendarId(id); setCalendarName && setCalendarName(name || null); notify && notify(l('Calendário ligado', 'Calendar connected')); }} />
 
       {/* Registo ORO.FTL.245 (PDF assinável) */}
       <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
@@ -293,41 +359,80 @@ export default function EscalaScreen({ navigation, route }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   body: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 16 },
-  wheelWrap: { flex: 1, justifyContent: 'flex-start' },
-  iconBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 6, paddingBottom: 8 },
-  monthBarTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, letterSpacing: 0.6, color: C.text, textTransform: 'uppercase' },
 
-  // Toolbar: toggle (esq.) + export (dir.)
-  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  segWrap: { flexDirection: 'row', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: 3 },
-  seg: { paddingVertical: 7, paddingHorizontal: 18, borderRadius: RADIUS.pill },
-  segOn: { backgroundColor: C.card, ...SHADOW.sm },
-  segTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.sub },
-  segTxtOn: { color: C.text },
-  exportRow: { flexDirection: 'row', gap: 8 },
-  iconBtnSm: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  // Cabeçalho
+  eyeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  eyebrowWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
+  eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub },
+  tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ib: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
 
-  // Alterações de escala (Fase 4) — banner
-  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: RADIUS.lg, padding: 12, marginBottom: 14 },
-  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
-  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
+  // Mês navegável
+  monthBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
+  marrow: { width: 36, height: 36, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  monthLabel: { flex: 1, textAlign: 'center', fontSize: 24, fontFamily: FONT.display, letterSpacing: -0.5, color: C.text },
 
-  // Lista de duties
+  // Selo do calendário (ligado)
+  selo: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8, marginTop: 11 },
+  seloT: { fontSize: 12, fontFamily: FONT.semibold, color: C.text, maxWidth: '64%' },
+  seloChg: { fontSize: 12, fontFamily: FONT.bold, color: C.ink },
+
+  // Cartão "Ligar ao calendário"
+  connectCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginTop: 11 },
+  connectIc: { width: 40, height: 40, borderRadius: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  connectT: { fontSize: 14.5, fontFamily: FONT.bold, color: C.text },
+  connectS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, lineHeight: 15 },
+  connectBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 10 },
+  connectBtnTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
+
+  // Banner de alterações (azul, informativo)
+  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.infoSoft, borderWidth: 1, borderColor: C.info, borderRadius: RADIUS.lg, padding: 12, marginTop: 10 },
+  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.info },
+  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.info, marginTop: 2, opacity: 0.85 },
+  rcGo: { backgroundColor: C.info, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
+  rcGoTxt: { color: '#fff', fontSize: 12.5, fontFamily: FONT.bold },
+
+  // Resumo do mês
+  summ: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.line, borderBottomWidth: 1, borderBottomColor: C.line },
+  si: { flex: 1, alignItems: 'center' },
+  siLbl: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub },
+  siVal: { fontSize: 18, fontFamily: FONT.display, color: C.text, marginTop: 3 },
+  siEur: { color: C.greenText },
+  sep: { width: 1, height: 26, backgroundColor: C.line },
+
+  // Cards de dia
+  day: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8, ...SHADOW.sm },
+  dayFlash: { backgroundColor: C.greenSoft, borderColor: C.green },
+  off: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingVertical: 9, paddingHorizontal: 14, marginBottom: 8 },
+  dnum: { width: 42, alignItems: 'center' },
+  dwd: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+  dwdOff: { color: C.lineStrong },
+  dd: { fontSize: 20, fontFamily: FONT.display, color: C.text, lineHeight: 22 },
+  ddOff: { color: C.lineStrong },
+  ddToday: { color: C.red },
+  todaydot: { width: 5, height: 5, borderRadius: 99, backgroundColor: C.red, marginTop: 3 },
+  dmid: { flex: 1, minWidth: 0 },
+  drow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  badge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: '#fff' },
+  route: { flex: 1, fontSize: 15, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
+  nschip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.infoSoft, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
+  nschipTxt: { fontSize: 11, fontFamily: FONT.heavy, color: C.info },
+  pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.warn || C.sub },
+  meta: { fontSize: 12, fontFamily: FONT.medium, color: C.sub, marginTop: 3, fontVariant: ['tabular-nums'] },
+  eur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
+  offlbl: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.sub },
+
+  // Vazio (sem nenhum serviço)
   empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.md },
   emptyWrap: { alignItems: 'flex-start' },
   emptyImportBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingVertical: 13, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   emptyImportTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md, marginBottom: SPACE.sm, backgroundColor: C.card },
-  rowFlash: { backgroundColor: C.greenSoft, borderColor: C.green }, // realce ~900ms ao guardar
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowDate: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
-  todayDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: C.red },
-  pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.warn || C.sub },
-  rowRoute: { fontSize: TYPE.micro, fontFamily: FONT.heavy, letterSpacing: 0.5, color: C.sub, marginLeft: 'auto' },
-  rowMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
-  delBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.line },
+  dividerTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
 
   // Folha do registo FTL.245
   form: { padding: 20 },

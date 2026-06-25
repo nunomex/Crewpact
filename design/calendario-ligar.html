@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ligar ao calendário — escolher o feed da escala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --paper:#FFFFFF; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 720px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:860px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;justify-content:center;gap:46px;flex-wrap:wrap;margin:44px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:330px}
+  figcaption .tag{display:inline-block;font-weight:800;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:99px;padding:4px 10px;margin-bottom:7px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72}
+  figcaption b{color:var(--ink)}
+
+  .phone{width:344px;height:746px;background:#fff;border-radius:48px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:39px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:110px;height:28px;background:#0A0A0A;border-radius:15px;z-index:60}
+  .stat{position:absolute;top:17px;left:28px;right:26px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink);z-index:55}
+  .body{flex:1;padding:54px 18px 0;overflow:hidden;display:flex;flex-direction:column}
+
+  /* cabeçalho estilo PageHeader */
+  .eyebrow{font-weight:800;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px;margin-bottom:6px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .h1{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:-.025em;color:var(--ink)}
+  .seg{display:flex;gap:6px;margin-top:14px}
+  .seg b{flex:1;text-align:center;font-weight:700;font-size:12.5px;padding:9px;border-radius:12px;border:1px solid var(--line);color:var(--sub);background:#fff}
+  .seg b.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  /* cartão "Ligar ao calendário" */
+  .connect{margin-top:16px;background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 6px 18px -14px rgba(20,22,26,.2)}
+  .connect .ic{width:46px;height:46px;border-radius:13px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .connect h3{font-weight:800;font-size:16.5px;color:var(--ink);letter-spacing:-.01em}
+  .connect p{font-size:12.5px;line-height:1.5;color:var(--sub);margin-top:6px}
+  .connect .priv{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--greentext);font-weight:700;margin-top:9px}
+  .btnDark{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--ink);color:#fff;border-radius:14px;padding:14px;margin-top:14px;font-weight:800;font-size:15px;
+    box-shadow:0 12px 26px -12px rgba(20,22,26,.45)}
+  .btnGhost{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:12px;margin-top:10px;font-weight:700;font-size:13.5px}
+
+  .orline{display:flex;align-items:center;gap:10px;margin:16px 4px 0;color:var(--linestrong);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+  .orline::before,.orline::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ── folha de seleção de calendário ── */
+  .close{width:34px;height:34px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .navrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .note{font-size:12.5px;line-height:1.5;color:var(--sub);margin-top:14px}
+  .note b{color:var(--ink);font-weight:700}
+  .cals{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+  .cal{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+  .cal.sel{border-color:var(--ink);background:var(--soft2);box-shadow:0 0 0 1px var(--ink) inset}
+  .cdot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
+  .cmid{flex:1;min-width:0}
+  .cname{font-weight:800;font-size:14.5px;color:var(--ink)}
+  .csrc{font-size:11.5px;color:var(--sub);margin-top:1px}
+  .radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--linestrong);flex:0 0 auto}
+  .radio.on{border-color:var(--ink);background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .badgeSub{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--brand);background:#ECEAF5;border-radius:6px;padding:2px 7px}
+
+  /* ── estado ligado ── */
+  .status{display:flex;align-items:center;gap:11px;background:var(--greensoft);border:1px solid #CFEBDD;border-radius:14px;padding:11px 13px;margin-top:16px}
+  .status .ic{width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .status .t{flex:1}
+  .status .lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--greentext)}
+  .status .val{font-weight:800;font-size:14px;color:var(--ink);margin-top:1px;display:flex;align-items:center;gap:6px}
+  .status .chg{font-size:12px;font-weight:800;color:var(--brand)}
+
+  .duty{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px 14px;margin-top:11px}
+  .dleft{flex:1}
+  .dtop{display:flex;align-items:center;gap:8px}
+  .ddate{font-weight:800;font-size:15px;color:var(--ink)}
+  .droute{font-weight:700;font-size:13px;color:var(--brand)}
+  .dmeta{font-size:12px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
+  .dnew{font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--green);border-radius:6px;padding:2px 6px}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · ligar ao calendário</div>
+    <h1>Ligar ao calendário do telemóvel &nbsp;·&nbsp; escolher qual</h1>
+    <p>O pedido de permissão só dispara quando carregas em <b>Ligar</b> (na Escala) — com o porquê <b>antes</b> do prompt do sistema. Depois <b>escolhes qual</b> dos calendários do telemóvel tem a tua escala, e a app passa a ler <b>só esse</b>.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- ===== A · ESCALA "não ligado" + cartão Ligar ===== -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyebrow"><i></i>Escala</div>
+          <div class="h1">Escala</div>
+          <div class="seg"><b class="on">Lista</b><b>Roda</b></div>
+
+          <div class="connect">
+            <div class="ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+            </div>
+            <h3>Liga o teu calendário</h3>
+            <p>Importamos os teus serviços do calendário do telemóvel automaticamente, assim que mudam. Tu só confirmas.</p>
+            <div class="priv">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2A7A5C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              Só de leitura · nada é alterado no teu calendário
+            </div>
+            <div class="btnDark">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Ligar ao calendário
+            </div>
+          </div>
+
+          <div class="orline">ou</div>
+          <div class="btnGhost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Adicionar serviço à mão
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">A · não ligado</span><p>Na <b>Lista</b> e na <b>Roda</b>. O prompt do sistema só aparece ao tocar em <b>Ligar</b> — não ao abrir a aba.</p></figcaption>
+    </figure>
+
+    <!-- ===== B · FOLHA escolher calendário ===== -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="navrow">
+            <div>
+              <div class="eyebrow"><i></i>Escala · Calendário</div>
+              <div class="h1">Escolher</div>
+            </div>
+            <div class="close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+          </div>
+          <div class="note">Escolhe o calendário do telemóvel onde tens <b>a tua escala</b>. A app passa a ler <b>só esse</b> — os outros eventos ficam de fora.</div>
+
+          <div class="cals">
+            <div class="cal">
+              <span class="cdot" style="background:#3478F6"></span>
+              <div class="cmid"><div class="cname">Pessoal</div><div class="csrc">iCloud</div></div>
+              <div class="radio"></div>
+            </div>
+            <div class="cal sel">
+              <span class="cdot" style="background:#1F9E6E"></span>
+              <div class="cmid"><div class="cname">Trabalho</div><div class="csrc">Google · funsnake@gmail.com</div></div>
+              <div class="radio on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+            </div>
+            <div class="cal">
+              <span class="cdot" style="background:#E8932B"></span>
+              <div class="cmid"><div class="cname">Aniversários</div><div class="csrc">iCloud</div></div>
+              <div class="radio"></div>
+            </div>
+            <div class="cal">
+              <span class="cdot" style="background:#9A6B1E"></span>
+              <div class="cmid"><div class="cname">Feriados Portugal</div><div class="csrc">Subscrição</div></div>
+              <div class="radio"></div>
+            </div>
+          </div>
+
+          <div class="btnDark" style="margin-top:auto;margin-bottom:14px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            Usar este calendário
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">B · escolher calendário</span><p>Lista os calendários do telemóvel (<b>getCalendarsAsync</b>: nome, conta, cor). Escolhes o que tem a tua escala; guardamos o id e lemos só esse.</p></figcaption>
+    </figure>
+
+    <!-- ===== C · ESCALA "ligado" ===== -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyebrow"><i></i>Escala</div>
+          <div class="h1">Escala</div>
+          <div class="seg"><b class="on">Lista</b><b>Roda</b></div>
+
+          <div class="status">
+            <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A7A5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></div>
+            <div class="t">
+              <div class="lbl">Calendário ligado</div>
+              <div class="val">Trabalho
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1F9E6E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+            </div>
+            <div class="chg">Mudar</div>
+          </div>
+
+          <div class="duty">
+            <div class="dleft">
+              <div class="dtop"><span class="ddate">Seg 30</span><span class="droute">LIS-LGW-LIS</span><span class="dnew">novo</span></div>
+              <div class="dmeta">Report 05:40 → 12:30 · 2 setores</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2C2C0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="duty">
+            <div class="dleft">
+              <div class="dtop"><span class="ddate">Qua 2</span><span class="droute">LIS-FNC-LIS</span></div>
+              <div class="dmeta">Report 06:10 → 13:20 · 2 setores</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2C2C0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">C · ligado</span><p>Selo discreto <b>"Calendário · &lt;nome do calendário&gt; ✓"</b> no topo, com <b>Mudar</b>. A sincronização deteta → mostra no import → confirmas.</p></figcaption>
+    </figure>
+
+  </div>
+
+  <div class="foot">CrewPact · ligar ao calendário · permissão no botão (priming) + seleção de feed</div>
+</body>
+</html>

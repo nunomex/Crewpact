@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Escala grelha — 3 ajustes (célula +alta / rota completa / resumo no topo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warntext:#9A6B1E; --sub:#6B6B66; --sublight:#7A7A73; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1200px 740px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:880px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .legend{position:relative;z-index:1;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:18px auto 0;font-size:12px;font-weight:600;color:#5C616A}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:18px;height:3px;border-radius:99px;display:inline-block}
+  .lg-flight{background:var(--brand)} .lg-sby{background:var(--warn)} .lg-pos{background:var(--sub)}
+  .lg-off{width:11px!important;height:11px!important;border-radius:3px;background:var(--soft2);border:1px solid var(--linestrong)}
+  .lg-now{width:11px!important;height:11px!important;border-radius:3px;background:#fff;box-shadow:0 0 0 2px var(--red) inset}
+  .lg-ns{width:7px!important;height:7px!important;border-radius:99px;background:var(--brand)}
+
+  .row{position:relative;z-index:1;display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:320px}
+  figcaption .tag{display:inline-block;font-weight:800;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:99px;padding:4px 10px;margin-bottom:7px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72}
+  figcaption b{color:var(--ink)}
+  figcaption .warn{color:var(--warntext);font-weight:700}
+
+  .phone{width:340px;height:752px;background:#fff;border-radius:46px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:108px;height:27px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .stat{position:absolute;top:16px;left:27px;right:25px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink);z-index:55}
+  .body{flex:1;padding:52px 18px 0;overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+  .eyerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .eyebrow{font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .toolbtns{display:flex;gap:8px}
+  .ib{width:38px;height:38px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .month{display:flex;align-items:center;gap:12px;margin-top:6px;margin-bottom:12px}
+  .marrow{width:36px;height:36px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .mlabel{font-family:var(--disp);font-weight:700;font-size:24px;letter-spacing:-.5px;color:var(--ink);flex:1;text-align:center}
+
+  .wkhead{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px;padding-bottom:4px}
+  .wkhead span{font-weight:800;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--sub);text-align:center}
+  .wkhead span.we{color:var(--sublight)}
+
+  .gridwrap{position:relative;margin-top:6px}
+  .calha{position:absolute;top:0;bottom:0;left:71%;right:0;background:var(--soft2);border-radius:9px;z-index:0}
+  .cal{position:relative;z-index:1;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-content:start}
+  .gc{position:relative;height:64px;border:1px solid var(--line);border-radius:9px;padding:7px 4px 6px;background:#fff;display:flex;flex-direction:column;align-items:flex-start}
+  .gc.wk{background:transparent}
+  .gc.empty{border-color:transparent;background:transparent}
+  .gn{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:-.3px;line-height:1;color:var(--ink)}
+  .gc.off .gn{color:var(--linestrong)}
+  .svc{margin-top:auto;align-self:stretch;display:flex;flex-direction:column;align-items:center}
+  .code{font-weight:800;font-size:8.5px;letter-spacing:.2px;line-height:1.1;text-align:center;white-space:nowrap;overflow:hidden;max-width:100%}
+  .code.flight{color:var(--brand)} .code.sby{color:var(--warntext)} .code.pos{color:var(--sub)}
+  .bar{width:100%;height:2.5px;border-radius:99px;margin-top:3px}
+  .bar.flight{background:var(--brand)} .bar.sby{background:var(--warn)} .bar.pos{background:var(--sub)}
+  .ns{position:absolute;top:4px;right:4px;width:3px;height:3px;border-radius:99px;background:var(--brand)}
+  .gc.now{box-shadow:inset 0 0 0 2px var(--red)}
+  .gc.now .gn{color:var(--red)}
+  /* modo ROTA COMPLETA: texto bem mais pequeno + menos padding lateral */
+  .cal.route .gc{padding-left:2px;padding-right:2px}
+  .cal.route .code{font-size:6px;letter-spacing:-.3px}
+
+  .summ{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .summ.top{margin-top:8px;margin-bottom:2px;padding-top:0;padding-bottom:12px;border-top:none;border-bottom:1px solid var(--line)}
+  .si{flex:1;text-align:center}
+  .si .lbl{font-weight:800;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--sub)}
+  .si .val{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ink);margin-top:2px}
+  .si.eur .val{color:var(--greentext)}
+  .sep{width:1px;height:14px;background:var(--line);flex:0 0 auto}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · Escala · ajustes do B·misto</div>
+    <h1>Os 3 ajustes que perguntaste</h1>
+    <p>Base = a grelha B vencedora, agora com a <b>célula mais alta (64px)</b> em todas. Cada telemóvel isola <b>um</b> ajuste para comparares. O <b>detalhe ao toque</b> (a sheet) mantém-se igual nos três.</p>
+  </div>
+
+  <div class="legend">
+    <span><i class="lg-flight"></i>Voo</span>
+    <span><i class="lg-sby"></i>Standby</span>
+    <span><i class="lg-pos"></i>Posicionamento</span>
+    <span><i class="lg-off"></i>Folga</span>
+    <span><i class="lg-now"></i>Hoje</span>
+    <span><i class="lg-ns"></i>Pernoita</span>
+  </div>
+
+  <div class="row">
+    <!-- 1 · célula +alta (código) -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+              <div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          </div>
+          <div class="month"><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="wkhead" id="wk1"></div>
+          <div class="gridwrap"><div class="calha"></div><div class="cal tall" id="grid1"></div></div>
+          <div class="summ"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">1 · célula +alta</span><p>Célula 64px (era 54). Mais ar à volta do número e da risca, fica mais calmo e fácil de tocar. <b>Código</b> mantido (AGP, FNC…). Resumo no rodapé.</p></figcaption>
+    </figure>
+
+    <!-- 2 · rota completa -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+              <div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          </div>
+          <div class="month"><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="wkhead" id="wk2"></div>
+          <div class="gridwrap"><div class="calha"></div><div class="cal tall route" id="grid2"></div></div>
+          <div class="summ"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">2 · rota completa</span><p>Mostra a rota toda (<b>LIS-AGP-LIS</b>) em vez do código. <span class="warn">Numa grelha de 7 colunas só cabe a ~6px — fica muito pequena/apertada.</span> Lê-se pior que o código a 8,5px. Standby/posic. ficam "Standby"/"Posic.".</p></figcaption>
+    </figure>
+
+    <!-- 3 · resumo no topo -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+              <div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          </div>
+          <div class="month"><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="summ top"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="wkhead" id="wk3"></div>
+          <div class="gridwrap"><div class="calha"></div><div class="cal tall" id="grid3"></div></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">3 · resumo no topo</span><p>O resumo (serviços/folgas/per-diem) sobe para baixo do mês — vês logo "quanto trabalhei / ganhei" antes da grelha, e o rodapé fica livre. <b>Código</b> mantido. Célula 64px.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="foot">CrewPact · Escala · célula +alta · rota completa · resumo no topo</div>
+
+<script>
+  // Junho 2026: dia 1 = Segunda. Hoje = 25. ns = pernoita.
+  var M = [
+    {wd:'Seg'},
+    {wd:'Ter',k:'flight',c:'LGW',r:'LIS-LGW-LIS'},
+    {wd:'Qua',k:'flight',c:'FNC',r:'LIS-FNC-LIS'},
+    {wd:'Qui'},
+    {wd:'Sex',k:'sby',c:'SBY',r:'Standby'},
+    {wd:'Sáb',k:'flight',c:'AGP',r:'LIS-AGP-LIS'},
+    {wd:'Dom'},
+    {wd:'Seg',k:'flight',c:'OPO',r:'LIS-OPO-LIS'},
+    {wd:'Ter',k:'flight',c:'CDG',r:'LIS-CDG-LIS'},
+    {wd:'Qua'},
+    {wd:'Qui'},
+    {wd:'Sex',k:'flight',c:'MAD',r:'LIS-MAD-LIS'},
+    {wd:'Sáb',k:'flight',c:'BCN',r:'LIS-BCN-LIS'},
+    {wd:'Dom'},
+    {wd:'Seg',k:'pos',c:'POS',r:'Posic.'},
+    {wd:'Ter',k:'flight',c:'LGW',r:'LGW-LIS',ns:true},
+    {wd:'Qua'},
+    {wd:'Qui',k:'sby',c:'SBY',r:'Standby'},
+    {wd:'Sex',k:'flight',c:'FAO',r:'LIS-FAO-LIS'},
+    {wd:'Sáb'},
+    {wd:'Dom'},
+    {wd:'Seg',k:'flight',c:'LGW',r:'LIS-LGW-LIS'},
+    {wd:'Ter',k:'flight',c:'FNC',r:'LIS-FNC-LIS'},
+    {wd:'Qua'},
+    {wd:'Qui',k:'flight',c:'AGP',r:'LIS-AGP-LIS',now:true},
+    {wd:'Sex',k:'flight',c:'OPO',r:'LIS-OPO-LIS'},
+    {wd:'Sáb'},
+    {wd:'Dom'},
+    {wd:'Seg',k:'pos',c:'POS',r:'Posic.'},
+    {wd:'Ter',k:'flight',c:'LGW',r:'LIS-LGW',ns:true}
+  ];
+  var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+  function buildWk(id){ document.getElementById(id).innerHTML = WD.map(function(w,i){return '<span class="'+(i>=5?'we':'')+'">'+w+'</span>';}).join(''); }
+  function buildGrid(id, route){
+    var cells = M.map(function(d,i){
+      var n=i+1, wk=(i%7)>=5;
+      var cls='gc'+(wk?' wk':'')+(d.now?' now':'')+(!d.k?' off':'');
+      var html='<div class="'+cls+'"><span class="gn">'+n+'</span>';
+      if(d.k){
+        var label = route ? d.r : d.c;
+        html+='<span class="svc"><span class="code '+d.k+'">'+label+'</span><span class="bar '+d.k+'"></span></span>';
+        if(d.ns) html+='<span class="ns"></span>';
+      }
+      return html+'</div>';
+    }).join('');
+    for(var e=0;e<5;e++) cells+='<div class="gc empty"></div>';
+    document.getElementById(id).innerHTML = cells;
+  }
+  buildWk('wk1'); buildWk('wk2'); buildWk('wk3');
+  buildGrid('grid1', false); buildGrid('grid2', true); buildGrid('grid3', false);
+</script>
+</body>
+</html>

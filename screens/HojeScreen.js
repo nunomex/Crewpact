@@ -24,12 +24,12 @@ export default function HojeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter();
 
-  // Estilo D1 ("verde calmo"): só o AVISO e o PERIGO ficam CHEIOS (warnSoft/redSoft) com o título
-  // a cor; o bom/verde e o neutro RECUAM para branco (a cor do estado vem só do PONTO) — assim o
-  // vermelho GRITA sem o ecrã virar uma parede de cor. A resposta fica a tinta, exceto perigo.
-  const cardBg = (st) => (st === 'bad' ? C.redSoft : st === 'warn' ? C.warnSoft : C.card);
+  // Estilo D ("atual" — cartão todo pintado): CADA cartão ganha o tom suave do seu estado (verde
+  // greenSoft / âmbar warnSoft / vermelho redSoft / neutro soft2) com o PONTO e o TÍTULO a cor.
+  // Forte e legível — com tudo ok fica "muito colorido". A resposta a tinta, exceto perigo.
+  const cardBg = (st) => (st === 'bad' ? C.redSoft : st === 'warn' ? C.warnSoft : st === 'ok' ? C.greenSoft : C.soft2);
   const dotColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.ink : C.lineStrong);
-  const titleColor = (st) => (st === 'warn' ? C.warnText : st === 'bad' ? C.redText : C.sub);
+  const titleColor = (st) => (st === 'ok' ? C.greenText : st === 'warn' ? C.warnText : st === 'bad' ? C.redText : C.sub);
   const ansColor = (st) => (st === 'bad' ? C.redText : null);
 
   const ctx = {
@@ -97,7 +97,7 @@ const makeStyles = (C) => StyleSheet.create({
   intro: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: -4, marginBottom: SPACE.md },
 
   card: {
-    backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 11,
+    backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 11,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
   dot: { width: 8, height: 8, borderRadius: 99, flexShrink: 0 },

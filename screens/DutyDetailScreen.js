@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, FONT, GUTTER, SHADOW } from '../data/constants';
@@ -21,7 +21,7 @@ const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60)
 // a duty NÃO guarda FDP nem per-diem. Degrada quando faltam dados (sem block-on, etc.).
 export default function DutyDetailScreen({ route, navigation }) {
   const ctxAll = useContext(AppContext);
-  const { lang, duties, ae, crewCategory } = ctxAll;
+  const { lang, duties, ae, crewCategory, removeDuty } = ctxAll;
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -35,6 +35,13 @@ export default function DutyDetailScreen({ route, navigation }) {
   const goBack = () => {
     if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
     else navigation.goBack();
+  };
+  // Apagar SÓ nos manuais (calendário/PDF cancelam-se pela fonte) — confirmação destrutiva.
+  const confirmDelete = () => {
+    Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
+      { text: t('common.cancel', lang), style: 'cancel' },
+      { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty && removeDuty(date); navigation.goBack(); } },
+    ]);
   };
 
   if (!duty || duty.deleted) {
@@ -50,6 +57,7 @@ export default function DutyDetailScreen({ route, navigation }) {
 
   const kind = duty.kind || 'flight';
   const isFlight = kind === 'flight';
+  const isManual = !duty.source || duty.source === 'manual';
   const todayISO = isoDay();
   const hasEnd = !!(duty.report_time && duty.block_on);
 
@@ -70,7 +78,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       if (nm == null) { ok = false; break; }
       dists.push(nm);
     }
-    if (ok && dists.length) perDiem = ae.perDiem(crewCategory, dists);
+    if (ok && dists.length) perDiem = ae.perDiem(crewCategory, dists, 1);
   }
   // Valor € da pernoita (Art. 39) — piloto por categoria, cabine €46 fixos; index=1 como o per-diem.
   const nsEur = (duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
@@ -169,6 +177,13 @@ export default function DutyDetailScreen({ route, navigation }) {
           <Text style={s.editTxt}>{l('Editar serviço', 'Edit duty')}</Text>
         </TouchableOpacity>
 
+        {isManual ? (
+          <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
+            <Ionicons name="trash-outline" size={16} color={C.redText} />
+            <Text style={s.delTxt}>{l('Apagar serviço', 'Delete duty')}</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
       </ScrollView>
 
@@ -202,6 +217,8 @@ const makeStyles = (C) => StyleSheet.create({
 
   editBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 15, marginTop: 22, ...SHADOW.sm },
   editTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
+  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 10 },
+  delTxt: { color: C.redText, fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
   muted: { fontSize: TYPE.sub, color: C.sub, lineHeight: 19 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 14, paddingHorizontal: 2 },

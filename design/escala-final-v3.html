@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Escala — FINAL v3 (lista desde hoje · pernoita no serviço · selo calendário · sync→import)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --sublight:#7A7A73; --brand:#1F4E79;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1400px 760px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:920px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .legend{position:relative;z-index:1;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:18px auto 0;font-size:12px;font-weight:600;color:#5C616A}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .lg-flight{background:var(--brand)} .lg-sby{background:var(--warntext)} .lg-pos{background:var(--sub)}
+  .lg-off{background:var(--soft2);border:1px solid var(--linestrong)}
+  .lg-now{background:#fff;box-shadow:0 0 0 2px var(--red) inset}
+
+  .row{position:relative;z-index:1;display:flex;justify-content:center;gap:34px;flex-wrap:wrap;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:300px}
+  figcaption .tag{display:inline-block;font-weight:800;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:99px;padding:4px 10px;margin-bottom:7px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72}
+  figcaption b{color:var(--ink)}
+
+  .phone{width:336px;height:752px;background:#fff;border-radius:46px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:108px;height:27px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .stat{position:absolute;top:16px;left:27px;right:25px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink);z-index:55}
+  .body{flex:1;padding:52px 16px 0;overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+  .eyerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .eyebrow{font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .toolbtns{display:flex;gap:8px}
+  .ib{width:37px;height:37px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .month{display:flex;align-items:center;gap:12px;margin-top:4px}
+  .marrow{width:35px;height:35px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .mlabel{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.5px;color:var(--ink);flex:1;text-align:center}
+
+  /* selo discreto do calendário ligado */
+  .calsel{display:flex;align-items:center;gap:8px;margin-top:11px;padding:8px 12px;background:var(--soft2);border:1px solid var(--line);border-radius:11px}
+  .calsel .cic{color:var(--sub);flex:0 0 auto}
+  .ct{flex:1;font-weight:700;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ct b{color:var(--ink);font-weight:800}
+  .ck{color:var(--greentext);font-weight:800;margin-left:2px}
+  .chgbtn{font-weight:800;font-size:12px;color:var(--ink);flex:0 0 auto}
+
+  /* banner: sincronização detetou alterações → rever no import */
+  .syncban{display:flex;align-items:center;gap:10px;margin-top:10px;padding:11px 13px;background:var(--warnsoft);border:1px solid #F0D6A6;border-radius:13px}
+  .syncban .sic{color:var(--warntext);flex:0 0 auto}
+  .syncban .st{flex:1;font-weight:700;font-size:12.5px;color:var(--warntext);line-height:1.3}
+  .syncban .sgo{font-weight:800;font-size:12.5px;color:#fff;background:var(--warntext);border-radius:9px;padding:6px 11px;flex:0 0 auto}
+
+  /* resumo no topo — margem generosa */
+  .summtop{margin-top:16px;margin-bottom:18px;padding-top:15px;padding-bottom:15px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .si{flex:1;text-align:center}
+  .si .lbl{font-weight:800;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--sub)}
+  .si .val{font-family:var(--disp);font-weight:700;font-size:18px;color:var(--ink);margin-top:4px}
+  .si.eur .val{color:var(--greentext)}
+  .sep{width:1px;height:26px;background:var(--line);flex:0 0 auto}
+
+  /* cards de dia — layout do escala-mes-cards "A" */
+  .list{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+  .day{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px 14px;box-shadow:0 4px 14px -12px rgba(20,22,26,.14)}
+  .dnum{width:42px;flex:0 0 auto;text-align:center}
+  .dwd{font-weight:700;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+  .dd{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--ink);line-height:1}
+  .dmid{flex:1;min-width:0}
+  .drow{display:flex;align-items:center;gap:8px}
+  .dkind{font-weight:800;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#fff;border-radius:6px;padding:2px 6px;flex:0 0 auto}
+  .k-flight{background:var(--brand)} .k-sby{background:var(--warntext)} .k-pos{background:var(--sub)}
+  .droute{font-weight:800;font-size:15px;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nsmoon{color:var(--brand);flex:0 0 auto}
+  .dmeta{font-size:12px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
+  .deur{font-family:var(--disp);font-weight:700;font-size:14px;color:var(--greentext);flex:0 0 auto;text-align:right}
+  .today{position:relative}
+  .today .dd{color:var(--red)}
+  .todaydot{width:5px;height:5px;border-radius:50%;background:var(--red);margin:3px auto 0}
+  .off{display:flex;align-items:center;gap:13px;background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:9px 14px}
+  .off .dd{color:var(--linestrong)} .off .dwd{color:var(--linestrong)}
+  .offlbl{flex:1;font-weight:700;font-size:13px;color:var(--sub)}
+  .moon{color:var(--linestrong);flex:0 0 auto}
+  .sel{box-shadow:inset 0 0 0 2px var(--ink)}
+
+  /* sheets */
+  .scrim{position:absolute;inset:0;background:rgba(20,22,26,.30);z-index:40;border-radius:37px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:#fff;border-radius:26px 26px 37px 37px;padding:10px 20px 30px;box-shadow:0 -20px 50px -20px rgba(20,22,26,.4)}
+  .grab{width:38px;height:5px;border-radius:99px;background:var(--linestrong);margin:0 auto 14px}
+  .sh-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .sh-eye{font-weight:800;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--sub)}
+  .sh-x{width:30px;height:30px;border-radius:99px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .sh-badge{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:var(--brand);border-radius:7px;padding:3px 8px;margin-top:12px}
+  .sh-route{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:-.5px;color:var(--ink);margin-top:8px}
+  .sh-title{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.4px;color:var(--ink);margin-top:10px}
+  .sh-stats{display:flex;gap:8px;margin-top:15px}
+  .sh-stat{flex:1;background:var(--soft2);border:1px solid var(--line);border-radius:13px;padding:10px 8px;text-align:center}
+  .sh-stat .l{font-weight:700;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--sub)}
+  .sh-stat .v{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
+  .sh-line{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding:11px 14px;border-radius:13px}
+  .sh-line.eur{background:var(--greensoft)}
+  .sh-line.ftl{background:var(--soft2);border:1px solid var(--line)}
+  .sh-line .k{font-weight:700;font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .sh-line .v{font-family:var(--disp);font-weight:700;font-size:15px}
+  .sh-line.eur .v{color:var(--greentext)}
+  .sh-line.ftl .v{color:var(--greentext);font-size:13px}
+  .dotg{width:8px;height:8px;border-radius:99px;background:var(--greentext)}
+  .sh-btns{display:flex;gap:10px;margin-top:16px}
+  .sh-btn{flex:1;height:47px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px}
+  .sh-btn.primary{background:var(--ink);color:#fff}
+  .sh-btn.ghost{background:var(--soft);color:var(--ink)}
+  .flabel{font-weight:800;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--sub);margin-top:15px;margin-bottom:8px}
+  .fchips{display:flex;flex-wrap:wrap;gap:7px}
+  .fchip{font-weight:700;font-size:12.5px;padding:8px 13px;border-radius:11px;background:var(--soft);color:var(--sub)}
+  .fchip.on{background:var(--brand);color:#fff}
+  .ffield{height:46px;border:1px solid var(--line);border-radius:12px;background:var(--soft2);display:flex;align-items:center;padding:0 14px;font-weight:700;font-size:15px;color:var(--ink)}
+  .ffield .ph{color:var(--linestrong)}
+  .frow{display:flex;gap:10px}.frow .ffield{flex:1}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · Escala · FINAL v3</div>
+    <h1>Lista desde hoje · pernoita no serviço · selo do calendário</h1>
+    <p>A lista <b>começa no dia de hoje</b> (25) e segue em frente. <b>Pernoita 🌙</b> também no card de serviço (dia 30). <b>Selo discreto</b> "Calendário · &lt;nome&gt; ✓ · Mudar" no topo. E o fluxo: a sincronização <b>deteta → mostra no import → confirmas</b> (4.º telemóvel).</p>
+  </div>
+
+  <div class="legend">
+    <span><i class="lg-flight"></i>Voo</span>
+    <span><i class="lg-sby"></i>Standby</span>
+    <span><i class="lg-pos"></i>Posicionamento</span>
+    <span><i class="lg-off"></i>Folga</span>
+    <span><i class="lg-now"></i>Hoje</span>
+    <span>🌙 Pernoita</span>
+  </div>
+
+  <div class="row">
+    <!-- 1 · vista principal -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="calsel"><svg class="cic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list" id="list1"></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">1 · vista principal</span><p>Selo do calendário (nome + ✓ + Mudar). Resumo no topo. Lista <b>começa em hoje (25)</b> e segue. Dia 30 mostra a <b>pernoita 🌙</b> no card de serviço.</p></figcaption>
+    </figure>
+
+    <!-- 2 · detalhe ao toque -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="calsel"><svg class="cic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list" id="list2"></div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="sh-top"><div class="sh-eye">Quinta · 25 Junho · Hoje</div><div class="sh-x"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>
+            <span class="sh-badge">Voo</span>
+            <div class="sh-route">LIS-AGP-LIS</div>
+            <div class="sh-stats">
+              <div class="sh-stat"><div class="l">Report</div><div class="v">05:40</div></div>
+              <div class="sh-stat"><div class="l">Bloco</div><div class="v">6h05</div></div>
+              <div class="sh-stat"><div class="l">Setores</div><div class="v">2</div></div>
+            </div>
+            <div class="sh-line eur"><span class="k">Per-diem do dia</span><span class="v">+44,00 €</span></div>
+            <div class="sh-line ftl"><span class="k"><span class="dotg"></span>FDP usado · limite</span><span class="v">9h20 / 13h00</span></div>
+            <div class="sh-btns">
+              <div class="sh-btn ghost">Fechar</div>
+              <div class="sh-btn primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Editar serviço</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">2 · serviço → detalhe</span><p>Sheet com rota, report/bloco/setores, <b>per-diem do dia</b> e <b>FDP vs. limite</b> (FTL). Botão Editar serviço.</p></figcaption>
+    </figure>
+
+    <!-- 3 · folga → adicionar -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="calsel"><svg class="cic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list" id="list3"></div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="sh-top"><div class="sh-eye">Sábado · 27 Junho · Dia vazio</div><div class="sh-x"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>
+            <div class="sh-title">Adicionar serviço</div>
+            <div class="flabel">Tipo</div>
+            <div class="fchips"><span class="fchip on">Voo</span><span class="fchip">Standby</span><span class="fchip">Posicion.</span><span class="fchip">Escritório</span><span class="fchip">Formação</span></div>
+            <div class="flabel">Rota</div>
+            <div class="ffield"><span class="ph">LIS-___-LIS</span></div>
+            <div class="flabel">Horas</div>
+            <div class="frow"><div class="ffield"><span class="ph">Report 00:00</span></div><div class="ffield"><span class="ph">Bloco 00:00</span></div></div>
+            <div class="sh-btns"><div class="sh-btn primary" style="flex:1">Guardar serviço</div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">3 · folga → adicionar</span><p>Dia vazio → formulário para <b>adicionar serviço</b> nesse dia (tipo, rota, horas). É o <b>DutyFormSheet</b> existente.</p></figcaption>
+    </figure>
+
+    <!-- 4 · sincronização detetou alterações -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div>
+            <div class="toolbtns"><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="calsel"><svg class="cic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="syncban"><svg class="sic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span class="st">A escala mudou no calendário · <b>2 dias</b></span><span class="sgo">Rever</span></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list" id="list4"></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">4 · sincronização detetou</span><p>A sync <b>deteta</b> mudanças no calendário → banner discreto "<b>Rever</b>" (não grava nada sozinho). Tocar → página de <b>import</b> onde <b>confirmas</b> antes de gravar.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="foot">CrewPact · Escala FINAL v3 · desde hoje · pernoita no serviço · selo calendário · sync→import→confirma</div>
+
+<script>
+  // Junho 2026: dia 1 = Segunda. Hoje = 25. Janela mostrada: 25→30 (começa em hoje).
+  var M = [
+    {wd:'Seg'},{wd:'Ter',k:'flight',r:'LIS-LGW-LIS'},{wd:'Qua',k:'flight',r:'LIS-FNC-LIS'},{wd:'Qui'},
+    {wd:'Sex',k:'sby',r:'Standby aero.'},{wd:'Sáb',k:'flight',r:'LIS-AGP-LIS'},{wd:'Dom'},
+    {wd:'Seg',k:'flight',r:'LIS-OPO-LIS'},{wd:'Ter',k:'flight',r:'LIS-CDG-LIS'},{wd:'Qua'},{wd:'Qui'},
+    {wd:'Sex',k:'flight',r:'LIS-MAD-LIS'},{wd:'Sáb',k:'flight',r:'LIS-BCN-LIS'},{wd:'Dom'},
+    {wd:'Seg',k:'pos',r:'Posicionamento'},{wd:'Ter',k:'flight',r:'LGW-LIS'},{wd:'Qua'},
+    {wd:'Qui',k:'sby',r:'Standby aero.'},{wd:'Sex',k:'flight',r:'LIS-FAO-LIS'},{wd:'Sáb'},{wd:'Dom'},
+    {wd:'Seg',k:'flight',r:'LIS-LGW-LIS'},{wd:'Ter',k:'flight',r:'LIS-FNC-LIS'},{wd:'Qua'},
+    {wd:'Qui',k:'flight',r:'LIS-AGP-LIS',meta:'Report 05:40 · 6h05 · 2 setores',eur:'+44,00 €',now:true},
+    {wd:'Sex',k:'flight',r:'LIS-OPO-LIS',meta:'Report 12:30 · 3h40 · 2 setores',eur:'+44,00 €'},
+    {wd:'Sáb'},
+    {wd:'Dom'},
+    {wd:'Seg',k:'pos',r:'Posicionamento',meta:'Início 14:20 · Fim 17:40'},
+    {wd:'Ter',k:'flight',r:'LIS-LGW',meta:'Report 17:40 · 1 setor',eur:'+77,52 €',ns:true}
+  ];
+  function kindLabel(k){ return k==='flight'?'Voo':k==='sby'?'Standby aero.':'Posicion.'; }
+  function kcls(k){ return k==='flight'?'k-flight':k==='sby'?'k-sby':'k-pos'; }
+  var MOON = '<svg class="nsmoon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>';
+
+  function dayCard(d,i,selDay){
+    var n=i+1;
+    if(!d.k){
+      return '<div class="off'+((selDay===n)?' sel':'')+'"><div class="dnum"><div class="dwd">'+d.wd+'</div><div class="dd">'+n+'</div></div><span class="offlbl">Folga</span><svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div>';
+    }
+    var cls='day'+(d.now?' today':'')+((selDay===n)?' sel':'');
+    return '<div class="'+cls+'">'
+      +'<div class="dnum"><div class="dwd">'+d.wd+'</div><div class="dd">'+n+'</div>'+(d.now?'<div class="todaydot"></div>':'')+'</div>'
+      +'<div class="dmid"><div class="drow"><span class="dkind '+kcls(d.k)+'">'+kindLabel(d.k)+'</span><span class="droute">'+d.r+'</span>'+(d.ns?MOON:'')+'</div>'
+      +(d.meta?('<div class="dmeta">'+d.meta+'</div>'):'')+'</div>'
+      +(d.eur?('<span class="deur">'+d.eur+'</span>'):'')+'</div>';
+  }
+  function fill(id, selDay){
+    var html='';
+    for(var i=24;i<=29;i++) html+=dayCard(M[i], i, selDay);   // janela 25→30 (começa em hoje)
+    document.getElementById(id).innerHTML=html;
+  }
+  fill('list1', null);
+  fill('list2', 25);   // detalhe no 25
+  fill('list3', 27);   // adicionar no 27 (folga)
+  fill('list4', null);
+</script>
+</body>
+</html>

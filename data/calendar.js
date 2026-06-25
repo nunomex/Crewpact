@@ -9,15 +9,30 @@
 import * as Calendar from 'expo-calendar';
 import { codesFor } from './rosterCodes';
 
+// Verifica a permissão SEM pedir (não dispara o prompt do sistema). As leituras de fundo
+// usam isto → nunca interrompem o utilizador. O prompt só acontece no botão "Ligar".
 export async function ensureCalendarPermission() {
-  const { status } = await Calendar.requestCalendarPermissionsAsync();
+  const { status } = await Calendar.getCalendarPermissionsAsync();
   return status === 'granted';
 }
 
-// Pede acesso ao calendário e devolve o resultado completo ({ granted, canAskAgain }),
-// para a UI decidir entre voltar a pedir ou encaminhar para as Definições.
+// Pede acesso ao calendário (DISPARA o prompt) e devolve o resultado completo ({ granted,
+// canAskAgain }), para a UI decidir entre voltar a pedir ou encaminhar para as Definições.
+// Usado SÓ no botão "Ligar ao calendário".
 export async function requestCalendarAccess() {
   return Calendar.requestCalendarPermissionsAsync();
+}
+
+// Lista os calendários do telemóvel (id/nome/conta/cor) para o utilizador ESCOLHER qual tem
+// a escala. Requer permissão já concedida — não pede (o pedido foi no "Ligar").
+export async function listCalendars() {
+  if (!(await ensureCalendarPermission())) return [];
+  const cals = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+  return cals.map((c) => ({
+    id: c.id, title: c.title || '(sem nome)',
+    source: (c.source && (c.source.name || c.source.type)) || '', color: c.color || null,
+    allowsModifications: !!c.allowsModifications,
+  }));
 }
 
 // ── Parsers ──────────────────────────────────────────────────────────────────
@@ -54,13 +69,15 @@ function classify(text, codes) {
 }
 const NONFLIGHT_KINDS = ['standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 
-// Eventos do calendário no intervalo [start, end].
-async function fetchEvents(start, end) {
-  const ok = await ensureCalendarPermission();
-  if (!ok) return { ok: false, events: [] };
+// Eventos do calendário ESCOLHIDO no intervalo [start, end]. SÓ lê o calendário cujo id é
+// `calendarId` (o que o utilizador ligou) — nunca todos. Sem calendário escolhido OU sem
+// permissão → { ok:false } (a app trata como "não ligado" e mostra o "Ligar").
+async function fetchEvents(start, end, calendarId = null) {
+  if (!calendarId) return { ok: false, events: [] };
+  if (!(await ensureCalendarPermission())) return { ok: false, events: [] };
   const cals = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-  if (!cals.length) return { ok: true, events: [] };
-  const events = await Calendar.getEventsAsync(cals.map(c => c.id), start, end);
+  if (!cals.some((c) => c.id === calendarId)) return { ok: false, events: [] }; // calendário já não existe
+  const events = await Calendar.getEventsAsync([calendarId], start, end);
   events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
   return { ok: true, events };
 }
@@ -127,9 +144,9 @@ function mapNonFlight(ev, codes) {
 
 // Próximo voo + estado da permissão: { ok, flight }. `ok:false` = sem acesso ao
 // calendário (para o cartão distinguir "sem permissão" de "sem voo").
-export async function getUpcomingFlight(company) {
+export async function getUpcomingFlight(company, calendarId = null) {
   const now = new Date();
-  const { ok, events } = await fetchEvents(now, new Date(now.getTime() + 21 * 24 * 3600 * 1000));
+  const { ok, events } = await fetchEvents(now, new Date(now.getTime() + 21 * 24 * 3600 * 1000), calendarId);
   if (!ok) return { ok: false, flight: null };
   const codes = codesFor(company);
   for (const ev of events) {
@@ -141,8 +158,8 @@ export async function getUpcomingFlight(company) {
 
 // Devolve todos os voos no intervalo [start, end] (para a grelha mensal e a lista
 // do dia). { ok:false } quando não há permissão de calendário.
-export async function getFlightsInRange(start, end, company) {
-  const { ok, events } = await fetchEvents(start, end);
+export async function getFlightsInRange(start, end, company, calendarId = null) {
+  const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, flights: [] };
   const codes = codesFor(company);
   const flights = [];
@@ -202,8 +219,8 @@ export function buildDuties(legs) {
 }
 
 // Atividades no intervalo [start, end] (pernas de voo agrupadas por setores).
-export async function getDutiesInRange(start, end, company) {
-  const { ok, events } = await fetchEvents(start, end);
+export async function getDutiesInRange(start, end, company, calendarId = null) {
+  const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, duties: [] };
   const codes = codesFor(company);
   const legs = events.map((ev) => mapFlight(ev, codes)).filter(Boolean);
@@ -211,8 +228,8 @@ export async function getDutiesInRange(start, end, company) {
 }
 
 // Duties SEM-VOO (standby/posicionamento/terra/formação) no intervalo [start, end].
-export async function getNonFlightInRange(start, end, company) {
-  const { ok, events } = await fetchEvents(start, end);
+export async function getNonFlightInRange(start, end, company, calendarId = null) {
+  const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, items: [] };
   const codes = codesFor(company);
   return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean) };
@@ -222,8 +239,8 @@ export async function getNonFlightInRange(start, end, company) {
 // (flight/standby/other). Para o utilizador ver o que o calendário tem e perceber
 // porque um evento é (ou não é) reconhecido. { ok, total, items:[{ title, dateISO,
 // kind, route, flightNo, times }] }.
-export async function diagnoseEvents(start, end, company) {
-  const { ok, events } = await fetchEvents(start, end);
+export async function diagnoseEvents(start, end, company, calendarId = null) {
+  const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, total: 0, items: [] };
   const codes = codesFor(company);
   const items = events.map((ev) => {

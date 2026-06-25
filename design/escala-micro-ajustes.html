@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Escala — micro-ajustes (selo · pernoita € · tom do banner)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --canvas:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E; --sub:#6B6B66; --sublight:#7A7A73;
+    --brand:#1F4E79; --brandsoft:#E8EEF5;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1400px 760px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:920px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .section{position:relative;z-index:1;max-width:1120px;margin:50px auto 0}
+  .sectitle{text-align:center;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin-bottom:6px}
+  .secsub{text-align:center;font-size:13px;color:#5C616A;margin-bottom:26px}
+  .cluster{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+  .opt{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:330px}
+  .optlabel{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--ink);border-radius:99px;padding:4px 12px}
+  .optnote{font-size:12px;color:#646A72;text-align:center;line-height:1.5}
+  .optnote b{color:var(--ink)}
+
+  /* phone curto p/ a posição do selo */
+  .phone{width:300px;height:452px;background:#fff;border-radius:42px;padding:9px;position:relative;flex:0 0 auto;
+    box-shadow:0 30px 64px -34px rgba(20,22,26,.5),0 5px 14px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:96px;height:24px;background:#0A0A0A;border-radius:13px;z-index:60}
+  .body{flex:1;padding:46px 15px 0;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .fade{position:absolute;left:0;right:0;bottom:0;height:66px;background:linear-gradient(transparent,#fff);z-index:5}
+
+  .eyerow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+  .eyebrow{font-weight:800;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:7px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .toolbtns{display:flex;gap:7px}
+  .ib{width:33px;height:33px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .month{display:flex;align-items:center;gap:10px;margin-top:4px}
+  .marrow{width:32px;height:32px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+  .mlabel{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:-.5px;color:var(--ink);flex:1;text-align:center}
+
+  .calsel{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--soft2);border:1px solid var(--line);border-radius:11px}
+  .calsel.top{margin-bottom:9px}
+  .calsel.mid{margin-top:10px}
+  .calsel.bot{margin-top:12px}
+  .cic{color:var(--sub);flex:0 0 auto}
+  .ct{flex:1;font-weight:700;font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ct b{color:var(--ink);font-weight:800}
+  .ck{color:var(--greentext);font-weight:800;margin-left:2px}
+  .chgbtn{font-weight:800;font-size:11.5px;color:var(--ink);flex:0 0 auto}
+
+  .summtop{margin-top:14px;margin-bottom:14px;padding-top:13px;padding-bottom:13px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .si{flex:1;text-align:center}
+  .si .lbl{font-weight:800;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--sub)}
+  .si .val{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ink);margin-top:3px}
+  .si.eur .val{color:var(--greentext)}
+  .sep{width:1px;height:22px;background:var(--line);flex:0 0 auto}
+
+  .list{display:flex;flex-direction:column;gap:8px}
+  .day{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 13px;box-shadow:0 4px 14px -12px rgba(20,22,26,.14)}
+  .dnum{width:40px;flex:0 0 auto;text-align:center}
+  .dwd{font-weight:700;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+  .dd{font-family:var(--disp);font-weight:700;font-size:19px;color:var(--ink);line-height:1}
+  .dmid{flex:1;min-width:0}
+  .drow{display:flex;align-items:center;gap:7px}
+  .dkind{font-weight:800;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:#fff;border-radius:6px;padding:2px 6px;flex:0 0 auto}
+  .k-flight{background:var(--brand)} .k-sby{background:var(--warntext)} .k-pos{background:var(--sub)}
+  .droute{font-weight:800;font-size:14.5px;color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nsmoon{color:var(--brand);flex:0 0 auto}
+  .dmeta{font-size:11.5px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
+  .deur{font-family:var(--disp);font-weight:700;font-size:14px;color:var(--greentext);flex:0 0 auto;text-align:right}
+  .today{position:relative}.today .dd{color:var(--red)}
+  .todaydot{width:5px;height:5px;border-radius:50%;background:var(--red);margin:3px auto 0}
+  .off{display:flex;align-items:center;gap:12px;background:var(--soft2);border:1px solid var(--line);border-radius:13px;padding:8px 13px}
+  .off .dd{color:var(--linestrong)} .off .dwd{color:var(--linestrong)}
+  .offlbl{flex:1;font-weight:700;font-size:12.5px;color:var(--sub)}
+  .moon{color:var(--linestrong);flex:0 0 auto}
+
+  /* swatch (card / banner isolados) */
+  .swatch{width:330px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 24px 56px -34px rgba(20,22,26,.45)}
+  /* pernoita: valor € ao lado */
+  .nschip{display:inline-flex;align-items:center;gap:4px;background:var(--brandsoft);color:var(--brand);font-weight:800;font-size:11px;border-radius:7px;padding:2px 7px;flex:0 0 auto}
+  .nsright{display:flex;flex-direction:column;align-items:flex-end;flex:0 0 auto}
+  .nsright .l{font-weight:800;font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:var(--sub)}
+  .nsval-inline{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--greentext);flex:0 0 auto}
+
+  /* banner — 3 tons */
+  .syncban{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px}
+  .syncban .sic{flex:0 0 auto}
+  .syncban .st{flex:1;font-weight:700;font-size:12.5px;line-height:1.3}
+  .syncban .st b{font-weight:800}
+  .syncban .sgo{font-weight:800;font-size:12px;border-radius:9px;padding:6px 11px;flex:0 0 auto}
+  .ban-amber{background:var(--warnsoft);border:1px solid #F0D6A6} .ban-amber .sic,.ban-amber .st{color:var(--warntext)} .ban-amber .sgo{background:var(--warntext);color:#fff}
+  .ban-blue{background:var(--brandsoft);border:1px solid #CDDBEA} .ban-blue .sic,.ban-blue .st{color:var(--brand)} .ban-blue .sgo{background:var(--brand);color:#fff}
+  .ban-neutral{background:var(--soft2);border:1px solid var(--line)} .ban-neutral .sic{color:var(--red)} .ban-neutral .st{color:var(--ink)} .ban-neutral .sgo{background:var(--ink);color:#fff}
+  .reddot{width:8px;height:8px;border-radius:99px;background:var(--red);flex:0 0 auto}
+
+  .foot{text-align:center;color:#8A9099;font-size:12px;padding:36px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · Escala · micro-ajustes</div>
+    <h1>Três pormenores para escolheres</h1>
+    <p>Cada secção mostra opções para o mesmo elemento. Escolhe uma de cada: <b>posição do selo</b> do calendário, como mostrar a <b>pernoita 🌙 com o valor €</b>, e o <b>tom do banner</b> de alterações.</p>
+  </div>
+
+  <!-- SECÇÃO 1 · posição do selo -->
+  <div class="section">
+    <div class="sectitle">1 · Posição do selo do calendário</div>
+    <div class="secsub">Onde fica o "Calendário · easyJet ✓ · Mudar".</div>
+    <div class="cluster">
+
+      <!-- A: entre mês e resumo (atual) -->
+      <div class="opt">
+        <div class="phone"><div class="screen"><div class="island"></div><div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div><div class="toolbtns"><div class="ib"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="calsel mid"><svg class="cic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list"><div class="day today"><div class="dnum"><div class="dwd">Qui</div><div class="dd">25</div><div class="todaydot"></div></div><div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-AGP-LIS</span></div></div><span class="deur">+44,00 €</span></div></div>
+          <div class="fade"></div>
+        </div></div></div>
+        <div class="optlabel">A · entre mês e resumo</div>
+        <div class="optnote">O atual (v3). O selo fica logo abaixo do mês, antes do resumo.</div>
+      </div>
+
+      <!-- B: linha de topo (substitui o eyebrow) -->
+      <div class="opt">
+        <div class="phone"><div class="screen"><div class="island"></div><div class="body">
+          <div class="calsel top"><svg class="cic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span>
+            <div class="ib" style="width:31px;height:31px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+          <div class="month"><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="list"><div class="day today"><div class="dnum"><div class="dwd">Qui</div><div class="dd">25</div><div class="todaydot"></div></div><div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-AGP-LIS</span></div></div><span class="deur">+44,00 €</span></div>
+            <div class="day"><div class="dnum"><div class="dwd">Sex</div><div class="dd">26</div></div><div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-OPO-LIS</span></div></div><span class="deur">+44,00 €</span></div></div>
+          <div class="fade"></div>
+        </div></div></div>
+        <div class="optlabel">B · linha de topo</div>
+        <div class="optnote">O selo sobe para a 1.ª linha (com o sino), e o "Junho 2026" passa a ser o título. Liberta espaço no meio.</div>
+      </div>
+
+      <!-- C: entre resumo e lista -->
+      <div class="opt">
+        <div class="phone"><div class="screen"><div class="island"></div><div class="body">
+          <div class="eyerow"><div class="eyebrow"><i></i>A tua escala</div><div class="toolbtns"><div class="ib"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="ib"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div></div>
+          <div class="month"><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mlabel">Junho 2026</div><div class="marrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>
+          <div class="summtop"><div class="si"><div class="lbl">Serviços</div><div class="val">17</div></div><div class="sep"></div><div class="si"><div class="lbl">Folgas</div><div class="val">13</div></div><div class="sep"></div><div class="si eur"><div class="lbl">Per-diem</div><div class="val">612,40 €</div></div></div>
+          <div class="calsel bot"><svg class="cic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg><span class="ct">Calendário · <b>easyJet</b><span class="ck">✓</span></span><span class="chgbtn">Mudar</span></div>
+          <div class="list" style="margin-top:12px"><div class="day today"><div class="dnum"><div class="dwd">Qui</div><div class="dd">25</div><div class="todaydot"></div></div><div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-AGP-LIS</span></div></div><span class="deur">+44,00 €</span></div></div>
+          <div class="fade"></div>
+        </div></div></div>
+        <div class="optlabel">C · entre resumo e lista</div>
+        <div class="optnote">O selo encosta-se à lista. O resumo fica colado ao mês.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECÇÃO 2 · pernoita 🌙 + valor € -->
+  <div class="section">
+    <div class="sectitle">2 · Pernoita 🌙 com o valor €</div>
+    <div class="secsub">Dia 30 (LIS-LGW, 1 setor ímpar → pernoita, +77,52 €). Como mostrar a luinha + o valor.</div>
+    <div class="cluster">
+
+      <!-- i: chip ao lado da rota -->
+      <div class="opt">
+        <div class="swatch">
+          <div class="day"><div class="dnum"><div class="dwd">Ter</div><div class="dd">30</div></div>
+            <div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-LGW</span><span class="nschip"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>+77,52 €</span></div>
+              <div class="dmeta">Report 17:40 · 1 setor</div></div></div>
+        </div>
+        <div class="optlabel">i · chip ao lado da rota</div>
+        <div class="optnote">Pílula <b>🌙 +77,52 €</b> a seguir à rota. O valor da pernoita salta logo, sem ocupar a coluna do €.</div>
+      </div>
+
+      <!-- ii: à direita, com label -->
+      <div class="opt">
+        <div class="swatch">
+          <div class="day"><div class="dnum"><div class="dwd">Ter</div><div class="dd">30</div></div>
+            <div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-LGW</span><svg class="nsmoon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div>
+              <div class="dmeta">Report 17:40 · 1 setor</div></div>
+            <div class="nsright"><span class="l">🌙 Pernoita</span><span class="nsval-inline">+77,52 €</span></div></div>
+        </div>
+        <div class="optlabel">ii · à direita, com rótulo</div>
+        <div class="optnote">🌙 a seguir à rota e, na coluna do €, o valor com o rótulo <b>"🌙 Pernoita"</b> por cima.</div>
+      </div>
+
+      <!-- iii: na meta -->
+      <div class="opt">
+        <div class="swatch">
+          <div class="day"><div class="dnum"><div class="dwd">Ter</div><div class="dd">30</div></div>
+            <div class="dmid"><div class="drow"><span class="dkind k-flight">Voo</span><span class="droute">LIS-LGW</span><svg class="nsmoon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div>
+              <div class="dmeta">Report 17:40 · 1 setor · <b style="color:var(--brand)">🌙 +77,52 € pernoita</b></div></div>
+            <div class="deur">+77,52 €</div></div>
+        </div>
+        <div class="optlabel">iii · na linha de baixo</div>
+        <div class="optnote">🌙 a seguir à rota e o valor escrito na <b>meta</b> ("🌙 +77,52 € pernoita"). Mais discreto.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECÇÃO 3 · tom do banner -->
+  <div class="section">
+    <div class="sectitle">3 · Tom do banner de alterações</div>
+    <div class="secsub">"A escala mudou no calendário · 2 dias · Rever". Mesmo conteúdo, três tons.</div>
+    <div class="cluster">
+
+      <div class="opt">
+        <div class="swatch">
+          <div class="syncban ban-amber"><svg class="sic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span class="st">A escala mudou no calendário · <b>2 dias</b></span><span class="sgo">Rever</span></div>
+        </div>
+        <div class="optlabel">A · âmbar (atual)</div>
+        <div class="optnote">Tom de aviso suave (warnSoft). Chama a atenção sem alarmar.</div>
+      </div>
+
+      <div class="opt">
+        <div class="swatch">
+          <div class="syncban ban-blue"><svg class="sic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span class="st">A escala mudou no calendário · <b>2 dias</b></span><span class="sgo">Rever</span></div>
+        </div>
+        <div class="optlabel">B · azul (informativo)</div>
+        <div class="optnote">Tom de informação (brand). Mais calmo/neutro — "há novidades", não "perigo".</div>
+      </div>
+
+      <div class="opt">
+        <div class="swatch">
+          <div class="syncban ban-neutral"><span class="reddot"></span><span class="st">A escala mudou no calendário · <b>2 dias</b></span><span class="sgo">Rever</span></div>
+        </div>
+        <div class="optlabel">C · neutro (subtil)</div>
+        <div class="optnote">Fundo soft2 + texto ink, só um pontinho vermelho a sinalizar. O mais discreto.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">CrewPact · Escala · micro-ajustes · selo · pernoita € · tom do banner</div>
+</body>
+</html>
