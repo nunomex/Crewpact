@@ -60,6 +60,9 @@ export default function EscalaScreen({ navigation, route }) {
   const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
   const [toast, setToast] = useState(null);             // toast flutuante de sucesso { n, src }
   const toastTimer = useRef(null);
+  const scrollRef = useRef(null);        // ScrollView da lista (scroll até hoje ao entrar)
+  const didScrollToday = useRef(false);  // já posicionámos no dia de hoje neste mês?
+  const prevYmRef = useRef(null);        // mês renderizado antes (p/ reativar o scroll ao mudar de mês)
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   useEffect(() => {
     if (!user?.id) return;
@@ -127,16 +130,13 @@ export default function EscalaScreen({ navigation, route }) {
   const ym = `${y}-${String(m0 + 1).padStart(2, '0')}`;
   const daysInMonth = new Date(y, m0 + 1, 0).getDate();
   const isCurrentMonth = today.startsWith(ym);
-  // Mês atual: o mês TODO, mas ordenado a começar em HOJE (hoje→fim, depois 1→ontem) — nada
-  // fica escondido e hoje lidera. Outros meses: 1→fim (cronológico).
-  const upcomingDays = [], pastDays = [];
-  if (isCurrentMonth) {
-    const td = Number(today.slice(8, 10));
-    for (let dn = td; dn <= daysInMonth; dn++) upcomingDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
-    for (let dn = 1; dn < td; dn++) pastDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
-  } else {
-    for (let dn = 1; dn <= daysInMonth; dn++) upcomingDays.push(`${ym}-${String(dn).padStart(2, '0')}`);
-  }
+  // Mudar de mês → reativa o scroll-até-hoje (reset síncrono, antes de os cards renderizarem).
+  if (prevYmRef.current !== ym) { prevYmRef.current = ym; didScrollToday.current = false; }
+  // Lista cronológica do mês inteiro (1→fim). No mês atual, ao entrar fazemos scroll até HOJE
+  // (fica em 1.º); nos outros meses começa no topo (dia 1).
+  const dayList = [];
+  for (let dn = 1; dn <= daysInMonth; dn++) dayList.push(`${ym}-${String(dn).padStart(2, '0')}`);
+  useEffect(() => { if (!isCurrentMonth) scrollRef.current?.scrollTo({ y: 0, animated: false }); }, [ym]); // eslint-disable-line react-hooks/exhaustive-deps
   const monthName = monthDate.toLocaleDateString(locale, { month: 'long' });
   const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`;
   const shiftMonth = (delta) => { select(); setMonthDate(new Date(y, m0 + delta, 1)); };
@@ -183,10 +183,17 @@ export default function EscalaScreen({ navigation, route }) {
     const dd = Number(iso.slice(8, 10));
     const wd = weekdayShort(iso);
     const isDuty = d && !d.deleted && d.report_time;
+    // No mês atual, quando o card de HOJE se desenha, posiciona a lista nele (1.ª vez no mês).
+    const onLayoutToday = isToday ? (e) => {
+      if (isCurrentMonth && !didScrollToday.current && scrollRef.current) {
+        didScrollToday.current = true;
+        scrollRef.current.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - 8), animated: false });
+      }
+    } : undefined;
 
     if (!isDuty) {
       return (
-        <TouchableOpacity key={iso} style={s.off} activeOpacity={0.75} onPress={() => { select(); setDutyDate(iso); }}>
+        <TouchableOpacity key={iso} onLayout={onLayoutToday} style={s.off} activeOpacity={0.75} onPress={() => { select(); setDutyDate(iso); }}>
           <View style={s.dnum}>
             <Text style={[s.dwd, s.dwdOff]}>{wd}</Text>
             <Text style={[s.dd, isToday ? s.ddToday : s.ddOff]}>{dd}</Text>
@@ -211,7 +218,7 @@ export default function EscalaScreen({ navigation, route }) {
       : (d.block_on && d.block_on !== d.report_time ? `${d.report_time} – ${d.block_on}` : (d.report_time || '—'));
 
     return (
-      <TouchableOpacity key={iso} style={[s.day, iso === flashIso && s.dayFlash]} activeOpacity={0.7}
+      <TouchableOpacity key={iso} onLayout={onLayoutToday} style={[s.day, iso === flashIso && s.dayFlash]} activeOpacity={0.7}
         onPress={() => navigation.navigate('DutyDetail', { date: iso })}
         onLongPress={() => { select(); setDutyDate(iso); }}>
         <View style={s.dnum}>
@@ -337,7 +344,7 @@ export default function EscalaScreen({ navigation, route }) {
             </View>
 
             {/* Lista de cards de dia (faz scroll) */}
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
+            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
                 refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
                   onRefresh={async () => {
                     setRefreshing(true); const t0 = Date.now();
@@ -345,15 +352,7 @@ export default function EscalaScreen({ navigation, route }) {
                     const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
                     setRefreshing(false);
                   }} />}>
-              {upcomingDays.map(renderDay)}
-              {pastDays.length > 0 ? (
-                <View style={s.divider}>
-                  <View style={s.dividerLine} />
-                  <Text style={s.dividerTxt}>{l('Anteriores este mês', 'Earlier this month')}</Text>
-                  <View style={s.dividerLine} />
-                </View>
-              ) : null}
-              {pastDays.map(renderDay)}
+              {dayList.map(renderDay)}
               <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
             </ScrollView>
           </>
@@ -496,9 +495,6 @@ const makeStyles = (C) => StyleSheet.create({
   offlbl: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.sub },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: C.line },
-  dividerTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
 
   // Arranque (Serviços, sem escala)
   h1Big: { fontSize: 28, fontFamily: FONT.display, letterSpacing: -0.6, color: C.text, marginTop: 6 },
