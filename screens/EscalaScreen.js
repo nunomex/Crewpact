@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, GUTTER, TYPE, SPACE, FONT, SHADOW } from '../data/constants';
@@ -41,6 +41,7 @@ export default function EscalaScreen({ navigation, route }) {
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
+  const insets = useSafeAreaInsets();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -53,8 +54,12 @@ export default function EscalaScreen({ navigation, route }) {
   const [recOpen, setRecOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [calPickerOpen, setCalPickerOpen] = useState(false);
+  const [hubOpen, setHubOpen] = useState(false);       // hub de importar (calendário | PDF)
+  const [importSource, setImportSource] = useState('calendar'); // fonte com que abre o RosterImportSheet
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: reverifica a escala
   const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
+  const [toast, setToast] = useState(null);             // toast flutuante de sucesso { n, src }
+  const toastTimer = useRef(null);
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   useEffect(() => {
     if (!user?.id) return;
@@ -73,7 +78,7 @@ export default function EscalaScreen({ navigation, route }) {
 
   // Vindo do sino/banner "Alterações na escala" → abre a folha de revisão (import).
   useEffect(() => {
-    if (route.params?.review) setImportOpen(true);
+    if (route.params?.review) { setImportSource('calendar'); setImportOpen(true); }
   }, [route.params?.review]);
 
   // Voltou do DutyDetailScreen após editar → salta para o mês do serviço e re-acende o realce.
@@ -96,6 +101,20 @@ export default function EscalaScreen({ navigation, route }) {
     if (res?.granted) setCalPickerOpen(true);
     else if (res && res.canAskAgain === false) Linking.openSettings();
   };
+
+  // Hub de importar (mini-fab / cartão "IR" / arranque) → escolher fonte; depois abre o "Confirmar import".
+  const openHub = () => { select(); setHubOpen(true); };
+  const openImport = (src) => { setImportSource(src || 'calendar'); setHubOpen(false); setImportOpen(true); };
+  const addManual = () => { select(); setHubOpen(false); setDutyDate(isoDay()); };
+
+  // Toast flutuante (em cima) após confirmar um import — aparece e some sozinho (~3 s).
+  const showToast = (n, src) => {
+    if (!n) return;   // o import já fez success() (haptic); aqui só mostramos o toast
+    setToast({ n, src });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
+  };
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   // ── € (cêntimos, NUNCA arredonda — money-no-rounding) ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
@@ -240,78 +259,92 @@ export default function EscalaScreen({ navigation, route }) {
                 <TouchableOpacity onPress={onExport} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.export', lang)}><Ionicons name="share-outline" size={17} color={C.text} /></TouchableOpacity>
               </>
             ) : null}
-            <TouchableOpacity onPress={() => { select(); setImportOpen(true); }} hitSlop={6} style={s.ib} accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={openHub} hitSlop={6} style={s.ib} accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
             <NotificationsBell />
           </View>
         </View>
 
-        {/* Mês navegável ‹ Junho 2026 › */}
-        <View style={s.monthBar}>
-          <TouchableOpacity onPress={() => shiftMonth(-1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês anterior', 'Previous month')}><Ionicons name="chevron-back" size={18} color={C.text} /></TouchableOpacity>
-          <Text style={s.monthLabel}>{monthLabel}</Text>
-          <TouchableOpacity onPress={() => shiftMonth(1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês seguinte', 'Next month')}><Ionicons name="chevron-forward" size={18} color={C.text} /></TouchableOpacity>
-        </View>
+        {!anyDuty ? (
+          /* ── Arranque (Serviços) — sem escala: informativo + formas de importar ── */
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
+            <Text style={s.h1Big}>{l('Serviços', 'Duties')}</Text>
+            <Text style={s.lead}>{l('Ainda não tens escala. Liga o calendário do telemóvel (ou importa por PDF) e mostramos os teus serviços aqui.', "You have no roster yet. Connect your phone calendar (or import a PDF) and we'll show your duties here.")}</Text>
 
-        {/* Selo A — calendário ligado (nome + ✓ + Mudar) OU cartão para ligar */}
-        {!calendarId ? (
-          <View style={s.connectCard}>
-            <View style={s.connectIc}><Ionicons name="calendar-outline" size={21} color={C.text} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.connectT}>{l('Liga o teu calendário', 'Connect your calendar')}</Text>
-              <Text style={s.connectS}>{l('Importamos a tua escala do calendário do telemóvel. Só de leitura.', 'We import your roster from the phone calendar. Read-only.')}</Text>
-            </View>
-            <TouchableOpacity onPress={connectCalendar} activeOpacity={0.9} style={s.connectBtn}><Text style={s.connectBtnTxt}>{l('Ligar', 'Connect')}</Text></TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity activeOpacity={0.8} onPress={() => { select(); setCalPickerOpen(true); }} style={s.selo}>
-            <Ionicons name="calendar-outline" size={14} color={C.sub} />
-            <Text style={s.seloT} numberOfLines={1}>{l('Calendário', 'Calendar')}{calendarName ? ` · ${calendarName}` : ''}</Text>
-            <Ionicons name="checkmark-circle" size={14} color={C.greenText} />
-            <View style={{ flex: 1 }} />
-            <Text style={s.seloChg}>{l('Mudar', 'Change')}</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Alterações de escala (Fase 4) — banner AZUL (informativo) que abre a revisão */}
-        {rcCounts?.total ? (
-          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportOpen(true); }} style={s.rcBanner}>
-            <Ionicons name="sync-circle" size={20} color={C.info} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.rcTitle}>{l('A escala mudou no calendário', 'Roster changed in calendar')}</Text>
-              <Text style={s.rcSub} numberOfLines={1}>{rcSub}{rcSub ? ' · ' : ''}{l('rever', 'review')}</Text>
-            </View>
-            <View style={s.rcGo}><Text style={s.rcGoTxt}>{l('Rever', 'Review')}</Text></View>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Resumo do mês — tipografia com separadores, no topo */}
-        <View style={s.summ}>
-          <View style={s.si}><Text style={s.siLbl}>{l('Serviços', 'Duties')}</Text><Text style={s.siVal}>{serviceCount}</Text></View>
-          <View style={s.sep} />
-          <View style={s.si}><Text style={s.siLbl}>{l('Folgas', 'Days off')}</Text><Text style={s.siVal}>{folgaCount}</Text></View>
-          <View style={s.sep} />
-          <View style={s.si}><Text style={s.siLbl}>{l('Per-diem', 'Per diem')}</Text><Text style={[s.siVal, s.siEur]}>{fmtEur(perDiemTotal)}</Text></View>
-        </View>
-
-        {/* Lista de cards de dia (faz scroll) */}
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
-            refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
-              onRefresh={async () => {
-                setRefreshing(true); const t0 = Date.now();
-                try { await checkRosterChanges?.(); } catch { /* ignora */ }
-                const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
-                setRefreshing(false);
-              }} />}>
-          {!anyDuty ? (
-            <View style={s.emptyWrap}>
-              <Text style={s.empty}>{t('duties.empty', lang)}</Text>
-              <TouchableOpacity activeOpacity={0.9} style={s.emptyImportBtn} onPress={() => { select(); setImportOpen(true); }}>
-                <Ionicons name="download-outline" size={18} color="#fff" />
-                <Text style={s.emptyImportTxt}>{l('Importar escala', 'Import roster')}</Text>
+            <View style={s.connectBig}>
+              <View style={s.connectBigIc}><Ionicons name="calendar-outline" size={22} color={C.text} /></View>
+              <Text style={s.connectBigT}>{calendarId ? l('Calendário ligado', 'Calendar connected') : l('Liga o teu calendário', 'Connect your calendar')}</Text>
+              <Text style={s.connectBigS}>{calendarId
+                ? l('Sem serviços lidos do calendário. Tenta importar de novo (podes mudar o intervalo) ou usa o PDF.', 'No duties read from the calendar. Try importing again (you can change the range) or use a PDF.')
+                : l('Importamos os teus serviços do calendário do telemóvel, assim que mudam. Tu só confirmas.', 'We import your duties from the phone calendar whenever they change. You just confirm.')}</Text>
+              <View style={s.privRow}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.privTxt}>{l('Só de leitura · nada é alterado no teu calendário', 'Read-only · nothing is changed in your calendar')}</Text></View>
+              <TouchableOpacity onPress={calendarId ? () => openImport('calendar') : connectCalendar} activeOpacity={0.9} style={s.btnDark}>
+                <Ionicons name={calendarId ? 'refresh' : 'arrow-forward'} size={17} color="#fff" /><Text style={s.btnDarkTxt}>{calendarId ? l('Importar agora', 'Import now') : l('Ligar ao calendário', 'Connect calendar')}</Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            <>
+
+            <View style={s.orline}><View style={s.orlineBar} /><Text style={s.orlineTxt}>{l('ou', 'or')}</Text><View style={s.orlineBar} /></View>
+            <TouchableOpacity onPress={() => openImport('paste')} activeOpacity={0.9} style={s.btnGhost}><Ionicons name="document-text-outline" size={16} color={C.text} /><Text style={s.btnGhostTxt}>{l('Importar PDF da escala', 'Import roster PDF')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={addManual} activeOpacity={0.9} style={s.btnGhost}><Ionicons name="add" size={18} color={C.text} /><Text style={s.btnGhostTxt}>{l('Adicionar serviço à mão', 'Add a duty by hand')}</Text></TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <>
+            {/* Mês navegável ‹ Junho 2026 › */}
+            <View style={s.monthBar}>
+              <TouchableOpacity onPress={() => shiftMonth(-1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês anterior', 'Previous month')}><Ionicons name="chevron-back" size={18} color={C.text} /></TouchableOpacity>
+              <Text style={s.monthLabel}>{monthLabel}</Text>
+              <TouchableOpacity onPress={() => shiftMonth(1)} hitSlop={8} style={s.marrow} accessibilityLabel={l('Mês seguinte', 'Next month')}><Ionicons name="chevron-forward" size={18} color={C.text} /></TouchableOpacity>
+            </View>
+
+            {/* Selo (ligado) OU cartão "IR" (há serviços, calendário por ligar) → hub de importar */}
+            {calendarId ? (
+              <TouchableOpacity activeOpacity={0.8} onPress={() => { select(); setCalPickerOpen(true); }} style={s.selo}>
+                <Ionicons name="calendar-outline" size={14} color={C.sub} />
+                <Text style={s.seloT} numberOfLines={1}>{l('Calendário', 'Calendar')}{calendarName ? ` · ${calendarName}` : ''}</Text>
+                <Ionicons name="checkmark-circle" size={14} color={C.greenText} />
+                <View style={{ flex: 1 }} />
+                <Text style={s.seloChg}>{l('Mudar', 'Change')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity activeOpacity={0.85} onPress={openHub} style={s.connectCard}>
+                <View style={s.connectIc}><Ionicons name="calendar-outline" size={21} color={C.text} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.connectT}>{l('Liga o teu calendário', 'Connect your calendar')}</Text>
+                  <Text style={s.connectS}>{l('Importa do calendário do telemóvel ou por PDF. Só de leitura.', 'Import from the phone calendar or a PDF. Read-only.')}</Text>
+                </View>
+                <View style={s.goBtn}><Text style={s.goBtnTxt}>{l('IR', 'GO')}</Text><Ionicons name="chevron-forward" size={14} color="#fff" /></View>
+              </TouchableOpacity>
+            )}
+
+            {/* Alterações de escala (Fase 4) — banner AZUL → revisão (Confirmar import, calendário) */}
+            {rcCounts?.total ? (
+              <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportSource('calendar'); setImportOpen(true); }} style={s.rcBanner}>
+                <Ionicons name="sync-circle" size={20} color={C.info} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.rcTitle}>{l('A escala mudou no calendário', 'Roster changed in calendar')}</Text>
+                  <Text style={s.rcSub} numberOfLines={1}>{rcSub}{rcSub ? ' · ' : ''}{l('rever', 'review')}</Text>
+                </View>
+                <View style={s.rcGo}><Text style={s.rcGoTxt}>{l('Rever', 'Review')}</Text></View>
+              </TouchableOpacity>
+            ) : null}
+
+            {/* Resumo do mês — tipografia com separadores, no topo */}
+            <View style={s.summ}>
+              <View style={s.si}><Text style={s.siLbl}>{l('Serviços', 'Duties')}</Text><Text style={s.siVal}>{serviceCount}</Text></View>
+              <View style={s.sep} />
+              <View style={s.si}><Text style={s.siLbl}>{l('Folgas', 'Days off')}</Text><Text style={s.siVal}>{folgaCount}</Text></View>
+              <View style={s.sep} />
+              <View style={s.si}><Text style={s.siLbl}>{l('Per-diem', 'Per diem')}</Text><Text style={[s.siVal, s.siEur]}>{fmtEur(perDiemTotal)}</Text></View>
+            </View>
+
+            {/* Lista de cards de dia (faz scroll) */}
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
+                refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
+                  onRefresh={async () => {
+                    setRefreshing(true); const t0 = Date.now();
+                    try { await checkRosterChanges?.(); } catch { /* ignora */ }
+                    const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
+                    setRefreshing(false);
+                  }} />}>
               {upcomingDays.map(renderDay)}
               {pastDays.length > 0 ? (
                 <View style={s.divider}>
@@ -322,16 +355,56 @@ export default function EscalaScreen({ navigation, route }) {
               ) : null}
               {pastDays.map(renderDay)}
               <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
-            </>
-          )}
-        </ScrollView>
+            </ScrollView>
+          </>
+        )}
       </View>
+
+      {/* Toast flutuante (em cima) — "X serviços importados do {calendário/PDF}", some sozinho */}
+      {toast ? (
+        <View style={[s.toast, { top: insets.top + 6 }]} pointerEvents="none">
+          <View style={s.toastCk}><Ionicons name="checkmark" size={14} color="#fff" /></View>
+          <Text style={s.toastTxt} numberOfLines={2}>{l(`${toast.n} serviços importados`, `${toast.n} duties imported`)}{toast.src === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}</Text>
+        </View>
+      ) : null}
 
       <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
-      <RosterImportSheet visible={importOpen} onConnect={connectCalendar} onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
+      <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
+        onDone={({ saved, source }) => showToast(saved, source)}
+        onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
+
+      {/* Hub de importar — Ligar calendário · Importar PDF (aberto pelo mini-fab / cartão "IR" / arranque) */}
+      <BottomSheet visible={hubOpen} onClose={() => setHubOpen(false)} title={l('Importar escala', 'Import roster')} closeLabel={t('common.close', lang)}>
+        <View style={s.hubBody}>
+          <Text style={s.hubSub}>{l('Trazemos os teus serviços para a Escala — escolhe a fonte.', 'We bring your duties into the roster — pick a source.')}</Text>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { setHubOpen(false); connectCalendar(); }} style={s.hubOpt}>
+            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="calendar-outline" size={22} color={C.brand} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.hubOptT}>{l('Ligar ao calendário', 'Connect calendar')}</Text>
+              <Text style={s.hubOptS}>{l('Escolhes o calendário do telemóvel; sincroniza sozinho. Só de leitura.', 'Pick your phone calendar; it syncs on its own. Read-only.')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+          </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => openImport('paste')} style={s.hubOpt}>
+            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="document-text-outline" size={22} color={C.info} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.hubOptT}>{l('Importar PDF', 'Import PDF')}</Text>
+              <Text style={s.hubOptS}>{l('Lês o PDF da escala no telemóvel; a cópia é apagada (RGPD).', 'Read the roster PDF on-device; the copy is deleted (GDPR).')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+          </TouchableOpacity>
+          <View style={s.hubNote}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.hubNoteTxt}>{l('Nada sai do telemóvel · confirmas antes de gravar', 'Nothing leaves your phone · you confirm before saving')}</Text></View>
+        </View>
+      </BottomSheet>
       <CalendarPickerSheet visible={calPickerOpen} onClose={() => setCalPickerOpen(false)} currentId={calendarId}
-        onSelect={(id, name) => { setCalendarId(id); setCalendarName && setCalendarName(name || null); notify && notify(l('Calendário ligado', 'Calendar connected')); }} />
+        onSelect={(id, name) => {
+          setCalendarId(id); setCalendarName && setCalendarName(name || null);
+          // Ligar = ler o calendário e abrir já o "Confirmar import" (calendário). Pequeno atraso
+          // para o Modal do picker fechar antes de abrir o do import (evita modal-sobre-modal).
+          setImportSource('calendar');
+          setTimeout(() => setImportOpen(true), 350);
+        }} />
 
       {/* Registo ORO.FTL.245 (PDF assinável) */}
       <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
@@ -383,8 +456,6 @@ const makeStyles = (C) => StyleSheet.create({
   connectIc: { width: 40, height: 40, borderRadius: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   connectT: { fontSize: 14.5, fontFamily: FONT.bold, color: C.text },
   connectS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, lineHeight: 15 },
-  connectBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 10 },
-  connectBtnTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
 
   // Banner de alterações (azul, informativo)
   rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.infoSoft, borderWidth: 1, borderColor: C.info, borderRadius: RADIUS.lg, padding: 12, marginTop: 10 },
@@ -424,15 +495,46 @@ const makeStyles = (C) => StyleSheet.create({
   eur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
   offlbl: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.sub },
 
-  // Vazio (sem nenhum serviço)
-  empty: { fontSize: TYPE.sub, color: C.sub, paddingVertical: SPACE.md },
-  emptyWrap: { alignItems: 'flex-start' },
-  emptyImportBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.red, borderRadius: RADIUS.pill, paddingVertical: 13, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  emptyImportTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, marginBottom: 10 },
   dividerLine: { flex: 1, height: 1, backgroundColor: C.line },
   dividerTxt: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+
+  // Arranque (Serviços, sem escala)
+  h1Big: { fontSize: 28, fontFamily: FONT.display, letterSpacing: -0.6, color: C.text, marginTop: 6 },
+  lead: { fontSize: 13.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 20, marginTop: 8 },
+  connectBig: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 18 },
+  connectBigIc: { width: 46, height: 46, borderRadius: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  connectBigT: { fontSize: 16.5, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
+  connectBigS: { fontSize: 12.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 18, marginTop: 6 },
+  privRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 },
+  privTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
+  btnDark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: 14, paddingVertical: 14, marginTop: 14 },
+  btnDarkTxt: { color: '#fff', fontSize: 15, fontFamily: FONT.bold },
+  orline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
+  orlineBar: { flex: 1, height: 1, backgroundColor: C.line },
+  orlineTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.lineStrong },
+  btnGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, borderRadius: 14, paddingVertical: 13, marginTop: 10 },
+  btnGhostTxt: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
+
+  // Cartão "IR" (no mês, calendário por ligar) → hub
+  goBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 9 },
+  goBtnTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.heavy, letterSpacing: 0.3 },
+
+  // Hub de importar
+  hubBody: { padding: 20 },
+  hubSub: { fontSize: 12.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 18, marginBottom: 4 },
+  hubOpt: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 14, marginTop: 12 },
+  hubOptIc: { width: 46, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  hubOptT: { fontSize: 15.5, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
+  hubOptS: { fontSize: 12, fontFamily: FONT.medium, color: C.sub, marginTop: 3, lineHeight: 16 },
+  hubNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 14 },
+  hubNoteTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
+
+  // Toast flutuante de sucesso (em cima)
+  toast: { position: 'absolute', left: GUTTER, right: GUTTER, zIndex: 100, elevation: 12, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.ink, borderRadius: 15, paddingVertical: 13, paddingHorizontal: 15, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
+  toastCk: { width: 24, height: 24, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  toastTxt: { flex: 1, color: '#fff', fontSize: 13.5, fontFamily: FONT.bold },
 
   // Folha do registo FTL.245
   form: { padding: 20 },

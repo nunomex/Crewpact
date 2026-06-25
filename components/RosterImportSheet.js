@@ -37,7 +37,7 @@ const demoCands = () => {
 // Importação de escala (calendário do telemóvel ou PDF): seletor de intervalo → página
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
-export default function RosterImportSheet({ visible, onClose, onConnect }) {
+export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
   const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -45,7 +45,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
-  const [source, setSource] = useState('calendar');   // 'calendar' | 'paste'
+  const [source, setSource] = useState(initialSource || 'calendar');   // 'calendar' | 'paste'
   const [range, setRange] = useState('28');
   const [loading, setLoading] = useState(false);
   const [denied, setDenied] = useState(false);
@@ -68,6 +68,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect }) {
     setLoading(false);
   };
   useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source, calendarId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Abrir já na fonte pedida (ex.: vindo do hub "Importar PDF" → 'paste').
+  useEffect(() => { if (visible && initialSource) setSource(initialSource); }, [visible, initialSource]); // eslint-disable-line react-hooks/exhaustive-deps
   // RGPD: ao fechar, descartar o que foi lido do PDF (não fica nada em memória).
   useEffect(() => { if (!visible) { setPasteDiag(null); setPasteRecurrents([]); } }, [visible]);
 
@@ -198,14 +200,19 @@ export default function RosterImportSheet({ visible, onClose, onConnect }) {
       const recs = source === 'paste' ? pasteRecurrents : [];
       if (recs && recs.length) {
         const names = recs.map((r) => validityLabel(r.vid, isPilot, lang)).join(', ');
+        // Fecha + devolve o resultado (toast na Escala), em qualquer das escolhas — feedback consistente com o caminho normal.
+        const finish = () => { onClose(); onDone && onDone({ saved, source: src }); };
         Alert.alert(
           l('Escala atualizada', 'Roster updated'),
           `${savedMsg}\n\n${l('Detetei recorrentes', 'Found recurrents')}: ${names}. ${l('Atualizar as validades?', 'Update your documents?')}`,
           [
-            { text: l('Só a escala', 'Roster only'), onPress: onClose },
-            { text: l('Atualizar validades', 'Update documents'), onPress: () => { applyRecurrents(recs); onClose(); } },
+            { text: l('Só a escala', 'Roster only'), onPress: finish },
+            { text: l('Atualizar validades', 'Update documents'), onPress: () => { applyRecurrents(recs); finish(); } },
           ],
         );
+      } else if (onDone) {
+        // Sucesso normal → fecha e devolve o resultado à Escala (mostra o toast flutuante).
+        onClose(); onDone({ saved, source: src });
       } else {
         Alert.alert(l('Escala atualizada', 'Roster updated'), savedMsg, [{ text: 'OK', onPress: onClose }]);
       }
