@@ -19,6 +19,14 @@ export default function NotificationsBell() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  // Detalhe por-dia do aviso de escala: data curta + rota/tipo + etiqueta de estado.
+  const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); };
+  const descOf = (it) => it.route || t('duties.kind.' + (it.kind || 'flight'), lang);
+  const dayChip = (status) => status === 'added' ? { txt: l('Nova', 'New'), box: s.dchipNew, fg: { color: C.greenText || C.green || C.text } }
+    : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), box: s.dchipCx, fg: { color: C.red } }
+    : { txt: l('Alterada', 'Changed'), box: s.dchipCh, fg: { color: C.warnText || C.warn || C.text } };
 
   const notifs = buildNotifications(profile, lang, { rosterChanges });
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
@@ -57,7 +65,25 @@ export default function NotificationsBell() {
                       <Text style={s.notifTime}>{n.time}</Text>
                     </View>
                     <Text style={s.notifItemTitle}>{n.title}</Text>
-                    <Text style={s.notifItemBody}>{n.body}</Text>
+                    {n.days && n.days.length ? (
+                      <View style={s.days}>
+                        {n.days.map((it, di) => {
+                          const chip = dayChip(it.status);
+                          return (
+                            <View key={di} style={s.day}>
+                              <View style={[s.dchip, chip.box]}><Text style={[s.dchipTxt, chip.fg]}>{chip.txt}</Text></View>
+                              <Text style={s.dtxt} numberOfLines={1}>
+                                <Text style={s.dd}>{fmtDay(it.date)}</Text>{' · '}
+                                {it.beforeRoute ? <Text style={s.dstrike}>{it.beforeRoute}</Text> : null}{it.beforeRoute ? ' → ' : ''}
+                                {descOf(it)}{it.status === 'added' && it.sectors ? ` · ${it.sectors} ${t('duties.sectorsShort', lang)}` : ''}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <Text style={s.notifItemBody}>{n.body}</Text>
+                    )}
                   </View>
                   {n.action === 'roster' ? <Ionicons name="chevron-forward" size={16} color={C.sub} /> : null}
                 </>
@@ -97,5 +123,16 @@ const makeStyles = (C) => StyleSheet.create({
   notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
   notifItemTitle: { fontSize: 13, fontFamily: FONT.medium, color: C.text },
   notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },
+  // Detalhe por-dia do aviso de escala (chips + rota/tipo)
+  days: { marginTop: 9, gap: 8 },
+  day: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  dchip: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, minWidth: 72, alignItems: 'center' },
+  dchipTxt: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase' },
+  dchipCh: { backgroundColor: C.warnSoft || C.soft },
+  dchipNew: { backgroundColor: C.greenSoft || C.soft },
+  dchipCx: { backgroundColor: C.redSoft || C.soft },
+  dtxt: { flex: 1, fontSize: 12.5, fontFamily: FONT.semibold, color: C.text },
+  dd: { fontFamily: FONT.bold, color: C.text },
+  dstrike: { color: C.sub, textDecorationLine: 'line-through' },
   noMore: { textAlign: 'center', fontSize: 11, color: C.sub, padding: SPACE.lg },
 });

@@ -16,6 +16,20 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
       rc.counts.added ? `${rc.counts.added} ${en ? 'new' : 'nova(s)'}` : null,
       rc.counts.removed ? `${rc.counts.removed} ${en ? 'cancelled' : 'cancelada(s)'}` : null,
     ].filter(Boolean).join(' · ');
+    // Detalhe POR DIA (renderizado no sino): cada dia com estado + rota/tipo. O sino
+    // formata datas/etiquetas; aqui passamos só os dados crus.
+    const days = [];
+    const pushDay = (x, status) => {
+      const after = x.after || null, before = x.before || null;
+      const src = after || before || {};
+      const beforeRoute = (status === 'changed' && before && after && before.route && before.route !== after.route) ? before.route : null;
+      days.push({ date: x.date, status, route: src.route || null, kind: src.kind || 'flight', sectors: src.sectors || 0, beforeRoute });
+    };
+    (rc.changed || []).forEach((x) => pushDay(x, 'changed'));
+    (rc.conflict || []).forEach((x) => pushDay(x, 'changed'));   // conflito mostra como "alterada"
+    (rc.added || []).forEach((x) => pushDay(x, 'added'));
+    (rc.removed || []).forEach((x) => pushDay(x, 'removed'));
+    days.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     list.push({
       id: 'roster:' + dates.join(','),
       action: 'roster',
@@ -23,6 +37,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
       time: en ? 'Calendar' : 'Calendário',
       title: en ? 'Roster changes' : 'Alterações na escala',
       body: en ? `${parts}. Tap to review.` : `${parts}. Toca para rever.`,
+      days,
     });
   }
 

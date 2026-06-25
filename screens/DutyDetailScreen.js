@@ -72,6 +72,8 @@ export default function DutyDetailScreen({ route, navigation }) {
     }
     if (ok && dists.length) perDiem = ae.perDiem(crewCategory, dists);
   }
+  // Valor € da pernoita (Art. 39) — piloto por categoria, cabine €46 fixos; index=1 como o per-diem.
+  const nsEur = (duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
 
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const fmtDate = (iso) => {
@@ -79,7 +81,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     const str = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
-  const fmtEur0 = (n) => (n == null ? '—' : (lang === 'en' ? `€${Math.round(n)}` : `${Math.round(n)} €`));
+  const fmtEur0 = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
   const tv = (hhmm) => { const z = toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
   const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   const headMain = isFlight
@@ -158,7 +160,7 @@ export default function DutyDetailScreen({ route, navigation }) {
         <Panel rows={[
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: C.greenText },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
-          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: l('Sim', 'Yes') },
+          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? C.greenText : null },
           duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source },
         ]} />
 

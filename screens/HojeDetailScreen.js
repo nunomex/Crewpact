@@ -35,6 +35,8 @@ export default function HojeDetailScreen({ route, navigation }) {
 
   const stColor = (st) => (st === 'ok' ? C.green : st === 'warn' ? C.warn : st === 'bad' ? C.red : st === 'info' ? C.info : C.lineStrong);
   const isCheck = item.id === 'next' || item.id === 'roster' || item.id === 'validades';
+  // Valor € da pernoita (Art. 39): piloto por categoria, cabine €46; index=1 (como o per-diem do preview).
+  const nsEur = (ctxAll.ae && ctxAll.ae.nightStop && ctxAll.crewCategory) ? ctxAll.ae.nightStop(ctxAll.crewCategory) : null;
 
   const Row = ({ k, v, color }) => (
     <View style={s.row}>
@@ -92,7 +94,7 @@ export default function HojeDetailScreen({ route, navigation }) {
               {raw.report ? <Row k={l('Report', 'Report')} v={`${raw.report} ${l('local', 'local')} · ${toZulu(raw.iso, raw.report) || '—'}Z`} /> : null}
               <Row k={raw.route ? l('Rota', 'Route') : l('Tipo', 'Type')} v={raw.route || (raw.kind !== 'flight' ? t('duties.kind.' + raw.kind, lang) : l('Voo', 'Flight'))} />
               {raw.sectors ? <Row k={l('Setores', 'Sectors')} v={String(raw.sectors)} /> : null}
-              {raw.nightStop ? <Row k={l('Pernoita', 'Night stop')} v={l('Sim', 'Yes')} /> : null}
+              {raw.nightStop ? <Row k={l('Pernoita', 'Night stop')} v={nsEur != null ? `+${fmtEur0(nsEur, lang)}` : l('Sim', 'Yes')} color={nsEur != null ? C.greenText : null} /> : null}
             </>
           )}
         </>

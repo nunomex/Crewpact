@@ -73,8 +73,9 @@ export default function StatsScreen({ navigation }) {
   const fmtH = (h) => `${Number(h).toLocaleString(locale, { maximumFractionDigits: 1 })} h`;
   const fmtEur0 = (n) => {
     if (n == null) return '—';
-    const g = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-    return lang === 'en' ? `€${g}` : `${g} €`;
+    const [i, d] = Number(n).toFixed(2).split('.');
+    const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
   };
   const monthAbbr = (i) => new Date(2020, i, 1).toLocaleDateString(locale, { month: 'short' }).replace('.', '').slice(0, 3);
   const kindLabel = (k) => t('duties.kind.' + k, lang);

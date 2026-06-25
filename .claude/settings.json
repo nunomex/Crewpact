@@ -31,10 +31,17 @@
       "Bash(cd d:\\\\\\\\PROJECTOS\\\\\\\\CrewPact)",
       "Bash(git diff *)",
       "Read(//dev/**)",
-      "WebFetch(domain:pathikgandhi.com)"
+      "WebFetch(domain:pathikgandhi.com)",
+      "Bash(xargs grep -l \"const.*greenText\\\\|export.*greenText\")",
+      "Bash(xargs grep -l \"greenText\")",
+      "Bash(xargs grep -l \"useTheme\\\\|greenText\")",
+      "Bash(grep -v \"//\")",
+      "Bash(xargs grep -l \"RosterImportSheet\\\\|cPay\\\\|narrow\\\\|280\")",
+      "Bash(grep -n \"nsEur\">+\" \"D:\\\\PROJECTOS\\\\CrewPact\\\\components\\\\DutyFormSheet.js\")"
     ],
     "additionalDirectories": [
-      "C:\\Users\\funsn\\AppData\\Local\\Temp"
+      "C:\\Users\\funsn\\AppData\\Local\\Temp",
+      "D:\\PROJECTOS\\CrewPact"
     ]
   }
 }

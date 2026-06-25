@@ -109,6 +109,7 @@ const nomOf = (cat) => NOMINAL_SECTOR[cat] || 0;
 
 export const cashHandling = (cat) => r2(CASH_HANDLING_PCT * annualBase(cat) / 12);   // Art. 54 — €/mês
 export const holidayDay   = (cat) => r2(HOLIDAY_DAY_SECTORS * nomOf(cat));            // Art. 60 — €/dia de férias
+export const nightStop    = () => NIGHT_STOP_EUR;                                     // Art. 56 — pernoita = €46 FIXOS (interface uniforme c/ pilotos; ignora cat/index)
 export const office       = (cat) => r2(OFFICE_SECTORS * nomOf(cat));                 // Art. 70 — €/dia em terra
 export const wfly         = (cat) => r2(WFLY_PCT_ANNUAL * annualBase(cat));           // Art. 69 — €/dia (1% base anual)
 export const rdp          = (cat) => r2(Math.max(nomOf(cat), RDP_FLOOR[cat] || 0));   // Art. 67 — €/evento

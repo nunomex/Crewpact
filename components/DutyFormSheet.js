@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
@@ -23,7 +23,7 @@ const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight' };
 
 // Campo "HH:MM" — rótulo em cima, campo a toda a largura (`flex` para par lado-a-lado).
 function ClockField({ label, value, onChange, C, s, flex }) {
@@ -40,7 +40,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, base, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -52,11 +52,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight' }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight' });
   useEffect(() => {
     if (!visible) return;
     setForm(candidate ? formFromCand(candidate) : loadFor(date || isoDay()));
@@ -77,10 +77,15 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
     };
   };
-  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: (k === 'flight' || k === 'positioning') ? f.nightStop : false })); };
+  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k })); };
 
   const isFlight = form.kind === 'flight';
-  const showNightStop = isFlight || form.kind === 'positioning';
+  // Pernoita = PARIDADE dos setores (regra do utilizador): ÍMPAR → pernoita (forçada,
+  // sem toggle); PAR → sem pernoita. Derivada da rota/setores, não editável à mão.
+  const flightNs = isFlight && Number(form.sectors) % 2 === 1;
+  // Valor € da pernoita (Art. 39): piloto = ae.nightStop(cat); cabine = €46 fixos. index=1,
+  // igual ao per-diem do preview (a indexação só entra no cálculo mensal).
+  const nsEur = (flightNs && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
   const kindInfo = !ae ? null : ({
     flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
     standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
@@ -110,13 +115,6 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
     return { ok: true, eur: ae.perDiem(crewCategory, dists) };
   }, [ae, crewCategory, form.route]);
-  // Auto-sugestão de pernoita: se a rota TERMINA fora da base, o dia acaba fora da
-  // base → sugerir o toggle. NÃO muda nada sozinho — o utilizador confirma (toca).
-  const endAirport = (() => {
-    const c = (form.route || '').split('-').map((x) => x.trim().toUpperCase()).filter(Boolean);
-    return c.length >= 2 ? c[c.length - 1] : null;
-  })();
-  const suggestNightStop = showNightStop && !form.nightStop && !!base && !!endAirport && endAirport !== String(base).toUpperCase();
 
   const fmtPd = (n) => {
     const [int, dec] = Number(n).toFixed(2).split('.');
@@ -143,7 +141,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       report_time: form.report, block_off: form.off || null, block_on: form.on || null,
       sectors: isFlight ? form.sectors : 0, flight_minutes: isFlight ? hhmmToMin(form.flight) : 0,
       route: isFlight ? (form.route.trim() || null) : null,
-      kind: form.kind || 'flight', nightStop: showNightStop ? !!form.nightStop : false,
+      kind: form.kind || 'flight', nightStop: flightNs,
     };
     if (onCandidate) {
       // Correção no import: devolve o candidato corrigido — NÃO grava no `duties` (só o
@@ -205,20 +203,6 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             {kindInfo ? <Text style={s.kindInfo}>{kindInfo}</Text> : null}
           </Animated.View>
 
-          {/* Paragem nocturna — só voo/posicionamento */}
-          {showNightStop ? (
-            <Animated.View style={[s.sec, secStyle(2)]}>
-              <View style={s.nsRow}>
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text style={s.lbl}>{l('Paragem nocturna', 'Night stop')}</Text>
-                  <Text style={s.nsHint}>{l('Pernoita fora da base · abono AE (Art. 39)', 'Overnight away from base · AE allowance (Art. 39)')}</Text>
-                </View>
-                <Switch value={form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-              </View>
-            </Animated.View>
-          ) : null}
-
           {/* Rota + per-diem — só voo, e só onde serve (AE). FTL-only → setores diretos. */}
           {isFlight && (caps ? caps.route : !!ae) ? (
             <Animated.View style={[s.sec, secStyle(3)]}>
@@ -234,13 +218,23 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                     ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
                     : <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text>
               ) : null}
-              {suggestNightStop ? (
-                <TouchableOpacity onPress={() => { success(); setForm((f) => ({ ...f, nightStop: true })); }} style={s.nsSuggest} activeOpacity={0.75}>
-                  <Ionicons name="moon-outline" size={15} color={C.ink} />
-                  <Text style={s.nsSuggestTxt}>{l(`Termina em ${endAirport}, fora da base (${base})`, `Ends at ${endAirport}, away from base (${base})`)}</Text>
-                  <Text style={s.nsSuggestBtn}>{l('Pernoita', 'Night stop')}</Text>
-                </TouchableOpacity>
-              ) : null}
+            </Animated.View>
+          ) : null}
+
+          {/* Pernoita — derivada da PARIDADE dos setores (debaixo da rota). Sem toggle:
+              ÍMPAR → pernoita; PAR → sem pernoita. Atualiza ao definires os setores/rota. */}
+          {isFlight && Number(form.sectors) >= 1 ? (
+            <Animated.View style={[s.sec, secStyle(3)]}>
+              <View style={[s.nsCard, flightNs ? s.nsCardOn : null]}>
+                <Ionicons name={flightNs ? 'moon' : 'moon-outline'} size={17} color={flightNs ? C.ink : C.sub} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.nsCardT, flightNs ? null : { color: C.sub }]}>{flightNs ? l('Pernoita', 'Night stop') : l('Sem pernoita', 'No night stop')}</Text>
+                  <Text style={s.nsHint}>{flightNs
+                    ? l(`Setores ímpares (${form.sectors}) → acabas fora da base · abono AE (Art. 39)`, `Odd sectors (${form.sectors}) → ends away from base · AE allowance (Art. 39)`)
+                    : l(`Setores pares (${form.sectors}) → ida-e-volta à base`, `Even sectors (${form.sectors}) → round trip to base`)}</Text>
+                </View>
+                {flightNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
+              </View>
             </Animated.View>
           ) : null}
 
@@ -318,16 +312,16 @@ const makeStyles = (C) => StyleSheet.create({
   kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
   kindChipTxtOn: { color: '#fff' },
   kindInfo: { fontSize: 12, color: C.text, fontFamily: FONT.semibold, marginTop: 10, marginLeft: 2 },
-  nsRow: { flexDirection: 'row', alignItems: 'center' },
   nsHint: { fontSize: 11, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
   routeHint: { fontSize: 11.5, color: C.sub, marginTop: 7, fontFamily: FONT.medium },
   pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
   pdLab: { fontSize: 11.5, color: C.green || C.sub, fontFamily: FONT.semibold },
   pdTag: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff', backgroundColor: C.green || C.ink, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, overflow: 'hidden' },
-  // Sugestão de pernoita (rota termina fora da base) — toca para marcar.
-  nsSuggest: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 9, paddingHorizontal: 12, borderRadius: RADIUS.md, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line },
-  nsSuggestTxt: { flex: 1, fontSize: 11.5, fontFamily: FONT.semibold, color: C.text, lineHeight: 15 },
-  nsSuggestBtn: { fontSize: 11, fontFamily: FONT.bold, color: '#fff', backgroundColor: C.ink, borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5, overflow: 'hidden' },
+  // Pernoita derivada (sem toggle) — indicador debaixo da rota.
+  nsCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.soft, borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line },
+  nsCardOn: { borderColor: C.ink },
+  nsCardT: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
+  nsEur: { fontSize: 15, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'], marginLeft: 8 },
   proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
   projOk: { borderColor: C.line, backgroundColor: C.soft },
   projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },

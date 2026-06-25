@@ -32,11 +32,12 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
     const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
     return lang === 'en' ? `€${grouped}.${dec}` : `${grouped},${dec} €`;
   };
-  // € compacto, sem decimais (valores das barras por setor).
+  // € com cêntimos (valores exatos — sem arredondamento).
   const fmtEur0 = (n) => {
     if (n == null) return '—';
-    const g = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-    return lang === 'en' ? `€${g}` : `${g} €`;
+    const [i, d] = Number(n).toFixed(2).split('.');
+    const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
   };
 
   if (!category) {

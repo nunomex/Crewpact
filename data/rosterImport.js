@@ -18,14 +18,18 @@ export const dutyFromActivity = (act) => {
   // Cadeia de aeroportos: dep da 1.ª perna + arr de cada perna (setores contíguos).
   const codes = [first.depAirport, ...act.legs.map((l) => l.arrAirport)];
   const route = codes.length >= 2 && codes.every((c) => c && c !== '—') ? codes.join('-') : null;
+  const sectors = act.sectors || act.legs.length;
   return {
     duty_date: act.dateISO,
     report_time: first.report || null,   // apresentação (≈ dep − 1 h)
     block_off: first.depTime || null,     // 1.º off-block
     block_on: last.arrTime || null,       // último on-block
-    sectors: act.sectors || act.legs.length,
+    sectors,
     flight_minutes: flightMin,
     route,
+    // Pernoita pela PARIDADE dos setores: ÍMPAR = acabas fora da base → pernoita;
+    // PAR = ida-e-volta à base → sem pernoita. (regra do utilizador, voo)
+    nightStop: sectors % 2 === 1,
     // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
     // só o essencial por leg — flightNo + aeroportos + horas planeadas.
     legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null })),

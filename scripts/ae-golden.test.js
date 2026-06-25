@@ -186,6 +186,7 @@ eq('Cabine mensal FA 8/12', cabin.monthlyBase('FA', { contract: '8/12' }), 897.7
 eq('Cabine per diem FA (350,800)', cabin.perDiem('FA', [350, 800]), 42.00);             // 2.0 × 21
 eq('Cabine bandas iguais aos pilotos', cabin.sectorMult(350), 0.8);
 eq('Cabine pernoita = €46 fixos', cabin.NIGHT_STOP_EUR, 46);
+eq('Cabine pernoita função = €46', cabin.nightStop('FA'), 46);
 eq('Cabine mês: pernoita não é setor', cabin.computeAeMonth({ category: 'FA', nightStops: 2 }).nightStops, 92);
 eq('Cabine contrato fixo-50', cabin.contractFactor('fixo-50'), 0.5);
 eq('Cabine label CM en', cabin.categoryLabel('CM', 'en'), 'Cabin Manager');

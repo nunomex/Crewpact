@@ -26,8 +26,9 @@ export const dateLbl = (iso, todayISO, lang) => {
 
 export const fmtEur0 = (n, lang) => {
   if (n == null) return '—';
-  const g = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-  return lang === 'en' ? `€${g}` : `${g} €`;
+  const [i, d] = Number(n).toFixed(2).split('.');
+  const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+  return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
 };
 
 // Minutos → "H:MM" (clampa a 0; aguenta > 24 h, ex.: repouso longo).

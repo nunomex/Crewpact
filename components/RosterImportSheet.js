@@ -114,18 +114,27 @@ export default function RosterImportSheet({ visible, onClose }) {
   //   fix     = voo sem rota OU aeroporto não reconhecido → a corrigir (⏱ âmbar, "Corrigir")
   //   info    = não-voo (standby/terra) → importável, sem per-diem (⏱ âmbar, — €)
   //   removed = cancelado
-  const fmtEur0n = (n) => (lang === 'en' ? `€${Math.round(n)}` : `${Math.round(n)} €`);
+  const fmtEur0n = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
   const apsOf = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
   const candInfo = (c) => {
-    if (c.action === 'delete') return { kind: 'removed', perDiem: null, badAp: null };
-    if (c.kind !== 'flight') return { kind: 'info', perDiem: null, badAp: null };
+    if (c.action === 'delete') return { kind: 'removed', perDiem: null, badAp: null, nsEur: null };
+    if (c.kind !== 'flight') return { kind: 'info', perDiem: null, badAp: null, nsEur: null };
     const aps = apsOf(c.duty.route);
-    if (aps.length < 2) return { kind: 'fix', perDiem: null, badAp: null };
+    if (aps.length < 2) return { kind: 'fix', perDiem: null, badAp: null, nsEur: null };
     const bad = aps.find((a) => airportCoord(a) == null);
-    if (bad) return { kind: 'fix', perDiem: null, badAp: bad };
+    if (bad) return { kind: 'fix', perDiem: null, badAp: bad, nsEur: null };
     let perDiem = null;
     if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds); }
-    return { kind: 'ready', perDiem, badAp: null };
+    // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
+    const nsEur = (c.duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+    return { kind: 'ready', perDiem, badAp: null, nsEur };
+  };
+  // "Substitui o teu manual": uma alteração/conflito cujo dia já tinha um serviço MANUAL
+  // teu → o calendário (oficial) vai sobrepô-lo. Selo + antes→depois para saberes.
+  const replacesManual = (c) => {
+    if (c.status !== 'changed' && c.status !== 'conflict') return false;
+    const ex = duties[c.duty.duty_date];
+    return !!(ex && !ex.deleted && (!ex.source || ex.source === 'manual'));
   };
   const infos = shown.map((c) => ({ c, info: candInfo(c) }));
   const fixCount = infos.filter((x) => x.info.kind === 'fix').length;
@@ -133,6 +142,9 @@ export default function RosterImportSheet({ visible, onClose }) {
   const importable = infos.filter((x) => x.info.kind !== 'fix');   // entram no import (saves + cancelados); os "fix" só após corrigir
   const saveCount = importable.filter((x) => x.c.action !== 'delete').length;
   const perDiemTotal = importable.reduce((sum, x) => sum + (x.info.perDiem || 0), 0);
+  const nsTotal = importable.reduce((sum, x) => sum + (x.info.nsEur || 0), 0);
+  const payTotal = perDiemTotal + nsTotal;
+  const replaceCount = infos.filter((x) => replacesManual(x.c)).length;
   // Corrigir um candidato (aeroporto não reconhecido / sem rota): abre o DutyFormSheet em
   // MODO CANDIDATO (pré-preenchido) → ao guardar devolve aqui o candidato corrigido (NÃO grava
   // no `duties`) → reavaliamos estado/per-diem. O gravar real é só no "Confirmar import".
@@ -172,7 +184,7 @@ export default function RosterImportSheet({ visible, onClose }) {
         saveDuty(c.duty.duty_date, {
           report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
           sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
-          kind: c.kind, nightStop: false, source: src, snap, legs: c.duty.legs || null,
+          kind: c.kind, nightStop: !!c.duty.nightStop, source: src, snap, legs: c.duty.legs || null,
         });
         if (c.status === 'warn') warn++;
       }
@@ -284,7 +296,7 @@ export default function RosterImportSheet({ visible, onClose }) {
                 <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? C.warn : C.green} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.summT}>{l(`Li ${shown.length} atividades`, `Read ${shown.length} activities`)}</Text>
-                  <Text style={[s.summS, fixCount ? { color: C.warnText } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}</Text>
+                  <Text style={[s.summS, fixCount ? { color: C.warnText } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
                 </View>
               </View>
               {infos.map(({ c, info }) => {
@@ -298,17 +310,28 @@ export default function RosterImportSheet({ visible, onClose }) {
                   <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : null)} activeOpacity={info.kind === 'fix' ? 0.85 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix]}>
                     <View style={[s.statIc, { backgroundColor: ic.bg }]}><Ionicons name={ic.name} size={18} color={ic.fg} /></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
+                      <View style={s.cDayRow}>
+                        <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
+                        {replacesManual(c) ? (
+                          <View style={s.mark}><Ionicons name="create-outline" size={10} color={C.ink} /><Text style={s.markTxt}>{l('Substitui o teu manual', 'Replaces your manual')}</Text></View>
+                        ) : null}
+                      </View>
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
                         ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
                         : issue ? <Text style={[s.cMeta, info.kind === 'fix' && s.cIssue]} numberOfLines={1}>{issue}</Text>
                           : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}</Text>
                             : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                     </View>
-                    {info.kind === 'fix'
-                      ? <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
-                      : info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text>
-                        : <Text style={s.cEurMuted}>— €</Text>}
+                    {info.kind === 'fix' ? (
+                      <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
+                    ) : (info.perDiem != null || info.nsEur != null) ? (
+                      <View style={s.cPay}>
+                        {info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text> : null}
+                        {info.nsEur != null ? <Text style={s.cNs}>🌙 +{fmtEur0n(info.nsEur)}</Text> : null}
+                      </View>
+                    ) : (
+                      <Text style={s.cEurMuted}>— €</Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -344,8 +367,9 @@ export default function RosterImportSheet({ visible, onClose }) {
 
         <View style={s.foot}>
           <TouchableOpacity onPress={doImport} disabled={!saveCount} activeOpacity={0.9} style={[s.save, { backgroundColor: saveCount ? C.ink : C.soft }]}>
-            <Text style={[s.saveTxt, { color: saveCount ? '#fff' : C.sub }]}>{l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}{perDiemTotal ? `  ·  +${fmtEur0n(perDiemTotal)}` : ''}</Text>
+            <Text style={[s.saveTxt, { color: saveCount ? '#fff' : C.sub }]}>{l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}{payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}</Text>
           </TouchableOpacity>
+          {nsTotal ? <Text style={s.payBreak}>{l(`rota +${fmtEur0n(perDiemTotal)} · pernoita +${fmtEur0n(nsTotal)}`, `route +${fmtEur0n(perDiemTotal)} · night stop +${fmtEur0n(nsTotal)}`)}</Text> : null}
           {fixCount ? <Text style={s.fixHint}>{l(`Corrige as ${fixCount} para somarem ao per-diem`, `Fix the ${fixCount} so they count`)}</Text> : null}
         </View>
 
@@ -387,11 +411,17 @@ const makeStyles = (C) => StyleSheet.create({
   crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: 11 },
   crowFix: { backgroundColor: C.warnSoft, borderColor: C.warn },
   cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
+  cDayRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  mark: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.soft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  markTxt: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.ink },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
   cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cEur: { fontSize: 16, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
+  cPay: { alignItems: 'flex-end', gap: 1 },
+  cNs: { fontSize: 12.5, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
+  payBreak: { fontSize: 12, fontFamily: FONT.medium, color: C.greenText, textAlign: 'center', marginTop: 8 },
   cEurMuted: { fontSize: 15, fontFamily: FONT.display, color: C.lineStrong, fontVariant: ['tabular-nums'] },
   cFix: { fontSize: 13, fontFamily: FONT.heavy, color: C.warnText },
   cIssue: { color: C.warnText, fontFamily: FONT.semibold },

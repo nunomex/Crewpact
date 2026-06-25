@@ -66,7 +66,7 @@ export default function SettingsScreen({ navigation }) {
   const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
   const aeExtrasShown = aeMonth ? +(aeMonth.extras + (aeXt ? aeXt.total : 0)).toFixed(2) : 0;
   const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
-  const fmtEur0 = (n) => { const g = Math.round(Number(n || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}` : `${g} €`; };
+  const fmtEur0 = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
 
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');

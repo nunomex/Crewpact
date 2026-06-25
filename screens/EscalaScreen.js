@@ -103,15 +103,10 @@ export default function EscalaScreen({ navigation, route }) {
     const str = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
+  // O lixo só aparece nos manuais (os de calendário/PDF cancelam-se pela própria fonte),
+  // por isso o apagar aqui nunca toca em serviços importados → sem risco de ressurreição.
   const confirmDelete = (date) => {
-    // eCrew é editável: apagar na app um serviço do calendário não o tira do eCrew →
-    // o próximo sync deteta-o como "novo". Avisa p/ o user o remover também na fonte.
-    const fromCal = duties[date]?.source === 'calendar';
-    const msg = fromCal
-      ? l('Este serviço também está no calendário do eCrew. Apaga-o lá também, senão volta na próxima sincronização.',
-          'This duty is also in your eCrew calendar. Delete it there too, or it will return on the next sync.')
-      : t('duties.delMsg', lang);
-    Alert.alert(t('duties.delTitle', lang), msg, [
+    Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
       { text: t('common.cancel', lang), style: 'cancel' },
       { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty(date); notify && notify(l('Serviço apagado', 'Duty deleted')); } },
     ]);
@@ -252,9 +247,11 @@ export default function EscalaScreen({ navigation, route }) {
                     {(d.report_time || '--:--')} → {(d.block_on || '--:--')} · {d.sectors || 0} {t('duties.sectorsShort', lang)}{d.flight_minutes ? ` · ${minToHhmm(d.flight_minutes)} ${t('duties.flightShort', lang)}` : ''}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => confirmDelete(date)} hitSlop={8} style={s.delBtn} accessibilityLabel={t('duties.delConfirm', lang)}>
-                  <Ionicons name="trash-outline" size={17} color={C.sub} />
-                </TouchableOpacity>
+                {(!d.source || d.source === 'manual') ? (
+                  <TouchableOpacity onPress={() => confirmDelete(date)} hitSlop={8} style={s.delBtn} accessibilityLabel={t('duties.delConfirm', lang)}>
+                    <Ionicons name="trash-outline" size={17} color={C.sub} />
+                  </TouchableOpacity>
+                ) : null}
               </TouchableOpacity>
             ))}
             {listRows.length > 0 ? <Text style={s.foot}>{t('duties.syncHint', lang)}</Text> : null}

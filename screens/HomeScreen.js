@@ -312,8 +312,9 @@ export default function HomeScreen({ navigation }) {
   // Formata € compacto (sem decimais) — cartão AE e meta do próximo voo.
   const fmtEur0 = (n) => {
     if (n == null) return '—';
-    const grouped = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-    return lang === 'en' ? `€${grouped}` : `${grouped} €`;
+    const [int, dec] = Number(n).toFixed(2).split('.');
+    const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${grouped}.${dec}` : `${grouped},${dec} €`;
   };
   // Per diem do próximo voo — só companhias AE, com categoria e rota conhecida.
   let aeNextPd = null;

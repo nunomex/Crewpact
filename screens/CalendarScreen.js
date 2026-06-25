@@ -62,8 +62,9 @@ export default function CalendarScreen({ navigation, embedded }) {
   const { lang, dayLog, updateDayLog, removeDayLog, saveDuty, ae, crewCategory } = useContext(AppContext);
   const fmtEur = (n) => {
     if (n == null) return '—';
-    const grouped = Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-    return lang === 'en' ? `€${grouped}` : `${grouped} €`;
+    const [int, dec] = Number(n).toFixed(2).split('.');
+    const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? `€${grouped}.${dec}` : `${grouped},${dec} €`;
   };
   const C = useTheme();
   const s = makeStyles(C);
