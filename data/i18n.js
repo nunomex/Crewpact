@@ -593,8 +593,6 @@ export const STRINGS = {
     'onb.sCrewT': 'Tipo de tripulação', 'onb.sCrewS': 'Em que função operas?',
     'onb.sCatT': 'A tua categoria', 'onb.sCatS': 'Define o teu acordo de empresa.',
     'onb.sContractT': 'O teu contrato', 'onb.sContractS': 'Modalidade que define a tua base.',
-    'onb.s1t': 'A tua categoria', 'onb.s1s': 'Para destacar o que se aplica a ti.',
-    'onb.s2t': 'O teu contrato', 'onb.s2s': 'Tipo de vínculo atual.',
     'onb.soon': 'Em breve', 'onb.back': 'Voltar', 'onb.continue': 'Continuar', 'onb.enter': 'Entrar',
     'onb.saveErr': 'Erro ao guardar. Tenta novamente.',
 
@@ -1081,8 +1079,6 @@ export const STRINGS = {
     'onb.sCrewT': 'Crew type', 'onb.sCrewS': 'In which role do you operate?',
     'onb.sCatT': 'Your category', 'onb.sCatS': 'Sets your company agreement.',
     'onb.sContractT': 'Your contract', 'onb.sContractS': 'The pattern that sets your base.',
-    'onb.s1t': 'Your rank', 'onb.s1s': 'To highlight what applies to you.',
-    'onb.s2t': 'Your contract', 'onb.s2s': 'Current contract type.',
     'onb.soon': 'Soon', 'onb.back': 'Back', 'onb.continue': 'Continue', 'onb.enter': 'Enter',
     'onb.saveErr': 'Error saving. Please try again.',
 
