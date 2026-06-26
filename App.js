@@ -26,7 +26,7 @@ import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
-import { getAeForProfile } from './ae';
+import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
 import { capabilitiesFor } from './data/capabilities';
 import { migrateCrew, resolveCrew } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
@@ -756,6 +756,9 @@ export default function App() {
   // Matriz de capacidades — fonte única do que cada ecrã mostra/pede (AE↔FTL,
   // piloto↔cabine). `lifestyle` (Art. 66.9): PPY como estilo de vida → sem retenção.
   const caps = capabilitiesFor({ company: company || profile?.company, crewType, contract: crewContract || '12/12', lifestyle });
+  // Estado do AE (3 estados, honesto com o utilizador): 'modeled' (motor AE) / 'pending' (há AE
+  // publicado por modelar → aviso) / 'none' (não há AE → FTL-only é completo). Ver ae/index.js.
+  const aeStatus = aeStatusFor({ ae, company, crewType });
 
   // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
@@ -812,7 +815,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

@@ -7,6 +7,7 @@ import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
 import AeCalcs from '../components/AeCalcs';
+import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import { FTL_ARTICLES } from '../data/ftl';
@@ -52,7 +53,7 @@ const THEMES = [
 // Aba FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) num só
 // destino. Junta as antigas abas Cálculos e FTL. Toda a matemática vive no motor `ftl/`.
 export default function FtlHubScreen({ navigation }) {
-  const { lang, ae, caps, crewCategory, crewContract, instructorRated, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
+  const { lang, ae, caps, aeStatus, crewCategory, crewContract, instructorRated, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -114,6 +115,13 @@ export default function FtlHubScreen({ navigation }) {
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={l('Cálculos', 'Calculations')}
           right={<NotificationsBell />} />
+        {/* Estado 'pending': há acordo coletivo publicado, ainda não modelado → honestidade. */}
+        {aeStatus === 'pending' ? (
+          <Banner tone="info" icon="document-text-outline"
+            title={l('Acordo coletivo por modelar', 'Collective agreement not yet modelled')}
+            sub={l('Esta companhia tem AE publicado (BTE), ainda não no CrewPact — mostramos só os limites FTL (lei EASA). O estimador de salário/abonos chegará.', 'This airline has a published agreement (BTE), not yet in CrewPact — showing only FTL limits (EASA law). The salary/allowance estimator is coming.')}
+            style={{ marginBottom: SPACE.md }} />
+        ) : null}
         {/* Atividade — cartão de ação escuro com glow radial (mockup .actbig) */}
         <Animated.View style={seg(0)}>
           <TouchableOpacity style={s.actbig} activeOpacity={0.9} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>

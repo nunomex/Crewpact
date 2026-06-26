@@ -340,3 +340,27 @@ cross join (values
 ) as v(code, city, cc, seasonal)
 where lower(a.slug) = 'easyjet' or a.name ilike '%easyjet%' or a.name ilike '%easy jet%'
 on conflict (airline_id, code) do nothing;
+
+
+-- ── 16. airlines: AE POR MODELAR, por tipo de tripulação (3 estados honestos) ──
+-- FTL-only NÃO é incompleto — é a resposta certa para quem não tem acordo coletivo (o FTL é
+-- lei EASA, universal). MAS o binário AE/FTL juntava "não há AE" com "há AE, ainda não modelado".
+-- 3 estados: 'modeled' (registry ae/* tem módulo — DERIVADO, não se guarda aqui), 'pending'
+-- (tem AE publicado, ex. no BTE — Código do Trabalho obriga a publicar — mas ainda não no
+-- CrewPact → mostra-se FTL + aviso), 'none' (não há AE). Por TIPO de tripulação porque uma
+-- companhia pode ter o AE de cabine modelado e o de piloto por modelar (ex. easyJet = 2 acordos).
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='airlines' and column_name='ae_pending_pilot') then
+    alter table public.airlines add column ae_pending_pilot boolean not null default false;
+  end if;
+  if not exists (select 1 from information_schema.columns
+                 where table_schema='public' and table_name='airlines' and column_name='ae_pending_cabin') then
+    alter table public.airlines add column ae_pending_cabin boolean not null default false;
+  end if;
+end $$;
+-- Classificação (a confirmar no BTE/DGERT): easyJet fica 'modeled' (registry); as outras ficam
+-- 'none' por default. Quando confirmares que uma companhia TEM AE publicado mas por modelar,
+-- liga a flag do tipo certo. Ex. (a confirmar) TAP tem AE de cabine no BTE:
+--   update public.airlines set ae_pending_cabin = true where lower(slug) = 'tap' or name ilike '%tap%';

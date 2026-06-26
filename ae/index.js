@@ -48,3 +48,18 @@ export const getAeForProfile = ({ company, crewType } = {}) => {
   if (company && typeof company === 'object' && company.rule_type && company.rule_type !== 'AE') return null;
   return getAe(company, crewType);
 };
+
+// Estado do AE para (companhia, crewType) — p/ ser HONESTO (3 estados, não 2):
+//  • 'modeled' — há módulo no registry (ae/*) → o motor AE corre;
+//  • 'pending' — NÃO modelado, mas a companhia TEM AE publicado (flag `airlines.ae_pending_*`,
+//                ex. confirmado no BTE) → mostra-se só FTL + aviso "há acordo coletivo por modelar";
+//  • 'none'    — não há AE → FTL-only é a resposta COMPLETA (lei EASA, universal).
+// `modeled` é DERIVADO do registry (não se duplica na BD, p/ não recriar "dois modelos a competir");
+// só o none/pending vem da flag. Por TIPO de tripulação (cabine pode estar modelada e piloto pending).
+export const aeStatus = ({ ae, company, crewType } = {}) => {
+  const modeled = ae || getAeForProfile({ company, crewType });
+  if (modeled) return 'modeled';
+  const c = (company && typeof company === 'object') ? company : null;
+  const pending = !!(c && (crewType === 'pilot' ? c.ae_pending_pilot : c.ae_pending_cabin));
+  return pending ? 'pending' : 'none';
+};

@@ -33,6 +33,7 @@ Module._extensions['.js'] = function (m, filename) {
 };
 
 const ae = require(path.resolve('ae/easyjetSpac.js'));
+const { aeStatus } = require(path.resolve('ae/index.js'));
 const {
   BASE_ANNUAL, NOMINAL_SECTOR, CATEGORIES, SALARY_INSTALMENTS,
   sectorMult, monthlyBase, perDiem, computeAeMonth, categoryLabel,
@@ -216,6 +217,13 @@ eq('Cabine papéis FA (upranker+CTI)', cabin.additionalRolesFor('FA').map((r) =>
 eq('Cabine papéis FA1 (upranker+CTI)', cabin.additionalRolesFor('FA1').map((r) => r.id).join(','), 'upranker,cti');
 eq('Cabine papéis CM (CCLT+CTI, sem upranker)', cabin.additionalRolesFor('CM').map((r) => r.id).join(','), 'cclt,cti');
 eq('Cabine papéis CMP (upranker+CCLT+CTI)', cabin.additionalRolesFor('CMP').map((r) => r.id).join(','), 'upranker,cclt,cti');
+
+// ── Estado do AE — 3 estados honestos (modeled / pending / none) ──
+eq('aeStatus easyJet piloto = modeled', aeStatus({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'pilot' }), 'modeled');
+eq('aeStatus easyJet cabine = modeled', aeStatus({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'cabin' }), 'modeled');
+eq('aeStatus pending por flag (cabine)', aeStatus({ company: { slug: 'tap', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'cabin' }), 'pending');
+eq('aeStatus none quando flag do piloto off', aeStatus({ company: { slug: 'tap', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'pilot' }), 'none');
+eq('aeStatus none sem AE (FTL puro)', aeStatus({ company: { slug: 'ryanair', rule_type: 'FTL' }, crewType: 'pilot' }), 'none');
 eq('Cabine catalogValue base CM', cabin.catalogValue('base', { category: 'CM' }), 1657.00);
 eq('Cabine catalogValue cash CM', cabin.catalogValue('cash', { category: 'CM' }), 96.66);
 eq('Cabine catalogValue night', cabin.catalogValue('night', { category: 'CM' }), 46);
