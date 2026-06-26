@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPE, GUTTER, TRACK_DISPLAY, FONT, RADIUS } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
+import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
   FTL_ARTICLES, ftlSectionTitle,
@@ -116,7 +117,7 @@ export default function FtlDetailScreen({ route, navigation }) {
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
 
       <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
-        <Text style={d.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>
+        <Eyebrow style={{ marginBottom: 4 }}>{ftlSectionTitle(a.section, lang)}</Eyebrow>
         <Text style={d.code}>{a.code}</Text>
         <Text style={d.title}>{tx(a.title, lang)}</Text>
 
@@ -197,7 +198,6 @@ const makeTb = (C) => StyleSheet.create({
 const makeD = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
-  eyebrow: { fontSize: TYPE.eyebrow, color: C.sub, letterSpacing: 1.3, fontFamily: FONT.heavy, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.display },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
   paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },

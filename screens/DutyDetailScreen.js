@@ -2,9 +2,11 @@ import React, { useContext, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, FONT, GUTTER, SHADOW } from '../data/constants';
+import { RADIUS, TYPE, FONT, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
 import DutyFormSheet from '../components/DutyFormSheet';
+import PrimaryButton from '../components/PrimaryButton';
+import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -133,9 +135,9 @@ export default function DutyDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         {/* Cabeçalho — risca: verde dentro do limite, vermelha se exceder, neutra sem dados */}
         <View style={[s.headerCard, { borderLeftColor: stripeColor }]}>
-          <Text style={s.eyebrow}>
+          <Eyebrow>
             {(isFlight ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang))} · {fmtDate(date)}{date === todayISO ? ` · ${l('hoje', 'today')}` : ''}
-          </Text>
+          </Eyebrow>
           <Text style={s.answer} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{headMain}</Text>
           {duty.dirty ? (
             <View style={s.pendRow}><View style={s.pendDot} /><Text style={s.pendTxt}>{t('duties.pending', lang)}</Text></View>
@@ -172,10 +174,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source },
         ]} />
 
-        <TouchableOpacity style={s.editBtn} activeOpacity={0.9} onPress={() => { select(); setEditing(true); }}>
-          <Ionicons name="create-outline" size={17} color="#fff" />
-          <Text style={s.editTxt}>{l('Editar serviço', 'Edit duty')}</Text>
-        </TouchableOpacity>
+        <PrimaryButton onPress={() => { select(); setEditing(true); }} icon="create-outline" radius="lg" elevated style={{ marginTop: 22 }} label={l('Editar serviço', 'Edit duty')} />
 
         {isManual ? (
           <TouchableOpacity style={s.delBtn} activeOpacity={0.8} onPress={confirmDelete}>
@@ -198,7 +197,6 @@ const makeStyles = (C) => StyleSheet.create({
   scroll: { paddingHorizontal: GUTTER },
 
   headerCard: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: RADIUS.lg, padding: 16, paddingLeft: 13, marginTop: 6 },
-  eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   answer: { fontSize: 26, fontFamily: FONT.display, letterSpacing: -0.4, color: C.text, lineHeight: 31, marginTop: 6 },
   pendRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 11 },
   pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.warn || C.sub },
@@ -215,8 +213,6 @@ const makeStyles = (C) => StyleSheet.create({
   fatDot: { width: 7, height: 7, borderRadius: 99 },
   fatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
 
-  editBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 15, marginTop: 22, ...SHADOW.sm },
-  editTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
   delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 10 },
   delTxt: { color: C.redText, fontSize: TYPE.sub, fontFamily: FONT.semibold },
 

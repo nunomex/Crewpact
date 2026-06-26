@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, FONT, GUTTER } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
+import Eyebrow from '../components/Eyebrow';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { catLabel } from '../data/extras';
 import { buildTodayItems, winLbl, dateLbl, fmtEur0, hhmm } from './hojeItems';
@@ -183,7 +184,7 @@ export default function HojeDetailScreen({ route, navigation }) {
       <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]}>
         <View style={[s.headerCard, { borderLeftColor: stColor(item.status) }]}>
-          <Text style={s.eyebrow}>{item.q}</Text>
+          <Eyebrow>{item.q}</Eyebrow>
           <Text style={[s.answer, item.status === 'bad' ? { color: C.red } : null]}>{item.answer}</Text>
           {item.suggestion ? (
             <View style={s.sug}>
@@ -207,7 +208,6 @@ const makeStyles = (C) => StyleSheet.create({
   scroll: { paddingHorizontal: GUTTER },
 
   headerCard: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderLeftWidth: 4, borderRadius: RADIUS.lg, padding: 16, paddingLeft: 13, marginTop: 6 },
-  eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
   answer: { fontSize: 24, fontFamily: FONT.semibold, letterSpacing: -0.4, color: C.text, lineHeight: 30, marginTop: 5 },
 
   sug: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 13, marginTop: 14 },

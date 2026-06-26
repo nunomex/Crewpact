@@ -6,6 +6,8 @@ import { RADIUS, TYPE, FONT } from '../data/constants';
 import { listCalendars } from '../data/calendar';
 import { AppContext, useTheme } from '../data/appContext';
 import { select, success } from '../data/haptics';
+import PrimaryButton from './PrimaryButton';
+import Eyebrow from './Eyebrow';
 
 // Folha de seleção do calendário do TELEMÓVEL: lista os calendários (listCalendars) e o
 // utilizador escolhe qual tem a escala. O id escolhido é guardado no App e passamos a ler
@@ -33,7 +35,7 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{l('Escala · Calendário', 'Roster · Calendar')}</Text></View>
+            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Calendário', 'Roster · Calendar')}</Eyebrow></View>
             <Text style={s.h1}>{l('Escolher', 'Choose')}</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
@@ -65,9 +67,7 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
         </ScrollView>
 
         <View style={s.foot}>
-          <TouchableOpacity onPress={confirm} disabled={!sel} activeOpacity={0.9} style={[s.save, { backgroundColor: sel ? C.ink : C.soft }]}>
-            <Text style={[s.saveTxt, { color: sel ? '#fff' : C.sub }]}>{l('Usar este calendário', 'Use this calendar')}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={confirm} disabled={!sel} label={l('Usar este calendário', 'Use this calendar')} />
         </View>
       </View>
     </Modal>
@@ -79,7 +79,6 @@ const makeStyles = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  eyebrow: { fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy },
   h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   note: { fontSize: 12.5, lineHeight: 18, color: C.sub, fontFamily: FONT.medium, paddingHorizontal: 24, paddingBottom: 8 },
@@ -94,6 +93,4 @@ const makeStyles = (C) => StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 99, borderWidth: 2, borderColor: C.lineStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   radioOn: { borderColor: C.ink, backgroundColor: C.ink },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
-  save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
-  saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

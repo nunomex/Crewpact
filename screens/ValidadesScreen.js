@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, GUTTER, TYPE, FONT, SPACE } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
+import PrimaryButton from '../components/PrimaryButton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -152,9 +153,7 @@ export default function ValidadesScreen({ navigation }) {
                 placeholder={l('AAAA', 'YYYY')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={4} />
             </View>
 
-            <TouchableOpacity onPress={saveEditing} disabled={!formISO} activeOpacity={0.9} style={[s.saveBtn, { backgroundColor: formISO ? C.ink : C.soft }]}>
-              <Text style={[s.saveTxt, { color: formISO ? '#fff' : C.sub }]}>{t('common.save', lang)}</Text>
-            </TouchableOpacity>
+            <PrimaryButton onPress={saveEditing} disabled={!formISO} label={t('common.save', lang)} style={{ marginTop: 20 }} />
             {editing?.id ? (
               <TouchableOpacity onPress={deleteEditing} activeOpacity={0.85} style={s.delBtn} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
                 <Ionicons name="trash-outline" size={16} color={C.red} />
@@ -180,9 +179,7 @@ export default function ValidadesScreen({ navigation }) {
                 <Text style={s.scanHint}>{l('Cola o texto do teu PDF eCrew. Procuro SEP/CRM/DG/ASEC/FAID e proponho as validades. Nada sai do telemóvel.', 'Paste your eCrew PDF text. I look for SEP/CRM/DG/ASEC/FAID and propose the dates. Nothing leaves your phone.')}</Text>
                 <TextInput style={s.scanInput} value={scan?.text} onChangeText={(v) => setScan((sc) => ({ ...sc, text: v }))}
                   placeholder={l('Colar aqui…', 'Paste here…')} placeholderTextColor={C.sub} multiline textAlignVertical="top" />
-                <TouchableOpacity onPress={analyzeScan} disabled={!scan?.text} activeOpacity={0.9} style={[s.saveBtn, { backgroundColor: scan?.text ? C.ink : C.soft }]}>
-                  <Text style={[s.saveTxt, { color: scan?.text ? '#fff' : C.sub }]}>{l('Analisar', 'Analyze')}</Text>
-                </TouchableOpacity>
+                <PrimaryButton onPress={analyzeScan} disabled={!scan?.text} label={l('Analisar', 'Analyze')} style={{ marginTop: 20 }} />
               </>
             ) : scan.results.length === 0 ? (
               <Text style={s.scanHint}>{l('Nada detetado. Confirma que colaste a tabela com os recorrentes.', 'Nothing detected. Make sure you pasted the table with the recurrents.')}</Text>
@@ -241,8 +238,6 @@ const makeStyles = (C) => StyleSheet.create({
   dateIn: { width: 60, backgroundColor: C.soft, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: C.line, paddingHorizontal: 12, paddingVertical: 12, color: C.text, fontSize: TYPE.body, fontFamily: FONT.semibold, textAlign: 'center' },
   dateInY: { width: 86 },
   dateSep: { fontSize: TYPE.lg, color: C.sub },
-  saveBtn: { borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
-  saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
   delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 6 },
   delTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.red },
 
@@ -250,7 +245,7 @@ const makeStyles = (C) => StyleSheet.create({
   scanBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 4 },
   scanTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.ink },
   scanHint: { fontSize: TYPE.label, color: C.sub, lineHeight: 18, marginBottom: 12 },
-  scanInput: { backgroundColor: C.soft, borderRadius: RADIUS.md, borderWidth: 1, borderColor: C.line, padding: 13, color: C.text, fontSize: TYPE.label, minHeight: 120 },
+  scanInput: { backgroundColor: C.soft, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: C.line, padding: 13, color: C.text, fontSize: TYPE.label, minHeight: 120 },
   detRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.line },
   detLabel: { fontSize: TYPE.value, fontFamily: FONT.semibold, color: C.text },
   detSub: { fontSize: TYPE.micro, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },

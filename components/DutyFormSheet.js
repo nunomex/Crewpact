@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
 import AirportRoute from './AirportRoute';
+import PrimaryButton from './PrimaryButton';
+import Eyebrow from './Eyebrow';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
@@ -175,7 +177,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}>
               <View style={s.eyebrowDot} />
-              <Text style={s.eyebrow}>{onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Text>
+              <Eyebrow>{onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
             </View>
             <Text style={s.h1}>Duty</Text>
           </View>
@@ -311,9 +313,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         {/* Rodapé fixo — Guardar */}
         <View style={s.foot}>
           {isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null}
-          <TouchableOpacity onPress={onSave} disabled={!canSave} activeOpacity={0.9} style={[s.save, { backgroundColor: canSave ? C.ink : C.soft }]}>
-            <Text style={[s.saveTxt, { color: canSave ? '#fff' : C.sub }]}>{t('common.save', lang)}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={onSave} disabled={!canSave} label={t('common.save', lang)} />
         </View>
       </View>
     </Modal>
@@ -325,7 +325,6 @@ const makeStyles = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  eyebrow: { fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy },
   h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   body: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24, gap: 16 },
@@ -366,6 +365,4 @@ const makeStyles = (C) => StyleSheet.create({
   fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
   footHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginBottom: 8 },
-  save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
-  saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

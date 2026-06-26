@@ -8,6 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
+import PrimaryButton from '../components/PrimaryButton';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -357,9 +358,7 @@ export default function SettingsScreen({ navigation }) {
             </View>
           ))}
           {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
-          <TouchableOpacity onPress={handleChangePw} style={s.pwBtn}>
-            <Text style={s.pwBtnTxt}>{t('common.save', lang)}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={handleChangePw} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
 
@@ -373,9 +372,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <Text style={s.sdHint}>{l('Calcula a antiguidade para o prémio de permanência (Anexo I.9). Deixa vazio para remover.', 'Computes seniority for the loyalty bonus (Appendix I.9). Leave empty to clear.')}</Text>
           {sdErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{sdErr}</Text> : null}
-          <TouchableOpacity onPress={saveStartDate} style={s.pwBtn}>
-            <Text style={s.pwBtnTxt}>{t('common.save', lang)}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={saveStartDate} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
 
@@ -475,6 +472,4 @@ const makeStyles = (C) => StyleSheet.create({
   baseChipOn: { borderColor: C.red, backgroundColor: C.redSoft },
   baseChipTxt: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.sub },
   baseChipTxtOn: { color: C.red },
-  pwBtn: { backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  pwBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

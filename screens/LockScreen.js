@@ -2,10 +2,11 @@ import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import PrimaryButton from '../components/PrimaryButton';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext, useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
-import { TYPE, RADIUS, TRACK_DISPLAY, FONT } from '../data/constants';
+import { TYPE, RADIUS, FONT } from '../data/constants';
 import { success } from '../data/haptics';
 
 // Ecrã de bloqueio: pede biometria (Face ID / impressão digital) e cai para o
@@ -49,10 +50,7 @@ export default function LockScreen() {
         <Text style={s.title}>CrewPact</Text>
         <Text style={s.sub}>{t('lock.sub', lang)}</Text>
         {err ? <Text style={s.err}>{t('lock.failed', lang)}</Text> : null}
-        <TouchableOpacity onPress={authenticate} disabled={busy} style={[s.btn, busy && { opacity: 0.6 }]}>
-          <Ionicons name="finger-print" size={18} color="#fff" />
-          <Text style={s.btnTxt}>{t('lock.unlock', lang)}</Text>
-        </TouchableOpacity>
+        <PrimaryButton onPress={authenticate} disabled={busy} icon="finger-print" label={t('lock.unlock', lang)} style={{ marginTop: 28, paddingHorizontal: 28, alignSelf: 'center' }} />
       </View>
       <TouchableOpacity onPress={logout} style={s.logout} hitSlop={8}>
         <Text style={s.logoutTxt}>{t('profile.logout', lang)}</Text>
@@ -66,11 +64,9 @@ const makeStyles = (C) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   iconWrap: { width: 72, height: 72, borderRadius: RADIUS.pill, backgroundColor: C.ink, borderWidth: 2.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   iconDot: { position: 'absolute', top: 9, right: 9, width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  title: { fontSize: TYPE.hero, fontFamily: FONT.heavy, letterSpacing: TRACK_DISPLAY, color: C.text },
+  title: { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   sub: { fontSize: 14, color: C.sub, marginTop: 6, textAlign: 'center' },
   err: { fontSize: 13, color: C.red, marginTop: 14, textAlign: 'center' },
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, paddingHorizontal: 28, marginTop: 28 },
-  btnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
   logout: { alignItems: 'center', paddingVertical: 20 },
   logoutTxt: { fontSize: TYPE.label, color: C.sub, fontFamily: FONT.semibold },
 });

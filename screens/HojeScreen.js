@@ -7,6 +7,8 @@ import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
+import PrimaryButton from '../components/PrimaryButton';
+import GhostButton from '../components/GhostButton';
 import { buildTodayItems, hasAnyData } from './hojeItems';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -56,14 +58,8 @@ export default function HojeScreen({ navigation }) {
               <Text style={s.emptyEye}>{l('COMEÇAR', 'GET STARTED')}</Text>
               <Text style={s.emptyTitle}>{l('Vamos pôr a tua escala aqui', 'Let’s get your roster in')}</Text>
               <Text style={s.emptySub}>{l('Com a tua escala, isto ganha vida: estado FTL, salário e o teu próximo voo — num relance.', 'With your roster, this comes alive: FTL status, pay and your next flight — at a glance.')}</Text>
-              <TouchableOpacity activeOpacity={0.9} style={s.emptyBtnPri} onPress={() => goEscala({ review: Date.now() })}>
-                <Ionicons name="download-outline" size={18} color="#fff" />
-                <Text style={s.emptyBtnPriTxt}>{l('Importar escala', 'Import roster')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.8} style={s.emptyBtnSec} onPress={() => goEscala({ newDuty: Date.now() })}>
-                <Ionicons name="add" size={18} color={C.text} />
-                <Text style={s.emptyBtnSecTxt}>{l('Adicionar serviço', 'Add a duty')}</Text>
-              </TouchableOpacity>
+              <PrimaryButton tone="danger" onPress={() => goEscala({ review: Date.now() })} icon="download-outline" label={l('Importar escala', 'Import roster')} />
+              <GhostButton onPress={() => goEscala({ newDuty: Date.now() })} icon="add" label={l('Adicionar serviço', 'Add a duty')} style={{ marginTop: 10 }} />
             </View>
           </Animated.View>
         ) : items.map((it, i) => (
@@ -110,10 +106,6 @@ const makeStyles = (C) => StyleSheet.create({
   emptyEye: { fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.info, marginBottom: 8 },
   emptyTitle: { fontSize: 21, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, lineHeight: 27 },
   emptySub: { fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 16 },
-  emptyBtnPri: { flexDirection: 'row', gap: 8, backgroundColor: C.red, borderRadius: RADIUS.pill, height: 50, alignItems: 'center', justifyContent: 'center' },
-  emptyBtnPriTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold, letterSpacing: 0.3 },
-  emptyBtnSec: { flexDirection: 'row', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, height: 48, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  emptyBtnSecTxt: { color: C.text, fontSize: TYPE.body, fontFamily: FONT.semibold },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 8, paddingHorizontal: 2 },
 });

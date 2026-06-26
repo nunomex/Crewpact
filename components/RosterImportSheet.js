@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,8 @@ import { detectRecurrents } from '../data/recurrents';
 import { validityLabel } from '../data/validities';
 import { airportCoord, sectorDistanceNM } from '../data/airports';
 import DutyFormSheet from './DutyFormSheet';
+import Eyebrow from './Eyebrow';
+import PrimaryButton from './PrimaryButton';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -106,6 +108,17 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // Ligar/escolher calendário é na Escala — o botão delega no fluxo do EscalaScreen (onConnect).
   const grant = () => { onConnect && onConnect(); };
   const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug, calendarId)); };
+
+  // Vindo do hub "Importar PDF" (initialSource='paste') → abre logo o seletor de ficheiros (poupa 1 toque).
+  const pdfAutoRef = useRef(false);
+  useEffect(() => {
+    if (!visible) { pdfAutoRef.current = false; return; }
+    if (initialSource === 'paste' && !pdfAutoRef.current) {
+      pdfAutoRef.current = true;
+      const tmr = setTimeout(() => { pickPdf(); }, 400);   // deixa o Modal abrir antes do seletor nativo
+      return () => clearTimeout(tmr);
+    }
+  }, [visible, initialSource]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Revisão focada: esconder os "igual" (nada a fazer). A ordem (cancelado → conflito
   // → alterado → novo) já vem do buildImportCandidates.
@@ -236,7 +249,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{l('Escala · Importar', 'Roster · Import')}</Text></View>
+            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Importar', 'Roster · Import')}</Eyebrow></View>
             <Text style={s.h1}>{l('Confirmar import', 'Confirm import')}</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
@@ -271,22 +284,19 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
           /* Upload do PDF — extração 100% LOCAL (nativo PDFKit/PDFBox). RGPD: o ficheiro é lido
              no telemóvel e a cópia é APAGADA logo a seguir; nada sai do dispositivo. */
           <View style={s.pasteWrap}>
-            <TouchableOpacity onPress={pickPdf} activeOpacity={0.9} style={s.pdfBtn}>
-              <Ionicons name="document-attach-outline" size={18} color="#fff" />
-              <Text style={s.pdfBtnTxt}>{l('Escolher PDF da escala', 'Choose roster PDF')}</Text>
-            </TouchableOpacity>
+            <PrimaryButton onPress={pickPdf} icon="document-attach-outline" radius="lg" label={l('Escolher PDF da escala', 'Choose roster PDF')} />
             <Text style={s.pasteNote}>{l('🔒 O PDF é lido no telemóvel (nativo) e a cópia apagada logo a seguir. Nada sai do dispositivo. Precisa de dev build.', '🔒 The PDF is read on-device (native) and the copy deleted right after. Nothing leaves your device. Requires a dev build.')}</Text>
           </View>
         )}
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {loading ? (
-            <View style={s.center}><ActivityIndicator color={C.sub} /><Text style={s.dim}>{l('A ler o calendário…', 'Reading calendar…')}</Text></View>
+            <View style={s.center}><ActivityIndicator color={C.sub} /><Text style={s.dim}>{source === 'paste' ? l('A ler o PDF…', 'Reading PDF…') : l('A ler o calendário…', 'Reading calendar…')}</Text></View>
           ) : denied && source === 'calendar' ? (
             <View style={s.center}>
               <Ionicons name="calendar-outline" size={26} color={C.sub} />
               <Text style={s.dim}>{l('Liga o calendário do telemóvel para importar a escala.', 'Connect your phone calendar to import the roster.')}</Text>
-              <TouchableOpacity onPress={grant} style={s.grantBtn}><Text style={s.grantTxt}>{l('Ligar ao calendário', 'Connect calendar')}</Text></TouchableOpacity>
+              <PrimaryButton onPress={grant} label={l('Ligar ao calendário', 'Connect calendar')} style={{ marginTop: 6, paddingHorizontal: 18 }} />
             </View>
           ) : !shown.length ? (
             <View style={s.center}>
@@ -374,9 +384,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         </ScrollView>
 
         <View style={s.foot}>
-          <TouchableOpacity onPress={doImport} disabled={!saveCount} activeOpacity={0.9} style={[s.save, { backgroundColor: saveCount ? C.ink : C.soft }]}>
-            <Text style={[s.saveTxt, { color: saveCount ? '#fff' : C.sub }]}>{l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}{payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={doImport} disabled={!saveCount} label={`${l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}${payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}`} />
           {nsTotal ? <Text style={s.payBreak}>{l(`rota +${fmtEur0n(perDiemTotal)} · pernoita +${fmtEur0n(nsTotal)}`, `route +${fmtEur0n(perDiemTotal)} · night stop +${fmtEur0n(nsTotal)}`)}</Text> : null}
           {fixCount ? <Text style={s.fixHint}>{l(`Corrige as ${fixCount} para somarem ao per-diem`, `Fix the ${fixCount} so they count`)}</Text> : null}
         </View>
@@ -393,7 +401,6 @@ const makeStyles = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  eyebrow: { fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy },
   h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ranges: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 12 },
@@ -404,13 +411,9 @@ const makeStyles = (C) => StyleSheet.create({
   rTxtOn: { color: '#fff' },
   pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
   pasteNote: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 10, lineHeight: 16 },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: C.ink, borderRadius: 16, paddingVertical: 16 },
-  pdfBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
   dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },
-  grantBtn: { marginTop: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11 },
-  grantTxt: { color: '#fff', fontSize: TYPE.label, fontFamily: FONT.semibold },
   diagBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
   diagBtnTxt: { fontSize: 12, color: C.sub, fontFamily: FONT.semibold },
   diagBox: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 12, marginTop: 4 },
@@ -440,6 +443,4 @@ const makeStyles = (C) => StyleSheet.create({
   summS: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.sub, marginTop: 2, lineHeight: 17 },
   fixHint: { fontSize: 12, fontFamily: FONT.medium, color: C.warnText, textAlign: 'center', marginTop: 10 },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
-  save: { borderRadius: RADIUS.pill, paddingVertical: 16, alignItems: 'center' },
-  saveTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold },
 });

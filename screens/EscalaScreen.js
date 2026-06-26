@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, GUTTER, TYPE, SPACE, FONT, SHADOW } from '../data/constants';
@@ -14,8 +14,12 @@ import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
 import NotificationsBell from '../components/NotificationsBell';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
+import Eyebrow from '../components/Eyebrow';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import BottomSheet from '../components/BottomSheet';
+import PrimaryButton from '../components/PrimaryButton';
+import GhostButton from '../components/GhostButton';
+import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -41,7 +45,6 @@ export default function EscalaScreen({ navigation, route }) {
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
-  const insets = useSafeAreaInsets();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -58,8 +61,6 @@ export default function EscalaScreen({ navigation, route }) {
   const [importSource, setImportSource] = useState('calendar'); // fonte com que abre o RosterImportSheet
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: reverifica a escala
   const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
-  const [toast, setToast] = useState(null);             // toast flutuante de sucesso { n, src }
-  const toastTimer = useRef(null);
   const scrollRef = useRef(null);        // ScrollView da lista (scroll até hoje ao entrar)
   const didScrollToday = useRef(false);  // já posicionámos no dia de hoje neste mês?
   const prevYmRef = useRef(null);        // mês renderizado antes (p/ reativar o scroll ao mudar de mês)
@@ -109,15 +110,6 @@ export default function EscalaScreen({ navigation, route }) {
   const openHub = () => { select(); setHubOpen(true); };
   const openImport = (src) => { setImportSource(src || 'calendar'); setHubOpen(false); setImportOpen(true); };
   const addManual = () => { select(); setHubOpen(false); setDutyDate(isoDay()); };
-
-  // Toast flutuante (em cima) após confirmar um import — aparece e some sozinho (~3 s).
-  const showToast = (n, src) => {
-    if (!n) return;   // o import já fez success() (haptic); aqui só mostramos o toast
-    setToast({ n, src });
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 3200);
-  };
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   // ── € (cêntimos, NUNCA arredonda — money-no-rounding) ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
@@ -258,7 +250,7 @@ export default function EscalaScreen({ navigation, route }) {
       <View style={s.body}>
         {/* Cabeçalho — eyebrow + ações (export/import/sino) */}
         <View style={s.eyeRow}>
-          <View style={s.eyebrowWrap}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{l('A tua escala', 'Your roster')}</Text></View>
+          <View style={s.eyebrowWrap}><View style={s.eyebrowDot} /><Eyebrow>{l('A tua escala', 'Your roster')}</Eyebrow></View>
           <View style={s.tools}>
             {anyDuty ? (
               <>
@@ -284,14 +276,13 @@ export default function EscalaScreen({ navigation, route }) {
                 ? l('Sem serviços lidos do calendário. Tenta importar de novo (podes mudar o intervalo) ou usa o PDF.', 'No duties read from the calendar. Try importing again (you can change the range) or use a PDF.')
                 : l('Importamos os teus serviços do calendário do telemóvel, assim que mudam. Tu só confirmas.', 'We import your duties from the phone calendar whenever they change. You just confirm.')}</Text>
               <View style={s.privRow}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.privTxt}>{l('Só de leitura · nada é alterado no teu calendário', 'Read-only · nothing is changed in your calendar')}</Text></View>
-              <TouchableOpacity onPress={calendarId ? () => openImport('calendar') : connectCalendar} activeOpacity={0.9} style={s.btnDark}>
-                <Ionicons name={calendarId ? 'refresh' : 'arrow-forward'} size={17} color="#fff" /><Text style={s.btnDarkTxt}>{calendarId ? l('Importar agora', 'Import now') : l('Ligar ao calendário', 'Connect calendar')}</Text>
-              </TouchableOpacity>
+              <PrimaryButton onPress={calendarId ? () => openImport('calendar') : connectCalendar} icon={calendarId ? 'refresh' : 'arrow-forward'} radius="lg" style={{ marginTop: 14 }}
+                label={calendarId ? l('Importar agora', 'Import now') : l('Ligar ao calendário', 'Connect calendar')} />
             </View>
 
             <View style={s.orline}><View style={s.orlineBar} /><Text style={s.orlineTxt}>{l('ou', 'or')}</Text><View style={s.orlineBar} /></View>
-            <TouchableOpacity onPress={() => openImport('paste')} activeOpacity={0.9} style={s.btnGhost}><Ionicons name="document-text-outline" size={16} color={C.text} /><Text style={s.btnGhostTxt}>{l('Importar PDF da escala', 'Import roster PDF')}</Text></TouchableOpacity>
-            <TouchableOpacity onPress={addManual} activeOpacity={0.9} style={s.btnGhost}><Ionicons name="add" size={18} color={C.text} /><Text style={s.btnGhostTxt}>{l('Adicionar serviço à mão', 'Add a duty by hand')}</Text></TouchableOpacity>
+            <GhostButton onPress={() => openImport('paste')} icon="document-text-outline" radius="lg" style={{ marginTop: 10 }} label={l('Importar PDF da escala', 'Import roster PDF')} />
+            <GhostButton onPress={addManual} icon="add" radius="lg" style={{ marginTop: 10 }} label={l('Adicionar serviço à mão', 'Add a duty by hand')} />
           </ScrollView>
         ) : (
           <>
@@ -324,14 +315,10 @@ export default function EscalaScreen({ navigation, route }) {
 
             {/* Alterações de escala (Fase 4) — banner AZUL → revisão (Confirmar import, calendário) */}
             {rcCounts?.total ? (
-              <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); setImportSource('calendar'); setImportOpen(true); }} style={s.rcBanner}>
-                <Ionicons name="sync-circle" size={20} color={C.info} />
-                <View style={{ flex: 1 }}>
-                  <Text style={s.rcTitle}>{l('A escala mudou no calendário', 'Roster changed in calendar')}</Text>
-                  <Text style={s.rcSub} numberOfLines={1}>{rcSub}{rcSub ? ' · ' : ''}{l('rever', 'review')}</Text>
-                </View>
-                <View style={s.rcGo}><Text style={s.rcGoTxt}>{l('Rever', 'Review')}</Text></View>
-              </TouchableOpacity>
+              <Banner tone="info" icon="sync-circle" actionLabel={l('Rever', 'Review')} style={{ marginTop: 10 }}
+                title={l('A escala mudou no calendário', 'Roster changed in calendar')}
+                sub={`${rcSub}${rcSub ? ' · ' : ''}${l('rever', 'review')}`}
+                onPress={() => { select(); setImportSource('calendar'); setImportOpen(true); }} />
             ) : null}
 
             {/* Resumo do mês — tipografia com separadores, no topo */}
@@ -359,18 +346,10 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Toast flutuante (em cima) — "X serviços importados do {calendário/PDF}", some sozinho */}
-      {toast ? (
-        <View style={[s.toast, { top: insets.top + 6 }]} pointerEvents="none">
-          <View style={s.toastCk}><Ionicons name="checkmark" size={14} color="#fff" /></View>
-          <Text style={s.toastTxt} numberOfLines={2}>{l(`${toast.n} serviços importados`, `${toast.n} duties imported`)}{toast.src === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}</Text>
-        </View>
-      ) : null}
-
       <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
-        onDone={({ saved, source }) => showToast(saved, source)}
+        onDone={({ saved, source }) => { if (saved) notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported'); }}
         onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
       {/* Hub de importar — Ligar calendário · Importar PDF (aberto pelo mini-fab / cartão "IR" / arranque) */}
@@ -417,10 +396,7 @@ export default function EscalaScreen({ navigation, route }) {
           <TextInput value={recForm.crewId} onChangeText={(v) => setRecForm(f => ({ ...f, crewId: v }))}
             placeholder={t('duties.recIdPh', lang)} placeholderTextColor={C.sub} autoCapitalize="characters" style={s.recInput} />
 
-          <TouchableOpacity onPress={onGeneratePdf} style={s.saveBtn}>
-            <Ionicons name="document-text-outline" size={17} color="#fff" />
-            <Text style={s.saveBtnTxt}>{t('duties.recGenerate', lang)}</Text>
-          </TouchableOpacity>
+          <PrimaryButton onPress={onGeneratePdf} icon="document-text-outline" style={{ marginTop: 20 }} label={t('duties.recGenerate', lang)} />
           <Text style={s.formHint}>{t('duties.recHint', lang)}</Text>
         </View>
       </BottomSheet>
@@ -436,7 +412,6 @@ const makeStyles = (C) => StyleSheet.create({
   eyeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   eyebrowWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  eyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub },
   tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ib: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
 
@@ -457,11 +432,6 @@ const makeStyles = (C) => StyleSheet.create({
   connectS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, lineHeight: 15 },
 
   // Banner de alterações (azul, informativo)
-  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.infoSoft, borderWidth: 1, borderColor: C.info, borderRadius: RADIUS.lg, padding: 12, marginTop: 10 },
-  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.info },
-  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.info, marginTop: 2, opacity: 0.85 },
-  rcGo: { backgroundColor: C.info, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
-  rcGoTxt: { color: '#fff', fontSize: 12.5, fontFamily: FONT.bold },
 
   // Resumo do mês
   summ: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: C.line, borderBottomWidth: 1, borderBottomColor: C.line },
@@ -505,13 +475,9 @@ const makeStyles = (C) => StyleSheet.create({
   connectBigS: { fontSize: 12.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 18, marginTop: 6 },
   privRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 },
   privTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
-  btnDark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: 14, paddingVertical: 14, marginTop: 14 },
-  btnDarkTxt: { color: '#fff', fontSize: 15, fontFamily: FONT.bold },
   orline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
   orlineBar: { flex: 1, height: 1, backgroundColor: C.line },
   orlineTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.lineStrong },
-  btnGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, borderRadius: 14, paddingVertical: 13, marginTop: 10 },
-  btnGhostTxt: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
 
   // Cartão "IR" (no mês, calendário por ligar) → hub
   goBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 9 },
@@ -527,17 +493,11 @@ const makeStyles = (C) => StyleSheet.create({
   hubNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 14 },
   hubNoteTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
 
-  // Toast flutuante de sucesso (em cima)
-  toast: { position: 'absolute', left: GUTTER, right: GUTTER, zIndex: 100, elevation: 12, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.ink, borderRadius: 15, paddingVertical: 13, paddingHorizontal: 15, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-  toastCk: { width: 24, height: 24, borderRadius: 99, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  toastTxt: { flex: 1, color: '#fff', fontSize: 13.5, fontFamily: FONT.bold },
 
   // Folha do registo FTL.245
   form: { padding: 20 },
   fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
   recSub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-  recInput: { backgroundColor: C.soft, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: C.line, color: C.text, fontSize: TYPE.body },
-  saveBtn: { flexDirection: 'row', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  saveBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.semibold },
+  recInput: { backgroundColor: C.soft, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: C.line, color: C.text, fontSize: TYPE.body },
   formHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginTop: 10 },
 });

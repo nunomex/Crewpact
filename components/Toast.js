@@ -15,6 +15,7 @@ const META = {
   sync: { icon: 'cloud-done-outline',    tint: (C) => C.green },
   warn: { icon: 'cloud-offline-outline', tint: (C) => C.warn },
   ok:   { icon: 'checkmark-circle',      tint: (C) => C.ink },
+  imported: { icon: 'checkmark',         tint: (C) => C.green },  // import concluído (verde)
 };
 
 export default function Toast({ toast, lang, onHide }) {

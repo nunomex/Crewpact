@@ -355,7 +355,7 @@ export default function App() {
   // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
   const [toast, setToast] = useState(null);
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
-  const notify = (title, sub) => setToast({ kind: 'ok', title, sub: sub || null, ts: Date.now() });
+  const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
 
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.

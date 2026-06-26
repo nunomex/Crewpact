@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import NotificationsBell from '../components/NotificationsBell';
+import Banner from '../components/Banner';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { monthlyAe, aeMonthTotal } from '../data/perdiem';
@@ -11,6 +12,7 @@ import { sectorDistanceNM } from '../data/airports';
 import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import { isLongHaulCompany } from '../data/capabilities';
 import PageHeader from '../components/PageHeader';
+import Eyebrow from '../components/Eyebrow';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -345,7 +347,7 @@ export default function HomeScreen({ navigation }) {
 
   const nextDutyEl = flight ? (
     <View>
-      <Text style={s.svcSec}>{l('Serviço', 'Duty')}</Text>
+      <Eyebrow style={{ marginBottom: 12 }}>{l('Serviço', 'Duty')}</Eyebrow>
       <View style={s.svc}>
         <View style={s.svcNd}>
           <View style={s.svcBadgeWrap}>
@@ -358,7 +360,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
           <View style={s.svcNdx}>
-            <Text style={s.svcType} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Text>
+            <Eyebrow style={{ flex: 1 }} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Eyebrow>
             {/* Rota grande — encolhe p/ caber ao lado do badge, NUNCA quebra. */}
             <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isNonFlight
               ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
@@ -502,14 +504,10 @@ export default function HomeScreen({ navigation }) {
         {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso. Em
             longo-curso (Hi Fly) avisa e remete p/ a calculadora manual. */}
         {isLongHaulCompany(company) ? (
-          <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }} style={s.rcBanner}>
-            <Ionicons name="information-circle" size={22} color={C.warnText} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.rcTitle}>{l('Cálculo FTL automático', 'Automatic FTL calculation')}</Text>
-              <Text style={s.rcSub} numberOfLines={2}>{l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={C.sub} />
-          </TouchableOpacity>
+          <Banner tone="warn" icon="information-circle" style={{ marginBottom: SPACE.md }}
+            title={l('Cálculo FTL automático', 'Automatic FTL calculation')}
+            sub={l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}
+            onPress={() => { select(); navigation.navigate('FTL'); }} />
         ) : null}
 
         {/* Alterações de escala (Fase 4) — aviso quando o calendário difere do guardado */}
@@ -519,14 +517,9 @@ export default function HomeScreen({ navigation }) {
           const ch = (rc.changed || 0) + (rc.conflict || 0);
           const parts = [ch ? `${ch} ${l('alterada(s)', 'changed')}` : null, rc.added ? `${rc.added} ${l('nova(s)', 'new')}` : null, rc.removed ? `${rc.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ');
           return (
-            <TouchableOpacity activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Escala'); }} style={s.rcBanner}>
-              <Ionicons name="sync-circle" size={22} color={C.warnText} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.rcTitle}>{l('Alterações na escala', 'Roster changes')}</Text>
-                <Text style={s.rcSub} numberOfLines={1}>{parts}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={C.sub} />
-            </TouchableOpacity>
+            <Banner tone="warn" icon="sync-circle" style={{ marginBottom: SPACE.md }}
+              title={l('Alterações na escala', 'Roster changes')} sub={parts}
+              onPress={() => { select(); navigation.navigate('Escala'); }} />
           );
         })()}
 
@@ -594,9 +587,7 @@ const makeStyles = (C) => StyleSheet.create({
   ndFatDot: { width: 7, height: 7, borderRadius: 99 },
   ndFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
 
-  // Serviço — cartão herói do próximo serviço (badge + linha principal largura-toda + grelha)
-  svcSec: { fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, marginBottom: 12 },
-  // Card COM fundo (preenchimento soft2) + borda + sombra subtil — o "fundo" que o user quer
+  // Serviço — cartão herói do próximo serviço (badge + linha principal largura-toda + grelha)  // Card COM fundo (preenchimento soft2) + borda + sombra subtil — o "fundo" que o user quer
   svc: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
     shadowColor: '#14161A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 3 },
   svcNd: { flexDirection: 'row', alignItems: 'center', gap: 16 },   // dia (círculo) à esquerda · coluna direita, centrados
@@ -607,9 +598,7 @@ const makeStyles = (C) => StyleSheet.create({
     shadowColor: C.ink, shadowOpacity: 0.20, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 7 },
   // número justo e centrado (includeFontPadding:false + lineHeight≈fontSize ⇒ não fica torto)
   svcBadgeDay: { fontSize: 36, fontFamily: FONT.display, color: '#fff', lineHeight: 36, letterSpacing: -0.5, textAlign: 'center', includeFontPadding: false },
-  svcBadgeWd: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },
-  svcType: { flex: 1, fontSize: TYPE.eyebrow, fontFamily: FONT.heavy, letterSpacing: 1.5, textTransform: 'uppercase', color: C.sub },
-  svcCd: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, marginTop: 6 },   // sub-linha "quando"
+  svcBadgeWd: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },  svcCd: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, marginTop: 6 },   // sub-linha "quando"
   svcCdDay: { color: C.sub, fontFamily: FONT.bold },
   // Rota grande — numberOfLines=1 + adjustsFontSizeToFit ⇒ encolhe p/ caber ao lado do badge, nunca quebra
   svcMain: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 9, lineHeight: 30 },
@@ -662,9 +651,6 @@ const makeStyles = (C) => StyleSheet.create({
   grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
 
   // Alterações de escala (Fase 4) — banner de aviso
-  rcBanner: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.warnSoft || C.soft, borderWidth: 1, borderColor: C.warn || C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: SPACE.md },
-  rcTitle: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
-  rcSub: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
 
   // Notificações
   notifItem: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },

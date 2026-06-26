@@ -37,7 +37,7 @@ export default function ConfirmDialog({ visible, onCancel, onConfirm, icon = 'he
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 8 },
+  overlay: { flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: SPACE.lg + 4 },
   card: { width: '100%', maxWidth: 380, backgroundColor: C.card, borderRadius: RADIUS.xxl, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 18, alignItems: 'center',
     ...SHADOW.lg },
   iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

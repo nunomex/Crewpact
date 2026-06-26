@@ -2,9 +2,10 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Animated, Keyboard,
+  Animated, Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import PrimaryButton from '../components/PrimaryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
 import {
@@ -320,9 +321,7 @@ export default function LoginScreen() {
                 <TouchableOpacity style={s.forgotBtn} hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
                   <Text style={s.forgotTxt}>{t('login.forgot', lang)}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleLogin} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnLogin', lang)}</Text>}
-                </TouchableOpacity>
+                <PrimaryButton onPress={handleLogin} loading={loading} label={t('login.btnLogin', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
                 <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => setSignupMode(true)}>
                   <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
                   <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
@@ -343,9 +342,7 @@ export default function LoginScreen() {
                   placeholder={t('login.email', lang)} error={fErr}
                   icon="mail-outline" keyboardType="email-address" autoFocus returnKeyType="done"
                   onSubmitEditing={handleRequestReset} />
-                <TouchableOpacity onPress={handleRequestReset} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnSendCode', lang)}</Text>}
-                </TouchableOpacity>
+                <PrimaryButton onPress={handleRequestReset} loading={loading} label={t('login.btnSendCode', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
                 <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => navigateTo('login', false)}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
                   <Text style={s.linkTxt}>{t('login.backToLogin', lang)}</Text>
@@ -371,9 +368,7 @@ export default function LoginScreen() {
                     <Text style={s.errBannerTxt}>{codeErr}</Text>
                   </View>
                 ) : null}
-                <TouchableOpacity onPress={handleVerifyCode} disabled={loading || code.length < 8} style={[s.btnMain, code.length < 8 && { opacity: 0.4 }]}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnVerify', lang)}</Text>}
-                </TouchableOpacity>
+                <PrimaryButton onPress={handleVerifyCode} disabled={code.length < 8} loading={loading} label={t('login.btnVerify', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
                 <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
                   <Ionicons name="arrow-back" size={14} color={C.sub} />
                   <Text style={s.linkTxt}>{t('login.resend', lang)}</Text>
@@ -401,9 +396,7 @@ export default function LoginScreen() {
                   placeholder={t('login.confirmPw', lang)} error={newPw2Err} secure
                   icon="lock-closed-outline" returnKeyType="done"
                   onSubmitEditing={handleResetPassword} inputRef={newPw2Ref} />
-                <TouchableOpacity onPress={handleResetPassword} disabled={loading} style={s.btnMain}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnMainTxt}>{t('login.btnCreatePw', lang)}</Text>}
-                </TouchableOpacity>
+                <PrimaryButton onPress={handleResetPassword} loading={loading} label={t('login.btnCreatePw', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
               </>
             )}
 
@@ -423,7 +416,7 @@ const makeS = (C) => StyleSheet.create({
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
   ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', marginBottom: 18, ...SHADOW.sm },
-  logoName:     { fontSize: TYPE.hero, fontFamily: FONT.heavy, letterSpacing: -0.5, color: C.text },
+  logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
   switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 },
   switchLink:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
@@ -431,8 +424,6 @@ const makeS = (C) => StyleSheet.create({
   errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontFamily: FONT.medium },
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
   forgotTxt:    { fontSize: TYPE.sub, color: C.sub },
-  btnMain:      { backgroundColor: C.ink, borderRadius: RADIUS.pill, height: 54, alignItems: 'center', justifyContent: 'center', marginTop: SPACE.xs },
-  btnMainTxt:   { color: '#fff', fontSize: TYPE.value, fontFamily: FONT.bold, letterSpacing: 0.8 },
   // Forgot/code/reset shared
   stepHeader:   { alignItems: 'center', marginBottom: SPACE.xl },
   stepIconWrap: { width: 60, height: 60, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },

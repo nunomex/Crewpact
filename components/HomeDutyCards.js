@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT, TYPE, RADIUS } from '../data/constants';
 import { useTheme } from '../data/appContext';
+import Eyebrow from './Eyebrow';
 import { t } from '../data/i18n';
 
 // Card da Home com a lista das PRÓXIMAS ATIVIDADES (qualquer tipo de duty).
@@ -30,7 +31,7 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4 }) {
   const list = upcoming(duties, isoOf(new Date())).slice(0, limit);
   return (
     <View style={s.card}>
-      <Text style={s.eyebrow}>{lang === 'en' ? 'UPCOMING' : 'PRÓXIMAS ATIVIDADES'}</Text>
+      <Eyebrow style={{ marginBottom: 6 }}>{lang === 'en' ? 'UPCOMING' : 'PRÓXIMAS ATIVIDADES'}</Eyebrow>
       {list.length ? list.map((d, i) => (
         <View key={d.iso} style={[s.lrow, i > 0 && s.lrowBorder]}>
           <Ionicons name={KIND_ICON[d.kind || 'flight'] || 'ellipse-outline'} size={14} color={C.sub} />
@@ -44,7 +45,6 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4 }) {
 
 const makeStyles = (C) => StyleSheet.create({
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 13 },
-  eyebrow: { fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy, marginBottom: 6 },
   empty: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, paddingVertical: 4 },
   lrow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
   lrowBorder: { borderTopWidth: 1, borderTopColor: C.line },

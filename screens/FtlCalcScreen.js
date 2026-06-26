@@ -4,6 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, GUTTER, TRACK_DISPLAY, FONT } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
+import Eyebrow from '../components/Eyebrow';
+import PrimaryButton from '../components/PrimaryButton';
+import GhostButton from '../components/GhostButton';
 import CenterDialog from '../components/CenterDialog';
 import { PsvCalc, LimitsCalc, RestCalc, DutyCalc, InflightRestCalc, StandbyCalc, DelayedReportingCalc, PositioningCalc } from '../components/FtlCalcs';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -89,13 +92,13 @@ export default function FtlCalcScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         {isDuty ? (
           <>
-            <Text style={s.eyebrow}>{l('REGULAMENTO UE 83/2014', 'REGULATION EU 83/2014')}</Text>
+            <Eyebrow style={{ marginBottom: 4 }}>{l('REGULAMENTO UE 83/2014', 'REGULATION EU 83/2014')}</Eyebrow>
             <Text style={s.title}>{t('ftl.calcDuty', lang)}</Text>
             <Text style={s.sub}>{t('ftl.dutyCardSub', lang)}</Text>
           </>
         ) : (
           <>
-            <Text style={s.eyebrow}>{ftlSectionTitle(a.section, lang)}</Text>
+            <Eyebrow style={{ marginBottom: 4 }}>{ftlSectionTitle(a.section, lang)}</Eyebrow>
             <Text style={s.code}>{a.code}</Text>
             <Text style={s.title}>{tx(a.title, lang)}</Text>
             <Text style={s.sub}>{tx(a.sub, lang)}</Text>
@@ -124,12 +127,8 @@ export default function FtlCalcScreen({ route, navigation }) {
           <Text style={s.dlgText}>{t('ftl.confirmBody', lang)}</Text>
           <View style={s.dlgSummary}><Text style={s.dlgSummaryTxt}>{summary(pending)}</Text></View>
           <View style={s.dlgActions}>
-            <TouchableOpacity style={[s.dlgBtn, s.dlgBtnGhost]} activeOpacity={0.8} onPress={() => setPending(null)}>
-              <Text style={s.dlgBtnGhostTxt}>{t('common.no', lang)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.dlgBtn, s.dlgBtnPrimary]} activeOpacity={0.85} onPress={confirmRegister}>
-              <Text style={s.dlgBtnPrimaryTxt}>{t('common.yes', lang)}</Text>
-            </TouchableOpacity>
+            <GhostButton onPress={() => setPending(null)} label={t('common.no', lang)} style={{ flex: 1 }} />
+            <PrimaryButton onPress={confirmRegister} label={t('common.yes', lang)} style={{ flex: 1 }} />
           </View>
         </View>
       </CenterDialog>
@@ -140,7 +139,6 @@ export default function FtlCalcScreen({ route, navigation }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { paddingHorizontal: GUTTER },
-  eyebrow: { fontSize: TYPE.eyebrow, color: C.sub, letterSpacing: 1.3, fontFamily: FONT.heavy, textTransform: 'uppercase', marginBottom: 4 },
   code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.display },
   title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4 },
   sub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 20, marginTop: 8, marginBottom: 14 },
@@ -152,9 +150,4 @@ const makeStyles = (C) => StyleSheet.create({
   dlgSummary: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 14, marginTop: 14 },
   dlgSummaryTxt: { fontSize: 13, color: C.text, fontFamily: FONT.semibold, lineHeight: 19 },
   dlgActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
-  dlgBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: RADIUS.pill, paddingVertical: 13 },
-  dlgBtnGhost: { borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
-  dlgBtnGhostTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
-  dlgBtnPrimary: { backgroundColor: C.ink },
-  dlgBtnPrimaryTxt: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: '#fff' },
 });

@@ -7,6 +7,7 @@ import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { t } from '../data/i18n';
 import { AppContext, useTheme } from '../data/appContext';
+import Eyebrow from './Eyebrow';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo Início, Escala e qualquer ecrã
@@ -44,7 +45,7 @@ export default function NotificationsBell() {
         <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
           <View style={s.head}>
             <View style={{ flex: 1 }}>
-              <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{t('home.notifsEyebrow', lang)}</Text></View>
+              <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{t('home.notifsEyebrow', lang)}</Eyebrow></View>
               <Text style={s.h1}>{t('home.notifsTitle', lang)}</Text>
             </View>
             <TouchableOpacity onPress={close} hitSlop={8} style={s.close} accessibilityLabel={t('common.close', lang)}>
@@ -110,7 +111,6 @@ const makeStyles = (C) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  eyebrow: { fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: C.sub, fontFamily: FONT.heavy },
   h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
