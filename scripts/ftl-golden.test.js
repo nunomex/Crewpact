@@ -353,7 +353,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 
 // ─────────── Importação de escala (rosterImport) ───────────
 {
-  const { dutyFromActivity, prospectiveDuty } = require(path.resolve('data/rosterImport.js'));
+  const { dutyFromActivity, prospectiveDuty, isNightStop } = require(path.resolve('data/rosterImport.js'));
   const D = (h, m) => new Date(2026, 5, 1, h, m, 0);
   const act = {
     dateISO: '2026-06-01', sectors: 2,
@@ -376,6 +376,15 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // Prospetivo: 28d já a 188h de serviço → incluir a duty (7h) passa 190h → aviso.
   const p = prospectiveDuty(duty, { '2026-05-20': { servico: 188 } });
   eq('Prospetivo: excede 190h/28d', p.issues.some(i => i.type === 'duty28'), true);
+  // Pernoita = NOITE FORA DA BASE (Art. 39/56), com base conhecida; sem base/rota → paridade.
+  eq('NS: acaba fora (LIS-OPO, base LIS)', isNightStop('LIS-OPO', 'LIS', 1), true);
+  eq('NS: volta à base (LIS-OPO-LIS, base LIS)', isNightStop('LIS-OPO-LIS', 'LIS', 2), false);
+  eq('NS: regresso a casa (OPO-LIS, base LIS) — paridade erraria (true)', isNightStop('OPO-LIS', 'LIS', 1), false);
+  eq('NS: par mas acaba fora (LIS-OPO-FAO, base LIS) — paridade erraria (false)', isNightStop('LIS-OPO-FAO', 'LIS', 2), true);
+  eq('NS: sem base → paridade (ímpar→true)', isNightStop('OPO-LIS', null, 1), true);
+  eq('NS: sem rota → paridade (par→false)', isNightStop(null, 'LIS', 2), false);
+  eq('NS: base/rota case-insensitive', isNightStop('lis-opo', 'lis', 1), true);
+  eq('Import: nightStop por base (LIS-OPO-LIS, base LIS) = false', dutyFromActivity(act, 'LIS').nightStop, false);
 }
 
 // ─────────── Registo ORO.FTL.245 (PDF) ───────────

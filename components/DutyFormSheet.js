@@ -7,7 +7,7 @@ import AirportRoute from './AirportRoute';
 import PrimaryButton from './PrimaryButton';
 import Eyebrow from './Eyebrow';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
-import { prospectiveDuty } from '../data/rosterImport';
+import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { routeDistancesNM } from '../data/perdiem';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
@@ -45,7 +45,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewAt, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewAt, base, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -89,7 +89,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // POSICIONAMENTO/FORMAÇÃO/STANDBY AEROPORTO → toggle MANUAL (podes acabar fora da base; não há
   // setores p/ derivar). O motor paga-a IGUAL p/ qualquer tipo (perdiem conta independente do kind).
   const canNightStop = NIGHTSTOP_KINDS.includes(form.kind);
-  const flightNs = isFlight && Number(form.sectors) % 2 === 1;
+  const flightNs = isFlight && isNightStop(form.route, base, form.sectors);   // pernoita = acaba fora da base (recurso: paridade)
   const manualNs = canNightStop && !!form.nightStop;
   const hasNs = flightNs || manualNs;
   // Valor € da pernoita (Art. 39, igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
@@ -265,7 +265,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           </Animated.View>
 
           {/* Pernoita (NÃO-VOO) — toggle manual só onde podes acabar fora da base (posicionamento,
-              formação, standby aeroporto). O voo deriva da paridade dos setores. */}
+              formação, standby aeroporto). O voo deriva de acabar FORA DA BASE (Art. 39/56). */}
           {canNightStop ? (
             <Animated.View style={[s.sec, secStyle(5)]}>
               <View style={s.nsRow}>

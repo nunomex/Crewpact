@@ -40,7 +40,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory, base } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -63,7 +63,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const co = company?.slug;
     const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
     const window = { start: isoDay(start), end: isoDay(end) };  // p/ detetar cancelados na janela
-    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window }) : [];
+    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!fl.ok && !nf.ok) setDenied(true);
     setCands(next);
@@ -95,7 +95,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const text = await pdf.extractText(uri);
       try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
       const r = parseEasyjetRoster(text, company?.slug);
-      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog }));
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base }));
       setPasteDiag(r.diag);
       setPasteRecurrents(detectRecurrents(text));
       success();

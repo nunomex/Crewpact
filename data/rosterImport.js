@@ -4,11 +4,22 @@
 import { dutyToFtlDay, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
 
+// Pernoita = NOITE FORA DA BASE (Art. 39 pilotos / Art. 56 cabine): uma duty de VOO acaba
+// num aeroporto ≠ base do tripulante → dormes fora → pernoita. Sem base OU sem rota conhecida
+// → RECURSO pela PARIDADE dos setores (ímpar = acabas fora). `route`="LIS-OPO-LIS"; `base`=IATA.
+// (Substitui a antiga regra-do-utilizador por paridade, que contava a dobrar os dias de regresso.)
+export const isNightStop = (route, base, sectors) => {
+  const aps = String(route || '').split(/[^A-Za-z]+/).map((s) => s.toUpperCase()).filter(Boolean);
+  const b = String(base || '').trim().toUpperCase();
+  if (b && aps.length >= 2) return aps[aps.length - 1] !== b;   // último aeroporto ≠ base → pernoita
+  return Number(sectors) % 2 === 1;                              // recurso: paridade
+};
+
 // Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
 // → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
 // `route` = cadeia de aeroportos "LIS-OPO-LIS" (null se algum for desconhecido) —
 // alimenta o per diem do AE (distância de grande círculo por setor).
-export const dutyFromActivity = (act) => {
+export const dutyFromActivity = (act, base = null) => {
   if (!act || !Array.isArray(act.legs) || !act.legs.length) return null;
   const first = act.legs[0], last = act.legs[act.legs.length - 1];
   const flightMin = act.legs.reduce((s, l) => {
@@ -27,9 +38,9 @@ export const dutyFromActivity = (act) => {
     sectors,
     flight_minutes: flightMin,
     route,
-    // Pernoita pela PARIDADE dos setores: ÍMPAR = acabas fora da base → pernoita;
-    // PAR = ida-e-volta à base → sem pernoita. (regra do utilizador, voo)
-    nightStop: sectors % 2 === 1,
+    // Pernoita = NOITE FORA DA BASE (Art. 39/56): a duty acaba num aeroporto ≠ base. Sem
+    // base/rota → recurso pela paridade dos setores (ver isNightStop, topo do módulo).
+    nightStop: isNightStop(route, base, sectors),
     // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
     // só o essencial por leg — flightNo + aeroportos + horas planeadas.
     legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null })),
@@ -93,7 +104,7 @@ export const rangeFromOption = (option, from = new Date()) => {
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
 // e selected=false (MANTÉM o manual). O utilizador marca para o calendário substituir
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null } = {}) => {
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null } = {}) => {
   const out = [];
   const inDates = new Set();
   const make = (duty, kind) => {
@@ -110,7 +121,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     // Default SEGURO: só os NOVOS vêm marcados; alterado/conflito por marcar.
     return { duty, kind, status, exists, diff, prospect, selected: !exists, action: 'save' };
   };
-  for (const act of activities) { const c = make(dutyFromActivity(act), 'flight'); if (c) out.push(c); }
+  for (const act of activities) { const c = make(dutyFromActivity(act, base), 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
   // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do
   // calendário. Ação = apagar (por marcar; confirmação na UI). Manuais/PDF nunca.
