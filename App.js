@@ -28,6 +28,7 @@ import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile } from './ae';
 import { capabilitiesFor } from './data/capabilities';
+import { migrateCrew, resolveCrew } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
@@ -619,7 +620,10 @@ export default function App() {
           const base = resolved.base || localProfile?.base || user.base || null;
           // PPY como estilo de vida (Art. 66.9) → sem retenção. Metadata/cache (≠ tabela profiles).
           const lifestyle = resolved.lifestyle ?? localProfile?.lifestyle ?? user.lifestyle ?? false;
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, serviceStart, base, lifestyle });
+          // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
+          // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
+          const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewHistory, serviceStart, base, lifestyle });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -720,7 +724,12 @@ export default function App() {
   const crewType = profile?.crewType || 'cabin';   // 'cabin' | 'pilot'
   const isPilot = crewType === 'pilot';
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
-  const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE)
+  const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
+  // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
+  // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
+  // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
+  const crewHistory = profile?.crewHistory || [];
+  const crewAt = (ym) => resolveCrew(crewHistory, ym);
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
@@ -801,7 +810,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, baseObj, lifestyle, ae, caps,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, ae, caps,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

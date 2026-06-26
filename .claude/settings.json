@@ -63,7 +63,11 @@
       "Bash(git show *)",
       "Bash(cd \"D:/PROJECTOS/CrewPact\" && git diff --no-index /dev/null screens/FtlDetailScreen.js 2>/dev/null | grep -A2 -B2 \"Eyebrow\" || sed -n '120p' screens/FtlDetailScreen.js)",
       "Bash(node -c screens/DutyDetailScreen.js)",
-      "Bash(cd D:/PROJECTOS/CrewPact && git show HEAD:components/Eyebrow.js > /tmp/old_eyebrow.js && cat /tmp/old_eyebrow.js)"
+      "Bash(cd D:/PROJECTOS/CrewPact && git show HEAD:components/Eyebrow.js > /tmp/old_eyebrow.js && cat /tmp/old_eyebrow.js)",
+      "Bash(cd D:\\\\\\\\PROJECTOS\\\\\\\\CrewPact)",
+      "Bash(cd D:/PROJECTOS\\\\CrewPact && grep -n \"\\\\.map\\\\|\\\\.length\\\\|\\\\.forEach\" data/stats.js | grep -i crew)",
+      "Read(//d//**)",
+      "Bash(grep -v \"crewCategory\\\\|//.*monthlyAe\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

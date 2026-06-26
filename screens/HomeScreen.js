@@ -186,7 +186,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewHistory, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -455,8 +455,8 @@ export default function HomeScreen({ navigation }) {
   // Toca → abre a página Stats. Mostra setores/dias + total de horas de voo do ano
   // com barra vs limite anual (1000 h). ──
   const statsYtd = useMemo(
-    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12' }),
-    [duties, ae, crewCategory, crewContract],
+    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory }),
+    [duties, ae, crewCategory, crewContract, crewHistory],
   );
   const statRatio = Math.min(1, statsYtd.flightHours / ANNUAL_FLIGHT_LIMIT_H);
   const statsMiniEl = statsYtd.count > 0 ? (

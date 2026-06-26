@@ -23,7 +23,7 @@ const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60)
 // a duty NÃO guarda FDP nem per-diem. Degrada quando faltam dados (sem block-on, etc.).
 export default function DutyDetailScreen({ route, navigation }) {
   const ctxAll = useContext(AppContext);
-  const { lang, duties, ae, crewCategory, removeDuty } = ctxAll;
+  const { lang, duties, ae, crewCategory, crewAt, removeDuty } = ctxAll;
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -72,18 +72,19 @@ export default function DutyDetailScreen({ route, navigation }) {
 
   // ── Per-diem (motor AE) — só voo, piloto AE, rota completa (todos os setores conhecidos) ──
   const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+  const catD = crewAt(date).category;   // categoria EM VIGOR no mês desta duty (effective-dated)
   let perDiem = null;
-  if (ae && crewCategory && isFlight && stations.length >= 2) {
+  if (ae && catD && isFlight && stations.length >= 2) {
     const dists = []; let ok = true;
     for (let i = 0; i + 1 < stations.length; i++) {
       const nm = sectorDistanceNM(stations[i], stations[i + 1]);
       if (nm == null) { ok = false; break; }
       dists.push(nm);
     }
-    if (ok && dists.length) perDiem = ae.perDiem(crewCategory, dists, 1);
+    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1);
   }
   // Valor € da pernoita (Art. 39) — piloto por categoria, cabine €46 fixos; index=1 como o per-diem.
-  const nsEur = (duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
 
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const fmtDate = (iso) => {

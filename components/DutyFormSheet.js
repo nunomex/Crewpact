@@ -45,7 +45,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewAt, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -94,7 +94,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const hasNs = flightNs || manualNs;
   // Valor € da pernoita (Art. 39, igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
   // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
-  const nsEur = (hasNs && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  const catForm = crewAt(form.date || isoDay()).category;   // categoria EM VIGOR no mês da duty (effective-dated)
+  const nsEur = (hasNs && ae && ae.nightStop && catForm) ? ae.nightStop(catForm) : null;
   const kindInfo = !ae ? null : ({
     flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
     standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
@@ -119,11 +120,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // Per-diem AE deste voo (preview ao vivo por baixo da Rota).
   const routePd = useMemo(() => {
     const r = (form.route || '').trim();
-    if (!ae || !crewCategory || !r) return null;
+    if (!ae || !catForm || !r) return null;
     const dists = routeDistancesNM(r);
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
-    return { ok: true, eur: ae.perDiem(crewCategory, dists) };
-  }, [ae, crewCategory, form.route]);
+    return { ok: true, eur: ae.perDiem(catForm, dists) };
+  }, [ae, catForm, form.route]);
 
   const fmtPd = (n) => {
     const [int, dec] = Number(n).toFixed(2).split('.');

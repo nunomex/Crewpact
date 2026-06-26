@@ -22,6 +22,7 @@ Module._extensions['.js'] = function (m, filename) {
 };
 
 const { yearStats, availableYears } = require(path.resolve('data/stats.js'));
+const { resolveCrew, addCrewChange, migrateCrew } = require(path.resolve('data/crewHistory.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => {
@@ -90,6 +91,33 @@ const rr = yearStats(REST_D, { year: 2026, now: new Date('2026-12-31T12:00:00') 
 eq('minRestH = 9', rr.minRestH, 9);
 eq('reducedRests = 1', rr.reducedRests, 1);
 eq('longestStreak = 3', rr.longestStreak, 3);
+
+// ── crewHistory: effective-dating da categoria/contrato ──
+const HIST = [
+  { category: 'FO', contract: '12/12', from: '2024-01' },
+  { category: 'SFO', contract: '14-14', from: '2026-03' },
+];
+eq('resolveCrew antes do 1.º período → usa o 1.º', resolveCrew(HIST, '2023-05'), { category: 'FO', contract: '12/12' });
+eq('resolveCrew no FO', resolveCrew(HIST, '2026-02'), { category: 'FO', contract: '12/12' });
+eq('resolveCrew no mês da promoção', resolveCrew(HIST, '2026-03'), { category: 'SFO', contract: '14-14' });
+eq('resolveCrew depois', resolveCrew(HIST, '2026-09'), { category: 'SFO', contract: '14-14' });
+eq('resolveCrew aceita YYYY-MM-DD', resolveCrew(HIST, '2026-03-15'), { category: 'SFO', contract: '14-14' });
+eq('resolveCrew história vazia', resolveCrew([], '2026-01'), { category: null, contract: '12/12' });
+eq('addCrewChange adiciona período', addCrewChange(HIST, { category: 'CPT', contract: '12/12', from: '2027-01' }).length, 3);
+eq('addCrewChange colapsa mudança sem efeito', addCrewChange([{ category: 'FO', contract: '12/12', from: '2024-01' }], { category: 'FO', contract: '12/12', from: '2026-01' }).length, 1);
+eq('migrateCrew do escalar → 1 período no mês do serviceStart', migrateCrew({ crewCategory: 'FO', crewContract: '12/12', serviceStart: '2022-06-01' }), [{ category: 'FO', contract: '12/12', from: '2022-06' }]);
+eq('migrateCrew preserva história existente', migrateCrew({ crewHistory: HIST, crewCategory: 'XX' }), HIST);
+
+// yearStats EFFECTIVE-DATED: promoção a meio do ano NÃO reescreve o passado.
+const aeCat = { monthlyBase: (cat) => ({ FO: 3000, SFO: 5000 }[cat] || 0), perDiem: () => 0 };
+const promo = [
+  { category: 'FO', contract: '12/12', from: '2026-01' },
+  { category: 'SFO', contract: '12/12', from: '2026-03' },
+];
+const rEff = yearStats({}, { year: 2026, ae: aeCat, crewHistory: promo, now: new Date('2026-04-15T12:00:00') });
+eq('YTD effective-dated (Jan+Fev FO 3000 · Mar+Abr SFO 5000)', rEff.aeYtd.base, 16000);
+const rNaive = yearStats({}, { year: 2026, ae: aeCat, category: 'SFO', now: new Date('2026-04-15T12:00:00') });
+eq('YTD ingénuo (4× SFO 5000) — confirma a diferença', rNaive.aeYtd.base, 20000);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

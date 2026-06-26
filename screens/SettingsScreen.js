@@ -16,6 +16,7 @@ import { success } from '../data/haptics';
 
 import { RADIUS, TYPE, FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
+import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
@@ -50,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -134,16 +135,25 @@ export default function SettingsScreen({ navigation }) {
   // mudança de contrato…). Guardados no metadata + cache (como crewCategory/crewContract).
   const [catModal, setCatModal] = useState(false);
   const [contractModal, setContractModal] = useState(false);
-  const saveCategory = (val) => {
-    setProfile((p) => ({ ...p, crewCategory: val }));
-    updateProfile({ crewCategory: val }, lang).catch(() => {});
-    setCatModal(false); success();
+  // Categoria/contrato EFFECTIVE-DATED: a mudança ADICIONA um período "a partir de" um mês
+  // (default = mês atual; podes datar a promoção real) → os meses anteriores ficam congelados
+  // à categoria antiga. A categoria escala o AE inteiro, por isso isto evita reescrever o passado.
+  const nowD = new Date();
+  const currentYm = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`;
+  const [changeFrom, setChangeFrom] = useState(currentYm);
+  const maskYm = (v) => { const d = (v || '').replace(/\D/g, '').slice(0, 6); return d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`; };
+  const applyCrew = (nextCat, nextContract) => {
+    const cat = nextCat || currentCrew(crewHistory).category;   // mudar só o contrato → mantém a categoria atual
+    if (!cat) return;   // sem categoria não há AE — nada a gravar (evita estado inconsistente)
+    const from = /^\d{4}-(0[1-9]|1[0-2])$/.test(changeFrom) ? changeFrom : currentYm;
+    const hist = addCrewChange(crewHistory, { category: cat, contract: nextContract || '12/12', from });
+    const cur = currentCrew(hist);
+    setProfile((p) => ({ ...p, crewHistory: hist, crewCategory: cur.category, crewContract: cur.contract }));
+    updateProfile({ crewHistory: hist, crewCategory: cur.category, crewContract: cur.contract }, lang).catch(() => {});
   };
-  const saveContract = (val) => {
-    setProfile((p) => ({ ...p, crewContract: val }));
-    updateProfile({ crewContract: val }, lang).catch(() => {});
-    setContractModal(false); success();
-  };
+  const histLine = (crewHistory || []).map((p) => `${p.category} ${l('desde', 'since')} ${p.from}`).join('  ·  ');
+  const saveCategory = (val) => { applyCrew(val, crewContract || '12/12'); setCatModal(false); success(); };
+  const saveContract = (val) => { applyCrew(crewCategory, val); setContractModal(false); success(); };
 
   // Bloqueio biometria/PIN (opt-in). Ao ativar, confirma que o dispositivo
   // consegue autenticar (senão não vale a pena trancar e arriscar trancar fora).
@@ -176,7 +186,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, base, serviceStart, lifestyle },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewHistory, base, serviceStart, lifestyle },
         duties, dayLog, aeExtras,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -234,13 +244,13 @@ export default function SettingsScreen({ navigation }) {
               {ae ? (
                 <Row icon="ribbon-outline" label={l('Categoria', 'Rank')}
                   sub={crewCategory && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : l('A tua categoria', 'Your rank')}
-                  value={crewCategory || l('Por definir', 'Not set')} onPress={() => setCatModal(true)} s={s} C={C} />
+                  value={crewCategory || l('Por definir', 'Not set')} onPress={() => { setChangeFrom(currentYm); setCatModal(true); }} s={s} C={C} />
               ) : null}
               {ae ? (
                 <Row icon="briefcase-outline" label={l('Contrato', 'Contract')}
                   sub={l('Modalidade — afeta a base proporcional', 'Pattern — affects the pro-rated base')}
                   value={crewContract ? (ae.contractLabel ? ae.contractLabel(crewContract, lang) : crewContract) : l('Por definir', 'Not set')}
-                  onPress={() => setContractModal(true)} s={s} C={C} />
+                  onPress={() => { setChangeFrom(currentYm); setContractModal(true); }} s={s} C={C} />
               ) : null}
               {ae ? (
                 <Row icon="location-outline" label={l('Base', 'Base')} sub={l('Onde estás baseado', 'Where you are based')}
@@ -417,7 +427,10 @@ export default function SettingsScreen({ navigation }) {
       {ae ? (
         <CenterDialog visible={catModal} onClose={() => setCatModal(false)} title={l('A tua categoria', 'Your rank')} closeLabel={t('common.close', lang)}>
           <View style={{ padding: 20 }}>
-            <View style={s.baseWrap}>
+            <Text style={s.ymLabel}>{l('A partir de que mês (promoção)', 'From which month (promotion)')}</Text>
+            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={C.sub}
+              keyboardType="numbers-and-punctuation" maxLength={7} style={s.ymInput} />
+            <View style={[s.baseWrap, { marginTop: 14 }]}>
               {ae.CATEGORIES.map((id) => {
                 const on = crewCategory === id;
                 return (
@@ -427,7 +440,8 @@ export default function SettingsScreen({ navigation }) {
                 );
               })}
             </View>
-            <Text style={s.sdHint}>{l('Recalcula a partir de agora; o histórico fica estimado com o valor atual.', 'Recomputes from now; history is estimated with the current value.')}</Text>
+            {(crewHistory || []).length > 1 ? <Text style={[s.sdHint, { marginTop: 12 }]}>{l('Histórico', 'History')}:  {histLine}</Text> : null}
+            <Text style={s.sdHint}>{l('A mudança vale a partir do mês indicado; os meses anteriores ficam na categoria antiga.', 'Applies from the given month; earlier months keep the previous rank.')}</Text>
           </View>
         </CenterDialog>
       ) : null}
@@ -436,7 +450,10 @@ export default function SettingsScreen({ navigation }) {
       {ae ? (
         <CenterDialog visible={contractModal} onClose={() => setContractModal(false)} title={l('O teu contrato', 'Your contract')} closeLabel={t('common.close', lang)}>
           <View style={{ padding: 20 }}>
-            <View style={s.baseWrap}>
+            <Text style={s.ymLabel}>{l('A partir de que mês', 'From which month')}</Text>
+            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={C.sub}
+              keyboardType="numbers-and-punctuation" maxLength={7} style={s.ymInput} />
+            <View style={[s.baseWrap, { marginTop: 14 }]}>
               {ae.CONTRACTS.map((id) => {
                 const on = (crewContract || '12/12') === id;
                 return (
@@ -446,7 +463,7 @@ export default function SettingsScreen({ navigation }) {
                 );
               })}
             </View>
-            <Text style={s.sdHint}>{l('Afeta a base proporcional. Recalcula a partir de agora.', 'Affects the pro-rated base. Recomputes from now.')}</Text>
+            <Text style={s.sdHint}>{l('Afeta a base proporcional, a partir do mês indicado.', 'Affects the pro-rated base, from the given month.')}</Text>
           </View>
         </CenterDialog>
       ) : null}
@@ -497,4 +514,6 @@ const makeStyles = (C) => StyleSheet.create({
   baseRowBadge: { minWidth: 42, height: 38, borderRadius: RADIUS.sm, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   baseRowBadgeTxt: { color: '#fff', fontSize: 12.5, fontFamily: FONT.bold },
   baseRowCity: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
+  ymLabel: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, marginBottom: 8 },
+  ymInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card, letterSpacing: 1, textAlign: 'center' },
 });

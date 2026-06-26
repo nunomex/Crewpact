@@ -4,6 +4,7 @@
 // das rotas). Fonte: o store cru `duties` (não o dayLog do motor FTL), para contar
 // TUDO o que está na escala, importado ou manual.
 import { monthlyPerDiem } from './perdiem';
+import { resolveCrew } from './crewHistory';
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 export const ANNUAL_FLIGHT_LIMIT_H = 1000; // CS-FTL.1: 1000 h de voo em 12 meses consecutivos
@@ -29,7 +30,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', now = new Date() } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, now = new Date() } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -64,22 +65,33 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
 
-  // AE YTD (estimativa) — só companhias AE com categoria. base mensal × meses
-  // decorridos + per diem das rotas do ano (mesma lógica do cartão AE da Home).
+  // AE YTD (estimativa) — só companhias AE com categoria. A categoria escala o AE inteiro
+  // (base + per-diem + pernoita) e é EFFECTIVE-DATED: somamos MÊS A MÊS com a categoria/
+  // contrato que valia em cada mês → uma promoção a meio do ano NÃO reescreve os meses
+  // anteriores. `crewHistory` é a linha do tempo; sem ela, cai para 1 período (category/
+  // contract escalares) = comportamento antigo (retrocompatível).
   let aeYtd = null;
-  if (ae && category && typeof ae.monthlyBase === 'function') {
+  const history = (Array.isArray(crewHistory) && crewHistory.length)
+    ? crewHistory
+    : (category ? [{ category, contract: contract || '12/12', from: '0000-01' }] : []);
+  if (ae && history.length && typeof ae.monthlyBase === 'function') {
     const cy = now.getFullYear();
     const monthsElapsed = (+y < cy) ? 12 : (+y > cy ? 0 : now.getMonth() + 1);
     const index = ae.indexFactor ? ae.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
-    const base = ae.monthlyBase(category, { contract, index }) || 0;
-    const baseYtd = base * monthsElapsed;
-    const pd = monthlyPerDiem(duties, category, ae, { ym: y, index }); // prefixo "YYYY" → ano inteiro
-    const perDiemYtd = pd ? pd.total : 0;
+    let baseYtd = 0, perDiemYtd = 0, withRoute = 0, missing = 0;
+    for (let mo = 0; mo < monthsElapsed; mo++) {
+      const ym = `${y}-${String(mo + 1).padStart(2, '0')}`;
+      const { category: catM, contract: ctrM } = resolveCrew(history, ym);
+      if (!catM) continue;
+      baseYtd += ae.monthlyBase(catM, { contract: ctrM, index }) || 0;
+      const pd = monthlyPerDiem(duties, catM, ae, { ym, index });   // per-diem desse mês, à categoria desse mês
+      if (pd) { perDiemYtd += pd.total; withRoute += pd.withRoute; missing += pd.missing; }
+    }
     aeYtd = {
       base: +baseYtd.toFixed(2), perDiem: +perDiemYtd.toFixed(2),
       total: +(baseYtd + perDiemYtd).toFixed(2), monthsElapsed, index,
       estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(+y)) && index > 1,
-      withRoute: pd ? pd.withRoute : 0, missing: pd ? pd.missing : 0,
+      withRoute, missing,
     };
   }
 
