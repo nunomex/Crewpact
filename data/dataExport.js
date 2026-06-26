@@ -41,6 +41,7 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       base: profile.base || null,
       serviceStart: profile.serviceStart || null,
       lifestyle: !!profile.lifestyle,
+      instructorRated: !!profile.instructorRated,
     },
     duties: d,
     ftlDayLog: dayLog || {},

@@ -620,10 +620,11 @@ export default function App() {
           const base = resolved.base || localProfile?.base || user.base || null;
           // PPY como estilo de vida (Art. 66.9) → sem retenção. Metadata/cache (≠ tabela profiles).
           const lifestyle = resolved.lifestyle ?? localProfile?.lifestyle ?? user.lifestyle ?? false;
+          const instructorRated = resolved.instructorRated ?? localProfile?.instructorRated ?? user.instructorRated ?? false;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewHistory, serviceStart, base, lifestyle });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewHistory, serviceStart, base, lifestyle, instructorRated });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -739,6 +740,7 @@ export default function App() {
   // (o código) como fallback, por isso nada parte sem o catálogo.
   const baseObj = base ? (bases.find((b) => b.code === base && b.airline_id === company?.id) || bases.find((b) => b.code === base) || null) : null;
   const lifestyle = !!profile?.lifestyle;              // PPY como estilo de vida (Art. 66.9) → sem retenção
+  const instructorRated = !!profile?.instructorRated;  // qualificação de instrutor (Art. 42) — opt-in
   const serviceYears = (() => {
     if (!serviceStart) return null;
     const sd = new Date(`${serviceStart}T00:00:00`);
@@ -810,7 +812,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, ae, caps,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

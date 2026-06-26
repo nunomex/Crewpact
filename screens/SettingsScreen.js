@@ -51,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -108,6 +108,12 @@ export default function SettingsScreen({ navigation }) {
   // PPY estilo de vida (Art. 66.9) — só pilotos em contrato SAZONAL (PPY). ON → sem
   // retenção (esconde o item no catálogo via caps/lifestyle). Guardado no metadata.
   const showLifestyle = crewType === 'pilot' && !!ae && !!ae.isSeasonalContract && ae.isSeasonalContract(crewContract);
+  // Qualificação de instrutor (Art. 42) — opt-in p/ pilotos: destrava o papel p/ qualquer categoria.
+  const showInstructor = crewType === 'pilot' && !!ae;
+  const saveInstructor = (val) => {
+    setProfile((p) => ({ ...p, instructorRated: val }));
+    updateProfile({ instructorRated: val }, lang).catch(() => {});
+  };
   const saveLifestyle = (val) => {
     setProfile((p) => ({ ...p, lifestyle: val }));
     updateProfile({ lifestyle: val }, lang).catch(() => {});
@@ -186,7 +192,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewHistory, base, serviceStart, lifestyle },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewHistory, base, serviceStart, lifestyle, instructorRated },
         duties, dayLog, aeExtras,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -259,13 +265,19 @@ export default function SettingsScreen({ navigation }) {
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
                   sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
-                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle} s={s} C={C} />
+                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle && !showInstructor} s={s} C={C} />
               ) : null}
               {showLifestyle ? (
                 <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')}
                   sub={l('Sazonal recebe retenção · estilo de vida não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')}
-                  last s={s} C={C}
+                  last={!showInstructor} s={s} C={C}
                   right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
+              ) : null}
+              {showInstructor ? (
+                <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')}
+                  sub={l('Destrava o papel de instrutor (Art. 42) — só se tiveres a qualificação', 'Unlocks the instructor role (Art. 42) — only if you hold the rating')}
+                  last s={s} C={C}
+                  right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
               ) : null}
             </View>
             {aeMonth ? (

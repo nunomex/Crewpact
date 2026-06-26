@@ -18,7 +18,7 @@ const GROUP_LABEL = {
 // pagamento (mockup): chips de categoria/contrato, base + setor nominal, per diem
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
-export default function AeCalcs({ ae, category, contract = '12/12', duties = [], lifestyle = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
+export default function AeCalcs({ ae, category, contract = '12/12', duties = [], lifestyle = false, instructorRated = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
   const { lang, serviceYears } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -100,7 +100,7 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
     if (!g) { g = { id: c.group, items: [] }; groups.push(g); }
     g.items.push(c);
   });
-  const roles = ae.additionalRolesFor ? ae.additionalRolesFor(category) : [];
+  const roles = ae.additionalRolesFor ? ae.additionalRolesFor(category, { instructorRated }) : [];
   // Prémio de permanência (Anexo I.9) depende da antiguidade — só categorias elegíveis.
   const hasLoyalty = !!ae.loyaltyPct && ae.loyaltyPct(category, 99) > 0;
 

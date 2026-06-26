@@ -233,8 +233,12 @@ export const ADDITIONAL_ROLES = [
     label: { pt: 'Instrutor / verificador', en: 'Instructor / examiner' },
     unit: { pt: '€/dia', en: '€/day' }, sub: '€120 / dia' },
 ];
-// Papéis adicionais que a categoria `cat` pode desempenhar.
-export const additionalRolesFor = (cat) => ADDITIONAL_ROLES.filter((r) => r.categories.includes(cat));
+// Papéis adicionais que a categoria `cat` pode desempenhar. `instructorRated` (qualificação
+// de instrutor, opt-in no perfil) destrava o papel de instrutor p/ QUALQUER categoria — o
+// Art. 42 liga-o à QUALIFICAÇÃO, não ao posto (o gating CPT/SFO é só o caso-comum). O abono
+// já era universal pelos Extras (instructorDays); isto fecha a incoerência na lista de papéis.
+export const additionalRolesFor = (cat, { instructorRated = false } = {}) =>
+  ADDITIONAL_ROLES.filter((r) => r.categories.includes(cat) || (instructorRated && r.id === 'instr'));
 
 // Valor (€) de um cálculo do catálogo para uma categoria — para o ecrã Cálculos.
 // Devolve número, ou `null` quando o valor depende do voo/mês (per diem).
