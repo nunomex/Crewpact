@@ -181,7 +181,7 @@ eq('Cabine nominal CM', cabin.NOMINAL_SECTOR.CM, 32.50);
 eq('Cabine nominal FA', cabin.NOMINAL_SECTOR.FA, 21.00);
 eq('Cabine categorias', cabin.CATEGORIES.join(','), 'CM,CMP,FA,FA1');
 eq('Cabine mensal CM (23198/14)', cabin.monthlyBase('CM'), 1657.00);
-eq('Cabine mensal FA1 = SMN', cabin.monthlyBase('FA1'), 870.00);
+eq('Cabine mensal FA1 = SMN', cabin.monthlyBase('FA1'), 920.00);   // SMN 2026 (DL 139/2025)
 eq('Cabine mensal FA 8/12', cabin.monthlyBase('FA', { contract: '8/12' }), 897.71);   // 18852×8/12/14
 eq('Cabine per diem FA (350,800)', cabin.perDiem('FA', [350, 800]), 42.00);             // 2.0 × 21
 eq('Cabine bandas iguais aos pilotos', cabin.sectorMult(350), 0.8);
@@ -212,8 +212,8 @@ eq('Cabine total inclui abono', cabin.computeAeMonth({ category: 'CM', contract:
 // ─────────── Papéis adicionais de cabine (additional roles) ───────────
 eq('Cabine upranker (€/setor)', cabin.upranker(), 16.27);
 eq('Cabine CCLT (€/dia)', cabin.cclt(), 25);
-eq('Cabine papéis FA (upranker+CCLT)', cabin.additionalRolesFor('FA').map((r) => r.id).join(','), 'upranker,cclt');
-eq('Cabine papéis FA1 (só upranker)', cabin.additionalRolesFor('FA1').map((r) => r.id).join(','), 'upranker');
+eq('Cabine papéis FA (upranker+CTI)', cabin.additionalRolesFor('FA').map((r) => r.id).join(','), 'upranker,cti');
+eq('Cabine papéis FA1 (upranker+CTI)', cabin.additionalRolesFor('FA1').map((r) => r.id).join(','), 'upranker,cti');
 eq('Cabine papéis CM (CCLT+CTI, sem upranker)', cabin.additionalRolesFor('CM').map((r) => r.id).join(','), 'cclt,cti');
 eq('Cabine papéis CMP (upranker+CCLT+CTI)', cabin.additionalRolesFor('CMP').map((r) => r.id).join(','), 'upranker,cclt,cti');
 eq('Cabine catalogValue base CM', cabin.catalogValue('base', { category: 'CM' }), 1657.00);
@@ -225,7 +225,7 @@ eq('Cabine catalogValue cti CM', cabin.catalogValue('cti', { category: 'CM' }), 
 // ── Cabine — paridade com pilotos: bónus (Cl. 63), catalogFor, extras do mês ──
 eq('Cabine bónus CM (2 semanas)', cabin.perfBonus('CM'), 892.23);      // 23198×2/52
 eq('Cabine bónus FA (2 semanas)', cabin.perfBonus('FA'), 725.08);      // 18852×2/52
-eq('Cabine bónus FA1 (SMN×14×2/52)', cabin.perfBonus('FA1'), 468.46);  // 12180×2/52
+eq('Cabine bónus FA1 (SMN×14×2/52)', cabin.perfBonus('FA1'), 495.38);  // 12880×2/52 (SMN 920)
 eq('Cabine bónus CM part-time 50%', cabin.perfBonus('CM', { contract: 'fixo-50' }), 446.12);  // ×0.5
 eq('Cabine catalogValue bónus CM', cabin.catalogValue('bonus', { category: 'CM' }), 892.23);
 // catalogFor esconde papéis (upranker/cclt/cti), mantém office/bonus

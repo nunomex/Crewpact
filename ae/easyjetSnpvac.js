@@ -19,7 +19,8 @@ export const categoryLabel = (id, lang = 'pt') =>
   (lang === 'en' ? CATEGORY_LABEL_EN : CATEGORY_LABEL)[id] || id;
 
 // Salário mínimo nacional (mensal) — base do FA 1.º ano (Anexo I.1). Atualizar anualmente.
-export const NMW_MONTHLY = 870;
+// 2026 = €920 (Continente, onde estão LIS/OPO) — DL 139/2025, em vigor 1-jan-2026 (2025 era €870).
+export const NMW_MONTHLY = 920;
 
 // Anexo I.1 — Salário anual base ilíquido (€), Nov-2025. FA1 = SMN (ver NMW_MONTHLY).
 export const BASE_ANNUAL = { CM: 23198, CMP: 18914, FA: 18852 };
@@ -130,16 +131,17 @@ export const airportStandby = (cat, { called = false, over4h = false } = {}) => 
 // ── Papéis adicionais (additional roles) — NÃO são categorias profissionais; são
 // funções extra que um tripulante pode desempenhar SOBRE a sua categoria, com
 // pagamento acumulável (Cl. 34/35). `categories` = quem pode desempenhar o papel;
-// `calc` = função de cálculo deste módulo. A elegibilidade por categoria é a leitura
-// do AE (ajustável): Upranker = quem ainda não é Chefe; instrução = Chefes. ──
+// `calc` = função de cálculo deste módulo. A elegibilidade por categoria é a leitura DAS
+// CLÁUSULAS (ajustável): Upranker = quem ainda não é Chefe; CCLT = "de entre os chefes de
+// cabine" (CM/CMP, Cl. 35.ª-a); CTI-Flexi = "assistentes de bordo e chefes" (FA+CM/CMP, Cl. 35.ª-b). ──
 export const ADDITIONAL_ROLES = [
   { id: 'upranker', calc: 'upranker', categories: ['FA1', 'FA', 'CMP'],
     label: { pt: 'Upranker (a desempenhar Chefe)', en: 'Upranker (acting as Cabin Manager)' },
     unit: { pt: '€/setor', en: '€/sector' }, sub: '€16,27 / setor (Cl. 34)' },
-  { id: 'cclt', calc: 'cclt', categories: ['FA', 'CMP', 'CM'],
+  { id: 'cclt', calc: 'cclt', categories: ['CM', 'CMP'],   // Cl. 35.ª-a): "de entre os chefes de cabine"
     label: { pt: 'CCLT — Verificador de Linha', en: 'CCLT — Cabin Crew Line Trainer' },
     unit: { pt: '€/dia de treino', en: '€/training day' }, sub: '€25 / dia (Cl. 35)' },
-  { id: 'cti', calc: 'ctiFlexi', categories: ['CMP', 'CM'],
+  { id: 'cti', calc: 'ctiFlexi', categories: ['FA1', 'FA', 'CMP', 'CM'],   // Cl. 35.ª-b): "assistentes de bordo e chefes de cabine" = TODAS (FA1=tripulante 1.º ano também é assistente)
     label: { pt: 'CTI-Flexi — Instrutor', en: 'CTI-Flexi — Instructor' },
     unit: { pt: '€/dia', en: '€/day' }, sub: '4 setores nominais (Cl. 35)' },
 ];
