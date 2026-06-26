@@ -3,6 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Activi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { TYPE, RADIUS, TRACK_DISPLAY, FONT } from '../data/constants';
+import { getLocales } from 'expo-localization';
+import Eyebrow from '../components/Eyebrow';
+import { countryName as countryNameOf, countryFlag } from '../data/countries';
 import { AppContext, useTheme } from '../data/appContext';
 import { updateProfile, register, validateName, validateEmail, validatePassword } from '../data/auth';
 import { upsertProfile } from '../data/db';
@@ -12,7 +15,7 @@ import { select, success } from '../data/haptics';
 import AccountCreated from '../components/AccountCreated';
 
 export default function OnboardingScreen({ signup = false }) {
-  const { user, airlines, setProfile, setOnboarded, setUser, setSignupMode, suppressAuth, logout, lang } = useContext(AppContext);
+  const { user, airlines, bases, countries, setProfile, setOnboarded, setUser, setSignupMode, suppressAuth, logout, lang } = useContext(AppContext);
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
@@ -40,16 +43,23 @@ export default function OnboardingScreen({ signup = false }) {
     { id: 'cabin', label: { pt: 'Tripulante de Cabine', en: 'Cabin Crew' } },
     { id: 'pilot', label: { pt: 'Piloto', en: 'Pilot' } },
   ];
-  // Bases portuguesas da easyJet — per-diem e pernoitas são "fora da base".
-  const BASES = [
-    { id: 'LIS', code: 'LIS', label: { pt: 'Lisboa', en: 'Lisbon' } },
-    { id: 'OPO', code: 'OPO', label: { pt: 'Porto', en: 'Porto' } },
-    { id: 'FAO', code: 'FAO', label: { pt: 'Faro', en: 'Faro' } },
-  ];
   // AE da companhia escolhida + tipo de tripulação (pilotos e cabine têm AEs
   // diferentes). Resolve-se só depois de o crewType estar escolhido.
   const selAirline = airlines.find((a) => a.id === draft.company || a.slug === draft.company) || null;
   const ae = draft.crewType ? getAe(selAirline || draft.company, draft.crewType) : null;
+  // Catálogo de bases da companhia escolhida (tabela `bases` via contexto) — o picker
+  // agrupa-as por país. A base escolhida fica nos metadados como o CÓDIGO (ex. 'LIS').
+  const companyBases = bases.filter((b) => b.airline_id === selAirline?.id);
+  const deviceCC = getLocales?.()[0]?.regionCode || null;   // país do telemóvel → grupo no topo
+  const countryName = (cc) => countryNameOf(cc, lang, countries);
+  // Bases agrupadas por país (país do telemóvel primeiro; cidades ordenadas).
+  const baseGroups = (() => {
+    const by = {};
+    for (const b of companyBases) { (by[b.country_code] = by[b.country_code] || []).push(b); }
+    return Object.keys(by)
+      .sort((a, z) => (a === deviceCC ? -1 : z === deviceCC ? 1 : countryName(a).localeCompare(countryName(z))))
+      .map((cc) => ({ cc, items: by[cc].slice().sort((x, y) => (x.city || x.code).localeCompare(y.city || y.code)) }));
+  })();
   // A BD comanda o passo: `airlines.requires_category` (default: mostra se há AE).
   const requiresCategory = selAirline?.requires_category ?? !!ae;
   const requiresContract = selAirline?.requires_contract ?? false;
@@ -86,7 +96,7 @@ export default function OnboardingScreen({ signup = false }) {
     crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
     crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
-    base:         { title: lang === 'en' ? 'Home base' : 'Base', sub: lang === 'en' ? 'Where you are based' : 'Onde estás baseado', items: BASES, field: 'base' },
+    base:         { title: lang === 'en' ? 'Home base' : 'Base', sub: lang === 'en' ? 'Where you are based (optional)' : 'Onde estás baseado (opcional)', field: 'base', optional: true },
     serviceStart: { title: lang === 'en' ? 'Start date' : 'Data de início',
                     sub: lang === 'en' ? 'Seniority — for the loyalty bonus (optional, you can skip)' : 'Antiguidade — para o prémio de permanência (opcional, podes saltar)',
                     field: 'serviceStart', input: 'date' },
@@ -98,7 +108,7 @@ export default function OnboardingScreen({ signup = false }) {
     'company', 'crewType',
     ...(requiresCategory ? ['crewCategory'] : []),
     ...(requiresContract ? ['crewContract'] : []),
-    ...(requiresCategory ? ['base'] : []),
+    ...(companyBases.length ? ['base'] : []),
     ...(requiresCategory ? ['serviceStart'] : []),
     ...(signup ? ['account'] : []),   // credenciais NO FIM — coladas à criação da conta
   ];
@@ -111,6 +121,9 @@ export default function OnboardingScreen({ signup = false }) {
   // Data válida e completa? Controla quem fica "preto/ativo": vazia → Saltar; cheia → Confirmar.
   const dateOk = s.input === 'date' && isRealDate(draft.serviceStart);
   const canNext = s.input === 'date' ? dateOk : s.input === 'account' ? accountValid : !!draft[field];
+  // Passos OPCIONAIS (data de início, base) → botão "Saltar"; "Continuar" só ativo com valor.
+  const isOptionalStep = s.input === 'date' || !!s.optional;
+  const optionalFilled = s.input === 'date' ? dateOk : !!draft[field];
 
   // Grava o perfil e termina o onboarding. serviceStartVal: 'AAAA-MM-DD' ou null.
   const finish = async (serviceStartArg) => {
@@ -121,7 +134,7 @@ export default function OnboardingScreen({ signup = false }) {
       crewType: draft.crewType,
       crewCategory: companyHasAe ? draft.crewCategory : null,
       crewContract: companyHasContract ? draft.crewContract : null,
-      base: companyHasAe ? draft.base : null,
+      base: draft.base || null,
       serviceStart: serviceStartArg === undefined ? (draft.serviceStart || null) : serviceStartArg,
     };
     if (signup) {
@@ -225,6 +238,28 @@ export default function OnboardingScreen({ signup = false }) {
               maxLength={10} style={styles.dateInput} />
             <Text style={styles.dateHint}>{lang === 'en' ? 'Format YYYY-MM-DD. You can skip — it’s editable later in Profile.' : 'Formato AAAA-MM-DD. Podes saltar — é editável depois no Perfil.'}</Text>
           </View>
+        ) : s.field === 'base' ? (
+          baseGroups.map((g) => (
+            <View key={g.cc}>
+              <Eyebrow style={{ marginTop: 14, marginBottom: 8, marginLeft: 4 }}>{countryFlag(g.cc)} {countryName(g.cc)}</Eyebrow>
+              {g.items.map((b) => {
+                const sel = draft.base === b.code;
+                return (
+                  <TouchableOpacity key={b.code} onPress={() => { select(); setDraft({ ...draft, base: b.code }); }}
+                    style={[styles.row, { borderColor: sel ? C.red : C.line }]}>
+                    <View style={styles.optBadge}><Text style={styles.optBadgeTxt}>{b.code}</Text></View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.rowLabel, { color: C.text }]}>{b.city || b.code}</Text>
+                      {b.seasonal ? <Text style={styles.baseSeasonal}>{lang === 'en' ? 'Seasonal base' : 'Base sazonal'}</Text> : null}
+                    </View>
+                    <View style={[styles.check, { backgroundColor: sel ? C.red : 'transparent', borderColor: sel ? C.red : C.line }]}>
+                      {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))
         ) : items.map((item) => {
           const sel = draft[field] === item.id;
           return (
@@ -256,9 +291,13 @@ export default function OnboardingScreen({ signup = false }) {
             <Text style={[styles.btnText, { color: C.text }]}>{t('onb.back', lang)}</Text>
           </TouchableOpacity>
         )}
-        {s.input === 'date' && (
-          <TouchableOpacity disabled={saving} onPress={() => { if (isLast) finish(null); else { setDraft({ ...draft, serviceStart: '' }); setStep(step + 1); } }} style={[styles.btnBack, { backgroundColor: dateOk ? C.soft : C.ink }]}>
-            <Text style={[styles.btnText, { color: dateOk ? C.sub : '#fff' }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
+        {isOptionalStep && (
+          <TouchableOpacity disabled={saving} onPress={() => {
+            if (isLast) { finish(s.input === 'date' ? null : undefined); return; }
+            setDraft({ ...draft, ...(s.input === 'date' ? { serviceStart: '' } : { base: null }) });
+            setStep(step + 1);
+          }} style={[styles.btnBack, { backgroundColor: optionalFilled ? C.soft : C.ink }]}>
+            <Text style={[styles.btnText, { color: optionalFilled ? C.sub : '#fff' }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity disabled={!canNext || saving} onPress={handleNext} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
@@ -293,6 +332,7 @@ const makeStyles = (C) => StyleSheet.create({
   optBadge: { minWidth: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   optBadgeTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
   rowLabel: { fontSize: 14, fontFamily: FONT.semibold },
+  baseSeasonal: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },
   check: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   footer: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 8 },
   btnBack: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 99, backgroundColor: C.soft },

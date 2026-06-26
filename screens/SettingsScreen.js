@@ -9,11 +9,13 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
 import NotificationsBell from '../components/NotificationsBell';
 import PrimaryButton from '../components/PrimaryButton';
+import Eyebrow from '../components/Eyebrow';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
 import { RADIUS, TYPE, FONT } from '../data/constants';
+import { countryName, countryFlag } from '../data/countries';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
 import { openFtlPdf } from '../data/ftlPdf';
@@ -48,7 +50,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -111,9 +113,17 @@ export default function SettingsScreen({ navigation }) {
     success();
   };
 
-  // Base (LIS/OPO/FAO) — guardada no metadata; "fora da base" no per-diem/pernoitas.
-  const BASES = ['LIS', 'OPO', 'FAO'];
+  // Base — guardada no metadata como CÓDIGO; "fora da base" no per-diem/pernoitas. O picker
+  // vem do CATÁLOGO (tabela `bases`) filtrado pela companhia, agrupado por país.
   const [bModal, setBModal] = useState(false);
+  const companyBases = bases.filter((b) => b.airline_id === company?.id);
+  const cName = (cc) => countryName(cc, lang, countries);
+  const baseGroups = (() => {
+    const by = {};
+    for (const b of companyBases) { (by[b.country_code] = by[b.country_code] || []).push(b); }
+    return Object.keys(by).sort((a, z) => cName(a).localeCompare(cName(z)))
+      .map((cc) => ({ cc, items: by[cc].slice().sort((x, y) => (x.city || x.code).localeCompare(y.city || y.code)) }));
+  })();
   const saveBase = (val) => {
     setProfile((p) => ({ ...p, base: val }));
     updateProfile({ base: val }, lang).catch(() => {});
@@ -234,7 +244,7 @@ export default function SettingsScreen({ navigation }) {
               ) : null}
               {ae ? (
                 <Row icon="location-outline" label={l('Base', 'Base')} sub={l('Onde estás baseado', 'Where you are based')}
-                  value={base || l('Por definir', 'Not set')} onPress={() => setBModal(true)} s={s} C={C} />
+                  value={baseObj ? (baseObj.city ? `${baseObj.code} · ${baseObj.city}` : baseObj.code) : (base || l('Por definir', 'Not set'))} onPress={() => setBModal(true)} s={s} C={C} />
               ) : null}
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
@@ -378,19 +388,29 @@ export default function SettingsScreen({ navigation }) {
 
       {/* Base */}
       <CenterDialog visible={bModal} onClose={() => setBModal(false)} title={l('A tua base', 'Your base')} closeLabel={t('common.close', lang)}>
-        <View style={{ padding: 20 }}>
-          <View style={s.baseWrap}>
-            {BASES.map((b) => {
-              const on = base === b;
-              return (
-                <TouchableOpacity key={b} onPress={() => saveBase(b)} style={[s.baseChip, on && s.baseChipOn]} activeOpacity={0.85}>
-                  <Text style={[s.baseChipTxt, on && s.baseChipTxtOn]}>{b}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={s.sdHint}>{l('Per-diem e pernoitas são "fora da base".', 'Per-diem and night stops are "away from base".')}</Text>
-        </View>
+        <ScrollView style={{ maxHeight: 440 }} contentContainerStyle={{ padding: 20 }}>
+          {baseGroups.length ? baseGroups.map((g) => (
+            <View key={g.cc}>
+              <Eyebrow style={{ marginTop: 12, marginBottom: 8 }}>{countryFlag(g.cc)} {cName(g.cc)}</Eyebrow>
+              {g.items.map((b) => {
+                const on = base === b.code;
+                return (
+                  <TouchableOpacity key={b.code} onPress={() => saveBase(b.code)} style={[s.baseRow, on && s.baseRowOn]} activeOpacity={0.85}>
+                    <View style={s.baseRowBadge}><Text style={s.baseRowBadgeTxt}>{b.code}</Text></View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.baseRowCity, on && { color: C.red }]}>{b.city || b.code}</Text>
+                      {b.seasonal ? <Text style={s.sdHint}>{l('Base sazonal', 'Seasonal base')}</Text> : null}
+                    </View>
+                    {on && <Ionicons name="checkmark-circle" size={20} color={C.red} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )) : (
+            <Text style={s.sdHint}>{l('Catálogo de bases indisponível (sem ligação?).', 'Base catalog unavailable (offline?).')}</Text>
+          )}
+          <Text style={[s.sdHint, { marginTop: 16 }]}>{l('Per-diem e pernoitas são "fora da base".', 'Per-diem and night stops are "away from base".')}</Text>
+        </ScrollView>
       </CenterDialog>
 
       {/* Categoria / rank */}
@@ -472,4 +492,9 @@ const makeStyles = (C) => StyleSheet.create({
   baseChipOn: { borderColor: C.red, backgroundColor: C.redSoft },
   baseChipTxt: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.sub },
   baseChipTxtOn: { color: C.red },
+  baseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, backgroundColor: C.card },
+  baseRowOn: { borderColor: C.red, backgroundColor: C.redSoft },
+  baseRowBadge: { minWidth: 42, height: 38, borderRadius: RADIUS.sm, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  baseRowBadgeTxt: { color: '#fff', fontSize: 12.5, fontFamily: FONT.bold },
+  baseRowCity: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
 });

@@ -25,7 +25,7 @@ import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
-import { fetchProfile, fetchAirlines } from './data/db';
+import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile } from './ae';
 import { capabilitiesFor } from './data/capabilities';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
@@ -306,6 +306,8 @@ export default function App() {
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
   const [airlines, setAirlines]         = useState([]);   // catálogo de companhias (tabela `airlines`)
+  const [bases, setBases]               = useState([]);   // catálogo de bases (tabela `bases`, por companhia)
+  const [countries, setCountries]       = useState([]);   // catálogo de países (tabela `countries`) — grupos do picker
 
   // Bloqueio biometria/PIN — preferência do dispositivo (opt-in, desligado por
   // omissão). `lockEnabled` = funcionalidade ativa; `locked` = app trancada agora.
@@ -551,6 +553,16 @@ export default function App() {
     });
   }, []);
 
+  // Catálogo de BASES + PAÍSES (global) — carrega já no ARRANQUE, também pré-login, para o
+  // wizard de criação de conta mostrar o picker de base agrupado por país. Cache instantânea
+  // → refresca do servidor. Degrada com elegância ([] se as tabelas ainda não existirem).
+  useEffect(() => {
+    AsyncStorage.getItem('cp_bases').then((b) => { if (b) setBases(JSON.parse(b)); }).catch(() => {});
+    AsyncStorage.getItem('cp_countries').then((c) => { if (c) setCountries(JSON.parse(c)); }).catch(() => {});
+    fetchBases().then((fresh) => { if (fresh.length) { setBases(fresh); AsyncStorage.setItem('cp_bases', JSON.stringify(fresh)).catch(() => {}); } });
+    fetchCountries().then((fresh) => { if (fresh.length) { setCountries(fresh); AsyncStorage.setItem('cp_countries', JSON.stringify(fresh)).catch(() => {}); } });
+  }, []);
+
   // Favoritos / notificações lidas são guardados POR UTILIZADOR no telemóvel.
   // Carregam quando o utilizador entra; ficam gravados para esse utilizador.
   useEffect(() => {
@@ -712,7 +724,11 @@ export default function App() {
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
-  const base = profile?.base || null;                  // base (LIS/OPO/FAO)
+  const base = profile?.base || null;                  // base = CÓDIGO IATA (ex. LIS), vem dos metadados
+  // Base completa resolvida do catálogo (cidade/país) por (companhia, código). null se
+  // não houver base ou o catálogo ainda não tiver carregado — os consumidores usam `base`
+  // (o código) como fallback, por isso nada parte sem o catálogo.
+  const baseObj = base ? (bases.find((b) => b.code === base && b.airline_id === company?.id) || bases.find((b) => b.code === base) || null) : null;
   const lifestyle = !!profile?.lifestyle;              // PPY como estilo de vida (Art. 66.9) → sem retenção
   const serviceYears = (() => {
     if (!serviceStart) return null;
@@ -785,7 +801,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, lifestyle, ae, caps,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, serviceStart, serviceYears, base, baseObj, lifestyle, ae, caps,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

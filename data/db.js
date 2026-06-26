@@ -50,6 +50,31 @@ export const fetchAirlines = async () => {
   }
 };
 
+// Catálogo de BASES de tripulação (tabela `bases`, por companhia). A base
+// escolhida pelo utilizador fica nos metadados do Auth (como o CÓDIGO) — esta
+// tabela é só o catálogo que o picker mostra e de onde se resolve cidade/país.
+// Degrada com elegância ([]) se a tabela ainda não existir (igual a fetchAirlines).
+export const fetchBases = async () => {
+  try {
+    const { data, error } = await supabase.from('bases').select('*').eq('active', true).order('country_code').order('city');
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+};
+
+// Catálogo de PAÍSES (tabela `countries`) — rótulos dos grupos do picker de base.
+export const fetchCountries = async () => {
+  try {
+    const { data, error } = await supabase.from('countries').select('*');
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+};
+
 // Cria ou atualiza o perfil. Best-effort: devolve true/false sem lançar.
 export const upsertProfile = async (userId, { company, crewType = 'cabin' } = {}) => {
   if (!userId) return false;

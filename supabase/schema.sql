@@ -258,3 +258,85 @@ begin
 end $$;
 update public.airlines set long_haul = true
   where lower(slug) = 'hifly' or name ilike '%hi fly%' or name ilike '%hifly%';
+
+
+-- ── 14. countries — país de uma base (ISO-3166 alpha-2) ──────────────────────
+-- Catálogo pequeno só para a relação base→país (o picker do onboarding agrupa as
+-- bases por país). Legível por TODOS (anon+auth), como `airlines §10`. O `name` é
+-- um rótulo neutro (inglês); a app localiza os nomes de país (mapa ISO→pt/en).
+create table if not exists public.countries (
+  code text primary key,            -- 'PT', 'GB', 'FR', 'CH', …
+  name text not null
+);
+alter table public.countries enable row level security;
+drop policy if exists "countries_read" on public.countries;
+create policy "countries_read" on public.countries for select using (true);
+
+
+-- ── 15. bases — base operacional = companhia + aeroporto (num país) ──────────
+-- CATÁLOGO das bases de tripulação por companhia. A base ESCOLHIDA pelo utilizador
+-- continua nos metadados do Auth (como o CÓDIGO, ex. 'LIS', tal como hoje) — NÃO há
+-- coluna em profiles nem migração (decisão: igual a categoria/contrato, §9/Opção A).
+-- Esta tabela é o catálogo que o picker mostra e de onde a app resolve cidade/país.
+-- `code` = IATA do aeroporto (coords em data/airports.json). `seasonal` = base só de
+-- parte do ano. RLS: legível por todos (onboarding pode correr antes da conta existir).
+--
+-- `airline_id` HERDA automaticamente o tipo de `airlines.id` (o DO block introspeta o
+-- pg_attribute e cria a coluna a condizer) → NÃO há risco de incompatibilidade de tipo,
+-- seja `airlines.id` uuid, bigint/int8, text ou outro. Idempotente (só cria se faltar).
+do $$
+declare aid_type text;
+begin
+  if to_regclass('public.bases') is null then
+    select format_type(a.atttypid, a.atttypmod) into aid_type
+    from pg_attribute a
+    where a.attrelid = 'public.airlines'::regclass and a.attname = 'id' and not a.attisdropped;
+    execute format($f$
+      create table public.bases (
+        id           bigint generated always as identity primary key,
+        airline_id   %s not null references public.airlines(id) on delete cascade,  -- = tipo de airlines.id
+        code         text not null,                  -- IATA: 'LIS', 'LGW'
+        city         text,
+        country_code text not null references public.countries(code),
+        seasonal     boolean not null default false,
+        active       boolean not null default true,
+        unique (airline_id, code)
+      )$f$, aid_type);
+  end if;
+end $$;
+create index if not exists bases_airline_idx on public.bases(airline_id);
+alter table public.bases enable row level security;
+drop policy if exists "bases_read" on public.bases;
+create policy "bases_read" on public.bases for select using (true);
+
+-- Seed: 9 países + 33 bases easyJet (operacionais, jun-2026). Idempotente.
+insert into public.countries (code, name) values
+  ('GB','United Kingdom'), ('FR','France'), ('IT','Italy'), ('ES','Spain'),
+  ('PT','Portugal'), ('CH','Switzerland'), ('DE','Germany'), ('NL','Netherlands'), ('MA','Morocco')
+on conflict (code) do nothing;
+
+insert into public.bases (airline_id, code, city, country_code, seasonal)
+select a.id, v.code, v.city, v.cc, v.seasonal
+from public.airlines a
+cross join (values
+  -- Reino Unido (11)
+  ('BFS','Belfast','GB',false), ('BHX','Birmingham','GB',false), ('BRS','Bristol','GB',false),
+  ('EDI','Edinburgh','GB',false), ('GLA','Glasgow','GB',false), ('LPL','Liverpool','GB',false),
+  ('LGW','London Gatwick','GB',false), ('LTN','London Luton','GB',false), ('SEN','London Southend','GB',false),
+  ('MAN','Manchester','GB',false), ('NCL','Newcastle','GB',false),
+  -- França (6)
+  ('BOD','Bordeaux','FR',false), ('LYS','Lyon','FR',false), ('NTE','Nantes','FR',false),
+  ('NCE','Nice','FR',false), ('CDG','Paris CDG','FR',false), ('ORY','Paris Orly','FR',false),
+  -- Itália (4)
+  ('MXP','Milan Malpensa','IT',false), ('LIN','Milan Linate','IT',false), ('NAP','Naples','IT',false), ('FCO','Rome Fiumicino','IT',false),
+  -- Espanha (4 · sazonais exceto Barcelona)
+  ('ALC','Alicante','ES',true), ('BCN','Barcelona','ES',false), ('AGP','Malaga','ES',true), ('PMI','Palma','ES',true),
+  -- Portugal (3 · Faro sazonal)
+  ('FAO','Faro','PT',true), ('LIS','Lisbon','PT',false), ('OPO','Porto','PT',false),
+  -- Suíça (2 · Basel = EuroAirport, operado por easyJet Switzerland → CH)
+  ('BSL','Basel','CH',false), ('GVA','Geneva','CH',false),
+  -- Alemanha / Países Baixos / Marrocos (1 cada)
+  ('BER','Berlin','DE',false), ('AMS','Amsterdam','NL',false), ('RAK','Marrakesh','MA',false)
+) as v(code, city, cc, seasonal)
+where lower(a.slug) = 'easyjet' or a.name ilike '%easyjet%' or a.name ilike '%easy jet%'
+on conflict (airline_id, code) do nothing;
