@@ -23,6 +23,7 @@ import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
+const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 
 // CSV dos registos (apoio ao registo de tempos/serviço — ORO.FTL.245).
 const buildDutiesCsv = (duties) => {
@@ -40,7 +41,7 @@ const buildDutiesCsv = (duties) => {
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, rosterChanges, checkRosterChanges, notify,
+  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, notify,
     calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -51,6 +52,9 @@ export default function EscalaScreen({ navigation, route }) {
   // Mês visível (1.º dia). Default = mês de hoje.
   const [monthDate, setMonthDate] = useState(() => { const t0 = new Date(); return new Date(t0.getFullYear(), t0.getMonth(), 1); });
   const [dutyDate, setDutyDate] = useState(null); // dia a inserir/editar → popup
+  const [dayIso, setDayIso] = useState(null);     // dia tocado na grelha → sheet de detalhe (setores)
+  const [secExpand, setSecExpand] = useState(false); // sheet: expandir lista de setores se for cheia
+  const [gridW, setGridW] = useState(0);          // largura medida da grelha → célula = (W − gaps)/7
   const lastNewDuty = useRef(null);
 
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
@@ -144,6 +148,52 @@ export default function EscalaScreen({ navigation, route }) {
   const kindLabel = (kind) => (kind === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang));
   const kindColor = (kind) => (kind === 'flight' ? C.brand : (kind === 'standby_airport' || kind === 'standby_home') ? C.warnText : C.sub);
 
+  // ── Grelha de calendário ── 1.º dia da semana (Segunda=0), rótulos, código/cor por tipo.
+  const firstWeekday = ((new Date(y, m0, 1).getDay()) + 6) % 7;   // Dom=0 → Seg=0
+  const WD = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const dutyClass = (d) => { const k = d.kind || 'flight'; return k === 'flight' ? 'flight' : (k === 'standby_airport' || k === 'standby_home') ? 'sby' : 'pos'; };
+  const codeColor = (cls) => cls === 'flight' ? C.brand : cls === 'sby' ? C.warnText : C.sub;
+  const barColor = (cls) => cls === 'flight' ? C.brand : cls === 'sby' ? C.warn : C.sub;
+  // Código curto da célula: voo → estação "fora da base" (ex. LGW); senão sigla do tipo.
+  const dutyCode = (d) => {
+    const k = d.kind || 'flight';
+    if (k === 'flight') {
+      const aps = String(d.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+      const b = String(base || '').toUpperCase();
+      return aps.find((a) => a !== b) || aps[aps.length - 1] || aps[0] || '✈';
+    }
+    return (k === 'standby_airport' || k === 'standby_home') ? 'SBY' : k === 'positioning' ? 'POS' : k === 'office' ? 'OFC' : k === 'training' ? 'FRM' : '•';
+  };
+  const openDay = (iso) => { select(); setSecExpand(false); setDayIso(iso); };
+
+  const GAP = 4;
+  const cellW = gridW ? (gridW - GAP * 6) / 7 : 0;
+  // Uma célula da grelha: nº + (serviço: código+barra) · fim-de-semana, hoje, pernoita.
+  const renderCell = (iso) => {
+    const d = duties[iso];
+    const dd = Number(iso.slice(8, 10));
+    const isToday = iso === today;
+    const isDuty = d && !d.deleted && d.report_time;
+    const col = (firstWeekday + dd - 1) % 7;
+    const weekend = col >= 5;
+    const cls = isDuty ? dutyClass(d) : null;
+    return (
+      <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.gc, { width: cellW }, !isDuty && s.gcOff, weekend && s.gcWk, isToday && s.gcNow, iso === flashIso && s.gcFlash]}
+        onPress={() => (isDuty ? openDay(iso) : (select(), setDutyDate(iso)))}
+        onLongPress={() => { select(); setDutyDate(iso); }}>
+        <Text style={[s.gn, !isDuty && s.gnOff, isToday && s.gnNow]}>{dd}</Text>
+        {isDuty ? (
+          <View style={s.svc}>
+            <Text style={[s.code, { color: codeColor(cls) }]} numberOfLines={1}>{dutyCode(d)}</Text>
+            <View style={[s.bar, { backgroundColor: barColor(cls) }]} />
+          </View>
+        ) : null}
+        {isDuty && d.nightStop ? <View style={s.nsdot} /> : null}
+        {isDuty && d.dirty ? <View style={s.pendDotG} /> : null}
+      </TouchableOpacity>
+    );
+  };
+
   // ── Export ──
   const onExport = async () => {
     if (!anyDuty) { Alert.alert(t('duties.title', lang), t('duties.exportEmpty', lang)); return; }
@@ -169,75 +219,6 @@ export default function EscalaScreen({ navigation, route }) {
     } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
   };
 
-  // ── Card de um dia: serviço (tipo+rota+horas+€, pílula 🌙) ou folga (dia vazio) ──
-  const renderDay = (iso) => {
-    const d = duties[iso];
-    const isToday = iso === today;
-    const dd = Number(iso.slice(8, 10));
-    const wd = weekdayShort(iso);
-    const isDuty = d && !d.deleted && d.report_time;
-    // No mês atual, quando o card de HOJE se desenha, posiciona a lista nele (1.ª vez no mês).
-    const onLayoutToday = isToday ? (e) => {
-      if (isCurrentMonth && !didScrollToday.current && scrollRef.current) {
-        didScrollToday.current = true;
-        scrollRef.current.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - 8), animated: false });
-      }
-    } : undefined;
-
-    if (!isDuty) {
-      return (
-        <TouchableOpacity key={iso} onLayout={onLayoutToday} style={s.off} activeOpacity={0.75} onPress={() => { select(); setDutyDate(iso); }}>
-          <View style={s.dnum}>
-            <Text style={[s.dwd, s.dwdOff]}>{wd}</Text>
-            <Text style={[s.dd, isToday ? s.ddToday : s.ddOff]}>{dd}</Text>
-            {isToday ? <View style={s.todaydot} /> : null}
-          </View>
-          <Text style={s.offlbl}>{l('Folga', 'Day off')}</Text>
-          <Ionicons name="moon-outline" size={15} color={C.lineStrong} />
-        </TouchableOpacity>
-      );
-    }
-
-    const kind = d.kind || 'flight';
-    const isFlight = kind === 'flight';
-    const catD = crewAt(d.duty_date).category;   // categoria EM VIGOR no mês desta duty (effective-dated)
-    let perDiem = null;
-    if (ae && catD && isFlight) {
-      const dists = routeDistancesNM(d.route);
-      if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet);
-    }
-    const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
-    const meta = isFlight
-      ? `${d.report_time || '--:--'} → ${d.block_on || '--:--'} · ${d.sectors || 0} ${t('duties.sectorsShort', lang)}${d.flight_minutes ? ` · ${minToHhmm(d.flight_minutes)} ${t('duties.flightShort', lang)}` : ''}`
-      : (d.block_on && d.block_on !== d.report_time ? `${d.report_time} – ${d.block_on}` : (d.report_time || '—'));
-
-    return (
-      <TouchableOpacity key={iso} onLayout={onLayoutToday} style={[s.day, iso === flashIso && s.dayFlash]} activeOpacity={0.7}
-        onPress={() => navigation.navigate('DutyDetail', { date: iso })}
-        onLongPress={() => { select(); setDutyDate(iso); }}>
-        <View style={s.dnum}>
-          <Text style={s.dwd}>{wd}</Text>
-          <Text style={[s.dd, isToday && s.ddToday]}>{dd}</Text>
-          {isToday ? <View style={s.todaydot} /> : null}
-        </View>
-        <View style={s.dmid}>
-          <View style={s.drow}>
-            <View style={[s.badge, { backgroundColor: kindColor(kind) }]}><Text style={s.badgeTxt} numberOfLines={1}>{kindLabel(kind)}</Text></View>
-            {isFlight && d.route ? <Text style={s.route} numberOfLines={1}>{d.route}</Text> : null}
-            {d.nightStop ? (
-              <View style={s.nschip}>
-                <Ionicons name="moon" size={10} color={C.info} />
-                {nsEur != null ? <Text style={s.nschipTxt}>+{fmtEur(nsEur)}</Text> : null}
-              </View>
-            ) : null}
-            {d.dirty ? <View style={s.pendDot} accessibilityLabel={t('duties.pending', lang)} /> : null}
-          </View>
-          <Text style={s.meta} numberOfLines={1}>{meta}</Text>
-        </View>
-        {perDiem != null ? <Text style={s.eur}>+{fmtEur(perDiem)}</Text> : null}
-      </TouchableOpacity>
-    );
-  };
 
   // ── Banner "alterações na escala" (azul, informativo) ──
   const rcCounts = rosterChanges?.counts;
@@ -332,8 +313,9 @@ export default function EscalaScreen({ navigation, route }) {
               <View style={s.si}><Text style={s.siLbl}>{l('Per-diem', 'Per diem')}</Text><Text style={[s.siVal, s.siEur]}>{fmtEur(perDiemTotal)}</Text></View>
             </View>
 
-            {/* Lista de cards de dia (faz scroll) */}
-            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} alwaysBounceVertical
+            {/* Grelha do mês — cabeçalho dos dias + células. Toca num serviço → setores (sheet);
+                toca/longo numa folga → inserir. */}
+            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
                   onRefresh={async () => {
                     setRefreshing(true); const t0 = Date.now();
@@ -341,7 +323,15 @@ export default function EscalaScreen({ navigation, route }) {
                     const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
                     setRefreshing(false);
                   }} />}>
-              {dayList.map(renderDay)}
+              <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[s.wkh, i >= 5 && s.wkhWe]}>{w}</Text>)}</View>
+              <View style={s.cal} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
+                {cellW ? (
+                  <>
+                    {Array.from({ length: firstWeekday }).map((_, i) => <View key={`lead${i}`} style={[s.gc, s.gcEmpty, { width: cellW }]} />)}
+                    {dayList.map(renderCell)}
+                  </>
+                ) : null}
+              </View>
               <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
             </ScrollView>
           </>
@@ -353,6 +343,74 @@ export default function EscalaScreen({ navigation, route }) {
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => { if (saved) notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported'); }}
         onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
+
+      {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível). */}
+      <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)}>
+        {dayIso && duties[dayIso] ? (() => {
+          const d = duties[dayIso];
+          const kind = d.kind || 'flight';
+          const isFlight = kind === 'flight';
+          const legs = (isFlight && Array.isArray(d.legs)) ? d.legs : [];
+          const collapsed = legs.length > 3 && !secExpand;
+          const shown = collapsed ? legs.slice(0, 3) : legs;
+          const catD = crewAt(d.duty_date).category;
+          let perDiem = null;
+          if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet); }
+          const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
+          const pf = postFlightMin || 0;
+          const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
+          const end = so != null ? so : (onM != null ? onM + pf : null);
+          const dutyMin = (rm != null && end != null) ? (((end % 1440) >= rm) ? (end % 1440) - rm : (end % 1440) + 1440 - rm) : null;
+          const dt = new Date(`${dayIso}T00:00:00`);
+          const dateLbl = isNaN(dt) ? dayIso : (() => { const sx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); })();
+          return (
+            <View style={s.dsBody}>
+              <Text style={s.dsDate}>{dateLbl}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
+              <View style={s.dsHead}>
+                <View style={[s.dsBadge, { backgroundColor: kindColor(kind) }]}><Text style={s.dsBadgeTxt}>{kindLabel(kind)}</Text></View>
+                <Text style={s.dsRoute} numberOfLines={1}>{isFlight ? (d.route || l('Voo', 'Flight')) : kindLabel(kind)}</Text>
+                {d.nightStop ? <Ionicons name="moon" size={15} color={C.info} /> : null}
+              </View>
+
+              {isFlight && legs.length ? (
+                <View style={s.dsSecWrap}>
+                  <Text style={s.dsSecHead}>{l('Setores', 'Sectors')}</Text>
+                  {shown.map((lg, i) => (
+                    <View key={i} style={s.dsSecRow}>
+                      <Text style={s.dsSecNo} numberOfLines={1}>{lg.flightNo || `${i + 1}`}</Text>
+                      <Text style={s.dsSecRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}</Text>
+                      <Text style={s.dsSecTm}>{lg.off || '—'} → {lg.on || '—'}</Text>
+                    </View>
+                  ))}
+                  {legs.length > 3 ? (
+                    <TouchableOpacity onPress={() => { select(); setSecExpand((v) => !v); }} hitSlop={6} style={s.dsMore} activeOpacity={0.7}>
+                      <Text style={s.dsMoreTxt}>{collapsed ? l(`+ ${legs.length - 3} setores`, `+ ${legs.length - 3} sectors`) : l('mostrar menos', 'show less')}</Text>
+                      <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={14} color={C.brand} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <View style={s.dsMeta}>
+                {d.report_time ? <View style={s.dsMi}><Text style={s.dsMiLbl}>{l('Apresentação', 'Report')}</Text><Text style={s.dsMiVal}>{d.report_time}</Text></View> : null}
+                {d.flight_minutes ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Block hours</Text><Text style={s.dsMiVal}>{minToHhmm(d.flight_minutes)}</Text></View> : null}
+                {dutyMin != null ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Duty hours</Text><Text style={s.dsMiVal}>{minToHhmm(dutyMin)}</Text></View> : null}
+              </View>
+              {(perDiem != null || nsEur != null) ? (
+                <View style={s.dsPay}>
+                  {perDiem != null ? <Text style={s.dsEur}>{l('Per-diem', 'Per diem')} +{fmtEur(perDiem)}</Text> : null}
+                  {nsEur != null ? <Text style={s.dsNs}>🌙 +{fmtEur(nsEur)}</Text> : null}
+                </View>
+              ) : null}
+
+              <View style={s.dsBtns}>
+                <GhostButton onPress={() => { const iso = dayIso; setDayIso(null); setDutyDate(iso); }} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
+                <PrimaryButton onPress={() => { const iso = dayIso; setDayIso(null); navigation.navigate('DutyDetail', { date: iso }); }} icon="open-outline" radius="lg" style={{ flex: 1 }} label={l('Ver tudo', 'See all')} />
+              </View>
+            </View>
+          );
+        })() : null}
+      </BottomSheet>
 
       {/* Hub de importar — Ligar calendário · Importar PDF (aberto pelo mini-fab / cartão "IR" / arranque) */}
       <BottomSheet visible={hubOpen} onClose={() => setHubOpen(false)} title={l('Importar escala', 'Import roster')} closeLabel={t('common.close', lang)}>
@@ -465,6 +523,50 @@ const makeStyles = (C) => StyleSheet.create({
   meta: { fontSize: 12, fontFamily: FONT.medium, color: C.sub, marginTop: 3, fontVariant: ['tabular-nums'] },
   eur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
   offlbl: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.sub },
+
+  // ── Grelha de calendário ──
+  wkhead: { flexDirection: 'row', marginTop: 6, marginBottom: 4 },
+  wkh: { flex: 1, textAlign: 'center', fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: C.sub },
+  wkhWe: { color: C.lineStrong },
+  cal: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  gc: { height: 58, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingTop: 5, paddingHorizontal: 4, paddingBottom: 5, backgroundColor: C.card, alignItems: 'flex-start' },
+  gcEmpty: { borderColor: 'transparent', backgroundColor: 'transparent' },
+  gcOff: { backgroundColor: 'transparent' },
+  gcWk: { backgroundColor: C.soft2 },
+  gcNow: { borderColor: C.red, borderWidth: 2, paddingTop: 4, paddingHorizontal: 3, paddingBottom: 4 },
+  gcFlash: { borderColor: C.green, backgroundColor: C.greenSoft },
+  gn: { fontSize: 15, fontFamily: FONT.display, letterSpacing: -0.3, lineHeight: 16, color: C.text },
+  gnOff: { color: C.lineStrong },
+  gnNow: { color: C.red },
+  svc: { marginTop: 'auto', alignSelf: 'stretch', alignItems: 'center' },
+  code: { fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 0.2, textAlign: 'center', maxWidth: '100%' },
+  bar: { width: '100%', height: 2.5, borderRadius: 99, marginTop: 3 },
+  nsdot: { position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: 99, backgroundColor: C.info },
+  pendDotG: { position: 'absolute', top: 4, left: 4, width: 5, height: 5, borderRadius: 99, backgroundColor: C.warn || C.sub },
+
+  // ── Sheet de detalhe do dia (toque na grelha) ──
+  dsBody: { padding: 20 },
+  dsDate: { fontSize: 12, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
+  dsHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 8 },
+  dsBadge: { borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3 },
+  dsBadgeTxt: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: '#fff' },
+  dsRoute: { flex: 1, fontSize: 20, fontFamily: FONT.display, letterSpacing: -0.4, color: C.text },
+  dsSecWrap: { marginTop: 16, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 6 },
+  dsSecHead: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub, paddingVertical: 7 },
+  dsSecRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line },
+  dsSecNo: { width: 64, fontSize: 12.5, fontFamily: FONT.heavy, color: C.text, letterSpacing: 0.2 },
+  dsSecRt: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.text },
+  dsSecTm: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, fontVariant: ['tabular-nums'] },
+  dsMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 9, borderTopWidth: 1, borderTopColor: C.line },
+  dsMoreTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
+  dsMeta: { flexDirection: 'row', gap: 9, marginTop: 14 },
+  dsMi: { flex: 1, backgroundColor: C.soft2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  dsMiLbl: { fontSize: 10, fontFamily: FONT.bold, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.4 },
+  dsMiVal: { fontSize: 17, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'], marginTop: 2 },
+  dsPay: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  dsEur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
+  dsNs: { fontSize: 13, fontFamily: FONT.bold, color: C.info },
+  dsBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
 
