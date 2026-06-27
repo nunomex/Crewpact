@@ -44,7 +44,6 @@ import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
 import FtlDetailScreen    from './screens/FtlDetailScreen';
-import FtlCalcScreen      from './screens/FtlCalcScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
@@ -76,7 +75,6 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
-      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
@@ -89,7 +87,6 @@ function EscalaStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="EscalaMain" component={EscalaScreen} />
       <Stack.Screen name="DutyDetail" component={DutyDetailScreen} />
-      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
@@ -101,7 +98,6 @@ function FtlStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="FtlHub"    component={FtlHubScreen} />
-      <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
   );
@@ -390,6 +386,9 @@ export default function App() {
           legs: ('legs' in fields) ? fields.legs : (ex?.legs ?? null),
           // Sign-off REAL (fim de serviço, depois do debrief) — alimenta as Duty hours/210/repouso.
           signOff: ('signOff' in fields) ? (fields.signOff || null) : (ex?.signOff ?? null),
+          // Casos especiais FTL (Fase 1): repouso a bordo/aumentada (205c), delayed (205g),
+          // standby anterior (225) — mexem no TETO do PSV. Persistidos em roster_meta (sem migração).
+          special: ('special' in fields) ? fields.special : (ex?.special ?? null),
           duty_date: date,
           updated_at: new Date().toISOString(),
           dirty: true,
@@ -401,8 +400,8 @@ export default function App() {
     // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
     const entry = dutyToFtlDay({
       report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
-      sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind, signOff: fields.signOff,
-    }, { postFlightMin: profile?.postFlightMin || 0 });   // débrief do perfil (fallback do sign-off)
+      sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind, signOff: fields.signOff, special: fields.special,
+    }, { postFlightMin: profile?.postFlightMin || 0, isPilot });   // débrief do perfil + tipo de tripulação (tabela aumentada 205c)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -431,7 +430,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs, signOff: d.signOff });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs, signOff: d.signOff, special: d.special });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -682,13 +681,14 @@ export default function App() {
         for (const row of server) {
           const cur = merged[row.duty_date];
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
-          // roster_meta (Fase 4): JSON { source, snap, legs, signOff } — origem + snapshot + nº de voo + fim de serviço.
-          let source = 'manual', snap = null, legs = null, signOff = null;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; } } catch { /* meta inválida */ }
+          // roster_meta (Fase 4): JSON { source, snap, legs, signOff, special } — origem + snapshot
+          // + nº de voo + fim de serviço + casos especiais FTL (205c/205g/225).
+          let source = 'manual', snap = null, legs = null, signOff = null, special = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -709,8 +709,8 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin: profile?.postFlightMin || 0 }));
-  }, [duties, loadedUserId, profile?.postFlightMin]);
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin: profile?.postFlightMin || 0, isPilot }));
+  }, [duties, loadedUserId, profile?.postFlightMin]); // isPilot lido por closure (fora das deps p/ evitar TDZ; estável)
 
   // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
   useEffect(() => {

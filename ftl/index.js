@@ -38,16 +38,71 @@ import { parseHhmm, minToHhmm } from './utils/time';
 //   (ORO.FTL.235 a/b) e o acumulado (210) contam o PERÍODO DE SERVIÇO — PSV +
 //   serviço pós-voo — não só o PSV (ORO.FTL.105(11), 210(c)). Default 0 mantém o
 //   comportamento anterior quando o pós-voo não é fornecido.
-export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null, accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false, postFlightMin = 0 }) => {
+// Casos especiais que mexem no TETO do PSV (205) de UM serviço — todos via os calculadores
+// já golden (sem inventar valores): repouso a bordo / tripulação aumentada (205c), delayed
+// reporting (205g) e redução por standby anterior (225). `augmented`/`delayedFrom`/`preStandby`/
+// `isPilot` são opcionais → sem eles o comportamento é idêntico ao anterior (testes intactos).
+//   augmented   = { restClass:'c1'|'c2'|'c3', additionalCrew?:1|2 } (additionalCrew só piloto)
+//   delayedFrom = hora original de apresentação 'HH:MM' (a `report` é a adiada)
+//   preStandby  = { type:'airport'|'other', standbyH, startMin? }
+export const computeDuty = ({
+  state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null,
+  accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
+  postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
+}) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
-  const fdp = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, splitBreakStartMin: parseHhmm(splitBreakStart), accommodation, extended });
+  const base = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, splitBreakStartMin: parseHhmm(splitBreakStart), accommodation, extended });
+
+  // ── Teto do PSV efetivo a partir dos casos especiais (cada um via o seu calculador golden) ──
+  let maxMin = base.maxFdpMin, notAllowed = base.notAllowed, notAllowedReason = base.notAllowedReason;
+  let modifier = null; // 'augmented' | 'delayed' — para rótulo na UI
+  // Delayed reporting (205g): recalcula o máx pela hora mais limitativa (original vs adiada).
+  if (delayedFrom != null && reportMin != null) {
+    const dr = computeDelayedReporting({ state, origMin: parseHhmm(delayedFrom), delayedMin: reportMin, sectors });
+    if (dr.maxFdpMin != null) { maxMin = dr.maxFdpMin; modifier = 'delayed'; }
+  }
+  // Repouso a bordo / tripulação aumentada (205c): tabela aumentada (piloto por nº de tripulantes,
+  // cabine por classe de instalação). SUBSTITUI o teto básico (é mais alto). Acima do teto de
+  // setores (205c1) → não permitido.
+  if (augmented && augmented.restClass) {
+    const aug = isPilot
+      ? computeFlightCrewFdp({ restClass: augmented.restClass, additionalCrew: augmented.additionalCrew, sectors })
+      : computeInflightRest({ maxFdpMin: base.baseMin, restClass: augmented.restClass, sectors });
+    const augMax = isPilot ? aug.maxFdpMin : aug.classMaxMin;
+    if (aug.overSectors) { notAllowed = true; notAllowedReason = 'inflightSectors'; }
+    else if (augMax != null) { maxMin = augMax; modifier = 'augmented'; }
+  }
+  // Standby anterior (225): reduz o teto resultante (>4h aeroporto / >6h casa). Isto é 205 — a
+  // contribuição do standby para os acumulados de 28 d (210) é a Fase 2.
+  let stdbyReductionMin = 0;
+  if (preStandby && preStandby.standbyH > 0 && maxMin != null) {
+    const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: maxMin, startMin: preStandby.startMin != null ? preStandby.startMin : null });
+    stdbyReductionMin = sb.reductionMin;
+    maxMin = sb.reducedMaxFdpMin;
+  }
+
+  // PSV efetivo: a base com o teto sobreposto (recalcula over/excess). Sem modificadores → === base.
+  const changed = maxMin !== base.maxFdpMin || notAllowed !== base.notAllowed;
+  const over = !notAllowed && base.actualFdpMin != null && maxMin != null && base.actualFdpMin > maxMin;
+  const excessMin = over ? base.actualFdpMin - maxMin : 0;
+  const fdp = {
+    ...base,
+    ...(changed ? {
+      maxFdpMin: notAllowed ? null : maxMin,
+      maxFdpStr: (notAllowed || maxMin == null) ? null : minToHhmm(maxMin),
+      over, excessMin, excessStr: over ? minToHhmm(excessMin) : null,
+      notAllowed, notAllowedReason,
+    } : {}),
+    modifier, stdbyReductionMin,
+  };
+
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
   const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
   const rest = computeRest({ prevDutyMin: dutyPeriodMin || 0, inBase });
   const duty = validateDuty({ fdp, reportMin, endMin, sectors });
   const disc = discretion
-    ? computeDiscretion({ maxFdpMin: fdp.maxFdpMin, actualFdpMin: fdp.actualFdpMin, restMin: rest.restMin, inFlightRest })
+    ? computeDiscretion({ maxFdpMin: fdp.maxFdpMin, actualFdpMin: fdp.actualFdpMin, restMin: rest.restMin, inFlightRest: inFlightRest || !!augmented })
     : null;
   return {
     reportMin, endMin, sectors, state, inBase,
@@ -61,14 +116,23 @@ export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, sp
 // via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
 // `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).
 // Devolve null sem dados suficientes (sem apresentação ou sem on-block).
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlightMin = null } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlightMin = null, isPilot = false } = {}) => {
+  // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
+  // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
+  if (duty.kind === 'reserve') return null;
   if (!duty.report_time || !duty.block_on) return null;
   // Serviço pós-voo (debrief, ORO.FTL.235c — o operador fixa-o no OM). O sign-off REAL da duty
   // (`signOff` − último on-block, com volta-a-meia-noite) tem PRIORIDADE; senão usa o default
   // passado (min do perfil/OM). Entra no PERÍODO DE SERVIÇO (210 + repouso), como a norma manda.
   const onMin = parseHhmm(duty.block_on), soMin = parseHhmm(duty.signOff);
   const pf = soMin != null ? (soMin >= onMin ? soMin - onMin : soMin + 1440 - onMin) : (postFlightMin || 0);
-  const d = computeDuty({ state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf });
+  // Casos especiais (Fase 1) — repouso a bordo (205c), delayed (205g), redução por standby (225):
+  // mexem no TETO do PSV deste serviço. Vêm em `duty.special` (persistido em roster_meta).
+  const sp = duty.special || {};
+  const d = computeDuty({
+    state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf,
+    augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
+  });
   if (d.fdp.actualFdpMin == null) return null;
   const toH = (m) => +(m / 60).toFixed(1);
   const fullServicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
@@ -109,15 +173,15 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
 // a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
 // sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
 // ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
-export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0 } = {}) => {
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false } = {}) => {
   let next = dayLog, changed = false;
   for (const date in duties) {
     const d = duties[date];
     if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
     const entry = dutyToFtlDay({
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
-      sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff,
-    }, { postFlightMin });
+      sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
+    }, { postFlightMin, isPilot });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { computeDuty } from '../ftl';
 import { routeDistancesNM } from '../data/perdiem';
 import { validityStatus, validityLabel } from '../data/validities';
 import { AppContext, useTheme } from '../data/appContext';
+import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
 
 const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 
@@ -24,6 +25,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  const [advOpen, setAdvOpen] = useState(false); // "Avançado · casos especiais (FTL)" — reusa os calculadores da lei
 
   if (!duty) return <Modal visible={visible} animationType="slide" transparent />;
 
@@ -36,8 +38,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const pf = (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
 
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
-  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0);
-  const d = duty.report_time ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf }) : null;
+  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot);
+  const sp = duty.special || {};
+  const d = duty.report_time ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot }) : null;
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;
@@ -140,6 +143,18 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
               {it.bar != null ? <View style={s.qbar}><View style={[s.qbarFill, { width: `${it.bar}%`, backgroundColor: toneC(it.tone) }]} /></View> : null}
             </View>
           ))}
+
+          {/* Avançado · casos especiais (FTL) — abre os calculadores da lei (repouso a bordo 205c,
+              standby 225, posicionamento 215, delayed reporting 205g), pré-preenchidos com este serviço. */}
+          <TouchableOpacity style={s.advEntry} activeOpacity={0.85} onPress={() => setAdvOpen(true)}>
+            <View style={s.advEntryIc}><Ionicons name="construct-outline" size={16} color={C.brand} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.advEntryTit}>{l('Avançado · casos especiais', 'Advanced · special cases')}</Text>
+              <Text style={s.advEntrySub} numberOfLines={1}>{l('Repouso a bordo · standby · posicionamento · delayed', 'In-flight rest · standby · positioning · delayed')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.sub} />
+          </TouchableOpacity>
+
           <Text style={s.foot}>{l('Simulação · nada é guardado na tua escala. Valores de referência — confirma sempre com a companhia.', 'Simulation · nothing is saved to your roster. Reference values — always confirm with the company.')}</Text>
         </ScrollView>
 
@@ -147,6 +162,30 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
           <GhostButton onPress={onEdit} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
           <PrimaryButton onPress={onClose} icon="checkmark" radius="lg" style={{ flex: 1 }} label={l('Concluir', 'Done')} />
         </View>
+
+        {/* ── Avançado · casos especiais (FTL) — calculadores da lei reutilizados, pré-preenchidos
+            com o serviço simulado. Sem onRegister → puro cálculo, nada é guardado. ── */}
+        <Modal visible={advOpen} animationType="slide" onRequestClose={() => setAdvOpen(false)} presentationStyle="fullScreen">
+          <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
+            <View style={s.head}>
+              <View style={{ flex: 1 }}>
+                <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Avançado · FTL', 'Advanced · FTL')}</Eyebrow></View>
+                <Text style={s.h1}>{l('Casos especiais', 'Special cases')}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setAdvOpen(false)} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
+            </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={s.advIntro}>{l('Calculadoras da lei que modificam o serviço básico. Arrancam pré-preenchidas com o serviço simulado. Iguais para piloto e cabine — nada é guardado.', 'Law calculators that modify the basic duty. They start pre-filled with the simulated duty. Same for pilot and cabin — nothing is saved.')}</Text>
+              <DutyCalc lang={lang} dayLog={dayLog} refISO={duty.duty_date} isPilot={isPilot}
+                initReport={duty.report_time} initSectors={duty.sectors} initEnd={duty.block_on} />
+              <InflightRestCalc lang={lang} isPilot={isPilot} collapsible />
+              <StandbyCalc lang={lang} collapsible />
+              <PositioningCalc lang={lang} collapsible />
+              <DelayedReportingCalc lang={lang} collapsible />
+              <Text style={s.foot}>{l('Estimativa FTL (lei EASA, Reg. UE 83/2014). Confirma sempre com a companhia.', 'FTL estimate (EASA law, Reg. EU 83/2014). Always confirm with the company.')}</Text>
+            </ScrollView>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
@@ -187,4 +226,11 @@ const makeStyles = (C) => StyleSheet.create({
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 12, paddingHorizontal: 2 },
   footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
+
+  // Avançado · casos especiais (FTL)
+  advEntry: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 13, backgroundColor: C.card, marginTop: 4 },
+  advEntryIc: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.infoSoft, alignItems: 'center', justifyContent: 'center' },
+  advEntryTit: { fontSize: 13, fontFamily: FONT.bold, color: C.text },
+  advEntrySub: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },
+  advIntro: { fontSize: 12, fontFamily: FONT.medium, color: C.sub, lineHeight: 17, marginBottom: 14 },
 });

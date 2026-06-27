@@ -197,7 +197,7 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
 
 // Calculadora de ATIVIDADE (manual) — uma atividade dá os três de uma vez:
 // PSV máximo (205) vs FDP real, horas para os Limites (210) e repouso mínimo (235).
-export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
+export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSectors, initEnd }) {
   const C = useTheme();
   const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -205,9 +205,10 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO }) {
   const [autoAcc, setAutoAcc] = useState(false);   // modo Auto (Quadro 1)
   const [diffIdx, setDiffIdx] = useState(0);       // diferença de fuso (Quadro 1)
   const [elapIdx, setElapIdx] = useState(0);       // tempo decorrido (Quadro 1)
-  const [report, setReport] = useState('');  // apresentação
-  const [end, setEnd] = useState('');         // calços (fim)
-  const [sectors, setSectors] = useState(0);
+  // Pré-preenchimento opcional (Simulação → "Avançado"): arranca com os dados do serviço simulado.
+  const [report, setReport] = useState(initReport || '');  // apresentação
+  const [end, setEnd] = useState(initEnd || '');         // calços (fim)
+  const [sectors, setSectors] = useState(initSectors || 0);
   const [inBase, setInBase] = useState(true); // termina em base?
   const [brk, setBrk] = useState(0);          // split duty (h)
   const [brkStart, setBrkStart] = useState(''); // início da pausa em terra (HH:MM)

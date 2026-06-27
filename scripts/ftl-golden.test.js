@@ -435,6 +435,64 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('reconcile: sem duties → ref igual', reconcileDayLog({}, manual) === manual, true);
 }
 
+// ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
+// O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
+// Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).
+{
+  // (1) Repouso a bordo / tripulação aumentada — PILOTO (205c). 06:00→20:00 = 14h estoura o
+  //     básico; a tabela aumentada (golden) deve cobrir → over=false.
+  const fcMax = computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 2, sectors: 2 }).maxFdpMin;
+  const dP = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 2 }, isPilot: true });
+  eq('Aumentado piloto: teto = calculador golden', dP.fdp.maxFdpMin, fcMax);
+  eq('Aumentado piloto: modifier', dP.fdp.modifier, 'augmented');
+  eq('Aumentado piloto: over derivado do teto golden', dP.fdp.over, fcMax != null && M('14:00') > fcMax);
+  eq('Sem aumento: o mesmo serviço estoura o básico', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2 }).fdp.over, true);
+
+  // (2) Repouso a bordo — CABINE (205c): teto por classe (c1→18:00, c2→17:00, c3→16:00).
+  const cabMax = computeInflightRest({ restClass: 'c2', sectors: 2, maxFdpMin: 0 }).classMaxMin;
+  const dC = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c2' }, isPilot: false });
+  eq('Aumentado cabine: teto = classe (golden)', dC.fdp.maxFdpMin, cabMax);
+  eq('Aumentado cabine: modifier', dC.fdp.modifier, 'augmented');
+
+  // (3) Acima do teto de setores (205c1: ≤3) → não permitido (ambos os tipos).
+  eq('Aumentado >3 setores: não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 4, augmented: { restClass: 'c1' } }).fdp.notAllowed, true);
+
+  // (4) Delayed reporting (205g): teto pela hora mais limitativa (orig vs adiada) — universal.
+  const drMax = computeDelayedReporting({ state: 'acc', origMin: M('06:00'), delayedMin: M('11:00'), sectors: 2 }).maxFdpMin;
+  const dD = computeDuty({ state: 'acc', report: '11:00', end: '20:00', sectors: 2, delayedFrom: '06:00' });
+  eq('Delayed: teto = calculador golden', dD.fdp.maxFdpMin, drMax);
+  eq('Delayed: modifier', dD.fdp.modifier, 'delayed');
+
+  // (5) Standby anterior (225): reduz o teto (>4h aeroporto) — universal.
+  const sbBase = computeFdp({ state: 'acc', reportMin: M('06:00'), endMin: M('18:00'), sectors: 2 });
+  const sb = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: sbBase.maxFdpMin });
+  const dS = computeDuty({ state: 'acc', report: '06:00', end: '18:00', sectors: 2, preStandby: { type: 'airport', standbyH: 6 } });
+  eq('Standby: redução = calculador golden', dS.fdp.stdbyReductionMin, sb.reductionMin);
+  eq('Standby: teto reduzido = golden', dS.fdp.maxFdpMin, sb.reducedMaxFdpMin);
+
+  // (6) Sem modificadores → idêntico à base (regressão).
+  const bn = computeFdp({ state: 'acc', reportMin: M('06:00'), endMin: M('18:00'), sectors: 2 });
+  const dn = computeDuty({ state: 'acc', report: '06:00', end: '18:00', sectors: 2 });
+  eq('Sem modificadores: teto == base', dn.fdp.maxFdpMin, bn.maxFdpMin);
+  eq('Sem modificadores: modifier null', dn.fdp.modifier, null);
+  eq('Sem modificadores: redução standby 0', dn.fdp.stdbyReductionMin, 0);
+
+  // (7) Adapter dutyToFtlDay aplica o `special` ao serviço GRAVADO — PILOTO aumentado.
+  //     06:00→20:00 (14h) seria ilegal; com tripulação aumentada fica legal (teto golden).
+  const eP = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 2, flight_minutes: 720, special: { augmented: { restClass: 'c1', additionalCrew: 2 } } }, { isPilot: true });
+  eq('Adapter aumentado piloto: max = golden', eP.psv.max, computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 2, sectors: 2 }).maxFdpStr);
+  eq('Adapter aumentado piloto: legal (over derivado)', eP.psv.over, fcMax != null && M('14:00') > fcMax);
+  eq('Adapter SEM special: o mesmo serviço é ilegal', ftl.dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 2 }).psv.over, true);
+
+  // (8) Adapter — CABINE aumentada (classe c2 → teto 17:00, golden).
+  const eC = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 2, special: { augmented: { restClass: 'c2' } } }, { isPilot: false });
+  eq('Adapter aumentado cabine: max = classe (golden)', eC.psv.max, computeInflightRest({ restClass: 'c2', sectors: 2, maxFdpMin: 0 }).classMaxStr);
+
+  // (9) Adapter — delayed reporting (205g) no serviço gravado.
+  const eD = ftl.dutyToFtlDay({ report_time: '11:00', block_on: '20:00', sectors: 2, special: { delayedFrom: '06:00' } });
+  eq('Adapter delayed: max = golden', eD.psv.max, computeDelayedReporting({ state: 'acc', origMin: M('06:00'), delayedMin: M('11:00'), sectors: 2 }).maxFdpStr);
+}
+
 // ── Resumo ──
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

@@ -21,6 +21,7 @@ const cleanDuties = (duties = {}) => {
       nightStop: !!d.nightStop,
       signOff: d.signOff || null,                  // fim de serviço real (sign-off)
       legs: Array.isArray(d.legs) ? d.legs : null, // off/on + nº de voo por setor
+      special: d.special || null,                  // casos especiais FTL (205c/205g/225)
       source: d.source || 'manual',
     };
   }

@@ -49,8 +49,8 @@ export const dutyFromActivity = (act, base = null) => {
 
 // Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
 // no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
-export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0) => {
-  const ftl = dutyToFtlDay(duty, { postFlightMin }); // { psv, servico, voo, rest } ou null (sem dados)
+export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false) => {
+  const ftl = dutyToFtlDay(duty, { postFlightMin, isPilot }); // { psv, servico, voo, rest } ou null (sem dados)
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída
@@ -60,8 +60,9 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   if (ftl.psv.over) issues.push({ type: 'fdp' });
   if (duty28 && duty28.over) issues.push({ type: 'duty28', done: duty28.done, limit: duty28.limit });
   if (flight28 && flight28.over) issues.push({ type: 'flight28', done: flight28.done, limit: flight28.limit });
-  // Índice de risco de fadiga (consultivo) desta duty.
-  const d = computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase: true });
+  // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
+  const sp = duty.special || {};
+  const d = computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase: true, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot });
   const fatigue = fatigueFromDuty(d);
   return {
     ok: issues.length === 0,
@@ -104,7 +105,7 @@ export const rangeFromOption = (option, from = new Date()) => {
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
 // e selected=false (MANTÉM o manual). O utilizador marca para o calendário substituir
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null } = {}) => {
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, isPilot = false } = {}) => {
   const out = [];
   const inDates = new Set();
   const make = (duty, kind) => {
@@ -113,7 +114,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     inDates.add(duty.duty_date);
     const ex = duties[duty.duty_date];
     const exists = !!(ex && !ex.deleted);
-    const prospect = prospectiveDuty(duty, dayLog);
+    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot);
     // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
     let status = 'ok', diff = [];
     if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }

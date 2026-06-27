@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 // (per-diem no voo, setores no standby/terra, …) e para a deteção de alterações de
 // escala. Todos têm período de serviço (report) → não inclui férias/folga (ausências,
 // modelo à parte). Default 'flight'. Persiste na coluna duties.kind (schema §9).
-export const DUTY_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
+export const DUTY_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training', 'reserve'];
 
 // Acesso à tabela `duties` (registo bruto da escala). Uma duty por dia
 // (unique user_id + duty_date → upsert). Esta é a FONTE de dados crua; o motor
@@ -51,8 +51,9 @@ export const upsertDuty = async (userId, d = {}) => {
       notes: d.route || d.notes || null,   // rota "LIS-OPO-LIS" para o per diem AE
       kind: d.kind || 'flight',            // tipo de atividade (voo/standby/terra…)
       night_stop: !!d.nightStop,           // paragem nocturna (abono AE, Art. 39)
-      // origem + snapshot da escala (Fase 4) + legs c/ nº de voo (p/ "ao vivo") + sign-off (fim de serviço) — JSON num só campo
-      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null, legs: d.legs || null, signOff: d.signOff || null }),
+      // origem + snapshot da escala (Fase 4) + legs c/ nº de voo (p/ "ao vivo") + sign-off (fim de serviço)
+      // + casos especiais FTL (205c/205g/225, Fase 1) — JSON num só campo
+      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null, legs: d.legs || null, signOff: d.signOff || null, special: d.special || null }),
     };
     const up = (p) => supabase.from('duties').upsert(p, { onConflict: 'user_id,duty_date' });
     let { error } = await up(payload);

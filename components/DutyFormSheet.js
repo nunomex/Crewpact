@@ -10,6 +10,7 @@ import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { routeDistancesNM } from '../data/perdiem';
+import { computeDuty } from '../ftl';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
@@ -72,17 +73,53 @@ function ClockField({ label, value, onChange, C, s, flex, error, errText }) {
   );
 }
 
+// Segmented control compacto (casos especiais): opções [{id,label}], uma ativa.
+function SegRow({ options, value, onChange, s }) {
+  return (
+    <View style={s.segRow}>
+      {options.map((o) => {
+        const on = value === o.id;
+        return (
+          <TouchableOpacity key={o.id} onPress={() => { select(); onChange(o.id); }} style={[s.segChip, on && s.segChipOn]} activeOpacity={0.85}>
+            <Text style={[s.segChipTxt, on && s.segChipTxtOn]} numberOfLines={1}>{o.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 // Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
+
+  // ── Casos especiais (FTL) — mexem no TETO do PSV (205c/205g/225). Toggles locais; o objeto
+  // `special` deriva deles (mais abaixo) e alimenta a projeção FTL e o save. Crew-aware. ──
+  const [advOpen, setAdvOpen] = useState(false);
+  const [augOn, setAugOn] = useState(false);       // repouso a bordo / tripulação aumentada (205c)
+  const [augClass, setAugClass] = useState('c1');  // classe da instalação (c1/c2/c3)
+  const [augCrew, setAugCrew] = useState(1);        // pilotos EXTRA (1→3 total, 2→4) — só piloto
+  const [delOn, setDelOn] = useState(false);        // apresentação adiada (205g)
+  const [delFrom, setDelFrom] = useState('');       // hora ORIGINAL (a apresentação do form é a adiada)
+  const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
+  const [sbType, setSbType] = useState('airport');  // 'airport' | 'other' (casa/hotel)
+  const [sbH, setSbH] = useState(6);                // horas de standby
+  // Semeia os toggles a partir do `special` guardado (edição / troca de dia).
+  const syncSpecial = (sp) => {
+    sp = sp || {};
+    setAugOn(!!sp.augmented); setAugClass(sp.augmented?.restClass || 'c1'); setAugCrew(sp.augmented?.additionalCrew || 1);
+    setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
+    setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
+    setAdvOpen(!!(sp.augmented || sp.delayedFrom != null || sp.preStandby));
+  };
 
   // Carrega o form a partir do dia: já existe duty → EDITA; senão → vazio (NOVA).
   const loadFor = (iso) => {
@@ -97,8 +134,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     if (!visible) return;
     const f = candidate ? formFromCand(candidate) : loadFor(date || isoDay());
     setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
+    syncSpecial(candidate ? candidate.special : duties[date || isoDay()]?.special);
   }, [visible, date, candidate]); // eslint-disable-line react-hooks/exhaustive-deps
-  const goDate = (delta) => { select(); setForm(loadFor(addDays(form.date, delta))); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
+  const goDate = (delta) => { select(); const iso = addDays(form.date, delta); setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
 
   // ── Setores: Detetar (SÓ no manual; histórico→API se houver net) OU à mão (rota: 2 estações + ✓). ──
   // O nº de voo é OBRIGATÓRIO e COMPLETO (sigla+nº, ex. EJU7625); incompleto/vazio → vermelho.
@@ -178,14 +216,17 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
   const catForm = crewAt(form.date || isoDay()).category;   // categoria EM VIGOR no mês da duty (effective-dated)
   const nsEur = (hasNs && ae && ae.nightStop && catForm) ? ae.nightStop(catForm) : null;
-  const kindInfo = !ae ? null : ({
-    flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
-    standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
-    office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
-    positioning:     l('Conta para FTL · sem abono (pernoita à parte)', 'Counts for FTL · no allowance (night stop apart)'),
-    standby_home:    l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
-    training:        l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
-  })[form.kind] || null;
+  // Reserva (230) é FTL-universal (0h, mostra a todos); o resto é info AE (só com `ae`).
+  const kindInfo = form.kind === 'reserve'
+    ? l('Disponibilidade · 0 h FTL até ser convertida (ORO.FTL.230)', 'Availability · 0 h FTL until converted (ORO.FTL.230)')
+    : (!ae ? null : ({
+        flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
+        standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
+        office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
+        positioning:     l('Conta para FTL · sem abono (pernoita à parte)', 'Counts for FTL · no allowance (night stop apart)'),
+        standby_home:    l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+        training:        l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
+      })[form.kind] || null);
   // ── Setores (legs = FONTE das horas): off/on por setor. block_off/on + Block hours DERIVAM. ──
   // sectorRows = vista materializada dos legs alinhada à rota/nº de setores (dep/arr da rota,
   // off/on dos legs). A edição escreve em `form.legs` (setSectorTime).
@@ -223,14 +264,35 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const showErr = (k) => attemptedSave && requiredKeys.includes(k) && !fieldOk[k];
   const errText = l('Em falta', 'Missing');
 
+  // `special` derivado dos toggles → null quando nenhum caso ativo. Só voos. Crew-aware (o nº
+  // de pilotos só conta para piloto). Alimenta a projeção FTL e o save.
+  const special = useMemo(() => {
+    if (!isFlight) return null;
+    const aug = augOn ? { restClass: augClass, additionalCrew: Number(augCrew) } : null;
+    const del = (delOn && isClock(delFrom)) ? delFrom : null;
+    const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
+    return (aug || del || sb) ? { augmented: aug, delayedFrom: del, preStandby: sb } : null;
+  }, [isFlight, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH]);
+
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
     return prospectiveDuty({
       duty_date: form.date, report_time: form.report,
       block_off: firstOff, block_on: lastOn,
       sectors: sectorRows.length, flight_minutes: blockMin, signOff: form.signOff || null,
-    }, dayLog, null, postFlightMin);
-  }, [isFlight, form, dayLog, postFlightMin]); // eslint-disable-line react-hooks/exhaustive-deps
+      special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
+    }, dayLog, null, postFlightMin, isPilot);
+  }, [isFlight, form, dayLog, postFlightMin, isPilot, special]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
+  const psvPreview = useMemo(() => {
+    if (!isFlight || !isClock(form.report) || !special) return null;
+    const common = { state: 'acc', report: form.report, end: lastOn || null, sectors: sectorRows.length };
+    const base = computeDuty(common);
+    if (base.fdp.maxFdpStr == null) return null;
+    const eff = computeDuty({ ...common, augmented: special.augmented, delayedFrom: special.delayedFrom, preStandby: special.preStandby, isPilot });
+    return { base: base.fdp.maxFdpStr, eff: eff.fdp.notAllowed ? null : eff.fdp.maxFdpStr, notAllowed: !!eff.fdp.notAllowed };
+  }, [isFlight, form.report, lastOn, sectorRows.length, special, isPilot]);
 
   // Per-diem AE deste voo (preview ao vivo por baixo da Rota).
   const routePd = useMemo(() => {
@@ -283,6 +345,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       kind: form.kind || 'flight', nightStop: hasNs,
       signOff: form.signOff || null,   // fim de serviço REAL (Duty hours / 210 / repouso)
       legs,
+      special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -508,6 +571,104 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             </Animated.View>
           ) : null}
 
+          {/* ── Casos especiais (FTL) — mexem no TETO do PSV (205c/205g/225). Crew-aware:
+              o nº de pilotos só aparece a piloto. Tudo via o motor já testado (golden). ── */}
+          {isFlight ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <TouchableOpacity style={s.advHead} activeOpacity={0.7}
+                onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAdvOpen((o) => !o); }}>
+                <Ionicons name="construct-outline" size={15} color={C.sub} />
+                <Text style={s.advHeadTxt}>{l('Casos especiais (FTL)', 'Special cases (FTL)')}</Text>
+                {special ? <View style={s.advDot} /> : null}
+                <Ionicons name={advOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
+              </TouchableOpacity>
+              {advOpen ? (
+                <View style={s.advBody}>
+                  {/* 1 · Repouso a bordo / tripulação aumentada (205c) */}
+                  <View style={s.advRow}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={s.advTit}>{l('Tripulação aumentada / repouso a bordo', 'Augmented crew / in-flight rest')}</Text>
+                      <Text style={s.advSub}>205(c)</Text>
+                    </View>
+                    <Switch value={augOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAugOn(v); }}
+                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  </View>
+                  {augOn ? (
+                    <View style={s.advInset}>
+                      <Text style={s.advFieldLbl}>{l('Classe da instalação de repouso', 'Rest facility class')}</Text>
+                      <SegRow s={s} value={augClass} onChange={setAugClass} options={[
+                        { id: 'c1', label: l('Classe 1', 'Class 1') },
+                        { id: 'c2', label: l('Classe 2', 'Class 2') },
+                        { id: 'c3', label: l('Classe 3', 'Class 3') },
+                      ]} />
+                      {isPilot ? (
+                        <>
+                          <Text style={[s.advFieldLbl, { marginTop: 11 }]}>{l('Pilotos extra', 'Additional pilots')}</Text>
+                          <SegRow s={s} value={String(augCrew)} onChange={(v) => setAugCrew(Number(v))} options={[
+                            { id: '1', label: l('+1 · 3 no total', '+1 · 3 total') },
+                            { id: '2', label: l('+2 · 4 no total', '+2 · 4 total') },
+                          ]} />
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  {/* 2 · Apresentação adiada (205g) */}
+                  <View style={[s.advRow, s.advDivider]}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={s.advTit}>{l('Apresentação adiada', 'Delayed reporting')}</Text>
+                      <Text style={s.advSub}>205(g)</Text>
+                    </View>
+                    <Switch value={delOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setDelOn(v); }}
+                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  </View>
+                  {delOn ? (
+                    <View style={s.advInset}>
+                      <ClockField C={C} s={s} label={l('Hora original da apresentação', 'Original reporting time')} value={delFrom} onChange={setDelFrom} />
+                      <Text style={s.advHint}>{l('A apresentação (acima) é a ADIADA. O PSV máx recalcula pela hora mais limitativa.', 'The report (above) is the DELAYED one. Max FDP recalculates by the more limiting time.')}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* 3 · Standby antes deste serviço (225) */}
+                  <View style={[s.advRow, s.advDivider]}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={s.advTit}>{l('Standby antes deste serviço', 'Standby before this duty')}</Text>
+                      <Text style={s.advSub}>225</Text>
+                    </View>
+                    <Switch value={sbOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSbOn(v); }}
+                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  </View>
+                  {sbOn ? (
+                    <View style={s.advInset}>
+                      <Text style={s.advFieldLbl}>{l('Tipo de standby', 'Standby type')}</Text>
+                      <SegRow s={s} value={sbType} onChange={setSbType} options={[
+                        { id: 'airport', label: l('Aeroporto', 'Airport') },
+                        { id: 'other', label: l('Casa / hotel', 'Home / hotel') },
+                      ]} />
+                      <View style={{ marginTop: 11 }}>
+                        <Stepper label={l('Horas de standby', 'Standby hours')} value={sbH} setValue={setSbH} min={0} max={16} />
+                      </View>
+                      <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa). As horas contam para os 28 d na Fase 2.', 'Reduces max FDP (>4h airport · >6h home). The hours count toward the 28 d in Phase 2.')}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Preview do teto do PSV (base → efetivo), via o motor */}
+                  {psvPreview ? (
+                    <View style={s.advPreview}>
+                      <Text style={s.advPreviewLbl}>{l('PSV máx', 'Max FDP')}</Text>
+                      <Text style={s.advPreviewVal}>
+                        {psvPreview.base}<Text style={s.advPreviewArrow}>{'   →   '}</Text>
+                        {psvPreview.notAllowed
+                          ? <Text style={{ color: C.red }}>{l('não permitido', 'not allowed')}</Text>
+                          : <Text style={{ color: C.greenText }}>{psvPreview.eff}</Text>}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </Animated.View>
+          ) : null}
+
           {/* Projeção FTL — só voo, assim que há apresentação válida. Usa as horas DERIVADAS dos setores. */}
           {isFlight && prospect ? (
             <Animated.View style={[s.sec, secStyle(5)]}>
@@ -623,4 +784,28 @@ const makeStyles = (C) => StyleSheet.create({
   fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
   footHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginBottom: 8 },
+
+  // Segmented control (casos especiais)
+  segRow: { flexDirection: 'row', gap: 6 },
+  segChip: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 8, backgroundColor: C.card, alignItems: 'center' },
+  segChipOn: { borderColor: C.ink, backgroundColor: C.ink },
+  segChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
+  segChipTxtOn: { color: '#fff' },
+
+  // Disclosure "Casos especiais (FTL)"
+  advHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 14, backgroundColor: C.card },
+  advHeadTxt: { flex: 1, fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
+  advDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.brand },
+  advBody: { borderWidth: 1, borderColor: C.line, borderTopWidth: 0, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, marginTop: -2, paddingHorizontal: 13, paddingBottom: 13, backgroundColor: C.soft },
+  advRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 13 },
+  advDivider: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 13 },
+  advTit: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
+  advSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
+  advInset: { marginTop: 10, paddingLeft: 2 },
+  advFieldLbl: { fontSize: 11, fontFamily: FONT.bold, color: C.sub, marginBottom: 6 },
+  advHint: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 8, lineHeight: 15 },
+  advPreview: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line },
+  advPreviewLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+  advPreviewVal: { fontSize: 15, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
+  advPreviewArrow: { color: C.sub },
 });
