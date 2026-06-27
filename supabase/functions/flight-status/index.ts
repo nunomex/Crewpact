@@ -56,6 +56,7 @@ const slim = (f: Record<string, any>) => {
     arr: {
       iata: f.arr_iata,
       scheduled: f.arr_time, estimated: f.arr_estimated, actual: f.arr_actual,
+      scheduledUtc: f.arr_time_utc, estimatedUtc: f.arr_estimated_utc, actualUtc: f.arr_actual_utc,   // Zulu (UTC) da chegada
       scheduledTs: f.arr_time_ts, estimatedTs: f.arr_estimated_ts, delayMin: num(f.arr_delayed),
     },
     delayed: (depDelay ?? 0) >= 15 || ['delayed', 'cancelled', 'canceled', 'diverted'].includes(status),

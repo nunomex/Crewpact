@@ -43,7 +43,7 @@ export const dutyFromActivity = (act, base = null) => {
     nightStop: isNightStop(route, base, sectors),
     // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
     // só o essencial por leg — flightNo + aeroportos + horas planeadas.
-    legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null })),
+    legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null, offZ: l.depTimeZ || null, onZ: l.arrTimeZ || null })),
   };
 };
 
@@ -63,6 +63,9 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
   const sp = duty.special || {};
   const d = computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase: true, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot });
+  // Limite COMBINADO do standby (CS FTL.1.225): standby + PSV > 16h (aeroporto) / > 18h acordado
+  // (casa) / standby > 16h → ilegal, separado do PSV-over.
+  if (d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
   const fatigue = fatigueFromDuty(d);
   return {
     ok: issues.length === 0,

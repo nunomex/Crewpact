@@ -11,6 +11,7 @@ import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
+import { legZulu } from '../data/zulu';
 import NotificationsBell from '../components/NotificationsBell';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
@@ -379,7 +380,10 @@ export default function EscalaScreen({ navigation, route }) {
                     <View key={i} style={s.dsSecRow}>
                       <Text style={s.dsSecNo} numberOfLines={1}>{lg.flightNo || `${i + 1}`}</Text>
                       <Text style={s.dsSecRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}</Text>
-                      <Text style={s.dsSecTm}>{lg.off || '—'} → {lg.on || '—'}</Text>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={s.dsSecTm}>{lg.off || '—'} → {lg.on || '—'}</Text>
+                        {(() => { const zo = legZulu(d.duty_date, lg, 'off'), zn = legZulu(d.duty_date, lg, 'on'); return (zo || zn) ? <Text style={s.dsSecZ}>{zo || '—'} → {zn || '—'}Z</Text> : null; })()}
+                      </View>
                     </View>
                   ))}
                   {legs.length > 3 ? (
@@ -563,6 +567,7 @@ const makeStyles = (C) => StyleSheet.create({
   dsSecNo: { width: 64, fontSize: 12.5, fontFamily: FONT.heavy, color: C.text, letterSpacing: 0.2 },
   dsSecRt: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.text },
   dsSecTm: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, fontVariant: ['tabular-nums'] },
+  dsSecZ: { fontSize: 10.5, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 2, letterSpacing: 0.2 },
   dsMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 9, borderTopWidth: 1, borderTopColor: C.line },
   dsMoreTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
   dsMeta: { flexDirection: 'row', gap: 9, marginTop: 14 },

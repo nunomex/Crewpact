@@ -67,6 +67,11 @@ eq('histórico: flightMin (on-off)', h.flightMin, 135);
 eq('histórico: source', h.source, 'history');
 eq('histórico: sem match → null', legFromHistory('XX9999', duties), null);
 eq('normFlightNo limpa', normFlightNo(' eju 7625 '), 'EJU7625');
+// Preserva a Zulu AUTORITATIVA já guardada (offZ/onZ) — display correto sem recálculo.
+const hz = legFromHistory('EJU9001', { '2026-06-01': { legs: [{ flightNo: 'EJU9001', dep: 'LGW', arr: 'ATH', off: '08:30', on: '14:00', offZ: '07:30', onZ: '11:00' }] } });
+eq('histórico: preserva offZ', hz.offZ, '07:30');
+eq('histórico: preserva onZ', hz.onZ, '11:00');
+eq('histórico: sem Zulu guardada → offZ null', h.offZ, null);
 
 // ── isCompleteFlightNo — nº de voo COMPLETO (sigla + número) vs incompleto (→ vermelho no form) ──
 ok('completo: EJU7625', isCompleteFlightNo('EJU7625'));

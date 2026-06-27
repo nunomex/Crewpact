@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT, TYPE, RADIUS } from '../data/constants';
 import { useTheme } from '../data/appContext';
+import { legZulu } from '../data/zulu';
 import Eyebrow from './Eyebrow';
 import { t } from '../data/i18n';
 
@@ -40,7 +41,7 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, feat
     if (legs.length) {
       legs.forEach((lg, i) => {
         if (d.iso === featuredISO && activeIdx != null && i <= activeIdx) return;   // já passou / é o ativo
-        out.push({ key: `${d.iso}-${i}`, iso: d.iso, type: 'sector', dep: lg.dep, arr: lg.arr, off: lg.off, sector: i + 1, total: legs.length, nightStop: !!d.nightStop && i === legs.length - 1 });
+        out.push({ key: `${d.iso}-${i}`, iso: d.iso, type: 'sector', dep: lg.dep, arr: lg.arr, off: lg.off, on: lg.on, offZ: lg.offZ || null, onZ: lg.onZ || null, sector: i + 1, total: legs.length, nightStop: !!d.nightStop && i === legs.length - 1 });
       });
     } else {
       if (d.iso === featuredISO) continue;   // voo antigo / não-voo em destaque → já está no card
@@ -56,9 +57,20 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, feat
         <View key={e.key} style={[s.lrow, i > 0 && s.lrowBorder]}>
           <Ionicons name={e.type === 'sector' ? 'airplane' : (KIND_ICON[e.kind || 'flight'] || 'ellipse-outline')} size={14} color={C.sub} />
           <Text style={s.lday}>{fmtDay(e.iso, locale)}</Text>
-          <Text style={s.ltxt} numberOfLines={1}>{e.type === 'sector'
-            ? `${e.dep || '?'}→${e.arr || '?'}${e.off ? ` · ${e.off}` : ''} · ${lang === 'en' ? 'Sec' : 'Set'} ${e.sector}/${e.total}${e.nightStop ? ' · 🌙' : ''}`
-            : `${dutyLine(e, lang)}${e.report_time ? ` · ${e.report_time}` : ''}${e.nightStop ? ' · 🌙' : ''}`}</Text>
+          {e.type === 'sector' ? (() => {
+            // Zulu por prioridade (helper único), partida E chegada.
+            const zo = legZulu(e.iso, e, 'off');
+            const zn = legZulu(e.iso, e, 'on');
+            const times = e.off ? `${e.off}${e.on ? `→${e.on}` : ''}` : (e.on || '');
+            const zTxt = (zo || zn) ? `${zo || '—'}–${zn || '—'}Z` : null;
+            return (
+              <Text style={s.ltxt} numberOfLines={1}>
+                {`${e.dep || '?'}→${e.arr || '?'}`}{times ? ` · ${times}` : ''}{zTxt ? <Text style={s.lz}> {zTxt}</Text> : null}{` · ${lang === 'en' ? 'Sec' : 'Set'} ${e.sector}/${e.total}${e.nightStop ? ' · 🌙' : ''}`}
+              </Text>
+            );
+          })() : (
+            <Text style={s.ltxt} numberOfLines={1}>{`${dutyLine(e, lang)}${e.report_time ? ` · ${e.report_time}` : ''}${e.nightStop ? ' · 🌙' : ''}`}</Text>
+          )}
         </View>
       )) : <Text style={s.empty}>{lang === 'en' ? 'No upcoming duties' : 'Sem atividades futuras'}</Text>}
     </>
@@ -74,4 +86,5 @@ const makeStyles = (C) => StyleSheet.create({
   lrowBorder: { borderTopWidth: 1, borderTopColor: C.line },
   lday: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, width: 92 },
   ltxt: { fontSize: TYPE.label, color: C.sub, fontFamily: FONT.medium, flex: 1 },
+  lz: { color: C.brand, fontFamily: FONT.bold },
 });

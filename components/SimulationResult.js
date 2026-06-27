@@ -61,7 +61,8 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const verdict = prosp.ok === false ? 'bad' : prosp.ok === true ? 'ok' : 'none';
   const issueTxt = (it) => it.type === 'fdp' ? l('PSV excede o máximo', 'FDP over the max')
     : it.type === 'duty28' ? l('serviço acima de 190 h/28 d', 'duty over 190 h/28 d')
-    : it.type === 'flight28' ? l('voo acima de 100 h/28 d', 'flight over 100 h/28 d') : '';
+    : it.type === 'flight28' ? l('voo acima de 100 h/28 d', 'flight over 100 h/28 d')
+    : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h')) : '';
 
   // ── 7 itens (perguntas/respostas) ──
   const items = [];

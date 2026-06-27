@@ -11,6 +11,7 @@ import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { routeDistancesNM } from '../data/perdiem';
 import { computeDuty } from '../ftl';
+import { airportZulu } from '../data/zulu';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
@@ -35,7 +36,7 @@ const legsForSectors = (route, sectors, prev = []) => {
   const n = Math.max(0, Number(sectors) || 0);
   return Array.from({ length: n }, (_, i) => {
     const p = (prev && prev[i]) || {};
-    return { flightNo: p.flightNo || null, dep: aps[i] || p.dep || null, arr: aps[i + 1] || p.arr || null, off: p.off || '', on: p.on || '', aircraft: p.aircraft || null };
+    return { flightNo: p.flightNo || null, dep: aps[i] || p.dep || null, arr: aps[i + 1] || p.arr || null, off: p.off || '', on: p.on || '', aircraft: p.aircraft || null, offZ: p.offZ || null, onZ: p.onZ || null };
   });
 };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
@@ -312,7 +313,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const h1n = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
   const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
-  const issueLbl = (it) => it.type === 'fdp' ? t('duties.issueFdp', lang) : it.type === 'duty28' ? t('duties.issueDuty28', lang) : it.type === 'flight28' ? t('duties.issueFlight28', lang) : '';
+  const issueLbl = (it) => it.type === 'fdp' ? t('duties.issueFdp', lang) : it.type === 'duty28' ? t('duties.issueDuty28', lang) : it.type === 'flight28' ? t('duties.issueFlight28', lang)
+    : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('Standby acima de 16 h', 'Standby over 16 h') : it.kind === 'awake' ? l('Standby + PSV acima de 18 h acordado', 'Standby + FDP over 18 h awake') : l('Standby + PSV acima de 16 h', 'Standby + FDP over 16 h'))
+    : '';
 
   const fmtDate = (iso) => {
     if (!iso) return '';
@@ -332,6 +335,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       ? sectorRows.map((lg, i) => ({
           flightNo: normFlightNo(lg.flightNo) || null, dep: lg.dep || null, arr: lg.arr || null,
           off: lg.off || null, on: lg.on || null,
+          offZ: lg.offZ || null, onZ: lg.onZ || null,   // Zulu autoritativa do calendário (preserva ao editar)
           aircraft: i === 0 ? (ac || lg.aircraft || null) : (lg.aircraft || null),
         }))
       : null;
@@ -514,18 +518,27 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                     const lab = (lg.dep && lg.arr) ? `${lg.dep}→${lg.arr}` : l(`Setor ${i + 1}`, `Sector ${i + 1}`);
                     const offBad = showErr('sectors') && clkMin(lg.off) == null;
                     const onBad = showErr('sectors') && clkMin(lg.on) == null;
+                    // Zulu por prioridade: autoritativa (offZ/onZ) → fuso do aeroporto (origem/destino).
+                    const zo = lg.offZ || airportZulu(form.date, lg.off, lg.dep);
+                    const zn = lg.onZ || airportZulu(form.date, lg.on, lg.arr);
                     return (
-                      <View key={i} style={s.secRow}>
-                        <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
-                        <View style={s.secInputs}>
-                          <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
-                          <Text style={s.secArrow}>→</Text>
-                          <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
+                      <View key={i} style={{ marginTop: 8 }}>
+                        <View style={[s.secRow, { marginTop: 0 }]}>
+                          <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
+                          <View style={s.secInputs}>
+                            <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
+                            <Text style={s.secArrow}>→</Text>
+                            <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
+                          </View>
                         </View>
+                        {(zo || zn) ? <Text style={s.secZ}>{zo ? `${zo}Z` : '—'} → {zn ? `${zn}Z` : '—'}</Text> : null}
                       </View>
                     );
                   }) : <Text style={s.routeHint}>{l('Adiciona setores na secção Voos para meter as horas.', 'Add sectors in the Flights section to enter times.')}</Text>}
                   {showErr('sectors') ? <Text style={s.errTxt}>{l('Preenche o off e o on de cada setor.', 'Fill off and on for every sector.')}</Text> : null}
+                  {sectorRows.some((lg) => !lg.offZ) ? (
+                    <Text style={s.routeHint}>{l('A Zulu (UTC) usa o fuso do aeroporto — assume que as horas são locais do aeroporto.', 'Zulu (UTC) uses the airport timezone — assumes times are airport-local.')}</Text>
+                  ) : null}
                 </View>
                 {/* Fim de serviço (sign-off) — opcional; define as Duty hours com débrief real. */}
                 <View style={{ marginTop: 14 }}>
@@ -648,7 +661,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                       <View style={{ marginTop: 11 }}>
                         <Stepper label={l('Horas de standby', 'Standby hours')} value={sbH} setValue={setSbH} min={0} max={16} />
                       </View>
-                      <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa). As horas contam para os 28 d na Fase 2.', 'Reduces max FDP (>4h airport · >6h home). The hours count toward the 28 d in Phase 2.')}</Text>
+                      <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa) E conta para os 28 d (aeroporto 100% · casa 25%).', 'Reduces max FDP (>4h airport · >6h home) AND counts toward the 28 d (airport 100% · home 25%).')}</Text>
                     </View>
                   ) : null}
 
@@ -743,6 +756,7 @@ const makeStyles = (C) => StyleSheet.create({
   secInputs: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   secInput: { width: 64, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, fontSize: 14, fontFamily: FONT.semibold, color: C.text, textAlign: 'center' },
   secArrow: { fontSize: 13, color: C.sub },
+  secZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 4, letterSpacing: 0.2, alignSelf: 'flex-end' },
   // Dois campos só de visualização — Block hours · Duty hours
   calcRow: { flexDirection: 'row', gap: 9, marginTop: 14 },
   calcCell: { flex: 1, backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },

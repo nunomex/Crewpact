@@ -13,6 +13,7 @@ import { select } from '../data/haptics';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
+import { legZulu } from '../data/zulu';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -98,7 +99,11 @@ export default function DutyDetailScreen({ route, navigation }) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
   const fmtEur0 = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  const firstLeg = legs[0] || null, lastLeg = legs[legs.length - 1] || null;
   const tv = (hhmm) => { const z = toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
+  // Block off/on com Zulu AUTORITATIVA (do 1.º/último setor): autoritativa → fuso do aeroporto → dispositivo.
+  const tvL = (hhmm, leg, which) => { const z = legZulu(date, leg, which) || toZulu(date, hhmm); return z ? `${hhmm}  ·  ${z}Z` : hhmm; };
   const routeStr = stations.length > 1 ? stations.join(' → ') : (duty.route || l('Voo', 'Flight'));
   const headMain = isFlight
     ? routeStr
@@ -153,8 +158,8 @@ export default function DutyDetailScreen({ route, navigation }) {
         <Text style={s.sectionTitle}>{l('HORÁRIO', 'SCHEDULE')}</Text>
         <Panel rows={[
           duty.report_time && { k: l('Apresentação', 'Report'), v: tv(duty.report_time) },
-          duty.block_off && { k: l('Block off', 'Block off'), v: tv(duty.block_off) },
-          duty.block_on && { k: l('Block on', 'Block on'), v: tv(duty.block_on) },
+          duty.block_off && { k: l('Block off', 'Block off'), v: tvL(duty.block_off, firstLeg, 'off') },
+          duty.block_on && { k: l('Block on', 'Block on'), v: tvL(duty.block_on, lastLeg, 'on') },
           duty.signOff && { k: l('Fim de serviço', 'Sign-off'), v: tv(duty.signOff) },
           duty.flight_minutes && { k: 'Block hours', v: minToHhmm(duty.flight_minutes) },
           (d && d.dutyPeriodStr) && { k: 'Duty hours', v: d.dutyPeriodStr },
@@ -164,10 +169,18 @@ export default function DutyDetailScreen({ route, navigation }) {
         {isFlight && Array.isArray(duty.legs) && duty.legs.length ? (
           <>
             <Text style={s.sectionTitle}>{l('SETORES', 'SECTORS')}</Text>
-            <Panel rows={duty.legs.map((lg) => ({
-              k: `${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
-              v: `${lg.off || '—'} → ${lg.on || '—'}`,
-            }))} />
+            <Panel rows={duty.legs.map((lg) => {
+              const zo = legZulu(date, lg, 'off'), zn = legZulu(date, lg, 'on');
+              return {
+                k: `${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
+                node: (
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={s.rowV}>{`${lg.off || '—'} → ${lg.on || '—'}`}</Text>
+                    {(zo || zn) ? <Text style={s.rowVZ}>{`${zo || '—'} → ${zn || '—'}Z`}</Text> : null}
+                  </View>
+                ),
+              };
+            })} />
           </>
         ) : null}
 
@@ -226,6 +239,7 @@ const makeStyles = (C) => StyleSheet.create({
   rowFirst: { borderTopWidth: 0 },
   rowK: { flex: 1, fontSize: TYPE.sub, fontFamily: FONT.medium, color: C.sub },
   rowV: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  rowVZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: 2, letterSpacing: 0.2 },
 
   fatPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3 },
   fatDot: { width: 7, height: 7, borderRadius: 99 },

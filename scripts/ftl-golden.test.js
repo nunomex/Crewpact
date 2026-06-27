@@ -491,6 +491,27 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // (9) Adapter — delayed reporting (205g) no serviço gravado.
   const eD = ftl.dutyToFtlDay({ report_time: '11:00', block_on: '20:00', sectors: 2, special: { delayedFrom: '06:00' } });
   eq('Adapter delayed: max = golden', eD.psv.max, computeDelayedReporting({ state: 'acc', origMin: M('06:00'), delayedMin: M('11:00'), sectors: 2 }).maxFdpStr);
+
+  // (10) FASE 2 — standby ANTERIOR ao voo soma ao serviço dos 28 d (210). Delta = dutyCount golden.
+  //      Voo 10:00→18:00 (8h). AEROPORTO 4h → 100% = 4h ao serviço (e 0 de redução do PSV).
+  const eNoSb = ftl.dutyToFtlDay({ report_time: '10:00', block_on: '18:00', sectors: 2 });
+  const eApt = ftl.dutyToFtlDay({ report_time: '10:00', block_on: '18:00', sectors: 2, special: { preStandby: { type: 'airport', standbyH: 4 } } });
+  eq('Fase 2: standby aeroporto soma 100% ao serviço', +(eApt.servico - eNoSb.servico).toFixed(1), +(computeStandby({ type: 'airport', standbyH: 4 }).dutyCountMin / 60).toFixed(1));
+  // CASA 8h → 25% = 2h ao serviço.
+  const eHome = ftl.dutyToFtlDay({ report_time: '10:00', block_on: '18:00', sectors: 2, special: { preStandby: { type: 'other', standbyH: 8 } } });
+  eq('Fase 2: standby casa soma 25% ao serviço', +(eHome.servico - eNoSb.servico).toFixed(1), +(computeStandby({ type: 'other', standbyH: 8 }).dutyCountMin / 60).toFixed(1));
+  // Sem preStandby → serviço == só o voo (regressão).
+  eq('Fase 2: sem standby anterior → serviço = voo', eNoSb.servico, 8);
+
+  // (11) Limite COMBINADO do standby (CS FTL.1.225): standby + PSV > 16h (aeroporto) → stdbyOver.
+  const baseC = computeFdp({ state: 'acc', reportMin: M('06:00'), endMin: M('18:00'), sectors: 1 });
+  const sbC = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: baseC.maxFdpMin });
+  const dCombined = computeDuty({ state: 'acc', report: '06:00', end: '18:00', sectors: 1, preStandby: { type: 'airport', standbyH: 6 } });
+  eq('Standby combinado: = calculador golden', dCombined.fdp.stdbyOver, sbC.combinedOver);
+  eq('Standby combinado: aeroporto 6h + PSV > 16h → true', dCombined.fdp.stdbyOver, true);
+  eq('Standby combinado: kind', dCombined.fdp.stdbyOverKind, 'combined');
+  // Standby curto (2h) → dentro do combinado → sem flag.
+  eq('Standby combinado: 2h dentro do limite → false', computeDuty({ state: 'acc', report: '06:00', end: '14:00', sectors: 1, preStandby: { type: 'airport', standbyH: 2 } }).fdp.stdbyOver, false);
 }
 
 // ── Resumo ──

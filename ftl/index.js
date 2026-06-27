@@ -73,13 +73,17 @@ export const computeDuty = ({
     if (aug.overSectors) { notAllowed = true; notAllowedReason = 'inflightSectors'; }
     else if (augMax != null) { maxMin = augMax; modifier = 'augmented'; }
   }
-  // Standby anterior (225): reduz o teto resultante (>4h aeroporto / >6h casa). Isto é 205 — a
-  // contribuição do standby para os acumulados de 28 d (210) é a Fase 2.
-  let stdbyReductionMin = 0;
+  // Standby anterior (225): reduz o teto (>4h aeroporto / >6h casa) e tem LIMITES COMBINADOS
+  // (CS FTL.1.225): standby + PSV ≤ 16h (aeroporto) · ≤ 18h acordado (casa) · standby ≤ 16h.
+  // A contribuição para os acumulados de 28 d (210) é tratada no `dutyToFtlDay` (Fase 2).
+  let stdbyReductionMin = 0, stdbyOver = false, stdbyOverKind = null;
   if (preStandby && preStandby.standbyH > 0 && maxMin != null) {
     const sb = computeStandby({ type: preStandby.type, standbyH: preStandby.standbyH, maxFdpMin: maxMin, startMin: preStandby.startMin != null ? preStandby.startMin : null });
     stdbyReductionMin = sb.reductionMin;
     maxMin = sb.reducedMaxFdpMin;
+    if (sb.combinedOver) { stdbyOver = true; stdbyOverKind = 'combined'; }       // standby + PSV > 16h (aeroporto)
+    else if (sb.awakeOver) { stdbyOver = true; stdbyOverKind = 'awake'; }        // standby + PSV > 18h acordado (casa)
+    else if (sb.overMaxStandby) { stdbyOver = true; stdbyOverKind = 'maxStandby'; } // standby > 16h
   }
 
   // PSV efetivo: a base com o teto sobreposto (recalcula over/excess). Sem modificadores → === base.
@@ -94,7 +98,7 @@ export const computeDuty = ({
       over, excessMin, excessStr: over ? minToHhmm(excessMin) : null,
       notAllowed, notAllowedReason,
     } : {}),
-    modifier, stdbyReductionMin,
+    modifier, stdbyReductionMin, stdbyOver, stdbyOverKind,
   };
 
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
@@ -136,13 +140,20 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
   if (d.fdp.actualFdpMin == null) return null;
   const toH = (m) => +(m / 60).toFixed(1);
   const fullServicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
-  // Standby de CASA (other standby): só 25% do tempo conta p/ os limites CUMULATIVOS (60/110/190h)
-  // — CS FTL.1.225(b)(3) + GM1(c) (conta p/ ORO.FTL.210, NÃO p/ repouso 235). Standby de aeroporto
-  // e os outros tipos contam 100%. As REDUÇÕES do PSV (standby >4h/6h) exigem standby+PSV no mesmo
-  // serviço (o modelo 1-duty/dia não os liga) → vivem no StandbyCalc (calculadora), não aqui.
-  const servicoH = duty.kind === 'standby_home'
-    ? toH(computeStandby({ type: 'other', standbyH: (d.dutyPeriodMin || 0) / 60 }).dutyCountMin)
-    : fullServicoH;
+  // Serviço para os acumulados de 28 d (ORO.FTL.210), em MINUTOS (soma-se uma vez → sem dupla-arredondamento):
+  //  • DIA de standby próprio (kind standby_home): só 25% conta — CS FTL.1.225(b)(3) + GM1(c)
+  //    (conta p/ 210, NÃO p/ repouso 235). Os outros tipos/voo contam 100%.
+  //  • Standby ANTERIOR a este voo (`special.preStandby`, Fase 2 — "Buraco B"): a sua contribuição
+  //    soma-se ao serviço — aeroporto 100%, casa 25% (CS FTL.1.225). A REDUÇÃO do PSV por esse mesmo
+  //    standby já é aplicada no motor (Fase 1, `computeDuty`); aqui é só o lado dos cumulativos (210).
+  const baseServicoMin = duty.kind === 'standby_home'
+    ? computeStandby({ type: 'other', standbyH: (d.dutyPeriodMin || 0) / 60 }).dutyCountMin
+    : (d.dutyPeriodMin || 0);
+  const sp225 = duty.special && duty.special.preStandby;
+  const sbExtraMin = (sp225 && sp225.standbyH > 0)
+    ? computeStandby({ type: sp225.type, standbyH: sp225.standbyH }).dutyCountMin
+    : 0;
+  const servicoH = toH(baseServicoMin + sbExtraMin);
   const vooH = duty.flight_minutes ? toH(duty.flight_minutes) : 0;
   const place = inBase ? 'base' : 'away';
   const repMin = parseHhmm(duty.report_time), endMin = parseHhmm(duty.block_on);

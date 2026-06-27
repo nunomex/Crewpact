@@ -33,6 +33,7 @@ export function legFromHistory(flightNo, duties = {}) {
   if (!best) return null;
   const lg = best.leg;
   return { flightNo: fno, dep: lg.dep || null, arr: lg.arr || null, off: lg.off || null, on: lg.on || null,
+    offZ: lg.offZ || null, onZ: lg.onZ || null,   // preserva a Zulu autoritativa já guardada
     flightMin: legBlockMin(lg), aircraft: lg.aircraft || null, source: 'history' };
 }
 
@@ -44,6 +45,7 @@ function apiToLeg(fno, data) {
   // API (easyJet Europe: ICAO EJU = IATA EC → "EJU7625" apareceria "EC7625"; é o MESMO voo).
   return { flightNo: fno || data.flightIcao || data.flightIata, dep: dep.iata || null, arr: arr.iata || null,
     off: hm(dep.scheduled), on: hm(arr.scheduled),
+    offZ: hm(dep.scheduledUtc) || null, onZ: hm(arr.scheduledUtc) || null,   // Zulu AUTORITATIVA da API (dep/arr_time_utc)
     flightMin: data.duration != null ? data.duration : null,
     aircraft: (data.aircraft && data.aircraft.type) || null, source: 'api' };
 }

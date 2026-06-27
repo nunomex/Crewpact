@@ -101,6 +101,10 @@ function mapFlight(ev, codes) {
   const ac = text.match(RE_AC);
   const reg = text.match(RE_REG);
   const base = (text.match(RE_BASE) || [])[1] || null;
+  // Zulu/UTC AUTORITATIVA: a eCrew escreve-a explícita nas notas "(0830Z-1015Z)". É o padrão-ouro
+  // (a companhia declarou-a). Sem ela, deriva-se do INSTANTE ABSOLUTO do evento (hhmmZ) — também
+  // correto. Nunca depende do fuso do dispositivo.
+  const bz = text.match(RE_BLOCKZ);
 
   // Horas: preferir as do título; caso contrário usar início/fim do evento.
   const depTime = times ? `${pad(+times[1])}:${times[2]}` : hhmm(start);
@@ -120,9 +124,9 @@ function mapFlight(ev, codes) {
     reportDate,
     depTime,
     arrTime,
-    // Variantes em UTC/Zulu (derivadas do instante absoluto), para mostrar ambas.
-    depTimeZ: hhmmZ(start),
-    arrTimeZ: hhmmZ(finish),
+    // Zulu/UTC AUTORITATIVA: explícita das notas "(....Z)" se houver; senão do instante absoluto.
+    depTimeZ: bz ? `${bz[1]}:${bz[2]}` : hhmmZ(start),
+    arrTimeZ: bz ? `${bz[3]}:${bz[4]}` : hhmmZ(finish),
     reportZ: reportDate ? hhmmZ(reportDate) : null,
     depAirport: route ? route[1] : '—',
     arrAirport: route ? route[2] : '—',

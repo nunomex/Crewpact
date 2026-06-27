@@ -22,6 +22,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme, toZulu } from '../data/appContext';
+import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import { buildTodayItems } from './hojeItems';
 import { fetchFlightStatus, depDelayMin, hasDeviation } from '../data/flightStatus';
@@ -360,7 +361,7 @@ export default function HomeScreen({ navigation }) {
   }
   // Dia do voo para o badge circular (número + dia da semana).
   const ndDayNum = flight ? new Date(flight.dateISO + 'T00:00:00').getDate() : null;
-  const ndReportZ = flight ? toZulu(flight.dateISO, flight.report) : null;
+  const ndReportZ = flight ? (airportZulu(flight.dateISO, flight.report, flight.depAirport) || toZulu(flight.dateISO, flight.report)) : null;
   const ndDayWd = flight ? (() => {
     const w = new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
     return w.charAt(0).toUpperCase() + w.slice(1);
@@ -390,12 +391,25 @@ export default function HomeScreen({ navigation }) {
     return { idx, total: sectorLegs.length, leg: sectorLegs[idx] };
   })();
   const secBlock = activeSector ? legBlockStr(activeSector.leg) : null;
+  // Partida → chegada do card destaque (setor ativo, ou as horas do duty quando não há setores),
+  // com Zulu pelo helper único (autoritativa → fuso do aeroporto → dispositivo). `flight` pode ser null.
+  const ndDep = !flight ? null : (activeSector ? activeSector.leg.off : flight.depTime);
+  const ndArr = !flight ? null : (activeSector ? activeSector.leg.on : flight.arrTime);
+  const ndDepZ = !flight ? null : (activeSector ? legZulu(flight.dateISO, activeSector.leg, 'off')
+    : (airportZulu(flight.dateISO, flight.depTime, flight.depAirport) || toZulu(flight.dateISO, flight.depTime)));
+  const ndArrZ = !flight ? null : (activeSector ? legZulu(flight.dateISO, activeSector.leg, 'on')
+    : (airportZulu(flight.dateISO, flight.arrTime, flight.arrAirport) || toZulu(flight.dateISO, flight.arrTime)));
+  // Zulu ESTIMADA (não autoritativa) → mostra a nota da suposição (manual). Setor do calendário
+  // tem offZ/onZ → não estimada.
+  const ndZuluEst = !!(activeSector && activeSector.leg && !activeSector.leg.offZ && !activeSector.leg.onZ);
   const fatBg = (b) => b === 'high' ? C.redSoft : b === 'elevated' ? C.warnSoft : b === 'low' ? C.greenSoft : C.soft;
 
   // Skeleton só no 1º carregamento real (a sincronizar, ainda sem resultado e com
   // acesso ao calendário) — não no estado "sem voo" nem no pedido de permissão.
   const loadingFlight = !flight && syncing && !syncDone && calOk;
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
+  // Mostra a sub-linha de horas: no setor ativo sempre; sem setores só se partida≠chegada (evita "05:40 → 05:40").
+  const ndShowTimes = !isNonFlight && (activeSector ? !!(ndDep || ndArr) : !!(ndDep && ndArr && ndDep !== ndArr));
   // Dia relativo p/ a sub-linha "quando" (Hoje/Amanhã; senão usa só a contagem).
   const ndWhen = flight ? (() => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -411,8 +425,7 @@ export default function HomeScreen({ navigation }) {
     (flight.arrTime && flight.arrTime !== flight.report) ? { l: l('Fim', 'End'), v: flight.arrTime } : null,
     ndPsvMax ? { l: l('PSV s/ chamado', 'FDP if called'), v: ndPsvMax } : null,
   ] : activeSector ? [
-    { l: l('Início', 'Start'), v: activeSector.leg.off || '—', sub: l('setor', 'sector') },
-    { l: l('Fim', 'End'), v: activeSector.leg.on || '—', sub: l('setor', 'sector') },
+    // Início/Fim vivem na sub-linha (partida → chegada + Zulu); a grelha só acrescenta Block/Per-diem/PSV.
     secBlock ? { l: 'Block', v: secBlock, sub: l('setor', 'sector') } : null,
     dayPerDiem != null ? { l: 'Per-diem', v: `+${fmtEur0(dayPerDiem)}`, sub: l('dia', 'day'), green: true } : null,
     psvCell,
@@ -445,6 +458,11 @@ export default function HomeScreen({ navigation }) {
               ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
               : (activeSector ? `${activeSector.leg.dep || '?'} → ${activeSector.leg.arr || '?'}`
                 : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`))}</Text>
+            {/* Partida → chegada (horas) + Zulu — só voo, à frente da rota. */}
+            {ndShowTimes ? (
+              <Text style={s.svcTimes} numberOfLines={1}>{ndDep || '—'} → {ndArr || '—'}
+                {(ndDepZ || ndArrZ) ? <Text style={s.svcTimesZ}>  {ndDepZ || '—'}–{ndArrZ || '—'}Z</Text> : null}</Text>
+            ) : null}
             {/* Sub-linha "quando": dia relativo (sub) + contagem */}
             {countdownStr ? (
               <Text style={s.svcCd} numberOfLines={1}>{ndWhen ? <Text style={s.svcCdDay}>{ndWhen} · </Text> : null}{countdownStr}</Text>
@@ -459,6 +477,7 @@ export default function HomeScreen({ navigation }) {
             <View key={i} style={s.svcCell}>
               <Text style={s.svcCellL} numberOfLines={1}>{c.l}</Text>
               <Text style={[s.svcCellV, c.red ? { color: C.redText } : c.green ? { color: C.greenText } : null]} numberOfLines={1}>{c.v}{c.sub ? <Text style={s.svcCellSub}> {c.sub}</Text> : null}</Text>
+              {c.zsub ? <Text style={s.svcCellZ} numberOfLines={1}>{c.zsub}Z</Text> : null}
             </View>
           ))}
           {ndFat ? (
@@ -471,6 +490,8 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : null}
         </View>
+        {/* Nota honesta: a Zulu manual assume hora LOCAL do aeroporto (não há instante absoluto). */}
+        {ndZuluEst ? <Text style={s.svcZuluNote}>{l('Zulu estimada da hora local do aeroporto.', 'Zulu estimated from airport local time.')}</Text> : null}
         {/* Próximas atividades — FUNDIDAS no card Serviços, por baixo do próximo serviço */}
         <UpcomingDutiesCard duties={duties} lang={lang} bare limit={4} featuredISO={flight.dateISO} activeIdx={activeSector ? activeSector.idx : null} />
       </View>
@@ -664,6 +685,8 @@ const makeStyles = (C) => StyleSheet.create({
   svcCdDay: { color: C.sub, fontFamily: FONT.bold },
   // Rota grande — numberOfLines=1 + adjustsFontSizeToFit ⇒ encolhe p/ caber ao lado do badge, nunca quebra
   svcMain: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 9, lineHeight: 30 },
+  svcTimes: { fontSize: 13, fontFamily: FONT.bold, color: C.text, marginTop: 5, fontVariant: ['tabular-nums'] },
+  svcTimesZ: { fontFamily: FONT.bold, color: C.brand },
   svcNight: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 5 },
   // risca full-bleed + grelha 3 colunas (Report·Zulu·PSV / Setores·Per-diem·Fadiga)
   svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },
@@ -672,6 +695,8 @@ const makeStyles = (C) => StyleSheet.create({
   svcCellL: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub, marginBottom: 4 },
   svcCellV: { fontSize: 16, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
   svcCellSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub },
+  svcCellZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 2, letterSpacing: 0.2 },
+  svcZuluNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
   svcFat: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3, marginTop: 1 },
   svcFatDot: { width: 7, height: 7, borderRadius: 99 },
   svcFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
