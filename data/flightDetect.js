@@ -7,6 +7,9 @@
 import { supabase } from './supabase';
 
 export const normFlightNo = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
+// Nº de voo COMPLETO = designador (sigla) + número. Ex. EJU7625, U27625, TP1923, FR1234.
+// Só dígitos ("7625"), só letras ("EJU") ou vazio → incompleto (falta o número do voo) → vermelho.
+export const isCompleteFlightNo = (s) => /^[A-Z][A-Z0-9]{1,2}\d{1,5}$/.test(normFlightNo(s));
 const hm = (dt) => { const m = /\b(\d{2}):(\d{2})\b/.exec(String(dt || '')); return m ? `${m[1]}:${m[2]}` : null; };
 const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 // Tempo de bloco de um leg (on − off), com volta-a-meia-noite. null se faltar.

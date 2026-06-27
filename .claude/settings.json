@@ -159,7 +159,8 @@
       "Bash(node scripts/flightdetect.test.js)",
       "Bash(node \"C:/Users/funsn/AppData/Local/Temp/claude/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/scratchpad/edge-fn-batch-test.js\")",
       "PowerShell(npm test 2>&1)",
-      "Bash(Select-Object -Last 3)"
+      "Bash(Select-Object -Last 3)",
+      "PowerShell(npm run test:flightdetect 2>&1)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

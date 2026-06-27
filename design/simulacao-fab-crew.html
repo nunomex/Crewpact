@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulação — FAB speed-dial + resultado consciente do tripulante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1B1B; --canvas:#FFFFFF; --card:#FFFFFF;
+    --soft:#F2F2F0; --soft2:#FAFAF9; --line:#ECECEA; --linestrong:#D4D4D1;
+    --red:#F5402C; --redsoft:#FDE9E4; --redtext:#C9331F;
+    --green:#1F9E6E; --greensoft:#E2F4EC; --greentext:#2A7A5C;
+    --warn:#E8932B; --warnsoft:#FBEAD2; --warntext:#9A6B1E;
+    --sub:#6B6B66; --brand:#1F4E79; --info:#1F4E79; --infosoft:#E7EEF6;
+    --inter:"Inter",sans-serif; --disp:"Space Grotesk",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--inter);background:#E7E8EA;color:#23262B;padding:50px 24px 90px}
+  body::before{content:"";position:fixed;inset:0;z-index:0;background:radial-gradient(1300px 760px at 50% -6%,#fff,transparent 60%)}
+  .intro{position:relative;z-index:1;text-align:center;max-width:900px;margin:0 auto 8px}
+  .intro .k{font-weight:800;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+  .intro h1{font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink)}
+  .intro p{margin:12px auto 0;font-size:14px;line-height:1.6;color:#5C616A}
+  .intro b{color:var(--ink);font-weight:700}
+
+  .row{position:relative;z-index:1;display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:40px auto 0}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0}
+  figcaption{text-align:center;max-width:330px}
+  figcaption .tag{display:inline-block;font-weight:800;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:99px;padding:4px 10px;margin-bottom:7px}
+  figcaption p{font-size:12.5px;line-height:1.5;color:#646A72}
+  figcaption b{color:var(--ink)}
+
+  .phone{width:340px;height:752px;background:#fff;border-radius:46px;padding:10px;position:relative;flex:0 0 auto;
+    box-shadow:0 40px 80px -34px rgba(20,22,26,.5),0 6px 16px -10px rgba(20,22,26,.3)}
+  .screen{width:100%;height:100%;background:var(--canvas);border-radius:37px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:108px;height:27px;background:#0A0A0A;border-radius:14px;z-index:60}
+  .stat{position:absolute;top:16px;left:27px;right:25px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink);z-index:55}
+  .body{flex:1;padding:50px 18px 0;overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .eyebrow{font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px}
+  .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--brand)}
+  .h1{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:-.6px;color:var(--ink);margin-top:3px}
+  .x{width:34px;height:34px;border-radius:99px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto;margin-top:3px}
+
+  /* crew chip */
+  .crew{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:7px 13px;font-size:12px;font-weight:700;margin-bottom:13px}
+  .crew.pilot{background:var(--infosoft);color:var(--brand)}
+  .crew.cabin{background:#F3ECF7;color:#6D3A8E}
+  .crew svg{width:15px;height:15px}
+  .sumline{font-size:11.5px;color:var(--sub);font-weight:600;margin:-6px 0 13px}
+
+  .verdict{border-radius:18px;padding:15px;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .verdict.ok{background:var(--greensoft);border:1px solid #BFE6D5}
+  .vIc{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:#fff;background:var(--green)}
+  .vTit{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:-.3px;color:var(--greentext)}
+  .vSub{font-size:11px;font-weight:600;color:var(--sub);margin-top:2px}
+
+  .qa{display:flex;flex-direction:column;gap:9px;overflow:hidden}
+  .qcard{border:1px solid var(--line);border-radius:14px;padding:11px 13px;background:#fff}
+  .qcard.crewdep{border-color:#D9C7E6;background:#FCFAFE}
+  .qrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .qIc{width:30px;height:30px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--sub);flex:0 0 auto}
+  .qcard.crewdep .qIc{background:#F1E8F8;color:#6D3A8E}
+  .qQ{flex:1;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .qA{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--ink);text-align:right;white-space:nowrap}
+  .qA.green{color:var(--greentext)} .qA.warn{color:var(--warntext)} .qA.purple{color:#6D3A8E}
+  .qadv{font-size:11px;color:var(--sub);margin-top:6px;font-weight:500;line-height:1.4}
+  .tagdep{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#6D3A8E;background:#F1E8F8;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+  .qbar{height:5px;border-radius:99px;background:var(--soft);margin-top:9px;overflow:hidden}
+  .qbar > i{display:block;height:100%;border-radius:99px}
+
+  /* FAB speed-dial */
+  .scrim{position:absolute;inset:0;background:rgba(20,22,26,.34);z-index:40;border-radius:37px}
+  .sd{position:absolute;right:20px;bottom:96px;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:14px}
+  .sditem{display:flex;align-items:center;gap:11px}
+  .sdlab{background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--ink);box-shadow:0 6px 16px -8px rgba(0,0,0,.35)}
+  .sdbtn{width:50px;height:50px;border-radius:99px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px -8px rgba(0,0,0,.45)}
+  .sdbtn.sim{background:var(--brand);color:#fff}
+  .sdbtn.duty{background:var(--ink);color:#fff}
+  .plus{position:absolute;right:24px;bottom:30px;z-index:50;width:58px;height:58px;border-radius:99px;background:#fff;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:0 14px 26px -10px rgba(0,0,0,.4)}
+  .dockbar{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;z-index:45;display:inline-flex;align-items:center;gap:6px;background:var(--brand);border-radius:99px;padding:8px 10px;box-shadow:0 16px 28px -14px rgba(31,78,121,.7)}
+  .dt{width:38px;height:38px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6)}
+  .dt.on{background:rgba(255,255,255,.16);color:#fff}
+  .fakehome{padding:6px 4px 0}
+  .fhk{font-weight:800;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .fhk i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .fhcard{border:1px solid var(--line);border-radius:16px;background:#fff;padding:14px;margin-bottom:11px}
+  .fhrow{height:13px;border-radius:99px;background:var(--soft);margin:7px 0}
+  .fhrow.s{width:60%} .fhrow.m{width:85%}
+
+  .foot2{text-align:center;color:#8A9099;font-size:12px;padding:34px;font-weight:600}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="intro">
+    <div class="k">CrewPact · Simulação v2</div>
+    <h1>FAB speed-dial + resultado por tripulante</h1>
+    <p>O <b>＋</b> abre os mini-FABs (<b>Simulação acima de Serviço</b>). E as respostas <b>dependem de quem és</b>: a legalidade/PSV/fadiga/limites/descanso é FTL (igual), mas o <b>per-diem / pernoita</b> muda com <b>tipo + categoria + contrato</b> (piloto SPAC ≠ cabine SNPVAC). Abaixo: o mesmo voo simulado para <b>Piloto CPT</b> e <b>Cabine CM</b>.</p>
+  </div>
+
+  <div class="row">
+    <!-- 1 · FAB speed-dial -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="fakehome">
+            <div class="fhk"><i></i>Início</div>
+            <div class="fhcard"><div class="fhrow m"></div><div class="fhrow s"></div></div>
+            <div class="fhcard"><div class="fhrow m"></div><div class="fhrow s"></div></div>
+          </div>
+          <!-- estado EXPANDIDO -->
+          <div class="scrim"></div>
+          <div class="sd">
+            <div class="sditem"><span class="sdlab">Simulação</span><span class="sdbtn sim"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5L5 18a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V3"/></svg></span></div>
+            <div class="sditem"><span class="sdlab">Serviço</span><span class="sdbtn duty"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></div>
+          </div>
+          <div class="dockbar">
+            <span class="dt on"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg></span>
+            <span class="dt"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></span>
+            <span class="dt"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+            <span class="dt"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10Z"/></svg></span>
+            <span class="dt"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>
+          </div>
+          <div class="plus"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">1 · FAB speed-dial</span><p>Tocas no <b>＋</b> → roda para <b>×</b> e abrem os mini-FABs por cima, com etiqueta. <b>Simulação</b> em cima, <b>Serviço</b> por baixo. Fundo escurece; toca fora fecha.</p></figcaption>
+    </figure>
+
+    <!-- 2 · Resultado · Piloto -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="head">
+            <div><div class="eyebrow"><i></i>Simulação · resultado</div><div class="h1">Resultado</div></div>
+            <div class="x"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+          </div>
+          <div class="crew pilot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" /><circle cx="12" cy="12" r="10"/></svg>Piloto · CPT · 12/12</div>
+          <div class="sumline">Voo · LIS-OPO-LIS · 2 setores · apres. 05:30</div>
+
+          <div class="verdict ok">
+            <div class="vIc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div><div class="vTit">Estás legal</div><div class="vSub">PSV dentro do máximo · não excede os limites de 28 d</div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="qQ">Qual o teu PSV?</div><div class="qA green">3:45 / 13:00</div></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0 0 14 7 7 0 0 1 0-14Z"/></svg></div><div class="qQ">Fadiga?</div><div class="qA warn">Moderada · 58</div></div><div class="qbar"><i style="width:58%;background:var(--warn)"></i></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></div><div class="qQ">Limites a 28 dias?</div></div><div class="qadv" style="margin-top:8px">Serviço <b style="color:var(--ink)">141:30/190 h</b> · Voo <b style="color:var(--ink)">78:10/100 h</b></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div><div class="qQ">Descanso a seguir?</div><div class="qA">12:00</div></div></div>
+            <div class="qcard crewdep"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="qQ">Quanto recebes?<span class="tagdep">piloto CPT</span></div><div class="qA purple">+96,00 €</div></div><div class="qadv">Per-diem da rota à tarifa de <b style="color:#6D3A8E">Comandante (SPAC)</b>.</div></div>
+            <div class="qcard crewdep"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/></svg></div><div class="qQ">Validades em dia?<span class="tagdep">piloto</span></div><div class="qA warn">Medical · 23 d</div></div><div class="qadv">Documentos de <b style="color:#6D3A8E">piloto</b> (licença · medical Classe 1 · proficiência).</div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">2 · Resultado · Piloto (CPT)</span><p>FTL igual; o <b>per-diem</b> (cartão roxo, marcado <b>"piloto CPT"</b>) usa a tarifa do <b>SPAC</b> para a categoria/contrato.</p></figcaption>
+    </figure>
+
+    <!-- 3 · Resultado · Cabine -->
+    <figure>
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="stat"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="body">
+          <div class="head">
+            <div><div class="eyebrow"><i></i>Simulação · resultado</div><div class="h1">Resultado</div></div>
+            <div class="x"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+          </div>
+          <div class="crew cabin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>Cabine · CM · 12/12</div>
+          <div class="sumline">Voo · LIS-OPO-LIS · 2 setores · apres. 05:30</div>
+
+          <div class="verdict ok">
+            <div class="vIc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div><div class="vTit">Estás legal</div><div class="vSub">PSV dentro do máximo · não excede os limites de 28 d</div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="qQ">Qual o teu PSV?</div><div class="qA green">3:45 / 13:00</div></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0 0 14 7 7 0 0 1 0-14Z"/></svg></div><div class="qQ">Fadiga?</div><div class="qA warn">Moderada · 58</div></div><div class="qbar"><i style="width:58%;background:var(--warn)"></i></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></div><div class="qQ">Limites a 28 dias?</div></div><div class="qadv" style="margin-top:8px">Serviço <b style="color:var(--ink)">128:00/190 h</b> · Voo <b style="color:var(--ink)">71:40/100 h</b></div></div>
+            <div class="qcard"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></div><div class="qQ">Descanso a seguir?</div><div class="qA">12:00</div></div></div>
+            <div class="qcard crewdep"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="qQ">Quanto recebes?<span class="tagdep">cabine CM</span></div><div class="qA purple">+44,00 €</div></div><div class="qadv">Per-diem da rota à tarifa de <b style="color:#6D3A8E">Chefe de Cabine (SNPVAC)</b>.</div></div>
+            <div class="qcard crewdep"><div class="qrow"><div class="qIc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/></svg></div><div class="qQ">Validades em dia?<span class="tagdep">cabine</span></div><div class="qA green">Tudo válido</div></div><div class="qadv">Documentos de <b style="color:#6D3A8E">cabine</b> (CCA · medical · SEP).</div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="tag">3 · Resultado · Cabine (CM)</span><p>Mesmo voo, mesma legalidade — mas o <b>per-diem muda</b> (+44 € vs +96 €) e os limites refletem o histórico <b>desse</b> tripulante.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="foot2">CrewPact · Simulação · ＋ speed-dial (Simulação ▸ Serviço) · resultado consciente do tripulante</div>
+</body>
+</html>

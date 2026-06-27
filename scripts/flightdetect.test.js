@@ -25,7 +25,7 @@ const supaPath = path.resolve('data/supabase.js');
 require.cache[supaPath] = { id: supaPath, filename: supaPath, loaded: true,
   exports: { supabase: { functions: { invoke: async () => ({ data: null, error: 'stub' }) } } } };
 
-const { aggregateLegs, legFromHistory, normFlightNo } = require(path.resolve('data/flightDetect.js'));
+const { aggregateLegs, legFromHistory, normFlightNo, isCompleteFlightNo } = require(path.resolve('data/flightDetect.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => {
@@ -67,6 +67,28 @@ eq('histórico: flightMin (on-off)', h.flightMin, 135);
 eq('histórico: source', h.source, 'history');
 eq('histórico: sem match → null', legFromHistory('XX9999', duties), null);
 eq('normFlightNo limpa', normFlightNo(' eju 7625 '), 'EJU7625');
+
+// ── isCompleteFlightNo — nº de voo COMPLETO (sigla + número) vs incompleto (→ vermelho no form) ──
+ok('completo: EJU7625', isCompleteFlightNo('EJU7625'));
+ok('completo: U27625 (IATA)', isCompleteFlightNo('U27625'));
+ok('completo: TP1923', isCompleteFlightNo('TP1923'));
+ok('completo: FR1234', isCompleteFlightNo('FR1234'));
+ok('completo: tolera espaços/minúsculas', isCompleteFlightNo(' eju 7625 '));
+ok('incompleto: só dígitos "7625" → vermelho', !isCompleteFlightNo('7625'));
+ok('incompleto: só sigla "EJU" → vermelho', !isCompleteFlightNo('EJU'));
+ok('incompleto: vazio → vermelho', !isCompleteFlightNo(''));
+ok('incompleto: null → vermelho', !isCompleteFlightNo(null));
+
+// ── Setores À MÃO (rota "2 estações + ✓") → aggregateLegs encadeia a rota; sem horas → flightMin null ──
+const manual = [
+  { flightNo: 'EJU7625', dep: 'LIS', arr: 'OPO', source: 'manual' },
+  { flightNo: 'EJU7626', dep: 'OPO', arr: 'LIS', source: 'manual' },
+];
+const aggManual = aggregateLegs(manual);
+eq('manual: rota encadeada', aggManual.route, 'LIS-OPO-LIS');
+eq('manual: setores', aggManual.sectors, 2);
+eq('manual: sem horas → flightMin null', aggManual.flightMin, null);
+eq('manual: 1.º setor sozinho → rota LIS-OPO', aggregateLegs([manual[0]]).route, 'LIS-OPO');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  flightDetect: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

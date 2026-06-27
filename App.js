@@ -52,6 +52,8 @@ import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
 import Toast              from './components/Toast';
+import DutyFormSheet      from './components/DutyFormSheet';
+import SimulationResult   from './components/SimulationResult';
 
 // Segura o splash nativo no arranque e esconde-o assim que a app está pronta
 // (sem animação — o splash estático nativo cobre a janela de auth + hidratação).
@@ -113,7 +115,7 @@ function FtlStack() {
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
-  const { lang } = useContext(AppContext);
+  const { lang, openSimulation } = useContext(AppContext);
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
@@ -140,10 +142,12 @@ function FloatingTabBar({ state, navigation }) {
   };
 
   // Ações do speed-dial, na ordem baixo→cima a partir do FAB (Pesquisa mais perto).
+  // Simulação fica ACIMA do Serviço (decisão do user).
   const ACTIONS = [
-    { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'), run: () => setSearchOpen(true) },
-    { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),    run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
-    { key: 'import', icon: 'download-outline', label: l('Importar', 'Import'), run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
+    { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'),     run: () => setSearchOpen(true) },
+    { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
+    { key: 'sim',    icon: 'flask-outline',   label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
+    { key: 'import', icon: 'download-outline', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
   ];
 
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
@@ -231,6 +235,21 @@ function MainTabs() {
       <Tab.Screen name="FTL"    component={FtlStack} />
       <Tab.Screen name="Perfil" component={PerfilStack} />
     </Tab.Navigator>
+  );
+}
+
+// Fluxo de SIMULAÇÃO (global, fora das abas): form em modo `simulate` (não grava) → resultado
+// (perguntas/respostas). O form fica montado por baixo do resultado → "Editar" volta com os
+// dados intactos. Fechar/concluir desmonta tudo (reinicia para a próxima simulação).
+function SimulationFlow({ visible, onClose }) {
+  const [simDuty, setSimDuty] = useState(null);
+  if (!visible) return null;
+  const close = () => { setSimDuty(null); onClose(); };
+  return (
+    <>
+      <DutyFormSheet visible simulate onSimulate={setSimDuty} onClose={close} />
+      <SimulationResult visible={!!simDuty} duty={simDuty} onEdit={() => setSimDuty(null)} onClose={close} />
+    </>
   );
 }
 
@@ -343,6 +362,7 @@ export default function App() {
 
   // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
   const [toast, setToast] = useState(null);
+  const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação (speed-dial) aberto?
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
   const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
 
@@ -823,6 +843,7 @@ export default function App() {
     duties, saveDuty, removeDuty,
     notify,
     rosterChanges, checkRosterChanges,
+    openSimulation: () => setSimulateOpen(true),
     calendarId, setCalendarId,
     calendarName, setCalendarName,
     onboarded, setOnboarded,
@@ -879,6 +900,7 @@ export default function App() {
           {renderScreen()}
         </NavigationContainer>
         <OfflineBanner />
+        {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
       </AppContext.Provider>
     </SafeAreaProvider>

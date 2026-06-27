@@ -8,7 +8,7 @@ import PrimaryButton from './PrimaryButton';
 import Eyebrow from './Eyebrow';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
-import { detectLeg, aggregateLegs, normFlightNo } from '../data/flightDetect';
+import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { routeDistancesNM } from '../data/perdiem';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
@@ -22,9 +22,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // ── helpers HH:MM ──
 const maskClock = (v) => { const d = (v || '').replace(/[^0-9]/g, '').slice(0, 4); return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`; };
 const isClock = (s) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(s || '');
-// Nº de voo COMPLETO = designador (sigla) + número. Ex. EJU7625, U27625, TP1923, FR1234.
-// Só dígitos ("7625"), só letras ("EJU") ou vazio → incompleto (falta o número do voo).
-const isCompleteFlightNo = (s) => /^[A-Z][A-Z0-9]{1,2}\d{1,5}$/.test(String(s || ''));
 const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -78,7 +75,7 @@ function ClockField({ label, value, onChange, C, s, flex, error, errText }) {
 // Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
-export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
+export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate }) {
   const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -287,6 +284,12 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       signOff: form.signOff || null,   // fim de serviço REAL (Duty hours / 210 / repouso)
       legs,
     };
+    if (simulate) {
+      // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
+      success();
+      onSimulate && onSimulate({ duty_date: form.date, ...fields });
+      return;
+    }
     if (onCandidate) {
       // Correção no import: devolve o candidato corrigido — NÃO grava no `duties` (só o
       // "Confirmar import" grava). Volta à página de import, que reavalia estado/per-diem.
@@ -312,7 +315,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}>
               <View style={s.eyebrowDot} />
-              <Eyebrow>{onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
+              <Eyebrow>{simulate ? l('Simulação', 'Simulation') : onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
             </View>
             <Text style={s.h1}>Duty</Text>
           </View>
@@ -534,7 +537,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           {attemptedSave && !canSave
             ? <Text style={[s.footHint, { color: C.red }]}>{l('Faltam campos — preenche os assinalados a vermelho.', 'Missing fields — fill the ones marked red.')}</Text>
             : (isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null)}
-          <PrimaryButton onPress={onSave} label={t('common.save', lang)} />
+          <PrimaryButton onPress={onSave} icon={simulate ? 'play' : undefined} label={simulate ? l('Simular', 'Simulate') : t('common.save', lang)} />
         </View>
       </View>
     </Modal>
