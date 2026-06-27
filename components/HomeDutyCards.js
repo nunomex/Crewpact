@@ -26,23 +26,39 @@ const upcoming = (duties, fromISO) => Object.keys(duties || {})
   .map((iso) => ({ iso, ...duties[iso] }));
 
 // `bare` = sem a moldura de card (para EMBEBER dentro do card Serviços, por baixo do
-// próximo serviço). `afterISO` = mostra só os dias DEPOIS deste (evita repetir o serviço
-// que já está em destaque no topo). Em modo bare sem nada a seguir → não renderiza secção.
-export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, afterISO = null }) {
+// serviço em destaque). VOO → expande em SETORES (cada setor = um voo: `dep→arr · off · Set i/n`);
+// não-voo → uma linha. No serviço em DESTAQUE (`featuredISO`) salta os setores já passados/ativo
+// (índice ≤ `activeIdx`); sem setores → salta o duty inteiro (já está no card de cima).
+export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, featuredISO = null, activeIdx = null }) {
   const C = useTheme(); const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
-  let list = upcoming(duties, isoOf(new Date()));
-  if (afterISO) list = list.filter((d) => d.iso > afterISO);
-  list = list.slice(0, limit);
+  const days = upcoming(duties, isoOf(new Date()));
+  const out = [];
+  for (const d of days) {
+    const isF = (!d.kind || d.kind === 'flight');
+    const legs = (isF && Array.isArray(d.legs)) ? d.legs.filter((lg) => lg && (lg.dep || lg.arr)) : [];
+    if (legs.length) {
+      legs.forEach((lg, i) => {
+        if (d.iso === featuredISO && activeIdx != null && i <= activeIdx) return;   // já passou / é o ativo
+        out.push({ key: `${d.iso}-${i}`, iso: d.iso, type: 'sector', dep: lg.dep, arr: lg.arr, off: lg.off, sector: i + 1, total: legs.length, nightStop: !!d.nightStop && i === legs.length - 1 });
+      });
+    } else {
+      if (d.iso === featuredISO) continue;   // voo antigo / não-voo em destaque → já está no card
+      out.push({ key: d.iso, iso: d.iso, type: 'duty', kind: d.kind, route: d.route, report_time: d.report_time, nightStop: !!d.nightStop });
+    }
+  }
+  const list = out.slice(0, limit);
   if (bare && !list.length) return null;
   const inner = (
     <>
       <Eyebrow style={{ marginBottom: 6 }}>{lang === 'en' ? 'UPCOMING' : 'PRÓXIMAS ATIVIDADES'}</Eyebrow>
-      {list.length ? list.map((d, i) => (
-        <View key={d.iso} style={[s.lrow, i > 0 && s.lrowBorder]}>
-          <Ionicons name={KIND_ICON[d.kind || 'flight'] || 'ellipse-outline'} size={14} color={C.sub} />
-          <Text style={s.lday}>{fmtDay(d.iso, locale)}</Text>
-          <Text style={s.ltxt} numberOfLines={1}>{dutyLine(d, lang)}{d.report_time ? ` · ${d.report_time}` : ''}{d.nightStop ? ' · 🌙' : ''}</Text>
+      {list.length ? list.map((e, i) => (
+        <View key={e.key} style={[s.lrow, i > 0 && s.lrowBorder]}>
+          <Ionicons name={e.type === 'sector' ? 'airplane' : (KIND_ICON[e.kind || 'flight'] || 'ellipse-outline')} size={14} color={C.sub} />
+          <Text style={s.lday}>{fmtDay(e.iso, locale)}</Text>
+          <Text style={s.ltxt} numberOfLines={1}>{e.type === 'sector'
+            ? `${e.dep || '?'}→${e.arr || '?'}${e.off ? ` · ${e.off}` : ''} · ${lang === 'en' ? 'Sec' : 'Set'} ${e.sector}/${e.total}${e.nightStop ? ' · 🌙' : ''}`
+            : `${dutyLine(e, lang)}${e.report_time ? ` · ${e.report_time}` : ''}${e.nightStop ? ' · 🌙' : ''}`}</Text>
         </View>
       )) : <Text style={s.empty}>{lang === 'en' ? 'No upcoming duties' : 'Sem atividades futuras'}</Text>}
     </>

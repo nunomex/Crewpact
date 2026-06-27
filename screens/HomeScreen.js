@@ -7,7 +7,7 @@ import NotificationsBell from '../components/NotificationsBell';
 import Banner from '../components/Banner';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
-import { monthlyAe, aeMonthTotal } from '../data/perdiem';
+import { monthlyAe, aeMonthTotal, routeDistancesNM } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
 import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import { isLongHaulCompany } from '../data/capabilities';
@@ -131,9 +131,28 @@ function dutyToFlight(iso, d) {
     depAirport: dep, arrAirport: arr,
     stations: ap.length ? ap : [dep],  // cadeia completa de escalas (multi-leg) p/ a linha principal da Home
     sectors: d.sectors || null,
+    legs: Array.isArray(d.legs) ? d.legs : null,   // setores (off/on por leg) p/ o "setor ativo"
+    route: d.route || null,                        // p/ o per-diem do DIA (todos os setores)
+    blockOn: d.block_on || null, signOff: d.signOff || null,
     startDate: new Date(reportInstant.getTime() + 60 * 60 * 1000),
     endDate,
   };
+}
+
+// HH:MM → instante no dia `iso`; se for ANTES da apresentação → vira a noite (dia seguinte).
+function legInstant(iso, hhmm, report) {
+  const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(hhmm || '')); if (!m) return null;
+  const dt = new Date(`${iso}T00:00:00`); dt.setHours(+m[1], +m[2], 0, 0);
+  const r = /^(\d{1,2}):([0-5]\d)$/.exec(String(report || ''));
+  if (r && (+m[1] * 60 + +m[2]) < (+r[1] * 60 + +r[2])) dt.setDate(dt.getDate() + 1);
+  return dt;
+}
+// Block "H:MM" de um setor (on − off, volta-a-meia-noite). null se faltar.
+function legBlockStr(lg) {
+  const o = /^(\d{1,2}):([0-5]\d)$/.exec(String((lg && lg.off) || '')), n = /^(\d{1,2}):([0-5]\d)$/.exec(String((lg && lg.on) || ''));
+  if (!o || !n) return null;
+  const om = +o[1] * 60 + +o[2], nm = +n[1] * 60 + +n[2]; const d = nm >= om ? nm - om : nm + 1440 - om;
+  return `${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')}`;
 }
 
 // Próximo voo efetivo = o mais próximo entre o duty GUARDADO (store) e o voo do
@@ -321,16 +340,18 @@ export default function HomeScreen({ navigation }) {
   const fatTextColor = (b) => b === 'high' ? C.redText : b === 'elevated' ? C.warnText : b === 'low' ? C.greenText : C.sub; // texto acessível sobre fatBg (*Soft)
   const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
   // PSV máx + fadiga: se houver duty registada nesse dia, usa-a (exata); senão estima pelo voo (1 setor).
-  let ndPsvMax = null, ndFat = null, ndSectors = null;
+  // PSV é por DUTY (apresentação → último on-block, com TODOS os setores) — NÃO por setor.
+  // `actual` = PSV realizado/planeado; `over` = excede o máx (para a margem no card).
+  let ndPsvMax = null, ndPsvActual = null, ndPsvOver = false, ndFat = null, ndSectors = null;
   if (flight) {
     const reg = duties[flight.dateISO];
     if (flight.demo) {
       // Voo de exemplo: gera PSV máx + fadiga a partir dos próprios dados (sem registo).
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: flight.sectors });
-      ndPsvMax = d.fdp.maxFdpStr; ndSectors = flight.sectors; ndFat = fatigueFromDuty(d);
+      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = flight.sectors; ndFat = fatigueFromDuty(d);
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
       const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0 });
-      ndPsvMax = d.fdp.maxFdpStr; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
+      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
     } else if (flight.report) {
       // Só estima PSV máx se o calendário trouxe apresentação REAL — não inventa dep − 1 h.
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1 });
@@ -352,12 +373,23 @@ export default function HomeScreen({ navigation }) {
     const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
     return lang === 'en' ? `€${grouped}.${dec}` : `${grouped},${dec} €`;
   };
-  // Per diem do próximo voo — só companhias AE, com categoria e rota conhecida.
-  let aeNextPd = null;
-  if (flight && ae && crewCategory && flight.depAirport && flight.arrAirport) {
-    const dist = sectorDistanceNM(flight.depAirport, flight.arrAirport);
-    if (dist != null) aeNextPd = ae.perDiem(crewCategory, [dist], 1, crewFleet);
+  // Per-diem do DIA (todos os setores da rota) — é o que vai no card (não o de 1 setor).
+  let dayPerDiem = null;
+  if (flight && ae && crewCategory && flight.route) {
+    const dists = routeDistancesNM(flight.route);
+    if (dists.length && !dists.some((x) => x == null)) dayPerDiem = ae.perDiem(crewCategory, dists, 1, crewFleet);
   }
+  // Setor ATIVO (só voo): o que está a decorrer / o próximo (now vs on-block de cada leg).
+  // Quando o setor aterra (now > on), avança para o seguinte; todos aterrados → fica no último.
+  const sectorLegs = (flight && flight.kind === 'flight' && Array.isArray(flight.legs))
+    ? flight.legs.filter((lg) => lg && (lg.dep || lg.arr)) : [];
+  const activeSector = (() => {
+    if (!sectorLegs.length) return null;
+    let idx = sectorLegs.findIndex((lg) => { const on = legInstant(flight.dateISO, lg.on, flight.report); return !on || Date.now() <= on.getTime(); });
+    if (idx < 0) idx = sectorLegs.length - 1;
+    return { idx, total: sectorLegs.length, leg: sectorLegs[idx] };
+  })();
+  const secBlock = activeSector ? legBlockStr(activeSector.leg) : null;
   const fatBg = (b) => b === 'high' ? C.redSoft : b === 'elevated' ? C.warnSoft : b === 'low' ? C.greenSoft : C.soft;
 
   // Skeleton só no 1º carregamento real (a sincronizar, ainda sem resultado e com
@@ -370,17 +402,26 @@ export default function HomeScreen({ navigation }) {
     const diff = Math.round((new Date(flight.dateISO + 'T00:00:00').getTime() - t0.getTime()) / 86400000);
     return diff === 0 ? l('Hoje', 'Today') : diff === 1 ? l('Amanhã', 'Tomorrow') : null;
   })() : null;
-  // Grelha 3-col: campos do serviço (só os que têm dados — adapta-se a voo / não-voo).
+  // PSV máx do DIA com MARGEM (realizado / máx); vermelho se exceder. (PSV é por duty, não por setor.)
+  const psvCell = ndPsvMax ? { l: l('PSV máx', 'FDP max'), v: ndPsvActual ? `${ndPsvActual} / ${ndPsvMax}` : ndPsvMax, sub: l('dia', 'day'), red: ndPsvOver } : null;
+  // Grelha 3-col. Voo c/ setores → SETOR ATIVO (horas do setor + block do setor + per-diem do DIA
+  // + PSV do dia c/ margem). Voo sem setores → fallback (report/Zulu). Não-voo → início/fim.
   const ndCells = flight ? (isNonFlight ? [
     { l: l('Início', 'Start'), v: flight.report || '—' },
     (flight.arrTime && flight.arrTime !== flight.report) ? { l: l('Fim', 'End'), v: flight.arrTime } : null,
     ndPsvMax ? { l: l('PSV s/ chamado', 'FDP if called'), v: ndPsvMax } : null,
+  ] : activeSector ? [
+    { l: l('Início', 'Start'), v: activeSector.leg.off || '—', sub: l('setor', 'sector') },
+    { l: l('Fim', 'End'), v: activeSector.leg.on || '—', sub: l('setor', 'sector') },
+    secBlock ? { l: 'Block', v: secBlock, sub: l('setor', 'sector') } : null,
+    dayPerDiem != null ? { l: 'Per-diem', v: `+${fmtEur0(dayPerDiem)}`, sub: l('dia', 'day'), green: true } : null,
+    psvCell,
   ] : [
     { l: l('Report', 'Report'), v: flight.report || '—', sub: l('local', 'local') },
     ndReportZ ? { l: 'Zulu', v: ndReportZ, sub: 'Z' } : null,
-    ndPsvMax ? { l: l('PSV máx', 'FDP max'), v: ndPsvMax } : null,
+    psvCell,
     ndSectors ? { l: l('Setores', 'Sectors'), v: String(ndSectors) } : null,
-    aeNextPd != null ? { l: 'Per-diem', v: `+${fmtEur0(aeNextPd)}`, green: true } : null,
+    dayPerDiem != null ? { l: 'Per-diem', v: `+${fmtEur0(dayPerDiem)}`, green: true } : null,
   ]).filter(Boolean) : [];
 
   const nextDutyEl = flight ? (
@@ -398,11 +439,12 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
           <View style={s.svcNdx}>
-            <Eyebrow style={{ flex: 1 }} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : l('Voo', 'Flight')}</Eyebrow>
-            {/* Rota grande — encolhe p/ caber ao lado do badge, NUNCA quebra. */}
+            <Eyebrow style={{ flex: 1 }} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : `${l('Voo', 'Flight')}${activeSector ? ` · ${l('Setor', 'Sector')} ${activeSector.idx + 1}/${activeSector.total}` : ''}`}</Eyebrow>
+            {/* Texto grande — VOO: o SETOR ATIVO (dep → arr), não a rota inteira. Encolhe, nunca quebra. */}
             <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isNonFlight
               ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
-              : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`)}</Text>
+              : (activeSector ? `${activeSector.leg.dep || '?'} → ${activeSector.leg.arr || '?'}`
+                : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`))}</Text>
             {/* Sub-linha "quando": dia relativo (sub) + contagem */}
             {countdownStr ? (
               <Text style={s.svcCd} numberOfLines={1}>{ndWhen ? <Text style={s.svcCdDay}>{ndWhen} · </Text> : null}{countdownStr}</Text>
@@ -416,7 +458,7 @@ export default function HomeScreen({ navigation }) {
           {ndCells.map((c, i) => (
             <View key={i} style={s.svcCell}>
               <Text style={s.svcCellL} numberOfLines={1}>{c.l}</Text>
-              <Text style={[s.svcCellV, c.green ? { color: C.greenText } : null]} numberOfLines={1}>{c.v}{c.sub ? <Text style={s.svcCellSub}> {c.sub}</Text> : null}</Text>
+              <Text style={[s.svcCellV, c.red ? { color: C.redText } : c.green ? { color: C.greenText } : null]} numberOfLines={1}>{c.v}{c.sub ? <Text style={s.svcCellSub}> {c.sub}</Text> : null}</Text>
             </View>
           ))}
           {ndFat ? (
@@ -430,7 +472,7 @@ export default function HomeScreen({ navigation }) {
           ) : null}
         </View>
         {/* Próximas atividades — FUNDIDAS no card Serviços, por baixo do próximo serviço */}
-        <UpcomingDutiesCard duties={duties} lang={lang} bare afterISO={flight.dateISO} limit={3} />
+        <UpcomingDutiesCard duties={duties} lang={lang} bare limit={4} featuredISO={flight.dateISO} activeIdx={activeSector ? activeSector.idx : null} />
       </View>
     </View>
   ) : loadingFlight ? (

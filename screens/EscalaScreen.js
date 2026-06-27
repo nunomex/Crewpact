@@ -398,8 +398,14 @@ export default function EscalaScreen({ navigation, route }) {
               </View>
               {(perDiem != null || nsEur != null) ? (
                 <View style={s.dsPay}>
-                  {perDiem != null ? <Text style={s.dsEur}>{l('Per-diem', 'Per diem')} +{fmtEur(perDiem)}</Text> : null}
-                  {nsEur != null ? <Text style={s.dsNs}>🌙 +{fmtEur(nsEur)}</Text> : null}
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.dsPayLbl}>{l('Ganhos do dia', 'Day earnings')}</Text>
+                    <Text style={s.dsPayBreak}>{[
+                      perDiem != null ? `${l('per-diem', 'per diem')} +${fmtEur(perDiem)}` : null,
+                      nsEur != null ? `🌙 +${fmtEur(nsEur)}` : null,
+                    ].filter(Boolean).join('  ·  ')}</Text>
+                  </View>
+                  <Text style={s.dsPayTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0))}</Text>
                 </View>
               ) : null}
 
@@ -563,9 +569,10 @@ const makeStyles = (C) => StyleSheet.create({
   dsMi: { flex: 1, backgroundColor: C.soft2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   dsMiLbl: { fontSize: 10, fontFamily: FONT.bold, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.4 },
   dsMiVal: { fontSize: 17, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'], marginTop: 2 },
-  dsPay: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  dsEur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
-  dsNs: { fontSize: 13, fontFamily: FONT.bold, color: C.info },
+  dsPay: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, backgroundColor: C.greenSoft, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
+  dsPayLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: C.greenText },
+  dsPayBreak: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, fontVariant: ['tabular-nums'] },
+  dsPayTotal: { fontSize: 20, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
   dsBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },

@@ -37,7 +37,9 @@ export function legFromHistory(flightNo, duties = {}) {
 function apiToLeg(fno, data) {
   if (!data || !data.found && !data.dep) return null;
   const dep = data.dep || {}, arr = data.arr || {};
-  return { flightNo: data.flightIata || fno, dep: dep.iata || null, arr: arr.iata || null,
+  // Mantém o número COMO O ESCREVESTE (ex. EJU7625, o ICAO da escala) — não troca pelo IATA da
+  // API (easyJet Europe: ICAO EJU = IATA EC → "EJU7625" apareceria "EC7625"; é o MESMO voo).
+  return { flightNo: fno || data.flightIcao || data.flightIata, dep: dep.iata || null, arr: arr.iata || null,
     off: hm(dep.scheduled), on: hm(arr.scheduled),
     flightMin: data.duration != null ? data.duration : null,
     aircraft: (data.aircraft && data.aircraft.type) || null, source: 'api' };
@@ -72,12 +74,4 @@ export function aggregateLegs(legs = []) {
   const flightMin = sorted.reduce((s, l) => s + (l.flightMin != null ? l.flightMin : (legBlockMin(l) || 0)), 0);
   const aircraft = (sorted.find((l) => l.aircraft) || {}).aircraft || null;
   return { route, off, on, flightMin: flightMin || null, sectors: sorted.length, aircraft, legs: sorted };
-}
-
-// Sugestão de VOLTA (CrewLounge "triangular"): rota invertida do último leg, para o user
-// confirmar/escrever o nº. Só uma DICA de rota — o nº do voo de volta não é derivável.
-export function suggestReturn(legs = []) {
-  const last = legs && legs.length ? legs[legs.length - 1] : null;
-  if (!last || !last.dep || !last.arr || last.arr === last.dep) return null;
-  return { dep: last.arr, arr: last.dep };   // ex. último CDG→… ? não; invertemos o último
 }

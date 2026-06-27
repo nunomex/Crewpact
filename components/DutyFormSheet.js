@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
@@ -8,7 +8,7 @@ import PrimaryButton from './PrimaryButton';
 import Eyebrow from './Eyebrow';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
-import { detectLeg, aggregateLegs, suggestReturn, normFlightNo } from '../data/flightDetect';
+import { detectLeg, aggregateLegs, normFlightNo } from '../data/flightDetect';
 import { routeDistancesNM } from '../data/perdiem';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
@@ -22,6 +22,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // ── helpers HH:MM ──
 const maskClock = (v) => { const d = (v || '').replace(/[^0-9]/g, '').slice(0, 4); return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`; };
 const isClock = (s) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(s || '');
+// Nº de voo COMPLETO = designador (sigla) + número. Ex. EJU7625, U27625, TP1923, FR1234.
+// Só dígitos ("7625"), só letras ("EJU") ou vazio → incompleto (falta o número do voo).
+const isCompleteFlightNo = (s) => /^[A-Z][A-Z0-9]{1,2}\d{1,5}$/.test(String(s || ''));
 const okOrEmpty = (s) => !s || isClock(s);
 const hhmmToMin = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -93,27 +96,24 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
   const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '' });
-  // Lock da rota a partir do form carregado: tem rota + voos detetados → bloqueada (read-only);
-  // rota à mão (sem voos) ou vazia → editável.
-  const lockFromForm = (f) => !!(f.route && f.legs && f.legs.length);
   useEffect(() => {
     if (!visible) return;
     const f = candidate ? formFromCand(candidate) : loadFor(date || isoDay());
-    setForm(f); setRouteLocked(lockFromForm(f)); setAttemptedSave(false);
+    setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
   }, [visible, date, candidate]); // eslint-disable-line react-hooks/exhaustive-deps
-  const goDate = (delta) => { select(); const f = loadFor(addDays(form.date, delta)); setForm(f); setRouteLocked(lockFromForm(f)); setAttemptedSave(false); };
+  const goDate = (delta) => { select(); setForm(loadFor(addDays(form.date, delta))); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
 
-  // ── Auto-fill por DETEÇÃO de voo (histórico → API via Edge Function) → agrega os legs
-  // nos campos (rota · off/on · tempo de voo SOMA · setores · aeronave). Não-destrutivo. ──
+  // ── Setores: Detetar (SÓ no manual; histórico→API se houver net) OU à mão (rota: 2 estações + ✓). ──
+  // O nº de voo é OBRIGATÓRIO e COMPLETO (sigla+nº, ex. EJU7625); incompleto/vazio → vermelho.
   const [legInput, setLegInput] = useState('');
   const [detecting, setDetecting] = useState(false);
   const [detectMsg, setDetectMsg] = useState(null);
-  const [routeLocked, setRouteLocked] = useState(false);   // rota auto-detetada → BLOQUEADA (1 toque desbloqueia p/ editar)
+  const [flightErr, setFlightErr] = useState(false);           // nº de voo em falta/incompleto → vermelho
   const [attemptedSave, setAttemptedSave] = useState(false);   // valida-on-save: marca a vermelho os campos em falta
   const applyLegs = (legs) => {
     const agg = aggregateLegs(legs);
     setForm((f) => ({ ...f, legs,
-      route: (agg && agg.route) ? agg.route : f.route,
+      route: (agg && agg.route) ? agg.route : (legs.length ? f.route : ''),
       off: (agg && agg.off) ? agg.off : f.off,
       on: (agg && agg.on) ? agg.on : f.on,
       flight: (agg && agg.flightMin) ? minToHhmm(agg.flightMin) : f.flight,
@@ -121,23 +121,37 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       aircraft: (agg && agg.aircraft) ? agg.aircraft : f.aircraft,
     }));
   };
+  // Detetar (manual): nº completo → procura (histórico→API). Encontrou → cria o setor. Não → pergunta
+  // "introduzir à mão?" (sim mantém o nº p/ o ✓ da rota; não limpa). Calendário/PDF NUNCA passam por aqui.
   const onDetect = async () => {
     const fno = normFlightNo(legInput);
-    if (!fno || detecting) return;
-    setDetecting(true); setDetectMsg(null);
+    if (!isCompleteFlightNo(fno)) { setFlightErr(true); setDetectMsg(null); return; }   // falta o nº do voo
+    if (detecting) return;
+    setFlightErr(false); setDetecting(true); setDetectMsg(null);
     const leg = await detectLeg(fno, duties);
     setDetecting(false);
-    if (leg) { applyLegs([...(form.legs || []), leg]); setRouteLocked(true); }   // detetado → rota bloqueada (read-only)
+    if (leg) { applyLegs([...(form.legs || []), leg]); setLegInput(''); success(); }
     else {
-      const aps = String(form.route || '').split('-').map((x) => x.trim().toUpperCase()).filter(Boolean);
-      applyLegs([...(form.legs || []), { flightNo: fno, dep: aps[0] || null, arr: aps[aps.length - 1] || null, source: 'manual' }]);
-      setRouteLocked(false);   // não encontrado → fica editável p/ meteres a rota à mão
-      setDetectMsg(l('Não encontrei o voo — adicionei o número; preenche os campos à mão.', 'Flight not found — added the number; fill the fields manually.'));
+      Alert.alert(
+        l('Voo não encontrado', 'Flight not found'),
+        l(`"${fno}" não existe na deteção. Queres introduzi-lo à mão (rota + horas)?`, `"${fno}" was not found. Add it manually (route + times)?`),
+        [
+          { text: l('Cancelar', 'Cancel'), style: 'cancel', onPress: () => setLegInput('') },
+          { text: l('Introduzir à mão', 'Add manually'), onPress: () => setDetectMsg(l(`Mete a rota (origem → destino) e ✓ para adicionar "${fno}".`, `Enter the route (origin → destination) and ✓ to add "${fno}".`)) },
+        ],
+      );
     }
-    setLegInput(''); select();
+  };
+  // À mão (rota ✓): o nº de voo escrito cola-se ao setor. Sem nº completo → vermelho (devolve false →
+  // o AirportRoute mantém as estações escolhidas para não as perderes).
+  const addManualSector = (dep, arr) => {
+    const fno = normFlightNo(legInput);
+    if (!isCompleteFlightNo(fno)) { setFlightErr(true); return false; }
+    applyLegs([...(form.legs || []), { flightNo: fno, dep, arr, source: 'manual' }]);
+    setLegInput(''); setFlightErr(false); setDetectMsg(null);
+    return true;
   };
   const removeLeg = (idx) => { applyLegs((form.legs || []).filter((_, i) => i !== idx)); select(); };
-  const returnHint = suggestReturn(form.legs || []);
 
   // Revelação em cascata das secções (uma Animated.Value 0→1 mapeada por índice).
   const enter = useRef(new Animated.Value(0)).current;
@@ -197,15 +211,14 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   });
   const setSectorCount = (n) => setForm((f) => ({ ...f, sectors: n, legs: legsForSectors(f.route, n, f.legs) }));
 
-  // Validação "Completo" — SÓ VOO: apresentação + rota (≥2) + CADA setor com off E on (aeronave e
-  // sign-off opcionais). NÃO-VOO não exige nada — guarda livre (só valida o FORMATO do que escreveres).
+  // Validação "Completo" — SÓ VOO: apresentação + ≥1 setor com off E on (a rota deriva dos setores;
+  // aeronave/sign-off opcionais). NÃO-VOO não exige nada — guarda livre (só valida o FORMATO).
   const sectorsFilled = isFlight && sectorRows.length > 0 && sectorRows.every((lg) => clkMin(lg.off) != null && clkMin(lg.on) != null);
   const fieldOk = {
     report: isClock(form.report),
-    route: String(form.route || '').split('-').filter(Boolean).length >= 2,
     sectors: sectorsFilled,
   };
-  const requiredKeys = isFlight ? ['report', 'route', 'sectors'] : [];
+  const requiredKeys = isFlight ? ['report', 'sectors'] : [];
   const missing = requiredKeys.filter((k) => !fieldOk[k]);
   const formatOk = isFlight || (okOrEmpty(form.report) && okOrEmpty(form.on) && okOrEmpty(form.signOff));
   const canSave = missing.length === 0 && formatOk;
@@ -350,61 +363,41 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   ))}
                 </View>
               ) : null}
+              {/* Nº de voo (sigla+nº) + Detetar (só manual; histórico→API). Vermelho se incompleto/vazio. */}
               <View style={s.legRow}>
                 <TextInput value={legInput}
-                  onChangeText={(v) => { setLegInput(v.toUpperCase().replace(/\s+/g, '')); setDetectMsg(null); }}
+                  onChangeText={(v) => { setLegInput(v.toUpperCase().replace(/\s+/g, '')); setDetectMsg(null); setFlightErr(false); }}
                   onSubmitEditing={onDetect}
-                  placeholder={(form.legs || []).length ? l('+ próximo voo (ex. EJU7626)', '+ next flight (e.g. EJU7626)') : l('Nº de voo · ex. EJU7625', 'Flight no. · e.g. EJU7625')}
-                  placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={8} style={[s.input, { flex: 1 }]} />
+                  placeholder={l('Nº de voo · ex. EJU7625', 'Flight no. · e.g. EJU7625')}
+                  placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={8} style={[s.input, { flex: 1 }, flightErr && s.inputErr]} />
                 <TouchableOpacity onPress={onDetect} disabled={!legInput || detecting} style={[s.detectBtn, (!legInput || detecting) && s.detectBtnOff]} activeOpacity={0.85}>
                   {detecting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.detectBtnTxt}>{l('Detetar', 'Detect')}</Text>}
                 </TouchableOpacity>
               </View>
-              {returnHint ? (
-                <TouchableOpacity onPress={() => { select(); setDetectMsg(l(`Escreve o nº da volta (${returnHint.dep}→${returnHint.arr}) e toca Detetar.`, `Type the return number (${returnHint.dep}→${returnHint.arr}) and tap Detect.`)); }} activeOpacity={0.8}>
-                  <Text style={[s.routeHint, { color: C.brand }]}>+ {l('Volta', 'Return')} {returnHint.dep}→{returnHint.arr}</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={[s.routeHint, detectMsg ? { color: C.warn } : null]}>{detectMsg || l('Opcional · preenche rota, horas e aeronave automaticamente.', 'Optional · auto-fills route, times and aircraft.')}</Text>
-              )}
-              {returnHint && detectMsg ? <Text style={[s.routeHint, { color: C.warn }]}>{detectMsg}</Text> : null}
-            </Animated.View>
-          ) : null}
+              {flightErr ? <Text style={s.errTxt}>{l('Falta o número do voo (sigla + nº, ex. EJU7625).', 'Flight number missing (code + no., e.g. EJU7625).')}</Text> : null}
+              {detectMsg ? <Text style={[s.routeHint, { color: C.warn }]}>{detectMsg}</Text> : null}
 
-          {/* Rota + per-diem — só voo, e só onde serve (AE). FTL-only → setores diretos. */}
-          {isFlight && (caps ? caps.route : !!ae) ? (
-            <Animated.View style={[s.sec, secStyle(3)]}>
-              <Text style={s.lbl}>{l('Rota', 'Route')}</Text>
-              {routeLocked ? (
-                // Rota auto-detetada → BLOQUEADA (estações read-only) + selo "Detetado". A edição é
-                // DELIBERADA (botão "Editar"), não toque na caixa — evita desbloquear por engano
-                // (a rota mexe no per-diem € e nos setores FTL).
-                <View style={s.routeLocked}>
-                  <Text style={s.routeLockedTxt} numberOfLines={1}>{form.route || '—'}</Text>
-                  <View style={s.routeLockTag}>
-                    <Ionicons name="lock-closed" size={12} color={C.sub} />
-                    <Text style={s.routeLockTagTxt}>{l('Detetado', 'Detected')}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setRouteLocked(false); }}
-                    hitSlop={8} activeOpacity={0.85} style={s.routeEditBtn}>
-                    <Ionicons name="pencil" size={13} color={C.brand} />
-                    <Text style={s.routeEditTxt}>{l('Editar', 'Edit')}</Text>
-                  </TouchableOpacity>
+              {/* Rota À MÃO — origem → destino + ✓ cria UM setor (com o nº de voo escrito). */}
+              {(caps ? caps.route : !!ae) ? (
+                <>
+                  <Text style={[s.lbl, { marginTop: 13 }]}>{l('Rota · setor a setor', 'Route · sector by sector')}</Text>
+                  <AirportRoute onAdd={addManualSector} error={flightErr} />
+                  <Text style={s.routeHint}>{l('Origem → destino + ✓ cria um setor (cada ✓ = um voo). Repete para mais.', 'Origin → destination + ✓ adds a sector (each ✓ = one flight). Repeat for more.')}</Text>
+                </>
+              ) : null}
+
+              {/* Rota (VISUALIZAÇÃO, só leitura) — cadeia dos setores, qualquer fonte (Detetar/manual/PDF/calendário). */}
+              {form.route ? (
+                <View style={s.routeVis}>
+                  <Text style={s.routeVisLbl}>{l('Rota', 'Route')}</Text>
+                  <Text style={s.routeVisTxt} numberOfLines={1}>{form.route}</Text>
                 </View>
-              ) : (
-                <AirportRoute
-                  error={showErr('route')}
-                  value={form.route}
-                  onChange={(r) => setForm((f) => { const sc = Math.max(0, r ? r.split('-').filter(Boolean).length - 1 : 0); return { ...f, route: r, sectors: sc, legs: legsForSectors(r, sc, f.legs) }; })}
-                />
-              )}
-              {showErr('route') ? <Text style={s.errTxt}>{l('Indica a rota (mín. 2 aeroportos)', 'Enter the route (min. 2 airports)')}</Text> : null}
-              {ae ? (
-                routePd == null
-                  ? <Text style={s.routeHint}>{l('Calcula o teu per-diem (Art. 53) · ex. LIS-OPO-LIS', 'Calculates your per diem (Art. 53) · e.g. LIS-OPO-LIS')}</Text>
-                  : routePd.ok
-                    ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
-                    : <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text>
+              ) : null}
+              {/* Per-diem do voo (AE) — derivado da rota. */}
+              {ae && form.route ? (
+                routePd && routePd.ok
+                  ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
+                  : (routePd && !routePd.ok ? <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text> : null)
               ) : null}
             </Animated.View>
           ) : null}
@@ -449,8 +442,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   {form.route && form.route.split('-').filter(Boolean).length > 1
                     ? <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Setores definidos pela rota · ajustável', 'Sectors set from route · adjustable')}</Text> : null}
                 </View>
-                {/* off/on de cada setor (block_off/on + Block hours derivam). Detetado → read-only
-                    (desbloqueia no botão Editar da Rota); manual → editável. */}
+                {/* off/on de cada setor (block_off/on + Block hours derivam). Sempre editável. */}
                 <View style={{ marginTop: 14 }}>
                   <Text style={s.lbl}>{l('Horas por setor (block)', 'Times per sector (block)')}</Text>
                   {sectorRows.length ? sectorRows.map((lg, i) => {
@@ -460,18 +452,14 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                     return (
                       <View key={i} style={s.secRow}>
                         <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
-                        {routeLocked ? (
-                          <Text style={s.secTimes}>{(lg.off || '—')} → {(lg.on || '—')}</Text>
-                        ) : (
-                          <View style={s.secInputs}>
-                            <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
-                            <Text style={s.secArrow}>→</Text>
-                            <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
-                          </View>
-                        )}
+                        <View style={s.secInputs}>
+                          <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
+                          <Text style={s.secArrow}>→</Text>
+                          <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
+                        </View>
                       </View>
                     );
-                  }) : <Text style={s.routeHint}>{l('Define a rota ou os setores para meter as horas.', 'Set the route or sectors to enter times.')}</Text>}
+                  }) : <Text style={s.routeHint}>{l('Adiciona setores na secção Voos para meter as horas.', 'Add sectors in the Flights section to enter times.')}</Text>}
                   {showErr('sectors') ? <Text style={s.errTxt}>{l('Preenche o off e o on de cada setor.', 'Fill off and on for every sector.')}</Text> : null}
                 </View>
                 {/* Fim de serviço (sign-off) — opcional; define as Duty hours com débrief real. */}
@@ -607,6 +595,10 @@ const makeStyles = (C) => StyleSheet.create({
   detectBtn: { backgroundColor: C.ink, borderRadius: 16, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', minWidth: 92 },
   detectBtnOff: { opacity: 0.4 },
   detectBtnTxt: { color: '#fff', fontSize: 13.5, fontFamily: FONT.semibold },
+  // Rota (visualização só leitura) — cadeia dos setores
+  routeVis: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, marginTop: 11 },
+  routeVisLbl: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+  routeVisTxt: { flex: 1, fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.5, textAlign: 'right' },
   pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
   pdLab: { fontSize: 11.5, color: C.green || C.sub, fontFamily: FONT.semibold },
   pdTag: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff', backgroundColor: C.green || C.ink, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, overflow: 'hidden' },
