@@ -51,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -64,7 +64,7 @@ export default function SettingsScreen({ navigation }) {
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthName = (() => { const m = now.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
   const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
-  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex }) : null;
+  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex, fleet: crewFleet }) : null;
   // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
   const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, (aeExtras && aeExtras[ym]) || {}, { index: aeIndex }) : null;
   const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
@@ -109,10 +109,18 @@ export default function SettingsScreen({ navigation }) {
   // retenção (esconde o item no catálogo via caps/lifestyle). Guardado no metadata.
   const showLifestyle = crewType === 'pilot' && !!ae && !!ae.isSeasonalContract && ae.isSeasonalContract(crewContract);
   // Qualificação de instrutor (Art. 42) — opt-in p/ pilotos: destrava o papel p/ qualquer categoria.
-  const showInstructor = crewType === 'pilot' && !!ae;
+  // SÓ quando o AE tem papel de instrutor modelado (easyJet sim; TAP não → não mostrar toggle morto).
+  const showInstructor = crewType === 'pilot' && !!ae && Array.isArray(ae.ADDITIONAL_ROLES) && ae.ADDITIONAL_ROLES.some((r) => r.id === 'instr');
   const saveInstructor = (val) => {
     setProfile((p) => ({ ...p, instructorRated: val }));
     updateProfile({ instructorRated: val }, lang).catch(() => {});
+  };
+  // Frota (WB/NB) — só os AE com `FLEETS` (TAP) a distinguem, p/ a coluna de per-diem A ("WB cobra sempre WB").
+  const showFleet = crewType === 'pilot' && !!ae && Array.isArray(ae.FLEETS) && ae.FLEETS.length > 1;
+  const saveFleet = (val) => {
+    setProfile((p) => ({ ...p, crewFleet: val }));
+    updateProfile({ crewFleet: val }, lang).catch(() => {});
+    success();
   };
   const saveLifestyle = (val) => {
     setProfile((p) => ({ ...p, lifestyle: val }));
@@ -265,19 +273,25 @@ export default function SettingsScreen({ navigation }) {
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
                   sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
-                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle && !showInstructor} s={s} C={C} />
+                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle && !showInstructor && !showFleet} s={s} C={C} />
               ) : null}
               {showLifestyle ? (
                 <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')}
                   sub={l('Sazonal recebe retenção · estilo de vida não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')}
-                  last={!showInstructor} s={s} C={C}
+                  last={!showInstructor && !showFleet} s={s} C={C}
                   right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
               ) : null}
               {showInstructor ? (
                 <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')}
                   sub={l('Destrava o papel de instrutor (Art. 42) — só se tiveres a qualificação', 'Unlocks the instructor role (Art. 42) — only if you hold the rating')}
-                  last s={s} C={C}
+                  last={!showFleet} s={s} C={C}
                   right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
+              ) : null}
+              {showFleet ? (
+                <Row icon="airplane-outline" label={l('Frota', 'Fleet')}
+                  sub={l('Wide-body cobra sempre a tarifa WB de per-diem (AE TAP)', 'Wide-body always charges the WB per-diem rate (TAP agreement)')}
+                  last s={s} C={C}
+                  right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
               ) : null}
             </View>
             {aeMonth ? (

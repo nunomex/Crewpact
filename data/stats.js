@@ -30,7 +30,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, now = new Date() } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, now = new Date() } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -84,7 +84,7 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
       const { category: catM, contract: ctrM } = resolveCrew(history, ym);
       if (!catM) continue;
       baseYtd += ae.monthlyBase(catM, { contract: ctrM, index }) || 0;
-      const pd = monthlyPerDiem(duties, catM, ae, { ym, index });   // per-diem desse mês, à categoria desse mês
+      const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet });   // per-diem desse mês, à categoria desse mês (frota → coluna A no TAP)
       if (pd) { perDiemYtd += pd.total; withRoute += pd.withRoute; missing += pd.missing; }
     }
     aeYtd = {

@@ -6,11 +6,14 @@
 // contractLabel, AE_LABEL, NOMINAL_SECTOR, monthlyBase, perDiem, computeAeMonth.
 import * as easyjetSpac from './easyjetSpac';      // pilotos (SPAC)
 import * as easyjetSnpvac from './easyjetSnpvac';  // cabine  (SNPVAC)
+import * as tapSpac from './tapSpac';              // pilotos TAP (SPAC)
+import * as tapSnpvac from './tapSnpvac';          // cabine  TAP (SNPVAC)
 
 // Chave (engine_code/slug da tabela `airlines`, minúsculas) → { pilot, cabin }.
 const REGISTRY = {
   ezy_ae_2024: { pilot: easyjetSpac, cabin: easyjetSnpvac },   // airlines.engine_code
   easyjet:     { pilot: easyjetSpac, cabin: easyjetSnpvac },   // airlines.slug (fallback)
+  tap:         { pilot: tapSpac, cabin: tapSnpvac },           // airlines.slug — TAP Air Portugal
 };
 
 // String de pesquisa — aceita id/slug (string) OU o objeto da tabela `airlines`.
@@ -41,13 +44,12 @@ export const getAe = (company, crewType = 'pilot') => {
 // True se a companhia tem AE modelado.
 export const hasAe = (company) => getAeSet(company) != null;
 
-// AE aplicável a um perfil — orientado pela tabela `airlines`:
-//  • só companhias AE (rule_type === 'AE'); FTL devolve null;
-//  • resolve pilotos OU cabine consoante o crewType.
-export const getAeForProfile = ({ company, crewType } = {}) => {
-  if (company && typeof company === 'object' && company.rule_type && company.rule_type !== 'AE') return null;
-  return getAe(company, crewType);
-};
+// AE aplicável a um perfil — o REGISTRY é a fonte de verdade do "modeled" (3 estados):
+// se a companhia tem módulo no registry, corre o AE (pilotos OU cabine consoante o crewType);
+// senão devolve null. NÃO se consulta `rule_type` (flag grosseira da BD) — uma companhia
+// modelada está no registry independentemente disso (ex. TAP entra como rule_type='AE', mas
+// é o registry que manda). Companhias fora do registry (Jet2/Volotea/Wizz/Hi Fly) → null.
+export const getAeForProfile = ({ company, crewType } = {}) => getAe(company, crewType);
 
 // Estado do AE para (companhia, crewType) — p/ ser HONESTO (3 estados, não 2):
 //  • 'modeled' — há módulo no registry (ae/*) → o motor AE corre;

@@ -40,7 +40,7 @@ export const hasAnyData = (ctx) => !!(ctx && ((ctx.duties && ctx.duties.length) 
 
 // ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO }
 export function buildTodayItems(ctx, lang) {
-  const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, validities, isPilot, todayISO } = ctx;
+  const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeExtras, validities, isPilot, todayISO } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const items = [];
 
@@ -136,7 +136,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 5 · Quanto recebo? (só AE)
-  const pay = payStatus({ duties, ae, crewCategory, crewContract, aeExtras });
+  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeExtras });
   if (pay) {
     items.push({
       id: 'pay',

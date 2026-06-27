@@ -18,7 +18,7 @@ const GROUP_LABEL = {
 // pagamento (mockup): chips de categoria/contrato, base + setor nominal, per diem
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
-export default function AeCalcs({ ae, category, contract = '12/12', duties = [], lifestyle = false, instructorRated = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
+export default function AeCalcs({ ae, category, contract = '12/12', fleet = null, duties = [], lifestyle = false, instructorRated = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
   const { lang, serviceYears } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -54,12 +54,12 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
   const indexEst = !!(ae.isIndexEstimated && ae.isIndexEstimated(year)) && index > 1;
   const base = ae.monthlyBase(category, { contract, index });
   const cash = ae.cashHandling ? ae.cashHandling(category) : 0;   // só cabine tem abono p/ falhas
-  const pd = monthlyPerDiem(duties, category, ae, { ym, index });
+  const pd = monthlyPerDiem(duties, category, ae, { ym, index, fleet });
   const pdBand = monthlyPerDiemByBand(duties, category, ae, { ym, index });
   // Total interligado do motor (base + per-diem + extras dos eventos). Fallback para
   // o cálculo antigo se a AE não expuser computeAeMonth (ex.: cabine). `cash` (abono
   // p/ falhas, só cabine) soma por cima.
-  const month = monthlyAe(duties, category, contract, ae, { ym, index });
+  const month = monthlyAe(duties, category, contract, ae, { ym, index, fleet });
   // Extras do mês (Passo 4) — contadores manuais/auto que somam ao total. Só os AE
   // com a mecânica (piloto) os expõem. Valor por unidade via o próprio motor.
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
@@ -119,28 +119,41 @@ export default function AeCalcs({ ae, category, contract = '12/12', duties = [],
         {nominal != null ? <View style={[s.aeline, s.aelineBorder]}><Text style={s.aeK}>{l('Setor nominal', 'Nominal sector')}</Text><Text style={s.aeV}>{fmtEur(nominal)}</Text></View> : null}
       </View>
       {indexEst ? (
-        <Text style={s.note}>{l(`Valores indexados a ${year} · estimativa (piso 1%) — IPC oficial por confirmar.`, `Values indexed to ${year} · estimate (1% floor) — official CPI to be confirmed.`)}</Text>
+        <Text style={s.note}>{ae.indexNote ? ae.indexNote(year, lang) : l(`Valores indexados a ${year} · estimativa (piso 1%) — IPC oficial por confirmar.`, `Values indexed to ${year} · estimate (1% floor) — official CPI to be confirmed.`)}</Text>
       ) : null}
       {ae.isAgreementExpired && ae.isAgreementExpired(now) ? (
-        <Text style={s.note}>{l(`AE em vigor até jan-2026 · valores de ${year} são referência até novo acordo.`, `Agreement in force until Jan-2026 · ${year} values are reference until a new agreement.`)}</Text>
+        <Text style={s.note}>{l(`AE expirado · valores de ${year} são referência até novo acordo.`, `Agreement expired · ${year} values are reference until a new agreement.`)}</Text>
       ) : null}
 
-      {/* ── Per diem · por setor (barras curto/médio/longo) ── */}
-      <Text style={s.group}>{l('PER DIEM · POR SETOR', 'PER DIEM · BY SECTOR')}</Text>
-      <View style={s.aebox}>
-        <View style={s.aeline}><Text style={s.aeK}>{l('Total do mês', 'Month total')}</Text><Text style={[s.aeV, { color: C.greenText }]}>+{fmtEur(pdBand ? pdBand.total : (pd ? pd.total : 0))}</Text></View>
-        {activeBands.map(([id, label]) => {
-          const v = byBand[id];
-          return (
-            <View key={id} style={s.pdrow}>
-              <Text style={s.pdLab}>{label}</Text>
-              <View style={s.pdTrack}><View style={[s.pdFill, { width: `${Math.round((v / maxBand) * 100)}%` }]} /></View>
-              <Text style={s.pdVal}>{fmtEur0(v)}</Text>
-            </View>
-          );
-        })}
-        <Text style={s.pdfoot}>{(pdBand ? pdBand.withRoute : 0)} {l('voos com rota · distância de grande círculo (Art. 37)', 'flights with route · great-circle distance (Art. 37)')}</Text>
-      </View>
+      {/* ── Per diem ── easyJet: barras por setor (distância). TAP: total por dia de calendário
+          (não há setor nominal / bandas → mostra só o total, sem barras nem "Art. 37"). */}
+      {ae.SECTOR_BANDS ? (
+        <>
+          <Text style={s.group}>{l('PER DIEM · POR SETOR', 'PER DIEM · BY SECTOR')}</Text>
+          <View style={s.aebox}>
+            <View style={s.aeline}><Text style={s.aeK}>{l('Total do mês', 'Month total')}</Text><Text style={[s.aeV, { color: C.greenText }]}>+{fmtEur(pdBand ? pdBand.total : (pd ? pd.total : 0))}</Text></View>
+            {activeBands.map(([id, label]) => {
+              const v = byBand[id];
+              return (
+                <View key={id} style={s.pdrow}>
+                  <Text style={s.pdLab}>{label}</Text>
+                  <View style={s.pdTrack}><View style={[s.pdFill, { width: `${Math.round((v / maxBand) * 100)}%` }]} /></View>
+                  <Text style={s.pdVal}>{fmtEur0(v)}</Text>
+                </View>
+              );
+            })}
+            <Text style={s.pdfoot}>{(pdBand ? pdBand.withRoute : 0)} {l('voos com rota · distância de grande círculo (Art. 37)', 'flights with route · great-circle distance (Art. 37)')}</Text>
+          </View>
+        </>
+      ) : pd ? (
+        <>
+          <Text style={s.group}>{l('PER DIEM', 'PER DIEM')}</Text>
+          <View style={s.aebox}>
+            <View style={s.aeline}><Text style={s.aeK}>{l('Total do mês', 'Month total')}</Text><Text style={[s.aeV, { color: C.greenText }]}>+{fmtEur(pd.total)}</Text></View>
+            <Text style={s.pdfoot}>{pd.withRoute} {l('dia(s) de voo · por dia de calendário', 'flight day(s) · per calendar day')}</Text>
+          </View>
+        </>
+      ) : null}
 
       {/* ── Total estimado — cartão escuro (mockup .aetotal) ── */}
       <View style={s.aetotal}>

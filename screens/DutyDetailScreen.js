@@ -81,7 +81,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       if (nm == null) { ok = false; break; }
       dists.push(nm);
     }
-    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1);
+    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, ctxAll.crewFleet);
   }
   // Valor € da pernoita (Art. 39) — piloto por categoria, cabine €46 fixos; index=1 como o per-diem.
   const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;

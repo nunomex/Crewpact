@@ -37,6 +37,7 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       crewType: profile.crewType || null,
       category: profile.crewCategory || null,
       contract: profile.crewContract || null,
+      fleet: profile.crewFleet || null,           // frota WB/NB (só AE com `FLEETS`, ex. TAP)
       crewHistory: profile.crewHistory || null,   // linha do tempo categoria/contrato (effective-dated)
       base: profile.base || null,
       serviceStart: profile.serviceStart || null,

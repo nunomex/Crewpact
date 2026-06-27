@@ -19,7 +19,7 @@ export default function OnboardingScreen({ signup = false }) {
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ name: '', email: '', password: '', company: null, crewType: null, crewCategory: null, crewContract: null, base: null, serviceStart: '' });
+  const [draft, setDraft] = useState({ name: '', email: '', password: '', company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
@@ -65,11 +65,16 @@ export default function OnboardingScreen({ signup = false }) {
   const requiresContract = selAirline?.requires_contract ?? false;
   const companyHasAe = !!ae && requiresCategory;
   const companyHasContract = !!ae && requiresContract;
+  // Frota (WB/NB) — derivada do MÓDULO AE (não da BD): só os AE com `FLEETS` (TAP) a pedem.
+  const companyHasFleet = !!ae && Array.isArray(ae.FLEETS) && ae.FLEETS.length > 1;
   const CATEGORIES = ae
     ? ae.CATEGORIES.map((id) => ({ id, label: { pt: `${id} · ${ae.categoryLabel(id, 'pt')}`, en: `${id} · ${ae.categoryLabel(id, 'en')}` } }))
     : [];
   const CONTRACTS = ae
     ? ae.CONTRACTS.map((id) => ({ id, label: { pt: ae.contractLabel(id, 'pt'), en: ae.contractLabel(id, 'en') } }))
+    : [];
+  const FLEET_ITEMS = companyHasFleet
+    ? ae.FLEETS.map((id) => ({ id, label: { pt: ae.fleetLabel(id, 'pt'), en: ae.fleetLabel(id, 'en') } }))
     : [];
   const maskDate = (v) => {
     const d = (v || '').replace(/\D/g, '').slice(0, 8);
@@ -96,6 +101,7 @@ export default function OnboardingScreen({ signup = false }) {
     crewType:     { title: t('onb.sCrewT', lang),    sub: t('onb.sCrewS', lang),    items: CREW,       field: 'crewType' },
     crewCategory: { title: t('onb.sCatT', lang),     sub: t('onb.sCatS', lang),     items: CATEGORIES, field: 'crewCategory' },
     crewContract: { title: t('onb.sContractT', lang), sub: t('onb.sContractS', lang), items: CONTRACTS, field: 'crewContract' },
+    fleet:        { title: lang === 'en' ? 'Fleet' : 'Frota', sub: lang === 'en' ? 'Wide- or narrow-body (affects per-diem)' : 'Wide ou narrow-body (afeta o per-diem)', items: FLEET_ITEMS, field: 'crewFleet' },
     base:         { title: lang === 'en' ? 'Home base' : 'Base', sub: lang === 'en' ? 'Where you are based (optional)' : 'Onde estás baseado (opcional)', field: 'base', optional: true },
     serviceStart: { title: lang === 'en' ? 'Start date' : 'Data de início',
                     sub: lang === 'en' ? 'Seniority — for the loyalty bonus (optional, you can skip)' : 'Antiguidade — para o prémio de permanência (opcional, podes saltar)',
@@ -108,6 +114,7 @@ export default function OnboardingScreen({ signup = false }) {
     'company', 'crewType',
     ...(requiresCategory ? ['crewCategory'] : []),
     ...(requiresContract ? ['crewContract'] : []),
+    ...(companyHasFleet ? ['fleet'] : []),
     ...(companyBases.length ? ['base'] : []),
     ...(requiresCategory ? ['serviceStart'] : []),
     ...(signup ? ['account'] : []),   // credenciais NO FIM — coladas à criação da conta
@@ -134,6 +141,7 @@ export default function OnboardingScreen({ signup = false }) {
       crewType: draft.crewType,
       crewCategory: companyHasAe ? draft.crewCategory : null,
       crewContract: companyHasContract ? draft.crewContract : null,
+      crewFleet: companyHasFleet ? draft.crewFleet : null,
       base: draft.base || null,
       serviceStart: serviceStartArg === undefined ? (draft.serviceStart || null) : serviceStartArg,
     };

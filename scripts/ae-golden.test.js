@@ -42,6 +42,8 @@ const {
 const registry = require(path.resolve('ae/index.js'));
 const { getAe, hasAe, getAeForProfile, getAeSet } = registry;
 const cabin = require(path.resolve('ae/easyjetSnpvac.js'));
+const tapPilot = require(path.resolve('ae/tapSpac.js'));
+const tapCabin = require(path.resolve('ae/tapSnpvac.js'));
 const { airportCoord, greatCircleNM, sectorDistanceNM } = require(path.resolve('data/airports.js'));
 const { routeDistancesNM, monthlyPerDiem, aeMonthTotal } = require(path.resolve('data/perdiem.js'));
 
@@ -164,13 +166,14 @@ eq('getAe por slug', getAe('easyjet') === ae, true);
 eq('getAe por engine_code', getAe('EZY_AE_2024') === ae, true);
 eq('getAe por substring', getAe('EasyJet Europe') === ae, true);
 eq('getAe objeto-companhia (BD)', getAe({ slug: 'easyjet', engine_code: 'EZY_AE_2024', name: 'easyJet' }) === ae, true);
-eq('getAe sem AE → null', getAe('tap'), null);
+eq('getAe sem AE → null', getAe('jet2'), null);
 eq('hasAe easyjet', hasAe('easyjet'), true);
-eq('hasAe tap', hasAe('tap'), false);
-// Orientado pela BD: rule_type comanda; pilotos↔SPAC, cabine↔SNPVAC.
-eq('AE: rule_type AE + piloto → SPAC', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'pilot' }) === ae, true);
-eq('AE: rule_type AE + cabine → SNPVAC', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'cabin' }) === cabin, true);
-eq('AE: rule_type FTL → null', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'FTL' }, crewType: 'pilot' }), null);
+eq('hasAe fora do registry (jet2)', hasAe('jet2'), false);
+// Registry manda (3 estados): pilotos↔SPAC, cabine↔SNPVAC. rule_type NÃO é consultado.
+eq('AE: easyjet + piloto → SPAC', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'pilot' }) === ae, true);
+eq('AE: easyjet + cabine → SNPVAC', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'cabin' }) === cabin, true);
+eq('AE: fora do registry → null', getAeForProfile({ company: { slug: 'jet2', rule_type: 'FTL' }, crewType: 'pilot' }), null);
+eq('AE: registry manda mesmo com rule_type FTL', getAeForProfile({ company: { slug: 'easyjet', rule_type: 'FTL' }, crewType: 'pilot' }) === ae, true);
 eq('AE: string legada + piloto', getAeForProfile({ company: 'easyjet', crewType: 'pilot' }) === ae, true);
 eq('getAe cabine por engine_code', getAe('EZY_AE_2024', 'cabin') === cabin, true);
 eq('getAeSet tem pilot+cabin', getAeSet('easyjet').pilot === ae && getAeSet('easyjet').cabin === cabin, true);
@@ -221,8 +224,10 @@ eq('Cabine papéis CMP (upranker+CCLT+CTI)', cabin.additionalRolesFor('CMP').map
 // ── Estado do AE — 3 estados honestos (modeled / pending / none) ──
 eq('aeStatus easyJet piloto = modeled', aeStatus({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'pilot' }), 'modeled');
 eq('aeStatus easyJet cabine = modeled', aeStatus({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'cabin' }), 'modeled');
-eq('aeStatus pending por flag (cabine)', aeStatus({ company: { slug: 'tap', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'cabin' }), 'pending');
-eq('aeStatus none quando flag do piloto off', aeStatus({ company: { slug: 'tap', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'pilot' }), 'none');
+eq('aeStatus TAP piloto = modeled', aeStatus({ company: { slug: 'tap', rule_type: 'AE' }, crewType: 'pilot' }), 'modeled');
+eq('aeStatus TAP cabine = modeled', aeStatus({ company: { slug: 'tap', rule_type: 'AE' }, crewType: 'cabin' }), 'modeled');
+eq('aeStatus pending por flag (cabine)', aeStatus({ company: { slug: 'jet2', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'cabin' }), 'pending');
+eq('aeStatus none quando flag do piloto off', aeStatus({ company: { slug: 'jet2', rule_type: 'FTL', ae_pending_cabin: true }, crewType: 'pilot' }), 'none');
 eq('aeStatus none sem AE (FTL puro)', aeStatus({ company: { slug: 'ryanair', rule_type: 'FTL' }, crewType: 'pilot' }), 'none');
 eq('Cabine catalogValue base CM', cabin.catalogValue('base', { category: 'CM' }), 1657.00);
 eq('Cabine catalogValue cash CM', cabin.catalogValue('cash', { category: 'CM' }), 96.66);
@@ -355,6 +360,127 @@ eq('extras indexados (ddo×1 @1.01)', ae.monthExtras('CPT', { ddo: 1 }, { index:
 eq('extras instrutor universal (FO)', ae.monthExtras('FO', { instructorDays: 1 }).total, 120);  // não trancado por categoria
 eq('EXTRA_KINDS (8)', ae.EXTRA_KINDS.length, 8);
 eq('EXTRA_KINDS snc é auto', ae.EXTRA_KINDS.find((k) => k.id === 'snc').auto, true);
+
+// ═══════════ AE TAP × SPAC (pilotos) — BTE 29/2023, Anexo 3 ═══════════
+// VB-base 2023 = golden (Tabela A-3.1); VB atualizado nunca publicado → índice +3%/ano (estimado).
+eq('TAP registado (pilot)', getAe('tap') === tapPilot, true);
+eq('TAP registado (cabin)', getAe('tap', 'cabin') === tapCabin, true);
+eq('TAP hasAe', hasAe('tap'), true);
+eq('TAP getAeSet pilot+cabin', getAeSet('tap').pilot === tapPilot && getAeSet('tap').cabin === tapCabin, true);
+eq('TAP getAeForProfile piloto', getAeForProfile({ company: { slug: 'tap', rule_type: 'AE' }, crewType: 'pilot' }) === tapPilot, true);
+eq('TAP getAeForProfile cabine', getAeForProfile({ company: { slug: 'tap', rule_type: 'AE' }, crewType: 'cabin' }) === tapCabin, true);
+// Tabela A-3.1 — VB base 2023 (golden, verbatim do BTE)
+eq('TAP VB CTE 2023', tapPilot.VB_2023.CTE, 8125);
+eq('TAP VB OP3C 2023', tapPilot.VB_2023.OP3C, 6500);
+eq('TAP VB OP3 2023', tapPilot.VB_2023.OP3, 6050);
+eq('TAP VB OP2 2023', tapPilot.VB_2023.OP2, 5200);
+eq('TAP VB OP1 2023', tapPilot.VB_2023.OP1, 4420);
+eq('TAP categorias', tapPilot.CATEGORIES.join(','), 'CTE,OP3C,OP3,OP2,OP1');
+eq('TAP categoria CTE pt', tapPilot.categoryLabel('CTE', 'pt'), 'Comandante');
+eq('TAP categoria OP1 en', tapPilot.categoryLabel('OP1', 'en'), 'First Officer 1');
+// Base mensal = VB × (1 + VE 2%) (índice 1 = 2023)
+eq('TAP base CTE (VB+VE, 2023)', tapPilot.monthlyBase('CTE'), 8287.50);   // 8125×1.02
+eq('TAP base OP1 (VB+VE, 2023)', tapPilot.monthlyBase('OP1'), 4508.40);   // 4420×1.02
+eq('TAP base OP3 (VB+VE, 2023)', tapPilot.monthlyBase('OP3'), 6171.00);   // 6050×1.02
+// Per diem (Tabela A-3.2) — por dia, coluna por operação (MC-NB < 2000NM ≤ WB/LC-NB). Não indexado.
+eq('TAP per diem CTE médio-courier (500NM)', tapPilot.perDiem('CTE', [500]), 270);
+eq('TAP per diem CTE long-courier (3000NM)', tapPilot.perDiem('CTE', [3000]), 300);
+eq('TAP per diem OP médio-courier (500NM)', tapPilot.perDiem('OP1', [500]), 202.50);
+eq('TAP per diem OP long-courier (3000NM)', tapPilot.perDiem('OP1', [3000]), 225);
+eq('TAP per diem sem voo → 0', tapPilot.perDiem('CTE', []), 0);
+// Frota (WB cobra SEMPRE WB/LC-NB; NB/ausente = por operação/distância)
+eq('TAP FLEETS', tapPilot.FLEETS.join(','), 'NB,WB');
+eq('TAP fleetLabel WB en', tapPilot.fleetLabel('WB', 'en'), 'Wide-body (A330/A350)');
+eq('TAP per diem CTE WB curto = A_lc (300)', tapPilot.perDiem('CTE', [500], 1, 'WB'), 300);
+eq('TAP per diem CTE NB curto = MC (270)', tapPilot.perDiem('CTE', [500], 1, 'NB'), 270);
+eq('TAP per diem OP WB curto = A_lc (225)', tapPilot.perDiem('OP1', [500], 1, 'WB'), 225);
+eq('TAP per diem WB sem voo → 0', tapPilot.perDiem('CTE', [], 1, 'WB'), 0);
+eq('TAP mês CTE WB: per diem curto = 300', tapPilot.computeAeMonth({ category: 'CTE', duties: [[500]], fleet: 'WB' }).perDiem, 300);
+eq('TAP mês CTE NB: per diem curto = 270', tapPilot.computeAeMonth({ category: 'CTE', duties: [[500]], fleet: 'NB' }).perDiem, 270);
+// Pernoita = Per diem B (estadia)
+eq('TAP pernoita CTE (per diem B)', tapPilot.nightStop('CTE'), 180);
+eq('TAP pernoita OP (per diem B)', tapPilot.nightStop('OP1'), 135);
+// Comando em cruzeiro, vencimento horário (A-3.3), senioridade
+eq('TAP comando em cruzeiro', tapPilot.comando(), 200);
+eq('TAP hora L1 CTE (3% VB)', tapPilot.hourly('CTE', 1), 243.75);   // 0.03×8125
+eq('TAP hora L2 CTE (6% VB)', tapPilot.hourly('CTE', 2), 487.50);   // 0.06×8125
+eq('TAP hora L1 OP1 (3% VB)', tapPilot.hourly('OP1', 1), 132.60);   // 0.03×4420
+eq('TAP senioridade CTE (1,5% VB)', tapPilot.vs('CTE'), 121.88);    // 0.015×8125
+// Estimativa mensal (base + per diem + pernoita)
+{
+  const r = tapPilot.computeAeMonth({ category: 'CTE', duties: [[500]], nightStops: 1 });
+  eq('TAP mês CTE: base', r.base, 8287.50);
+  eq('TAP mês CTE: per diem', r.perDiem, 270);
+  eq('TAP mês CTE: pernoita', r.nightStops, 180);
+  eq('TAP mês CTE: variável', r.variable, 450);
+  eq('TAP mês CTE: total', r.total, 8737.50);
+}
+// Índice de atualização (+3%/ano, sempre estimado) e vigência
+eq('TAP index 2023 = 1', tapPilot.indexFactor(2023), 1);
+eq('TAP index 2024 = +3%', tapPilot.indexFactor(2024), 1.03);
+eq('TAP index 2026 = (1.03)^3', tapPilot.indexFactor(2026), 1.092727);
+eq('TAP index 2027 congela (fim vigência)', tapPilot.indexFactor(2027), 1.092727);   // sem teto sobrestimaria
+eq('TAP index 2030 ainda congelado', tapPilot.indexFactor(2030), 1.092727);
+eq('TAP index sempre estimado (2024)', tapPilot.isIndexEstimated(2024), true);
+eq('TAP index 2023 não estimado', tapPilot.isIndexEstimated(2023), false);
+eq('TAP base CTE indexada 2026', tapPilot.monthlyBase('CTE', { index: tapPilot.indexFactor(2026) }), 9055.98);  // 8125×1.092727×1.02
+eq('TAP vigência até dez-2026', tapPilot.AE_VALID_UNTIL, '2026-12-31');
+eq('TAP não expirado em jun-2026', tapPilot.isAgreementExpired(new Date('2026-06-23')), false);
+eq('TAP expirado em jan-2027', tapPilot.isAgreementExpired(new Date('2027-01-02')), true);
+// Catálogo + papéis + extras
+eq('TAP catalogValue base CTE', tapPilot.catalogValue('base', { category: 'CTE' }), 8287.50);
+eq('TAP catalogValue night CTE', tapPilot.catalogValue('night', { category: 'CTE' }), 180);
+eq('TAP catalogValue perdiem = null', tapPilot.catalogValue('perdiem', { category: 'CTE' }), null);
+eq('TAP catalogValue vs CTE', tapPilot.catalogValue('vs', { category: 'CTE' }), 121.88);
+eq('TAP catálogo: VS só CTE', tapPilot.catalogFor('CTE').map((c) => c.id).includes('vs'), true);
+eq('TAP catálogo: VS escondido p/ OP1', tapPilot.catalogFor('OP1').map((c) => c.id).includes('vs'), false);
+eq('TAP sem papéis adicionais', tapPilot.additionalRolesFor('CTE').length, 0);
+eq('TAP extras comando×2', tapPilot.monthExtras('CTE', { comandoSectors: 2 }).total, 400);
+eq('TAP extras horas L1×1 CTE', tapPilot.monthExtras('CTE', { hoursL1: 1 }).total, 243.75);
+eq('TAP contratos', tapPilot.CONTRACTS.join(','), '12/12');
+
+// ═══════════ AE TAP × SNPVAC (cabine) — BTE 7/2024, coluna 2026 (golden) ═══════════
+eq('TAP cabine VB CAB0 = RMMG', tapCabin.VB_2026.CAB0, 920);
+eq('TAP cabine VB CAB1 2026', tapCabin.VB_2026.CAB1, 1214.68);
+eq('TAP cabine VB CAB3 2026', tapCabin.VB_2026.CAB3, 2020.73);
+eq('TAP cabine VB SC7 2026', tapCabin.VB_2026.SC7, 3287.57);
+eq('TAP cabine RMMG 2026', tapCabin.NMW_MONTHLY, 920);
+eq('TAP cabine 13 escalões', tapCabin.CATEGORIES.length, 13);
+eq('TAP cabine categorias', tapCabin.CATEGORIES.join(','), 'CAB0,CAB1,CAB2,CAB3,CAB4,CAB5,SC1,SC2,SC3,SC4,SC5,SC6,SC7');
+eq('TAP cabine base CAB0', tapCabin.monthlyBase('CAB0'), 920);
+eq('TAP cabine base CAB3', tapCabin.monthlyBase('CAB3'), 2020.73);
+eq('TAP cabine base SC7', tapCabin.monthlyBase('SC7'), 3287.57);
+// Ajudas de custo (cl. 7.ª) — por dia, valor único 2026
+eq('TAP cabine AC1 (dia de voo)', tapCabin.perDiem('CAB3', [500]), 150);
+eq('TAP cabine AC1 long-haul = mesmo', tapCabin.perDiem('SC1', [3000]), 150);
+eq('TAP cabine AC1 sem voo → 0', tapCabin.perDiem('CAB3', []), 0);
+eq('TAP cabine pernoita AC2', tapCabin.nightStop('CAB3'), 80);
+eq('TAP cabine pernoita SC = mesmo', tapCabin.nightStop('SC1'), 80);
+// Vencimento horário (2,5% VB), senioridade (1%/ano), complemento extraordinário
+eq('TAP cabine VH CAB3 (2,5% VB)', tapCabin.vh('CAB3'), 50.52);          // 0.025×2020.73
+eq('TAP cabine VS CAB3 5 anos (5%)', tapCabin.vs('CAB3', 5), 101.04);    // 0.05×2020.73
+eq('TAP cabine VS 0 anos = 0', tapCabin.vs('CAB3', 0), 0);
+eq('TAP cabine compl. extraordinário', tapCabin.extraord(), 40);
+// Estimativa mensal
+{
+  const r = tapCabin.computeAeMonth({ category: 'CAB3', duties: [[500], [600]], nightStops: 1 });
+  eq('TAP cabine mês: base', r.base, 2020.73);
+  eq('TAP cabine mês: per diem (2 dias)', r.perDiem, 300);
+  eq('TAP cabine mês: pernoita', r.nightStops, 80);
+  eq('TAP cabine mês: total', r.total, 2400.73);
+}
+// Catálogo + extras
+eq('TAP cabine catalogValue base CAB3', tapCabin.catalogValue('base', { category: 'CAB3' }), 2020.73);
+eq('TAP cabine catalogValue vh CAB3', tapCabin.catalogValue('vh', { category: 'CAB3' }), 50.52);
+eq('TAP cabine catalogValue natal CAB3 (VB+VS0)', tapCabin.catalogValue('natal', { category: 'CAB3' }), 2020.73);
+eq('TAP cabine catalogValue perdiem = null', tapCabin.catalogValue('perdiem', { category: 'CAB3' }), null);
+eq('TAP cabine chefia só S/C', tapCabin.catalogFor('SC1').map((c) => c.id).includes('chefia'), true);
+eq('TAP cabine chefia escondida p/ CAB3', tapCabin.catalogFor('CAB3').map((c) => c.id).includes('chefia'), false);
+eq('TAP cabine extras assistência×2', tapCabin.monthExtras('CAB3', { extraordDays: 2 }).total, 80);
+eq('TAP cabine extras horas×2', tapCabin.monthExtras('CAB3', { vhHours: 2 }).total, 101.04);  // 2×50.52
+eq('TAP cabine categoria CAB0 pt', tapCabin.categoryLabel('CAB0', 'pt'), 'Tripulante (CAB 0)');
+eq('TAP cabine categoria SC1 en', tapCabin.categoryLabel('SC1', 'en'), 'Supervisor (S/C 1)');
+eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
 
 // ── Resumo ──
 console.log(`\nAE golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

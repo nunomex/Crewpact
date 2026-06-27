@@ -47,7 +47,7 @@ function MonthBar({ ratio, color, delay }) {
 // horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
 // mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, ae, crewCategory, crewContract, crewHistory, company } = useContext(AppContext);
+  const { lang, duties, ae, crewCategory, crewContract, crewFleet, crewHistory, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -64,8 +64,8 @@ export default function StatsScreen({ navigation }) {
   const [year, setYear] = useState(years[0]);
 
   const st = useMemo(
-    () => yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory }),
-    [duties, year, ae, crewCategory, crewContract, crewHistory],
+    () => yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet }),
+    [duties, year, ae, crewCategory, crewContract, crewHistory, crewFleet],
   );
 
   // Formatação

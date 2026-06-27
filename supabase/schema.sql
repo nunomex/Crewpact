@@ -360,7 +360,29 @@ begin
     alter table public.airlines add column ae_pending_cabin boolean not null default false;
   end if;
 end $$;
--- Classificação (a confirmar no BTE/DGERT): easyJet fica 'modeled' (registry); as outras ficam
--- 'none' por default. Quando confirmares que uma companhia TEM AE publicado mas por modelar,
--- liga a flag do tipo certo. Ex. (a confirmar) TAP tem AE de cabine no BTE:
---   update public.airlines set ae_pending_cabin = true where lower(slug) = 'tap' or name ilike '%tap%';
+-- Classificação (BTE/DGERT): easyJet e TAP ficam 'modeled' (registry); as outras ficam 'none'
+-- por default. Quando confirmares que uma companhia TEM AE publicado mas por modelar, liga a flag
+-- do tipo certo. Ex. Ryanair tem AE de piloto E cabine no BTE, ainda por modelar (ver §17):
+--   update public.airlines set ae_pending_pilot = true, ae_pending_cabin = true where lower(slug) = 'ryanair';
+
+
+-- ── 17. airlines: inserir TAP (MODELADA) + Ryanair (pending) ──
+-- Pesquisa BTE/DGERT (2026-06): TAP Air Portugal e Ryanair-Sucursal-PT têm acordo coletivo PT
+-- publicado (piloto E cabine). DIFERENÇA: a TAP já está MODELADA no CrewPact (registry ae/tapSpac
+-- + ae/tapSnpvac) → entra como rule_type='AE' (estado 'modeled': corre o motor de salário, pede
+-- categoria/contrato). A Ryanair ainda NÃO está modelada → entra como FTL + `ae_pending` (estado
+-- 'pending': mostra os limites FTL + aviso "acordo por modelar"). Inserir ambas DESBLOQUEIA o
+-- onboarding delas. As outras (Wizz/Hi Fly/Jet2/Volotea) = 'none' (sem AE PT) e já estão na tabela.
+-- Idempotente. Refs: TAP piloto AE-SPAC BTE 29/2023 · TAP cabine AE-SNPVAC BTE 7/2024 · Ryanair
+-- piloto SPAC BTE 20/2023 · Ryanair cabine STTAMP BTE 9/2023. (`id` = gen_random_uuid, PG13+/pgcrypto.)
+insert into public.airlines (id, slug, name, code, rule_type, requires_category, requires_contract, ae_pending_pilot, ae_pending_cabin)
+select gen_random_uuid(), 'tap', 'TAP Air Portugal', 'TAP', 'AE', true, true, false, false
+where not exists (select 1 from public.airlines where lower(slug) = 'tap');
+insert into public.airlines (id, slug, name, code, rule_type, requires_category, requires_contract, ae_pending_pilot, ae_pending_cabin)
+select gen_random_uuid(), 'ryanair', 'Ryanair', 'RYR', 'FTL', false, false, true, true
+where not exists (select 1 from public.airlines where lower(slug) = 'ryanair');
+-- TAP modelada: garantir o estado correto mesmo que uma versão anterior a tenha inserido como FTL/pending.
+update public.airlines
+   set rule_type = 'AE', requires_category = true, requires_contract = true,
+       ae_pending_pilot = false, ae_pending_cabin = false
+ where lower(slug) = 'tap';

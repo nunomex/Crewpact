@@ -621,10 +621,12 @@ export default function App() {
           // PPY como estilo de vida (Art. 66.9) → sem retenção. Metadata/cache (≠ tabela profiles).
           const lifestyle = resolved.lifestyle ?? localProfile?.lifestyle ?? user.lifestyle ?? false;
           const instructorRated = resolved.instructorRated ?? localProfile?.instructorRated ?? user.instructorRated ?? false;
+          // Frota do piloto (WB/NB) — só os AE com `FLEETS` (TAP) a usam, p/ a coluna de per-diem.
+          const crewFleet = resolved.crewFleet || localProfile?.crewFleet || user.crewFleet || null;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewHistory, serviceStart, base, lifestyle, instructorRated });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -726,6 +728,7 @@ export default function App() {
   const isPilot = crewType === 'pilot';
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
+  const crewFleet = profile?.crewFleet || null;        // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
   // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
   // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
@@ -815,7 +818,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

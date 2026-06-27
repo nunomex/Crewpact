@@ -24,7 +24,7 @@ export const routeDistancesNM = (route) => {
 // nightStop → computeAeMonth), não o per-diem. Exclusões do AE (standby/escritório/
 // formação) são tratadas por tipo de duty em monthlyAe, não aqui.
 // Devolve { total, withRoute, missing, count } ou null se faltar ae/categoria.
-export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1 } = {}) => {
+export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1, fleet } = {}) => {
   if (!ae || !category) return null;
   let total = 0, withRoute = 0, missing = 0, count = 0;
   for (const date in duties) {
@@ -34,7 +34,7 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
     count++;
     const dists = routeDistancesNM(d.route);
     if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
-    total += ae.perDiem(category, dists, index);
+    total += ae.perDiem(category, dists, index, fleet);   // `fleet` (TAP: WB/NB → coluna A); easyJet ignora o 4.º arg
     withRoute++;
   }
   return { total: +total.toFixed(2), withRoute, missing, count };
@@ -84,7 +84,7 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
 // nightStop?, deleted? } }. Devolve o objeto do motor (base, perDiem, nightStops €,
 // extras, total) + meta { withRoute, missing, count, officeDays, adtyDays, nightStopDays }
 // — ou null se faltar ae/categoria/computeAeMonth.
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1 } = {}) => {
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   const office4 = ae.OFFICE4_SECTORS || 0;
   const ADTY_SECTORS = 2;             // Anexo I.5 — serviço em aeroporto ≥4h não-chamado = 2 setores nominais
@@ -106,7 +106,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     flights.push(dists);
     withRoute++;
   }
-  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index });
+  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet });
   return { ...month, withRoute, missing, count, officeDays, adtyDays, nightStopDays: nightStops };
 };
 
@@ -114,9 +114,9 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {} } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet } = {}) => {
   if (!ae || !category) return null;
-  const m = monthlyAe(duties, category, contract, ae, { ym, index });
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet });
   const baseTotal = m ? m.total : (ae.monthlyBase ? ae.monthlyBase(category, { contract, index }) : 0);
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);

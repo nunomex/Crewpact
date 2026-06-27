@@ -186,7 +186,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewHistory, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -318,7 +318,7 @@ export default function HomeScreen({ navigation }) {
   let aeNextPd = null;
   if (flight && ae && crewCategory && flight.depAirport && flight.arrAirport) {
     const dist = sectorDistanceNM(flight.depAirport, flight.arrAirport);
-    if (dist != null) aeNextPd = ae.perDiem(crewCategory, [dist]);
+    if (dist != null) aeNextPd = ae.perDiem(crewCategory, [dist], 1, crewFleet);
   }
   const fatBg = (b) => b === 'high' ? C.redSoft : b === 'elevated' ? C.warnSoft : b === 'low' ? C.greenSoft : C.soft;
 
@@ -432,9 +432,9 @@ export default function HomeScreen({ navigation }) {
     const monthName = (() => { const m = d.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
     const index = ae.indexFactor ? ae.indexFactor(d.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
     // Caminho único (= Perfil/Cálculos): monthlyAe (base+abono+per-diem+pernoita+escritório) + extras do mês.
-    const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index });
+    const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet });
     const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
-    const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {} }) || base;
+    const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {}, fleet: crewFleet }) || base;
     const variable = +(total - base).toFixed(2);
     const fill = total > 0 ? Math.min(1, variable / total) : 0;
     return (
@@ -455,8 +455,8 @@ export default function HomeScreen({ navigation }) {
   // Toca → abre a página Stats. Mostra setores/dias + total de horas de voo do ano
   // com barra vs limite anual (1000 h). ──
   const statsYtd = useMemo(
-    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory }),
-    [duties, ae, crewCategory, crewContract, crewHistory],
+    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet }),
+    [duties, ae, crewCategory, crewContract, crewHistory, crewFleet],
   );
   const statRatio = Math.min(1, statsYtd.flightHours / ANNUAL_FLIGHT_LIMIT_H);
   const statsMiniEl = statsYtd.count > 0 ? (

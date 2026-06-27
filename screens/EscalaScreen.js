@@ -40,7 +40,7 @@ const buildDutiesCsv = (duties) => {
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, dayLog, user, company, ae, crewCategory, crewAt, rosterChanges, checkRosterChanges, notify,
+  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, rosterChanges, checkRosterChanges, notify,
     calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -137,7 +137,7 @@ export default function EscalaScreen({ navigation, route }) {
   const serviceCount = Object.entries(duties).filter(([iso, d]) => iso.startsWith(ym) && d && !d.deleted && d.report_time).length;
   const folgaCount = Math.max(0, daysInMonth - serviceCount);
   const catYm = crewAt(ym).category;   // categoria em vigor no mês mostrado (effective-dated)
-  const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym }) : null;
+  const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewFleet }) : null;
   const perDiemTotal = pd ? pd.total : null;
 
   const weekdayShort = (iso) => { const dt = new Date(`${iso}T00:00:00`); if (isNaN(dt)) return ''; const str = dt.toLocaleDateString(locale, { weekday: 'short' }).replace('.', ''); return str.charAt(0).toUpperCase() + str.slice(1); };
@@ -204,7 +204,7 @@ export default function EscalaScreen({ navigation, route }) {
     let perDiem = null;
     if (ae && catD && isFlight) {
       const dists = routeDistancesNM(d.route);
-      if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1);
+      if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet);
     }
     const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
     const meta = isFlight

@@ -45,7 +45,7 @@ function ClockField({ label, value, onChange, C, s, flex }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewAt, base, notify } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewFleet, crewAt, base, notify } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -123,8 +123,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     if (!ae || !catForm || !r) return null;
     const dists = routeDistancesNM(r);
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
-    return { ok: true, eur: ae.perDiem(catForm, dists) };
-  }, [ae, catForm, form.route]);
+    return { ok: true, eur: ae.perDiem(catForm, dists, 1, crewFleet) };
+  }, [ae, catForm, form.route, crewFleet]);
 
   const fmtPd = (n) => {
     const [int, dec] = Number(n).toFixed(2).split('.');

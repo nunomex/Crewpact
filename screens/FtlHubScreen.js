@@ -53,7 +53,7 @@ const THEMES = [
 // Aba FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) num só
 // destino. Junta as antigas abas Cálculos e FTL. Toda a matemática vive no motor `ftl/`.
 export default function FtlHubScreen({ navigation }) {
-  const { lang, ae, caps, aeStatus, crewCategory, crewContract, instructorRated, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
+  const { lang, ae, caps, aeStatus, crewCategory, crewContract, crewFleet, instructorRated, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -79,7 +79,7 @@ export default function FtlHubScreen({ navigation }) {
           <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
             right={<NotificationsBell />} />
           <Animated.View style={seg(0)}>
-            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} duties={duties || []}
+            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} fleet={crewFleet} duties={duties || []}
               lifestyle={!!caps.lifestyle} instructorRated={instructorRated} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
           </Animated.View>
         </ScrollView>

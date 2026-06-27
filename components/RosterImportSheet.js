@@ -40,7 +40,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory, base } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, validities, addValidity, updateValidity, isPilot, ae, crewCategory, crewFleet, base } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -140,7 +140,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const bad = aps.find((a) => airportCoord(a) == null);
     if (bad) return { kind: 'fix', perDiem: null, badAp: bad, nsEur: null };
     let perDiem = null;
-    if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds); }
+    if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds, 1, crewFleet); }
     // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
     const nsEur = (c.duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
     return { kind: 'ready', perDiem, badAp: null, nsEur };

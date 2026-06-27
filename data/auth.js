@@ -9,6 +9,7 @@ export const mapUser = (u) => ({
   crewType:     u.user_metadata?.crewType     || null,
   crewCategory: u.user_metadata?.crewCategory || null,
   crewContract: u.user_metadata?.crewContract || null,
+  crewFleet: u.user_metadata?.crewFleet || null,         // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
   crewHistory: u.user_metadata?.crewHistory || null,    // linha do tempo categoria/contrato (effective-dated)
   serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
