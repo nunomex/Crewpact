@@ -634,10 +634,15 @@ export default function App() {
           // Serviço pós-voo / débrief (min) — definido pelo OM do operador (ORO.FTL.235c). Entra nas
           // Duty hours/210/repouso como fallback do sign-off real. Default 0 até o user o definir.
           const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? 0;
+          // Vínculo + cobertura do AE (lei: art. 496º CT). `employment` (por conta de outrem/agência/
+          // independente) é o eixo legal; `aeCovered` é o override (raro: empregado não filiado).
+          // Default: empregado + coberto → ZERO disrupção para quem já existe.
+          const employment = resolved.employment || localProfile?.employment || user.employment || 'employee';
+          const aeCovered = resolved.aeCovered ?? localProfile?.aeCovered ?? user.aeCovered ?? true;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, employment, aeCovered });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -765,15 +770,22 @@ export default function App() {
     if (now.getMonth() < sd.getMonth() || (now.getMonth() === sd.getMonth() && now.getDate() < sd.getDate())) y--;
     return Math.max(0, y);
   })();
-  // AE (Acordo de Empresa) aplicável às companhias com AE modelado, resolvido por
-  // crewType — pilotos (SPAC) OU cabine (SNPVAC). Companhia FTL → ae = null.
-  const ae = getAeForProfile({ company: company || profile?.company, crewType });
-  // Matriz de capacidades — fonte única do que cada ecrã mostra/pede (AE↔FTL,
-  // piloto↔cabine). `lifestyle` (Art. 66.9): PPY como estilo de vida → sem retenção.
-  const caps = capabilitiesFor({ company: company || profile?.company, crewType, contract: crewContract || '12/12', lifestyle });
-  // Estado do AE (3 estados, honesto com o utilizador): 'modeled' (motor AE) / 'pending' (há AE
-  // publicado por modelar → aviso) / 'none' (não há AE → FTL-only é completo). Ver ae/index.js.
-  const aeStatus = aeStatusFor({ ae, company, crewType });
+  // COBERTURA pelo AE (lei: art. 496º CT — o IRCT abrange os TRABALHADORES da empresa, filiados/
+  // aderentes, na categoria). O vínculo é o eixo legal: empregado (por conta de outrem) → coberto
+  // por default; agência/independente → NÃO coberto (estrutural). `aeCovered` é o override (raro:
+  // empregado não filiado). Default tudo coberto → ZERO disrupção p/ quem já existe.
+  const employment = profile?.employment || 'employee';      // vínculo: 'employee' | 'agency' | 'independent'
+  const aeCoveredOverride = profile?.aeCovered;              // override (raro: empregado não filiado). Default ON.
+  const covered = employment === 'employee' ? (aeCoveredOverride !== false) : false;  // cobertura EFETIVA
+  // AE (Acordo de Empresa) da companhia, por crewType — SPAC piloto / SNPVAC cabine. Companhia FTL
+  // → null. SE não-coberto → ae = null também (degrada o PAGAMENTO em toda a app; FTL fica intacto).
+  const companyAe = getAeForProfile({ company: company || profile?.company, crewType });
+  const ae = covered ? companyAe : null;
+  // Matriz de capacidades — fonte única do que cada ecrã mostra/pede (AE↔FTL, piloto↔cabine).
+  const caps = capabilitiesFor({ company: company || profile?.company, crewType, contract: crewContract || '12/12', lifestyle, aeCovered: covered });
+  // Estado do AE (honesto): modeled (motor AE) / uncovered (companhia tem AE mas TU não estás
+  // abrangido → FTL-only p/ pay) / pending (AE publicado por modelar) / none (sem AE). Ver ae/index.js.
+  const aeStatus = aeStatusFor({ ae: companyAe, company, crewType, covered });
 
   // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
@@ -830,7 +842,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

@@ -58,9 +58,11 @@ export const getAeForProfile = ({ company, crewType } = {}) => getAe(company, cr
 //  • 'none'    — não há AE → FTL-only é a resposta COMPLETA (lei EASA, universal).
 // `modeled` é DERIVADO do registry (não se duplica na BD, p/ não recriar "dois modelos a competir");
 // só o none/pending vem da flag. Por TIPO de tripulação (cabine pode estar modelada e piloto pending).
-export const aeStatus = ({ ae, company, crewType } = {}) => {
+// `covered` = o INDIVÍDUO está abrangido pelo AE (vínculo/filiação, art. 496º CT). Companhia com AE
+// modelado MAS não-coberto (agência/independente/não-aderente) → 'uncovered' (FTL-only p/ pagamento).
+export const aeStatus = ({ ae, company, crewType, covered = true } = {}) => {
   const modeled = ae || getAeForProfile({ company, crewType });
-  if (modeled) return 'modeled';
+  if (modeled) return covered ? 'modeled' : 'uncovered';
   const c = (company && typeof company === 'object') ? company : null;
   const pending = !!(c && (crewType === 'pilot' ? c.ae_pending_pilot : c.ae_pending_cabin));
   return pending ? 'pending' : 'none';

@@ -18,18 +18,20 @@ export const isLongHaulCompany = (company) =>
 
 // NB: o wording (rótulos pt/en) vive no i18n (data/i18n.js), NÃO aqui — a matriz só
 // decide O QUE aparece (comportamento/feature-gating), não COMO se chama.
-export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract = '12/12', lifestyle = false } = {}) => {
+export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract = '12/12', lifestyle = false, aeCovered = true } = {}) => {
   const ae = getAeForProfile({ company, crewType });
-  const hasAe = !!ae;
+  const companyHasAe = !!ae;                 // a COMPANHIA tem AE (independente da cobertura individual)
+  const hasAe = companyHasAe && aeCovered;   // o INDIVÍDUO está abrangido → desbloqueia o PAGAMENTO
   const isPilot = crewType === 'pilot';
   const seasonal = !!(ae && ae.isSeasonalContract && ae.isSeasonalContract(contract));
   return {
-    ae, hasAe, isPilot, crewType, lifestyle,
+    ae, hasAe, companyHasAe, isPilot, crewType, lifestyle,
     // Página Cálculos: AE → suite de pagamento; FTL → ferramentas regulamentares.
     pay: hasAe,
-    // Campo de rota (AirportRoute) no formulário de duty — serve o per-diem do AE.
-    // FTL-only não precisa: os setores entram direto no stepper (alimentam o PSV).
-    route: hasAe,
+    // Campo de rota (AirportRoute): disponível sempre que a COMPANHIA tem AE — mesmo sem cobertura
+    // individual (registo mais rico; a lei FTL/ORO.FTL.245 não exige aeroportos, mas permite). O
+    // per-diem é que gateia em `ae`. FTL-only sem AE → setores pelo stepper.
+    route: companyHasAe,
     perDiem: hasAe,
     // Perfil/onboarding: AE tem categoria/rank + modalidade de contrato (piloto: CPT/SFO/FO/SO;
     // cabine: FA/CM…). FTL não tem nenhum. (O onboarding já o faz via requires_category/contract.)
@@ -37,8 +39,8 @@ export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract =
     askContract: hasAe,
     // Antiguidade (data de início) só alimenta cálculos AE (prémio de permanência).
     askServiceStart: hasAe,
-    // Extras do mês (contadores) — onde há motor monthExtras (piloto e cabine AE).
-    extras: !!(ae && ae.monthExtras),
+    // Extras do mês (contadores) — onde há motor monthExtras (piloto e cabine AE), e coberto.
+    extras: !!(ae && ae.monthExtras) && hasAe,
     // Retenção sazonal: só PPY SAZONAL e NÃO estilo de vida (Art. 66.9 / Anexo I.15(**)).
     retention: hasAe && isPilot && seasonal && !lifestyle,
     // Report offset (cabine) no FTL: 0 — o PSV começa na hora de report da escala, que

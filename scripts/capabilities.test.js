@@ -61,6 +61,19 @@ const FTL = { slug: 'someftl', rule_type: 'FTL' };
   eq('AE cabine: isPilot', c.isPilot, false);
 }
 
+// ── AE · piloto NÃO ABRANGIDO (agência/independente/não-filiado): FTL-only p/ pay, mas rota fica ──
+{
+  const c = capabilitiesFor({ company: AE, crewType: 'pilot', aeCovered: false });
+  eq('não-coberto: companyHasAe (companhia tem AE)', c.companyHasAe, true);
+  eq('não-coberto: hasAe false (pagamento)', c.hasAe, false);
+  eq('não-coberto: pay false', c.pay, false);
+  eq('não-coberto: perDiem false', c.perDiem, false);
+  eq('não-coberto: askCategory false', c.askCategory, false);
+  eq('não-coberto: extras false', c.extras, false);
+  eq('não-coberto: retention false', c.retention, false);
+  eq('não-coberto: ROTA fica (aeroportos, registo)', c.route, true);
+}
+
 // ── FTL-only (qualquer crewType) ──
 {
   const c = capabilitiesFor({ company: FTL, crewType: 'cabin' });

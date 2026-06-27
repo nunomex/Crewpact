@@ -51,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -134,6 +134,20 @@ export default function SettingsScreen({ navigation }) {
     updateProfile({ postFlightMin: val }, lang).catch(() => {});
     success();
   };
+  // Vínculo + cobertura pelo AE (lei: art. 496º CT). Só onde a COMPANHIA tem AE (modelado/uncovered).
+  // O vínculo manda na cobertura (empregado → coberto; agência/independente → não). `aeCovered` é o
+  // override raro do empregado não filiado. Mexer aqui muda o que é PAGAMENTO em toda a app (FTL fica).
+  const companyHasAe = !!(caps && caps.companyHasAe) || aeStatus === 'uncovered';
+  const saveEmployment = (val) => {
+    setProfile((p) => ({ ...p, employment: val }));
+    updateProfile({ employment: val }, lang).catch(() => {});
+    success();
+  };
+  const saveAeCovered = (val) => {
+    setProfile((p) => ({ ...p, aeCovered: val }));
+    updateProfile({ aeCovered: val }, lang).catch(() => {});
+    success();
+  };
 
   // Base — guardada no metadata como CÓDIGO; "fora da base" no per-diem/pernoitas. O picker
   // vem do CATÁLOGO (tabela `bases`) filtrado pela companhia, agrupado por país.
@@ -207,7 +221,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, employment, aeCovered },
         duties, dayLog, aeExtras,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -303,8 +317,22 @@ export default function SettingsScreen({ navigation }) {
               {/* Serviço pós-voo / débrief (min, do OM) — universal; alimenta as Duty hours (fallback do sign-off). */}
               <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
                 sub={l('Débrief após o último calço (do teu OM) — conta para o serviço', 'Debrief after last on-block (from your OM) — counts as duty')}
-                last s={s} C={C}
+                last={!companyHasAe} s={s} C={C}
                 right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
+              {/* Vínculo (lei: art. 496º CT) — só onde a companhia tem AE. Decide a cobertura do pagamento. */}
+              {companyHasAe ? (
+                <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')}
+                  sub={l('Decide se o AE te abrange (pagamento). Agência/independente → não abrangido.', 'Decides if the agreement covers you (pay). Agency/independent → not covered.')}
+                  last={(employment || 'employee') !== 'employee'} s={s} C={C}
+                  right={<Seg options={[{ id: 'employee', label: l('Empresa', 'Employee') }, { id: 'agency', label: l('Agência', 'Agency') }, { id: 'independent', label: l('Indep.', 'Indep.') }]} value={employment || 'employee'} setValue={saveEmployment} />} />
+              ) : null}
+              {/* Override raro: empregado não filiado/não aderente numa empresa que não aplica o AE a todos. */}
+              {companyHasAe && (employment || 'employee') === 'employee' ? (
+                <Row icon="shield-checkmark-outline" label={l('Abrangido pelo AE', 'Covered by agreement')}
+                  sub={l('Filiação/adesão (art. 496º/497º). Quase sempre Sim. Não → FTL-only no pagamento.', 'Union/individual membership (art. 496/497). Almost always Yes. No → FTL-only for pay.')}
+                  last s={s} C={C}
+                  right={<Seg options={[{ id: 'yes', label: l('Sim', 'Yes') }, { id: 'no', label: l('Não', 'No') }]} value={aeCovered === false ? 'no' : 'yes'} setValue={(v) => saveAeCovered(v === 'yes')} />} />
+              ) : null}
             </View>
             {aeMonth ? (
               <View style={s.aeCard}>

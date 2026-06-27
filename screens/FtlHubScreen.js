@@ -122,6 +122,14 @@ export default function FtlHubScreen({ navigation }) {
             sub={l('Esta companhia tem AE publicado (BTE), ainda não no CrewPact — mostramos só os limites FTL (lei EASA). O estimador de salário/abonos chegará.', 'This airline has a published agreement (BTE), not yet in CrewPact — showing only FTL limits (EASA law). The salary/allowance estimator is coming.')}
             style={{ marginBottom: SPACE.md }} />
         ) : null}
+        {/* Estado 'uncovered': a companhia tem AE modelado, mas TU não estás abrangido (vínculo/filiação,
+            art. 496º CT) → o pagamento segue o teu contrato individual, não modelável. FTL fica igual. */}
+        {aeStatus === 'uncovered' ? (
+          <Banner tone="info" icon="shield-outline"
+            title={l('Não abrangido pelo AE', 'Not covered by the agreement')}
+            sub={l('Como agência/independente (ou sem filiação), o AE não te cobre — o pagamento segue o teu contrato, que não modelamos. Mostramos só os limites FTL (iguais para todos). Muda no Perfil.', 'As agency/independent (or not affiliated), the agreement doesn’t cover you — pay follows your own contract, which we don’t model. Showing only FTL limits (same for all). Change it in Profile.')}
+            style={{ marginBottom: SPACE.md }} />
+        ) : null}
         {/* Atividade — cartão de ação escuro com glow radial (mockup .actbig) */}
         <Animated.View style={seg(0)}>
           <TouchableOpacity style={s.actbig} activeOpacity={0.9} onPress={() => navigation.navigate('FtlCalc', { duty: true })}>

@@ -45,7 +45,9 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       serviceStart: profile.serviceStart || null,
       lifestyle: !!profile.lifestyle,
       instructorRated: !!profile.instructorRated,
-      postFlightMin: profile.postFlightMin || 0,   // serviço pós-voo/débrief (min, do OM)
+      postFlightMin: profile.postFlightMin || 0,    // serviço pós-voo/débrief (min, do OM)
+      employment: profile.employment || 'employee', // vínculo (por conta de outrem/agência/independente)
+      aeCovered: profile.aeCovered !== false,        // abrangido pelo AE (cobertura do pagamento)
     },
     duties: d,
     ftlDayLog: dayLog || {},
