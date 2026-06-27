@@ -383,9 +383,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               {/* Rota À MÃO — origem → destino + ✓ cria UM setor (com o nº de voo escrito). */}
               {(caps ? caps.route : !!ae) ? (
                 <>
-                  <Text style={[s.lbl, { marginTop: 13 }]}>{l('Rota · setor a setor', 'Route · sector by sector')}</Text>
+                  <Text style={[s.lbl, { marginTop: 13 }]}>{l('Rota · opcional (per-diem)', 'Route · optional (per diem)')}</Text>
                   <AirportRoute onAdd={addManualSector} error={flightErr} />
-                  <Text style={s.routeHint}>{l('Origem → destino + ✓ cria um setor (cada ✓ = um voo). Repete para mais.', 'Origin → destination + ✓ adds a sector (each ✓ = one flight). Repeat for more.')}</Text>
+                  <Text style={s.routeHint}>{l('Opcional · só alimenta o per-diem (AE). Origem → destino + ✓ adiciona o setor. O FTL precisa só dos setores + horas.', 'Optional · only feeds the per diem (AE). Origin → destination + ✓ adds the sector. FTL needs only sectors + times.')}</Text>
                 </>
               ) : null}
 
@@ -442,8 +442,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 {/* Nº de setores (define as linhas de off/on). Da rota, ou ajustável à mão. */}
                 <View style={{ marginTop: 14 }}>
                   <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={setSectorCount} min={0} max={12} />
-                  {form.route && form.route.split('-').filter(Boolean).length > 1
-                    ? <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Setores definidos pela rota · ajustável', 'Sectors set from route · adjustable')}</Text> : null}
+                  <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Nº de setores — é o que o FTL conta (mínimo legal). A rota (em Voos) é opcional, só para o per-diem.', 'Number of sectors — what FTL counts (legal minimum). The route (in Flights) is optional, only for per diem.')}</Text>
                 </View>
                 {/* off/on de cada setor (block_off/on + Block hours derivam). Sempre editável. */}
                 <View style={{ marginTop: 14 }}>
