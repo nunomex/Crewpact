@@ -19,6 +19,8 @@ const cleanDuties = (duties = {}) => {
       route: d.route || null,
       kind: d.kind || 'flight',
       nightStop: !!d.nightStop,
+      signOff: d.signOff || null,                  // fim de serviço real (sign-off)
+      legs: Array.isArray(d.legs) ? d.legs : null, // off/on + nº de voo por setor
       source: d.source || 'manual',
     };
   }
@@ -43,6 +45,7 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       serviceStart: profile.serviceStart || null,
       lifestyle: !!profile.lifestyle,
       instructorRated: !!profile.instructorRated,
+      postFlightMin: profile.postFlightMin || 0,   // serviço pós-voo/débrief (min, do OM)
     },
     duties: d,
     ftlDayLog: dayLog || {},

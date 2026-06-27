@@ -61,9 +61,14 @@ export const computeDuty = ({ state = 'acc', report, end = null, sectors = 1, sp
 // via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
 // `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).
 // Devolve null sem dados suficientes (sem apresentação ou sem on-block).
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlightMin = null } = {}) => {
   if (!duty.report_time || !duty.block_on) return null;
-  const d = computeDuty({ state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: 0 });
+  // Serviço pós-voo (debrief, ORO.FTL.235c — o operador fixa-o no OM). O sign-off REAL da duty
+  // (`signOff` − último on-block, com volta-a-meia-noite) tem PRIORIDADE; senão usa o default
+  // passado (min do perfil/OM). Entra no PERÍODO DE SERVIÇO (210 + repouso), como a norma manda.
+  const onMin = parseHhmm(duty.block_on), soMin = parseHhmm(duty.signOff);
+  const pf = soMin != null ? (soMin >= onMin ? soMin - onMin : soMin + 1440 - onMin) : (postFlightMin || 0);
+  const d = computeDuty({ state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf });
   if (d.fdp.actualFdpMin == null) return null;
   const toH = (m) => +(m / 60).toFixed(1);
   const fullServicoH = d.dutyPeriodMin != null ? toH(d.dutyPeriodMin) : 0;
@@ -104,15 +109,15 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true } = {}) =
 // a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
 // sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
 // ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
-export const reconcileDayLog = (duties = {}, dayLog = {}) => {
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0 } = {}) => {
   let next = dayLog, changed = false;
   for (const date in duties) {
     const d = duties[date];
     if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
     const entry = dutyToFtlDay({
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
-      sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind,
-    });
+      sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff,
+    }, { postFlightMin });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

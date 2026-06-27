@@ -172,7 +172,7 @@ export const STRINGS = {
   pt: {
     // Tabs
     'tab.home': 'Início',
-    'tab.today': 'Briefing',
+    'tab.stats': 'Estatísticas',
     'tab.agreement': 'AE/FTL',
     'tab.ae': 'AE',
     'tab.ftl': 'FTL',
@@ -659,7 +659,7 @@ export const STRINGS = {
   en: {
     // Tabs
     'tab.home': 'Home',
-    'tab.today': 'Briefing',
+    'tab.stats': 'Statistics',
     'tab.agreement': 'CLA/FTL',
     'tab.ae': 'CLA',
     'tab.ftl': 'FTL',

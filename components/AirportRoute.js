@@ -13,7 +13,7 @@ const DEFAULT_FREQ = ['LIS', 'OPO', 'FAO', 'LGW', 'AGP', 'BCN', 'MAD', 'FNC', 'A
 // Campo de Rota: chips (com dash automático) + pesquisa por nome/sigla (sugestões
 // com a sigla em badge) + input tolerante (`lis opo`/`LISOPO` → chips) + grelha das
 // tuas estações (1 toque). Controlado: `value`="LIS-OPO-LIS", emite onChange(string).
-export default function AirportRoute({ value, onChange }) {
+export default function AirportRoute({ value, onChange, error }) {
   const { lang, duties, base } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -63,7 +63,7 @@ export default function AirportRoute({ value, onChange }) {
   return (
     <View>
       {/* Caixa de rota: ícone + chips + input */}
-      <View style={[s.box, focused && s.boxOn]}>
+      <View style={[s.box, focused && s.boxOn, error && s.boxErr]}>
         <Ionicons name="search" size={16} color={C.sub} />
         {legs.map((c, i) => (
           <React.Fragment key={c + i}>
@@ -127,6 +127,7 @@ const makeStyles = (C) => StyleSheet.create({
   box: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 7, minHeight: 52,
     borderWidth: 1.5, borderColor: C.line, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14, paddingVertical: 8 },
   boxOn: { borderColor: C.ink },
+  boxErr: { borderColor: C.red },
   arrow: { color: C.sub, fontSize: 13 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 32, backgroundColor: C.ink, borderRadius: 11, paddingLeft: 11, paddingRight: 8 },
   chipTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 14, letterSpacing: 0.4 },

@@ -51,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -127,6 +127,13 @@ export default function SettingsScreen({ navigation }) {
     updateProfile({ lifestyle: val }, lang).catch(() => {});
     success();
   };
+  // Serviço pós-voo / débrief (min) — do OM do operador (ORO.FTL.235c). Default das Duty hours
+  // quando não há sign-off real por duty. Universal (piloto + cabine, qualquer companhia).
+  const savePostFlight = (val) => {
+    setProfile((p) => ({ ...p, postFlightMin: val }));
+    updateProfile({ postFlightMin: val }, lang).catch(() => {});
+    success();
+  };
 
   // Base — guardada no metadata como CÓDIGO; "fora da base" no per-diem/pernoitas. O picker
   // vem do CATÁLOGO (tabela `bases`) filtrado pela companhia, agrupado por país.
@@ -200,7 +207,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin },
         duties, dayLog, aeExtras,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -248,7 +255,7 @@ export default function SettingsScreen({ navigation }) {
           <Animated.View style={seg(1)}>
             <Text style={s.gt}>{l('Companhia', 'Airline')}</Text>
             <View style={s.gbox}>
-              <View style={[s.gr, ae && s.grBorder]}>
+              <View style={[s.gr, s.grBorder]}>
                 <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
@@ -273,26 +280,31 @@ export default function SettingsScreen({ navigation }) {
               {ae ? (
                 <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
                   sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
-                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} last={!showLifestyle && !showInstructor && !showFleet} s={s} C={C} />
+                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} s={s} C={C} />
               ) : null}
               {showLifestyle ? (
                 <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')}
                   sub={l('Sazonal recebe retenção · estilo de vida não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')}
-                  last={!showInstructor && !showFleet} s={s} C={C}
+                  s={s} C={C}
                   right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
               ) : null}
               {showInstructor ? (
                 <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')}
                   sub={l('Destrava o papel de instrutor (Art. 42) — só se tiveres a qualificação', 'Unlocks the instructor role (Art. 42) — only if you hold the rating')}
-                  last={!showFleet} s={s} C={C}
+                  s={s} C={C}
                   right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
               ) : null}
               {showFleet ? (
                 <Row icon="airplane-outline" label={l('Frota', 'Fleet')}
                   sub={l('Wide-body cobra sempre a tarifa WB de per-diem (AE TAP)', 'Wide-body always charges the WB per-diem rate (TAP agreement)')}
-                  last s={s} C={C}
+                  s={s} C={C}
                   right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
               ) : null}
+              {/* Serviço pós-voo / débrief (min, do OM) — universal; alimenta as Duty hours (fallback do sign-off). */}
+              <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
+                sub={l('Débrief após o último calço (do teu OM) — conta para o serviço', 'Debrief after last on-block (from your OM) — counts as duty')}
+                last s={s} C={C}
+                right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
             </View>
             {aeMonth ? (
               <View style={s.aeCard}>

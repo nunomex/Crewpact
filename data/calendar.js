@@ -46,11 +46,17 @@ const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;       // hora
 const hhmmZ = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; // hora UTC (Zulu)
 // Data local 'YYYY-MM-DD' (componentes locais, não UTC) — chave por dia.
 const isoLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Date no MESMO dia local de `ref`, à hora h:m (para a apresentação parseada do texto do evento).
+const atDayTime = (ref, h, m) => { const d = new Date(ref); d.setHours(h, m, 0, 0); return d; };
 const fmtDate = (d) => d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
 // Padrões extra: bloco em Zulu e base (das notas da AIMS eCrew). Os códigos de
 // TIPO de duty (voo/standby/posicionamento…) são por companhia → ver rosterCodes.js.
 const RE_BLOCKZ  = /\((\d{2})(\d{2})Z\s*[-–—]\s*(\d{2})(\d{2})Z\)/;  // (1350Z-1615Z)
 const RE_BASE    = /Local Base\s*\(([A-Z]{3})\)/i;                  // "All times in Local Base (LIS)"
+// Apresentação/sign-on EXPLÍCITA no evento (ex. "RP 0540", "Report 05:40", "C/I 0540",
+// "Apresentação 05:40"). SÓ se o feed a trouxer — NUNCA derivada de dep − 1 h (a apresentação
+// é input FTL, define o PSV máx; não é estimativa). Tratada como hora LOCAL (= horas do título).
+const RE_REPORT  = /\b(?:RP|REPORT|SIGN[\s-]?ON|C\/?I|CHECK[\s-]?IN|APRES(?:ENTA[ÇC][AÃ]O)?)\b\s*[:=]?\s*(\d{1,2})[:h.]?(\d{2})\b/i;
 
 // KIND universal do evento a partir dos CÓDIGOS da companhia (rosterCodes). Os
 // tipos sem-voo têm prioridade sobre a rota — "DH LIS-LGW" é posicionamento (não
@@ -99,21 +105,25 @@ function mapFlight(ev, codes) {
   // Horas: preferir as do título; caso contrário usar início/fim do evento.
   const depTime = times ? `${pad(+times[1])}:${times[2]}` : hhmm(start);
   const arrTime = times ? `${pad(+times[3])}:${times[4]}` : hhmm(finish);
-  // Apresentação ≈ 1 h antes da partida (ajustável conforme a operação).
-  const report = new Date(start.getTime() - 60 * 60 * 1000);
+  // Apresentação: SÓ se o evento a trouxer EXPLÍCITA (RE_REPORT). NUNCA dep − 1 h — a
+  // apresentação é input FTL (define o PSV máx), não estimativa. Sem token → null: o user
+  // preenche (igual ao PDF, que lê a coluna real, e ao manual, que fica vazio). Ver report-time.
+  const rep = text.match(RE_REPORT);
+  const reportDate = rep ? atDayTime(start, +rep[1], +rep[2]) : null;
 
   return {
     kind: 'flight',
     flightNo: flt ? flt[0].toUpperCase().replace(/\s+/g, '') : null,
     dateISO: isoLocal(start),
     date: fmtDate(start),
-    report: hhmm(report),
+    report: reportDate ? hhmm(reportDate) : null,
+    reportDate,
     depTime,
     arrTime,
     // Variantes em UTC/Zulu (derivadas do instante absoluto), para mostrar ambas.
     depTimeZ: hhmmZ(start),
     arrTimeZ: hhmmZ(finish),
-    reportZ: hhmmZ(report),
+    reportZ: reportDate ? hhmmZ(reportDate) : null,
     depAirport: route ? route[1] : '—',
     arrAirport: route ? route[2] : '—',
     aircraft: [ac && ac[1], reg && reg[1]].filter(Boolean).join(' · ') || '—',
@@ -187,8 +197,8 @@ function finishDuty(d) {
   const base = legs.map(l => l.base).find(Boolean) || null;
   return {
     dateISO: first.dateISO,
-    report: hhmm(first.startDate),   // = início do 1º evento (validar: report vs STD)
-    reportDate: first.startDate,
+    report: first.report || null,        // apresentação REAL do 1.º evento (ou null se o feed não a traz)
+    reportDate: first.reportDate || null,
     release: hhmm(release),
     releaseDate: release,
     sectors: legs.length,

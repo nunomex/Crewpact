@@ -32,7 +32,7 @@ export const dutyFromActivity = (act, base = null) => {
   const sectors = act.sectors || act.legs.length;
   return {
     duty_date: act.dateISO,
-    report_time: first.report || null,   // apresentação (≈ dep − 1 h)
+    report_time: first.report || null,   // apresentação REAL do evento (null → o user preenche; nunca dep − 1 h)
     block_off: first.depTime || null,     // 1.º off-block
     block_on: last.arrTime || null,       // último on-block
     sectors,
@@ -49,8 +49,8 @@ export const dutyFromActivity = (act, base = null) => {
 
 // Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
 // no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
-export const prospectiveDuty = (duty, dayLog = {}, ref = null) => {
-  const ftl = dutyToFtlDay(duty); // { psv, servico, voo, rest } ou null (sem dados)
+export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0) => {
+  const ftl = dutyToFtlDay(duty, { postFlightMin }); // { psv, servico, voo, rest } ou null (sem dados)
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída

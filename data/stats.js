@@ -3,18 +3,23 @@
 // `ae`+category+contract para estimar ganhos YTD (base × meses decorridos + per diem
 // das rotas). Fonte: o store cru `duties` (não o dayLog do motor FTL), para contar
 // TUDO o que está na escala, importado ou manual.
-import { monthlyPerDiem } from './perdiem';
+import { monthlyPerDiem, monthlyAe } from './perdiem';
 import { resolveCrew } from './crewHistory';
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
 export const ANNUAL_FLIGHT_LIMIT_H = 1000; // CS-FTL.1: 1000 h de voo em 12 meses consecutivos
 
 const toMin = (hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-// Duração de serviço aproximada (report → block_on), overnight-aware. null sem dados.
-const dutyMinutes = (d) => {
+// Duração de serviço (report → FIM), overnight-aware. Fim = sign-off REAL; senão block_on +
+// débrief do perfil (ORO.FTL.235c). null sem dados. `pf` = serviço pós-voo (min) do perfil.
+const dutyMinutes = (d, pf = 0) => {
   const r = toMin(d.report_time), e = toMin(d.block_on);
   if (r == null || e == null) return null;
-  return e >= r ? e - r : (e + 1440 - r);
+  const so = toMin(d.signOff);
+  const end = so != null ? so : e;                       // fim = sign-off real, senão block_on
+  let dur = end >= r ? end - r : (end + 1440 - r);
+  if (so == null) dur += (pf || 0);                       // sem sign-off → soma o débrief do perfil
+  return dur;
 };
 // Nº do dia (desde a época) p/ sequências/repouso; dias do ano p/ as folgas.
 const dayNum = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000) : null; };
@@ -30,7 +35,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, now = new Date() } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, now = new Date() } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -52,7 +57,7 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
     if (dn != null) dutyDayNums.push(dn);
     const rm = toMin(d.report_time), bo = toMin(d.block_on);
     if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
-    const dm = dutyMinutes(d);
+    const dm = dutyMinutes(d, postFlightMin);
     if (dm != null) { dutyMin += dm; months[mi].dutyMin += dm; }
     if (kind === 'flight') {
       flights++;
@@ -116,11 +121,100 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
 
   return {
-    year: y,
+    scope: 'year', year: y,
     flightMin, flightHours: +(flightMin / 60).toFixed(1),
     dutyMin, dutyHours: +(dutyMin / 60).toFixed(1),
     sectors, count, flights, withRoute, nightStops,
     offDays, longestStreak, minRestH, reducedRests,
     byKind, months, topDest, aeYtd,
+  };
+};
+
+const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
+
+// Agrega UM mês (`ym`='YYYY-MM') — a MESMA família de números do `yearStats`, para a
+// vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
+// = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
+// EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, now = new Date() } = {}) => {
+  const [Y, M] = String(ym || '').split('-').map(Number);
+  const y = Y || now.getFullYear();
+  const m0 = M ? M - 1 : now.getMonth();
+  const ymStr = `${y}-${String(m0 + 1).padStart(2, '0')}`;
+  const dim = daysInMonth(y, m0);
+  const days = Array.from({ length: dim }, (_, i) => ({ day: i + 1, flightMin: 0, count: 0 }));
+  const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
+  const dest = {};
+  let flightMin = 0, dutyMin = 0, sectors = 0, count = 0, flights = 0, withRoute = 0, nightStops = 0;
+  const dutyDayNums = [], restEntries = [];
+
+  for (const date in duties) {
+    const d = duties[date];
+    if (!d || d.deleted) continue;
+    if (!String(date).startsWith(ymStr + '-')) continue;
+    const di = +String(date).slice(8, 10) - 1;
+    count++;
+    const kind = d.kind || 'flight';
+    byKind[kind] = (byKind[kind] || 0) + 1;
+    if (d.nightStop) nightStops++;
+    const dn = dayNum(date);
+    if (dn != null) dutyDayNums.push(dn);
+    const rm = toMin(d.report_time), bo = toMin(d.block_on);
+    if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
+    const dm = dutyMinutes(d, postFlightMin);
+    if (dm != null) dutyMin += dm;
+    if (kind === 'flight') {
+      flights++;
+      const fm = d.flight_minutes || 0; flightMin += fm;
+      if (di >= 0 && di < dim) { days[di].flightMin += fm; days[di].count++; }
+      const sc = d.sectors || 0; sectors += sc;
+      const codes = String(d.route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
+      for (let i = 1; i < codes.length; i++) { const a = codes[i]; if (a) dest[a] = (dest[a] || 0) + 1; }
+      if (codes.length >= 2) withRoute++;
+    }
+  }
+  const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
+
+  // Folgas no mês = dias DECORRIDOS do mês − dias com serviço (mês corrente: até hoje).
+  const cy = now.getFullYear(), cm = now.getMonth();
+  const elapsed = (y < cy || (y === cy && m0 < cm)) ? dim : ((y > cy || (y === cy && m0 > cm)) ? 0 : now.getDate());
+  const offDays = Math.max(0, elapsed - count);
+
+  dutyDayNums.sort((a, b) => a - b);
+  let longestStreak = 0, run = 0, prev = null;
+  for (const n of dutyDayNums) { run = (prev != null && n === prev + 1) ? run + 1 : 1; longestStreak = Math.max(longestStreak, run); prev = n; }
+  restEntries.sort((a, b) => a.start - b.start);
+  let minRestMin = null, reducedRests = 0;
+  for (let i = 1; i < restEntries.length; i++) {
+    const rest = restEntries[i].start - restEntries[i - 1].end;
+    if (rest <= 0) continue;
+    if (minRestMin == null || rest < minRestMin) minRestMin = rest;
+    if (rest < 11 * 60) reducedRests++;
+  }
+  const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
+
+  // AE do mês — categoria/contrato EFFECTIVE-DATED desse mês (uma promoção não reescreve o passado).
+  let aeMonth = null;
+  const history = (Array.isArray(crewHistory) && crewHistory.length)
+    ? crewHistory
+    : (category ? [{ category, contract: contract || '12/12', from: '0000-01' }] : []);
+  const resolved = history.length ? resolveCrew(history, ymStr) : { category: null, contract: '12/12' };
+  if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
+    const index = ae.indexFactor ? ae.indexFactor(y) : 1;
+    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet });
+    if (m) aeMonth = {
+      base: m.base, perDiem: m.perDiem, nightStops: m.nightStops, total: m.total,
+      withRoute: m.withRoute, missing: m.missing,
+      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(y)) && index > 1,
+    };
+  }
+
+  return {
+    scope: 'month', ym: ymStr, year: y, month: m0,
+    flightMin, flightHours: +(flightMin / 60).toFixed(1),
+    dutyMin, dutyHours: +(dutyMin / 60).toFixed(1),
+    sectors, count, flights, withRoute, nightStops,
+    offDays, longestStreak, minRestH, reducedRests,
+    byKind, days, topDest, aeMonth,
   };
 };

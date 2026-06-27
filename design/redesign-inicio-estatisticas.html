@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CrewPact · Início (Serviços + Perguntas) + Estatísticas (Limites FTL)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#FFFFFF; --card:#FFFFFF; --soft:#F2F2F0; --ink:#1B1B1B;
+    --red:#F5402C; --redSoft:#FDE9E4; --redText:#C9331F;
+    --brand:#1F4E79; --warn:#E8932B; --warnSoft:#FBEAD2; --warnText:#9A6B1E;
+    --line:#ECECEA; --text:#1B1B1B; --sub:#6B6B66;
+    --green:#1F9E6E; --greenSoft:#E2F4EC; --greenText:#2A7A5C;
+    --r-lg:16px; --r-xl:22px; --r-pill:99px;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --ui:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  body{font-family:var(--ui);background:radial-gradient(1200px 700px at 50% -10%, #EFEFEC 0%, #E4E4E0 60%, #DDDDD9 100%);color:var(--text);min-height:100vh;padding:46px 24px 70px}
+  .head{max-width:980px;margin:0 auto 34px;text-align:center}
+  .head .eb{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--brand);margin-bottom:10px}
+  .head h1{font-family:var(--disp);font-weight:600;font-size:30px;letter-spacing:-.6px;color:#15151A}
+  .head p{margin-top:10px;font-size:14px;color:#55554F;font-weight:500;max-width:620px;margin-left:auto;margin-right:auto;line-height:1.55}
+  .stage{display:flex;gap:54px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .cap{font-size:12.5px;font-weight:700;color:#44443F;text-align:center;max-width:380px;line-height:1.5}
+  .cap b{color:var(--red)}
+  .cap span{display:block;font-weight:500;color:#6E6E68;margin-top:4px;font-size:11.5px}
+
+  /* ── Phone frame ── */
+  .phone{width:390px;height:812px;background:var(--canvas);border-radius:46px;position:relative;overflow:hidden;
+    box-shadow:0 2px 0 #fff inset, 0 34px 70px -28px rgba(20,22,26,.55), 0 0 0 11px #0c0c0e, 0 0 0 12px #2a2a2e}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:122px;height:30px;background:#0c0c0e;border-radius:18px;z-index:40}
+  .scroll{position:absolute;inset:0;padding:58px 18px 116px;overflow:hidden}
+
+  /* ── shared bits ── */
+  .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--sub)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 12px 26px -22px rgba(20,22,26,.5)}
+  .mb{margin-bottom:14px}
+  .row-sb{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+  /* page header */
+  .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+  .ph .op{font-size:10.5px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--sub)}
+  .ph h2{font-family:var(--disp);font-weight:600;font-size:27px;letter-spacing:-.5px;margin-top:7px;color:var(--text)}
+  .bell{width:38px;height:38px;border-radius:var(--r-pill);background:var(--soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto;position:relative}
+  .bell svg{width:18px;height:18px;stroke:var(--text);stroke-width:1.8;fill:none}
+  .bell .bdg{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;border-radius:99px;background:var(--red);color:#fff;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--canvas);padding:0 3px}
+
+  /* ILEGAL banner (só quando ilegal) */
+  .alert{display:flex;gap:11px;align-items:flex-start;background:var(--redSoft);border:1px solid #F6CDC4;border-radius:var(--r-lg);padding:13px 15px;margin-bottom:14px}
+  .alert .dot{width:9px;height:9px;border-radius:50%;background:var(--red);margin-top:5px;flex:0 0 auto}
+  .alert .q{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--redText)}
+  .alert .a{font-size:13.5px;font-weight:700;color:#7a1d11;margin-top:2px}
+  .alert .s{font-size:11.5px;font-weight:500;color:#9a4034;margin-top:3px;line-height:1.4}
+
+  /* SERVIÇOS card */
+  .svc{padding:16px 16px 6px}
+  .svc .head{display:flex;align-items:center;gap:7px;margin-bottom:14px;text-align:left}
+  .svc .head .dot{width:8px;height:8px;border-radius:3px;background:var(--ink)}
+  .next{display:flex;gap:14px;align-items:center}
+  .badge{width:66px;height:66px;border-radius:var(--r-lg);background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 10px 20px -10px rgba(27,27,27,.6)}
+  .badge .d{font-family:var(--disp);font-weight:600;font-size:30px;line-height:1;letter-spacing:-.5px}
+  .badge .w{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.82);margin-top:3px}
+  .next .info{min-width:0;flex:1}
+  .next .route{font-family:var(--disp);font-weight:600;font-size:25px;letter-spacing:-.4px;color:var(--text);line-height:1.05}
+  .next .meta{font-size:12px;font-weight:500;color:var(--sub);margin-top:7px}
+  .next .meta b{color:var(--red);font-weight:700}
+  .tags{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+  .tag{display:inline-flex;align-items:center;gap:5px;background:var(--soft);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px 10px;font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--sub)}
+  .tag.night{background:#E9F0F8;border-color:#D4E2F0;color:#2C6097}
+  .svc .div{height:1px;background:var(--line);margin:15px 0 11px}
+  .svc .up-eb{font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--sub);margin-bottom:9px}
+  .up{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--line)}
+  .up:first-of-type{border-top:none}
+  .up .ud{width:34px;text-align:center;flex:0 0 auto}
+  .up .ud .n{font-family:var(--disp);font-weight:600;font-size:17px;color:var(--text);line-height:1}
+  .up .ud .wd{font-size:9px;font-weight:800;text-transform:uppercase;color:var(--sub);margin-top:2px}
+  .up .ut{flex:1;min-width:0}
+  .up .ut .t{font-size:13.5px;font-weight:600;color:var(--text)}
+  .up .ut .sub{font-size:11px;font-weight:500;color:var(--sub);margin-top:1px}
+
+  /* PERGUNTAS */
+  .sec-eb{font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--sub);margin:6px 2px 9px}
+  .qcard{padding:2px 16px}
+  .qrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:none}
+  .qrow .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .qrow .body{flex:1;min-width:0}
+  .qrow .q{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--sub)}
+  .qrow .a{font-size:13.5px;font-weight:600;color:var(--text);margin-top:1px}
+  .qrow .a em{font-style:normal;color:var(--warnText);font-weight:700}
+  .qrow .chev{width:16px;height:16px;stroke:var(--sub);stroke-width:2;fill:none;flex:0 0 auto}
+  .g{background:var(--green)} .am{background:var(--warn)} .rd{background:var(--red)}
+
+  /* Estatísticas */
+  .toggle{display:inline-flex;background:var(--soft);border-radius:var(--r-pill);padding:4px;margin-bottom:14px}
+  .toggle button{border:none;background:none;font-family:var(--ui);font-size:13px;font-weight:600;color:var(--sub);padding:7px 22px;border-radius:var(--r-pill);cursor:pointer}
+  .toggle button.on{background:var(--ink);color:#fff}
+  .mnav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 8px;margin-bottom:14px}
+  .mnav .b{width:34px;height:34px;border-radius:var(--r-pill);background:var(--soft);display:flex;align-items:center;justify-content:center}
+  .mnav .b svg{width:16px;height:16px;stroke:var(--text);stroke-width:2.2;fill:none}
+  .mnav .lbl{font-size:15px;font-weight:600;color:var(--text)}
+
+  .limits{padding:15px 16px 8px;position:relative;border-color:#F2D9D3;box-shadow:0 12px 26px -20px rgba(245,64,44,.28)}
+  .limits .new{position:absolute;top:14px;right:14px;background:var(--redSoft);color:var(--redText);font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill)}
+  .limits .head{display:flex;align-items:center;gap:7px;margin-bottom:13px}
+  .limits .head .dot{width:8px;height:8px;border-radius:3px;background:var(--red)}
+  .lwin{padding:9px 0;border-top:1px solid var(--line)}
+  .lwin:first-of-type{border-top:none}
+  .lwin .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+  .lwin .nm{font-size:11.5px;font-weight:700;color:var(--text)}
+  .lwin .vl{font-size:11.5px;font-weight:700;color:var(--sub)}
+  .lwin .vl b{color:var(--text)}
+  .track{height:7px;border-radius:99px;background:var(--soft);overflow:hidden}
+  .fill{height:100%;border-radius:99px}
+
+  .hero{padding:18px;margin-bottom:14px}
+  .hero .top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .hero .top .dot{width:8px;height:8px;border-radius:3px;background:var(--red)}
+  .hero .top .eb{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--sub)}
+  .hero .numr{display:flex;align-items:baseline;gap:9px}
+  .hero .num{font-family:var(--disp);font-weight:700;font-size:48px;letter-spacing:-1.4px;color:var(--text);line-height:1}
+  .hero .un{font-size:13px;font-weight:600;color:var(--sub)}
+  .hero .sub{font-size:11.5px;font-weight:500;color:var(--sub);margin-top:11px}
+
+  .tiles{display:flex;flex-wrap:wrap;gap:11px;margin-bottom:14px}
+  .tile{flex:1 1 46%;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px}
+  .tile svg{width:16px;height:16px;stroke:var(--red);stroke-width:1.9;fill:none}
+  .tile .v{font-family:var(--disp);font-weight:700;font-size:22px;letter-spacing:-.5px;color:var(--text);margin-top:8px}
+  .tile .l{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);margin-top:3px}
+
+  .chart{padding:16px}
+  .chart .ttl{font-size:10.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--sub);margin-bottom:12px}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:74px}
+  .bars .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;align-items:center;gap:5px}
+  .bars .bar{width:62%;border-radius:3px;background:var(--ink)}
+  .bars .bar.z{background:var(--line)}
+  .bars .bar.now{background:var(--red)}
+  .bars .dl{font-size:8px;font-weight:700;color:var(--sub)}
+
+  /* dock */
+  .dock-wrap{position:absolute;left:0;right:0;bottom:20px;display:flex;justify-content:center;z-index:30;pointer-events:none}
+  .dock{display:flex;gap:6px;background:var(--brand);border-radius:var(--r-pill);padding:9px 12px;box-shadow:0 16px 34px -14px rgba(31,78,121,.7)}
+  .tb{width:46px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative}
+  .tb svg{width:23px;height:23px;stroke:rgba(255,255,255,.62);stroke-width:1.9;fill:none}
+  .tb.on{background:rgba(255,255,255,.12)}
+  .tb.on svg{stroke:#fff}
+  .tb.on .tdot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--red)}
+  .fab{position:absolute;right:20px;bottom:0;width:58px;height:58px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 26px -8px rgba(245,64,44,.7)}
+  .fab svg{width:28px;height:28px;stroke:#fff;stroke-width:2.4;fill:none}
+  .fade{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom, rgba(255,255,255,0), #fff 62%);z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="eb">CrewPact · proposta de redesign</div>
+    <h1>Início focado nos serviços · Estatísticas com os limites</h1>
+    <p>O Início perde os cards de Estatísticas, Salário e Limites e o item “Estou legal?”. Fica o card <b>Serviços</b> (fundido) + as <b>perguntas</b> por baixo. Os <b>Limites FTL cumulativos</b> mudam-se para a aba Estatísticas.</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- ════════ PHONE 1 · INÍCIO ════════ -->
+    <div class="col">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scroll">
+
+        <!-- header -->
+        <div class="ph">
+          <div>
+            <div class="op">easyJet · AE · Piloto</div>
+            <h2>Olá, Tó</h2>
+          </div>
+          <div class="bell">
+            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="bdg">2</span>
+          </div>
+        </div>
+
+        <!-- (ILEGAL — só aparece quando estás fora dos limites) -->
+        <div class="alert">
+          <div class="dot"></div>
+          <div>
+            <div class="q">Estou legal?</div>
+            <div class="a">Não — PSV excede o máximo (+0:20)</div>
+            <div class="s">Reduzir o serviço ou usar prolongamento. Confirma sempre com a companhia.</div>
+          </div>
+        </div>
+
+        <!-- SERVIÇOS (card principal fundido) -->
+        <div class="card svc mb">
+          <div class="head"><span class="dot"></span><span class="eyebrow">Serviços</span></div>
+          <div class="next">
+            <div class="badge"><span class="d">25</span><span class="w">Qua</span></div>
+            <div class="info">
+              <div class="route">LIS–OPO–LIS</div>
+              <div class="meta">Report <b>06:00</b> · 2 setores · block 5:10</div>
+              <div class="tags">
+                <span class="tag">EJU 1234</span>
+                <span class="tag night">
+                  <svg width="11" height="11" viewBox="0 0 24 24" style="stroke:#2C6097;stroke-width:2;fill:none"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+                  Pernoita
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="div"></div>
+          <div class="up-eb">Próximas atividades</div>
+          <div class="up"><div class="ud"><div class="n">26</div><div class="wd">Qui</div></div><div class="ut"><div class="t">Standby aeroporto</div><div class="sub">Report 05:00 · LGW</div></div></div>
+          <div class="up"><div class="ud"><div class="n">28</div><div class="wd">Sáb</div></div><div class="ut"><div class="t">LIS–FNC–LIS</div><div class="sub">Report 13:20 · 2 setores</div></div></div>
+          <div class="up"><div class="ud"><div class="n">29</div><div class="wd">Dom</div></div><div class="ut"><div class="t">Folga</div><div class="sub">—</div></div></div>
+        </div>
+
+        <!-- PERGUNTAS -->
+        <div class="sec-eb">Perguntas</div>
+        <div class="card qcard mb">
+          <div class="qrow">
+            <span class="dot g"></span>
+            <div class="body"><div class="q">Tenho descanso?</div><div class="a">Sim · 12:30 antes do report</div></div>
+          </div>
+          <div class="qrow">
+            <span class="dot am"></span>
+            <div class="body"><div class="q">Mudou a escala?</div><div class="a"><em>1 alterada · 1 nova</em></div></div>
+            <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="qrow">
+            <span class="dot g"></span>
+            <div class="body"><div class="q">Validades em dia?</div><div class="a">Tudo válido</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="fade"></div>
+      <div class="dock-wrap"><div class="dock" style="pointer-events:auto">
+        <div class="tb on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span class="tdot"></span></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+      </div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></div>
+    </div>
+    <div class="cap"><b>Início</b> — card Serviços + perguntas por baixo.<span>O aviso vermelho “Estou legal?” só salta quando estás ILEGAL (no dia-a-dia não aparece).</span></div>
+    </div>
+
+    <!-- ════════ PHONE 2 · ESTATÍSTICAS ════════ -->
+    <div class="col">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scroll">
+
+        <div class="ph">
+          <div>
+            <div class="op">Estatísticas · easyJet · AE</div>
+            <h2>O teu mês</h2>
+          </div>
+          <div class="bell"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        </div>
+
+        <div class="toggle"><button class="on">Mês</button><button>Ano</button></div>
+
+        <div class="mnav">
+          <div class="b"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <div class="lbl">Junho 2026</div>
+          <div class="b"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+
+        <!-- LIMITES FTL (movido do Início) -->
+        <div class="card limits mb">
+          <span class="new">novo · veio do Início</span>
+          <div class="head"><span class="dot"></span><span class="eyebrow">Limites FTL · atuais</span></div>
+          <div class="lwin">
+            <div class="top"><span class="nm">Voo · 28 dias</span><span class="vl">62% · <b>62</b>/100 h</span></div>
+            <div class="track"><div class="fill" style="width:62%;background:var(--green)"></div></div>
+          </div>
+          <div class="lwin">
+            <div class="top"><span class="nm">Voo · ano civil</span><span class="vl">41% · <b>410</b>/1000 h</span></div>
+            <div class="track"><div class="fill" style="width:41%;background:var(--green)"></div></div>
+          </div>
+          <div class="lwin">
+            <div class="top"><span class="nm">Serviço · 28 dias</span><span class="vl">78% · <b>148</b>/190 h</span></div>
+            <div class="track"><div class="fill" style="width:78%;background:var(--warn)"></div></div>
+          </div>
+        </div>
+
+        <!-- hero -->
+        <div class="card hero">
+          <div class="top"><span class="dot"></span><span class="eb">Horas de voo</span></div>
+          <div class="numr"><span class="num">47,5</span><span class="un">h voadas</span></div>
+          <div class="sub">12 voos · 28 setores · este mês</div>
+        </div>
+
+        <!-- tiles -->
+        <div class="tiles">
+          <div class="tile"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><div class="v">86 h</div><div class="l">Serviço</div></div>
+          <div class="tile"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><div class="v">12</div><div class="l">Dias de escala</div></div>
+          <div class="tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg><div class="v">18</div><div class="l">Dias de folga</div></div>
+          <div class="tile"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg><div class="v">3</div><div class="l">Pernoitas</div></div>
+        </div>
+
+        <!-- voo por dia -->
+        <div class="card chart">
+          <div class="ttl">Voo por dia</div>
+          <div class="bars">
+            <div class="c"><div class="bar" style="height:38%"></div><div class="dl">1</div></div>
+            <div class="c"><div class="bar z" style="height:2%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:64%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:52%"></div><div class="dl">5</div></div>
+            <div class="c"><div class="bar z" style="height:2%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:80%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:44%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar z" style="height:2%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:70%"></div><div class="dl">10</div></div>
+            <div class="c"><div class="bar" style="height:58%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar z" style="height:2%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:48%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar" style="height:90%"></div><div class="dl"></div></div>
+            <div class="c"><div class="bar now" style="height:34%"></div><div class="dl" style="color:var(--red)">15</div></div>
+            <div class="c"><div class="bar z" style="height:2%"></div><div class="dl"></div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="fade"></div>
+      <div class="dock-wrap"><div class="dock" style="pointer-events:auto">
+        <div class="tb"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+        <div class="tb on"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="tdot"></span></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+      </div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></div>
+    </div>
+    <div class="cap"><b>Estatísticas</b> — Mês ⇄ Ano + os Limites FTL.<span>O card “Limites FTL · atuais” é o que saiu do Início (consumo a esta data).</span></div>
+    </div>
+
+  </div>
+</body>
+</html>

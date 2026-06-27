@@ -339,6 +339,10 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                         : issue ? <Text style={[s.cMeta, info.kind === 'fix' && s.cIssue]} numberOfLines={1}>{issue}</Text>
                           : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}</Text>
                             : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
+                      {/* off/on de CADA setor (lido do PDF/calendário) — só leitura */}
+                      {c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length ? (
+                        <Text style={s.cLegs} numberOfLines={2}>{c.duty.legs.map((lg) => `${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}-${lg.on || '—'}`).join('   ·   ')}</Text>
+                      ) : null}
                     </View>
                     {info.kind === 'fix' ? (
                       <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
@@ -426,6 +430,7 @@ const makeStyles = (C) => StyleSheet.create({
   mark: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.soft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   markTxt: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.ink },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
+  cLegs: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 3, fontVariant: ['tabular-nums'] },
   cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

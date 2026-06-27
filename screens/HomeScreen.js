@@ -23,6 +23,8 @@ import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme, toZulu } from '../data/appContext';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
+import { buildTodayItems } from './hojeItems';
+import { fetchFlightStatus, depDelayMin, hasDeviation } from '../data/flightStatus';
 import CountUp from '../components/CountUp';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
@@ -122,6 +124,7 @@ function dutyToFlight(iso, d) {
   const arr = (ap.length > 1 ? (last !== dep ? last : ap[1]) : dep) || '—';  // ida-volta → mostra a estação fora
   return {
     kind: d.kind || 'flight', nightStop: !!d.nightStop, manual: true, dateISO: iso,
+    flightNo: (d.legs && d.legs[0] && d.legs[0].flightNo) || null,   // p/ o estado do voo ao vivo
     report: d.report_time,
     depTime: d.block_off || d.report_time,
     arrTime: d.block_on || d.report_time,
@@ -152,9 +155,10 @@ function mergeNextFlight(calFlight, duties, now) {
 
 // Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com
 // mini-barra colorida por severidade. Usado na grelha 2-col do Início.
-function LimitCard({ title, windows, limLabel, s, C }) {
+function LimitCard({ title, question, windows, limLabel, s, C }) {
   return (
     <View style={s.uc}>
+      {question ? <Text style={s.ucQ} numberOfLines={1}>{question}</Text> : null}
       <View style={s.ucHead}>
         <View style={s.ucDot} />
         <Text style={s.ucTitle} numberOfLines={1}>{title}</Text>
@@ -186,11 +190,28 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras, validities } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
+
+  // Respostas da antiga Briefing no Início (reaproveita o MESMO `buildTodayItems` → consciente de
+  // tripulação/categoria via ae/isPilot). "Estou legal?" só aparece quando ILEGAL (aviso vermelho);
+  // as perguntas (descanso/escala/validades) vão por baixo do card Serviços.
+  const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+  const todayItems = useMemo(
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeExtras, validities, isPilot, todayISO }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeExtras, validities, isPilot, todayISO, lang],
+  );
+  // Perguntas (por baixo do card Serviços) — "Estou legal?" entra aqui (já ordenado por
+  // severidade: ILEGAL sobe ao topo). Mostra-se quando há veredicto (esconde "sem dados").
+  const questionItems = todayItems.filter((it) =>
+    (it.id === 'legal' && it.status !== 'neutral')
+    || (it.id === 'rest' && it.status !== 'neutral')
+    || it.id === 'roster'
+    || it.id === 'validades');
+  const stColor = (st) => st === 'bad' ? C.red : st === 'warn' ? (C.warn || C.text) : st === 'ok' ? (C.greenText || C.green) : C.sub;
 
   // FTL — limites de tempo (ORO.FTL.210), calculados pelo MOTOR a partir do dayLog (store FTL).
   const dutyLimits = computeDutyTime(dayLog);     // serviço: 60/110/190 h em 7/14/28 dias
@@ -272,6 +293,22 @@ export default function HomeScreen({ navigation }) {
   }, []));
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: relê o calendário a pedido
 
+  // ── Estado do voo AO VIVO (proxy AirLabs via Edge Function `flight-status`) ──
+  // Só para o voo do card Serviços, e só DENTRO DA JANELA (~4 h antes da partida até ~1 h
+  // depois da chegada) → poupa pedidos. Vira um aviso no topo SÓ quando há desvio.
+  const flightNo = flight && flight.flightNo;
+  const depTs = (flight && flight.startDate) ? +new Date(flight.startDate) : null;
+  const endTs = (flight && flight.endDate) ? +new Date(flight.endDate) : (depTs ? depTs + 3 * 3600e3 : null);
+  const inFlightWindow = !!depTs && Date.now() >= depTs - 4 * 3600e3 && Date.now() <= (endTs || depTs) + 3600e3;
+  const [flightStatus, setFlightStatus] = useState(null);
+  const [fsTick, setFsTick] = useState(0);   // re-fetch a pedido (pull-to-refresh)
+  useEffect(() => {
+    let cancelled = false;
+    if (!flightNo || !inFlightWindow) { setFlightStatus(null); return; }
+    fetchFlightStatus(flightNo).then((st) => { if (!cancelled) setFlightStatus(st); });
+    return () => { cancelled = true; };
+  }, [flightNo, inFlightWindow, fsTick]);
+
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
   const reportMs = flight ? flight.startDate.getTime() - 60 * 60 * 1000 : null; // apresentação ≈ partida − 1 h
@@ -294,7 +331,8 @@ export default function HomeScreen({ navigation }) {
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
       const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0 });
       ndPsvMax = d.fdp.maxFdpStr; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
-    } else {
+    } else if (flight.report) {
+      // Só estima PSV máx se o calendário trouxe apresentação REAL — não inventa dep − 1 h.
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1 });
       ndPsvMax = d.fdp.maxFdpStr;
     }
@@ -347,7 +385,7 @@ export default function HomeScreen({ navigation }) {
 
   const nextDutyEl = flight ? (
     <View>
-      <Eyebrow style={{ marginBottom: 12 }}>{l('Serviço', 'Duty')}</Eyebrow>
+      <Eyebrow style={{ marginBottom: 12 }}>{l('Serviços', 'Duties')}</Eyebrow>
       <View style={s.svc}>
         <View style={s.svcNd}>
           <View style={s.svcBadgeWrap}>
@@ -391,6 +429,8 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : null}
         </View>
+        {/* Próximas atividades — FUNDIDAS no card Serviços, por baixo do próximo serviço */}
+        <UpcomingDutiesCard duties={duties} lang={lang} bare afterISO={flight.dateISO} limit={3} />
       </View>
     </View>
   ) : loadingFlight ? (
@@ -423,57 +463,9 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  // ── Cartão AE compacto (mockup .uc.ae) — entra na grelha de baixo (direita),
-  // emparelhado com o cartão FTL·Voo. Só para companhias AE com categoria. Toca
-  // → abre a página AE nos Cálculos. ──
-  const aeMiniEl = (ae && crewCategory) ? (() => {
-    const d = new Date();
-    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const monthName = (() => { const m = d.toLocaleDateString(locale, { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
-    const index = ae.indexFactor ? ae.indexFactor(d.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
-    // Caminho único (= Perfil/Cálculos): monthlyAe (base+abono+per-diem+pernoita+escritório) + extras do mês.
-    const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet });
-    const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
-    const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {}, fleet: crewFleet }) || base;
-    const variable = +(total - base).toFixed(2);
-    const fill = total > 0 ? Math.min(1, variable / total) : 0;
-    return (
-      <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('FTL'); }}>
-        <View style={s.ucHead}><View style={[s.ucDot, s.ucDotAe]} /><Text style={s.ucTitle} numberOfLines={1}>AE · {monthName}</Text></View>
-        <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>Base ({crewContract || '12/12'})</Text><Text style={s.aeMV}>{fmtEur0(base)}</Text></View>
-        <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{lang === 'en' ? 'Variable' : 'Variável'}</Text><Text style={[s.aeMV, { color: C.greenText }]}>+{fmtEur0(variable)}</Text></View>
-        <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{t('home.aeEst', lang)}</Text><CountUp value={total} format={fmtEur0} style={s.aeMVtot} delay={300} /></View>
-        <MiniBar ratio={fill} color={C.green} track={s.aeMBar} fill={s.aeMBarFill} />
-        {ae.isAgreementExpired && ae.isAgreementExpired(d) ? (
-          <Text style={s.aeMNote}>{l('Valores de referência · AE até jan-2026', 'Reference values · agreement to Jan-2026')}</Text>
-        ) : null}
-      </TouchableOpacity>
-    );
-  })() : null;
-
-  // ── Estatísticas YTD — cartão COMPACTO (.uc) na grelha, no lugar do FTL·Voo.
-  // Toca → abre a página Stats. Mostra setores/dias + total de horas de voo do ano
-  // com barra vs limite anual (1000 h). ──
-  const statsYtd = useMemo(
-    () => yearStats(duties, { year: new Date().getFullYear(), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet }),
-    [duties, ae, crewCategory, crewContract, crewHistory, crewFleet],
-  );
-  const statRatio = Math.min(1, statsYtd.flightHours / ANNUAL_FLIGHT_LIMIT_H);
-  const statsMiniEl = statsYtd.count > 0 ? (
-    <TouchableOpacity style={s.uc} activeOpacity={0.9} onPress={() => { select(); navigation.navigate('Stats'); }}>
-      <View style={s.ucHead}><View style={s.ucDot} /><Text style={s.ucTitle} numberOfLines={1}>{l('Estatísticas', 'Statistics')} · {new Date().getFullYear()}</Text></View>
-      <View style={[s.aeMRow, s.aeMRow0]}><Text style={s.aeMK} numberOfLines={1}>{l('Setores', 'Sectors')}</Text><Text style={s.aeMV}>{statsYtd.sectors}</Text></View>
-      <View style={s.aeMRow}><Text style={s.aeMK} numberOfLines={1}>{l('Dias de escala', 'Duty days')}</Text><Text style={s.aeMV}>{statsYtd.count}</Text></View>
-      <View style={s.aeMRow}><Text style={s.aeMKtot} numberOfLines={1}>{l('Voo (ano)', 'Flight (yr)')}</Text><CountUp value={statsYtd.flightHours} format={(n) => `${n.toLocaleString(locale, { maximumFractionDigits: 1 })} h`} style={s.aeMVtot} delay={300} /></View>
-      <MiniBar ratio={statRatio} color={barColor(statRatio, C)} track={s.aeMBar} fill={s.aeMBarFill} mark={0.9} />
-    </TouchableOpacity>
-  ) : null;
-
-  // Cartão FTL · Voo (limites de voo). Vai para a grelha quando NÃO há stats; quando
-  // há stats, o Stats ocupa o lugar e este desce para baixo das Próximas atividades.
-  const ftlVooCard = (
-    <LimitCard title={`FTL · ${catLabel('voo', lang)}`} windows={flightLimits} limLabel={limLabel} s={s} C={C} />
-  );
+  // (Removidos do Início: cartões AE-compacto, Estatísticas-mini e FTL·limites — o
+  //  salário vive nos Cálculos/FTL, as Estatísticas têm aba própria, e os limites
+  //  cumulativos passaram para a aba Estatísticas. Ver StatsScreen.)
 
   // ── Cabeçalho premium + tira de 5 dias ──
   const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
@@ -490,6 +482,7 @@ export default function HomeScreen({ navigation }) {
           onRefresh={async () => {
             setRefreshing(true); const t0 = Date.now();
             try { await syncFlight(); } catch { /* ignora */ }
+            setFsTick((n) => n + 1);   // re-busca o estado do voo ao vivo
             const dt = Date.now() - t0; if (dt < 600) await new Promise((r) => setTimeout(r, 600 - dt));
             setRefreshing(false);
           }} />}>
@@ -501,8 +494,34 @@ export default function HomeScreen({ navigation }) {
           right={<NotificationsBell />}
         />
 
-        {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso. Em
-            longo-curso (Hi Fly) avisa e remete p/ a calculadora manual. */}
+        {/* Aviso de VOO ao vivo — SÓ quando há desvio (atraso/cancelado/desviado). Estado do
+            voo do card Serviços via Edge Function (AirLabs). Estipulado vs real + porta. */}
+        {flightStatus && hasDeviation(flightStatus) ? (() => {
+          const st = String(flightStatus.status || '').toLowerCase();
+          const cancelled = st === 'cancelled' || st === 'canceled';
+          const diverted = st === 'diverted';
+          const bad = cancelled || diverted;
+          const delay = depDelayMin(flightStatus);
+          const tone = bad ? C.red : C.warn, soft = bad ? C.redSoft : C.warnSoft, txt = bad ? C.redText : C.warnText;
+          const hm = (s) => (s ? String(s).slice(11, 16) : '—');
+          const dep = flightStatus.dep || {};
+          const head = cancelled ? l('Voo cancelado', 'Flight cancelled')
+            : diverted ? l('Voo desviado', 'Flight diverted')
+            : l(`Atrasado +${delay} min`, `Delayed +${delay} min`);
+          return (
+            <Animated.View style={[s.fdelay, { backgroundColor: soft, borderColor: tone + '55' }, seg(1)]}>
+              <Ionicons name={cancelled ? 'close-circle' : diverted ? 'git-branch-outline' : 'time'} size={18} color={tone} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo}{dep.iata ? ` · ${dep.iata}→${flightStatus.arr?.iata || '—'}` : ''}</Text>
+                <Text style={[s.fdelayH, { color: txt }]} numberOfLines={1}>{head}</Text>
+                {!bad ? <Text style={s.fdelayS} numberOfLines={2}>{l('Sai', 'Departs')} {hm(dep.estimated || dep.actual)} · {l('estava', 'was')} {hm(dep.scheduled)}{dep.gate ? ` · ${l('porta', 'gate')} ${dep.gate}` : ''}</Text> : null}
+                {!bad && delay >= 30 ? <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text> : null}
+              </View>
+            </Animated.View>
+          );
+        })() : null}
+
+        {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso (Hi Fly). */}
         {isLongHaulCompany(company) ? (
           <Banner tone="warn" icon="information-circle" style={{ marginBottom: SPACE.md }}
             title={l('Cálculo FTL automático', 'Automatic FTL calculation')}
@@ -510,36 +529,37 @@ export default function HomeScreen({ navigation }) {
             onPress={() => { select(); navigation.navigate('FTL'); }} />
         ) : null}
 
-        {/* Alterações de escala (Fase 4) — aviso quando o calendário difere do guardado */}
-        {(() => {
-          const rc = rosterChanges?.counts || {};
-          if (!rc.total) return null;
-          const ch = (rc.changed || 0) + (rc.conflict || 0);
-          const parts = [ch ? `${ch} ${l('alterada(s)', 'changed')}` : null, rc.added ? `${rc.added} ${l('nova(s)', 'new')}` : null, rc.removed ? `${rc.removed} ${l('cancelada(s)', 'cancelled')}` : null].filter(Boolean).join(' · ');
-          return (
-            <Banner tone="warn" icon="sync-circle" style={{ marginBottom: SPACE.md }}
-              title={l('Alterações na escala', 'Roster changes')} sub={parts}
-              onPress={() => { select(); navigation.navigate('Escala'); }} />
-          );
-        })()}
-
-        {/* Próximo voo — badge circular do report + rota + meta + etiquetas */}
+        {/* Card SERVIÇOS (principal) — próximo serviço + próximas atividades FUNDIDOS */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
+        {/* Sem próximo voo (estado vazio): mostra as próximas atividades à parte, p/ não se perderem */}
+        {!flight ? <Animated.View style={seg(3)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View> : null}
 
-        {/* Grelha de baixo — Stats (compacto) + (AE compacto | FTL·Serviço). Quando
-            ainda não há stats, o FTL·Voo fica aqui (fallback). */}
-        <Animated.View style={[s.grid2, seg(3)]}>
-          {statsMiniEl || ftlVooCard}
-          {ae && crewCategory ? aeMiniEl : <LimitCard title={`FTL · ${catLabel('servico', lang)}`} windows={dutyLimits} limLabel={limLabel} s={s} C={C} />}
-        </Animated.View>
-        {(!(ae && crewCategory) && !hasLimitData) ? <Text style={s.gridHint}>{t('home.limitsEmpty', lang)}</Text> : null}
-
-        {/* Próximas atividades (qualquer tipo de duty) — card no fundo */}
-        <Animated.View style={seg(4)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View>
-
-        {/* FTL · Voo — desce para baixo das Próximas atividades (largura inteira) quando
-            o Stats lhe tomou o lugar na grelha. */}
-        {statsMiniEl ? <Animated.View style={[s.grid2, seg(5)]}>{ftlVooCard}</Animated.View> : null}
+        {/* PERGUNTAS — por baixo do card Serviços (estou legal? · descanso · escala · validades).
+            "Estou legal?" entra aqui: vermelho + sobe ao topo quando ILEGAL (severidade). A escala,
+            quando há alterações, é tocável → Escala. Reaproveita as respostas da Briefing. */}
+        {questionItems.length ? (
+          <>
+            <Text style={s.qSec}>{l('Perguntas', 'Questions')}</Text>
+            <Animated.View style={[s.sit, seg(4)]}>
+              {questionItems.map((it, i) => {
+                const tap = it.id === 'roster' && it.raw && it.raw.kind !== 'none'
+                  ? () => { select(); navigation.navigate('Escala'); } : null;
+                const Row = tap ? TouchableOpacity : View;
+                return (
+                  <Row key={it.id} {...(tap ? { onPress: tap, activeOpacity: 0.85 } : {})} style={[s.sitRow, i > 0 && s.sitRowBorder]}>
+                    <View style={[s.sitDot, { backgroundColor: stColor(it.status) }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.sitQ} numberOfLines={1}>{it.q}</Text>
+                      <Text style={[s.sitA, it.status === 'bad' && { color: C.redText }]} numberOfLines={2}>{it.answer}</Text>
+                      {it.suggestion ? <Text style={s.sitS} numberOfLines={3}>{it.suggestion}</Text> : null}
+                    </View>
+                    {tap ? <Ionicons name="chevron-forward" size={16} color={C.sub} /> : null}
+                  </Row>
+                );
+              })}
+            </Animated.View>
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -616,6 +636,26 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Grelha 2-col (mockup .grid2/.uc/.win/.wbar)
   grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
+
+  // "Situação de hoje" — tira de segurança (legal/descanso/validade) no topo do Início
+  sit: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 16, marginBottom: SPACE.md },
+  sitRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  sitRowBorder: { borderTopWidth: 1, borderTopColor: C.line },
+  sitDot: { width: 9, height: 9, borderRadius: 4, flexShrink: 0 },
+  sitQ: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+  sitA: { fontSize: 13.5, fontFamily: FONT.semibold, color: C.text, marginTop: 1 },
+  sitS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 3, lineHeight: 15 },
+  // Eyebrow com a pergunta nos cartões que já respondem (destaque, sem duplicar)
+  ucQ: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub, marginBottom: 7 },
+  qLead: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, marginBottom: 8, marginLeft: 2 },
+  // Secção "Perguntas" (por baixo do card Serviços) — reutiliza os cartões `sit*`
+  qSec: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub, marginTop: 2, marginBottom: 9, marginLeft: 2 },
+  // Aviso de voo ao vivo (atraso/cancelado/desviado) — topo do Início
+  fdelay: { flexDirection: 'row', gap: 11, alignItems: 'flex-start', borderWidth: 1, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACE.md },
+  fdelayQ: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub },
+  fdelayH: { fontSize: 15, fontFamily: FONT.heavy, marginTop: 2 },
+  fdelayS: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.text, marginTop: 3 },
+  fdelayNote: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 4, lineHeight: 15 },
   gridHint: { fontSize: TYPE.micro, color: C.sub, marginTop: -8, marginBottom: SPACE.md, paddingHorizontal: 2, lineHeight: 16 },
   uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15 },
   ucHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },

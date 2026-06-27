@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { yearStats, availableYears } = require(path.resolve('data/stats.js'));
+const { yearStats, availableYears, monthStats } = require(path.resolve('data/stats.js'));
 const { resolveCrew, addCrewChange, migrateCrew } = require(path.resolve('data/crewHistory.js'));
 
 let pass = 0, fail = 0;
@@ -118,6 +118,39 @@ const rEff = yearStats({}, { year: 2026, ae: aeCat, crewHistory: promo, now: new
 eq('YTD effective-dated (Jan+Fev FO 3000 · Mar+Abr SFO 5000)', rEff.aeYtd.base, 16000);
 const rNaive = yearStats({}, { year: 2026, ae: aeCat, category: 'SFO', now: new Date('2026-04-15T12:00:00') });
 eq('YTD ingénuo (4× SFO 5000) — confirma a diferença', rNaive.aeYtd.base, 20000);
+
+// ── monthStats — vista de Mês ──
+const jm = monthStats(DUTIES, { ym: '2026-01', now: new Date('2026-04-15T12:00:00') });
+eq('mês jan: scope', jm.scope, 'month');
+eq('mês jan: ym', jm.ym, '2026-01');
+eq('mês jan: count', jm.count, 2);
+eq('mês jan: flights', jm.flights, 2);
+eq('mês jan: flightMin', jm.flightMin, 555);
+eq('mês jan: sectors', jm.sectors, 4);
+eq('mês jan: nightStops', jm.nightStops, 1);
+eq('mês jan: dias (31)', jm.days.length, 31);
+eq('mês jan: dia 5 = 255', jm.days[4].flightMin, 255);
+eq('mês jan: dia 20 = 300', jm.days[19].flightMin, 300);
+eq('mês jan: offDays (mês passado: 31−2)', jm.offDays, 29);
+eq('mês jan: sem AE → aeMonth null', jm.aeMonth, null);
+ok('mês jan: topDest tem LIS', jm.topDest.some((d) => d.code === 'LIS'));
+
+// mês corrente (parcial) — offDays só até hoje; apagada ignorada
+const cmS = monthStats(DUTIES, { ym: '2026-04', now: new Date('2026-04-15T12:00:00') });
+eq('mês abr: count (apagada ignorada)', cmS.count, 0);
+eq('mês abr: offDays até dia 15', cmS.offDays, 15);
+
+// AE do mês com stub completo (computeAeMonth)
+const aeStub2 = {
+  monthlyBase: () => 5000,
+  computeAeMonth: ({ duties = [], nightStops = 0 }) => ({ base: 5000, perDiem: duties.length * 50, nightStops: nightStops * 46, total: 5000 + duties.length * 50 + nightStops * 46 }),
+};
+const am = monthStats(DUTIES, { ym: '2026-01', ae: aeStub2, category: 'CPT', now: new Date('2026-04-15T12:00:00') });
+ok('mês jan: aeMonth existe', !!am.aeMonth);
+eq('mês jan: aeMonth.base', am.aeMonth.base, 5000);
+eq('mês jan: aeMonth.perDiem (2 voos ×50)', am.aeMonth.perDiem, 100);
+eq('mês jan: aeMonth.pernoita (1×46)', am.aeMonth.nightStops, 46);
+eq('mês jan: aeMonth.total', am.aeMonth.total, 5146);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

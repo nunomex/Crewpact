@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
+import NotificationsBell from '../components/NotificationsBell';
 import CountUp from '../components/CountUp';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { yearStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
+import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
+import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
@@ -46,8 +48,8 @@ function MonthBar({ ratio, color, delay }) {
 // Fase 3 — Estatísticas do ano (YTD). Agrega o store cru `duties` (data/stats.js):
 // horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
 // mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
-export default function StatsScreen({ navigation }) {
-  const { lang, duties, ae, crewCategory, crewContract, crewFleet, crewHistory, company } = useContext(AppContext);
+export default function StatsScreen() {
+  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -55,6 +57,10 @@ export default function StatsScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter();
 
+  const [scope, setScope] = useState('year');   // 'year' | 'month'
+  const isYear = scope === 'year';
+
+  // Seletor de ANO (anos com escala + o corrente)
   const years = useMemo(() => {
     const ys = availableYears(duties);
     const cy = String(new Date().getFullYear());
@@ -63,10 +69,36 @@ export default function StatsScreen({ navigation }) {
   }, [duties]);
   const [year, setYear] = useState(years[0]);
 
+  // Navegador de MÊS — começa no corrente; não avança para lá do mês atual.
+  const nowYm = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+  const [ym, setYm] = useState(nowYm);
+  const shiftMonth = (delta) => {
+    const [Y, M] = ym.split('-').map(Number);
+    const d = new Date(Y, M - 1 + delta, 1);
+    setYm(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+  const monthTitle = (() => {
+    const [Y, M] = ym.split('-').map(Number);
+    const x = new Date(Y, M - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    return x.charAt(0).toUpperCase() + x.slice(1);
+  })();
+
   const st = useMemo(
-    () => yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet }),
-    [duties, year, ae, crewCategory, crewContract, crewHistory, crewFleet],
+    () => isYear
+      ? yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin }),
+    [isYear, duties, year, ym, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin],
   );
+
+  // Limites FTL cumulativos ATUAIS (janelas rolantes a esta data) — vieram do Início.
+  // Independentes do mês/ano selecionado (é o consumo agora). `dayLog` = store do motor FTL.
+  const limits = useMemo(() => {
+    const flight = computeFlightTime(dayLog);   // voo: 100 h/28 d · ano civil · 12 meses
+    const duty = computeDutyTime(dayLog);       // serviço: 60/110/190 h em 7/14/28 dias
+    const has = Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0));
+    return { rows: [...flight.map((w) => ({ ...w, grp: 'voo' })), ...duty.map((w) => ({ ...w, grp: 'serv' }))], has };
+  }, [dayLog]);
+  const limLabel = (w) => w.id === 'year' ? l('Ano civil', 'Calendar year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} ${l('dias', 'days')}`;
 
   // Formatação
   const nf = (n) => Number(n).toLocaleString(locale);
@@ -81,8 +113,11 @@ export default function StatsScreen({ navigation }) {
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
   const flightRatio = Math.min(1, st.flightHours / ANNUAL_FLIGHT_LIMIT_H);
-  const maxMonth = Math.max(1, ...st.months.map((m) => m.flightMin));
+  const chartData = isYear ? st.months : st.days;   // 12 meses · ou dias do mês
+  const maxBar = Math.max(1, ...chartData.map((m) => m.flightMin));
   const kindsPresent = STAT_KINDS.filter((k) => st.byKind[k] > 0);
+  const aeBlock = isYear ? st.aeYtd : st.aeMonth;   // bloco AE conforme o âmbito
+  const nowD = new Date();
 
   const tiles = [
     { ic: 'briefcase-outline', label: l('Serviço', 'Duty'), value: fmtH(st.dutyHours) },
@@ -91,30 +126,68 @@ export default function StatsScreen({ navigation }) {
     { ic: 'moon-outline', label: l('Paragens noct.', 'Night stops'), value: nf(st.nightStops) },
   ];
 
-  const back = (
-    <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8} style={s.back} activeOpacity={0.8}>
-      <Ionicons name="chevron-back" size={20} color={C.text} />
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         <PageHeader
           eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
-          title={l('O teu ano', 'Your year')}
-          right={back}
+          title={isYear ? l('O teu ano', 'Your year') : l('O teu mês', 'Your month')}
+          right={<NotificationsBell />}
         />
 
-        {/* Seletor de ano */}
-        {years.length > 1 ? (
-          <Animated.View style={[s.years, seg(0)]}>
-            {years.map((y) => {
-              const on = y === year;
+        {/* Toggle Mês ⇄ Ano */}
+        <Animated.View style={[s.scope, seg(0)]}>
+          {[['month', l('Mês', 'Month')], ['year', l('Ano', 'Year')]].map(([id, label]) => {
+            const on = scope === id;
+            return (
+              <TouchableOpacity key={id} onPress={() => { select(); setScope(id); }} activeOpacity={0.85} style={[s.scopeChip, on && s.scopeChipOn]}>
+                <Text style={[s.scopeTxt, on && s.scopeTxtOn]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </Animated.View>
+
+        {/* Período: ano = chips · mês = navegador ‹ › */}
+        {isYear ? (
+          years.length > 1 ? (
+            <Animated.View style={[s.years, seg(0)]}>
+              {years.map((y) => {
+                const on = y === year;
+                return (
+                  <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                    <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </Animated.View>
+          ) : null
+        ) : (
+          <Animated.View style={[s.mnav, seg(0)]}>
+            <TouchableOpacity onPress={() => { select(); shiftMonth(-1); }} hitSlop={10} style={s.mnavBtn} activeOpacity={0.8}>
+              <Ionicons name="chevron-back" size={18} color={C.text} />
+            </TouchableOpacity>
+            <Text style={s.mnavTxt}>{monthTitle}</Text>
+            <TouchableOpacity disabled={ym >= nowYm} onPress={() => { select(); shiftMonth(1); }} hitSlop={10} style={[s.mnavBtn, ym >= nowYm && s.mnavBtnOff]} activeOpacity={0.8}>
+              <Ionicons name="chevron-forward" size={18} color={ym >= nowYm ? C.sub : C.text} />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {/* Limites FTL · atuais — janelas cumulativas (vieram do Início). Consumo a ESTA
+            data; independentes do mês/ano selecionado. */}
+        {limits.has ? (
+          <Animated.View style={[s.card, s.limCard, seg(1)]}>
+            <View style={s.limHead}><View style={s.limDot} /><Text style={s.limTitle}>{l('Limites FTL · atuais', 'FTL limits · current')}</Text></View>
+            {limits.rows.map((w, i) => {
+              const r = w.limit ? w.done / w.limit : 0;
               return (
-                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                  <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
-                </TouchableOpacity>
+                <View key={w.grp + w.id} style={[s.limWin, i > 0 && s.limWinB]}>
+                  <View style={s.limTop}>
+                    <Text style={s.limNm} numberOfLines={1}>{w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · {limLabel(w)}</Text>
+                    <Text style={s.limVl}>{Math.round(r * 100)}% · <Text style={s.limVlb}>{Math.round(w.done)}</Text>/{Math.round(w.limit)} h</Text>
+                  </View>
+                  <GrowBar ratio={r} color={barColor(r, C)} track={s.limTrack} fill={s.limFill} delay={200 + i * 40} />
+                </View>
               );
             })}
           </Animated.View>
@@ -123,27 +196,27 @@ export default function StatsScreen({ navigation }) {
         {st.count === 0 ? (
           <Animated.View style={[s.empty, seg(1)]}>
             <Ionicons name="bar-chart-outline" size={28} color={C.sub} />
-            <Text style={s.emptyTxt}>{l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.')}</Text>
+            <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
             <Text style={s.emptySub}>{l('Importa ou regista duties para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
           </Animated.View>
         ) : (
           <>
-            {/* HERO — horas de voo vs limite anual (1000 h / 12 meses) */}
+            {/* HERO — horas de voo (ano: vs limite 1000 h · mês: só o número + contexto) */}
             <Animated.View style={[s.hero, seg(1)]}>
               <View style={s.heroTop}>
                 <View style={s.heroDot} />
                 <Text style={s.heroEyebrow}>{l('Horas de voo', 'Flight hours')}</Text>
-                <Text style={s.heroPct}>{Math.round(flightRatio * 100)}%</Text>
+                {isYear ? <Text style={s.heroPct}>{Math.round(flightRatio * 100)}%</Text> : null}
               </View>
               <View style={s.heroNumRow}>
                 <CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.heroNum} delay={250} />
                 <Text style={s.heroUnit}>{l('h voadas', 'h flown')}</Text>
               </View>
-              <GrowBar ratio={flightRatio} color={barColor(flightRatio, C)} track={s.heroBar} fill={s.heroBarFill} />
-              <Text style={s.heroSub}>{l('de', 'of')} {nf(ANNUAL_FLIGHT_LIMIT_H)} h · {st.flights} {l('voos', 'flights')} · {st.sectors} {l('setores', 'sectors')}</Text>
+              {isYear ? <GrowBar ratio={flightRatio} color={barColor(flightRatio, C)} track={s.heroBar} fill={s.heroBarFill} /> : null}
+              <Text style={s.heroSub}>{isYear ? `${l('de', 'of')} ${nf(ANNUAL_FLIGHT_LIMIT_H)} h · ` : ''}{st.flights} {l('voos', 'flights')} · {st.sectors} {l('setores', 'sectors')}</Text>
             </Animated.View>
 
-            {/* Tiles — serviço / setores / dias / paragens nocturnas */}
+            {/* Tiles — serviço / dias / folgas / paragens nocturnas */}
             <Animated.View style={[s.tiles, seg(2)]}>
               {tiles.map((ti) => (
                 <View key={ti.label} style={s.tile}>
@@ -154,7 +227,7 @@ export default function StatsScreen({ navigation }) {
               ))}
             </Animated.View>
 
-            {/* Repouso & fadiga (qualidade do descanso) */}
+            {/* Repouso & fadiga */}
             <Animated.View style={[s.card, seg(3)]}>
               <Text style={s.cardTitle}>{l('Repouso & fadiga', 'Rest & fatigue')}</Text>
               <View style={s.aeRow}><Text style={s.aeK} numberOfLines={1}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text><Text style={s.aeV}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text></View>
@@ -162,19 +235,22 @@ export default function StatsScreen({ navigation }) {
               <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text><Text style={s.aeV}>{st.longestStreak} {l('dias', 'days')}</Text></View>
             </Animated.View>
 
-            {/* Gráfico mensal — horas de voo por mês */}
+            {/* Gráfico — ano: 12 meses · mês: dias do mês */}
             <Animated.View style={[s.card, seg(3)]}>
-              <Text style={s.cardTitle}>{l('Voo por mês', 'Flight by month')}</Text>
+              <Text style={s.cardTitle}>{isYear ? l('Voo por mês', 'Flight by month') : l('Voo por dia', 'Flight by day')}</Text>
               <View style={s.chart}>
-                {st.months.map((m, i) => {
-                  const r = m.flightMin / maxMonth;
-                  const isNow = +year === new Date().getFullYear() && i === new Date().getMonth();
+                {chartData.map((m, i) => {
+                  const r = m.flightMin / maxBar;
+                  const isNow = isYear
+                    ? (+year === nowD.getFullYear() && i === nowD.getMonth())
+                    : (st.ym === nowYm && (i + 1) === nowD.getDate());
+                  const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
                   return (
                     <View key={i} style={s.chartCol}>
                       <View style={s.chartBarWrap}>
-                        <MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? C.red : C.ink) : C.line} delay={300 + i * 35} />
+                        <MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? C.red : C.ink) : C.line} delay={300 + i * (isYear ? 35 : 14)} />
                       </View>
-                      <Text style={[s.chartLbl, isNow && { color: C.red, fontFamily: FONT.heavy }]} numberOfLines={1}>{monthAbbr(i)}</Text>
+                      <Text style={[s.chartLbl, isNow && { color: C.red, fontFamily: FONT.heavy }]} numberOfLines={1}>{lbl}</Text>
                     </View>
                   );
                 })}
@@ -199,14 +275,15 @@ export default function StatsScreen({ navigation }) {
               </Animated.View>
             ) : null}
 
-            {/* AE — ganhos YTD estimados (só companhias AE) */}
-            {st.aeYtd ? (
+            {/* AE — ganhos estimados (ano: YTD · mês: do mês) */}
+            {aeBlock ? (
               <Animated.View style={[s.card, seg(5)]}>
-                <View style={s.aeHead}><View style={s.aeDot} /><Text style={s.cardTitle}>{l('AE · ganhos no ano (est.)', 'AE · earnings this year (est.)')}</Text></View>
-                <View style={s.aeRow}><Text style={s.aeK}>{l('Base', 'Base')} ({st.aeYtd.monthsElapsed} {l('meses', 'months')})</Text><Text style={s.aeV}>{fmtEur0(st.aeYtd.base)}</Text></View>
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Per diem', 'Per diem')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(st.aeYtd.perDiem)}</Text></View>
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={st.aeYtd.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
-                {st.aeYtd.missing ? <Text style={s.aeMiss}>{st.aeYtd.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
+                <View style={s.aeHead}><View style={s.aeDot} /><Text style={s.cardTitle}>{isYear ? l('AE · ganhos no ano (est.)', 'AE · earnings this year (est.)') : l('AE · ganhos do mês (est.)', 'AE · earnings this month (est.)')}</Text></View>
+                <View style={s.aeRow}><Text style={s.aeK}>{l('Base', 'Base')}{isYear ? ` (${st.aeYtd.monthsElapsed} ${l('meses', 'months')})` : ''}</Text><Text style={s.aeV}>{fmtEur0(aeBlock.base)}</Text></View>
+                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Per diem', 'Per diem')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.perDiem)}</Text></View>
+                {!isYear && aeBlock.nightStops ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Pernoitas', 'Night stops')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.nightStops)}</Text></View> : null}
+                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={aeBlock.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
+                {aeBlock.missing ? <Text style={s.aeMiss}>{aeBlock.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
               </Animated.View>
             ) : null}
 
@@ -233,7 +310,33 @@ export default function StatsScreen({ navigation }) {
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
   scroll: { padding: SPACE.lg },
-  back: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+
+  // Toggle Mês ⇄ Ano (segmentado)
+  scope: { flexDirection: 'row', alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: 4, marginBottom: SPACE.md },
+  scopeChip: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: RADIUS.pill },
+  scopeChipOn: { backgroundColor: C.ink },
+  scopeTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
+  scopeTxtOn: { color: '#fff' },
+
+  // Navegador de mês ‹ Junho 2026 ›
+  mnav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 6, marginBottom: SPACE.md },
+  mnavBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  mnavBtnOff: { opacity: 0.4 },
+  mnavTxt: { fontSize: 15, fontFamily: FONT.semibold, color: C.text, fontVariant: ['tabular-nums'] },
+
+  // Limites FTL · atuais (card que veio do Início)
+  limCard: { borderColor: '#F2D9D3' },
+  limHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 13 },
+  limDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.red },
+  limTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub },
+  limWin: { paddingVertical: 9 },
+  limWinB: { borderTopWidth: 1, borderTopColor: C.line },
+  limTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 7 },
+  limNm: { fontSize: 11.5, fontFamily: FONT.semibold, color: C.text },
+  limVl: { fontSize: 11.5, fontFamily: FONT.semibold, color: C.sub, fontVariant: ['tabular-nums'] },
+  limVlb: { color: C.text, fontFamily: FONT.bold },
+  limTrack: { height: 7, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
+  limFill: { height: '100%', borderRadius: RADIUS.pill },
 
   years: { flexDirection: 'row', gap: 8, marginBottom: SPACE.md },
   yChip: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.card },

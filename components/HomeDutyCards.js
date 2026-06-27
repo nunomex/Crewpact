@@ -25,12 +25,18 @@ const upcoming = (duties, fromISO) => Object.keys(duties || {})
   .sort()
   .map((iso) => ({ iso, ...duties[iso] }));
 
-export function UpcomingDutiesCard({ duties, lang, limit = 4 }) {
+// `bare` = sem a moldura de card (para EMBEBER dentro do card Serviços, por baixo do
+// próximo serviço). `afterISO` = mostra só os dias DEPOIS deste (evita repetir o serviço
+// que já está em destaque no topo). Em modo bare sem nada a seguir → não renderiza secção.
+export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, afterISO = null }) {
   const C = useTheme(); const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
-  const list = upcoming(duties, isoOf(new Date())).slice(0, limit);
-  return (
-    <View style={s.card}>
+  let list = upcoming(duties, isoOf(new Date()));
+  if (afterISO) list = list.filter((d) => d.iso > afterISO);
+  list = list.slice(0, limit);
+  if (bare && !list.length) return null;
+  const inner = (
+    <>
       <Eyebrow style={{ marginBottom: 6 }}>{lang === 'en' ? 'UPCOMING' : 'PRÓXIMAS ATIVIDADES'}</Eyebrow>
       {list.length ? list.map((d, i) => (
         <View key={d.iso} style={[s.lrow, i > 0 && s.lrowBorder]}>
@@ -39,12 +45,14 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4 }) {
           <Text style={s.ltxt} numberOfLines={1}>{dutyLine(d, lang)}{d.report_time ? ` · ${d.report_time}` : ''}{d.nightStop ? ' · 🌙' : ''}</Text>
         </View>
       )) : <Text style={s.empty}>{lang === 'en' ? 'No upcoming duties' : 'Sem atividades futuras'}</Text>}
-    </View>
+    </>
   );
+  return bare ? <View style={s.bare}>{inner}</View> : <View style={s.card}>{inner}</View>;
 }
 
 const makeStyles = (C) => StyleSheet.create({
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: 13 },
+  bare: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 14, paddingTop: 13 },   // embebido no card Serviços
   empty: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, paddingVertical: 4 },
   lrow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
   lrowBorder: { borderTopWidth: 1, borderTopColor: C.line },

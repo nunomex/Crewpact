@@ -40,8 +40,6 @@ import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
 import HomeScreen         from './screens/HomeScreen';
-import HojeScreen         from './screens/HojeScreen';
-import HojeDetailScreen   from './screens/HojeDetailScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
@@ -72,22 +70,10 @@ export { AppContext, isoDay, useTheme };
 // se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
-// Hoje — quadro de respostas (pergunta → resposta + "como cheguei aqui") num só lugar.
-// O detalhe abre DENTRO desta aba (não encaminha para outras), por isso é um stack.
-function HojeStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="HojeMain"   component={HojeScreen} />
-      <Stack.Screen name="HojeDetail" component={HojeDetailScreen} />
-    </Stack.Navigator>
-  );
-}
-
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home"      component={HomeScreen} />
-      <Stack.Screen name="Stats"     component={StatsScreen} />
       <Stack.Screen name="FtlCalc"   component={FtlCalcScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -131,11 +117,11 @@ function FloatingTabBar({ state, navigation }) {
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
-    'Hoje':   ['pulse', 'pulse-outline'],
-    'Início': ['home', 'home-outline'],
-    'Escala': ['calendar', 'calendar-outline'],
-    'FTL':    ['time', 'time-outline'],
-    'Perfil': ['person', 'person-outline'],
+    'Início':       ['home', 'home-outline'],
+    'Estatísticas': ['stats-chart', 'stats-chart-outline'],
+    'Escala':       ['calendar', 'calendar-outline'],
+    'FTL':          ['time', 'time-outline'],
+    'Perfil':       ['person', 'person-outline'],
   };
   const active = state.routes[state.index];
   const [searchOpen, setSearchOpen] = useState(false);
@@ -190,7 +176,7 @@ function FloatingTabBar({ state, navigation }) {
             const [on, off] = ICON[route.name];
             return (
               <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Hoje' ? 'today' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
+                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
                 <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.6)'} />
@@ -239,9 +225,9 @@ function PerfilStack() {
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
-      <Tab.Screen name="Início" component={HomeStack} />
-      <Tab.Screen name="Hoje"   component={HojeStack} />
-      <Tab.Screen name="Escala" component={EscalaStack} />
+      <Tab.Screen name="Início"       component={HomeStack} />
+      <Tab.Screen name="Estatísticas" component={StatsScreen} />
+      <Tab.Screen name="Escala"       component={EscalaStack} />
       <Tab.Screen name="FTL"    component={FtlStack} />
       <Tab.Screen name="Perfil" component={PerfilStack} />
     </Tab.Navigator>
@@ -382,6 +368,8 @@ export default function App() {
           source: fields.source !== undefined ? fields.source : (ex?.source || 'manual'),
           snap: ('snap' in fields) ? fields.snap : (ex?.snap ?? null),
           legs: ('legs' in fields) ? fields.legs : (ex?.legs ?? null),
+          // Sign-off REAL (fim de serviço, depois do debrief) — alimenta as Duty hours/210/repouso.
+          signOff: ('signOff' in fields) ? (fields.signOff || null) : (ex?.signOff ?? null),
           duty_date: date,
           updated_at: new Date().toISOString(),
           dirty: true,
@@ -393,8 +381,8 @@ export default function App() {
     // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
     const entry = dutyToFtlDay({
       report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
-      sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind,
-    });
+      sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind, signOff: fields.signOff,
+    }, { postFlightMin: profile?.postFlightMin || 0 });   // débrief do perfil (fallback do sign-off)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -423,7 +411,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs, signOff: d.signOff });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -623,10 +611,13 @@ export default function App() {
           const instructorRated = resolved.instructorRated ?? localProfile?.instructorRated ?? user.instructorRated ?? false;
           // Frota do piloto (WB/NB) — só os AE com `FLEETS` (TAP) a usam, p/ a coluna de per-diem.
           const crewFleet = resolved.crewFleet || localProfile?.crewFleet || user.crewFleet || null;
+          // Serviço pós-voo / débrief (min) — definido pelo OM do operador (ORO.FTL.235c). Entra nas
+          // Duty hours/210/repouso como fallback do sign-off real. Default 0 até o user o definir.
+          const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? 0;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -666,13 +657,13 @@ export default function App() {
         for (const row of server) {
           const cur = merged[row.duty_date];
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
-          // roster_meta (Fase 4): JSON { source, snap, legs } — origem + snapshot + nº de voo.
-          let source = 'manual', snap = null, legs = null;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; } } catch { /* meta inválida */ }
+          // roster_meta (Fase 4): JSON { source, snap, legs, signOff } — origem + snapshot + nº de voo + fim de serviço.
+          let source = 'manual', snap = null, legs = null, signOff = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -693,8 +684,8 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev));
-  }, [duties, loadedUserId]);
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin: profile?.postFlightMin || 0 }));
+  }, [duties, loadedUserId, profile?.postFlightMin]);
 
   // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
   useEffect(() => {
@@ -729,6 +720,7 @@ export default function App() {
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
   const crewFleet = profile?.crewFleet || null;        // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
+  const postFlightMin = profile?.postFlightMin || 0;   // débrief/serviço pós-voo (min, do OM) → Duty hours/210/repouso
   // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
   // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
@@ -818,7 +810,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,

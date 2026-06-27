@@ -15,6 +15,7 @@ import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
+const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 
 // Detalhe de um serviço (read-only) — abre ao TOCAR numa duty na Escala. Mostra tudo
 // (rota, horas+Zulu, FDP/PSV, serviço, repouso, fadiga, setores, per-diem, fonte) SEM
@@ -63,9 +64,13 @@ export default function DutyDetailScreen({ route, navigation }) {
   const todayISO = isoDay();
   const hasEnd = !!(duty.report_time && duty.block_on);
 
-  // ── Motor FTL (só com report; campos "realizados" só com block-on) ──
+  // ── Motor FTL (só com report; campos "realizados" só com block-on) ── Duty hours incluem o
+  // serviço pós-voo: sign-off REAL (fim − último on) ou o débrief do perfil (ORO.FTL.235c).
+  const pf = (duty.signOff && duty.block_on)
+    ? (() => { const on = clkMin(duty.block_on), so = clkMin(duty.signOff); return (on == null || so == null) ? (ctxAll.postFlightMin || 0) : (so >= on ? so - on : so + 1440 - on); })()
+    : (ctxAll.postFlightMin || 0);
   const d = duty.report_time
-    ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0 })
+    ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf })
     : null;
   const fat = (d && hasEnd) ? fatigueFromDuty(d) : null;
   const over = !!(d && d.fdp && d.fdp.over);
@@ -147,12 +152,24 @@ export default function DutyDetailScreen({ route, navigation }) {
 
         <Text style={s.sectionTitle}>{l('HORÁRIO', 'SCHEDULE')}</Text>
         <Panel rows={[
-          duty.report_time && { k: l('Report', 'Report'), v: tv(duty.report_time) },
+          duty.report_time && { k: l('Apresentação', 'Report'), v: tv(duty.report_time) },
           duty.block_off && { k: l('Block off', 'Block off'), v: tv(duty.block_off) },
           duty.block_on && { k: l('Block on', 'Block on'), v: tv(duty.block_on) },
-          (d && d.dutyPeriodStr) && { k: l('Tempo de serviço', 'Duty time'), v: d.dutyPeriodStr },
-          duty.flight_minutes && { k: l('Tempo de voo', 'Flight time'), v: minToHhmm(duty.flight_minutes) },
+          duty.signOff && { k: l('Fim de serviço', 'Sign-off'), v: tv(duty.signOff) },
+          duty.flight_minutes && { k: 'Block hours', v: minToHhmm(duty.flight_minutes) },
+          (d && d.dutyPeriodStr) && { k: 'Duty hours', v: d.dutyPeriodStr },
         ]} />
+
+        {/* Setores — off/on de cada setor (read-only). Soma dos block = Block hours. */}
+        {isFlight && Array.isArray(duty.legs) && duty.legs.length ? (
+          <>
+            <Text style={s.sectionTitle}>{l('SETORES', 'SECTORS')}</Text>
+            <Panel rows={duty.legs.map((lg) => ({
+              k: `${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
+              v: `${lg.off || '—'} → ${lg.on || '—'}`,
+            }))} />
+          </>
+        ) : null}
 
         {d ? (
           <>
