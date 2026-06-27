@@ -127,7 +127,8 @@
       "Bash(pdftotext -layout -enc UTF-8 bte5_840689095.pdf bte5_840689095.txt)",
       "WebFetch(domain:poligrafo.sapo.pt)",
       "WebFetch(domain:www.scribd.com)",
-      "WebFetch(domain:jo.azores.gov.pt)"
+      "WebFetch(domain:jo.azores.gov.pt)",
+      "Bash(node --input-type=module -e ' *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

@@ -200,7 +200,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewHistory, base, serviceStart, lifestyle, instructorRated },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated },
         duties, dayLog, aeExtras,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
