@@ -47,6 +47,7 @@ import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
+import BibliotecaScreen   from './screens/BibliotecaScreen';
 import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
@@ -99,6 +100,7 @@ function FtlStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="FtlHub"    component={FtlHubScreen} />
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
+      <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
 }
@@ -218,6 +220,7 @@ function PerfilStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
+      <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
 }
@@ -422,12 +425,13 @@ export default function App() {
     // Remove o registo FTL derivado deste dia (preserva registos manuais sem src).
     setDayLog(prev => { if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; } return prev; });
   };
-  // Um serviço-irmão (forma de `extra`) a partir dos campos do form.
-  const svcFromFields = (f) => ({
+  // Um serviço-irmão (forma de `extra`) a partir dos campos do form. `source` por-SERVIÇO
+  // (manual/calendar/pdf): distingue um 2.º serviço teu (sobrevive ao import) de um do calendário.
+  const svcFromFields = (f, source = 'manual') => ({
     report_time: f.report_time || null, block_off: f.block_off || null, block_on: f.block_on || null,
     sectors: f.sectors || 0, flight_minutes: f.flight_minutes || 0, route: f.route || null,
     kind: f.kind || 'flight', nightStop: !!f.nightStop, signOff: f.signOff || null,
-    legs: f.legs || null, special: f.special || null,
+    legs: f.legs || null, special: f.special || null, source,
   });
   // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special });
@@ -442,7 +446,7 @@ export default function App() {
   const addDutyService = (date, fields) => {
     const cur = dutiesRef.current?.[date];
     if (!cur || cur.deleted) { saveDuty(date, fields); return; }
-    const newExtra = [...(cur.extra || []), svcFromFields(fields)];
+    const newExtra = [...(cur.extra || []), svcFromFields(fields, 'manual')];   // novo 2.º serviço À MÃO
     setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], extra: newExtra, updated_at: new Date().toISOString(), dirty: true } } : prev));
     recomputeDay(date, cur, newExtra);   // soma 210, pior PSV 205, repouso entre serviços 235
   };
@@ -450,7 +454,8 @@ export default function App() {
   const updateDutyService = (date, index, fields) => {
     const cur = dutiesRef.current?.[date];
     if (!cur || !Array.isArray(cur.extra) || index < 0 || index >= cur.extra.length) return;
-    const newExtra = cur.extra.map((e, i) => (i === index ? svcFromFields(fields) : e));
+    // Editar PRESERVA a proveniência do serviço (editar um do calendário à mão NÃO o torna manual).
+    const newExtra = cur.extra.map((e, i) => (i === index ? svcFromFields(fields, e?.source || 'manual') : e));
     setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], extra: newExtra, updated_at: new Date().toISOString(), dirty: true } } : prev));
     recomputeDay(date, cur, newExtra);
   };

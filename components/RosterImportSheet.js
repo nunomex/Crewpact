@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
-import { buildImportCandidates, rangeFromOption } from '../data/rosterImport';
+import { buildImportCandidates, rangeFromOption, importSaveFields } from '../data/rosterImport';
 import { parseEasyjetRoster } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
@@ -157,6 +157,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // Entra no import = selecionado E não está "a corrigir" (esses só contam depois de corrigidos).
   const importable = infos.filter((x) => x.info.kind !== 'fix');   // entram no import (saves + cancelados); os "fix" só após corrigir
   const saveCount = importable.filter((x) => x.c.action !== 'delete').length;
+  const delCount = importable.filter((x) => x.c.action === 'delete').length;                       // cancelados detetados (ausência)
+  const selDelCount = importable.filter((x) => x.c.action === 'delete' && x.c.selected).length;     // os que TU marcaste p/ apagar
   const perDiemTotal = importable.reduce((sum, x) => sum + (x.info.perDiem || 0), 0);
   const nsTotal = importable.reduce((sum, x) => sum + (x.info.nsEur || 0), 0);
   const payTotal = perDiemTotal + nsTotal;
@@ -165,6 +167,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // MODO CANDIDATO (pré-preenchido) → ao guardar devolve aqui o candidato corrigido (NÃO grava
   // no `duties`) → reavaliamos estado/per-diem. O gravar real é só no "Confirmar import".
   const correct = (c) => setCorrecting(c);
+  // Opt-in dos CANCELADOS (ausência = sinal fraco, apagar é irreversível): toca para marcar/desmarcar apagar.
+  const toggle = (cand) => setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c)));
   const applyCorrection = (corrected) => {
     setCands((cs) => cs.map((c) => (correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind
       ? { ...c, duty: { ...c.duty, ...corrected }, kind: corrected.kind || c.kind }
@@ -173,7 +177,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   };
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const lineFor = (c) => (c.kind === 'flight' ? (c.duty.route || l('Voo', 'Flight')) : t('duties.kind.' + c.kind, lang));
-  const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null].filter(Boolean).join(' · ');
+  const metaFor = (c) => [c.duty.report_time ? `Report ${c.duty.report_time}` : null, c.duty.sectors ? `${c.duty.sectors} ${t('duties.sectorsShort', lang)}` : null, c.multi > 1 ? l(`${c.multi} serviços`, `${c.multi} services`) : null].filter(Boolean).join(' · ');
   // Linha "antes → depois" dos campos que mudaram (candidatos 'changed').
   const diffLine = (c) => (c.diff || []).map((f) => `${f.label[lang === 'en' ? 'en' : 'pt']} ${f.before == null || f.before === '' ? '—' : f.before}→${f.after == null || f.after === '' ? '—' : f.after}`).join('  ·  ');
 
@@ -190,22 +194,20 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const items = importable.map((x) => x.c);   // tudo o que não está "a corrigir" (sem checkbox)
     if (!items.length) return;
     const src = source === 'paste' ? 'pdf' : 'calendar';
-    const deletes = items.filter((c) => c.action === 'delete');     // cancelados → apagar
+    const deletes = items.filter((c) => c.action === 'delete' && c.selected);  // SÓ os cancelados que marcaste
     const conflicts = items.filter((c) => c.status === 'conflict');  // sobrepõem a tua edição
+    const saves = items.filter((c) => c.action !== 'delete');
     const run = () => {
       let warn = 0;
       for (const c of items) {
-        if (c.action === 'delete') { removeDuty(c.duty.duty_date); continue; }
-        const snap = { report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on, route: c.duty.route, sectors: c.duty.sectors, kind: c.kind };
-        saveDuty(c.duty.duty_date, {
-          report_time: c.duty.report_time, block_off: c.duty.block_off, block_on: c.duty.block_on,
-          sectors: c.duty.sectors, flight_minutes: c.duty.flight_minutes, route: c.duty.route,
-          kind: c.kind, nightStop: !!c.duty.nightStop, source: src, snap, legs: c.duty.legs || null,
-        });
+        // Cancelado: só apaga se TU o marcaste (ausência é sinal fraco). Não-marcado → fica como está.
+        if (c.action === 'delete') { if (c.selected) removeDuty(c.duty.duty_date); continue; }
+        // Merge por-serviço: extras manuais do dia sobrevivem; os do calendário vêm da leitura.
+        saveDuty(c.duty.duty_date, importSaveFields(c, src, duties[c.duty.duty_date]?.extra));
         if (c.status === 'warn') warn++;
       }
       success();
-      const saved = items.length - deletes.length;
+      const saved = saves.length;
       const ignored = fixCount;   // os "a corrigir" ficaram de fora
       const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
         `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`);
@@ -233,12 +235,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     // Confirmação só para o que é destrutivo: apagar cancelados ou sobrepor a tua edição.
     if (deletes.length || conflicts.length) {
       const parts = [
-        deletes.length ? l(`apagar ${deletes.length} cancelada(s)`, `delete ${deletes.length} cancelled`) : null,
+        deletes.length ? l(`apagar ${deletes.length} que deixaram de aparecer (pode ser atraso do feed)`, `delete ${deletes.length} that stopped appearing (may be feed delay)`) : null,
         conflicts.length ? l(`sobrepor ${conflicts.length} que editaste`, `overwrite ${conflicts.length} you edited`) : null,
       ].filter(Boolean).join(l(' e ', ' and '));
       Alert.alert(
         l('Confirmar alterações', 'Confirm changes'),
-        l(`Vais ${parts}. Os restantes não são afetados.`, `You will ${parts}. The rest are unaffected.`),
+        l(`Vais ${parts}. Apagar é irreversível. Os restantes não são afetados.`, `You will ${parts}. Deleting is irreversible. The rest are unaffected.`),
         [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Aplicar', 'Apply'), style: 'destructive', onPress: run }],
       );
     } else run();
@@ -324,8 +326,9 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                 const issue = info.kind === 'fix'
                   ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`) : l('Sem rota — corrige para somar', 'No route — fix to count'))
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
+                const tappable = info.kind === 'fix' || info.kind === 'removed';
                 return (
-                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : null)} activeOpacity={info.kind === 'fix' ? 0.85 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix]}>
+                  <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>
                     <View style={[s.statIc, { backgroundColor: ic.bg }]}><Ionicons name={ic.name} size={18} color={ic.fg} /></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <View style={s.cDayRow}>
@@ -337,7 +340,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
                         ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
                         : issue ? <Text style={[s.cMeta, info.kind === 'fix' && s.cIssue]} numberOfLines={1}>{issue}</Text>
-                          : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={1}>{l('já não está no calendário', 'no longer in calendar')}</Text>
+                          : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={2}>{l('Deixou de aparecer — pode ser atraso do feed. Toca para apagar.', 'Stopped appearing — may be a feed delay. Tap to delete.')}</Text>
                             : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                       {/* off/on de CADA setor (lido do PDF/calendário) — só leitura */}
                       {c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length ? (
@@ -346,6 +349,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                     </View>
                     {info.kind === 'fix' ? (
                       <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
+                    ) : info.kind === 'removed' ? (
+                      <View style={[s.cChk, c.selected && s.cChkOn]}>{c.selected ? <Ionicons name="trash" size={13} color="#fff" /> : null}</View>
                     ) : (info.perDiem != null || info.nsEur != null) ? (
                       <View style={s.cPay}>
                         {info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text> : null}
@@ -388,8 +393,10 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         </ScrollView>
 
         <View style={s.foot}>
-          <PrimaryButton onPress={doImport} disabled={!saveCount} label={`${l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`)}${payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}`} />
+          <PrimaryButton onPress={doImport} disabled={!saveCount && !selDelCount}
+            label={`${saveCount ? l(`Confirmar ${saveCount} duties`, `Confirm ${saveCount} duties`) : l('Aplicar', 'Apply')}${selDelCount ? l(` · apagar ${selDelCount}`, ` · delete ${selDelCount}`) : ''}${payTotal ? `  ·  +${fmtEur0n(payTotal)}` : ''}`} />
           {nsTotal ? <Text style={s.payBreak}>{l(`rota +${fmtEur0n(perDiemTotal)} · pernoita +${fmtEur0n(nsTotal)}`, `route +${fmtEur0n(perDiemTotal)} · night stop +${fmtEur0n(nsTotal)}`)}</Text> : null}
+          {delCount ? <Text style={s.fixHint}>{selDelCount ? l(`${selDelCount}/${delCount} cancelada(s) marcada(s) p/ apagar`, `${selDelCount}/${delCount} cancelled marked to delete`) : l(`${delCount} deixaram de aparecer — toca p/ apagar (ou ignora)`, `${delCount} stopped appearing — tap to delete (or ignore)`)}</Text> : null}
           {fixCount ? <Text style={s.fixHint}>{l(`Corrige as ${fixCount} para somarem ao per-diem`, `Fix the ${fixCount} so they count`)}</Text> : null}
         </View>
 
@@ -441,6 +448,10 @@ const makeStyles = (C) => StyleSheet.create({
   cEurMuted: { fontSize: 15, fontFamily: FONT.display, color: C.lineStrong, fontVariant: ['tabular-nums'] },
   cFix: { fontSize: 13, fontFamily: FONT.heavy, color: C.warnText },
   cIssue: { color: C.warnText, fontFamily: FONT.semibold },
+  // Cancelado: checkbox de opt-in p/ apagar (default vazio) + realce da linha quando marcada.
+  cChk: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center' },
+  cChkOn: { backgroundColor: C.red, borderColor: C.red },
+  crowDel: { backgroundColor: C.redSoft, borderColor: C.red },
   summ: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft, borderRadius: RADIUS.lg, padding: 13, marginBottom: 14 },
   summWarn: { backgroundColor: C.warnSoft },
   summIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },

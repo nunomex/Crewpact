@@ -19,7 +19,6 @@ import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile } from '../data/auth';
-import { openFtlPdf } from '../data/ftlPdf';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
@@ -209,12 +208,6 @@ export default function SettingsScreen({ navigation }) {
     } catch { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); }
   };
 
-  // Biblioteca: abre o PDF do Regulamento (UE) 83/2014 incluído na app.
-  const openPdf = async () => {
-    const ok = await openFtlPdf();
-    if (!ok) Alert.alert(t('ftl.pdfTitle', lang), t('ftl.pdfError', lang));
-  };
-
   // RGPD — exportar TODOS os meus dados num JSON (conta+perfil+escala+FTL+AE),
   // partilhado pela folha do sistema (sem sair para servidor; o user escolhe o destino).
   const exportData = async () => {
@@ -373,11 +366,13 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        {/* Biblioteca — regulamento (PDF) */}
+        {/* Biblioteca — fontes oficiais (FTL universal + AE por companhia/tipo), crew-aware */}
         <Animated.View style={seg(4)}>
           <Text style={s.gt}>{l('Biblioteca', 'Library')}</Text>
           <View style={s.gbox}>
-            <Row icon="document-text-outline" label={t('profile.libReg', lang)} value="PDF" onPress={openPdf} last s={s} C={C} />
+            <Row icon="library-outline" label={l('Fontes oficiais', 'Official sources')}
+              sub={l('FTL (UE) + AE (BTE) — só links oficiais', 'FTL (EU) + AE (BTE) — official links only')}
+              onPress={() => navigation.navigate('Biblioteca')} last s={s} C={C} />
           </View>
         </Animated.View>
 

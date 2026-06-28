@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Biblioteca (mockup fiel)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#FFFFFF; --card:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --ink:#1B1B1B;
+    --brand:#1F4E79; --line:#ECECEA; --text:#1B1B1B; --sub:#6B6B66; --info:#2E6BE6; --infoSoft:#E4ECFB;
+    --display:'Space Grotesk',sans-serif; --body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#D9DCE1;font-family:var(--body);color:var(--text);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;gap:18px;padding:34px 16px 60px;}
+  h1.t{font-family:var(--display);font-weight:600;font-size:21px;color:#2a2f36;text-align:center}
+  .lede{max-width:560px;text-align:center;color:#5a6068;font-size:13px;line-height:1.55}
+  .lede b{color:#2a2f36}
+
+  .phone{width:360px;background:var(--canvas);border-radius:44px;padding:0;position:relative;overflow:hidden;
+    box-shadow:0 30px 60px -24px rgba(20,26,40,.5),0 0 0 1px rgba(0,0,0,.05),0 1px 0 #fff inset;}
+  .screen{background:var(--canvas);min-height:720px;padding:0 0 24px}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text);font-weight:700;padding:14px 26px 4px}
+  /* top bar (DetailTopBar) */
+  .topbar{display:flex;align-items:center;gap:7px;padding:8px 18px 6px;color:var(--sub)}
+  .topbar .back{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--sub)}
+  .body{padding:6px 20px 0}
+
+  .eyebrow{font-size:11px;font-family:var(--body);font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--sub);margin-top:4px}
+  .h1{font-family:var(--display);font-weight:600;font-size:26px;letter-spacing:-.6px;color:var(--text);margin-top:4px}
+  .ld{font-size:13px;font-weight:500;color:var(--sub);line-height:1.46;margin-top:6px;margin-bottom:2px}
+
+  .section{margin-top:20px}
+  .secHead{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .secTitle{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.3px;color:var(--text)}
+  .tag{background:var(--soft2);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:10.5px;font-weight:800;letter-spacing:.3px;color:var(--sub)}
+  .secNote{font-size:12px;font-weight:500;color:var(--sub);line-height:1.45;margin-bottom:10px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:13px 14px}
+  .row+.row{border-top:1px solid var(--line)}
+  .rowic{width:34px;height:34px;border-radius:10px;background:var(--infoSoft);display:flex;align-items:center;justify-content:center;flex:none;color:var(--brand)}
+  .rl{flex:1;min-width:0}
+  .rlabel{font-size:14px;font-weight:700;color:var(--text)}
+  .rsub{font-size:11.5px;font-weight:500;color:var(--sub);line-height:1.35;margin-top:1px}
+  .open{color:var(--sub);font-size:16px;flex:none}
+  .foot{font-size:11px;font-weight:500;color:var(--sub);line-height:1.45;margin-top:22px;text-align:center;padding:0 6px}
+  svg{display:block}
+
+  .cap{font-size:11.5px;color:#5a6068;max-width:360px;text-align:center;line-height:1.5;margin-top:2px}
+  .cap b{color:#2a2f36}
+</style>
+</head>
+<body>
+  <h1 class="t">Biblioteca — fontes oficiais (fiel ao ecrã RN)</h1>
+  <p class="lede">FTL <b>universal</b> (uma lei para piloto e cabine) · AE <b>crew-aware</b> (companhia + tipo). Só links oficiais — EUR-Lex / EASA / BTE.</p>
+
+  <div class="phone"><div class="screen">
+    <div class="statusbar"><span>9:41</span><span></span><span>100%</span></div>
+    <div class="topbar"><span class="back">‹ Voltar</span></div>
+    <div class="body">
+      <div class="eyebrow">PERFIL · BIBLIOTECA</div>
+      <div class="h1">Fontes oficiais</div>
+      <div class="ld">De onde saem os cálculos da app. Só fontes oficiais — sem blogs.</div>
+
+      <!-- FTL -->
+      <div class="section">
+        <div class="secHead"><div class="secTitle">FTL · Limites de tempo de voo</div><div class="tag">Universal</div></div>
+        <div class="secNote">Lei UE — IGUAL para piloto e cabine. O que muda por tipo são tabelas DENTRO do mesmo documento.</div>
+        <div class="card">
+          <div class="row"><div class="rowic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="rl"><div class="rlabel">Reg. (UE) 83/2014</div><div class="rsub">O regulamento FTL (altera o 965/2012) · EUR-Lex</div></div><span class="open">⇗</span></div>
+          <div class="row"><div class="rowic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="rl"><div class="rlabel">Reg. (UE) 965/2012</div><div class="rsub">Operações aéreas — base ARO/ORO/CAT · EUR-Lex</div></div><span class="open">⇗</span></div>
+          <div class="row"><div class="rowic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="rl"><div class="rlabel">EASA · Easy Access Rules (Air Ops)</div><div class="rsub">CS-FTL.1 + AMC/GM consolidados (inclui ARO.OPS.230)</div></div><span class="open">⇗</span></div>
+        </div>
+      </div>
+
+      <!-- AE -->
+      <div class="section">
+        <div class="secHead"><div class="secTitle">AE · Acordo de Empresa</div><div class="tag">easyJet · Piloto</div></div>
+        <div class="secNote">Por COMPANHIA e por TIPO — piloto e cabine têm acordos SEPARADOS. Procura o da tua companhia.</div>
+        <div class="card">
+          <div class="row"><div class="rowic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="rl"><div class="rlabel">BTE — Boletim do Trabalho e Emprego</div><div class="rsub">Onde os Acordos de Empresa são publicados (PT)</div></div><span class="open">⇗</span></div>
+          <div class="row"><div class="rowic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="rl"><div class="rlabel">gov.pt — Consultar o BTE</div><div class="rsub">Pesquisa oficial dos boletins</div></div><span class="open">⇗</span></div>
+        </div>
+      </div>
+
+      <div class="foot">Os links abrem no navegador. A app é um apoio — confirma sempre com a fonte oficial e a tua companhia.</div>
+    </div>
+  </div></div>
+
+  <p class="cap">Para a <b>cabine</b>, a tag do AE muda para <b>"easyJet · Tripulante de cabine"</b> e a nota é a mesma. O FTL fica <b>igual</b> (universal). Tudo vem de <b>data/library.js</b> (crew-aware), com <b>npm run test:library</b> a trancar "só domínios oficiais".</p>
+</body>
+</html>

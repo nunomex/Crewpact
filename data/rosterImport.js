@@ -112,11 +112,25 @@ export const rangeFromOption = (option, from = new Date()) => {
 export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, isPilot = false } = {}) => {
   const out = [];
   const inDates = new Set();
+  const byDate = new Map();   // dia → candidato primário (p/ empilhar 2.º+ FDP do mesmo dia)
+  // Serviço-irmão (forma de `extra`) a partir de uma duty-row de atividade.
+  const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null });
   const make = (duty, kind) => {
     if (!duty) return null;
     duty.kind = kind;
-    inDates.add(duty.duty_date);
-    const ex = duties[duty.duty_date];
+    const date = duty.duty_date;
+    inDates.add(date);
+    // 2.º+ atividade do MESMO dia nesta leitura → a EASA conta por serviço (210): EMPILHA como
+    // `extra` no candidato primário (não sobrepõe). O prospect reprojeta-se com o dia completo.
+    const prev = byDate.get(date);
+    if (prev) {
+      prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
+      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot);
+      prev.multi = (prev.duty.extra.length + 1);
+      if (prev.prospect && prev.prospect.ok === false && prev.status === 'ok') prev.status = 'warn';
+      return null;   // já está em `out`; não cria novo candidato
+    }
+    const ex = duties[date];
     const exists = !!(ex && !ex.deleted);
     const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot);
     // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
@@ -124,14 +138,16 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }
     else status = (prospect && prospect.ok === false) ? 'warn' : 'ok';
     // Default SEGURO: só os NOVOS vêm marcados; alterado/conflito por marcar.
-    return { duty, kind, status, exists, diff, prospect, selected: !exists, action: 'save' };
+    const cand = { duty, kind, status, exists, diff, prospect, selected: !exists, action: 'save' };
+    byDate.set(date, cand);
+    return cand;
   };
   for (const act of activities) { const c = make(dutyFromActivity(act, base), 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
-  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário
-  // ("fonte manda"). Vêm PRÉ-MARCADOS (selected: true) → o "Confirmar import" habitual limpa os
-  // dias cancelados, que ficam livres. A confirmação é a rede de segurança contra leituras
-  // parciais (sem tombstone, apagar é irreversível). Manuais/PDF nunca entram aqui.
+  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
+  // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)
+  // → vêm POR MARCAR (selected: false). O utilizador opta-in serviço-a-serviço (toca para apagar).
+  // Manuais/PDF nunca entram aqui (só o feed vivo se cancela por ausência).
   if (window && window.start && window.end) {
     for (const date in duties) {
       const d = duties[date];
@@ -139,12 +155,34 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       if (date < window.start || date > window.end) continue;
       if (inDates.has(date)) continue;
       const kind = d.kind || 'flight';
-      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: true, action: 'delete' });
+      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
     }
   }
   const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, same: 5 };
   out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
   return out;
+};
+
+// Campos para o saveDuty a partir de um candidato de import (commit do RosterImportSheet).
+// MERGE por-SERVIÇO de `extra` (proveniência por-serviço):
+//   • os serviços-irmãos DESTA leitura são do calendário/PDF (tag `source`);
+//   • os teus extras MANUAIS (source:'manual') do dia SOBREVIVEM (não morrem por o calendário não
+//     os trazer — são teus, deliberados);
+//   • um extra do CALENDÁRIO guardado que a leitura já não traz é DESCARTADO (o dia foi relido em
+//     positivo → a leitura é autoritativa para os serviços-do-calendário desse dia).
+// `existingExtra` = o `extra` guardado do dia (duties[date].extra). Se nada resultar → extra:null.
+export const importSaveFields = (c, source = 'calendar', existingExtra = null) => {
+  const d = c.duty;
+  const readExtra = (d.extra || []).map((e) => ({ ...e, source }));                  // do calendário/PDF (esta leitura)
+  const keptManual = (existingExtra || []).filter((e) => e && e.source === 'manual'); // os teus à mão sobrevivem
+  const extra = [...readExtra, ...keptManual];
+  const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind };
+  return {
+    report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
+    sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route,
+    kind: c.kind, nightStop: !!d.nightStop, source, snap, legs: d.legs || null,
+    extra: extra.length ? extra : null,
+  };
 };
 
 // Duty-rows da nova leitura (calendário/PDF) — sem o cálculo prospetivo, para a

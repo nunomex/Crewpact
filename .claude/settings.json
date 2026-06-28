@@ -175,7 +175,19 @@
       "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('screens/EscalaScreen.js',{presets:['babel-preset-expo']}\\);console.log\\('OK screens/EscalaScreen.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
       "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['App.js','components/DutyFormSheet.js','screens/EscalaScreen.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
       "PowerShell(npm run test:record 2>&1)",
-      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('screens/DutyDetailScreen.js',{presets:['babel-preset-expo']}\\);console.log\\('OK screens/DutyDetailScreen.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")"
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('screens/DutyDetailScreen.js',{presets:['babel-preset-expo']}\\);console.log\\('OK screens/DutyDetailScreen.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['data/rosterImport.js','components/RosterImportSheet.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
+      "PowerShell(npm run test:pdf 2>&1)",
+      "PowerShell(node \"C:\\\\Users\\\\funsn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--PROJECTOS-CrewPact\\\\b0056018-4b71-41fb-9179-0baa2eb87736\\\\scratchpad\\\\babel-all.js\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\biblioteca.html\")",
+      "PowerShell(npm run test:library 2>&1)",
+      "PowerShell($o=\"C:\\\\Users\\\\funsn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--PROJECTOS-CrewPact\\\\b0056018-4b71-41fb-9179-0baa2eb87736\\\\scratchpad\\\\bte40_2023.pdf\"; Invoke-WebRequest -Uri \"https://bte.gep.msess.gov.pt/completos/2023/bte40_2023.pdf\" -OutFile $o -UseBasicParsing; \"$\\([math]::Round\\(\\(Get-Item $o\\).Length/1MB,2\\)\\) MB baixado\")",
+      "Bash(node pdftext.js bte40_2023.pdf)",
+      "PowerShell($o=\"C:\\\\Users\\\\funsn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--PROJECTOS-CrewPact\\\\b0056018-4b71-41fb-9179-0baa2eb87736\\\\scratchpad\\\\dre_223256548.pdf\"; Invoke-WebRequest -Uri \"https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/10/30/223256548.pdf\" -OutFile $o -UseBasicParsing; \"$\\([math]::Round\\(\\(Get-Item $o\\).Length/1MB,2\\)\\) MB baixado\")",
+      "Bash(node pdftext.js dre_223256548.pdf)",
+      "Bash(timeout 30 node pdftext.js dre_223256548.pdf)",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('data/library.js',{presets:['babel-preset-expo']}\\);console.log\\('OK data/library.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
+      "Bash(node \"C:/Users/funsn/AppData/Local/Temp/claude/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/scratchpad/pdftext.js\" \"C:/Users/funsn/.claude/projects/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/tool-results/webfetch-1782653684313-dxh4fo.pdf\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

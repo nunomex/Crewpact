@@ -27,7 +27,7 @@ Module._extensions['.js'] = function (m, filename) {
 };
 
 const { parseEasyjetRoster } = require(path.resolve('data/pdfRoster.js'));
-const { dutyFromActivity, buildImportCandidates } = require(path.resolve('data/rosterImport.js'));
+const { dutyFromActivity, buildImportCandidates, importSaveFields } = require(path.resolve('data/rosterImport.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => {
@@ -129,6 +129,54 @@ const cands = buildImportCandidates({ activities: r.activities, nonflights: r.no
 ok('pipeline: 3 candidatos', cands.length === 3);
 ok('pipeline: todos flight', cands.every((c) => c.kind === 'flight'));
 ok('pipeline: ordenados por data', cands[0].duty.duty_date <= cands[1].duty.duty_date && cands[1].duty.duty_date <= cands[2].duty.duty_date);
+
+// Dois FDP no MESMO dia (a EASA conta por serviço — 210) → FUNDEM num só candidato com `extra`.
+const mkAct = (date, dep, arr, off, on, rep) => ({ dateISO: date, sectors: 1, legs: [{ depAirport: dep, arrAirport: arr, depTime: off, arrTime: on, report: rep, flightNo: 'EZY1', startDate: `${date}T${off}:00Z`, endDate: `${date}T${on}:00Z` }] });
+const sameDay = buildImportCandidates({ activities: [mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45'), mkAct('2026-06-16', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [], duties: {}, dayLog: {} });
+ok('2 FDP/dia: 1 candidato (não sobrepõe)', sameDay.length === 1);
+ok('2 FDP/dia: extra com 1 serviço', Array.isArray(sameDay[0].duty.extra) && sameDay[0].duty.extra.length === 1);
+ok('2 FDP/dia: multi = 2', sameDay[0].multi === 2);
+ok('2 FDP/dia: a 2.ª atividade vira extra (CDG-LGW)', sameDay[0].duty.extra[0].route === 'CDG-LGW');
+ok('2 FDP/dia: a 1.ª fica primária (LGW-CDG)', sameDay[0].duty.route === 'LGW-CDG');
+// Dias diferentes → NÃO funde (2 candidatos, sem multi).
+const diffDay = buildImportCandidates({ activities: [mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45'), mkAct('2026-06-17', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [], duties: {}, dayLog: {} });
+ok('dias diferentes → 2 candidatos, sem merge', diffDay.length === 2 && !diffDay[0].multi && !diffDay[1].multi);
+
+// Cancelado por AUSÊNCIA vem POR MARCAR (selected:false) — apagar é opt-in (ausência = sinal fraco).
+const win = { start: '2026-06-16', end: '2026-06-22' };
+const storedCal = { '2026-06-20': { duty_date: '2026-06-20', source: 'calendar', report_time: '06:00', block_on: '10:00', kind: 'flight' } };
+const cancCands = buildImportCandidates({ activities: [], nonflights: [], duties: storedCal, dayLog: {}, window: win });
+const rem = cancCands.find((c) => c.action === 'delete');
+ok('cancelado por ausência é detetado (removed)', !!rem && rem.status === 'removed');
+ok('cancelado vem POR MARCAR (selected:false)', !!rem && rem.selected === false);
+// Manual/PDF ausentes NUNCA são cancelados (só o feed vivo).
+const storedMan = { '2026-06-20': { duty_date: '2026-06-20', source: 'manual', report_time: '06:00', block_on: '10:00', kind: 'flight' } };
+const manCands = buildImportCandidates({ activities: [], nonflights: [], duties: storedMan, dayLog: {}, window: win });
+ok('manual ausente NUNCA é cancelado', !manCands.some((c) => c.action === 'delete'));
+const storedPdf = { '2026-06-20': { duty_date: '2026-06-20', source: 'pdf', report_time: '06:00', block_on: '10:00', kind: 'flight' } };
+const pdfCands = buildImportCandidates({ activities: [], nonflights: [], duties: storedPdf, dayLog: {}, window: win });
+ok('PDF ausente NUNCA é cancelado', !pdfCands.some((c) => c.action === 'delete'));
+
+// Proveniência POR-SERVIÇO: o commit faz MERGE — extras MANUAIS sobrevivem, extras do calendário
+// vêm da leitura (a primária presente = leitura autoritativa para os serviços-do-calendário do dia).
+const singleCand = { duty: dutyFromActivity(mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45')), kind: 'flight' };
+// (a) 1 atividade, nada guardado → extra null.
+ok('merge: 1 atividade + sem extra → null', importSaveFields(singleCand, 'calendar').extra === null);
+// (b) 1 atividade, mas há 2.º serviço MANUAL guardado → SOBREVIVE.
+const manualExtra = [{ report_time: '18:45', block_on: '20:45', route: 'CDG-LGW', kind: 'flight', source: 'manual' }];
+const withMan = importSaveFields(singleCand, 'calendar', manualExtra);
+ok('merge: extra MANUAL sobrevive ao import', Array.isArray(withMan.extra) && withMan.extra.length === 1 && withMan.extra[0].source === 'manual');
+// (c) 1 atividade, mas o extra guardado era do CALENDÁRIO → DESCARTADO (leitura autoritativa).
+const calExtra = [{ report_time: '18:45', block_on: '20:45', route: 'CDG-LGW', kind: 'flight', source: 'calendar' }];
+ok('merge: extra do CALENDÁRIO ausente da leitura é descartado', importSaveFields(singleCand, 'calendar', calExtra).extra === null);
+// (d) 2 atividades → o 2.º serviço vem da leitura, com a fonte (calendar/pdf).
+const multiCand = sameDay[0];
+const mf = importSaveFields(multiCand, 'calendar');
+ok('merge: 2 atividades → extra do calendário (tagged)', Array.isArray(mf.extra) && mf.extra.length === 1 && mf.extra[0].source === 'calendar');
+// (e) 2 atividades + 1 manual guardado → AMBOS coexistem.
+const mf2 = importSaveFields(multiCand, 'calendar', manualExtra);
+ok('merge: calendário (leitura) + manual (guardado) coexistem', mf2.extra.length === 2 && mf2.extra.some((e) => e.source === 'calendar') && mf2.extra.some((e) => e.source === 'manual'));
+ok('merge: source da primária propaga no commit', importSaveFields(singleCand, 'calendar').source === 'calendar');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  pdfRoster: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

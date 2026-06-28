@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
@@ -10,7 +10,6 @@ import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import { FTL_ARTICLES } from '../data/ftl';
-import { openFtlPdf } from '../data/ftlPdf';
 import { t, tx } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
@@ -66,11 +65,8 @@ export default function FtlHubScreen({ navigation }) {
   const used = new Set(THEMES.flatMap(th => th.codes));
   const ungrouped = articles.filter(a => !used.has(a.code));
 
-  const openPdf = async () => {
-    select();
-    const ok = await openFtlPdf();
-    if (!ok) Alert.alert(t('ftl.pdfTitle', lang), t('ftl.pdfError', lang));
-  };
+  // "CONSULTAR" → abre a Biblioteca (fontes oficiais: FTL universal + AE por companhia/tipo).
+  const openLibrary = () => { select(); navigation.navigate('Biblioteca'); };
 
   const article = (a) => (
     <TouchableOpacity key={a.code} style={s.card} activeOpacity={0.8}
@@ -112,10 +108,10 @@ export default function FtlHubScreen({ navigation }) {
         <Animated.View style={seg(0)}>
         <View style={s.consultHead}>
           <Text style={[s.sec, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
-          <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openPdf} hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}>
-            <Ionicons name="document-text-outline" size={14} color={C.text} />
-            <Text style={s.pdfBtnTxt}>PDF</Text>
-            <Ionicons name="open-outline" size={13} color={C.sub} />
+          <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openLibrary} hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}>
+            <Ionicons name="library-outline" size={14} color={C.text} />
+            <Text style={s.pdfBtnTxt}>{l('Fontes', 'Sources')}</Text>
+            <Ionicons name="chevron-forward" size={13} color={C.sub} />
           </TouchableOpacity>
         </View>
 
