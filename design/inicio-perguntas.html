@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Perguntas do Início (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F4F2ED; --card:#FFFFFF; --ink:#191714; --sub:#9A958C; --line:#ECE8E0;
+    --soft:#F6F4EF; --soft2:#F1EEE7; --red:#CE4639; --redText:#B23A2E; --redSoft:#FBEDEB;
+    --green:#2E7D55; --greenText:#246B47; --greenSoft:#EAF4EC; --warn:#C98A2B; --warnText:#9C6A18; --warnSoft:#FAF1DF;
+    --brand:#3F6CC7; --infoSoft:#EAF0FB;
+    --display:'Fraunces',Georgia,serif; --body:'Schibsted Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E7E3DB;font-family:var(--body);color:var(--ink);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;gap:24px;padding:34px 16px 60px;
+    background-image:radial-gradient(120% 80% at 50% -10%,#F2EEE6 0%,#E7E3DB 60%);}
+  h1{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.5px;margin-top:4px;text-align:center}
+  .lede{max-width:600px;text-align:center;color:#6f6a60;font-size:13.5px;line-height:1.55}
+  .lede b{color:var(--ink)}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+
+  .phone{width:340px;background:var(--canvas);border-radius:42px;padding:14px;
+    box-shadow:0 2px 1px #fff inset,0 30px 60px -24px rgba(40,34,24,.42),0 0 0 1px rgba(0,0,0,.04);}
+  .screen{background:var(--canvas);border-radius:30px;overflow:hidden;padding:20px 18px 22px}
+  .status{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);font-weight:600;padding:2px 6px 14px}
+  .eyebrow{font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:99px;background:var(--red)}
+
+  /* mini serviços card (contexto) */
+  .svc{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:13px 14px;margin-bottom:18px;
+    box-shadow:0 10px 24px -20px rgba(40,34,24,.5)}
+  .svcTop{display:flex;align-items:center;gap:12px}
+  .badge{width:50px;height:50px;border-radius:15px;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+  .badge .n{font-family:var(--display);font-weight:600;font-size:21px;line-height:1}
+  .badge .wd{font-size:8.5px;letter-spacing:1.4px;text-transform:uppercase;opacity:.7;margin-top:2px}
+  .svcRoute{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:-.3px}
+  .svcTimes{font-size:12px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+  .svcTimes .z{color:var(--brand)}
+
+  /* ALERTA (crítico) — só quando ILEGAL / expirado */
+  .alert{display:flex;gap:12px;align-items:flex-start;background:var(--redSoft);border:1px solid var(--red);
+    border-radius:16px;padding:13px 14px;margin-bottom:14px}
+  .alert .ic{width:34px;height:34px;border-radius:11px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:18px}
+  .alert .q{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--redText)}
+  .alert .a{font-family:var(--display);font-weight:600;font-size:16px;color:var(--redText);margin-top:2px;letter-spacing:-.2px}
+  .alert .s{font-size:11.5px;color:#8a5b53;line-height:1.45;margin-top:5px}
+
+  /* LISTA de perguntas — Q à esquerda, ESTADO à direita (pill), tocável */
+  .qhead{font-family:var(--body);font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);font-weight:800;margin:0 2px 8px}
+  .qcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .qrow{display:flex;align-items:center;gap:12px;padding:13px 14px}
+  .qrow + .qrow{border-top:1px solid var(--line)}
+  .qrow .q{flex:1;font-size:13.5px;font-weight:700;color:var(--ink)}
+  .qrow .q .sg{display:block;font-size:11px;font-weight:500;color:var(--sub);margin-top:2px}
+  .pill{font-size:12px;font-weight:800;border-radius:99px;padding:4px 11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pill.ok{background:var(--greenSoft);color:var(--greenText)}
+  .pill.warn{background:var(--warnSoft);color:var(--warnText)}
+  .pill.bad{background:var(--redSoft);color:var(--redText)}
+  .chev{color:var(--sub);font-size:15px;margin-left:2px}
+
+  .cap{font-size:11px;color:#8a857b;text-align:center;margin-top:13px;line-height:1.5;max-width:340px}
+
+  /* variants strip */
+  .variants{display:flex;flex-direction:column;gap:14px;width:340px}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 16px}
+  .vh{font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:3px}
+  .vh .tag{font:700 10px var(--body);color:#fff;background:var(--ink);border-radius:6px;padding:2px 7px;margin-left:7px;vertical-align:2px}
+  .vh .tag.rec{background:var(--green)}
+  .vd{font-size:12px;color:#6f6a60;line-height:1.5;margin:6px 0 12px}
+
+  /* demo: atual */
+  .demoAtual .r{display:flex;gap:10px;align-items:flex-start;padding:8px 0}
+  .demoAtual .r+.r{border-top:1px solid var(--line)}
+  .demoAtual .d{width:8px;height:8px;border-radius:99px;margin-top:5px;flex:none}
+  .demoAtual .ql{font-size:11px;font-weight:700;color:var(--sub)}
+  .demoAtual .al{font-size:13px;font-weight:600;color:var(--ink);margin-top:1px}
+  /* demo: chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:var(--soft)}
+  .chip .ci{width:8px;height:8px;border-radius:99px;flex:none}
+  .chip .ct{font-size:12px;font-weight:700}
+  .chip .cv{font-size:11px;color:var(--sub);font-weight:600}
+</style>
+</head>
+<body>
+  <h1>Perguntas do Início — análise + proposta</h1>
+  <p class="lede">Hoje é uma lista plana: <b>ponto + pergunta + resposta + sugestão</b>, tudo no mesmo peso.
+    Proposta: <b>separar o alarme do relance</b> — o que é crítico vira um <b>alerta</b> que salta à vista;
+    o resto vira uma <b>lista escaneável</b> com o estado à direita, tudo tocável.</p>
+
+  <div class="grid">
+    <!-- PHONE: proposta A -->
+    <div class="phone">
+      <div class="screen">
+        <div class="status"><span>9:41</span><span>Início</span></div>
+        <div class="eyebrow"><span class="dot"></span> easyJet · AE · Piloto</div>
+
+        <!-- contexto: card serviços compacto -->
+        <div class="svc">
+          <div class="svcTop">
+            <div class="badge"><div class="n">14</div><div class="wd">Seg</div></div>
+            <div>
+              <div class="svcRoute">LGW → ATH</div>
+              <div class="svcTimes">08:30 → 14:00 <span class="z">07:30–11:00Z</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTA crítico (só quando ILEGAL) -->
+        <div class="alert">
+          <div class="ic">!</div>
+          <div style="flex:1">
+            <div class="q">Estou legal?</div>
+            <div class="a">Não — PSV excede o máximo (+1:00)</div>
+            <div class="s">Reduzir o serviço ou, se aplicável, usar prolongamento (máx 2 em 7 d). Confirma com a companhia.</div>
+          </div>
+        </div>
+
+        <!-- LISTA das restantes -->
+        <div class="qhead">Perguntas</div>
+        <div class="qcard">
+          <div class="qrow"><div class="q">Tenho descanso?</div><span class="pill ok">Sim · 12:30</span><span class="chev">›</span></div>
+          <div class="qrow"><div class="q">Mudou a escala?<span class="sg">Há alterações por rever</span></div><span class="pill warn">2 · 1 cancel.</span><span class="chev">›</span></div>
+          <div class="qrow"><div class="q">Validades em dia?</div><span class="pill ok">Tudo válido</span><span class="chev">›</span></div>
+        </div>
+
+        <p class="cap">Quando está tudo bem, não há alerta — só a lista (verde). O alerta vermelho aparece
+          apenas quando há um bloqueio (ilegal / validade expirada).</p>
+      </div>
+    </div>
+
+    <!-- PHONE: A + CHIPS (combo) -->
+    <div class="phone">
+      <div class="screen">
+        <div class="status"><span>9:41</span><span>Início · A+chips</span></div>
+        <div class="eyebrow"><span class="dot"></span> easyJet · AE · Piloto</div>
+        <div class="svc">
+          <div class="svcTop">
+            <div class="badge"><div class="n">14</div><div class="wd">Seg</div></div>
+            <div><div class="svcRoute">LGW → ATH</div>
+              <div class="svcTimes">08:30 → 14:00 <span class="z">07:30–11:00Z</span></div></div>
+          </div>
+        </div>
+
+        <!-- alerta crítico (igual ao A) -->
+        <div class="alert">
+          <div class="ic">!</div>
+          <div style="flex:1">
+            <div class="q">Estou legal?</div>
+            <div class="a">Não — PSV excede o máximo (+1:00)</div>
+            <div class="s">Reduzir o serviço ou usar prolongamento (máx 2 em 7 d). Confirma com a companhia.</div>
+          </div>
+        </div>
+
+        <!-- chips para o resto (glance + tap) -->
+        <div class="qhead">O teu dia</div>
+        <div class="chips" style="margin-bottom:4px">
+          <div class="chip"><span class="ci" style="background:var(--green)"></span><span class="ct">Descanso</span><span class="cv">12:30</span></div>
+          <div class="chip" style="border-color:var(--warn);background:var(--warnSoft)"><span class="ci" style="background:var(--warn)"></span><span class="ct">Escala</span><span class="cv">3 mud.</span></div>
+          <div class="chip"><span class="ci" style="background:var(--green)"></span><span class="ct">Validades</span><span class="cv">ok</span></div>
+        </div>
+        <p class="cap">Crítico = alerta (com conselho). Resto = chips coloridos, tap → detalhe.
+          O âmbar (escala) salta entre os verdes.</p>
+      </div>
+    </div>
+
+    <!-- VARIANTS -->
+    <div class="variants">
+      <div class="vcard">
+        <div class="vh">Atual<span class="tag">como está</span></div>
+        <div class="vd">Lista plana: ponto + pergunta (pequena) + resposta (grande) + sugestão. Tudo no mesmo peso; o crítico não salta mais que o resto, e só a "escala" é tocável.</div>
+        <div class="demoAtual">
+          <div class="r"><div class="d" style="background:var(--red)"></div><div><div class="ql">Estou legal?</div><div class="al">Não — PSV excede o máximo (+1:00)</div></div></div>
+          <div class="r"><div class="d" style="background:var(--warn)"></div><div><div class="ql">Mudou a escala?</div><div class="al">2 alterada(s) · 1 cancelada(s)</div></div></div>
+          <div class="r"><div class="d" style="background:var(--green)"></div><div><div class="ql">Validades em dia?</div><div class="al">Tudo válido</div></div></div>
+        </div>
+      </div>
+
+      <div class="vcard">
+        <div class="vh">A · Alerta + lista com estado<span class="tag rec">recomendo</span></div>
+        <div class="vd">O crítico (ilegal/expirado) vira um <b>alerta vermelho</b> destacado, com a sugestão. As restantes ficam numa lista limpa: pergunta à esquerda, <b>estado à direita</b> (pill verde/âmbar/vermelho), todas tocáveis → detalhe.</div>
+        <div class="qcard">
+          <div class="qrow"><div class="q">Tenho descanso?</div><span class="pill ok">Sim · 12:30</span><span class="chev">›</span></div>
+          <div class="qrow"><div class="q">Mudou a escala?</div><span class="pill warn">2 · 1 cancel.</span><span class="chev">›</span></div>
+        </div>
+      </div>
+
+      <div class="vcard">
+        <div class="vh">B · Chips "O teu dia"<span class="tag">ultra-compacto</span></div>
+        <div class="vd">Um cartão só, com <b>chips</b> por tópico (legal/descanso/escala/validades): ponto de cor + rótulo + valor curto. Tap num chip → detalhe. Ocupa pouquíssimo espaço, mas a sugestão/aviso fica escondida no detalhe.</div>
+        <div class="chips">
+          <div class="chip"><span class="ci" style="background:var(--red)"></span><span class="ct">Legal</span><span class="cv">+1:00</span></div>
+          <div class="chip"><span class="ci" style="background:var(--green)"></span><span class="ct">Descanso</span><span class="cv">12:30</span></div>
+          <div class="chip"><span class="ci" style="background:var(--warn)"></span><span class="ct">Escala</span><span class="cv">3 mud.</span></div>
+          <div class="chip"><span class="ci" style="background:var(--green)"></span><span class="ct">Validades</span><span class="cv">ok</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap" style="max-width:600px">Valores ilustrativos. As respostas vêm do mesmo <code>buildTodayItems</code> (crew-aware), por isso qualquer variante reusa a lógica já existente — só muda a apresentação.</p>
+</body>
+</html>

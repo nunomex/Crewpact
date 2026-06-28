@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Perguntas do Início — B & C (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F4F2ED; --card:#FFFFFF; --ink:#191714; --sub:#9A958C; --line:#ECE8E0;
+    --soft:#F6F4EF; --soft2:#F1EEE7; --red:#CE4639; --redText:#B23A2E; --redSoft:#FBEDEB;
+    --green:#2E7D55; --greenText:#246B47; --greenSoft:#EAF4EC; --warn:#C98A2B; --warnText:#9C6A18; --warnSoft:#FAF1DF;
+    --brand:#3F6CC7; --infoSoft:#EAF0FB;
+    --display:'Fraunces',Georgia,serif; --body:'Schibsted Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E7E3DB;font-family:var(--body);color:var(--ink);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;gap:22px;padding:34px 16px 60px;
+    background-image:radial-gradient(120% 80% at 50% -10%,#F2EEE6 0%,#E7E3DB 60%);}
+  h1{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.5px;margin-top:4px;text-align:center}
+  .lede{max-width:620px;text-align:center;color:#6f6a60;font-size:13.5px;line-height:1.55}
+  .lede b{color:var(--ink)}
+  .grid{display:flex;flex-wrap:wrap;gap:30px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .clabel{font-family:var(--display);font-weight:600;font-size:16px}
+  .cdesc{font-size:11.5px;color:#6f6a60;max-width:320px;text-align:center;line-height:1.5}
+
+  .phone{width:330px;background:var(--canvas);border-radius:42px;padding:14px;position:relative;overflow:hidden;
+    box-shadow:0 2px 1px #fff inset,0 30px 60px -24px rgba(40,34,24,.42),0 0 0 1px rgba(0,0,0,.04);}
+  .screen{background:var(--canvas);border-radius:30px;overflow:hidden;padding:20px 18px 22px;min-height:520px}
+  .status{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);font-weight:600;padding:2px 6px 14px}
+  .eyebrow{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);font-weight:800;margin:0 2px 9px}
+
+  /* alerta crítico (comum) */
+  .alert{display:flex;gap:11px;align-items:flex-start;background:var(--redSoft);border:1px solid var(--red);border-radius:15px;padding:12px 13px;margin-bottom:14px}
+  .alert .ic{width:30px;height:30px;border-radius:10px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-weight:800}
+  .alert .q{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--redText)}
+  .alert .a{font-family:var(--display);font-weight:600;font-size:15px;color:var(--redText);margin-top:1px}
+
+  /* ===== B · MOSAICOS ===== */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tile{border:1px solid var(--line);background:var(--card);border-radius:15px;padding:12px 13px;cursor:pointer}
+  .tile .tl{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+  .tile .dot{width:8px;height:8px;border-radius:99px;flex:none}
+  .tile .tq{font-size:12px;font-weight:700;color:var(--ink)}
+  .tile .tv{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:-.2px}
+  .tile .tvs{font-size:11px;color:var(--sub);font-weight:600;margin-top:1px}
+  .tile.bad{border-color:var(--red);background:var(--redSoft)} .tile.bad .tv{color:var(--redText)}
+  .tile.ok .tv{color:var(--greenText)} .tile.info .tv{color:var(--brand)} .tile.warn .tv{color:var(--warnText)}
+
+  /* sheet (sobre o phone B) */
+  .scrim{position:absolute;inset:0;background:rgba(25,23,20,.34);border-radius:42px}
+  .sheet{position:absolute;left:14px;right:14px;bottom:14px;background:var(--card);border-radius:26px 26px 30px 30px;
+    padding:8px 20px 22px;box-shadow:0 -10px 40px -16px rgba(0,0,0,.4)}
+  .handle{width:38px;height:4px;border-radius:99px;background:var(--line);margin:6px auto 14px}
+  .shQ{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--sub)}
+  .shA{font-family:var(--display);font-weight:600;font-size:21px;color:var(--redText);letter-spacing:-.3px;margin-top:3px}
+  .panel{background:var(--soft);border-radius:14px;padding:4px 14px;margin-top:14px}
+  .prow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:12.5px}
+  .prow+.prow{border-top:1px solid var(--line)}
+  .prow .k{color:var(--sub);font-weight:600} .prow .v{font-weight:700;font-variant-numeric:tabular-nums}
+  .prow .v.bad{color:var(--redText)} .prow .v.ok{color:var(--greenText)}
+  .advise{display:flex;gap:9px;align-items:flex-start;margin-top:14px;background:var(--warnSoft);border-radius:12px;padding:11px 13px}
+  .advise .ai{color:var(--warnText);font-weight:800;flex:none}
+  .advise .at{font-size:12px;color:#7a5a1e;line-height:1.45}
+  .foot{font-size:10.5px;color:var(--sub);margin-top:12px;text-align:center}
+
+  /* ===== C · ACORDEÃO ===== */
+  .accard{border:1px solid var(--line);background:var(--card);border-radius:16px;overflow:hidden}
+  .arow{padding:13px 14px;cursor:pointer}
+  .arow+.arow{border-top:1px solid var(--line)}
+  .ahead{display:flex;align-items:center;gap:11px}
+  .ahead .q{flex:1;font-size:13.5px;font-weight:700}
+  .pill{font-size:12px;font-weight:800;border-radius:99px;padding:4px 11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pill.ok{background:var(--greenSoft);color:var(--greenText)} .pill.warn{background:var(--warnSoft);color:var(--warnText)}
+  .pill.info{background:var(--infoSoft);color:var(--brand)} .pill.bad{background:var(--redSoft);color:var(--redText)}
+  .chev{color:var(--sub);font-size:15px;transition:transform .2s}
+  .arow.open .chev{transform:rotate(90deg)}
+  .abody{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .abody .panel{margin-top:0}
+  .abody .advise{margin-top:12px}
+</style>
+</head>
+<body>
+  <h1>Perguntas do Início — mais 2 direções (B · C)</h1>
+  <p class="lede">Já tens a <b>A</b> (alerta + lista com pill). Aqui vão duas alternativas, cada uma com
+    <b>tap → justificação detalhada</b> (os números por trás da resposta): <b>B</b> abre uma folha;
+    <b>C</b> expande no sítio.</p>
+
+  <div class="grid">
+    <!-- ===== B ===== -->
+    <div class="col">
+      <div class="phone">
+        <div class="screen" style="filter:blur(.4px)">
+          <div class="status"><span>9:41</span><span>Início</span></div>
+          <div class="eyebrow">Perguntas</div>
+          <div class="alert">
+            <div class="ic">!</div>
+            <div><div class="q">Estou legal?</div><div class="a">Não — PSV excede o máximo (+1:00)</div></div>
+          </div>
+          <div class="tiles">
+            <div class="tile ok"><div class="tl"><span class="dot" style="background:var(--green)"></span><span class="tq">Descanso</span></div><div class="tv">12:30</div><div class="tvs">antes do report</div></div>
+            <div class="tile info"><div class="tl"><span class="dot" style="background:var(--brand)"></span><span class="tq">Escala</span></div><div class="tv">2 mud.</div><div class="tvs">por rever ›</div></div>
+            <div class="tile warn"><div class="tl"><span class="dot" style="background:var(--warn)"></span><span class="tq">Validades</span></div><div class="tv">12 d</div><div class="tvs">Medical</div></div>
+            <div class="tile ok"><div class="tl"><span class="dot" style="background:var(--green)"></span><span class="tq">Limite 28d</span></div><div class="tv">45 h</div><div class="tvs">faltam · serviço</div></div>
+          </div>
+        </div>
+        <!-- sheet aberta (tap no alerta "Estou legal?") -->
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="shQ">Estou legal?</div>
+          <div class="shA">Não — PSV excede o máximo (+1:00)</div>
+          <div class="panel">
+            <div class="prow"><span class="k">PSV realizado / máx</span><span class="v bad">14:00 / 13:00</span></div>
+            <div class="prow"><span class="k">Serviço · 28 dias</span><span class="v">145 / 190 h</span></div>
+            <div class="prow"><span class="k">Voo · 28 dias</span><span class="v">78 / 100 h</span></div>
+            <div class="prow"><span class="k">Apresentação · setores</span><span class="v">06:00 · 2</span></div>
+          </div>
+          <div class="advise"><span class="ai">⚠</span><span class="at">Reduzir o serviço ou, se aplicável, usar prolongamento (máx 2 em 7 d). Confirma sempre com a companhia.</span></div>
+          <div class="foot">Estimativa FTL · não substitui a companhia</div>
+        </div>
+      </div>
+      <div class="clabel">B · Mosaicos + folha</div>
+      <div class="cdesc">Grelha de <b>tiles</b> (relance compacto). Tap num tile → <b>folha de detalhe</b> desliza de baixo com os números por trás + conselho. Rico em espaço; sai do contexto por um instante.</div>
+    </div>
+
+    <!-- ===== C ===== -->
+    <div class="col">
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>Início</span></div>
+          <div class="eyebrow">Perguntas</div>
+          <div class="alert">
+            <div class="ic">!</div>
+            <div><div class="q">Estou legal?</div><div class="a">Não — PSV excede o máximo (+1:00)</div></div>
+          </div>
+          <div class="accard">
+            <!-- linha ABERTA -->
+            <div class="arow open">
+              <div class="ahead"><span class="q">Tenho descanso?</span><span class="pill ok">12:30</span><span class="chev">›</span></div>
+              <div class="abody">
+                <div class="panel">
+                  <div class="prow"><span class="k">Repouso antes do report</span><span class="v ok">12:30</span></div>
+                  <div class="prow"><span class="k">Mínimo exigido (235)</span><span class="v">12:00</span></div>
+                  <div class="prow"><span class="k">Local</span><span class="v">Em base</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- linhas fechadas -->
+            <div class="arow"><div class="ahead"><span class="q">Mudou a escala?</span><span class="pill info">2 mud.</span><span class="chev">›</span></div></div>
+            <div class="arow"><div class="ahead"><span class="q">Validades em dia?</span><span class="pill warn">12 d</span><span class="chev">›</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="clabel">C · Acordeão (expande no sítio)</div>
+      <div class="cdesc">Lista limpa; tap numa pergunta → <b>expande inline</b> com os números + conselho (sem modal). Fica em contexto, sente-se fluido. Ideal para "tocar e perceber porquê".</div>
+    </div>
+  </div>
+
+  <p class="lede" style="margin-top:6px"><b>A minha recomendação:</b> a <b>C (acordeão)</b> — mantém tudo no Início, sem saltar para um modal,
+    e o "porquê" abre suavemente onde tocas. A <b>B</b> é boa se quiseres o relance mais compacto (grelha) e detalhe num espaço maior.
+    Em qualquer das três a justificação vem do <b>mesmo motor</b> (`buildTodayItems` + `raw`).</p>
+  <p class="cdesc" style="max-width:620px">Valores ilustrativos. Em todas, o crítico (ILEGAL) fica como alerta no topo; tocá-lo abre o mesmo detalhe.</p>
+</body>
+</html>

@@ -24,6 +24,7 @@ import { select } from '../data/haptics';
 import { AppContext, useTheme, toZulu } from '../data/appContext';
 import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
+import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fetchFlightStatus, depDelayMin, hasDeviation } from '../data/flightStatus';
 import CountUp from '../components/CountUp';
@@ -231,6 +232,9 @@ export default function HomeScreen({ navigation }) {
     || (it.id === 'rest' && it.status !== 'neutral')
     || it.id === 'roster'
     || it.id === 'validades');
+  // A+chips: o CRÍTICO (bad) vira ALERTA (com conselho à vista); o resto vira CHIPS (relance + tap).
+  const qAlerts = questionItems.filter((it) => it.status === 'bad');
+  const qChips = questionItems.filter((it) => it.status !== 'bad');
   const stColor = (st) => st === 'bad' ? C.red : st === 'warn' ? (C.warn || C.text) : st === 'ok' ? (C.greenText || C.green) : C.sub;
 
   // FTL — limites de tempo (ORO.FTL.210), calculados pelo MOTOR a partir do dayLog (store FTL).
@@ -321,6 +325,7 @@ export default function HomeScreen({ navigation }) {
   const endTs = (flight && flight.endDate) ? +new Date(flight.endDate) : (depTs ? depTs + 3 * 3600e3 : null);
   const inFlightWindow = !!depTs && Date.now() >= depTs - 4 * 3600e3 && Date.now() <= (endTs || depTs) + 3600e3;
   const [flightStatus, setFlightStatus] = useState(null);
+  const [detailItem, setDetailItem] = useState(null);   // pergunta aberta na folha "porquê"
   const [fsTick, setFsTick] = useState(0);   // re-fetch a pedido (pull-to-refresh)
   useEffect(() => {
     let cancelled = false;
@@ -597,33 +602,48 @@ export default function HomeScreen({ navigation }) {
         {/* Sem próximo voo (estado vazio): mostra as próximas atividades à parte, p/ não se perderem */}
         {!flight ? <Animated.View style={seg(3)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View> : null}
 
-        {/* PERGUNTAS — por baixo do card Serviços (estou legal? · descanso · escala · validades).
-            "Estou legal?" entra aqui: vermelho + sobe ao topo quando ILEGAL (severidade). A escala,
-            quando há alterações, é tocável → Escala. Reaproveita as respostas da Briefing. */}
-        {questionItems.length ? (
-          <>
-            <Text style={s.qSec}>{l('Perguntas', 'Questions')}</Text>
-            <Animated.View style={[s.sit, seg(4)]}>
-              {questionItems.map((it, i) => {
-                const tap = it.id === 'roster' && it.raw && it.raw.kind !== 'none'
-                  ? () => { select(); navigation.navigate('Escala'); } : null;
-                const Row = tap ? TouchableOpacity : View;
-                return (
-                  <Row key={it.id} {...(tap ? { onPress: tap, activeOpacity: 0.85 } : {})} style={[s.sitRow, i > 0 && s.sitRowBorder]}>
-                    <View style={[s.sitDot, { backgroundColor: stColor(it.status) }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.sitQ} numberOfLines={1}>{it.q}</Text>
-                      <Text style={[s.sitA, it.status === 'bad' && { color: C.redText }]} numberOfLines={2}>{it.answer}</Text>
-                      {it.suggestion ? <Text style={s.sitS} numberOfLines={3}>{it.suggestion}</Text> : null}
-                    </View>
-                    {tap ? <Ionicons name="chevron-forward" size={16} color={C.sub} /> : null}
-                  </Row>
-                );
-              })}
-            </Animated.View>
-          </>
+        {/* PERGUNTAS — A+chips. CRÍTICO (ILEGAL/expirado) → alerta vermelho com o conselho à vista
+            (segurança FTL grita). O resto → chips coloridos (relance); "escala" toca → Escala. */}
+        {(qAlerts.length || qChips.length) ? (
+          <Animated.View style={[s.qWrap, seg(4)]}>
+            {qAlerts.map((it) => (
+              <TouchableOpacity key={it.id} style={s.qAlert} activeOpacity={0.85} onPress={() => { select(); setDetailItem(it); }}>
+                <View style={s.qAlertIc}><Ionicons name="alert" size={18} color="#fff" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.qAlertQ}>{it.q}</Text>
+                  <Text style={s.qAlertA} numberOfLines={2}>{it.answer}</Text>
+                  {it.suggestion ? <Text style={s.qAlertS} numberOfLines={2}>{it.suggestion}</Text> : null}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={C.redText} style={{ alignSelf: 'center' }} />
+              </TouchableOpacity>
+            ))}
+            {qChips.length ? (
+              <>
+                <Text style={s.qSec}>{l('Perguntas', 'Questions')}</Text>
+                <View style={s.qList}>
+                  {qChips.map((it, i) => (
+                    <TouchableOpacity key={it.id} activeOpacity={0.85} onPress={() => { select(); setDetailItem(it); }} style={[s.qRow, i > 0 && s.qRowBorder]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.qRowQ} numberOfLines={1}>{it.q}</Text>
+                        {it.suggestion ? <Text style={s.qRowS} numberOfLines={2}>{it.suggestion}</Text> : null}
+                      </View>
+                      <View style={[s.qPill, it.status === 'warn' ? s.qPillWarn : it.status === 'info' ? s.qPillInfo : it.status === 'ok' ? s.qPillOk : null]}>
+                        <Text style={[s.qPillT, it.status === 'warn' ? { color: C.warnText } : it.status === 'info' ? { color: C.brand } : it.status === 'ok' ? { color: C.greenText } : null]} numberOfLines={1}>{it.short}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={C.sub} style={{ marginLeft: 2 }} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </Animated.View>
         ) : null}
       </ScrollView>
+
+      {/* Folha "porquê" — abre ao tocar numa pergunta (alerta ou linha). */}
+      <QuestionDetailSheet item={detailItem} lang={lang}
+        onClose={() => setDetailItem(null)}
+        onNav={(screen) => { setDetailItem(null); navigation.navigate(screen); }} />
     </SafeAreaView>
   );
 }
@@ -717,6 +737,26 @@ const makeStyles = (C) => StyleSheet.create({
   qLead: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, marginBottom: 8, marginLeft: 2 },
   // Secção "Perguntas" (por baixo do card Serviços) — reutiliza os cartões `sit*`
   qSec: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub, marginTop: 2, marginBottom: 9, marginLeft: 2 },
+
+  // Perguntas — A+chips
+  qWrap: { marginBottom: SPACE.md },
+  // Alerta crítico (ILEGAL / expirado) — vermelho, com o conselho à vista
+  qAlert: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: C.redSoft, borderWidth: 1, borderColor: C.red, borderRadius: RADIUS.lg, padding: 14, marginBottom: 12 },
+  qAlertIc: { width: 34, height: 34, borderRadius: 11, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  qAlertQ: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.redText },
+  qAlertA: { fontSize: 16, fontFamily: FONT.display, color: C.redText, letterSpacing: -0.2, marginTop: 2 },
+  qAlertS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.redText, opacity: 0.85, marginTop: 5, lineHeight: 16 },
+  // Lista de perguntas (versão A) — cartão; cada linha: pergunta (+conselho) + estado em PILL à direita
+  qList: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 16 },
+  qRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 13 },
+  qRowBorder: { borderTopWidth: 1, borderTopColor: C.line },
+  qRowQ: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
+  qRowS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 3, lineHeight: 15 },
+  qPill: { borderRadius: RADIUS.pill, paddingHorizontal: 11, paddingVertical: 5, backgroundColor: C.soft, flexShrink: 0 },
+  qPillOk: { backgroundColor: C.greenSoft || C.soft },
+  qPillWarn: { backgroundColor: C.warnSoft || C.soft },
+  qPillInfo: { backgroundColor: C.infoSoft || C.soft },
+  qPillT: { fontSize: 12, fontFamily: FONT.heavy, color: C.sub, fontVariant: ['tabular-nums'] },
   // Aviso de voo ao vivo (atraso/cancelado/desviado) — topo do Início
   fdelay: { flexDirection: 'row', gap: 11, alignItems: 'flex-start', borderWidth: 1, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACE.md },
   fdelayQ: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub },

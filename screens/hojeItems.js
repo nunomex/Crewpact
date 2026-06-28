@@ -164,14 +164,29 @@ export function buildTodayItems(ctx, lang) {
     } else {
       answer = l('Tudo válido', 'All current');
     }
-    items.push({ id: 'validades', q: l('Validades em dia?', 'Documents current?'), status, answer, suggestion, raw: { items: sortValidities(withSt), isPilot } });
+    items.push({ id: 'validades', q: l('Validades em dia?', 'Documents current?'), status, answer, suggestion, raw: { items: sortValidities(withSt), isPilot, worst: worst.st } });
   }
 
+  // topic (rótulo curto) + short (valor curto) p/ os CHIPS do Início — reusa o `it.raw` já
+  // calculado; a resposta/sugestão longas mantêm-se em `answer`/`suggestion` (alerta/detalhe).
+  const chipOf = (it) => {
+    const r = it.raw || {};
+    switch (it.id) {
+      case 'legal':     return { topic: 'Legal', short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Ilegal', 'Illegal')) : r.kind === 'limitOver' ? l('Limite', 'Limit') : r.kind === 'noData' ? '—' : l('Sim', 'Yes') };
+      case 'headroom':  return { topic: l('Limite', 'Limit'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
+      case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
+      case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
+      case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('OK', 'OK') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };
+      case 'pay':       return { topic: l('Salário', 'Pay'), short: fmtEur0(r.total, lang) };
+      case 'validades': return { topic: l('Validades', 'Docs'), short: it.status === 'bad' ? l('Expirado', 'Expired') : it.status === 'warn' ? `${r.worst ? r.worst.days : ''} d` : l('OK', 'OK') };
+      default:          return { topic: it.q, short: '' };
+    }
+  };
   // Ordenar por severidade (o que exige ação ao topo): bad → warn → info → ok → neutral.
   // Estável: dentro do mesmo nível mantém a ordem-tópico de construção.
   const RANK = { bad: 0, warn: 1, info: 2, ok: 3, neutral: 4 };
   return items
     .map((it, i) => [it, i])
     .sort((a, b) => ((RANK[a[0].status] ?? 9) - (RANK[b[0].status] ?? 9)) || (a[1] - b[1]))
-    .map((x) => x[0]);
+    .map((x) => ({ ...x[0], ...chipOf(x[0]) }));
 }
