@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · 2.º serviço — inline vs mini-FAB (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F4F2ED; --card:#FFFFFF; --ink:#191714; --sub:#9A958C; --line:#ECE8E0;
+    --soft:#F6F4EF; --soft2:#F1EEE7; --red:#CE4639; --redText:#B23A2E; --redSoft:#FBEDEB;
+    --green:#2E7D55; --greenText:#246B47; --greenSoft:#EAF4EC; --warn:#C98A2B; --warnText:#9C6A18; --warnSoft:#FAF1DF;
+    --brand:#3F6CC7; --infoSoft:#EAF0FB;
+    --display:'Fraunces',Georgia,serif; --body:'Schibsted Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E7E3DB;font-family:var(--body);color:var(--ink);min-height:100vh;padding:34px 16px 60px;
+    background-image:radial-gradient(120% 70% at 50% -10%,#F2EEE6 0%,#E7E3DB 60%);}
+  h1{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.5px;text-align:center}
+  .lede{max-width:680px;margin:7px auto 0;text-align:center;color:#6f6a60;font-size:13.5px;line-height:1.55}
+  .lede b{color:var(--ink)}
+
+  .grid{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;align-items:flex-start;margin-top:28px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;width:330px}
+  .badge-rec{display:inline-flex;align-items:center;gap:6px;background:var(--greenSoft);color:var(--greenText);border:1px solid #cfe6d6;
+    font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;border-radius:99px;padding:4px 11px}
+  .badge-ok{background:var(--infoSoft);color:var(--brand);border-color:#cfdcf4}
+  .clabel{font-family:var(--display);font-weight:600;font-size:17px;text-align:center}
+  .csub{font-size:11.5px;color:var(--sub);font-weight:700;text-align:center;margin-top:-6px}
+
+  .phone{width:330px;background:var(--canvas);border-radius:42px;padding:14px;position:relative;overflow:hidden;
+    box-shadow:0 2px 1px #fff inset,0 30px 60px -24px rgba(40,34,24,.42),0 0 0 1px rgba(0,0,0,.04);}
+  .screen{background:var(--canvas);border-radius:30px;overflow:hidden;padding:18px 16px 20px;min-height:560px;position:relative}
+  .status{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);font-weight:600;padding:1px 5px 12px}
+  .eyebrow{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--sub);font-weight:800;margin:0 2px 8px}
+  .ptitle{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.4px;margin:0 2px 2px}
+  .psub{font-size:11px;color:var(--sub);font-weight:600;margin:0 2px 15px}
+
+  .finger{position:absolute;font-size:23px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.28));z-index:5;transform:rotate(-12deg)}
+  .target{animation:tgt 1.5s ease-in-out infinite;z-index:2}
+  @keyframes tgt{0%,100%{box-shadow:0 0 0 2px var(--brand),0 0 0 5px rgba(63,108,199,.22)}50%{box-shadow:0 0 0 2px var(--brand),0 0 0 11px rgba(63,108,199,.05)}}
+
+  /* sheet (variante inline) */
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:7px 16px 16px;margin-top:2px}
+  .handle{width:36px;height:4px;border-radius:99px;background:var(--line);margin:6px auto 12px}
+  .shDay{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.3px}
+  .shCount{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--sub);margin:2px 0 12px}
+
+  .svc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 11px}
+  .svcH{display:flex;align-items:center;gap:9px}
+  .num{width:22px;height:22px;border-radius:7px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex:none}
+  .svcR{font-family:var(--display);font-weight:600;font-size:14.5px;flex:1}
+  .tag{font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--infoSoft);color:var(--brand)}
+  .legs{margin:7px 0 0;border-top:1px solid var(--line);padding-top:7px}
+  .leg{display:flex;gap:8px;font-size:11px;align-items:center} .leg .fn{font-weight:800;color:#6f6a60;width:52px} .leg .rt{font-weight:700;flex:1} .leg .tm{font-variant-numeric:tabular-nums;color:#6f6a60;font-weight:600;font-size:10.5px}
+  .svcF{display:flex;gap:14px;margin-top:7px;border-top:1px solid var(--line);padding-top:7px}
+  .kv .k{font-size:8.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--sub);font-weight:800} .kv .v{font-family:var(--display);font-weight:600;font-size:13.5px;margin-top:1px}
+
+  .acts{display:flex;gap:9px;margin-top:13px}
+  .btn{flex:1;text-align:center;border-radius:13px;padding:11px;font-size:12.5px;font-weight:800;position:relative}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn.add{background:var(--infoSoft);color:var(--brand);border:1px solid #cfdcf4}
+
+  /* DutyDetail (variante FAB) */
+  .dd{padding-top:2px}
+  .ddRoute{font-family:var(--display);font-weight:600;font-size:25px;letter-spacing:-.5px;margin:2px 2px 2px}
+  .ddMeta{font-size:11.5px;color:var(--sub);font-weight:700;margin:0 2px 16px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:12px}
+  .prow{display:flex;justify-content:space-between;align-items:center;padding:12px 14px} .prow+.prow{border-top:1px solid var(--line)}
+  .prow .k{font-size:12px;font-weight:700;color:#6f6a60} .prow .v{font-family:var(--display);font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums}
+  .prow .v.brand{color:var(--brand)} .prow .v.green{color:var(--greenText)}
+  .legcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:12px}
+  .legcard .lh{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);margin-bottom:7px}
+  .legrow{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0} .legrow .fn{font-weight:800;color:#6f6a60;width:54px} .legrow .rt{font-weight:700;flex:1} .legrow .tm{font-variant-numeric:tabular-nums;color:#6f6a60;font-weight:600;font-size:10.5px}
+
+  /* FAB estendido contextual */
+  .fab{position:absolute;right:18px;bottom:18px;display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;
+    border-radius:99px;padding:13px 18px 13px 15px;font-weight:800;font-size:13.5px;box-shadow:0 12px 24px -8px rgba(25,23,20,.55);z-index:3}
+  .fab .plus{font-size:19px;line-height:1;margin-top:-1px}
+
+  /* FAB redondo simples (alternativa b2) */
+  .fabR{position:absolute;right:18px;bottom:18px;width:54px;height:54px;border-radius:99px;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:300;box-shadow:0 12px 24px -8px rgba(25,23,20,.55);z-index:3}
+
+  .pros{width:330px;text-align:left;font-size:12px;line-height:1.6;color:#5d584f}
+  .pros .p{color:var(--greenText);font-weight:700} .pros .c{color:var(--redText);font-weight:700} .pros b{color:var(--ink)}
+  .pros div{margin-bottom:3px}
+
+  .verdict{max-width:680px;margin:32px auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 18px;font-size:12.5px;color:#5d584f;line-height:1.6}
+  .verdict b{color:var(--ink)} .verdict .rec{color:var(--greenText);font-weight:800}
+  .rej{max-width:680px;margin:14px auto 0;background:var(--redSoft);border:1px solid #eecbc6;border-radius:14px;padding:13px 17px;font-size:12px;color:#8a4035;line-height:1.55}
+  .rej b{color:var(--redText)}
+</style>
+</head>
+<body>
+  <h1>2.º serviço — botão inline vs mini-FAB</h1>
+  <p class="lede">Mesma ação, dois sítios. À esquerda o <b>botão inline</b> na folha do dia; à direita um <b>FAB contextual</b> no ecrã "Detalhe do serviço". O alvo do toque está a azul 👆.</p>
+
+  <div class="grid">
+
+    <!-- ░░ A — INLINE ░░ -->
+    <div class="col">
+      <span class="badge-rec">★ Recomendado</span>
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Escala</span></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="shDay">Quarta, 16 Jun</div>
+          <div class="shCount">1 período de serviço</div>
+          <div class="svc">
+            <div class="svcH"><div class="num">1</div><div class="svcR">LGW → CDG</div><span class="tag">Voo</span></div>
+            <div class="legs"><div class="leg"><span class="fn">EZY8201</span><span class="rt">LGW → CDG</span><span class="tm">06:15→07:45</span></div></div>
+            <div class="svcF"><div class="kv"><div class="k">PSV</div><div class="v">02:30</div></div><div class="kv"><div class="k">Block</div><div class="v">01:30</div></div><div class="kv"><div class="k">Report→fim</div><div class="v">05:45·08:15</div></div></div>
+          </div>
+          <div class="acts">
+            <div class="btn ghost">Editar</div>
+            <div class="btn add target">+ 2.º serviço<span class="finger" style="right:-4px;bottom:-15px">👆</span></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="clabel">A · Botão inline</div>
+      <div class="csub">na folha "Detalhe do dia"</div>
+      <div class="pros">
+        <div><span class="p">+</span> Está <b>colado à lista</b> — "+ adicionar mais um" lê-se sozinho.</div>
+        <div><span class="p">+</span> O <b>dia é o contexto</b>: zero ambiguidade de "qual dia?".</div>
+        <div><span class="p">+</span> Funciona na folha <b>e</b> no ecrã do serviço, igual.</div>
+        <div><span class="c">−</span> Menos "chamativo" que um FAB a flutuar.</div>
+      </div>
+    </div>
+
+    <!-- ░░ B — FAB CONTEXTUAL ░░ -->
+    <div class="col">
+      <span class="badge-rec badge-ok">Alternativa viável</span>
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Detalhe do serviço</span></div>
+        <div class="dd">
+          <div class="eyebrow">Quarta, 16 Jun · easyJet</div>
+          <div class="ddRoute">LGW → CDG</div>
+          <div class="ddMeta">1 setor · voo · aclimatado</div>
+          <div class="legcard">
+            <div class="lh">Setores</div>
+            <div class="legrow"><span class="fn">EZY8201</span><span class="rt">LGW → CDG</span><span class="tm">06:15→07:45</span></div>
+          </div>
+          <div class="panel">
+            <div class="prow"><span class="k">PSV (FDP)</span><span class="v">02:30 / 13:00</span></div>
+            <div class="prow"><span class="k">Block · Duty</span><span class="v">01:30 · 02:30</span></div>
+            <div class="prow"><span class="k">Repouso depois</span><span class="v green">12:00</span></div>
+            <div class="prow"><span class="k">Per diem</span><span class="v brand">18,40€</span></div>
+          </div>
+        </div>
+        <div class="fab target" style="box-shadow:0 0 0 2px var(--brand),0 0 0 7px rgba(63,108,199,.18),0 12px 24px -8px rgba(25,23,20,.55)">
+          <span class="plus">+</span> Serviço
+          <span class="finger" style="right:-2px;bottom:-16px">👆</span>
+        </div>
+      </div></div>
+      <div class="clabel">B · FAB contextual</div>
+      <div class="csub">no ecrã "Detalhe do serviço" (estendido: + Serviço)</div>
+      <div class="pros">
+        <div><span class="p">+</span> Consistente com o <b>idioma FAB</b> da app (speed-dial).</div>
+        <div><span class="p">+</span> Contexto do dia já está estabelecido (estás nele).</div>
+        <div><span class="c">−</span> Num <b>bottom-sheet</b> não encaixa (sheets são transitórias) → só vive no ecrã cheio.</div>
+        <div><span class="c">−</span> "+ Serviço" pode ler-se como "novo serviço noutro dia" → precisa do rótulo.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <b>Veredito:</b> ficam <b>bem os dois</b> — nenhum "fica mal". Recomendo o <span class="rec">A (botão inline)</span> como principal:
+    a ação é <b>"adicionar um irmão à lista que estou a ver"</b>, e isso lê-se melhor num botão colado à lista do que num FAB a flutuar.
+    Se gostas do FAB, a versão certa é a <b>B — FAB estendido contextual no ecrã do serviço</b> (não no speed-dial global). Podemos até ter <b>os dois</b>: inline na folha, FAB no ecrã cheio. Mesmo destino.
+  </div>
+  <div class="rej">
+    <b>O que evitar:</b> meter "2.º serviço" como mini-FAB no <b>speed-dial global</b> (junto da Simulação). Aí a ação fica <b>órfã</b> — "2.º serviço de que dia?" — e obriga a escolher o dia primeiro. O FAB global é para ações sem contexto (Serviço novo, Simulação); este precisa sempre de um dia.
+  </div>
+</body>
+</html>

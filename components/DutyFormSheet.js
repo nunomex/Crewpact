@@ -93,8 +93,8 @@ function SegRow({ options, value, onChange, s }) {
 // Formulário de duty em PÁGINA inteira (Modal slide-up). Entrada com revelação em
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
-export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate }) {
-  const { lang, duties, dayLog, saveDuty, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
+export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -131,12 +131,19 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
   const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '' });
+  // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '' });
   useEffect(() => {
     if (!visible) return;
-    const f = candidate ? formFromCand(candidate) : loadFor(date || isoDay());
+    const iso = date || isoDay();
+    const exObj = (editExtra != null) ? (duties[iso]?.extra || [])[editExtra] : null;
+    // editExtra → edita o serviço-irmão; append → começa VAZIO (mesmo num dia ocupado); senão → primária.
+    const f = candidate ? formFromCand(candidate)
+      : (editExtra != null ? (exObj ? formFromExtra(exObj, iso) : { ...EMPTY, date: iso })
+      : (append ? { ...EMPTY, date: iso } : loadFor(iso)));
     setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
-    syncSpecial(candidate ? candidate.special : duties[date || isoDay()]?.special);
-  }, [visible, date, candidate]); // eslint-disable-line react-hooks/exhaustive-deps
+    syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
+  }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
   const goDate = (delta) => { select(); const iso = addDays(form.date, delta); setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
 
   // ── Setores: Detetar (SÓ no manual; histórico→API se houver net) OU à mão (rota: 2 estações + ✓). ──
@@ -365,14 +372,17 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       onClose && onClose();
       return;
     }
-    saveDuty(form.date, fields);
+    // editExtra → atualiza esse serviço-irmão; append → empilha novo; senão grava/edita a primária.
+    if (editExtra != null) updateDutyService(form.date, editExtra, fields);
+    else if (append) addDutyService(form.date, fields);
+    else saveDuty(form.date, fields);
     success();
-    notify && notify(l('Serviço guardado', 'Duty saved'));
+    notify && notify(editExtra != null ? l('Serviço atualizado', 'Service updated') : append ? l('Serviço adicionado ao dia', 'Service added to day') : l('Serviço guardado', 'Duty saved'));
     onSaved && onSaved(form.date);
     onClose && onClose();
   };
 
-  const isEdit = duties[form.date] && !duties[form.date].deleted;
+  const isEdit = !append && duties[form.date] && !duties[form.date].deleted;
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
@@ -382,7 +392,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}>
               <View style={s.eyebrowDot} />
-              <Eyebrow>{simulate ? l('Simulação', 'Simulation') : onCandidate ? l('Import · Corrigir', 'Import · Fix') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
+              <Eyebrow>{simulate ? l('Simulação', 'Simulation') : onCandidate ? l('Import · Corrigir', 'Import · Fix') : editExtra != null ? l('Escala · Editar serviço', 'Roster · Edit service') : append ? l('Escala · + serviço no dia', 'Roster · + service') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
             </View>
             <Text style={s.h1}>Duty</Text>
           </View>

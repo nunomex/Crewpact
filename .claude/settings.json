@@ -161,7 +161,21 @@
       "PowerShell(npm test 2>&1)",
       "Bash(Select-Object -Last 3)",
       "PowerShell(npm run test:flightdetect 2>&1)",
-      "Bash(node scripts/zulu.test.js)"
+      "Bash(node scripts/zulu.test.js)",
+      "PowerShell(npm run test:ftl 2>&1)",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['App.js','data/duties.js','ftl/calculators/disruptiveCalculator.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['App.js','ftl/index.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\varios-servicos-dia.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\varios-servicos-fluxo.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\varios-servicos-fab-vs-inline.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\varios-servicos-colisao-timeline.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\servico-cruza-meia-noite.html\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('ftl/index.js',{presets:['babel-preset-expo']}\\);console.log\\('OK ftl/index.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['App.js','components/DutyFormSheet.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('screens/EscalaScreen.js',{presets:['babel-preset-expo']}\\);console.log\\('OK screens/EscalaScreen.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);for\\(const f of ['App.js','components/DutyFormSheet.js','screens/EscalaScreen.js']\\){try{b.transformFileSync\\(f,{presets:['babel-preset-expo']}\\);console.log\\('OK  '+f\\)}catch\\(e\\){console.log\\('ERR '+f+': '+e.message.split\\('\\\\n'\\)[0]\\)}}\")",
+      "PowerShell(npm run test:record 2>&1)",
+      "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('screens/DutyDetailScreen.js',{presets:['babel-preset-expo']}\\);console.log\\('OK screens/DutyDetailScreen.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

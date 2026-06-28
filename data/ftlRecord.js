@@ -49,20 +49,29 @@ const WIN = {
 export const buildRecordModel = ({
   duties = {}, dayLog = {}, name = '', crewId = '', operator = '', email = '', generatedAt = null,
 } = {}) => {
+  // Uma linha por PERÍODO DE SERVIÇO (não por dia): a EASA conta serviços (ORO.FTL.245/210),
+  // por isso um dia com 2 serviços rende 2 linhas. Serviços do dia = primária + `extra`,
+  // ordenados pelo report; cada um recalculado pelo motor (fonte única de verdade).
+  const svcRow = (date, d, idx, nSvc) => {
+    const r = computeDuty({ state: 'acc', report: d.report_time, end: d.block_on, sectors: d.sectors || 0, inBase: true });
+    return {
+      date: nSvc > 1 ? `${date} (${idx + 1}/${nSvc})` : date,
+      report: d.report_time || '—', off: d.block_off || '—', on: d.block_on || '—',
+      sectors: d.sectors || 0, flightMin: d.flight_minutes || 0,
+      fdp: r.fdp.actualFdpStr || '—',
+      duty: r.dutyPeriodStr || r.fdp.actualFdpStr || '—',
+      rest: r.rest.restStr || (r.rest.restMin != null ? minToHhmm(r.rest.restMin) : '—'),
+      over: !!r.fdp.over,
+    };
+  };
   const rows = Object.entries(duties)
-    .filter(([, d]) => d && !d.deleted && d.report_time && d.block_on)
+    .filter(([, d]) => d && !d.deleted)
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([date, d]) => {
-      const r = computeDuty({ state: 'acc', report: d.report_time, end: d.block_on, sectors: d.sectors || 0, inBase: true });
-      return {
-        date,
-        report: d.report_time || '—', off: d.block_off || '—', on: d.block_on || '—',
-        sectors: d.sectors || 0, flightMin: d.flight_minutes || 0,
-        fdp: r.fdp.actualFdpStr || '—',
-        duty: r.dutyPeriodStr || r.fdp.actualFdpStr || '—',
-        rest: r.rest.restStr || (r.rest.restMin != null ? minToHhmm(r.rest.restMin) : '—'),
-        over: !!r.fdp.over,
-      };
+    .flatMap(([date, d]) => {
+      const services = [d, ...(Array.isArray(d.extra) ? d.extra : [])]
+        .filter((sv) => sv && sv.report_time && sv.block_on)
+        .sort((a, b) => String(a.report_time).localeCompare(String(b.report_time)));
+      return services.map((sv, idx) => svcRow(date, sv, idx, services.length));
     });
 
   const totalFlightMin = rows.reduce((s, r) => s + r.flightMin, 0);

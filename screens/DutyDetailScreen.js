@@ -205,6 +205,21 @@ export default function DutyDetailScreen({ route, navigation }) {
           duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source },
         ]} />
 
+        {/* Outros períodos de serviço do MESMO dia (a EASA conta por serviço — 210/245). Lista
+            compacta (horário + PSV); o detalhe rico e o repouso entre serviços vivem na folha do dia. */}
+        {Array.isArray(duty.extra) && duty.extra.length ? (
+          <>
+            <Text style={s.sectionTitle}>{l('OUTROS SERVIÇOS NESTE DIA', 'OTHER SERVICES THIS DAY')}</Text>
+            <Panel rows={duty.extra.map((sv, i) => {
+              const rr = sv.report_time ? computeDuty({ state: 'acc', report: sv.report_time, end: sv.block_on || null, sectors: sv.sectors || 0, postFlightMin: pf }) : null;
+              const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
+              const psv = (rr && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;
+              return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };
+            })} />
+            <Text style={s.foot}>{l('Os serviços do dia somam nos 28 dias (210). Vê o repouso entre eles na folha do dia.', 'The day’s services sum over 28 days (210). See the rest between them in the day detail.')}</Text>
+          </>
+        ) : null}
+
         <PrimaryButton onPress={() => { select(); setEditing(true); }} icon="create-outline" radius="lg" elevated style={{ marginTop: 22 }} label={l('Editar serviço', 'Edit duty')} />
 
         {isManual ? (

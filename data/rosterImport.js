@@ -1,7 +1,7 @@
 // Importação de escala: atividade do calendário (getDutiesInRange) → linha de `duty`
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
-import { dutyToFtlDay, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
+import { dayFtlFromDuties, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
 
 // Pernoita = NOITE FORA DA BASE (Art. 39 pilotos / Art. 56 cabine): uma duty de VOO acaba
@@ -50,7 +50,8 @@ export const dutyFromActivity = (act, base = null) => {
 // Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
 // no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
 export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false) => {
-  const ftl = dutyToFtlDay(duty, { postFlightMin, isPilot }); // { psv, servico, voo, rest } ou null (sem dados)
+  // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
+  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot }); // { psv, servico, voo, rest, parts } ou null
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída

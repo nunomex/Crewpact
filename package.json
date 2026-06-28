@@ -20,7 +20,8 @@
     "test:export": "node scripts/dataexport.test.js",
     "test:flightdetect": "node scripts/flightdetect.test.js",
     "test:zulu": "node scripts/zulu.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu"
+    "test:record": "node scripts/record.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

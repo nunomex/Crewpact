@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Vários serviços por dia (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F4F2ED; --card:#FFFFFF; --ink:#191714; --sub:#9A958C; --line:#ECE8E0;
+    --soft:#F6F4EF; --soft2:#F1EEE7; --red:#CE4639; --redText:#B23A2E; --redSoft:#FBEDEB;
+    --green:#2E7D55; --greenText:#246B47; --greenSoft:#EAF4EC; --warn:#C98A2B; --warnText:#9C6A18; --warnSoft:#FAF1DF;
+    --brand:#3F6CC7; --infoSoft:#EAF0FB;
+    --display:'Fraunces',Georgia,serif; --body:'Schibsted Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E7E3DB;font-family:var(--body);color:var(--ink);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;gap:22px;padding:34px 16px 60px;
+    background-image:radial-gradient(120% 80% at 50% -10%,#F2EEE6 0%,#E7E3DB 60%);}
+  h1{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.5px;margin-top:4px;text-align:center}
+  .lede{max-width:660px;text-align:center;color:#6f6a60;font-size:13.5px;line-height:1.55}
+  .lede b{color:var(--ink)}
+  .law{max-width:660px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 16px;font-size:12px;color:#6f6a60;line-height:1.6}
+  .law b{color:var(--ink)} .law code{font-family:var(--body);font-weight:700;color:var(--brand);font-size:11.5px}
+  .grid{display:flex;flex-wrap:wrap;gap:30px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:11px}
+  .clabel{font-family:var(--display);font-weight:600;font-size:15px}
+  .cdesc{font-size:11.5px;color:#6f6a60;max-width:330px;text-align:center;line-height:1.5}
+  .cdesc b{color:var(--ink)}
+
+  .phone{width:340px;background:var(--canvas);border-radius:42px;padding:14px;position:relative;overflow:hidden;
+    box-shadow:0 2px 1px #fff inset,0 30px 60px -24px rgba(40,34,24,.42),0 0 0 1px rgba(0,0,0,.04);}
+  .screen{background:var(--canvas);border-radius:30px;overflow:hidden;padding:20px 18px 22px;min-height:580px}
+  .status{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);font-weight:600;padding:2px 6px 14px}
+  .eyebrow{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);font-weight:800;margin:0 2px 9px}
+  .ptitle{font-family:var(--display);font-weight:600;font-size:24px;letter-spacing:-.5px;margin:0 2px 3px}
+  .psub{font-size:11.5px;color:var(--sub);font-weight:600;margin:0 2px 16px}
+
+  /* ===== GRELHA (Escala) ===== */
+  .mhead{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 12px}
+  .mhead .nav{width:28px;height:28px;border-radius:9px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--sub);font-weight:800}
+  .mhead .mo{font-family:var(--display);font-weight:600;font-size:17px}
+  .summ{display:flex;gap:8px;margin-bottom:14px}
+  .schip{flex:1;background:#fff;border:1px solid var(--line);border-radius:13px;padding:9px 10px;text-align:center}
+  .schip .v{font-family:var(--display);font-weight:600;font-size:16px} .schip .k{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-top:1px}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px}
+  .dow span{text-align:center;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--sub)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cell{aspect-ratio:1/1.18;border-radius:11px;background:#fff;border:1px solid var(--line);padding:5px 5px 4px;position:relative;display:flex;flex-direction:column}
+  .cell.we{background:var(--soft2);opacity:.85}
+  .cell.off{background:var(--soft);}
+  .cell .dn{font-size:11px;font-weight:700;color:var(--ink)}
+  .cell .code{font-size:8.5px;font-weight:800;letter-spacing:.2px;margin-top:auto;color:#6f6a60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cell .bar2{height:4px;border-radius:99px;margin-top:3px}
+  .b-fly{background:var(--brand)} .b-sby{background:var(--warn)} .b-off{background:var(--line)}
+  .cell.today{border-color:var(--red);box-shadow:0 0 0 1.5px var(--red) inset}
+  .stack{position:absolute;top:4px;right:4px;background:var(--ink);color:#fff;font-size:8.5px;font-weight:800;line-height:1;
+    padding:2px 4px;border-radius:6px;letter-spacing:.2px}
+  .twobars{display:flex;flex-direction:column;gap:2px;margin-top:auto}
+
+  /* ===== SHEET detalhe do dia ===== */
+  .scrim{position:absolute;inset:0;background:rgba(25,23,20,.34);border-radius:42px}
+  .sheet{position:absolute;left:14px;right:14px;bottom:14px;background:var(--card);border-radius:26px 26px 30px 30px;
+    padding:8px 18px 18px;box-shadow:0 -10px 44px -16px rgba(0,0,0,.42);max-height:560px;overflow:hidden}
+  .handle{width:38px;height:4px;border-radius:99px;background:var(--line);margin:6px auto 12px}
+  .shDay{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.3px}
+  .shCount{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--brand);margin:3px 0 14px}
+
+  /* cartão de um serviço */
+  .svc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 12px;margin-bottom:0}
+  .svcH{display:flex;align-items:center;gap:10px}
+  .num{width:24px;height:24px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:none}
+  .svcR{font-family:var(--display);font-weight:600;font-size:15.5px;flex:1}
+  .tag{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 7px;border-radius:7px}
+  .tag.fly{background:var(--infoSoft);color:var(--brand)} .tag.sby{background:var(--warnSoft);color:var(--warnText)}
+  .tag.night{background:#ECEAF6;color:#5B53A8}
+  .legs{margin:8px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+  .leg{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:2px 0}
+  .leg .fn{font-weight:800;color:#6f6a60;width:54px} .leg .rt{font-weight:700;flex:1} .leg .tm{font-variant-numeric:tabular-nums;color:#6f6a60;font-weight:600}
+  .leg .tm .z{color:var(--brand);font-size:10px;margin-left:5px}
+  .svcF{display:flex;gap:14px;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+  .kv .k{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--sub);font-weight:800} .kv .v{font-family:var(--display);font-weight:600;font-size:14px;margin-top:1px}
+
+  /* repouso entre serviços (235) */
+  .rest{display:flex;align-items:center;gap:9px;margin:8px 2px;padding:8px 11px;background:var(--greenSoft);border-radius:12px}
+  .rest .dot{width:8px;height:8px;border-radius:99px;background:var(--green);flex:none}
+  .rest .t{flex:1;font-size:11.5px;font-weight:700;color:var(--greenText)}
+  .rest .m{font-size:10px;font-weight:700;color:var(--greenText);opacity:.8}
+  .rest.warn{background:var(--warnSoft)} .rest.warn .dot{background:var(--warn)} .rest.warn .t,.rest.warn .m{color:var(--warnText)}
+
+  /* totais do dia */
+  .tot{background:var(--soft);border-radius:14px;padding:11px 13px;margin-top:12px}
+  .totR{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+  .totR .k{font-size:12px;font-weight:700} .totR .k small{display:block;color:var(--sub);font-weight:600;font-size:10px;margin-top:1px}
+  .totR .v{font-family:var(--display);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+  .totR .v.bad{color:var(--redText)} .sumnote{font-size:10px;color:var(--sub);font-weight:600;margin-top:6px;text-align:center}
+  .acts{display:flex;gap:9px;margin-top:13px}
+  .btn{flex:1;text-align:center;border-radius:13px;padding:11px;font-size:12.5px;font-weight:800}
+  .btn.dark{background:var(--ink);color:#fff} .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn.add{background:var(--infoSoft);color:var(--brand);border:1px solid #cfdcf4}
+
+  /* ===== FORM + 2.º serviço ===== */
+  .seg{display:flex;background:var(--soft2);border-radius:12px;padding:3px;margin:0 2px 14px}
+  .seg div{flex:1;text-align:center;font-size:11.5px;font-weight:800;padding:7px;border-radius:9px;color:var(--sub)}
+  .seg div.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .done{background:var(--greenSoft);border:1px solid #cfe6d6;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .done .ck{width:22px;height:22px;border-radius:99px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:none}
+  .done .t{flex:1;font-size:12px;font-weight:700} .done .t small{display:block;color:#6f6a60;font-weight:600;font-size:10.5px;margin-top:1px}
+  .done .ed{font-size:10.5px;font-weight:800;color:var(--brand)}
+  .fsec{font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--sub);margin:2px 2px 9px}
+  .field{margin-bottom:11px} .field .l{font-size:10.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--sub);margin:0 2px 5px}
+  .inp{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .inp .ph{color:var(--sub);font-weight:600} .row2{display:flex;gap:9px} .row2 .field{flex:1}
+  .hint{display:flex;align-items:center;gap:8px;background:var(--infoSoft);border-radius:11px;padding:9px 11px;margin:2px 2px 0}
+  .hint .i{color:var(--brand);font-weight:800;flex:none} .hint .t{font-size:11px;font-weight:600;color:#3a567f;line-height:1.4}
+  .save{margin-top:14px;background:var(--ink);color:#fff;border-radius:13px;padding:13px;text-align:center;font-size:13.5px;font-weight:800}
+</style>
+</head>
+<body>
+  <h1>Vários serviços por dia — a lei conta períodos, não dias</h1>
+  <p class="lede">A EASA conta por <b>período de serviço</b>, não por dia civil — um dia pode ter <b>2 FDP</b> com repouso entre eles
+    (<code>ORO.FTL.210/245</code>). Estes 3 ecrãs mostram isso: a <b>grelha</b> marca o dia, a <b>folha do dia</b> separa os serviços e
+    <b>soma-os</b> nos 28 dias, e o <b>form</b> deixa juntar um 2.º serviço.</p>
+
+  <div class="grid">
+
+    <!-- ░░░ 1 · GRELHA ░░░ -->
+    <div class="col">
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>Escala</span></div>
+          <div class="mhead">
+            <div class="nav">‹</div><div class="mo">Junho 2026</div><div class="nav">›</div>
+          </div>
+          <div class="summ">
+            <div class="schip"><div class="v">14</div><div class="k">Serviços</div></div>
+            <div class="schip"><div class="v">9</div><div class="k">Folgas</div></div>
+            <div class="schip"><div class="v">312,50€</div><div class="k">Per diem</div></div>
+          </div>
+          <div class="dow"><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span><span>D</span></div>
+          <div class="cal">
+            <div class="cell off"><div class="dn">8</div><div class="bar2 b-off"></div></div>
+            <div class="cell"><div class="dn">9</div><div class="code">EZY·CDG</div><div class="bar2 b-fly"></div></div>
+            <div class="cell"><div class="dn">10</div><div class="code">EZY·AMS</div><div class="bar2 b-fly"></div></div>
+            <div class="cell"><div class="dn">11</div><div class="code">SBY</div><div class="bar2 b-sby"></div></div>
+            <div class="cell"><div class="dn">12</div><div class="code">EZY·BCN</div><div class="bar2 b-fly"></div></div>
+            <div class="cell we off"><div class="dn">13</div><div class="bar2 b-off"></div></div>
+            <div class="cell we off"><div class="dn">14</div><div class="bar2 b-off"></div></div>
+
+            <div class="cell off"><div class="dn">15</div><div class="bar2 b-off"></div></div>
+            <!-- DIA com 2 serviços -->
+            <div class="cell today" style="background:#fff">
+              <div class="dn">16</div>
+              <div class="stack">2×</div>
+              <div class="code">EZY·CDG</div>
+              <div class="twobars"><div class="bar2 b-fly" style="margin:0"></div><div class="bar2 b-fly" style="margin:0;opacity:.55"></div></div>
+            </div>
+            <div class="cell"><div class="dn">17</div><div class="code">EZY·LIS</div><div class="bar2 b-fly"></div></div>
+            <div class="cell"><div class="dn">18</div><div class="code">EZY·OPO</div><div class="bar2 b-fly"></div></div>
+            <div class="cell"><div class="dn">19</div><div class="code">SBY</div><div class="bar2 b-sby"></div></div>
+            <div class="cell we"><div class="dn">20</div><div class="code">EZY·MXP</div><div class="bar2 b-fly"></div></div>
+            <div class="cell we off"><div class="dn">21</div><div class="bar2 b-off"></div></div>
+          </div>
+          <p class="cdesc" style="margin-top:14px">Dia 16: dois traços + <b>2×</b> no canto. Tap → folha do dia.</p>
+        </div>
+      </div>
+      <div class="clabel">Grelha · dia com 2 serviços</div>
+      <div class="cdesc">O dia mostra <b>2 barras</b> e o selo <b>2×</b>. Não há sobreposição: o 2.º serviço vive ao lado do 1.º, não por cima.</div>
+    </div>
+
+    <!-- ░░░ 2 · FOLHA DO DIA ░░░ -->
+    <div class="col">
+      <div class="phone">
+        <div class="screen" style="filter:blur(.4px)">
+          <div class="status"><span>9:41</span><span>Escala</span></div>
+          <div class="mhead"><div class="nav">‹</div><div class="mo">Junho 2026</div><div class="nav">›</div></div>
+          <div class="summ"><div class="schip"><div class="v">14</div><div class="k">Serviços</div></div><div class="schip"><div class="v">9</div><div class="k">Folgas</div></div><div class="schip"><div class="v">312,50€</div><div class="k">Per diem</div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="shDay">Quarta, 16 Jun</div>
+          <div class="shCount">2 períodos de serviço</div>
+
+          <!-- Serviço 1 -->
+          <div class="svc">
+            <div class="svcH"><div class="num">1</div><div class="svcR">LGW → CDG</div><span class="tag fly">Voo</span></div>
+            <div class="legs"><div class="leg"><span class="fn">EZY8201</span><span class="rt">LGW → CDG</span><span class="tm">06:15→07:45 <span class="z">05:15–06:45Z</span></span></div></div>
+            <div class="svcF">
+              <div class="kv"><div class="k">PSV</div><div class="v">02:30</div></div>
+              <div class="kv"><div class="k">Block</div><div class="v">01:30</div></div>
+              <div class="kv"><div class="k">Report→fim</div><div class="v">05:45·08:15</div></div>
+            </div>
+          </div>
+
+          <!-- Repouso entre serviços (235) -->
+          <div class="rest">
+            <span class="dot"></span>
+            <span class="t">Repouso entre serviços · 10:30</span>
+            <span class="m">mín 10:00 fora ✓</span>
+          </div>
+
+          <!-- Serviço 2 -->
+          <div class="svc">
+            <div class="svcH"><div class="num">2</div><div class="svcR">CDG → LGW</div><span class="tag fly">Voo</span></div>
+            <div class="legs"><div class="leg"><span class="fn">EZY8214</span><span class="rt">CDG → LGW</span><span class="tm">19:15→20:45 <span class="z">18:15–19:45Z</span></span></div></div>
+            <div class="svcF">
+              <div class="kv"><div class="k">PSV</div><div class="v">02:30</div></div>
+              <div class="kv"><div class="k">Block</div><div class="v">01:30</div></div>
+              <div class="kv"><div class="k">Report→fim</div><div class="v">18:45·21:15</div></div>
+            </div>
+          </div>
+
+          <!-- Totais do dia -->
+          <div class="tot">
+            <div class="totR"><div class="k">Serviço <small>28 dias · ORO.FTL.210</small></div><div class="v">05:00</div></div>
+            <div class="totR"><div class="k">Voo <small>28 dias</small></div><div class="v">03:00</div></div>
+            <div class="totR"><div class="k">PSV do dia <small>o pior dos 2 · 205</small></div><div class="v">02:30 / 13:00</div></div>
+            <div class="sumnote">Os dois serviços <b>somam</b> nos 28 dias — antes só contava um.</div>
+          </div>
+
+          <div class="acts">
+            <div class="btn ghost">Ver tudo</div>
+            <div class="btn add">+ 2.º serviço</div>
+          </div>
+        </div>
+      </div>
+      <div class="clabel">Folha do dia · 2 serviços</div>
+      <div class="cdesc">Cada serviço com os seus setores e horas. No meio, o <b>repouso entre eles</b> (235) com o mínimo. Em baixo, os totais que <b>somam</b> (210) e o <b>pior PSV</b> (205).</div>
+    </div>
+
+    <!-- ░░░ 3 · FORM + 2.º SERVIÇO ░░░ -->
+    <div class="col">
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>Novo serviço</span></div>
+          <div class="ptitle">Quarta, 16 Jun</div>
+          <div class="psub">A juntar um 2.º período de serviço a este dia</div>
+
+          <!-- serviço 1 já feito -->
+          <div class="done">
+            <div class="ck">✓</div>
+            <div class="t">1.º serviço · LGW → CDG<small>05:45 → 08:15 · 1 setor · voo</small></div>
+            <div class="ed">Editar</div>
+          </div>
+
+          <div class="fsec">2.º serviço</div>
+          <div class="field"><div class="l">Tipo</div><div class="inp">Voo <span style="color:var(--sub)">⌄</span></div></div>
+          <div class="row2">
+            <div class="field"><div class="l">Apresentação</div><div class="inp">18:45</div></div>
+            <div class="field"><div class="l">Fim (sign-off)</div><div class="inp">21:15</div></div>
+          </div>
+          <div class="row2">
+            <div class="field"><div class="l">Block off→on</div><div class="inp">19:15·20:45</div></div>
+            <div class="field"><div class="l">Setores</div><div class="inp">1</div></div>
+          </div>
+          <div class="field"><div class="l">Rota</div><div class="inp">CDG → LGW</div></div>
+
+          <!-- hint legal ao vivo -->
+          <div class="hint">
+            <span class="i">✓</span>
+            <span class="t"><b>Repouso entre serviços: 10:30</b> — cumpre o mínimo de 10:00 fora da base (ORO.FTL.235). Dois FDP separados.</span>
+          </div>
+
+          <div class="save">Guardar 2.º serviço</div>
+        </div>
+      </div>
+      <div class="clabel">Form · + 2.º serviço</div>
+      <div class="cdesc">O 1.º serviço fica resumido no topo (tocável p/ editar). O 2.º entra normal — e o <b>aviso legal ao vivo</b> calcula o repouso entre os dois (235) e diz se é 1 serviço (split) ou 2.</div>
+    </div>
+
+  </div>
+
+  <div class="law">
+    <b>Como a lei entra (determinístico, sem inventar):</b><br>
+    · <code>ORO.FTL.210</code> — serviço e voo dos 2 períodos <b>somam</b> nos acumulados de 28 dias (era aqui que o modelo "1/dia" falhava).<br>
+    · <code>ORO.FTL.205</code> — o PSV do dia é o <b>pior</b> dos dois (se algum exceder, o dia é ilegal).<br>
+    · <code>ORO.FTL.235</code> — o <b>repouso entre serviços</b> tem de cumprir o mínimo (<b>12h na base / 10h fora</b>); se a transição for disruptiva (noite/largada tardia → entrada cedo) exige <b>noite local</b> — que num intervalo dentro do mesmo dia civil quase nunca cabe → avisa.<br>
+    · <code>CS&nbsp;FTL.1.220</code> — se o intervalo for &lt; ao repouso mínimo mas ≥ 3h, <b>não são 2 serviços</b>: é <b>split duty</b> (1 só FDP, com o intervalo a contar). O form deteta e classifica.<br>
+    · <code>ORO.FTL.245</code> — cada período é registado à parte (logbook/registo).<br>
+    easyJet Europe = tipo <b>matinal</b> (AOC austríaco). Valores ilustrativos.
+  </div>
+  <p class="cdesc" style="max-width:660px">Tudo isto sai do mesmo motor já feito (<code>dayFtlFromDuties</code> + <code>disruptiveCalculator</code>) — estes ecrãs são só a superfície.</p>
+</body>
+</html>

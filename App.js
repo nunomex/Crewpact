@@ -33,7 +33,7 @@ import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
-import { dutyToFtlDay, reconcileDayLog } from './ftl';
+import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { syncReminders, notifyRosterChange, cancelAllReminders, requestRemindersPermission } from './data/reminders';
 
 import LoginScreen        from './screens/LoginScreen';
@@ -389,6 +389,9 @@ export default function App() {
           // Casos especiais FTL (Fase 1): repouso a bordo/aumentada (205c), delayed (205g),
           // standby anterior (225) — mexem no TETO do PSV. Persistidos em roster_meta (sem migração).
           special: ('special' in fields) ? fields.special : (ex?.special ?? null),
+          // 2.º+ período de serviço no MESMO dia civil (a lei conta períodos, não dias — 210).
+          // Array de duties-irmãs (mesma forma da primária); persistido em roster_meta.
+          extra: ('extra' in fields) ? (fields.extra && fields.extra.length ? fields.extra : null) : (ex?.extra ?? null),
           duty_date: date,
           updated_at: new Date().toISOString(),
           dirty: true,
@@ -398,10 +401,15 @@ export default function App() {
     });
     // Liga ao motor FTL: deriva o registo do dia (PSV/limites/repouso) a partir da
     // duty. `src:'duty'` marca-o como derivado; registos manuais (sem src) não são tocados.
-    const entry = dutyToFtlDay({
+    // Um dia pode ter N períodos de serviço (a lei conta por SERVIÇO — 210): junta a primária
+    // com os `extra` (efetivos: dos fields, ou os já guardados se a edição não lhes tocou).
+    const primary = {
       report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
       sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind, signOff: fields.signOff, special: fields.special,
-    }, { postFlightMin: profile?.postFlightMin || 0, isPilot });   // débrief do perfil + tipo de tripulação (tabela aumentada 205c)
+    };
+    const effExtra = ('extra' in fields) ? fields.extra : (dutiesRef.current?.[date]?.extra || null);
+    const entry = dayFtlFromDuties([primary, ...((effExtra && effExtra.length) ? effExtra : [])],
+      { postFlightMin: profile?.postFlightMin || 0, isPilot });   // débrief do perfil + tipo de tripulação (tabela aumentada 205c)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -413,6 +421,46 @@ export default function App() {
     setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], deleted: true, dirty: true, updated_at: new Date().toISOString() } } : prev));
     // Remove o registo FTL derivado deste dia (preserva registos manuais sem src).
     setDayLog(prev => { if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; } return prev; });
+  };
+  // Um serviço-irmão (forma de `extra`) a partir dos campos do form.
+  const svcFromFields = (f) => ({
+    report_time: f.report_time || null, block_off: f.block_off || null, block_on: f.block_on || null,
+    sectors: f.sectors || 0, flight_minutes: f.flight_minutes || 0, route: f.route || null,
+    kind: f.kind || 'flight', nightStop: !!f.nightStop, signOff: f.signOff || null,
+    legs: f.legs || null, special: f.special || null,
+  });
+  // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).
+  const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special });
+  // Recalcula o FTL do dia (primária + extra) e grava no dayLog.
+  const recomputeDay = (date, cur, extra) => {
+    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin: profile?.postFlightMin || 0, isPilot });
+    setDayLog(prev => (entry ? { ...prev, [date]: entry } : prev));
+  };
+  // Adicionar um SERVIÇO ao dia (2.º+ período) — a EASA conta por SERVIÇO, não por dia (210).
+  // Empilha em `extra` SEM tocar na primária e recalcula o FTL do dia com TODOS os serviços
+  // (dayFtlFromDuties). Sem primária → é o 1.º serviço (cai no saveDuty normal).
+  const addDutyService = (date, fields) => {
+    const cur = dutiesRef.current?.[date];
+    if (!cur || cur.deleted) { saveDuty(date, fields); return; }
+    const newExtra = [...(cur.extra || []), svcFromFields(fields)];
+    setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], extra: newExtra, updated_at: new Date().toISOString(), dirty: true } } : prev));
+    recomputeDay(date, cur, newExtra);   // soma 210, pior PSV 205, repouso entre serviços 235
+  };
+  // Editar o SERVIÇO extra de índice `index` (0-based no array `extra`).
+  const updateDutyService = (date, index, fields) => {
+    const cur = dutiesRef.current?.[date];
+    if (!cur || !Array.isArray(cur.extra) || index < 0 || index >= cur.extra.length) return;
+    const newExtra = cur.extra.map((e, i) => (i === index ? svcFromFields(fields) : e));
+    setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], extra: newExtra, updated_at: new Date().toISOString(), dirty: true } } : prev));
+    recomputeDay(date, cur, newExtra);
+  };
+  // Apagar o SERVIÇO extra de índice `index` — só os extra (a primária apaga-se no DutyDetail).
+  const removeDutyService = (date, index) => {
+    const cur = dutiesRef.current?.[date];
+    if (!cur || !Array.isArray(cur.extra) || index < 0 || index >= cur.extra.length) return;
+    const newExtra = cur.extra.filter((_, i) => i !== index);
+    setDuties(prev => (prev[date] ? { ...prev, [date]: { ...prev[date], extra: newExtra.length ? newExtra : null, updated_at: new Date().toISOString(), dirty: true } } : prev));
+    recomputeDay(date, cur, newExtra);
   };
 
   // Empurra pendentes (dirty/deleted) para o Supabase. Best-effort: o que falhar
@@ -430,7 +478,7 @@ export default function App() {
           if (!err) { setDuties(prev => { const n = { ...prev }; if (n[date]?.deleted && n[date]?.updated_at === d.updated_at) delete n[date]; return n; }); okN++; }
           else { console.warn('[duties] delete falhou', date, err); failN++; }
         } else if (d.dirty) {
-          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs, signOff: d.signOff, special: d.special });
+          const err = await upsertDuty(uid, { duty_date: date, report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route, kind: d.kind, nightStop: d.nightStop, source: d.source, snap: d.snap, legs: d.legs, signOff: d.signOff, special: d.special, extra: d.extra });
           // Só limpa a flag se nada mudou entretanto (evita perder edições concorrentes).
           if (!err) { setDuties(prev => (prev[date] && prev[date].updated_at === d.updated_at ? { ...prev, [date]: { ...prev[date], dirty: false } } : prev)); okN++; }
           else { console.warn('[duties] upsert falhou', date, err); failN++; }
@@ -683,12 +731,12 @@ export default function App() {
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
           // roster_meta (Fase 4): JSON { source, snap, legs, signOff, special } — origem + snapshot
           // + nº de voo + fim de serviço + casos especiais FTL (205c/205g/225).
-          let source = 'manual', snap = null, legs = null, signOff = null, special = null;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; } } catch { /* meta inválida */ }
+          let source = 'manual', snap = null, legs = null, signOff = null, special = null, extra = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; extra = (m.extra && m.extra.length) ? m.extra : null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special, extra,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -856,7 +904,7 @@ export default function App() {
     readNotifIds, setReadNotifIds,
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
-    duties, saveDuty, removeDuty,
+    duties, saveDuty, removeDuty, addDutyService, updateDutyService, removeDutyService,
     notify,
     rosterChanges, checkRosterChanges,
     openSimulation: () => setSimulateOpen(true),

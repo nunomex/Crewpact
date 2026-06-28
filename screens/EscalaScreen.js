@@ -29,8 +29,14 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // CSV dos registos (apoio ao registo de tempos/serviço — ORO.FTL.245).
 const buildDutiesCsv = (duties) => {
   const rows = Object.entries(duties).filter(([, d]) => !d.deleted).sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  const head = 'duty_date,report_time,block_off,block_on,sectors,flight_minutes';
-  const body = rows.map(([date, d]) => [date, d.report_time || '', d.block_off || '', d.block_on || '', d.sectors || 0, d.flight_minutes || 0].join(','));
+  const head = 'duty_date,service,report_time,block_off,block_on,sectors,flight_minutes';
+  // Uma linha por SERVIÇO (a lei conta períodos — 210/245): primária + extra do mesmo dia.
+  const body = rows.flatMap(([date, d]) => {
+    const extras = (Array.isArray(d.extra) ? d.extra : []).filter((sv) => sv && (sv.report_time || sv.block_on));
+    const services = [d, ...extras];
+    const n = services.length;
+    return services.map((sv, i) => [date, n > 1 ? `${i + 1}/${n}` : '', sv.report_time || '', sv.block_off || '', sv.block_on || '', sv.sectors || 0, sv.flight_minutes || 0].join(','));
+  });
   return [head, ...body].join('\n');
 };
 
@@ -42,7 +48,7 @@ const buildDutiesCsv = (duties) => {
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, notify,
+  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, notify, removeDutyService,
     calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -53,6 +59,8 @@ export default function EscalaScreen({ navigation, route }) {
   // Mês visível (1.º dia). Default = mês de hoje.
   const [monthDate, setMonthDate] = useState(() => { const t0 = new Date(); return new Date(t0.getFullYear(), t0.getMonth(), 1); });
   const [dutyDate, setDutyDate] = useState(null); // dia a inserir/editar → popup
+  const [dutyAppend, setDutyAppend] = useState(false); // form em modo "+ serviço" (2.º+ período do dia)
+  const [dutyEditExtra, setDutyEditExtra] = useState(null); // índice do serviço extra a editar (null = não)
   const [dayIso, setDayIso] = useState(null);     // dia tocado na grelha → sheet de detalhe (setores)
   const [secExpand, setSecExpand] = useState(false); // sheet: expandir lista de setores se for cheia
   const [gridW, setGridW] = useState(0);          // largura medida da grelha → célula = (W − gaps)/7
@@ -191,6 +199,7 @@ export default function EscalaScreen({ navigation, route }) {
     const dd = Number(iso.slice(8, 10));
     const isToday = iso === today;
     const isDuty = d && !d.deleted && d.report_time;
+    const nSvc = isDuty && Array.isArray(d.extra) ? d.extra.length + 1 : 1;   // serviços no dia (210 conta por serviço)
     const col = (firstWeekday + dd - 1) % 7;
     const weekend = col >= 5;
     const cls = isDuty ? dutyClass(d) : null;
@@ -201,7 +210,7 @@ export default function EscalaScreen({ navigation, route }) {
         <Text style={[s.gn, !isDuty && s.gnOff, isToday && s.gnNow]}>{dd}</Text>
         {isDuty ? (
           <View style={s.svc}>
-            <Text style={[s.code, { color: codeColor(cls) }]} numberOfLines={1}>{dutyCode(d)}</Text>
+            <Text style={[s.code, { color: codeColor(cls) }]} numberOfLines={1}>{nSvc > 1 ? `${nSvc}× ` : ''}{dutyCode(d)}</Text>
             <View style={[s.bar, { backgroundColor: barColor(cls) }]} />
           </View>
         ) : null}
@@ -363,7 +372,7 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      <DutyFormSheet visible={!!dutyDate} onClose={() => setDutyDate(null)} date={dutyDate}
+      <DutyFormSheet visible={!!dutyDate} onClose={() => { setDutyDate(null); setDutyAppend(false); setDutyEditExtra(null); }} date={dutyDate} append={dutyAppend} editExtra={dutyEditExtra}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
         onDone={({ saved, source }) => { if (saved) notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported'); }}
@@ -372,75 +381,123 @@ export default function EscalaScreen({ navigation, route }) {
       {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível). */}
       <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)}>
         {dayIso && duties[dayIso] ? (() => {
-          const d = duties[dayIso];
-          const kind = d.kind || 'flight';
-          const isFlight = kind === 'flight';
-          const legs = (isFlight && Array.isArray(d.legs)) ? d.legs : [];
-          const collapsed = legs.length > 3 && !secExpand;
-          const shown = collapsed ? legs.slice(0, 3) : legs;
-          const catD = crewAt(d.duty_date).category;
-          let perDiem = null;
-          if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet); }
-          const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
+          const prim = duties[dayIso];
+          const services = [prim, ...(Array.isArray(prim.extra) ? prim.extra : [])];
+          const between = (dayLog[dayIso] && Array.isArray(dayLog[dayIso].between)) ? dayLog[dayIso].between : [];
+          const multi = services.length > 1;
           const pf = postFlightMin || 0;
-          const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
-          const end = so != null ? so : (onM != null ? onM + pf : null);
-          const dutyMin = (rm != null && end != null) ? (((end % 1440) >= rm) ? (end % 1440) - rm : (end % 1440) + 1440 - rm) : null;
+          const catD = crewAt(dayIso).category;
+          const fmtM = (m) => minToHhmm(Math.max(0, Math.round(m || 0)));
           const dt = new Date(`${dayIso}T00:00:00`);
           const dateLbl = isNaN(dt) ? dayIso : (() => { const sx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); })();
+
+          // Um cartão por SERVIÇO do dia (a EASA conta por serviço — 210). idx 0 = primária.
+          const renderSvc = (d, idx) => {
+            const kind = d.kind || 'flight';
+            const isFlight = kind === 'flight';
+            const legs = (isFlight && Array.isArray(d.legs)) ? d.legs : [];
+            const canExpand = idx === 0;                          // expande só a primária (simplificação)
+            const collapsed = legs.length > 3 && !(secExpand && canExpand);
+            const shown = collapsed ? legs.slice(0, 3) : legs;
+            let perDiem = null;
+            if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet); }
+            const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
+            const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
+            const end = so != null ? so : (onM != null ? onM + pf : null);
+            const endsNext = end != null && rm != null && (end % 1440) < rm;   // serviço acaba no dia seguinte
+            const dutyMin = (rm != null && end != null) ? (((end % 1440) >= rm) ? (end % 1440) - rm : (end % 1440) + 1440 - rm) : null;
+            return (
+              <View key={`svc${idx}`} style={multi ? s.dsSvcCard : undefined}>
+                <View style={s.dsHead}>
+                  {multi ? <View style={s.dsNum}><Text style={s.dsNumTxt}>{idx + 1}</Text></View> : null}
+                  <View style={[s.dsBadge, { backgroundColor: kindColor(kind) }]}><Text style={s.dsBadgeTxt}>{kindLabel(kind)}</Text></View>
+                  <Text style={s.dsRoute} numberOfLines={1}>{isFlight ? (d.route || l('Voo', 'Flight')) : kindLabel(kind)}</Text>
+                  {d.nightStop ? <Ionicons name="moon" size={15} color={C.info} /> : null}
+                </View>
+
+                {isFlight && legs.length ? (
+                  <View style={s.dsSecWrap}>
+                    <Text style={s.dsSecHead}>{l('Setores', 'Sectors')}</Text>
+                    {shown.map((lg, i) => (
+                      <View key={i} style={s.dsSecRow}>
+                        <Text style={s.dsSecNo} numberOfLines={1}>{lg.flightNo || `${i + 1}`}</Text>
+                        <Text style={s.dsSecRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}</Text>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={s.dsSecTm}>{lg.off || '—'} → {lg.on || '—'}</Text>
+                          {(() => { const zo = legZulu(dayIso, lg, 'off'), zn = legZulu(dayIso, lg, 'on'); return (zo || zn) ? <Text style={s.dsSecZ}>{zo || '—'} → {zn || '—'}Z</Text> : null; })()}
+                        </View>
+                      </View>
+                    ))}
+                    {legs.length > 3 && canExpand ? (
+                      <TouchableOpacity onPress={() => { select(); setSecExpand((v) => !v); }} hitSlop={6} style={s.dsMore} activeOpacity={0.7}>
+                        <Text style={s.dsMoreTxt}>{collapsed ? l(`+ ${legs.length - 3} setores`, `+ ${legs.length - 3} sectors`) : l('mostrar menos', 'show less')}</Text>
+                        <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={14} color={C.brand} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                <View style={s.dsMeta}>
+                  {d.report_time ? <View style={s.dsMi}><Text style={s.dsMiLbl}>{l('Apresentação', 'Report')}</Text><Text style={s.dsMiVal}>{d.report_time}</Text></View> : null}
+                  {d.flight_minutes ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Block hours</Text><Text style={s.dsMiVal}>{minToHhmm(d.flight_minutes)}</Text></View> : null}
+                  {dutyMin != null ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Duty hours</Text><Text style={s.dsMiVal}>{minToHhmm(dutyMin)}{endsNext ? ' ⁺¹' : ''}</Text></View> : null}
+                </View>
+                {(perDiem != null || nsEur != null) ? (
+                  <View style={s.dsPay}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.dsPayLbl}>{multi ? l('Ganhos do serviço', 'Service earnings') : l('Ganhos do dia', 'Day earnings')}</Text>
+                      <Text style={s.dsPayBreak}>{[
+                        perDiem != null ? `${l('per-diem', 'per diem')} +${fmtEur(perDiem)}` : null,
+                        nsEur != null ? `🌙 +${fmtEur(nsEur)}` : null,
+                      ].filter(Boolean).join('  ·  ')}</Text>
+                    </View>
+                    <Text style={s.dsPayTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0))}</Text>
+                  </View>
+                ) : null}
+                {/* Serviço EXTRA (idx>0): editar/apagar individual (a primária trata-se nos botões de baixo). */}
+                {multi && idx > 0 ? (
+                  <View style={s.dsSvcActs}>
+                    <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyEditExtra(idx - 1); setDutyDate(iso); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
+                      <Ionicons name="create-outline" size={15} color={C.brand} /><Text style={s.dsSvcActTxt}>{l('Editar', 'Edit')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { const iso = dayIso, ix = idx - 1; Alert.alert(l('Apagar serviço', 'Delete service'), l('Apagar este serviço do dia? Os outros mantêm-se.', 'Delete this service? The others stay.'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeDutyService(iso, ix) }]); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
+                      <Ionicons name="trash-outline" size={15} color={C.red} /><Text style={[s.dsSvcActTxt, { color: C.red }]}>{l('Apagar', 'Delete')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            );
+          };
+
+          // Faixa de REPOUSO ENTRE serviços (235 + split duty 220) — rest/split/continuous.
+          const restChip = (rb, i) => {
+            const tone = rb.kind === 'rest' ? C.green : rb.kind === 'split' ? C.warn : C.red;
+            const bg = rb.kind === 'rest' ? C.greenSoft : rb.kind === 'split' ? C.warnSoft : C.redSoft;
+            const place = rb.place === 'away' ? l('fora', 'away') : l('base', 'base');
+            const txt = rb.kind === 'rest'
+              ? l(`Repouso entre serviços · ${fmtM(rb.gapMin)} (mín ${fmtM(rb.requiredMin)} ${place}) ✓`, `Rest between · ${fmtM(rb.gapMin)} (min ${fmtM(rb.requiredMin)}) ✓`)
+              : rb.kind === 'split'
+                ? l(`Split duty · ${fmtM(rb.gapMin)} < mín ${fmtM(rb.requiredMin)} → conta como 1 serviço (220)`, `Split duty · ${fmtM(rb.gapMin)} < min → counts as one FDP (220)`)
+                : l(`Muito perto · ${fmtM(rb.gapMin)} (< 3h) → é o mesmo serviço`, `Too close · ${fmtM(rb.gapMin)} (< 3h) → same duty`);
+            return <View key={`rb${i}`} style={[s.dsRest, { backgroundColor: bg }]}><View style={[s.dsRestDot, { backgroundColor: tone }]} /><Text style={[s.dsRestTxt, { color: tone }]}>{txt}</Text></View>;
+          };
+
+          const rows = [];
+          services.forEach((svc, i) => { rows.push(renderSvc(svc, i)); if (i < services.length - 1) rows.push(restChip(between[i] || { kind: 'rest', gapMin: 0, requiredMin: 0, place: 'base' }, i)); });
+
           return (
             <View style={s.dsBody}>
               <Text style={s.dsDate}>{dateLbl}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
-              <View style={s.dsHead}>
-                <View style={[s.dsBadge, { backgroundColor: kindColor(kind) }]}><Text style={s.dsBadgeTxt}>{kindLabel(kind)}</Text></View>
-                <Text style={s.dsRoute} numberOfLines={1}>{isFlight ? (d.route || l('Voo', 'Flight')) : kindLabel(kind)}</Text>
-                {d.nightStop ? <Ionicons name="moon" size={15} color={C.info} /> : null}
-              </View>
-
-              {isFlight && legs.length ? (
-                <View style={s.dsSecWrap}>
-                  <Text style={s.dsSecHead}>{l('Setores', 'Sectors')}</Text>
-                  {shown.map((lg, i) => (
-                    <View key={i} style={s.dsSecRow}>
-                      <Text style={s.dsSecNo} numberOfLines={1}>{lg.flightNo || `${i + 1}`}</Text>
-                      <Text style={s.dsSecRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}</Text>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={s.dsSecTm}>{lg.off || '—'} → {lg.on || '—'}</Text>
-                        {(() => { const zo = legZulu(d.duty_date, lg, 'off'), zn = legZulu(d.duty_date, lg, 'on'); return (zo || zn) ? <Text style={s.dsSecZ}>{zo || '—'} → {zn || '—'}Z</Text> : null; })()}
-                      </View>
-                    </View>
-                  ))}
-                  {legs.length > 3 ? (
-                    <TouchableOpacity onPress={() => { select(); setSecExpand((v) => !v); }} hitSlop={6} style={s.dsMore} activeOpacity={0.7}>
-                      <Text style={s.dsMoreTxt}>{collapsed ? l(`+ ${legs.length - 3} setores`, `+ ${legs.length - 3} sectors`) : l('mostrar menos', 'show less')}</Text>
-                      <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={14} color={C.brand} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ) : null}
-
-              <View style={s.dsMeta}>
-                {d.report_time ? <View style={s.dsMi}><Text style={s.dsMiLbl}>{l('Apresentação', 'Report')}</Text><Text style={s.dsMiVal}>{d.report_time}</Text></View> : null}
-                {d.flight_minutes ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Block hours</Text><Text style={s.dsMiVal}>{minToHhmm(d.flight_minutes)}</Text></View> : null}
-                {dutyMin != null ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Duty hours</Text><Text style={s.dsMiVal}>{minToHhmm(dutyMin)}</Text></View> : null}
-              </View>
-              {(perDiem != null || nsEur != null) ? (
-                <View style={s.dsPay}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.dsPayLbl}>{l('Ganhos do dia', 'Day earnings')}</Text>
-                    <Text style={s.dsPayBreak}>{[
-                      perDiem != null ? `${l('per-diem', 'per diem')} +${fmtEur(perDiem)}` : null,
-                      nsEur != null ? `🌙 +${fmtEur(nsEur)}` : null,
-                    ].filter(Boolean).join('  ·  ')}</Text>
-                  </View>
-                  <Text style={s.dsPayTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0))}</Text>
-                </View>
-              ) : null}
-
+              {multi ? <Text style={s.dsCount}>{services.length} {l('serviços', 'services')}</Text> : null}
+              {rows}
               <View style={s.dsBtns}>
-                <GhostButton onPress={() => { const iso = dayIso; setDayIso(null); setDutyDate(iso); }} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
+                <GhostButton onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
                 <PrimaryButton onPress={() => { const iso = dayIso; setDayIso(null); navigation.navigate('DutyDetail', { date: iso }); }} icon="open-outline" radius="lg" style={{ flex: 1 }} label={l('Ver tudo', 'See all')} />
               </View>
+              <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(true); setDutyDate(iso); }} activeOpacity={0.8} style={s.dsAdd}>
+                <Ionicons name="add" size={18} color={C.brand} />
+                <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
+              </TouchableOpacity>
             </View>
           );
         })() : null}
@@ -604,6 +661,19 @@ const makeStyles = (C) => StyleSheet.create({
   dsPayBreak: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, fontVariant: ['tabular-nums'] },
   dsPayTotal: { fontSize: 20, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
   dsBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  // Vários serviços no dia (210 conta por serviço): contador + cartão por serviço + repouso entre eles.
+  dsCount: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: C.brand, marginTop: 4 },
+  dsSvcCard: { marginTop: 12, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13 },
+  dsNum: { width: 22, height: 22, borderRadius: 7, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  dsNumTxt: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff' },
+  dsRest: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
+  dsRestDot: { width: 8, height: 8, borderRadius: 99 },
+  dsRestTxt: { flex: 1, fontSize: 11.5, fontFamily: FONT.bold },
+  dsAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12 },
+  dsAddTxt: { fontSize: 13, fontFamily: FONT.bold, color: C.brand },
+  dsSvcActs: { flexDirection: 'row', gap: 18, marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: C.line },
+  dsSvcAct: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dsSvcActTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
 

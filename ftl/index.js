@@ -178,6 +178,72 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
   };
 };
 
+// Repouso ENTRE dois períodos de serviço do mesmo dia (ORO.FTL.235 + CS FTL.1.220).
+// Classifica o intervalo entre o FIM de `prev` (sign-off, ou block_on + débrief) e o REPORT
+// de `next` — com volta à meia-noite. O mínimo de repouso é max(12h base / 10h fora, serviço
+// anterior) — ORO.FTL.235(a)/(b). O intervalo é então:
+//   • 'rest'       (≥ mínimo)      → 2 FDP SEPARADOS, com repouso a sério (são 2 serviços).
+//   • 'split'      (≥3h e < mínimo)→ SPLIT DUTY: é 1 só FDP, o intervalo conta (CS FTL.1.220).
+//   • 'continuous' (< 3h)          → demasiado perto: NÃO são 2 serviços (é o mesmo).
+// Devolve { gapMin, requiredMin, kind, legal, place, prevDutyMin } — alimenta o diálogo de
+// colisão (2 serviços vs split) e o aviso da folha do dia. Determinístico; null sem horas.
+export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0 } = {}) => {
+  if (!prev || !next) return null;
+  const repPrev = parseHhmm(prev.report_time);
+  const onPrev = parseHhmm(prev.block_on), soPrev = parseHhmm(prev.signOff);
+  const repNext = parseHhmm(next.report_time);
+  let endPrev = soPrev != null ? soPrev : (onPrev != null ? (onPrev + (postFlightMin || 0)) % 1440 : null);
+  if (endPrev == null || repNext == null) return null;
+  let gapMin = repNext - endPrev; while (gapMin < 0) gapMin += 1440;          // next reporta depois do fim de prev
+  let prevDutyMin = repPrev != null ? endPrev - repPrev : 0; while (prevDutyMin < 0) prevDutyMin += 1440;
+  const place = inBase ? 'base' : 'away';
+  const minRest = Math.max(inBase ? 720 : 600, prevDutyMin);                  // 12h base / 10h fora, nunca < serviço anterior
+  let kind, legal;
+  if (gapMin >= minRest) { kind = 'rest'; legal = true; }
+  else if (gapMin >= 180) { kind = 'split'; legal = true; }                   // ≥3h → split duty (1 FDP)
+  else { kind = 'continuous'; legal = false; }                               // <3h → não são 2 serviços
+  return { gapMin, requiredMin: minRest, kind, legal, place, prevDutyMin };
+};
+
+// Um DIA pode ter N PERÍODOS DE SERVIÇO — a EASA conta por SERVIÇO, não por dia civil
+// (ORO.FTL.210/245; dois FDP no mesmo dia são legais, com repouso entre eles). Funde os
+// registos FTL de TODOS os serviços do dia:
+//   • SERVIÇO e VOO  → SOMAM (ORO.FTL.210, acumulados de 28 d).
+//   • PSV do dia      → o PIOR (ORO.FTL.205): se ALGUM serviço excede, o dia é ilegal.
+//   • REPOUSO         → o do ÚLTIMO serviço (o que vale para a frente).
+//   • `parts`         → o PSV de cada serviço, para o detalhe e o registo 245.
+// `list` = [serviço1, serviço2, …] (cada um na forma da tabela `duties`). 1 serviço (ou 0/1
+// não-nulo) → idêntico ao `dutyToFtlDay` (o caso normal não muda nada).
+export const dayFtlFromDuties = (list = [], opts = {}) => {
+  const arr = Array.isArray(list) ? list : [list];
+  // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
+  const paired = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
+  if (!paired.length) return null;
+  // Ordena cronologicamente pelo report → os serviços do dia ficam por ordem (1.º, 2.º, …).
+  paired.sort((a, b) => (parseHhmm(a.duty.report_time) ?? 0) - (parseHhmm(b.duty.report_time) ?? 0));
+  const entries = paired.map((p) => p.entry);
+  if (entries.length === 1) return entries[0];
+  const r1 = (n) => +(Number(n) || 0).toFixed(1);
+  const servico = r1(entries.reduce((s, e) => s + (e.servico || 0), 0));
+  const voo = r1(entries.reduce((s, e) => s + (e.voo || 0), 0));
+  // PSV do dia = o PIOR: prioriza o que EXCEDE; entre vários, o de maior excesso.
+  const excMin = (p) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String((p && p.excess) || '')); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
+  const worst = entries.reduce((a, b) => {
+    if (!!b.psv.over !== !!a.psv.over) return b.psv.over ? b : a;
+    return excMin(b.psv) > excMin(a.psv) ? b : a;
+  });
+  const last = entries[entries.length - 1];
+  // Repouso ENTRE serviços consecutivos (235 + 220): classifica cada par (rest/split/continuous).
+  const between = [];
+  for (let i = 0; i < paired.length - 1; i++) {
+    const rb = restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 });
+    if (rb) between.push(rb);
+  }
+  const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
+  const restShort = between.some((b) => b.kind === 'continuous'); // algum par perto demais (não são 2)
+  return { src: 'duty', psv: worst.psv, servico, voo, rest: last.rest, parts: entries.map((e) => e.psv), between, split, restShort };
+};
+
 // Reconstrói as entradas FTL DERIVADAS (src:'duty') em FALTA no `dayLog`, a partir
 // das duties (escala). FILL-ONLY: só preenche dias AUSENTES — nunca toca em entradas
 // existentes (manuais OU derivadas), logo é idempotente e não destrói histórico. Serve
@@ -189,10 +255,12 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
   for (const date in duties) {
     const d = duties[date];
     if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
-    const entry = dutyToFtlDay({
+    // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
+    const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
-    }, { postFlightMin, isPilot });
+    };
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

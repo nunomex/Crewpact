@@ -294,6 +294,11 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Disrupt: largada tardia 00:30', classifyDisruptive({ reportMin: M('20:00'), endMin: M('00:30') }).lateFinish, true);
   eq('Disrupt: noturno 01:00→09:00', classifyDisruptive({ reportMin: M('01:00'), endMin: M('09:00') }).night, true);
   eq('Disrupt: diurno 08:00→16:00 não é disruptivo', classifyDisruptive({ reportMin: M('08:00'), endMin: M('16:00') }).disruptive, false);
+  // Tipo TARDIO (late) por companhia — ARO.OPS.230. easyJet Europe = matinal (default acima).
+  eq('Disrupt tardio: entrada 06:30 É matinal', classifyDisruptive({ reportMin: M('06:30'), endMin: M('14:00'), type: 'late' }).earlyStart, true);
+  eq('Disrupt matinal: entrada 06:30 NÃO é matinal', classifyDisruptive({ reportMin: M('06:30'), endMin: M('14:00') }).earlyStart, false);
+  eq('Disrupt tardio: largada 23:30 NÃO é tardia', classifyDisruptive({ reportMin: M('15:00'), endMin: M('23:30'), type: 'late' }).lateFinish, false);
+  eq('Disrupt tardio: largada 00:30 É tardia', classifyDisruptive({ reportMin: M('15:00'), endMin: M('00:30'), type: 'late' }).lateFinish, true);
 }
 
 // ─────────── 235(a)(2)/(d) — sequência de escala (computeRestSequence) ───────────
@@ -512,6 +517,57 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Standby combinado: kind', dCombined.fdp.stdbyOverKind, 'combined');
   // Standby curto (2h) → dentro do combinado → sem flag.
   eq('Standby combinado: 2h dentro do limite → false', computeDuty({ state: 'acc', report: '06:00', end: '14:00', sectors: 1, preStandby: { type: 'airport', standbyH: 2 } }).fdp.stdbyOver, false);
+}
+
+// ─────────── Dia com N PERÍODOS DE SERVIÇO (ORO.FTL.210/245) — dayFtlFromDuties ───────────
+{
+  const { dayFtlFromDuties, dutyToFtlDay } = ftl;
+  // Serviço 1: 06:00→10:00 (PSV 4h · 3h voo). Serviço 2: 20:00→23:00 (PSV 3h · 2h voo). 2 FDP/dia.
+  const d1 = { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180 };
+  const d2 = { report_time: '20:00', block_on: '23:00', sectors: 1, flight_minutes: 120 };
+  const e1 = dutyToFtlDay(d1), e2 = dutyToFtlDay(d2);
+  const day = dayFtlFromDuties([d1, d2]);
+  eq('Dia 2 serviços: SERVIÇO soma (210)', day.servico, +((e1.servico + e2.servico)).toFixed(1));
+  eq('Dia 2 serviços: VOO soma (210)', day.voo, +((e1.voo + e2.voo)).toFixed(1));
+  eq('Dia 2 serviços: VOO = 3+2 = 5h', day.voo, 5);
+  eq('Dia 2 serviços: SERVIÇO = 4+3 = 7h', day.servico, 7);
+  eq('Dia 2 serviços: parts = PSV por serviço', day.parts.length, 2);
+  eq('Dia 2 serviços: nenhum excede → legal', day.psv.over, false);
+  // 1 serviço → IDÊNTICO ao dutyToFtlDay (o caso normal não muda).
+  const solo = dayFtlFromDuties([d1]);
+  eq('Dia 1 serviço: servico igual', solo.servico, e1.servico);
+  eq('Dia 1 serviço: voo igual', solo.voo, e1.voo);
+  // Um serviço ILEGAL no dia → o DIA fica ilegal (pior PSV manda).
+  const ilegal = { report_time: '06:00', block_on: '20:00', sectors: 1 }; // PSV 14h > máx 13h
+  const dayBad = dayFtlFromDuties([d1, ilegal]);
+  eq('Dia: 1 serviço ilegal → dia ilegal', dayBad.psv.over, true);
+  eq('Dia: PSV do dia = o que excede (+01:00)', dayBad.psv.excess, '01:00');
+}
+
+// ─────────── Repouso ENTRE serviços do dia (ORO.FTL.235 + CS FTL.1.220) — restBetweenDuties ───────────
+{
+  const { restBetweenDuties, dayFtlFromDuties } = ftl;
+  const A = { report_time: '06:00', block_on: '08:00' };           // serviço de 2h
+  // 14h de intervalo na base ≥ 12h → 2 FDP separados (repouso a sério).
+  eq('Repouso entre: 14h base → rest', restBetweenDuties(A, { report_time: '22:00' }).kind, 'rest');
+  // 4h de intervalo → split duty (≥3h mas < mínimo) = 1 FDP (CS FTL.1.220).
+  const B = { report_time: '06:00', block_on: '10:00' };
+  eq('Repouso entre: 4h → split duty', restBetweenDuties(B, { report_time: '14:00' }).kind, 'split');
+  // 2h de intervalo (< 3h) → demasiado perto: não são 2 serviços.
+  eq('Repouso entre: 2h → continuous', restBetweenDuties(B, { report_time: '12:00' }).kind, 'continuous');
+  // 11h: na base é split (< 12h), FORA da base é rest (≥ 10h).
+  eq('Repouso entre: 11h base → split', restBetweenDuties(B, { report_time: '21:00' }, { inBase: true }).kind, 'split');
+  eq('Repouso entre: 11h fora → rest', restBetweenDuties(B, { report_time: '21:00' }, { inBase: false }).kind, 'rest');
+  // Mínimo nunca < serviço anterior (235): serviço de 13h → exige 13h, 12h45 de intervalo não chega.
+  const long = { report_time: '06:00', block_on: '19:00' };        // serviço de 13h
+  eq('Repouso entre: mín = serviço anterior (13h) → 12h45 não chega', restBetweenDuties(long, { report_time: '07:40' }).kind, 'split');
+  // Fim DEPOIS da meia-noite (sign-off 01:15): o intervalo calcula-se com volta à meia-noite.
+  const nite = { report_time: '22:30', block_on: '00:45', signOff: '01:15' };
+  eq('Repouso entre: fim 01:15 → next 14:00 = 12h45 base → rest', restBetweenDuties(nite, { report_time: '14:00' }).kind, 'rest');
+  // dayFtlFromDuties EXPÕE o `between` e o flag split.
+  const day2 = dayFtlFromDuties([{ report_time: '06:00', block_on: '10:00', flight_minutes: 180 }, { report_time: '20:00', block_on: '23:00', flight_minutes: 120 }]);
+  eq('Dia 2 serviços: expõe between[1]', day2.between.length, 1);
+  eq('Dia 2 serviços: 10h base entre eles → split', day2.split, true);
 }
 
 // ── Resumo ──
