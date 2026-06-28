@@ -127,8 +127,10 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
   };
   for (const act of activities) { const c = make(dutyFromActivity(act, base), 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
-  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do
-  // calendário. Ação = apagar (por marcar; confirmação na UI). Manuais/PDF nunca.
+  // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário
+  // ("fonte manda"). Vêm PRÉ-MARCADOS (selected: true) → o "Confirmar import" habitual limpa os
+  // dias cancelados, que ficam livres. A confirmação é a rede de segurança contra leituras
+  // parciais (sem tombstone, apagar é irreversível). Manuais/PDF nunca entram aqui.
   if (window && window.start && window.end) {
     for (const date in duties) {
       const d = duties[date];
@@ -136,7 +138,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       if (date < window.start || date > window.end) continue;
       if (inDates.has(date)) continue;
       const kind = d.kind || 'flight';
-      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
+      out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: true, action: 'delete' });
     }
   }
   const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, same: 5 };

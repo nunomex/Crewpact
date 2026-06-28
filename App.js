@@ -790,19 +790,23 @@ export default function App() {
   // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
   // permissão de calendário → não faz nada. NÃO altera nada (o utilizador revê/aplica).
+  // Devolve o diff ({changed,added,removed,counts,...}) para quem chama (ex.: botão Sincronizar
+  // dar feedback "em dia" vs "X mudanças"); null quando não leu (sem calendário/sem leitura/erro).
   const checkRosterChanges = useCallback(async () => {
-    if (!calendarId) return;   // só deteta se houver calendário LIGADO (sem prompt; sem leitura "às cegas")
+    if (!calendarId) return null;   // só deteta se houver calendário LIGADO (sem prompt; sem leitura "às cegas")
     try {
       const co = company?.slug;
       const { start, end } = rangeFromOption('month');
       const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
-      if (!fl.ok && !nf.ok) return;   // sem leitura válida → não marca cancelamentos
+      if (!fl.ok && !nf.ok) return null;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
       const window = { start: isoDay(start), end: isoDay(end) };
       // SÓ DETETA (não grava): expõe o diff p/ o user rever e CONFIRMAR no import (decisão do
       // user — nada entra no `duties` sem confirmação). Gravar = RosterImportSheet → saveDuty.
-      setRosterChanges(diffRoster({ incoming, duties: dutiesRef.current, window }));
-    } catch { /* best-effort */ }
+      const res = diffRoster({ incoming, duties: dutiesRef.current, window });
+      setRosterChanges(res);
+      return res;
+    } catch { return null; /* best-effort */ }
   }, [company, calendarId]);
   // Corre quando o perfil fica pronto e ao voltar ao foreground (auto, ao focar) — SÓ se ligado.
   useEffect(() => { if (onboarded && company && calendarId) checkRosterChanges(); }, [onboarded, company, calendarId, checkRosterChanges]);

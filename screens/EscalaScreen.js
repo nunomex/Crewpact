@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +65,7 @@ export default function EscalaScreen({ navigation, route }) {
   const [hubOpen, setHubOpen] = useState(false);       // hub de importar (calendário | PDF)
   const [importSource, setImportSource] = useState('calendar'); // fonte com que abre o RosterImportSheet
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: reverifica a escala
+  const [syncing, setSyncing] = useState(false);        // botão Sincronizar (relê o calendário ligado)
   const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
   const scrollRef = useRef(null);        // ScrollView da lista (scroll até hoje ao entrar)
   const didScrollToday = useRef(false);  // já posicionámos no dia de hoje neste mês?
@@ -111,6 +112,21 @@ export default function EscalaScreen({ navigation, route }) {
     else if (res && res.canAskAgain === false) Linking.openSettings();
   };
 
+  // Sincronizar: relê AGORA o calendário ligado e dá feedback. NÃO grava nada — se houver mudanças,
+  // aparece o banner azul "Rever" (revisão antes de aplicar, com a confirmação de apagar). Sem
+  // calendário ligado o botão nem aparece (aí é o "Importar/Ligar" que trata).
+  const onSync = async () => {
+    if (!calendarId || syncing) return;
+    select(); setSyncing(true);
+    const t0 = Date.now();
+    let res; try { res = await checkRosterChanges?.(); } catch { res = null; }
+    const dt = Date.now() - t0; if (dt < 500) await new Promise((r) => setTimeout(r, 500 - dt)); // mínimo visível
+    setSyncing(false);
+    if (res == null) { notify(l('Não consegui ler o calendário', 'Couldn’t read the calendar'), null, 'warn'); return; }
+    const n = res.counts?.total || 0;
+    notify(n ? l(`${n} alteração(ões) na escala — revê em baixo`, `${n} roster change(s) — review below`)
+             : l('Escala em dia', 'Roster up to date'), null, n ? 'sync' : 'ok');
+  };
   // Hub de importar (mini-fab / cartão "IR" / arranque) → escolher fonte; depois abre o "Confirmar import".
   const openHub = () => { select(); setHubOpen(true); };
   const openImport = (src) => { setImportSource(src || 'calendar'); setHubOpen(false); setImportOpen(true); };
@@ -236,6 +252,14 @@ export default function EscalaScreen({ navigation, route }) {
         <View style={s.eyeRow}>
           <View style={s.eyebrowWrap}><View style={s.eyebrowDot} /><Eyebrow>{l('A tua escala', 'Your roster')}</Eyebrow></View>
           <View style={s.tools}>
+            {/* Sincronizar com o calendário ligado (relê agora) — só aparece quando há calendário. */}
+            {calendarId ? (
+              <TouchableOpacity onPress={onSync} disabled={syncing} hitSlop={6} style={s.ib} accessibilityLabel={l('Sincronizar com o calendário', 'Sync with calendar')}>
+                {syncing ? <ActivityIndicator size="small" color={C.sub} /> : <Ionicons name="sync" size={17} color={C.text} />}
+                {/* Pontinho azul quando há mudanças por rever (espelha o banner "A escala mudou"). */}
+                {!syncing && rcCounts?.total ? <View style={s.syncDot} /> : null}
+              </TouchableOpacity>
+            ) : null}
             {anyDuty ? (
               <>
                 <TouchableOpacity onPress={openPdf} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.exportPdf', lang)}><Ionicons name="document-text-outline" size={17} color={C.text} /></TouchableOpacity>
@@ -484,6 +508,7 @@ const makeStyles = (C) => StyleSheet.create({
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
   tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ib: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  syncDot: { position: 'absolute', top: 7, right: 7, width: 9, height: 9, borderRadius: 99, backgroundColor: C.brand, borderWidth: 1.5, borderColor: C.canvas },
 
   // Mês navegável
   monthBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
