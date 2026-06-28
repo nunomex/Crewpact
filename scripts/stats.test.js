@@ -152,5 +152,36 @@ eq('mês jan: aeMonth.perDiem (2 voos ×50)', am.aeMonth.perDiem, 100);
 eq('mês jan: aeMonth.pernoita (1×46)', am.aeMonth.nightStops, 46);
 eq('mês jan: aeMonth.total', am.aeMonth.total, 5146);
 
+// ── Multi-serviço (2.º FDP no mesmo dia, `duty.extra`) — a EASA conta por SERVIÇO (ORO.FTL.210):
+// horas/voos/setores/per-diem SOMAM primária + extra; "dias de escala"/folgas/pernoita = por DIA. ──
+const MS = {
+  '2026-06-10': {
+    duty_date: '2026-06-10', report_time: '06:00', block_on: '10:00', flight_minutes: 200, sectors: 2, route: 'LIS-OPO-LIS', kind: 'flight', nightStop: false,
+    extra: [{ report_time: '14:00', block_on: '18:00', flight_minutes: 180, sectors: 2, route: 'LIS-FAO-LIS', kind: 'flight', nightStop: false, source: 'manual' }],
+  },
+};
+const ms = yearStats(MS, { year: 2026, now: new Date('2026-06-30T12:00:00') });
+eq('multi: count = 1 DIA (não 2 serviços)', ms.count, 1);
+eq('multi: flights = 2 (primária + extra)', ms.flights, 2);
+eq('multi: sectors = 4 (2+2)', ms.sectors, 4);
+eq('multi: flightMin = 380 (200+180)', ms.flightMin, 380);
+eq('multi: dutyMin = 480 (4h + 4h)', ms.dutyMin, 480);
+eq('multi: byKind.flight = 2 serviços', ms.byKind.flight, 2);
+eq('multi: nightStops = 0 (day-level)', ms.nightStops, 0);
+eq('multi: mês jun flightMin = 380', ms.months[5].flightMin, 380);
+ok('multi: topDest inclui FAO (do 2.º voo)', ms.topDest.some((d) => d.code === 'FAO'));
+// AE: o per-diem conta os DOIS voos do dia (antes da correção dava só 1 → subcontava).
+const msAe = yearStats(MS, { year: 2026, ae: aeStub, category: 'CPT', now: new Date('2026-06-30T12:00:00') });
+eq('multi: aeYtd.perDiem = 100 (2 voos ×50)', msAe.aeYtd.perDiem, 100);
+// monthStats: mesma soma por serviço.
+const msM = monthStats(MS, { ym: '2026-06', now: new Date('2026-06-30T12:00:00') });
+eq('multi mês: flightMin 380', msM.flightMin, 380);
+eq('multi mês: sectors 4', msM.sectors, 4);
+eq('multi mês: flights 2', msM.flights, 2);
+eq('multi mês: count 1 dia', msM.count, 1);
+eq('multi mês: dia 10 flightMin 380', msM.days[9].flightMin, 380);
+const msMAe = monthStats(MS, { ym: '2026-06', ae: aeStub2, category: 'CPT', now: new Date('2026-06-30T12:00:00') });
+eq('multi mês: aeMonth.perDiem 100 (2 voos)', msMAe.aeMonth.perDiem, 100);
+
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

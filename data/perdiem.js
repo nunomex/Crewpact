@@ -32,10 +32,14 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
     if (!d || d.deleted) continue;
     if (ym && !String(date).startsWith(ym)) continue;
     count++;
-    const dists = routeDistancesNM(d.route);
-    if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
-    total += ae.perDiem(category, dists, index, fleet);   // `fleet` (TAP: WB/NB → coluna A); easyJet ignora o 4.º arg
-    withRoute++;
+    // Per-diem é POR setor voado → soma a primária + cada `extra` do dia (multi-serviço; ORO.FTL.210/Cl.52 contam por serviço).
+    for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+      if (!s) continue;
+      const dists = routeDistancesNM(s.route);
+      if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
+      total += ae.perDiem(category, dists, index, fleet);   // `fleet` (TAP: WB/NB → coluna A); easyJet ignora o 4.º arg
+      withRoute++;
+    }
   }
   return { total: +total.toFixed(2), withRoute, missing, count };
 };
@@ -56,15 +60,18 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
     if (!d || d.deleted) continue;
     if (ym && !String(date).startsWith(ym)) continue;
     count++;
-    const dists = routeDistancesNM(d.route);
-    if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
-    for (const dist of dists) {
-      const band = bands.find((b) => Number(dist) <= b.maxNM) || bands[bands.length - 1];
-      const val = band.mult * nominal;
-      byBand[band.id] += val;
-      total += val;
+    for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {   // primária + extra (multi-serviço)
+      if (!s) continue;
+      const dists = routeDistancesNM(s.route);
+      if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
+      for (const dist of dists) {
+        const band = bands.find((b) => Number(dist) <= b.maxNM) || bands[bands.length - 1];
+        const val = band.mult * nominal;
+        byBand[band.id] += val;
+        total += val;
+      }
+      withRoute++;
     }
-    withRoute++;
   }
   Object.keys(byBand).forEach((k) => { byBand[k] = +byBand[k].toFixed(2); });
   return { total: +total.toFixed(2), byBand, withRoute, missing, count };
@@ -95,16 +102,21 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     if (!d || d.deleted) continue;
     if (ym && !String(date).startsWith(ym)) continue;
     count++;
-    if (d.nightStop) nightStops++;     // paragem nocturna marcada (Art. 39 = 2×NS) — independente do kind
-    const kind = d.kind || 'flight';
-    if (kind === 'office')          { extraSectors += office4;      officeDays++; continue; }
-    if (kind === 'standby_airport') { extraSectors += ADTY_SECTORS; adtyDays++;   continue; }
-    // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
-    if (kind !== 'flight') continue;
-    const dists = routeDistancesNM(d.route);
-    if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
-    flights.push(dists);
-    withRoute++;
+    // Primária + extra (ORO.FTL.210/Cl.52 contam por serviço). Pernoita day-level (Art. 39 = 2×NS, 1 noite/dia).
+    const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+    if (svcs.some((s) => s && s.nightStop)) nightStops++;
+    for (const s of svcs) {
+      if (!s) continue;
+      const kind = s.kind || 'flight';
+      if (kind === 'office')          { extraSectors += office4;      officeDays++; continue; }
+      if (kind === 'standby_airport') { extraSectors += ADTY_SECTORS; adtyDays++;   continue; }
+      // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
+      if (kind !== 'flight') continue;
+      const dists = routeDistancesNM(s.route);
+      if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
+      flights.push(dists);
+      withRoute++;
+    }
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet });
   return { ...month, withRoute, missing, count, officeDays, adtyDays, nightStopDays: nightStops };

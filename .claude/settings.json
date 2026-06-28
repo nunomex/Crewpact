@@ -194,7 +194,8 @@
       "Bash(node pdftext.js tap_spac.pdf)",
       "Bash(node pdftext.js tap_snpvac.pdf)",
       "Bash(node vchk.js tap_spac.pdf)",
-      "Bash(node vchk.js tap_snpvac.pdf)"
+      "Bash(node vchk.js tap_snpvac.pdf)",
+      "WebFetch(domain:eur-lex.europa.eu)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

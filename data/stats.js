@@ -49,23 +49,29 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
     if (!String(date).startsWith(y + '-')) continue;
     const mi = +String(date).slice(5, 7) - 1;
     if (mi < 0 || mi > 11) continue;
-    count++; months[mi].count++;
-    const kind = d.kind || 'flight';
-    byKind[kind] = (byKind[kind] || 0) + 1;
-    if (d.nightStop) nightStops++;
+    count++; months[mi].count++;                 // DIA com serviço (folgas contam-se por dia)
     const dn = dayNum(date);
-    if (dn != null) dutyDayNums.push(dn);
-    const rm = toMin(d.report_time), bo = toMin(d.block_on);
-    if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
-    const dm = dutyMinutes(d, postFlightMin);
-    if (dm != null) { dutyMin += dm; months[mi].dutyMin += dm; }
-    if (kind === 'flight') {
-      flights++;
-      const fm = d.flight_minutes || 0; flightMin += fm; months[mi].flightMin += fm;
-      const sc = d.sectors || 0; sectors += sc; months[mi].sectors += sc;
-      const codes = String(d.route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
-      for (let i = 1; i < codes.length; i++) { const a = codes[i]; if (a) dest[a] = (dest[a] || 0) + 1; }
-      if (codes.length >= 2) withRoute++;
+    if (dn != null) dutyDayNums.push(dn);          // sequência de dias seguidos (day-level)
+    // A EASA conta por PERÍODO DE SERVIÇO (ORO.FTL.210): horas/voo/setores/tipo somam a
+    // primária + TODOS os `extra` do dia (multi-serviço). Pernoita fica day-level (1 noite/dia).
+    const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+    if (svcs.some((s) => s && s.nightStop)) nightStops++;
+    for (const s of svcs) {
+      if (!s) continue;
+      const kind = s.kind || 'flight';
+      byKind[kind] = (byKind[kind] || 0) + 1;
+      const rm = toMin(s.report_time), bo = toMin(s.block_on);
+      if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
+      const dm = dutyMinutes(s, postFlightMin);
+      if (dm != null) { dutyMin += dm; months[mi].dutyMin += dm; }
+      if (kind === 'flight') {
+        flights++;
+        const fm = s.flight_minutes || 0; flightMin += fm; months[mi].flightMin += fm;
+        const sc = s.sectors || 0; sectors += sc; months[mi].sectors += sc;
+        const codes = String(s.route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
+        for (let i = 1; i < codes.length; i++) { const a = codes[i]; if (a) dest[a] = (dest[a] || 0) + 1; }
+        if (codes.length >= 2) withRoute++;
+      }
     }
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
@@ -153,24 +159,29 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     if (!d || d.deleted) continue;
     if (!String(date).startsWith(ymStr + '-')) continue;
     const di = +String(date).slice(8, 10) - 1;
-    count++;
-    const kind = d.kind || 'flight';
-    byKind[kind] = (byKind[kind] || 0) + 1;
-    if (d.nightStop) nightStops++;
+    count++;                                      // DIA com serviço (day-level)
     const dn = dayNum(date);
     if (dn != null) dutyDayNums.push(dn);
-    const rm = toMin(d.report_time), bo = toMin(d.block_on);
-    if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
-    const dm = dutyMinutes(d, postFlightMin);
-    if (dm != null) dutyMin += dm;
-    if (kind === 'flight') {
-      flights++;
-      const fm = d.flight_minutes || 0; flightMin += fm;
-      if (di >= 0 && di < dim) { days[di].flightMin += fm; days[di].count++; }
-      const sc = d.sectors || 0; sectors += sc;
-      const codes = String(d.route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
-      for (let i = 1; i < codes.length; i++) { const a = codes[i]; if (a) dest[a] = (dest[a] || 0) + 1; }
-      if (codes.length >= 2) withRoute++;
+    // Primária + extra (ORO.FTL.210 conta por serviço); pernoita day-level (1 noite/dia).
+    const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+    if (svcs.some((s) => s && s.nightStop)) nightStops++;
+    for (const s of svcs) {
+      if (!s) continue;
+      const kind = s.kind || 'flight';
+      byKind[kind] = (byKind[kind] || 0) + 1;
+      const rm = toMin(s.report_time), bo = toMin(s.block_on);
+      if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
+      const dm = dutyMinutes(s, postFlightMin);
+      if (dm != null) dutyMin += dm;
+      if (kind === 'flight') {
+        flights++;
+        const fm = s.flight_minutes || 0; flightMin += fm;
+        if (di >= 0 && di < dim) { days[di].flightMin += fm; days[di].count++; }
+        const sc = s.sectors || 0; sectors += sc;
+        const codes = String(s.route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
+        for (let i = 1; i < codes.length; i++) { const a = codes[i]; if (a) dest[a] = (dest[a] || 0) + 1; }
+        if (codes.length >= 2) withRoute++;
+      }
     }
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
