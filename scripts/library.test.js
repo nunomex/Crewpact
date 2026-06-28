@@ -54,12 +54,23 @@ const ezCabine = libraryFor({ companySlug: 'easyjet', companyName: 'easyJet', is
 ok('AE easyJet piloto: 1.º link é o SPAC (DRE)', /SPAC/.test(ezPiloto[1].items[0].label) && /diariodarepublica\.pt/.test(ezPiloto[1].items[0].url));
 ok('AE easyJet cabine: 1.º link é o SNPVAC (DRE)', /SNPVAC/.test(ezCabine[1].items[0].label) && /diariodarepublica\.pt/.test(ezCabine[1].items[0].url));
 ok('AE deep-link piloto ≠ cabine (URL)', ezPiloto[1].items[0].url !== ezCabine[1].items[0].url);
-ok('AE deep-links são de domínio OFICIAL (DRE ou BTE)', [AE_DEEPLINKS.easyjet.pilot.url, AE_DEEPLINKS.easyjet.cabin.url].every((u) => /^https:\/\/(files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt)\//.test(u)));
+const allDeepUrls = Object.values(AE_DEEPLINKS).flatMap((c) => [c.pilot.url, c.cabin.url]);
+ok('AE deep-links (todas as companhias) são de domínio OFICIAL (DRE ou BTE)', allDeepUrls.every((u) => /^https:\/\/(files\.diariodarepublica\.pt|bte\.gep\.m(s|t)ess\.gov\.pt)\//.test(u)));
 // Reconhece variações do nome da companhia (ex.: "easyJet Europe").
 const ezEurope = libraryFor({ companySlug: 'easyjet-europe', companyName: 'easyJet Europe', isPilot: true, lang: 'pt' });
 ok('AE: reconhece "easyJet Europe" → deep-link SPAC', /SPAC/.test(ezEurope[1].items[0].label));
-// Companhia desconhecida → só os portais (sem deep-link), mas continua a funcionar.
-const outra = libraryFor({ companySlug: 'tap', companyName: 'TAP', isPilot: true, lang: 'pt' });
+
+// TAP: pilotos = SPAC (AE 30/06/2023); cabine = SNPVAC (em vigor 01/03/2024). Ambos DRE, até 31/12/2026.
+const tapPiloto = libraryFor({ companySlug: 'tap', companyName: 'TAP', isPilot: true, lang: 'pt' });
+const tapCabine = libraryFor({ companySlug: 'tap', companyName: 'TAP', isPilot: false, lang: 'pt' });
+ok('AE TAP piloto: 1.º link é o SPAC (DRE)', /SPAC/.test(tapPiloto[1].items[0].label) && /diariodarepublica\.pt/.test(tapPiloto[1].items[0].url));
+ok('AE TAP cabine: 1.º link é o SNPVAC (DRE)', /SNPVAC/.test(tapCabine[1].items[0].label) && /diariodarepublica\.pt/.test(tapCabine[1].items[0].url));
+ok('AE TAP piloto ≠ cabine (URL)', tapPiloto[1].items[0].url !== tapCabine[1].items[0].url);
+ok('AE TAP ≠ easyJet (deep-links distintos)', tapPiloto[1].items[0].url !== ezPiloto[1].items[0].url && tapCabine[1].items[0].url !== ezCabine[1].items[0].url);
+ok('AE: reconhece slug "tap-air-portugal" → deep-link TAP', /TAP/.test(libraryFor({ companySlug: 'tap-air-portugal', companyName: 'TAP Air Portugal', isPilot: false, lang: 'pt' })[1].items[0].label));
+
+// Companhia SEM deep-link (ex.: Ryanair) → só os portais genéricos, mas continua a funcionar.
+const outra = libraryFor({ companySlug: 'ryanair', companyName: 'Ryanair', isPilot: true, lang: 'pt' });
 ok('AE: companhia sem deep-link → 1.º link é o portal BTE', outra[1].items[0].key === 'bte');
 
 console.log(`\nBiblioteca — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

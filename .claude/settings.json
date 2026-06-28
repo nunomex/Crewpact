@@ -187,7 +187,14 @@
       "Bash(node pdftext.js dre_223256548.pdf)",
       "Bash(timeout 30 node pdftext.js dre_223256548.pdf)",
       "PowerShell(node -e \"const b=require\\('@babel/core'\\);try{b.transformFileSync\\('data/library.js',{presets:['babel-preset-expo']}\\);console.log\\('OK data/library.js'\\)}catch\\(e\\){console.log\\('ERR '+e.message.split\\('\\\\n'\\)[0]\\)}\")",
-      "Bash(node \"C:/Users/funsn/AppData/Local/Temp/claude/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/scratchpad/pdftext.js\" \"C:/Users/funsn/.claude/projects/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/tool-results/webfetch-1782653684313-dxh4fo.pdf\")"
+      "Bash(node \"C:/Users/funsn/AppData/Local/Temp/claude/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/scratchpad/pdftext.js\" \"C:/Users/funsn/.claude/projects/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/tool-results/webfetch-1782653684313-dxh4fo.pdf\")",
+      "Bash(curl -sL -A \"Mozilla/5.0\" -o tap_spac.pdf \"https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/08/08/220186744.pdf\")",
+      "Bash(curl -sL -A \"Mozilla/5.0\" -o tap_snpvac.pdf \"https://files.diariodarepublica.pt/bases_especiais/regtrab/2024/02/22/853385951.pdf\")",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(node pdftext.js tap_spac.pdf)",
+      "Bash(node pdftext.js tap_snpvac.pdf)",
+      "Bash(node vchk.js tap_spac.pdf)",
+      "Bash(node vchk.js tap_snpvac.pdf)"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",

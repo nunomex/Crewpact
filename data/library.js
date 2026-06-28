@@ -31,12 +31,25 @@ export const AE_SOURCES = [
 //  · cabine = SNPVAC → Diário da República (BTE 8/2024, de 29/02/2024), válido até 31/01/2027 —
 //    VERIFICADO (texto extraído: "representados pelo SNPVAC contratados pela Easyjet ... Revisão
 //    global", até 31/01/2027; 0× piloto/SPAC). Link DRE específico (não o boletim inteiro).
+// TAP (Transportes Aéreos Portugueses, SA):
+//  · pilotos = SPAC → DRE (AE de 30/06/2023, Revisão global), vigora até 31/12/2026 — VERIFICADO
+//    (piloto 406×/comandante 15×/cabine 0×; "TAP ... e o SPAC - Sindicato dos Pilotos ... Revisão
+//    global"; "O presente AE vigora até 31 de dezembro de 2026").
+//  · cabine = SNPVAC → DRE (em vigor 01/03/2024, Revisão global), vigência até 31/12/2026 —
+//    VERIFICADO (tripulante de cabine 137×/SPAC 0×; "... SNPVAC - Revisão global"; "prazo de
+//    vigência até 31 de dezembro de 2026").
 export const AE_DEEPLINKS = {
   easyjet: {
-    pilot: { key: 'aeSpac', label: 'AE easyJet · Pilotos (SPAC)', sub: { pt: 'Revisão global · DRE/BTE 40/2023 (até 31/01/2026)', en: 'Global revision · DRE/BTE 40/2023 (until 31/01/2026)' },
+    pilot: { key: 'aeSpac', label: 'AE easyJet · Pilotos (SPAC)', sub: { pt: 'Revisão global · DRE/BTE 40/2023 · até 31/01/2026 (último publicado)', en: 'Global revision · DRE/BTE 40/2023 · until 31/01/2026 (latest published)' },
       url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/10/30/223256548.pdf' },
     cabin: { key: 'aeSnpvac', label: 'AE easyJet · Cabine (SNPVAC)', sub: { pt: 'Revisão global · DRE/BTE 8/2024 (até 31/01/2027)', en: 'Global revision · DRE/BTE 8/2024 (until 31/01/2027)' },
       url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2024/02/29/853938512.pdf' },
+  },
+  tap: {
+    pilot: { key: 'aeTapSpac', label: 'AE TAP · Pilotos (SPAC)', sub: { pt: 'Revisão global · DRE/BTE (AE 30/06/2023, até 31/12/2026)', en: 'Global revision · DRE/BTE (CLA 30/06/2023, until 31/12/2026)' },
+      url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2023/08/08/220186744.pdf' },
+    cabin: { key: 'aeTapSnpvac', label: 'AE TAP · Cabine (SNPVAC)', sub: { pt: 'Revisão global · DRE/BTE (em vigor 01/03/2024, até 31/12/2026)', en: 'Global revision · DRE/BTE (effective 01/03/2024, until 31/12/2026)' },
+      url: 'https://files.diariodarepublica.pt/bases_especiais/regtrab/2024/02/22/853385951.pdf' },
   },
 };
 
@@ -44,6 +57,7 @@ export const AE_DEEPLINKS = {
 const companyKey = (slug, name) => {
   const k = String(slug || name || '').toLowerCase().replace(/[^a-z]/g, '');
   if (k.includes('easyjet')) return 'easyjet';
+  if (k.startsWith('tap')) return 'tap';   // 'tap' / 'tap-air-portugal' → TAP (SPAC/SNPVAC)
   return null;
 };
 
