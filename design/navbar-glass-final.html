@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Recomendado — vidro fosco + inset</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#dfe2e0; --canvas:#f5f6f4; --card:#ffffff; --line:#ececea;
+    --ink:#1b1b1b; --sub:#6b6b66; --faint:#a2a29c; --brand:#1f4e79; --red:#dd3f38;
+    --green:#15924f; --greenSoft:#e2f3e9; --dock:#1f4e79; --dockSub:rgba(255,255,255,.62);
+    --disp:'Space Grotesk',sans-serif; --ui:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;font-family:var(--ui);color:var(--ink);background:var(--page);display:flex;flex-direction:column;align-items:center;gap:9px;padding:30px 16px 70px}
+  h1.t{font-family:var(--disp);font-weight:600;font-size:21px;color:#26292e;text-align:center}
+  .sub{max-width:560px;text-align:center;color:#5a6068;font-size:13px;line-height:1.6}.sub b{color:#26292e}.sub .k{color:var(--green);font-weight:800}
+  .ctrls{display:flex;gap:9px}
+  .b{cursor:pointer;border:1px solid #cfd2d0;background:#fff;color:#26292e;font-family:var(--ui);font-weight:700;font-size:12.5px;padding:9px 15px;border-radius:11px}.b.on{background:#26292e;color:#fff;border-color:#26292e}
+  .badge{font-size:12px;font-weight:800;letter-spacing:.4px;border-radius:999px;padding:5px 13px;background:var(--greenSoft);color:#0c7a3e}
+
+  .phone{width:312px;height:620px;background:var(--canvas);border-radius:42px;overflow:hidden;position:relative;box-shadow:0 32px 64px -24px rgba(20,26,40,.5),0 0 0 1px rgba(0,0,0,.05)}
+  .scr{position:absolute;inset:0;overflow:hidden}
+  .scroller{position:absolute;top:0;left:0;right:0;padding:36px 17px 116px;animation:roll 11s ease-in-out infinite}  /* 116 = inset (barra+frost+margem) */
+  .paused .scroller{animation-play-state:paused}
+  @keyframes roll{0%{transform:translateY(0)}45%,55%{transform:translateY(-360px)}100%{transform:translateY(0)}}
+
+  .ph{display:flex;align-items:center;justify-content:space-between}
+  .eyb{display:flex;align-items:center;gap:7px}.eyb .d{width:6px;height:6px;border-radius:50%;background:var(--red)}.eyb .l{font-size:10px;font-weight:800;letter-spacing:1.2px;color:var(--sub);text-transform:uppercase}
+  .acts{display:flex;gap:8px}.ic{width:33px;height:33px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .ava{width:33px;height:33px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:12px}
+  .h1{font-family:var(--disp);font-weight:600;font-size:24px;margin-top:4px}
+  .svc{margin-top:13px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}
+  .svc .e{font-size:9px;font-weight:800;letter-spacing:1.1px;color:var(--faint);text-transform:uppercase}
+  .svc .r{font-family:var(--disp);font-weight:700;font-size:22px;margin-top:3px}.svc .r .ar{color:var(--brand)}
+  .svc .m{margin-top:3px;font-size:11px;color:var(--sub);font-weight:600}
+  .lh{margin-top:13px;font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:var(--faint);text-transform:uppercase;padding-left:2px}
+  .lr{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-top:8px;display:flex;gap:10px;align-items:center}
+  .lr .ico{font-size:13px;color:var(--faint)}.lr .day{font-size:12px;font-weight:800;width:72px}.lr .x{font-size:11px;color:var(--sub);font-weight:600;flex:1}
+  .lr.lastrow{border-color:#bfe6cd;background:#f4fbf6}
+
+  .sb{position:absolute;top:0;left:0;right:0;z-index:7;display:flex;justify-content:space-between;font-size:11px;font-weight:700;padding:13px 24px 8px;background:linear-gradient(180deg,var(--canvas) 60%,transparent)}
+
+  /* VIDRO FOSCO suave (frost que entra de baixo, sem ser uma 2.ª barra) */
+  .glass{position:absolute;left:0;right:0;bottom:0;height:120px;pointer-events:none;z-index:3;
+    backdrop-filter:blur(16px) saturate(1.06);-webkit-backdrop-filter:blur(16px) saturate(1.06);
+    background:linear-gradient(180deg, rgba(245,246,244,0) 0%, rgba(245,246,244,.32) 55%, rgba(245,246,244,.5) 100%);
+    -webkit-mask-image:linear-gradient(180deg, transparent 0%, #000 42%);mask-image:linear-gradient(180deg, transparent 0%, #000 42%)}
+
+  .dock{position:absolute;left:18px;right:86px;bottom:18px;height:58px;background:var(--dock);border-radius:21px;display:flex;align-items:center;justify-content:space-around;box-shadow:0 18px 38px -12px rgba(15,30,55,.62);z-index:5}
+  .ti{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dockSub);font-size:9px;font-weight:700;position:relative}
+  .ti .ico{font-size:18px}.ti.on{color:#fff}.ti.on::before{content:'';position:absolute;top:-7px;width:4px;height:4px;border-radius:50%;background:var(--red)}
+  .fab{position:absolute;right:18px;bottom:18px;width:58px;height:58px;border-radius:21px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;box-shadow:0 16px 30px -8px rgba(221,63,56,.8);z-index:5}
+  .mk{position:absolute;z-index:8;bottom:128px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;background:#0c7a3e;color:#fff;border-radius:8px;padding:4px 8px;box-shadow:0 6px 14px -6px rgba(0,0,0,.3)}
+</style>
+</head>
+<body>
+  <h1 class="t">Recomendado: <b style="color:var(--green)">vidro fosco + inset</b></h1>
+  <div class="badge">✓ O padrão das melhores apps</div>
+  <p class="sub">Vidro <b>suave</b> (o conteúdo a passar desfoca, premium) <b>+ inset correto</b> (a última linha descansa <b class="k">acima do dock</b>, sempre legível) <b>+ dock navy sólido</b> (ícones com contraste máximo). Vê chegar ao fim:</p>
+  <div class="ctrls"><button class="b on" id="play">⏸ Pausar</button></div>
+
+  <div class="phone"><div class="scr">
+    <div class="sb"><span>9:41</span><span>100%</span></div>
+    <div class="scroller">
+      <div class="ph"><div class="eyb"><span class="d"></span><span class="l">easyJet · Piloto</span></div><div class="acts"><div class="ic">🔔</div><div class="ava">JM</div></div></div>
+      <div class="h1">Olá, João</div>
+      <div class="svc"><div class="e">Próximo serviço · Hoje</div><div class="r">LIS <span class="ar">→</span> LGW</div><div class="m">05:40 → 09:05 · em 4 h 12 m</div></div>
+      <div class="lh">Próximas atividades</div>
+      <div class="lr"><span class="ico">✈</span><span class="day">Qui 26</span><span class="x">LGW→LIS · 10:15→13:30 · S2/2 🌙</span></div>
+      <div class="lr"><span class="ico">⏱</span><span class="day">Sex 27</span><span class="x">Standby aeroporto · 06:00</span></div>
+      <div class="lr"><span class="ico">✈</span><span class="day">Sáb 28</span><span class="x">LIS→AMS→LIS · 07:20 · S1/2</span></div>
+      <div class="lr"><span class="ico">✈</span><span class="day">Dom 29</span><span class="x">LIS→OPO · 16:40 · S1/1</span></div>
+      <div class="lr"><span class="ico">✈</span><span class="day">Seg 30</span><span class="x">OPO→LIS→FNC · 06:10 · S1/2</span></div>
+      <div class="lr"><span class="ico">⏱</span><span class="day">Ter 01</span><span class="x">Standby casa · 12:00</span></div>
+      <div class="lr"><span class="ico">✈</span><span class="day">Qua 02</span><span class="x">LIS→MAD→LIS · 08:30 · S1/2</span></div>
+      <div class="lr lastrow"><span class="ico">✈</span><span class="day">Qui 03</span><span class="x">LIS→CDG · 19:55 · S1/1 — ÚLTIMA</span></div>
+    </div>
+    <div class="glass"></div>
+    <div class="mk">↑ última linha nítida, acima do dock ✓</div>
+    <div class="dock"><div class="ti on"><span class="ico">⌂</span>Início</div><div class="ti"><span class="ico">▥</span>Estat.</div><div class="ti"><span class="ico">▦</span>Escala</div><div class="ti"><span class="ico">◷</span>FTL</div></div>
+    <div class="fab">＋</div>
+  </div></div>
+
+  <p class="sub" style="margin-top:16px">Em <b>movimento</b> os cartões desfocam ao chegar ao dock (vidro); ao <b>parar no fim</b>, a última linha fica limpa acima da barra (inset). Em RN é <b>BlurView (expo-blur)</b> — só dev build, e a app já saiu do Expo Go ✓.</p>
+
+<script>
+  const btn=document.getElementById('play');let p=false;
+  btn.addEventListener('click',()=>{p=!p;document.querySelector('.scr').classList.toggle('paused',p);btn.textContent=p?'▸ Retomar':'⏸ Pausar';btn.classList.toggle('on',!p);});
+</script>
+</body>
+</html>

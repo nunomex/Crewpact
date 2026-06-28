@@ -163,8 +163,14 @@ function FloatingTabBar({ state, navigation }) {
   return (
     <>
       <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
-      {/* Degradê de fundo (canvas) — esconde o conteúdo que passa por trás da barra */}
-      <LinearGradient pointerEvents="none" colors={[C.canvas + '00', C.canvas + '80', C.canvas]} locations={[0, 0.22, 0.36]}
+      {/* Esbatimento de fundo (canvas) — SUAVE, à maneira das melhores apps: transparente
+          em cima (a última linha da lista descansa AQUI, nítida, graças ao inset maior do
+          useTabBarSpace), veludo leve a entrar, e só sólido mesmo ATRÁS do dock. Antes era
+          um bloco sólido de ~140px que tapava o fim da lista; agora só suaviza o conteúdo
+          EM TRÂNSITO junto à barra — o que está parado no fim fica sempre legível. */}
+      <LinearGradient pointerEvents="none"
+        colors={[C.canvas + '00', C.canvas + '00', C.canvas + '40', C.canvas + 'B3', C.canvas]}
+        locations={[0, 0.35, 0.62, 0.85, 1]}
         start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={tbar.fade} />
       {/* Scrim — fecha o menu ao tocar fora. Cobre o ecrã todo (ancorado ao fundo).
           Usa C.scrim (o mesmo overlay dos modais) p/ ser consistente com a app. */}
@@ -265,9 +271,10 @@ function SimulationFlow({ visible, onClose }) {
 }
 
 const tbar = StyleSheet.create({
-  // Degradê de fundo atrás da barra (largura toda, do fundo até ~220px) — sólido
-  // até ~140px (cobre os nomes do FAB) e desvanece suave (~80px, com easing) acima.
-  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
+  // Esbatimento SUAVE atrás da barra (largura toda): transparente em cima → sólido só
+  // mesmo atrás do dock (~últimos 15%). O inset (useTabBarSpace) garante que a última
+  // linha descansa ACIMA disto, legível. (Antes: 220px com bloco sólido que tapava o fim.)
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   // Scrim que escurece o ecrã quando o speed-dial está aberto (toca p/ fechar).
   // A cor (C.scrim) é aplicada inline (vem do tema, não cabe no StyleSheet estático).
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },

@@ -212,7 +212,12 @@
       "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\fids-3-lcd.html\")",
       "PowerShell(\"abertos os 3 FIDS\")",
       "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\perfil-top-avatar.html\")",
-      "PowerShell(\"aberto\")"
+      "PowerShell(\"aberto\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\navbar-bottom-3.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\navbar-inset.html\")",
+      "PowerShell(Start-Process \"D:\\\\PROJECTOS\\\\CrewPact\\\\design\\\\navbar-glass-final.html\")",
+      "Bash(node scratchpad/babel-all.js)",
+      "Bash(node \"C:/Users/funsn/AppData/Local/Temp/claude/d--PROJECTOS-CrewPact/b0056018-4b71-41fb-9179-0baa2eb87736/scratchpad/babel-check.js\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\funsn\\AppData\\Local\\Temp",
