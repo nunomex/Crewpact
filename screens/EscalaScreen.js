@@ -12,7 +12,7 @@ import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
 import { legZulu } from '../data/zulu';
-import NotificationsBell from '../components/NotificationsBell';
+import HeaderActions from '../components/HeaderActions';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import Eyebrow from '../components/Eyebrow';
@@ -276,7 +276,7 @@ export default function EscalaScreen({ navigation, route }) {
               </>
             ) : null}
             <TouchableOpacity onPress={openHub} hitSlop={6} style={s.ib} accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
-            <NotificationsBell />
+            <HeaderActions />
           </View>
         </View>
 

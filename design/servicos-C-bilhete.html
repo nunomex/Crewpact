@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Serviços — C · Carta de Embarque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#eceef0; --card:#ffffff; --line:#e7e7e3; --ink:#191a1c; --sub:#6c6c66; --faint:#a6a69f;
+    --brand:#1f4e79; --green:#15924f; --greenSoft:#e2f3e9; --greenTx:#107a40; --greenBd:#bfe6cd;
+    --warn:#c2790f; --red:#cb2f1e; --redSoft:#fde7e3; --redTx:#b82a1a; --redBd:#f2c2ba;
+    --disp:'Hanken Grotesk',system-ui,sans-serif; --mono:'Martian Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;font-family:var(--disp);color:var(--ink);
+    background:radial-gradient(900px 500px at 50% -8%, #f3f4f6 0%, transparent 60%),var(--page);
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 16px 70px}
+  .lead{max-width:540px;text-align:center}.lead h1{font-weight:800;font-size:18px;letter-spacing:-.3px}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:var(--brand);background:#e9f0f7;border-radius:999px;padding:4px 11px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:var(--sub);line-height:1.55}.lead b{color:var(--ink)}
+
+  .wrap{width:432px;max-width:96vw}
+  .ticket{position:relative;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 64px -30px rgba(20,24,34,.4);overflow:hidden}
+  .anim .reveal{opacity:0;transform:translateY(9px);animation:rise .62s cubic-bezier(.2,.8,.25,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .sec{padding:18px 20px}
+
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .eye{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--faint);text-transform:uppercase}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:1.2px;color:var(--greenTx)}
+  .live i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.9s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(21,146,79,.5)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+  .main{display:flex;gap:15px;align-items:stretch;margin-top:14px}
+  /* talão do dia — pintado pelo estado */
+  .stub{flex:0 0 auto;width:66px;border-radius:14px;background:var(--greenSoft);border:1px solid var(--greenBd);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 0}
+  .ticket.illegal .stub{background:var(--redSoft);border-color:var(--redBd)}
+  .stub .n{font-family:var(--mono);font-weight:700;font-size:28px;color:var(--greenTx);line-height:1}
+  .ticket.illegal .stub .n{color:var(--redTx)}
+  .stub .w{font-size:9.5px;font-weight:800;letter-spacing:1.4px;color:var(--greenTx);text-transform:uppercase}
+  .ticket.illegal .stub .w{color:var(--redTx)}
+  .content{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+  .seye{font-size:10px;font-weight:800;letter-spacing:1.3px;color:var(--sub);text-transform:uppercase}
+  .route{font-family:var(--mono);font-weight:700;font-size:30px;letter-spacing:-1px;color:var(--ink);margin-top:5px;display:flex;align-items:center;gap:8px}
+  .route .ar{color:var(--brand);font-size:24px}
+  .tl{margin-top:7px;font-family:var(--mono);font-size:13px;color:var(--ink)}.tl .z{color:var(--greenTx);font-size:11.5px}
+  .cd{margin-top:7px;font-size:12px;color:var(--sub);font-weight:600}.cd b{color:var(--ink)}
+  .night{margin-top:6px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--warn);font-weight:700}
+
+  /* DIVISÓRIA PICOTADA — a assinatura do bilhete */
+  .perf{position:relative;height:24px}
+  .perf::before{content:'';position:absolute;top:50%;left:18px;right:18px;border-top:2px dashed var(--line)}
+  .notch{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:var(--page);border:1px solid var(--line);transform:translateY(-50%)}
+  .notch.l{left:-11px}.notch.r{right:-11px}
+  .ticket.illegal .perf::before{border-color:var(--redBd)}
+
+  /* talão de dados (grelha) */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px;padding:6px 20px 18px}
+  .cell .l{font-size:9px;font-weight:800;letter-spacing:.6px;color:var(--faint);text-transform:uppercase}
+  .cell .v{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink);margin-top:3px}.cell .v .s{color:var(--sub);font-size:11px}
+  .cell .v.green{color:var(--greenTx)} .ticket.illegal #c-psv .v{color:var(--redTx)}
+  .cell .fat{margin-top:3px;display:inline-flex;align-items:center;gap:6px;background:var(--greenSoft);border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;color:var(--greenTx)}.cell .fat i{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+  .foot{border-top:1px solid var(--line);background:#fafaf8}
+  .uh{font-size:10px;font-weight:800;letter-spacing:1.4px;color:var(--faint);text-transform:uppercase;padding:14px 20px 2px}
+  .row{display:flex;align-items:center;gap:11px;padding:8px 20px;border-top:1px solid var(--line)}
+  .row .i{width:15px;text-align:center;color:var(--faint);font-size:13px}.row .d{width:90px;font-size:12px;font-weight:800;color:var(--ink)}
+  .row .x{flex:1;font-family:var(--mono);font-size:11.5px;color:var(--sub)}.row .x .z{color:var(--greenTx)}
+  .row.last{padding-bottom:14px}
+
+  .btns{display:flex;gap:9px}
+  .b{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:var(--disp);font-weight:700;font-size:12.5px;padding:9px 14px;border-radius:11px}
+  .b.p{background:var(--ink);color:#fff;border-color:var(--ink)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>C · Carta de Embarque “Flight Deck”</h1><div class="t">Bilhete · objeto de papel</div>
+    <p>O card como um <b>cartão de embarque</b>: talão do dia (pinta-se de verde/vermelho pelo estado), <b>códigos IATA gigantes</b> em mono, e a <b>divisória picotada</b> a separar o voo do talão de dados. A cor do talão responde "estou legal?".</p>
+  </div>
+  <div class="btns"><button class="b p" id="replay">▸ Re-animar</button><button class="b" id="toggle">legal ⇄ ilegal</button></div>
+
+  <div class="wrap">
+    <div class="ticket anim" id="card">
+      <div class="sec reveal"><div class="top"><span class="eye">Serviços</span><span class="live"><i></i>AO VIVO</span></div>
+        <div class="main">
+          <div class="stub"><div class="n">26</div><div class="w">Qui</div></div>
+          <div class="content">
+            <div class="seye">Voo · Setor 1/2</div>
+            <div class="route">LIS<span class="ar">→</span>LGW</div>
+            <div class="tl">05:40 → 09:05 <span class="z">0440–0805Z</span></div>
+            <div class="cd"><b>Hoje</b> · em 4 h 12 m</div>
+            <div class="night">🌙 Paragem nocturna em LGW</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="perf reveal"><span class="notch l"></span><span class="notch r"></span></div>
+
+      <div class="grid reveal">
+        <div class="cell"><div class="l">Report</div><div class="v">05:40 <span class="s">local</span></div></div>
+        <div class="cell" id="c-psv"><div class="l">PSV máx</div><div class="v" id="psvc">10:25<span class="s"> / 13:00</span></div></div>
+        <div class="cell"><div class="l">Per-diem</div><div class="v green">+38,00 €</div></div>
+        <div class="cell"><div class="l">Setores</div><div class="v">2</div></div>
+        <div class="cell"><div class="l">Block</div><div class="v">1:55</div></div>
+        <div class="cell"><div class="l">Fadiga</div><div class="fat"><i></i>Baixa</div></div>
+      </div>
+
+      <div class="foot reveal">
+        <div class="uh">Próximas atividades</div>
+        <div class="row"><span class="i">✈</span><span class="d">Qui 26 jun</span><span class="x">LGW→LIS · 10:15→13:30 <span class="z">0915–1230Z</span> · Set 2/2 · 🌙</span></div>
+        <div class="row"><span class="i">⏱</span><span class="d">Sex 27 jun</span><span class="x">STANDBY AEROPORTO · 06:00</span></div>
+        <div class="row last"><span class="i">✈</span><span class="d">Sáb 28 jun</span><span class="x">LIS→AMS→LIS · 07:20 · Set 1/2</span></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const card=document.getElementById('card');
+  function replay(){ card.classList.remove('anim'); void card.offsetWidth; card.classList.add('anim');
+    [...card.querySelectorAll('.reveal')].forEach((el,i)=>el.style.animationDelay=(i*90)+'ms'); }
+  document.getElementById('replay').addEventListener('click',replay);
+  document.getElementById('toggle').addEventListener('click',()=>{
+    const ill=card.classList.toggle('illegal');
+    document.getElementById('psvc').innerHTML=ill?'13:10<span class="s"> / 13:00</span>':'10:25<span class="s"> / 13:00</span>';
+    document.querySelector('.stub .n').textContent='26';
+  });
+  window.addEventListener('load',()=>setTimeout(replay,200));
+</script>
+</body>
+</html>

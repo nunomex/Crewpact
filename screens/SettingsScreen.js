@@ -7,7 +7,6 @@ import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
-import NotificationsBell from '../components/NotificationsBell';
 import PrimaryButton from '../components/PrimaryButton';
 import Eyebrow from '../components/Eyebrow';
 import useEnter from '../hooks/useEnter';
@@ -236,10 +235,19 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      {/* Perfil é um MODAL que sobe (abre pelo avatar): grabber (arrastar p/ baixo fecha) + ✕ Fechar. */}
+      <View style={{ width: 38, height: 5, borderRadius: 3, backgroundColor: C.line, alignSelf: 'center', marginTop: 6 }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
 
-        {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) */}
-        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)} right={<NotificationsBell />} />
+        {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) + ✕ Fechar */}
+        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)}
+          right={
+            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}
+              style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}
+              accessibilityLabel={t('common.close', lang)}>
+              <Ionicons name="close" size={20} color={C.text} />
+            </TouchableOpacity>
+          } />
 
         {/* User card escuro (mockup .uca) — avatar vermelho + nome + email */}
         {user && (() => {

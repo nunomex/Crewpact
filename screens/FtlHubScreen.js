@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
-import NotificationsBell from '../components/NotificationsBell';
+import HeaderActions from '../components/HeaderActions';
 import AeCalcs from '../components/AeCalcs';
 import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
@@ -50,7 +50,7 @@ export default function FtlHubScreen({ navigation }) {
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
           <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
-            right={<NotificationsBell />} />
+            right={<HeaderActions />} />
           <Animated.View style={seg(0)}>
             <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} fleet={crewFleet} duties={duties || []}
               lifestyle={!!caps.lifestyle} instructorRated={instructorRated} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
@@ -84,7 +84,7 @@ export default function FtlHubScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={l('Cálculos', 'Calculations')}
-          right={<NotificationsBell />} />
+          right={<HeaderActions />} />
         {/* Estado 'pending': há acordo coletivo publicado, ainda não modelado → honestidade. */}
         {aeStatus === 'pending' ? (
           <Banner tone="info" icon="document-text-outline"

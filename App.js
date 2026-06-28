@@ -10,7 +10,7 @@ TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -232,8 +232,20 @@ function MainTabs() {
       <Tab.Screen name="Estatísticas" component={StatsScreen} />
       <Tab.Screen name="Escala"       component={EscalaStack} />
       <Tab.Screen name="FTL"    component={FtlStack} />
-      <Tab.Screen name="Perfil" component={PerfilStack} />
     </Tab.Navigator>
+  );
+}
+
+// Root: 4 abas operacionais + Perfil EMPURRADO por cima (já não é aba). O avatar do
+// cabeçalho (HeaderActions) navega para "Perfil"; o "‹ Voltar" do Perfil volta às abas.
+function RootNav() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Tabs"   component={MainTabs} />
+      {/* Perfil = MODAL que sobe (abre pelo avatar do cabeçalho); arrastar p/ baixo fecha. */}
+      <Stack.Screen name="Perfil" component={PerfilStack}
+        options={{ ...TransitionPresets.ModalSlideFromBottomIOS, gestureEnabled: true }} />
+    </Stack.Navigator>
   );
 }
 
@@ -940,7 +952,7 @@ export default function App() {
       </View>
     );
     if (!onboarded)  return <OnboardingScreen />;
-    return <MainTabs />;
+    return <RootNav />;
   };
 
   const palette = PALETTES[theme] || PALETTES.light;

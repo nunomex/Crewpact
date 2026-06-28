@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
-import NotificationsBell from '../components/NotificationsBell';
+import HeaderActions from '../components/HeaderActions';
 import Banner from '../components/Banner';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
@@ -559,7 +559,7 @@ export default function HomeScreen({ navigation }) {
         <PageHeader
           eyebrow={opEyebrow}
           title={`${t('home.hello', lang)}${firstName ? `, ${firstName}` : ''}`}
-          right={<NotificationsBell />}
+          right={<HeaderActions />}
         />
 
         {/* Aviso de VOO ao vivo — SÓ quando há desvio (atraso/cancelado/desviado). Estado do

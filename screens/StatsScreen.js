@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
-import NotificationsBell from '../components/NotificationsBell';
+import HeaderActions from '../components/HeaderActions';
 import CountUp from '../components/CountUp';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -132,7 +132,7 @@ export default function StatsScreen() {
         <PageHeader
           eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
           title={isYear ? l('O teu ano', 'Your year') : l('O teu mês', 'Your month')}
-          right={<NotificationsBell />}
+          right={<HeaderActions />}
         />
 
         {/* Toggle Mês ⇄ Ano */}
