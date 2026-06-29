@@ -1,0 +1,20 @@
+#!/bin/sh
+# ─────────────────────────────────────────────────────────────────────────────
+# CrewOS · Portão pre-push  (Constituição §8/§9)
+# Torna a governação INEVITÁVEL: corre os golden + o portão de vigência ANTES de
+# cada push. Se algo falhar, o push é ABORTADO.
+#
+# Ativação: AUTOMÁTICA via `prepare` do npm (corre em cada `npm install`). Manual: npm run setup:hooks.
+# Limite honesto: é local e CONTORNÁVEL (git push --no-verify) e NÃO corre em CI/noutras máquinas —
+#   a imposição a sério seria CI (ver Constituição §9). Isto é um aviso antecipado, não uma imposição.
+# ─────────────────────────────────────────────────────────────────────────────
+echo "▶ CrewOS pre-push — a correr 'npm test' (golden + vigência)…"
+npm test
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "✗ pre-push BLOQUEADO: 'npm test' falhou. Corrige antes do push."
+  echo "  (--no-verify força, mas contraria a Definição de Feito §8.)"
+  exit 1
+fi
+echo "✓ pre-push: tudo verde. Push autorizado."
+exit 0

@@ -7,3 +7,8 @@ dist
 # Native (CNG) — geradas pelo prebuild/expo run, não versionar
 /android
 /ios
+
+# Claude Code — config pessoal/por-máquina (permissões auto-aprovadas, paths locais).
+# São específicas do utilizador/máquina, não config partilhada → não versionar.
+.claude/settings.json
+.claude/settings.local.json

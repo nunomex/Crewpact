@@ -77,6 +77,14 @@ export const AE_VALID_FROM = '2023-02-01';
 export const AE_VALID_UNTIL = '2026-01-31';
 export const isAgreementExpired = (ref = new Date()) =>
   +new Date(ref) > +new Date(`${AE_VALID_UNTIL}T23:59:59`);
+// RECONHECIDO (Constituição §5/§9): o AE expirou (31-jan-2026) e ainda não há novo BTE
+// publicado. A app mostra os valores de tabela como REFERÊNCIA (AeCalcs/Início/Stats) e o
+// portão `test:vigencia` trata isto como EXPIRADO-RECONHECIDO — não como esquecimento.
+// `checked` = última vez que se verificou que NÃO há novo BTE (o portão avisa quando fica
+// velho, > 6 meses). Verif. 2026-06-29 (fontes oficiais): DRE sem AE publicado pós-BTE 40/2023;
+// SPAC "easyJet CLA Meetings Update" (jan-2026) = negociações, acesso restrito a membros.
+// Quando sair novo AE: atualizar tabelas + datas e rever/remover este reconhecimento.
+export const AE_EXPIRY_ACK = { acknowledged: true, status: 'aguarda-novo-BTE', since: '2026-01-31', checked: '2026-06-29' };
 
 export const SALARY_INSTALMENTS = 14;   // Art. 36 — 14 prestações/ano (2 = férias + Natal)
 export const NIGHT_STOP_SECTORS = 2;    // Art. 39 — paragem nocturna = 2 setores nominais

@@ -11,6 +11,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "sim": "node scripts/simulate.js",
+    "setup:hooks": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "test:ftl": "node scripts/ftl-golden.test.js",
     "test:ae": "node scripts/ae-golden.test.js",
     "test:pdf": "node scripts/pdf-roster.test.js",
@@ -22,7 +24,8 @@
     "test:zulu": "node scripts/zulu.test.js",
     "test:record": "node scripts/record.test.js",
     "test:library": "node scripts/library.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library"
+    "test:vigencia": "node scripts/vigencia.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

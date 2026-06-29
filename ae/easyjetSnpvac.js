@@ -28,6 +28,14 @@ export const BASE_ANNUAL = { CM: 23198, CMP: 18914, FA: 18852 };
 // Anexo I.2 — Setor nominal (€), Nov-2025.
 export const NOMINAL_SECTOR = { CM: 32.50, CMP: 24.00, FA: 21.00, FA1: 13.45 };
 
+// Vigência do AE (easyJet × SNPVAC, BTE/DRE): 1 fev 2023 → 31 jan 2027. Depois disto os
+// valores de tabela passam a REFERÊNCIA até novo acordo. Mesmo mecanismo dos pilotos
+// (ae/easyjetSpac.js) — proveniência de 1.ª classe p/ o portão `test:vigencia` (Constituição §5/§9).
+export const AE_VALID_FROM = '2023-02-01';
+export const AE_VALID_UNTIL = '2027-01-31';
+export const isAgreementExpired = (ref = new Date()) =>
+  +new Date(ref) > +new Date(`${AE_VALID_UNTIL}T23:59:59`);
+
 export const SALARY_INSTALMENTS = 14;   // 14 prestações/ano (2 = férias + Natal)
 export const NIGHT_STOP_EUR = 46;        // Art. 56 / Anexo I.7 — pernoita = €46 FIXOS (≠ pilotos)
 export const HOLIDAY_DAY_SECTORS = 2;    // Anexo I.3 — dia de férias = 2 setores nominais

@@ -32,6 +32,13 @@ import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm } from './utils/time';
 
+// Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
+// dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
+// versão um registo foi computado e possa re-avaliar SÓ os afetados. REGRA: incrementar
+// SEMPRE que uma regra/tabela FTL ou um cálculo muda (mesmo correção de bug). Pré-requisito
+// da errata fina — hoje só CARIMBA (a deteção de afetados e o recompute vêm depois).
+export const ENGINE_VERSION = 1;
+
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
 //   `postFlightMin` = serviço pós-voo (min) após o fim do PSV (calços). O repouso
@@ -165,7 +172,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
   const usedExtension = !!d.fdp.over && repMin != null && !extFdp.notAllowed
     && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
   return {
-    src: 'duty',
+    src: 'duty', engineVer: ENGINE_VERSION,
     psv: {
       state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: d.fdp.maxFdpStr,
       band: d.fdp.band, start: duty.report_time, end: duty.block_on,
@@ -241,7 +248,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   }
   const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
   const restShort = between.some((b) => b.kind === 'continuous'); // algum par perto demais (não são 2)
-  return { src: 'duty', psv: worst.psv, servico, voo, rest: last.rest, parts: entries.map((e) => e.psv), between, split, restShort };
+  return { src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv, servico, voo, rest: last.rest, parts: entries.map((e) => e.psv), between, split, restShort };
 };
 
 // Reconstrói as entradas FTL DERIVADAS (src:'duty') em FALTA no `dayLog`, a partir

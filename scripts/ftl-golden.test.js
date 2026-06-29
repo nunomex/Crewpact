@@ -229,6 +229,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // Duty legal: 06:00→18:00 (PSV 12:00), 1 setor, 10h de voo.
   const e = dutyToFtlDay({ report_time: '06:00', block_on: '18:00', sectors: 1, flight_minutes: 600 });
   eq('Adapter src=duty', e.src, 'duty');
+  eq('Adapter carimba engineVer (errata §E6)', e.engineVer, ftl.ENGINE_VERSION);
   eq('Adapter PSV result', e.psv.result, '12:00');
   eq('Adapter PSV max (acc 06:00 1set)', e.psv.max, '13:00');
   eq('Adapter dentro do limite', e.psv.over, false);
@@ -242,6 +243,15 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Adapter serviço ilegal (h)', il.servico, 14);
   // Sem on-block → null (sem dados FTL).
   eq('Adapter sem block_on → null', dutyToFtlDay({ report_time: '06:00' }), null);
+}
+
+// ─────────── Proveniência das fontes FTL (Constituição §5) ───────────
+{
+  const { FTL_SOURCES } = require(path.resolve('ftl/sources.js'));
+  eq('Fontes FTL: há registo (≥2)', FTL_SOURCES.length >= 2, true);
+  eq('Fontes FTL: só domínios oficiais (EUR-Lex/EASA)', FTL_SOURCES.every((s) => /^https:\/\/(eur-lex\.europa\.eu|www\.easa\.europa\.eu)\//.test(s.url)), true);
+  eq('Fontes FTL: cada uma tem lastVerified', FTL_SOURCES.every((s) => typeof s.lastVerified === 'string'), true);
+  eq('Reg 83/2014 aplica desde 18-02-2016 (art. 2.º)', FTL_SOURCES.find((s) => s.id === 'reg-83-2014').effectiveFrom, '2016-02-18');
 }
 
 // ─────────── Standby de casa: 25% conta p/ cumulativos (CS FTL.1.225(b)(3) + GM1(c)) ───────────

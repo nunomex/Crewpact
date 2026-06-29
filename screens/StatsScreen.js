@@ -284,6 +284,7 @@ export default function StatsScreen() {
                 {!isYear && aeBlock.nightStops ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Pernoitas', 'Night stops')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.nightStops)}</Text></View> : null}
                 <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={aeBlock.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
                 {aeBlock.missing ? <Text style={s.aeMiss}>{aeBlock.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
+                {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.aeMiss}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
               </Animated.View>
             ) : null}
 

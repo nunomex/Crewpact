@@ -332,6 +332,12 @@ eq('base CPT indexada 2025 (×1.024)', ae.monthlyBase('CPT', { index: ae.indexFa
 eq('AE vigência até jan-2026', ae.AE_VALID_UNTIL, '2026-01-31');
 eq('AE não expirado em jan-2026', ae.isAgreementExpired(new Date('2026-01-15')), false);
 eq('AE expirado em jun-2026', ae.isAgreementExpired(new Date('2026-06-23')), true);
+eq('AE pilotos expirado-RECONHECIDO (§5/§9)', !!(ae.AE_EXPIRY_ACK && ae.AE_EXPIRY_ACK.acknowledged), true);
+eq('AE ack tem data de verificação (checked)', typeof (ae.AE_EXPIRY_ACK || {}).checked, 'string');
+// Cabine (SNPVAC): vigência até 31 jan 2027 → ainda NÃO expirada; mecanismo de vigência presente.
+eq('Cabine vigência até jan-2027', cabin.AE_VALID_UNTIL, '2027-01-31');
+eq('Cabine não expirada em jun-2026', cabin.isAgreementExpired(new Date('2026-06-23')), false);
+eq('Cabine expirada em fev-2027', cabin.isAgreementExpired(new Date('2027-02-01')), true);
 
 // ── Art. 46 — bónus de performance anual (alvo, por categoria) ──
 eq('bónus CPT (10% base)', ae.perfBonus('CPT'), 12200);          // 0.10×122000
