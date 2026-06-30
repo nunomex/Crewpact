@@ -128,6 +128,7 @@ Uma mudança só está **"feita"** quando:
 
 - Não é rede social de tripulação. Não é chat. Não é marketplace de trocas de voo. **Não usa AI generativa dentro da app** (respostas são determinísticas e factuais).
 - **Não** suporta "todas as companhias" — só as que valida.
+- **Não** modela jurisdições fora da UE. *"FTL universal"* significa **uma lei para piloto+cabine, igual em todas as companhias — dentro da UE (EASA)**; **não** "global". Uma companhia não-UE (ex.: FAA/EUA) é **jurisdição nova**, modelada e validada via §5 (como qualquer companhia no Q2) — quando vier.
 - **Não** vai multi-plataforma antes da fundação (§7).
 
 *(Sem esta lista, "simplicidade" é decorativa.)*
