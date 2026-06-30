@@ -26,7 +26,7 @@ import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { fetchFlightStatus, depDelayMin, hasDeviation } from '../data/flightStatus';
+import { fetchFlightStatus, hasDeviation, worstDelay } from '../data/flightStatus';
 import CountUp from '../components/CountUp';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
@@ -472,6 +472,11 @@ export default function HomeScreen({ navigation }) {
             {countdownStr ? (
               <Text style={s.svcCd} numberOfLines={1}>{ndWhen ? <Text style={s.svcCdDay}>{ndWhen} · </Text> : null}{countdownStr}</Text>
             ) : null}
+            {/* Confirmação POSITIVA ao vivo — SÓ quando a API confirma SEM desvio (senão não afirmamos
+                "a horas" sem saber; o desvio tem o seu próprio card em cima). Subtil, no contexto do serviço. */}
+            {flightStatus && !hasDeviation(flightStatus) ? (
+              <Text style={s.svcOntime} numberOfLines={1}>✓ {l('A horas', 'On time')}{flightStatus.dep && flightStatus.dep.gate ? ` · ${l('porta', 'gate')} ${flightStatus.dep.gate}` : ''}</Text>
+            ) : null}
             {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
           </View>
         </View>
@@ -569,21 +574,24 @@ export default function HomeScreen({ navigation }) {
           const cancelled = st === 'cancelled' || st === 'canceled';
           const diverted = st === 'diverted';
           const bad = cancelled || diverted;
-          const delay = depDelayMin(flightStatus);
+          const w = worstDelay(flightStatus);            // { min, which:'dep'|'arr' } — o PIOR conta
+          const isArr = w.which === 'arr';
           const tone = bad ? C.red : C.warn, soft = bad ? C.redSoft : C.warnSoft, txt = bad ? C.redText : C.warnText;
-          const hm = (s) => (s ? String(s).slice(11, 16) : '—');
-          const dep = flightStatus.dep || {};
+          const hm = (x) => (x ? String(x).slice(11, 16) : '—');
+          const dep = flightStatus.dep || {}, arr = flightStatus.arr || {};
+          const leg = isArr ? arr : dep;                 // o lado relevante (partida vs chegada)
           const head = cancelled ? l('Voo cancelado', 'Flight cancelled')
             : diverted ? l('Voo desviado', 'Flight diverted')
-            : l(`Atrasado +${delay} min`, `Delayed +${delay} min`);
+            : isArr ? l(`Chega +${w.min} min`, `Arrives +${w.min} min`)
+            : l(`Atrasado +${w.min} min`, `Delayed +${w.min} min`);
           return (
             <Animated.View style={[s.fdelay, { backgroundColor: soft, borderColor: tone + '55' }, seg(1)]}>
               <Ionicons name={cancelled ? 'close-circle' : diverted ? 'git-branch-outline' : 'time'} size={18} color={tone} style={{ marginTop: 1 }} />
               <View style={{ flex: 1 }}>
-                <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo}{dep.iata ? ` · ${dep.iata}→${flightStatus.arr?.iata || '—'}` : ''}</Text>
+                <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo}{dep.iata ? ` · ${dep.iata}→${arr.iata || '—'}` : ''}</Text>
                 <Text style={[s.fdelayH, { color: txt }]} numberOfLines={1}>{head}</Text>
-                {!bad ? <Text style={s.fdelayS} numberOfLines={2}>{l('Sai', 'Departs')} {hm(dep.estimated || dep.actual)} · {l('estava', 'was')} {hm(dep.scheduled)}{dep.gate ? ` · ${l('porta', 'gate')} ${dep.gate}` : ''}</Text> : null}
-                {!bad && delay >= 30 ? <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text> : null}
+                {!bad ? <Text style={s.fdelayS} numberOfLines={2}>{isArr ? l('Chega', 'Arrives') : l('Sai', 'Departs')} {hm(leg.estimated || leg.actual)} · {l('estava', 'was')} {hm(leg.scheduled)}{!isArr && dep.gate ? ` · ${l('porta', 'gate')} ${dep.gate}` : ''}</Text> : null}
+                {!bad && w.min >= 30 ? <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text> : null}
               </View>
             </Animated.View>
           );
@@ -708,6 +716,7 @@ const makeStyles = (C) => StyleSheet.create({
   svcTimes: { fontSize: 13, fontFamily: FONT.bold, color: C.text, marginTop: 5, fontVariant: ['tabular-nums'] },
   svcTimesZ: { fontFamily: FONT.bold, color: C.brand },
   svcNight: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 5 },
+  svcOntime: { fontSize: 11.5, fontFamily: FONT.bold, color: C.greenText, marginTop: 6 },   // confirmação "a horas" ao vivo (subtil)
   // risca full-bleed + grelha 3 colunas (Report·Zulu·PSV / Setores·Per-diem·Fadiga)
   svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },
   svcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 15, marginTop: 16 },

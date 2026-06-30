@@ -19,18 +19,6 @@ export async function fetchFlightStatus(flight) {
   }
 }
 
-// Atraso de partida em minutos (preferindo o campo da API; senão deriva de agendada→estimada).
-export function depDelayMin(s) {
-  if (!s || !s.dep) return 0;
-  if (s.dep.delayMin != null) return Math.max(0, Math.round(s.dep.delayMin));
-  const sch = s.dep.scheduledTs, est = s.dep.estimatedTs || s.dep.actualTs;
-  return (sch && est) ? Math.max(0, Math.round((est - sch) / 60)) : 0;
-}
-
-// Há desvio que justifique mostrar o card? atraso ≥ `minMinutes` OU status anómalo.
-export function hasDeviation(s, minMinutes = 15) {
-  if (!s) return false;
-  const st = String(s.status || '').toLowerCase();
-  if (['delayed', 'cancelled', 'canceled', 'diverted'].includes(st)) return true;
-  return depDelayMin(s) >= minMinutes;
-}
+// A lógica de desvio/atraso (PURA) vive em ./flightDelay — testável por golden (sem supabase).
+// Re-exportada aqui para os consumidores continuarem a importar tudo de um só sítio.
+export { depDelayMin, arrDelayMin, hasDeviation, worstDelay } from './flightDelay';
