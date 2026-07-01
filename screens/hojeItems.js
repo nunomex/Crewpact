@@ -4,7 +4,7 @@
 import { catLabel } from '../data/extras';
 import { t } from '../data/i18n';
 import { legalStatus, headroomStatus, nextDutyStatus, restStatus, rosterStatus, payStatus } from '../data/today';
-import { validityStatus, validityLabel, sortValidities } from '../data/validities';
+import { validityStatus, validityLabel, sortValidities, isNoExpiryType } from '../data/validities';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
 export const winLbl = (id, days, lang) =>
@@ -148,10 +148,11 @@ export function buildTodayItems(ctx, lang) {
     });
   }
 
-  // 6 · Validades & Documentos (premium) — só aparece se houver itens registados.
-  if (validities && validities.length) {
+  // 6 · Validades & Documentos (premium) — só o que EXPIRA alarma; referências (licença/CCA) ficam de fora.
+  const trackedVal = (validities || []).filter((v) => !isNoExpiryType(v.type));
+  if (trackedVal.length) {
     const RANK = { expired: 0, expiring: 1, valid: 2, none: 3 };
-    const withSt = validities.map((v) => ({ ...v, st: validityStatus(v.expiry) }));
+    const withSt = trackedVal.map((v) => ({ ...v, st: validityStatus(v.expiry) }));
     const worst = withSt.reduce((a, b) => ((RANK[a.st.band] ?? 3) <= (RANK[b.st.band] ?? 3) ? a : b));
     const status = worst.st.band === 'expired' ? 'bad' : worst.st.band === 'expiring' ? 'warn' : 'ok';
     let answer, suggestion = null;

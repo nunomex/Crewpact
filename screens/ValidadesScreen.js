@@ -9,23 +9,21 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
-import { validityCatalog, validityStatus, validityLabel, sortValidities } from '../data/validities';
-import { detectRecurrents } from '../data/recurrents';
+import { validityCatalog, validityStatus, validityLabel, sortValidities, isNoExpiryType } from '../data/validities';
 
 // "Validades & Documentos" (premium v1) — radar pessoal do que expira (médico,
 // recorrentes, licença, passaporte…). Lista com estado a cores + adicionar/editar.
 // Guardado localmente (AppContext → AsyncStorage). Lembretes/cofre = fases seguintes.
 export default function ValidadesScreen({ navigation }) {
-  const { validities, addValidity, updateValidity, removeValidity, isPilot, lang } = useContext(AppContext);
+  const { validities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
-  const catalog = validityCatalog(isPilot);
+  const catalog = validityCatalog(isPilot, { instructorRated });
 
   const [editing, setEditing] = useState(null);          // null | { id?, type, d, m, y }
-  const [scan, setScan] = useState(null);                // null | { text, results: [] | null } — detetar da escala
   const openAdd = () => { select(); setEditing({ type: catalog[0].id, d: '', m: '', y: '' }); };
   const openEdit = (item) => {
     select();
@@ -36,6 +34,7 @@ export default function ValidadesScreen({ navigation }) {
   const bandColor = (b) => (b === 'valid' ? C.green : b === 'expiring' ? C.warn : b === 'expired' ? C.red : C.sub); // fill (dot)
   const bandTextColor = (b) => (b === 'valid' ? C.greenText : b === 'expiring' ? C.warnText : b === 'expired' ? C.redText : C.sub); // texto acessível
   const bandLabel = (st) =>
+    st.band === 'reference' ? l('referência · não expira', 'reference · no expiry') :
     st.band === 'none' ? l('sem data', 'no date') :
     st.band === 'expired' ? l(`expirado há ${Math.abs(st.days)} d`, `expired ${Math.abs(st.days)} d ago`) :
     st.band === 'expiring' ? l(`expira em ${st.days} d`, `expires in ${st.days} d`) :
@@ -51,28 +50,16 @@ export default function ValidadesScreen({ navigation }) {
     return isNaN(chk.getTime()) ? null : iso;
   };
   const formISO = editing ? buildISO(editing.d, editing.m, editing.y) : null;
+  const editRef = editing ? isNoExpiryType(editing.type) : false;   // referência (licença/CCA): guarda sem data
 
   const saveEditing = () => {
-    if (!editing || !formISO) return;
-    if (editing.id) updateValidity(editing.id, { type: editing.type, expiry: formISO });
-    else addValidity({ type: editing.type, expiry: formISO });
+    if (!editing || (!editRef && !formISO)) return;
+    const expiry = editRef ? null : formISO;
+    if (editing.id) updateValidity(editing.id, { type: editing.type, expiry });
+    else addValidity({ type: editing.type, expiry });
     success(); setEditing(null);
   };
   const deleteEditing = () => { if (editing?.id) { removeValidity(editing.id); success(); } setEditing(null); };
-
-  // Detetar da escala (colar PDF) → procura recorrentes e propõe as validades.
-  const analyzeScan = () => setScan((sc) => ({ ...sc, results: detectRecurrents(sc.text) }));
-  const applyDetected = (d) => {
-    const existing = validities.find((v) => v.type === d.vid);
-    if (existing) updateValidity(existing.id, { expiry: d.expiry });
-    else addValidity({ type: d.vid, expiry: d.expiry });
-    success();
-    setScan((sc) => {                                    // remove o aplicado; fecha quando aplicou tudo
-      if (!sc) return sc;
-      const left = (sc.results || []).filter((x) => x.vid !== d.vid);
-      return left.length ? { ...sc, results: left } : null;
-    });
-  };
 
   const sorted = sortValidities(validities);
 
@@ -87,7 +74,7 @@ export default function ValidadesScreen({ navigation }) {
         {sorted.length === 0 ? (
           <Text style={s.empty}>{l('Ainda sem validades. Adiciona a primeira em baixo.', 'No items yet. Add your first below.')}</Text>
         ) : sorted.map((item) => {
-          const st = validityStatus(item.expiry);
+          const st = isNoExpiryType(item.type) ? { band: 'reference', days: null } : validityStatus(item.expiry);
           return (
             <TouchableOpacity key={item.id} style={s.card} activeOpacity={0.85} onPress={() => openEdit(item)}>
               <View style={[s.dot, { backgroundColor: bandColor(st.band) }]} />
@@ -105,12 +92,8 @@ export default function ValidadesScreen({ navigation }) {
           <Ionicons name="add" size={18} color={C.text} />
           <Text style={s.addTxt}>{l('Adicionar validade', 'Add item')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.scanBtn} activeOpacity={0.85} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }} onPress={() => { select(); setScan({ text: '', results: null }); }}>
-          <Ionicons name="scan-outline" size={17} color={C.ink} />
-          <Text style={s.scanTxt}>{l('Detetar da escala (colar PDF)', 'Detect from roster (paste PDF)')}</Text>
-        </TouchableOpacity>
 
-        <Text style={s.foot}>{l('Guardado no dispositivo. Lembretes e cofre de documentos em breve.', 'Stored on device. Reminders and document vault coming soon.')}</Text>
+        <Text style={s.foot}>{l('Guardado no dispositivo · lembretes 30, 7 e 1 dia antes (se os Lembretes estiverem ligados).', 'Stored on device · reminders 30, 7 and 1 day before (if Reminders are on).')}</Text>
       </ScrollView>
 
       {/* Adicionar / Editar */}
@@ -141,19 +124,25 @@ export default function ValidadesScreen({ navigation }) {
               <Text style={[s.fLbl, { marginBottom: 4 }]}>{validityLabel(editing.type, isPilot, lang)}</Text>
             )}
 
-            <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Validade', 'Expiry')}</Text>
-            <View style={s.dateRow}>
-              <TextInput style={s.dateIn} value={editing?.d} onChangeText={(v) => setEditing((e) => ({ ...e, d: v.replace(/\D/g, '').slice(0, 2) }))}
-                placeholder={l('DD', 'DD')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
-              <Text style={s.dateSep}>/</Text>
-              <TextInput style={s.dateIn} value={editing?.m} onChangeText={(v) => setEditing((e) => ({ ...e, m: v.replace(/\D/g, '').slice(0, 2) }))}
-                placeholder={l('MM', 'MM')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
-              <Text style={s.dateSep}>/</Text>
-              <TextInput style={[s.dateIn, s.dateInY]} value={editing?.y} onChangeText={(v) => setEditing((e) => ({ ...e, y: v.replace(/\D/g, '').slice(0, 4) }))}
-                placeholder={l('AAAA', 'YYYY')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={4} />
-            </View>
+            {!editRef ? (
+              <>
+                <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Validade', 'Expiry')}</Text>
+                <View style={s.dateRow}>
+                  <TextInput style={s.dateIn} value={editing?.d} onChangeText={(v) => setEditing((e) => ({ ...e, d: v.replace(/\D/g, '').slice(0, 2) }))}
+                    placeholder={l('DD', 'DD')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
+                  <Text style={s.dateSep}>/</Text>
+                  <TextInput style={s.dateIn} value={editing?.m} onChangeText={(v) => setEditing((e) => ({ ...e, m: v.replace(/\D/g, '').slice(0, 2) }))}
+                    placeholder={l('MM', 'MM')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
+                  <Text style={s.dateSep}>/</Text>
+                  <TextInput style={[s.dateIn, s.dateInY]} value={editing?.y} onChangeText={(v) => setEditing((e) => ({ ...e, y: v.replace(/\D/g, '').slice(0, 4) }))}
+                    placeholder={l('AAAA', 'YYYY')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={4} />
+                </View>
+              </>
+            ) : (
+              <Text style={[s.fLbl, { marginTop: 14, color: C.sub, fontFamily: FONT.medium }]}>{l('Não expira — guardado como referência (o nº do documento).', 'No expiry — kept as a reference (the document number).')}</Text>
+            )}
 
-            <PrimaryButton onPress={saveEditing} disabled={!formISO} label={t('common.save', lang)} style={{ marginTop: 20 }} />
+            <PrimaryButton onPress={saveEditing} disabled={!editRef && !formISO} label={t('common.save', lang)} style={{ marginTop: 20 }} />
             {editing?.id ? (
               <TouchableOpacity onPress={deleteEditing} activeOpacity={0.85} style={s.delBtn} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
                 <Ionicons name="trash-outline" size={16} color={C.red} />
@@ -164,42 +153,6 @@ export default function ValidadesScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* Detetar da escala (colar PDF) */}
-      <Modal visible={!!scan} transparent animationType="slide" onRequestClose={() => setScan(null)}>
-        <View style={s.mOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setScan(null)} />
-          <View style={s.sheet}>
-            <View style={s.sheetHead}>
-              <Text style={s.sheetTitle}>{l('Detetar da escala', 'Detect from roster')}</Text>
-              <TouchableOpacity onPress={() => setScan(null)} hitSlop={8} style={s.sheetClose}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
-            </View>
-
-            {!scan?.results ? (
-              <>
-                <Text style={s.scanHint}>{l('Cola o texto do teu PDF eCrew. Procuro SEP/CRM/DG/ASEC/FAID e proponho as validades. Nada sai do telemóvel.', 'Paste your eCrew PDF text. I look for SEP/CRM/DG/ASEC/FAID and propose the dates. Nothing leaves your phone.')}</Text>
-                <TextInput style={s.scanInput} value={scan?.text} onChangeText={(v) => setScan((sc) => ({ ...sc, text: v }))}
-                  placeholder={l('Colar aqui…', 'Paste here…')} placeholderTextColor={C.sub} multiline textAlignVertical="top" />
-                <PrimaryButton onPress={analyzeScan} disabled={!scan?.text} label={l('Analisar', 'Analyze')} style={{ marginTop: 20 }} />
-              </>
-            ) : scan.results.length === 0 ? (
-              <Text style={s.scanHint}>{l('Nada detetado. Confirma que colaste a tabela com os recorrentes.', 'Nothing detected. Make sure you pasted the table with the recurrents.')}</Text>
-            ) : (
-              <>
-                <Text style={s.scanHint}>{l('Detetei estes — toca para aplicar:', 'Found these — tap to apply:')}</Text>
-                {scan.results.map((d) => (
-                  <TouchableOpacity key={d.vid} style={s.detRow} activeOpacity={0.85} onPress={() => applyDetected(d)}>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={s.detLabel} numberOfLines={1}>{validityLabel(d.vid, isPilot, lang)}</Text>
-                      <Text style={s.detSub} numberOfLines={1}>{l('feito', 'done')} {fmtDate(d.dateISO)} → {l('válido até', 'valid to')} {fmtDate(d.expiry)}</Text>
-                    </View>
-                    <Ionicons name="add-circle" size={22} color={C.ink} />
-                  </TouchableOpacity>
-                ))}
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -240,13 +193,4 @@ const makeStyles = (C) => StyleSheet.create({
   dateSep: { fontSize: TYPE.lg, color: C.sub },
   delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 6 },
   delTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.red },
-
-  // Detetar da escala
-  scanBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 4 },
-  scanTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.ink },
-  scanHint: { fontSize: TYPE.label, color: C.sub, lineHeight: 18, marginBottom: 12 },
-  scanInput: { backgroundColor: C.soft, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: C.line, padding: 13, color: C.text, fontSize: TYPE.label, minHeight: 120 },
-  detRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.line },
-  detLabel: { fontSize: TYPE.value, fontFamily: FONT.semibold, color: C.text },
-  detSub: { fontSize: TYPE.micro, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },
 });
