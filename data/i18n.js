@@ -554,6 +554,7 @@ export const STRINGS = {
     'login.tagline': 'O teu acordo de empresa, sempre contigo.',
     'login.noAccount': 'Não tens conta?',
     'login.createLink': 'Criar conta',
+    'login.errSignupHint': 'Ainda não tens conta?',
     'login.email': 'Email',
     'login.password': 'Palavra-passe',
     'login.confirmPw': 'Confirmar palavra-passe',
@@ -605,6 +606,12 @@ export const STRINGS = {
     'lock.failed': 'Não foi possível autenticar. Tenta novamente.',
     'lock.naTitle': 'Bloqueio indisponível',
     'lock.naMsg': 'Este dispositivo não tem biometria nem código configurado.',
+    'lock.unlockWith': 'Desbloquear com',
+    'lock.usePassword': 'Entrar com a palavra-passe',
+    'lock.offerTitle': 'Entrar mais rápido',
+    'lock.offerSub': 'Usa {name} para entrares sem escrever a palavra-passe de cada vez. Fica guardada em segurança.',
+    'lock.offerEnable': 'Ativar {name}',
+    'lock.offerLater': 'Agora não',
 
     // Duties (registo da escala)
     'duties.eyebrow': 'REGISTO DE ATIVIDADE',
@@ -1037,6 +1044,7 @@ export const STRINGS = {
     'login.tagline': 'Your collective agreement, always with you.',
     'login.noAccount': "Don't have an account?",
     'login.createLink': 'Create account',
+    'login.errSignupHint': "Don't have an account yet?",
     'login.email': 'Email',
     'login.password': 'Password',
     'login.confirmPw': 'Confirm password',
@@ -1088,6 +1096,12 @@ export const STRINGS = {
     'lock.failed': 'Could not authenticate. Try again.',
     'lock.naTitle': 'Lock unavailable',
     'lock.naMsg': 'This device has no biometrics or passcode set up.',
+    'lock.unlockWith': 'Unlock with',
+    'lock.usePassword': 'Sign in with password',
+    'lock.offerTitle': 'Sign in faster',
+    'lock.offerSub': 'Use {name} to sign in without typing your password every time. It stays stored securely.',
+    'lock.offerEnable': 'Enable {name}',
+    'lock.offerLater': 'Not now',
 
     // Duties (roster log)
     'duties.eyebrow': 'ACTIVITY LOG',

@@ -20,6 +20,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { getLocales } from 'expo-localization';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE } from './data/constants';
 import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
@@ -42,6 +43,7 @@ import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
 import ReactivateScreen   from './screens/ReactivateScreen';
+import BiometricOfferScreen from './screens/BiometricOfferScreen';
 import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
@@ -74,6 +76,23 @@ export { AppContext, isoDay, useTheme };
 // Bloqueio biometria/PIN (opt-in): re-tranca a app ao voltar de segundo plano
 // se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Lê a preferência de bloqueio POR-UTILIZADOR (`cp_lock_<uid>`). Se não houver chave per-uid mas
+// existir o global LEGADO (`cp_lock`, de builds antigos onde a preferência era única no device),
+// CONSOME-o uma só vez: semeia a chave per-uid do utilizador atual E apaga o global — assim só a 1.ª
+// conta após o upgrade (o dono do device) o herda; nenhuma conta seguinte o vê (senão o global, que
+// nunca é reescrito, re-semeava o bloqueio em TODAS as contas novas — herança que isto vem eliminar).
+// A leitura da preferência pode lançar (storage nativo indisponível) → deixa PROPAGAR para o chamador
+// decidir (no restauro: fail-closed/tranca; no login fresco: manter estado). A migração é best-effort.
+async function loadLockPref(uid) {
+  const per = await AsyncStorage.getItem(`cp_lock_${uid}`);
+  if (per != null) return per === '1';
+  const legacy = await AsyncStorage.getItem('cp_lock');
+  if (legacy == null) return false;
+  const enabled = legacy === '1';
+  try { await AsyncStorage.setItem(`cp_lock_${uid}`, enabled ? '1' : '0'); await AsyncStorage.removeItem('cp_lock'); } catch { /* migração best-effort */ }
+  return enabled;
+}
 
 function HomeStack() {
   return (
@@ -340,6 +359,9 @@ export default function App() {
   // omissão). `lockEnabled` = funcionalidade ativa; `locked` = app trancada agora.
   const [lockEnabled, setLockEnabled]   = useState(false);
   const [locked, setLocked]             = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(null);   // device tem biometria/código configurado?
+  const [lockOffered, setLockOffered]   = useState(null);   // já ofereci o Face ID a este user? (por-uid)
+  const [obscured, setObscured]         = useState(false);  // app em 2.º plano → tapa o conteúdo (app switcher)
   const lockHydrated = useRef(false);
   const bgAt = useRef(null); // timestamp de ida a segundo plano (para o timeout de re-bloqueio)
 
@@ -558,10 +580,6 @@ export default function App() {
   // a corrida com o gate: se há sessão restaurada e o bloqueio está ativo, trancar.
   useEffect(() => {
     (async () => {
-      let enabled = false;
-      try { enabled = (await AsyncStorage.getItem('cp_lock')) === '1'; } catch { /* default desligado */ }
-      if (enabled) setLockEnabled(true);
-      lockHydrated.current = true;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -577,12 +595,18 @@ export default function App() {
             } catch { /* offline → mantém o local (conservador: mostra o gate, revalida quando houver rede) */ }
           }
           if (u) {
+            // Preferência de bloqueio POR-UTILIZADOR (migra-e-limpa o global legado — ver loadLockPref).
+            // Lida ANTES de mostrar qualquer ecrã → sem flash de conteúdo. FAIL-CLOSED: se a leitura
+            // falhar, TRANCA (não expor dados na dúvida; recuperável pelo escape do LockScreen).
+            let enabled = false;
+            try { enabled = await loadLockPref(u.id); } catch { enabled = true; }
+            // Sessão restaurada (reabertura), não login fresco → exigir desbloqueio já.
+            if (enabled) { setLockEnabled(true); setLocked(true); }
             handleSetUser(mapUser(u));
-            // Sessão restaurada (reabertura), não login fresco → exigir desbloqueio.
-            if (enabled) setLocked(true);
           }
         }
       } catch { /* sem sessão guardada / storage indisponível */ }
+      lockHydrated.current = true;
       setAuthLoading(false);
     })();
 
@@ -595,23 +619,55 @@ export default function App() {
         setUser(null);
         setOnboarded(false);
         setLocked(false);
+        setLockEnabled(false); // limpa a preferência em memória → o próximo login não herda a de outra conta
       }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // Persistir a preferência de bloqueio (só depois de hidratar, p/ não a apagar).
-  useEffect(() => { if (lockHydrated.current) AsyncStorage.setItem('cp_lock', lockEnabled ? '1' : '0').catch(() => {}); }, [lockEnabled]);
+  // Persistir a preferência de bloqueio POR-UTILIZADOR (só depois de hidratar, e só com sessão: no
+  // logout reseta em memória mas NÃO apaga a chave guardada, p/ o próximo login a reencontrar).
+  useEffect(() => {
+    if (lockHydrated.current && user?.id) AsyncStorage.setItem(`cp_lock_${user.id}`, lockEnabled ? '1' : '0').catch(() => {});
+  }, [lockEnabled]); // eslint-disable-line react-hooks/exhaustive-deps -- user lido do closure atual (dep [lockEnabled] de propósito, p/ não escrever na troca de conta)
 
-  // Re-bloquear ao voltar de segundo plano se passou o timeout (e o bloqueio
-  // estiver ativo). Reaberturas rápidas (< 5 min) não pedem desbloqueio.
+  // Recarrega a preferência de bloqueio quando o UTILIZADOR muda (novo login no mesmo device) →
+  // ninguém herda a de outra conta; migra do global antigo. Trancar já (sessão restaurada) é do
+  // arranque — aqui NUNCA se tranca (login fresco não pede desbloqueio).
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      try { setLockEnabled(await loadLockPref(user.id)); }
+      catch { /* falha de leitura: mantém o estado; login fresco nunca tranca por causa disto */ }
+    })();
+  }, [user?.id]);
+
+  // Face ID/PIN — oferta pós-1.º login (padrão Apple/bancos): deteta se o device consegue biometria
+  // (hardware + configurado) e carrega, POR-UTILIZADOR, se já foi oferecido. Só se oferece uma vez.
+  useEffect(() => {
+    (async () => {
+      try { const [hw, en] = await Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.isEnrolledAsync()]); setBioAvailable(!!(hw && en)); }
+      catch { setBioAvailable(false); }
+    })();
+  }, []);
+  useEffect(() => {
+    if (!user?.id) { setLockOffered(null); return; }
+    AsyncStorage.getItem(`cp_lock_offered_${user.id}`).then((v) => setLockOffered(v === '1')).catch(() => setLockOffered(false));
+  }, [user?.id]);
+  const markOffered = () => { setLockOffered(true); if (user?.id) AsyncStorage.setItem(`cp_lock_offered_${user.id}`, '1').catch(() => {}); };
+
+  // Segundo plano: (1) privacidade — tapa o conteúdo enquanto não está 'active' para não aparecer
+  // na pré-visualização do multitarefas (padrão banca); (2) re-bloqueia ao voltar se passou o
+  // timeout e o bloqueio está ativo. Reaberturas rápidas (< 5 min) não pedem desbloqueio.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        setObscured(false);
         if (lockEnabled && bgAt.current && (Date.now() - bgAt.current > LOCK_TIMEOUT_MS)) setLocked(true);
         bgAt.current = null;
-      } else if (bgAt.current == null) {
-        bgAt.current = Date.now(); // 'background' / 'inactive'
+      } else {
+        setObscured(true); // 'background' / 'inactive'
+        if (bgAt.current == null) bgAt.current = Date.now();
       }
     });
     return () => sub.remove();
@@ -1041,6 +1097,10 @@ export default function App() {
       </View>
     );
     if (!onboarded)  return <OnboardingScreen />;
+    // Oferta de Face ID/PIN — uma vez, após o 1.º login, se o device tem biometria e ainda não decidiu.
+    if (!lockEnabled && lockOffered === false && bioAvailable === true) {
+      return <BiometricOfferScreen lang={lang} onEnable={() => { setLockEnabled(true); markOffered(); }} onSkip={markOffered} />;
+    }
     return <RootNav />;
   };
 
@@ -1072,6 +1132,16 @@ export default function App() {
         <OfflineBanner />
         {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
+        {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
+            pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}
+        {obscured && user ? (
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 64, height: 64, borderRadius: 999, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <Ionicons name="lock-closed" size={26} color={palette.onDark} />
+            </View>
+            <Text style={{ fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: palette.text }}>CrewPact</Text>
+          </View>
+        ) : null}
       </AppContext.Provider>
     </SafeAreaProvider>
   );

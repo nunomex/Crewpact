@@ -45,8 +45,12 @@ const SECURE_KEY = 'cp_enckey';       // chave-mestra (device-wide) no Keychain/
 
 // Chaves PÚBLICAS — NUNCA cifradas (preferências do dispositivo + catálogos globais; lidas
 // no arranque, antes/à volta do gate de login). Cifrá-las arriscaria travar a entrada.
+// Prefixo `cp_lock_` cobre as chaves POR-UTILIZADOR do bloqueio (`cp_lock_<uid>` e
+// `cp_lock_offered_<uid>`): têm de ser legíveis no arranque, ANTES da chave-mestra existir —
+// senão a cifra devolvia null → o gate lia "desligado" e a app abria destrancada (fail-open).
 const PUBLIC = new Set(['cp_lock', 'cp_lang', 'cp_theme', 'cp_airlines', 'cp_bases', 'cp_countries']);
-const isPublic = (k) => PUBLIC.has(k);
+const PUBLIC_PREFIX = ['cp_lock_'];
+const isPublic = (k) => PUBLIC.has(k) || PUBLIC_PREFIX.some((p) => k.startsWith(p));
 
 // ── Chave-mestra: gerada NO MÁXIMO uma vez; nunca roda numa falha de leitura ─────
 // Devolve os bytes da chave, ou null se indisponível (leitura falhou / não persistível).

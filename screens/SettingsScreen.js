@@ -287,8 +287,10 @@ export default function SettingsScreen({ navigation }) {
     if (next === lockEnabled) return;
     if (!next) { setLockEnabled(false); return; }
     try {
-      const hasHw = await LocalAuthentication.hasHardwareAsync();
-      if (!hasHw) { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); return; }
+      // hardware existe E há biometria/código CONFIGURADO (isEnrolled) — senão o bloqueio
+      // ativa-se mas só passa pelo código do telemóvel, ou pior, arrisca prender.
+      const [hasHw, enrolled] = await Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.isEnrolledAsync()]);
+      if (!hasHw || !enrolled) { Alert.alert(t('lock.naTitle', lang), t('lock.naMsg', lang)); return; }
       const res = await LocalAuthentication.authenticateAsync({
         promptMessage: t('lock.enablePrompt', lang),
         cancelLabel: t('common.cancel', lang),

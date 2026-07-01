@@ -250,6 +250,15 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
+            {/* Erro de login → empurrão contextual para o registo (o motivo pode ser "sem conta"; a
+                mensagem é genérica de propósito p/ não revelar se o e-mail existe — sem enumeração). */}
+            {view === 'login' && globalErr ? (
+              <TouchableOpacity style={s.errSignupRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={() => setSignupMode(true)}>
+                <Text style={s.linkTxt}>{t('login.errSignupHint', lang)}</Text>
+                <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
+              </TouchableOpacity>
+            ) : null}
+
             {/* ── LOGIN ── */}
             {view === 'login' && (
               <Animated.View style={{ transform: [{ translateX: shake }] }}>
@@ -370,6 +379,7 @@ const makeS = (C) => StyleSheet.create({
   logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
   logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
   switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 },
+  errSignupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4, marginBottom: 16 },
   switchLink:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
   errBanner:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.redSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.redSoft },
   errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontFamily: FONT.medium },
