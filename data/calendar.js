@@ -1,13 +1,11 @@
-// Ligação à app de calendário do dispositivo (expo-calendar).
-// Lê os eventos de voo da escala importada para o calendário e mapeia os campos
-// para o cartão "Próximo voo" e para a grelha mensal (ecrã Calendário). Só de
-// leitura — nunca escreve nem apaga eventos do calendário real.
+// Ligação à app de calendário do dispositivo (expo-calendar). I/O NATIVO + leitura por
+// intervalo. O PARSING (classificação, mapeamento de eventos → serviços) vive em
+// ./calendarParse (PURO, testável por golden). Só de leitura — nunca escreve/apaga eventos.
 //
-// Heurísticas pensadas para escalas easyJet e TAP (ajustar se o teu feed diferir):
-//   easyJet: "EZY1234 LIS-FNC 06:40-08:15" / "U2 LIS/FNC 0640 0815"
-//   TAP:     "TP1923 LIS-OPO 07:10-08:05"  / "TAP 234 LIS/MAD"
+// Heurísticas pensadas para escalas easyJet e TAP — ver ./calendarParse.
 import * as Calendar from 'expo-calendar';
 import { codesFor } from './rosterCodes';
+import { classify, mapFlight, mapNonFlight, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES } from './calendarParse';
 
 // Verifica a permissão SEM pedir (não dispara o prompt do sistema). As leituras de fundo
 // usam isto → nunca interrompem o utilizador. O prompt só acontece no botão "Ligar".
@@ -18,7 +16,6 @@ export async function ensureCalendarPermission() {
 
 // Pede acesso ao calendário (DISPARA o prompt) e devolve o resultado completo ({ granted,
 // canAskAgain }), para a UI decidir entre voltar a pedir ou encaminhar para as Definições.
-// Usado SÓ no botão "Ligar ao calendário".
 export async function requestCalendarAccess() {
   return Calendar.requestCalendarPermissionsAsync();
 }
@@ -35,46 +32,6 @@ export async function listCalendars() {
   }));
 }
 
-// ── Parsers ──────────────────────────────────────────────────────────────────
-const RE_ROUTE  = /\b([A-Z]{3})\s*[-/→]\s*([A-Z]{3})\b/;                 // LIS-FNC, LIS/FNC, LIS→FNC
-const RE_TIMES  = /\b(\d{1,2})[:h.]?(\d{2})\s*[-–—/ ]\s*(\d{1,2})[:h.]?(\d{2})\b/; // 0640-0815 / 06:40 08:15
-const RE_AC     = /\b(A3\d{2}|A2\d{2}|A\d{2}N|B7\d{2})\b/;               // A320, A321, A20N/A21N (neo), A330, B738
-const RE_REG    = /\b(CS-[A-Z]{3})\b/;                                   // matrícula CS-EZW (easyJet) / CS-TVA (TAP)
-
-const pad = (n) => String(n).padStart(2, '0');
-const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;       // hora local do dispositivo
-const hhmmZ = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; // hora UTC (Zulu)
-// Data local 'YYYY-MM-DD' (componentes locais, não UTC) — chave por dia.
-const isoLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-// Date no MESMO dia local de `ref`, à hora h:m (para a apresentação parseada do texto do evento).
-const atDayTime = (ref, h, m) => { const d = new Date(ref); d.setHours(h, m, 0, 0); return d; };
-const fmtDate = (d) => d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
-// Padrões extra: bloco em Zulu e base (das notas da AIMS eCrew). Os códigos de
-// TIPO de duty (voo/standby/posicionamento…) são por companhia → ver rosterCodes.js.
-const RE_BLOCKZ  = /\((\d{2})(\d{2})Z\s*[-–—]\s*(\d{2})(\d{2})Z\)/;  // (1350Z-1615Z)
-const RE_BASE    = /Local Base\s*\(([A-Z]{3})\)/i;                  // "All times in Local Base (LIS)"
-// Apresentação/sign-on EXPLÍCITA no evento (ex. "RP 0540", "Report 05:40", "C/I 0540",
-// "Apresentação 05:40"). SÓ se o feed a trouxer — NUNCA derivada de dep − 1 h (a apresentação
-// é input FTL, define o PSV máx; não é estimativa). Tratada como hora LOCAL (= horas do título).
-const RE_REPORT  = /\b(?:RP|REPORT|SIGN[\s-]?ON|C\/?I|CHECK[\s-]?IN|APRES(?:ENTA[ÇC][AÃ]O)?)\b\s*[:=]?\s*(\d{1,2})[:h.]?(\d{2})\b/i;
-
-// KIND universal do evento a partir dos CÓDIGOS da companhia (rosterCodes). Os
-// tipos sem-voo têm prioridade sobre a rota — "DH LIS-LGW" é posicionamento (não
-// voo); "SBY LIS-LIS" é standby.
-function classify(text, codes) {
-  if (codes.standbyHome && codes.standbyHome.test(text)) return 'standby_home';
-  if (codes.standbyAirport && codes.standbyAirport.test(text)) return 'standby_airport';
-  if (codes.positioning && codes.positioning.test(text)) return 'positioning';
-  if (codes.training && codes.training.test(text)) return 'training';
-  if (codes.office && codes.office.test(text)) return 'office';
-  if (codes.flightNo && codes.flightNo.test(text)) return 'flight';
-  if (codes.dayOff && codes.dayOff.test(text)) return 'off'; // folga/fadiga (depois do voo, p/ não apanhar aeroportos)
-  const r = text.match(RE_ROUTE);
-  if (r && r[1] !== r[2]) return 'flight'; // rota com aeroportos diferentes
-  return 'other';
-}
-const NONFLIGHT_KINDS = ['standby_airport', 'standby_home', 'positioning', 'office', 'training'];
-
 // Eventos do calendário ESCOLHIDO no intervalo [start, end]. SÓ lê o calendário cujo id é
 // `calendarId` (o que o utilizador ligou) — nunca todos. Sem calendário escolhido OU sem
 // permissão → { ok:false } (a app trata como "não ligado" e mostra o "Ligar").
@@ -88,76 +45,7 @@ async function fetchEvents(start, end, calendarId = null) {
   return { ok: true, events };
 }
 
-// Mapeia um evento de calendário para uma perna de voo (ou null se não for voo).
-function mapFlight(ev, codes) {
-  const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
-  if (classify(text, codes) !== 'flight') return null; // só pernas de voo
-
-  const start = new Date(ev.startDate);
-  const finish = new Date(ev.endDate);
-  const route = text.match(RE_ROUTE);
-  const flt = codes.flightNo ? text.match(codes.flightNo) : null;   // nº de voo (p/ reconcile "ao vivo")
-  const times = text.match(RE_TIMES);
-  const ac = text.match(RE_AC);
-  const reg = text.match(RE_REG);
-  const base = (text.match(RE_BASE) || [])[1] || null;
-  // Zulu/UTC AUTORITATIVA: a eCrew escreve-a explícita nas notas "(0830Z-1015Z)". É o padrão-ouro
-  // (a companhia declarou-a). Sem ela, deriva-se do INSTANTE ABSOLUTO do evento (hhmmZ) — também
-  // correto. Nunca depende do fuso do dispositivo.
-  const bz = text.match(RE_BLOCKZ);
-
-  // Horas: preferir as do título; caso contrário usar início/fim do evento.
-  const depTime = times ? `${pad(+times[1])}:${times[2]}` : hhmm(start);
-  const arrTime = times ? `${pad(+times[3])}:${times[4]}` : hhmm(finish);
-  // Apresentação: SÓ se o evento a trouxer EXPLÍCITA (RE_REPORT). NUNCA dep − 1 h — a
-  // apresentação é input FTL (define o PSV máx), não estimativa. Sem token → null: o user
-  // preenche (igual ao PDF, que lê a coluna real, e ao manual, que fica vazio). Ver report-time.
-  const rep = text.match(RE_REPORT);
-  const reportDate = rep ? atDayTime(start, +rep[1], +rep[2]) : null;
-
-  return {
-    kind: 'flight',
-    flightNo: flt ? flt[0].toUpperCase().replace(/\s+/g, '') : null,
-    dateISO: isoLocal(start),
-    date: fmtDate(start),
-    report: reportDate ? hhmm(reportDate) : null,
-    reportDate,
-    depTime,
-    arrTime,
-    // Zulu/UTC AUTORITATIVA: explícita das notas "(....Z)" se houver; senão do instante absoluto.
-    depTimeZ: bz ? `${bz[1]}:${bz[2]}` : hhmmZ(start),
-    arrTimeZ: bz ? `${bz[3]}:${bz[4]}` : hhmmZ(finish),
-    reportZ: reportDate ? hhmmZ(reportDate) : null,
-    depAirport: route ? route[1] : '—',
-    arrAirport: route ? route[2] : '—',
-    aircraft: [ac && ac[1], reg && reg[1]].filter(Boolean).join(' · ') || '—',
-    startDate: start,    // instante absoluto (para agrupar setores)
-    endDate: finish,
-    base,                // base das notas, p.ex. 'LIS' (ou null)
-  };
-}
-
-// Mapeia um evento SEM-VOO (standby/posicionamento/terra/formação) → item com o
-// KIND universal. null se for voo/folga/outro.
-function mapNonFlight(ev, codes) {
-  const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
-  const kind = classify(text, codes);
-  if (!NONFLIGHT_KINDS.includes(kind)) return null;
-  const start = new Date(ev.startDate);
-  const finish = new Date(ev.endDate);
-  return {
-    kind,
-    dateISO: isoLocal(start),
-    date: fmtDate(start),
-    start: hhmm(start),
-    end: hhmm(finish),
-    startDate: start,
-    endDate: finish,
-  };
-}
-
-// Próximo voo + estado da permissão: { ok, flight }. `ok:false` = sem acesso ao
-// calendário (para o cartão distinguir "sem permissão" de "sem voo").
+// Próximo voo + estado da permissão: { ok, flight }. `ok:false` = sem acesso ao calendário.
 export async function getUpcomingFlight(company, calendarId = null) {
   const now = new Date();
   const { ok, events } = await fetchEvents(now, new Date(now.getTime() + 21 * 24 * 3600 * 1000), calendarId);
@@ -170,8 +58,7 @@ export async function getUpcomingFlight(company, calendarId = null) {
   return { ok: true, flight: null };
 }
 
-// Devolve todos os voos no intervalo [start, end] (para a grelha mensal e a lista
-// do dia). { ok:false } quando não há permissão de calendário.
+// Todos os voos no intervalo [start, end] (grelha mensal / lista do dia). { ok:false } sem permissão.
 export async function getFlightsInRange(start, end, company, calendarId = null) {
   const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, flights: [] };
@@ -182,54 +69,6 @@ export async function getFlightsInRange(start, end, company, calendarId = null) 
     if (f) flights.push(f);
   }
   return { ok: true, flights };
-}
-
-// ── Atividades (agrupamento de setores) ──────────────────────────────────────
-// Pernas seguidas com pouco intervalo entre si pertencem à mesma atividade; um
-// repouso (≥ 10–12 h) separa atividades, por isso um limiar de 6 h distingue com
-// folga turnarounds e split-duty de um repouso real. Ajustável.
-const DUTY_GAP_MS = 6 * 3600 * 1000;
-const DEBRIEF_MIN = 30; // debrief após os últimos calços → fim de serviço (release)
-
-// Fecha uma atividade: report (início da 1ª perna), release (fim da última +
-// debrief), nº de setores, aeroportos e fim em base.
-function finishDuty(d) {
-  const legs = d.legs;
-  const first = legs[0];
-  const last = legs[legs.length - 1];
-  const release = new Date(last.endDate.getTime() + DEBRIEF_MIN * 60 * 1000);
-  const base = legs.map(l => l.base).find(Boolean) || null;
-  return {
-    dateISO: first.dateISO,
-    report: first.report || null,        // apresentação REAL do 1.º evento (ou null se o feed não a traz)
-    reportDate: first.reportDate || null,
-    release: hhmm(release),
-    releaseDate: release,
-    sectors: legs.length,
-    startAirport: first.depAirport,
-    endAirport: last.arrAirport,
-    base,
-    endInBase: base ? last.arrAirport === base : null,
-    legs,
-  };
-}
-
-// Agrupa pernas (objetos de mapFlight, com startDate/endDate) em atividades.
-export function buildDuties(legs) {
-  const sorted = legs.filter(Boolean).sort((a, b) => a.startDate - b.startDate);
-  const duties = [];
-  let cur = null;
-  for (const leg of sorted) {
-    if (cur && leg.startDate - cur._lastEnd <= DUTY_GAP_MS) {
-      cur.legs.push(leg);
-      cur._lastEnd = leg.endDate;
-    } else {
-      if (cur) duties.push(finishDuty(cur));
-      cur = { legs: [leg], _lastEnd: leg.endDate };
-    }
-  }
-  if (cur) duties.push(finishDuty(cur));
-  return duties;
 }
 
 // Atividades no intervalo [start, end] (pernas de voo agrupadas por setores).
@@ -249,21 +88,22 @@ export async function getNonFlightInRange(start, end, company, calendarId = null
   return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean) };
 }
 
-// Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica
-// (flight/standby/other). Para o utilizador ver o que o calendário tem e perceber
-// porque um evento é (ou não é) reconhecido. { ok, total, items:[{ title, dateISO,
-// kind, route, flightNo, times }] }.
+// Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica. Para o utilizador
+// ver o que o calendário tem e perceber porque um evento é (ou não) reconhecido. Um evento de
+// dia-inteiro sem horas aparece como 'other' (IGNORADO) — mesmo que o título case um código.
 export async function diagnoseEvents(start, end, company, calendarId = null) {
   const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, total: 0, items: [] };
   const codes = codesFor(company);
   const items = events.map((ev) => {
-    const text = `${ev.title || ''} ${ev.location || ''} ${ev.notes || ''}`;
+    const text = eventText(ev);
+    const allDayIgnored = isAllDayNoTime(ev, text);
     const r = text.match(RE_ROUTE);
     return {
       title: (ev.title || '').trim() || '(sem título)',
       dateISO: isoLocal(new Date(ev.startDate)),
-      kind: classify(text, codes),
+      kind: allDayIgnored ? 'other' : classify(text, codes),   // all-day sem horas → ignorado
+      allDay: !!ev.allDay,
       route: (r && r[1] !== r[2]) ? `${r[1]}-${r[2]}` : null,
       flightNo: codes.flightNo.test(text),
       times: RE_TIMES.test(text),

@@ -41,7 +41,12 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
           <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
         </View>
 
-        <Text style={s.note}>{l('Escolhe o calendário do telemóvel onde tens a tua escala. A app passa a ler só esse — os outros eventos ficam de fora.', 'Choose the phone calendar that holds your roster. The app reads only that one — other events are left out.')}</Text>
+        <Text style={s.note}>{l('Escolhe o calendário do telemóvel onde tens a tua escala. A app passa a ler só esse — os outros calendários ficam de fora.', 'Choose the phone calendar that holds your roster. The app reads only that one — other calendars are left out.')}</Text>
+
+        <View style={s.tip}>
+          <Ionicons name="bulb-outline" size={15} color={C.warnText} style={{ marginTop: 1 }} />
+          <Text style={s.tipTxt}>{l('Dica: se a tua escala partilha o calendário com eventos pessoais (aniversários, jantares…), subscreve o feed do eCrew como um calendário PRÓPRIO e escolhe esse — assim só entram serviços.', 'Tip: if your roster shares a calendar with personal events (birthdays, dinners…), subscribe the eCrew feed as its OWN calendar and pick that — then only duties get in.')}</Text>
+        </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {cals == null ? (
@@ -82,6 +87,8 @@ const makeStyles = (C) => StyleSheet.create({
   h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
   close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   note: { fontSize: 12.5, lineHeight: 18, color: C.sub, fontFamily: FONT.medium, paddingHorizontal: 24, paddingBottom: 8 },
+  tip: { flexDirection: 'row', gap: 9, marginHorizontal: 24, marginBottom: 6, padding: 12, borderRadius: RADIUS.md, backgroundColor: C.warnSoft, borderWidth: 1, borderColor: C.warn + '55' },
+  tipTxt: { flex: 1, fontSize: 12, lineHeight: 17, color: C.text, fontFamily: FONT.medium },
   body: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24, gap: 9 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
   dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },

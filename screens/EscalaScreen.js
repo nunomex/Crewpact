@@ -295,6 +295,9 @@ export default function EscalaScreen({ navigation, route }) {
                 ? l('Sem serviços lidos do calendário. Tenta importar de novo (podes mudar o intervalo) ou usa o PDF.', 'No duties read from the calendar. Try importing again (you can change the range) or use a PDF.')
                 : l('Importamos os teus serviços do calendário do telemóvel, assim que mudam. Tu só confirmas.', 'We import your duties from the phone calendar whenever they change. You just confirm.')}</Text>
               <View style={s.privRow}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.privTxt}>{l('Só de leitura · nada é alterado no teu calendário', 'Read-only · nothing is changed in your calendar')}</Text></View>
+              {!calendarId ? (
+                <View style={s.connectTip}><Ionicons name="bulb-outline" size={13} color={C.warnText} /><Text style={s.connectTipTxt}>{l('Melhor com um calendário só para a escala (o feed do eCrew) — aniversários e eventos pessoais ficam de fora.', 'Best with a calendar just for your roster (the eCrew feed) — birthdays and personal events stay out.')}</Text></View>
+              ) : null}
               <PrimaryButton onPress={calendarId ? () => openImport('calendar') : connectCalendar} icon={calendarId ? 'refresh' : 'arrow-forward'} radius="lg" style={{ marginTop: 14 }}
                 label={calendarId ? l('Importar agora', 'Import now') : l('Ligar ao calendário', 'Connect calendar')} />
             </View>
@@ -696,6 +699,8 @@ const makeStyles = (C) => StyleSheet.create({
   connectBigS: { fontSize: 12.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 18, marginTop: 6 },
   privRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 },
   privTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
+  connectTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginTop: 12, padding: 11, borderRadius: RADIUS.md, backgroundColor: C.warnSoft, borderWidth: 1, borderColor: C.warn + '55' },
+  connectTipTxt: { flex: 1, fontSize: 11.5, lineHeight: 16, fontFamily: FONT.medium, color: C.text },
   orline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
   orlineBar: { flex: 1, height: 1, backgroundColor: C.line },
   orlineTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.lineStrong },

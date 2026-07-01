@@ -26,7 +26,8 @@
     "test:library": "node scripts/library.test.js",
     "test:vigencia": "node scripts/vigencia.test.js",
     "test:flightstatus": "node scripts/flightstatus.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia && npm run test:flightstatus"
+    "test:calendar": "node scripts/calendar.test.js",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
