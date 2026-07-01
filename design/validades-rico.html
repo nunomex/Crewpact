@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Validades & Documentos (formulário rico) · mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* Paleta REAL da app (PALETTE_LIGHT, data/constants.js) */
+  :root{
+    --canvas:#FFFFFF; --card:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9;
+    --ink:#1B1B1B; --red:#F5402C; --line:#ECECEA; --lineStrong:#D4D4D1;
+    --text:#1B1B1B; --sub:#6B6B66; --brand:#1F4E79;
+    --green:#1F9E6E; --greenText:#2A7A5C; --warn:#E8932B; --warnText:#9A6B1E;
+    --redText:#C9331F; --scrim:rgba(0,0,0,.4);
+    --ui:'Inter',system-ui,sans-serif; --display:'Space Grotesk','Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  body{font-family:var(--ui);background:#E7E7E4;color:var(--text);
+    background-image:radial-gradient(circle at 20% 0%,#f4f4f2,#dcdcd8);min-height:100vh;padding:32px 16px 64px}
+  .head{max-width:860px;margin:0 auto 26px;text-align:center}
+  .head h1{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.4px}
+  .head p{color:#55554f;font-size:13.5px;margin-top:8px;line-height:1.5}
+  .head .warn{display:inline-block;margin-top:12px;background:#FBEAD2;border:1px solid #E8932B55;color:#7a5518;
+    font-size:12px;font-weight:600;border-radius:10px;padding:7px 12px}
+  .crew{display:flex;gap:6px;justify-content:center;margin-top:16px}
+  .crew button{font-family:var(--ui);font-weight:600;font-size:13px;border:1px solid var(--lineStrong);background:#fff;
+    color:var(--text);border-radius:99px;padding:8px 16px;cursor:pointer}
+  .crew button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  .stage{display:flex;gap:28px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:900px;margin:0 auto}
+  .frame{width:380px;background:var(--canvas);border-radius:44px;padding:12px;
+    box-shadow:0 30px 70px -30px rgba(20,22,26,.5),0 0 0 1px rgba(0,0,0,.04);position:relative}
+  .frame .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:99px;z-index:5}
+  .screen{background:var(--canvas);border-radius:34px;height:760px;overflow:hidden;position:relative}
+  .cap{position:absolute;bottom:-30px;left:0;right:0;text-align:center;font-size:12px;font-weight:600;color:#6b6b66}
+
+  /* Conteúdo do ecrã */
+  .scroll{height:100%;overflow-y:auto;padding:52px 16px 24px}
+  .scroll::-webkit-scrollbar{width:0}
+  .topbar{display:flex;align-items:center;gap:6px;color:var(--text);font-size:14px;font-weight:600;margin-bottom:12px}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;color:var(--red)}
+  .title{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:-.3px;margin-top:4px}
+  .sub{font-size:14px;color:var(--sub);line-height:1.45;margin:6px 0 16px}
+
+  .item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:9px}
+  .dot{width:9px;height:9px;border-radius:99px;flex:0 0 auto}
+  .item .mid{flex:1;min-width:0}
+  .item .lbl{font-size:16px;font-weight:600}
+  .item .st{font-size:12px;font-weight:700;margin-top:2px}
+  .item .note{font-size:12px;font-weight:500;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .date{font-size:12px;font-weight:500;color:var(--sub);font-variant-numeric:tabular-nums}
+  .chev{color:var(--sub)}
+  .addbtn{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);border-radius:99px;padding:13px;font-weight:600;font-size:14px;margin-top:6px}
+  .foot{font-size:11px;color:var(--sub);line-height:1.45;margin-top:14px;padding:0 2px}
+
+  /* Sheet (modal) */
+  .sheetscreen{position:relative;background:var(--scrim)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--canvas);border-radius:22px 22px 34px 34px;padding:20px 20px 26px;max-height:96%;overflow-y:auto}
+  .sheet::-webkit-scrollbar{width:0}
+  .shead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .shead h3{font-size:17px;font-weight:600}
+  .x{width:34px;height:34px;border-radius:99px;background:var(--soft);display:grid;place-items:center;color:var(--text);font-size:18px}
+  .flbl{font-size:13px;font-weight:600;margin:14px 0 8px}
+  .flbl:first-of-type{margin-top:0}
+  .opt{font-weight:500;color:var(--sub)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);border-radius:99px;padding:8px 13px;font-size:13px;font-weight:600;background:var(--card);color:var(--text);cursor:pointer;user-select:none}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .daterow{display:flex;align-items:center;gap:8px}
+  .din{width:60px;text-align:center;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--ui);font-weight:600;font-size:15px;color:var(--text)}
+  .din.y{width:86px}
+  .sep{color:var(--sub);font-size:17px}
+  .tin{width:100%;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-family:var(--ui);font-weight:500;font-size:15px;color:var(--text)}
+  .tin::placeholder,.din::placeholder{color:#a9a9a3}
+  .derived{font-size:12px;font-weight:700;color:var(--greenText);margin-top:8px}
+  .hint{font-size:11.5px;line-height:1.5;font-weight:500;color:var(--sub);margin-top:8px;white-space:pre-line}
+  .refnote{font-size:13px;font-weight:500;color:var(--sub);margin-top:14px}
+  .save{margin-top:20px;background:var(--ink);color:#fff;text-align:center;font-weight:600;font-size:16px;border-radius:14px;padding:15px}
+  .save.off{opacity:.45}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Validades &amp; Documentos — formulário rico</h1>
+    <p>Reprodução fiel do ecrã <b>screens/ValidadesScreen.js</b> (mesma paleta e componentes).<br>Toca nos chips de <b>tipo</b> à direita e vê os campos mudarem — igual ao <code>fieldsForType</code> do código.</p>
+    <div class="warn">⚠️ Isto é um mockup HTML, não é a app a correr no telemóvel.</div>
+    <div class="crew">
+      <button id="cP" class="on" onclick="setCrew('pilot')">Piloto</button>
+      <button id="cC" onclick="setCrew('cabin')">Cabine</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- Frame 1: lista -->
+    <div class="frame">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="scroll">
+          <div class="topbar">‹ Voltar</div>
+          <div class="eyebrow">PRO</div>
+          <div class="title">Validades &amp; Documentos</div>
+          <div class="sub">Acompanha o que expira e renova a tempo.</div>
+          <div id="list"></div>
+          <div class="addbtn">＋ Adicionar validade</div>
+          <div class="foot">Guardado no dispositivo · lembretes 30, 7 e 1 dia antes (se os Lembretes estiverem ligados).</div>
+        </div>
+        <div class="cap">Lista</div>
+      </div>
+    </div>
+
+    <!-- Frame 2: sheet interativa -->
+    <div class="frame">
+      <div class="notch"></div>
+      <div class="screen sheetscreen">
+        <div class="sheet">
+          <div class="shead"><h3>Nova validade</h3><div class="x">✕</div></div>
+          <div class="flbl">Tipo</div>
+          <div class="chips" id="typeChips"></div>
+          <div id="fields"></div>
+        </div>
+        <div class="cap">Adicionar validade — <b>interativo</b></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* ── Porte da lógica de data/validities.js ── */
+  const CAT = {
+    pilot: [['medical','Médico Classe 1'],['licence','Licença (nº)'],['typeRating','Type rating · OPC/LPC'],['ir','IR · instrumentos'],['lang','Inglês ICAO'],['sep','SEP recorrente'],['crm','CRM'],['dg','Dangerous Goods'],['asec','Segurança (ASEC)'],['faid','Primeiros socorros'],['passport','Passaporte'],['instructor','Instrutor · TRI/TRE']],
+    cabin: [['medical','Médico'],['cca','Atestado de cabine (nº)'],['sep','SEP recorrente'],['crm','CRM'],['dg','Dangerous Goods'],['asec','Segurança (ASEC)'],['faid','Primeiros socorros'],['passport','Passaporte']],
+  };
+  const RENEW = {medical:12,typeRating:12,ir:12,sep:12,crm:36,dg:24,asec:36,faid:36,instructor:36};
+  const fieldsForType = (t) => ({
+    medical:{date:1,limitations:1,number:1}, passport:{date:1,number:1,nationality:1},
+    licence:{reference:1,number:1}, cca:{reference:1,number:1}, lang:{level:1},
+    typeRating:{doneDate:1,aircraft:1}, ir:{doneDate:1},
+    sep:{doneDate:1},crm:{doneDate:1},dg:{doneDate:1},asec:{doneDate:1},faid:{doneDate:1},
+    instructor:{doneDate:1,instrKind:1},
+  }[t] || {date:1,number:1});
+  const MED = {
+    pilot:[['VDL','óculos p/ longe + sobresselente'],['VML','multifocais + sobresselente'],['VNL','óculos p/ perto disponíveis'],['OML','só multipiloto'],['OCL','só como copiloto'],['HAL','com aparelho auditivo'],['TML','validade reduzida'],['SIC','exames médicos extra']],
+    cabin:[['CCL','só lentes de contacto'],['HAL','com aparelho auditivo'],['MCL','só tripulação múltipla'],['OAL','restrito ao tipo de avião'],['TML','validade reduzida'],['SIC','exames médicos extra']],
+  };
+  const langRenew = (lv)=> lv===6?null : lv===5?72:48;
+  const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const deriveExpiry=(y,m,d,months)=>{ if(!y||!m||!d||!months) return null; const end=new Date(Date.UTC(y,(m-1)+months+1,0)); return `${d?end.getUTCDate():''} ${MONTHS[end.getUTCMonth()]} ${end.getUTCFullYear()}`; };
+  const label=(t)=>{ const all=[...CAT.pilot,...CAT.cabin]; const f=all.find(x=>x[0]===t); return f?f[1]:t; };
+
+  /* ── Estado ── */
+  let crew='pilot', type='medical';
+  let st={}; // por-tipo: {d,m,y, number, note, aircraft, nationality, level, instrKind, lim:Set}
+  const fresh=()=>({d:'',m:'',y:'',number:'',note:'',aircraft:'',nationality:'',level:null,instrKind:null,lim:new Set()});
+
+  function setCrew(c){ crew=c; document.getElementById('cP').classList.toggle('on',c==='pilot'); document.getElementById('cC').classList.toggle('on',c==='cabin');
+    type=CAT[crew][0][0]; st=fresh(); renderTypes(); renderFields(); }
+
+  function renderTypes(){
+    document.getElementById('typeChips').innerHTML = CAT[crew].map(([id,lbl])=>
+      `<div class="chip ${id===type?'on':''}" onclick="pickType('${id}')">${lbl}</div>`).join('');
+  }
+  window.pickType=(t)=>{ type=t; st=fresh(); renderTypes(); renderFields(); };
+
+  function chips(arr,cur,cb,fmt){ return `<div class="chips">`+arr.map(o=>{const v=fmt?o.v:o,t2=fmt?o.l:o;return `<div class="chip ${cur===v?'on':''}" onclick="${cb}('${v}')">${t2}</div>`;}).join('')+`</div>`; }
+
+  function renderFields(){
+    const ff=fieldsForType(type);
+    const isRef = ff.reference || (ff.level && st.level===6);
+    const usesDone = ff.doneDate || (ff.level && st.level && st.level!==6);
+    const needsLevel = ff.level && !st.level;
+    const renewM = ff.level ? langRenew(st.level) : RENEW[type];
+    const y=+st.y,m=+st.m,d=+st.d;
+    const derived = usesDone && d&&m&&y && renewM ? deriveExpiry(y,m,d,renewM) : null;
+    const canSave = !needsLevel && (isRef || (d&&m&&y));
+    let h='';
+
+    if(ff.level){
+      h+=`<div class="flbl">Nível ICAO</div>`+chips(
+        [{v:'4',l:'4'},{v:'5',l:'5'},{v:'6',l:'6 · sem prazo'}], st.level?String(st.level):'', 'pickLevel', true);
+    }
+    if(ff.instrKind){
+      h+=`<div class="flbl">Tipo <span class="opt">· opcional</span></div>`+chips(['TRI','TRE','FI','SFI'], st.instrKind||'', 'pickInstr', false);
+    }
+    if(isRef){
+      h+=`<div class="refnote">Não expira — guardado como referência.</div>`;
+    }else if(needsLevel){
+      h+=`<div class="refnote">Escolhe o nível acima.</div>`;
+    }else{
+      h+=`<div class="flbl">${usesDone?'Feito em':'Validade'}</div>
+        <div class="daterow">
+          <input class="din" maxlength="2" placeholder="DD" value="${st.d}" oninput="upd('d',this.value)">
+          <span class="sep">/</span>
+          <input class="din" maxlength="2" placeholder="MM" value="${st.m}" oninput="upd('m',this.value)">
+          <span class="sep">/</span>
+          <input class="din y" maxlength="4" placeholder="AAAA" value="${st.y}" oninput="upd('y',this.value)">
+        </div>
+        <div id="dv" class="derived" style="display:${derived?'block':'none'}">${derived?('→ válido até '+derived):''}</div>`;
+    }
+    if(ff.limitations){
+      const codes=MED[crew];
+      h+=`<div class="flbl">Limitações <span class="opt">· opcional</span></div><div class="chips">`+
+        codes.map(([c])=>`<div class="chip ${st.lim.has(c)?'on':''}" onclick="toggleLim('${c}')">${c}</div>`).join('')+`</div>`;
+      if(st.lim.size){ h+=`<div class="hint">`+[...st.lim].map(c=>{const f=codes.find(x=>x[0]===c);return c+' — '+(f?f[1]:'');}).join('\n')+`</div>`; }
+    }
+    if(ff.aircraft){ h+=`<div class="flbl">Avião</div><input class="tin" placeholder="ex. A320" value="${st.aircraft}" oninput="upd('aircraft',this.value)">`; }
+    if(ff.nationality){ h+=`<div class="flbl">Nacionalidade <span class="opt">· opcional</span></div><input class="tin" placeholder="ex. PRT" value="${st.nationality}" oninput="upd('nationality',this.value)">`; }
+    if(ff.number){ h+=`<div class="flbl">Número <span class="opt">· opcional</span></div><input class="tin" placeholder="nº do documento" value="${st.number}" oninput="upd('number',this.value)">`; }
+    h+=`<div class="flbl">Nota <span class="opt">· opcional</span></div><input class="tin" placeholder="qualquer nota" value="${st.note}" oninput="upd('note',this.value)">`;
+    h+=`<div id="sv" class="save ${canSave?'':'off'}">Guardar</div>`;
+    document.getElementById('fields').innerHTML=h;
+  }
+  function refreshDerived(){
+    const ff=fieldsForType(type);
+    const usesDone = ff.doneDate || (ff.level && st.level && st.level!==6);
+    const renewM = ff.level ? langRenew(st.level) : RENEW[type];
+    const y=+st.y,m=+st.m,d=+st.d;
+    const derived = usesDone && d&&m&&y && renewM ? deriveExpiry(y,m,d,renewM) : null;
+    const dv=document.getElementById('dv');
+    if(dv){ dv.textContent = derived?('→ válido até '+derived):''; dv.style.display = derived?'block':'none'; }
+    const isRef = ff.reference || (ff.level && st.level===6);
+    const needsLevel = ff.level && !st.level;
+    const canSave = !needsLevel && (isRef || (d&&m&&y));
+    const sv=document.getElementById('sv'); if(sv) sv.className='save '+(canSave?'':'off');
+  }
+  window.upd=(k,v)=>{ if(k==='d'||k==='m')v=v.replace(/\D/g,'').slice(0,2); if(k==='y')v=v.replace(/\D/g,'').slice(0,4); st[k]=v;
+    // datas → atualiza só o derivado/botão (mantém o foco no campo); texto → já está no `st`.
+    if(k==='d'||k==='m'||k==='y') refreshDerived(); };
+  window.pickLevel=(v)=>{ st.level=+v; renderFields(); };
+  window.pickInstr=(v)=>{ st.instrKind = st.instrKind===v?null:v; renderFields(); };
+  window.toggleLim=(c)=>{ st.lim.has(c)?st.lim.delete(c):st.lim.add(c); renderFields(); };
+
+  /* ── Lista de exemplo ── */
+  const LIST=[
+    {dot:'var(--red)',c:'var(--redText)',lbl:'Passaporte',st:'expirado há 12 d',note:'PRT · nº C1234567',date:'19 jun 2026'},
+    {dot:'var(--warn)',c:'var(--warnText)',lbl:'Type rating · OPC/LPC',st:'expira em 24 d',note:'A320',date:'25 jul 2026'},
+    {dot:'var(--green)',c:'var(--greenText)',lbl:'Médico Classe 1',st:'válido · faltam 210 d',note:'VDL · nº 88213',date:'27 jan 2027'},
+    {dot:'var(--green)',c:'var(--greenText)',lbl:'Inglês ICAO',st:'válido · faltam 900 d',note:'ICAO 5',date:'12 dez 2028'},
+    {dot:'var(--sub)',c:'var(--sub)',lbl:'Licença (nº)',st:'referência · não expira',note:'nº PRT.FCL.12345',date:'—'},
+  ];
+  document.getElementById('list').innerHTML=LIST.map(i=>`
+    <div class="item">
+      <div class="dot" style="background:${i.dot}"></div>
+      <div class="mid">
+        <div class="lbl">${i.lbl}</div>
+        <div class="st" style="color:${i.c}">${i.st}</div>
+        <div class="note">${i.note}</div>
+      </div>
+      <div class="date">${i.date}</div>
+      <div class="chev">›</div>
+    </div>`).join('');
+
+  renderTypes(); renderFields();
+</script>
+</body>
+</html>

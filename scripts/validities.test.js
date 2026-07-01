@@ -21,7 +21,8 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { validityCatalog, validityStatus, sortValidities, isNoExpiryType } = require(path.resolve('data/validities.js'));
+const V = require(path.resolve('data/validities.js'));
+const { validityCatalog, validityStatus, sortValidities, isNoExpiryType, deriveExpiry, fieldsForType, langRenewMonths, medCodes, renewMonthsForType } = V;
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -86,6 +87,34 @@ const items = [
 ];
 eq('ordena: expirado primeiro', sortValidities(items, REF)[0].id, 'b');
 eq('ordena: a expirar em 2.º', sortValidities(items, REF)[1].id, 'c');
+
+// ── Formulário RICO: derivar validade da DATA FEITA (fim do mês) ──
+eq('SEP feito 12/05/2026 (+12m) → fim de maio/2027', deriveExpiry('2026-05-12', 12), '2027-05-31');
+eq('DG feito 12/05/2026 (+24m) → fim de maio/2028', deriveExpiry('2026-05-12', 24), '2028-05-31');
+eq('feito em fim de ano (+12m) → dezembro', deriveExpiry('2026-01-15', 12), '2027-01-31');
+eq('sem data → null', deriveExpiry(null, 12), null);
+eq('sem meses → null', deriveExpiry('2026-05-12', null), null);
+eq('renewMonths do SEP = 12', renewMonthsForType('sep'), 12);
+eq('renewMonths do DG = 24', renewMonthsForType('dg'), 24);
+eq('renewMonths do instrutor = 36', renewMonthsForType('instructor'), 36);
+
+// ── Proficiência linguística: nível → meses (6 = sem prazo) ──
+eq('Inglês nível 4 → 48 m', langRenewMonths(4), 48);
+eq('Inglês nível 5 → 72 m', langRenewMonths(5), 72);
+eq('Inglês nível 6 → sem prazo (null)', langRenewMonths(6), null);
+
+// ── Campos por tipo (o que o formulário rico mostra) ──
+eq('médico: data + limitações + nº', fieldsForType('medical'), { date: true, limitations: true, number: true });
+eq('passaporte: data + nº + nacionalidade', fieldsForType('passport'), { date: true, number: true, nationality: true });
+eq('type rating: data feita + avião', fieldsForType('typeRating'), { doneDate: true, aircraft: true });
+eq('SEP: data feita', fieldsForType('sep'), { doneDate: true });
+eq('licença: referência + nº', fieldsForType('licence'), { reference: true, number: true });
+eq('Inglês: nível', fieldsForType('lang'), { level: true });
+eq('instrutor: data feita + tipo', fieldsForType('instructor'), { doneDate: true, instrKind: true });
+
+// ── Códigos de limitação médica crew-aware ──
+eq('piloto tem OML nas limitações', medCodes(true).some((c) => c.code === 'OML'), true);
+eq('cabine tem MCL, não OML', medCodes(false).some((c) => c.code === 'MCL') && !medCodes(false).some((c) => c.code === 'OML'), true);
 
 console.log(`\nvalidades (catálogo) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

@@ -56,6 +56,74 @@ export const validityLabel = (typeId, isPilot, lang = 'pt') => {
 // é "para sempre" (o que caduca são os ratings), o CCA tem duração ilimitada. Guarda-se o nº.
 export const isNoExpiryType = (typeId) => CATALOG_ALL.some((t) => t.id === typeId && t.noExpiry);
 
+// ── Formulário RICO: campos estruturados por tipo + helpers puros ────────────────────────────
+// Meses de renovação de um tipo (do catálogo); null se não tiver.
+export const renewMonthsForType = (typeId) => (CATALOG_ALL.find((t) => t.id === typeId) || {}).renewMonths || null;
+
+// Deriva a VALIDADE a partir da DATA FEITA + meses de renovação, levando ao FIM DO MÊS (como o
+// eCrew regista: "válido até fim do mês de expiração"). null se faltar algo. Puro, UTC.
+export const deriveExpiry = (doneISO, months) => {
+  if (!doneISO || !months) return null;
+  const [y, m, d] = String(doneISO).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const base = new Date(Date.UTC(y, m - 1, d));
+  if (isNaN(base.getTime())) return null;
+  const end = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + months + 1, 0)); // dia 0 = último do mês
+  const p = (n) => String(n).padStart(2, '0');
+  return `${end.getUTCFullYear()}-${p(end.getUTCMonth() + 1)}-${p(end.getUTCDate())}`;
+};
+
+// Que campos o formulário RICO mostra para cada tipo:
+//  date       — validade DIRETA (médico, passaporte)        doneDate — DATA FEITA → validade derivada
+//  reference  — não expira, só nº (licença/CCA)             number/nationality/aircraft/limitations/level/instrKind — extras
+export const fieldsForType = (typeId) => {
+  const F = {
+    medical:    { date: true, limitations: true, number: true },
+    passport:   { date: true, number: true, nationality: true },
+    licence:    { reference: true, number: true },
+    cca:        { reference: true, number: true },
+    lang:       { level: true },
+    typeRating: { doneDate: true, aircraft: true },
+    ir:         { doneDate: true },
+    sep:        { doneDate: true }, crm: { doneDate: true }, dg: { doneDate: true }, asec: { doneDate: true }, faid: { doneDate: true },
+    instructor: { doneDate: true, instrKind: true },
+  };
+  return F[typeId] || { date: true, number: true };
+};
+
+// Proficiência linguística (FCL.055): nível 4 = 48 m · nível 5 = 72 m · nível 6 = sem prazo.
+export const LANG_LEVELS = [4, 5, 6];
+export const langRenewMonths = (level) => (level === 6 ? null : level === 5 ? 72 : 48);
+
+// Tipos de certificado de instrutor/examinador (Part-FCL) — para o piloto escolher qual tem.
+export const INSTRUCTOR_KINDS = ['TRI', 'TRE', 'FI', 'SFI'];
+
+// Códigos de limitação médica (Part-MED), crew-aware — os mais comuns na linha (o resto vai na nota).
+// Cada código condiciona COMO se opera; a app mostra a dica.
+const MED_CODES_PILOT = [
+  { code: 'VDL', pt: 'óculos p/ longe + sobresselente', en: 'distance glasses + spare' },
+  { code: 'VML', pt: 'multifocais + sobresselente',     en: 'multifocals + spare' },
+  { code: 'VNL', pt: 'óculos p/ perto disponíveis',     en: 'reading glasses available' },
+  { code: 'OML', pt: 'só multipiloto',                  en: 'multi-pilot only' },
+  { code: 'OCL', pt: 'só como copiloto',                en: 'co-pilot only' },
+  { code: 'HAL', pt: 'com aparelho auditivo',           en: 'with hearing aid' },
+  { code: 'TML', pt: 'validade reduzida',               en: 'time-limited' },
+  { code: 'SIC', pt: 'exames médicos extra',            en: 'special medical exams' },
+];
+const MED_CODES_CABIN = [
+  { code: 'CCL', pt: 'só lentes de contacto',           en: 'contact lenses only' },
+  { code: 'HAL', pt: 'com aparelho auditivo',           en: 'with hearing aid' },
+  { code: 'MCL', pt: 'só tripulação múltipla',          en: 'multi cabin-crew only' },
+  { code: 'OAL', pt: 'restrito ao tipo de avião',       en: 'aircraft-type restricted' },
+  { code: 'TML', pt: 'validade reduzida',               en: 'time-limited' },
+  { code: 'SIC', pt: 'exames médicos extra',            en: 'special medical exams' },
+];
+export const medCodes = (isPilot) => (isPilot ? MED_CODES_PILOT : MED_CODES_CABIN);
+export const medCodeHint = (code, isPilot, lang = 'pt') => {
+  const def = [...MED_CODES_PILOT, ...MED_CODES_CABIN].find((c) => c.code === code);
+  return def ? (lang === 'en' ? def.en : def.pt) : '';
+};
+
 // Estado de um item pela data de validade. warnDays = janela "a expirar" (default 30).
 // band: 'valid' (verde) · 'expiring' (âmbar) · 'expired' (vermelho) · 'none' (sem data).
 export function validityStatus(expiryISO, ref = new Date(), warnDays = 30) {
