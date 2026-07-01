@@ -19,7 +19,7 @@ const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); re
 // perguntas do Briefing/Início — FTL universal (legal · PSV · fadiga · limites 28 d · descanso)
 // + as CONSCIENTES DO PERFIL (per-diem por tipo/categoria/contrato; validades por piloto/cabine).
 export default function SimulationResult({ visible, duty, onEdit, onClose }) {
-  const { lang, dayLog, ae, crewAt, crewContract, crewFleet, postFlightMin, isPilot, validities } = useContext(AppContext);
+  const { lang, dayLog, ae, crewAt, crewContract, crewFleet, postFlightMin, isPilot, base, validities } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -38,7 +38,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const pf = (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
 
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
-  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot);
+  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base);
   const sp = duty.special || {};
   const d = duty.report_time ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot }) : null;
 

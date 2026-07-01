@@ -299,9 +299,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       duty_date: form.date, report_time: form.report,
       block_off: firstOff, block_on: lastOn,
       sectors: sectorRows.length, flight_minutes: blockMin, signOff: form.signOff || null,
+      route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
+      legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
-    }, dayLog, null, postFlightMin, isPilot);
-  }, [isFlight, form, dayLog, postFlightMin, isPilot, special]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, dayLog, null, postFlightMin, isPilot, base);   // + base → 12h/10h por localização real (235)
+  }, [isFlight, form, dayLog, postFlightMin, isPilot, special, accOn, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
   const psvPreview = useMemo(() => {
