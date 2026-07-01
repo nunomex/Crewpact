@@ -615,6 +615,23 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Split universal: piloto = cabine (excesso)', asPilot.psv.excess, asCabin.psv.excess);
 }
 
+// ─────────── Split DERIVADO das legs (atividade agrupada num só serviço, CS FTL.1.220) ───────────
+{
+  const { dayFtlFromDuties } = ftl;
+  // 1 atividade = 1 duty com 2 setores e pausa em terra de 4h (on-block 08:00 → off-block 12:00). O
+  // motor DERIVA o split das próprias legs (não precisa de campo persistido à parte). Span 06:00→20:00
+  // = 14h; base(06:00·2)=13:00 + extensão (pausa 4h, sem alojamento → líquida 3h30 → +1:45) = 14:45.
+  const legDuty = { report_time: '06:00', block_on: '20:00', sectors: 2, legs: [{ off: '06:00', on: '08:00' }, { off: '12:00', on: '20:00' }] };
+  const legDay = dayFtlFromDuties([legDuty]);
+  eq('Split das legs: máx estende para 14:45', legDay.psv.max, '14:45');
+  eq('Split das legs: 14:00 ≤ 14:45 → LEGAL', legDay.psv.over, false);
+  // A MESMA duty SEM legs (sem info da pausa) → falso-ilegal 14:00 > 13:00 → prova que a derivação é o que salva.
+  eq('Sem legs → falso-ilegal (14:00 > 13:00)', dayFtlFromDuties([{ report_time: '06:00', block_on: '20:00', sectors: 2 }]).psv.over, true);
+  // Turnaround CURTO (<3h): pausa 2h (08:00→10:00) → NÃO é split, sem extensão (máx = base).
+  const shortTA = dayFtlFromDuties([{ report_time: '06:00', block_on: '12:00', sectors: 2, legs: [{ off: '06:00', on: '08:00' }, { off: '10:00', on: '12:00' }] }]);
+  eq('Turnaround <3h: sem extensão (máx = base 13:00)', shortTA.psv.max, '13:00');
+}
+
 // ─────────── Voo ao vivo (#2): veredicto do PSV com o ATRASO REAL (ORO.FTL.105 / 205 b/f) ───────────
 // A lei mede o PSV até ao ÚLTIMO on-block REAL (105) → o atraso à CHEGADA estica o PSV; o teto fica
 // FIXO pela apresentação (205 b); acima do teto = discrição do comandante (205 f: +2h / +3h com

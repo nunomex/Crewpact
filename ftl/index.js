@@ -151,6 +151,22 @@ export const liveFdpVerdict = (d, arrDelayMin, { projected = false } = {}) => {
   };
 };
 
+// Split duty a partir das LEGS (CS FTL.1.220): a MAIOR pausa em terra ≥3h entre setores
+// (on-block da perna anterior → off-block da seguinte, com volta à meia-noite). "A single break"
+// → só a maior conta. DERIVADO das legs (não persistido à parte) → sempre coerente com as horas
+// reais e sobrevive a gravar/reler (as legs vão no roster_meta). {0,null} se não houver pausa ≥3h.
+const splitFromLegs = (legs) => {
+  if (!Array.isArray(legs) || legs.length < 2) return { splitBreakH: 0, splitBreakStart: null };
+  let bestMin = 0, start = null;
+  for (let i = 0; i < legs.length - 1; i++) {
+    const on = parseHhmm(legs[i].on), off = parseHhmm(legs[i + 1].off);   // arrival(i) → departure(i+1) = terra
+    if (on == null || off == null) continue;
+    let gap = off - on; while (gap < 0) gap += 1440;
+    if (gap >= 180 && gap > bestMin) { bestMin = gap; start = legs[i].on; }
+  }
+  return { splitBreakH: bestMin / 60, splitBreakStart: start };
+};
+
 // Adapter: registo bruto de duty (tabela `duties`) → entrada do `dayLog` (store FTL),
 // via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
 // `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).
@@ -168,11 +184,13 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
   // Casos especiais (Fase 1) — repouso a bordo (205c), delayed (205g), redução por standby (225):
   // mexem no TETO do PSV deste serviço. Vêm em `duty.special` (persistido em roster_meta).
   const sp = duty.special || {};
+  // Split duty (CS FTL.1.220): `splitBreakH` EXPLÍCITO (bloco combinado do dayFtlFromDuties, ou form)
+  // ganha; senão DERIVA a maior pausa em terra ≥3h das próprias legs. Assim uma atividade agrupada
+  // (2 setores com pausa 3-6h) recebe a extensão do teto em vez de um falso-ilegal.
+  const der = splitFromLegs(duty.legs);
   const d = computeDuty({
     state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf,
-    // Split duty (CS FTL.1.220): quando esta "duty" é um FDP COMBINADO (bloco de serviços com uma
-    // pausa em terra ≥3h), a pausa estende o teto. Default 0/null/false → serviço normal (inalterado).
-    splitBreakH: duty.splitBreakH || 0, splitBreakStart: duty.splitBreakStart || null, accommodation: !!duty.accommodation,
+    splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: !!duty.accommodation,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
   });
   if (d.fdp.actualFdpMin == null) return null;
@@ -334,6 +352,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
+      legs: d.legs,   // p/ derivar o split-duty das pausas em terra (CS FTL.1.220)
     };
     const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot });
     if (!entry) continue;                              // sem report/block_on → não deriva
