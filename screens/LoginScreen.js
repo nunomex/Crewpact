@@ -89,14 +89,6 @@ export default function LoginScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  // Cooldown do "Reenviar código": conta para baixo e mantém o botão BLOQUEADO até chegar a 0
-  // (evita pedidos repetidos + o rate-limit do servidor).
-  useEffect(() => {
-    if (resendLeft <= 0) return;
-    const id = setTimeout(() => setResendLeft((n) => n - 1), 1000);
-    return () => clearTimeout(id);
-  }, [resendLeft]);
-
   // Login
   const [lEmail, setLEmail]     = useState('');
   const [lPw, setLPw]           = useState('');
@@ -111,6 +103,13 @@ export default function LoginScreen() {
   const [codeErr, setCodeErr]     = useState('');
   const [resendLeft, setResendLeft] = useState(0);   // cooldown do "reenviar" (s) → bloqueia novo pedido
   const [resentOk, setResentOk]   = useState(false);
+  // Cooldown do "Reenviar código": conta para baixo até 0 (mantém o botão bloqueado). TEM de vir
+  // DEPOIS do useState acima — se vier antes, a dependência lê `undefined` e o timer nunca arranca.
+  useEffect(() => {
+    if (resendLeft <= 0) return;
+    const id = setTimeout(() => setResendLeft((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendLeft]);
   const [newPw, setNewPw]         = useState('');
   const [newPw2, setNewPw2]       = useState('');
   const [newPwErr, setNewPwErr]   = useState('');
