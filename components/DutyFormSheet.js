@@ -9,6 +9,7 @@ import Eyebrow from './Eyebrow';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
+import { flightNoForeign } from '../data/rosterCodes';
 import { routeDistancesNM } from '../data/perdiem';
 import { computeDuty } from '../ftl';
 import { airportZulu } from '../data/zulu';
@@ -94,7 +95,7 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -175,9 +176,16 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setDetecting(false);
     if (leg) { applyLegs([...(form.legs || []), leg]); setLegInput(''); success(); }
     else {
+      // Aviso SUAVE (não bloqueia): num voo OPERADO, se o nº não parecer da companhia do
+      // perfil. NÃO em posicionamento (deadhead é noutra companhia, legítimo → só kind 'flight').
+      const foreign = form.kind === 'flight' && flightNoForeign(fno, company);
+      const msg = foreign
+        ? l(`"${fno}" não foi detetado e não parece um voo da ${company?.name || 'tua companhia'} — posicionamento noutra companhia, ou engano? Introduzir à mão?`,
+            `"${fno}" wasn't found and doesn't look like a ${company?.name || 'your company'} flight — positioning on another carrier, or a typo? Add manually?`)
+        : l(`"${fno}" não existe na deteção. Queres introduzi-lo à mão (rota + horas)?`, `"${fno}" was not found. Add it manually (route + times)?`);
       Alert.alert(
         l('Voo não encontrado', 'Flight not found'),
-        l(`"${fno}" não existe na deteção. Queres introduzi-lo à mão (rota + horas)?`, `"${fno}" was not found. Add it manually (route + times)?`),
+        msg,
         [
           { text: l('Cancelar', 'Cancel'), style: 'cancel', onPress: () => setLegInput('') },
           { text: l('Introduzir à mão', 'Add manually'), onPress: () => setDetectMsg(l(`Mete a rota (origem → destino) e ✓ para adicionar "${fno}".`, `Enter the route (origin → destination) and ✓ to add "${fno}".`)) },

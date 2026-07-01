@@ -123,6 +123,34 @@ export const computeDuty = ({
   };
 };
 
+// ── Voo ao vivo: veredicto legal do PSV com o ATRASO REAL (ORO.FTL.105 / 205 b/f) ────────────
+// A lei mede o PSV da apresentação até ao ÚLTIMO on-block REAL (105) → o atraso à CHEGADA
+// estica o fim do PSV. O TETO fica FIXO pela hora de apresentação e nº de setores (205 b) — o
+// atraso NÃO o move. Acima do teto entra na DISCRIÇÃO do comandante (205 f: +2h normal, +3h com
+// repouso a bordo); acima da discrição é ILEGAL. `d` = resultado do computeDuty do serviço
+// PLANEADO (já crew-aware — o teto vem de lá, que distingue piloto/cabine no 205 c). `arrDelayMin`
+// = atraso à chegada, em minutos (multi-setor: assume-se propagação ao último setor — lado
+// conservador). `projected:true` quando a chegada ainda é ESTIMADA (não ATA). Devolve null sem
+// PSV/teto (sem veredicto). Determinístico: reusa o computeDiscretion golden, não inventa nada.
+export const liveFdpVerdict = (d, arrDelayMin, { projected = false } = {}) => {
+  if (!d || !d.fdp || d.fdp.actualFdpMin == null || d.fdp.maxFdpMin == null) return null;
+  const add = Math.max(0, Math.round(arrDelayMin || 0));
+  const realMin = d.fdp.actualFdpMin + add;   // PSV realizado = planeado + atraso à chegada
+  const maxMin = d.fdp.maxFdpMin;             // teto FIXO pela apresentação (205 b), crew-aware
+  const disc = computeDiscretion({
+    maxFdpMin: maxMin, actualFdpMin: realMin,
+    restMin: d.rest ? d.rest.restMin : 0,
+    inFlightRest: d.fdp.modifier === 'augmented',   // 205 f: repouso a bordo → +3h em vez de +2h
+  });
+  const verdict = realMin <= maxMin ? 'legal' : disc.used ? 'discretion' : 'over';
+  return {
+    verdict, projected, delayMin: add,
+    realStr: minToHhmm(realMin), maxStr: minToHhmm(maxMin), discMaxStr: disc.maxStr,
+    overMaxStr: realMin > maxMin ? minToHhmm(realMin - maxMin) : null,  // acima do teto planeado (205 b)
+    overDiscStr: disc.over ? disc.excessStr : null,                     // acima da discrição (205 f) = ilegal
+  };
+};
+
 // Adapter: registo bruto de duty (tabela `duties`) → entrada do `dayLog` (store FTL),
 // via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
 // `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).

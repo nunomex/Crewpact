@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { depDelayMin, arrDelayMin, hasDeviation, worstDelay } = require(path.resolve('data/flightDelay.js'));
+const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal } = require(path.resolve('data/flightDelay.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -59,6 +59,41 @@ eq('empate 15/15 → partida', worstDelay({ dep: { delayMin: 15 }, arr: { delayM
 eq('arr negativo → 0 (clamp)', arrDelayMin({ arr: { delayMin: -5 } }), 0);
 eq('null → 0', depDelayMin(null), 0);
 eq('null → sem desvio', hasDeviation(null), false);
+
+// ── Registo ATRASADO face às horas reais (recordBehindLive) — aviso de SINCRONIZAR ──
+// Extração das horas Zulu do feed (AirLabs dá "YYYY-MM-DD HH:MM" nos *_utc).
+eq('settledArrZ: ATA confirmado', settledArrZ({ status: 'active', arr: { actualUtc: '2026-06-30 14:42' } }), '14:42');
+eq('settledArrZ: só estimada EM VOO → null', settledArrZ({ status: 'active', arr: { estimatedUtc: '2026-06-30 14:42' } }), null);
+eq('settledArrZ: estimada MAS aterrou → assente', settledArrZ({ status: 'landed', arr: { estimatedUtc: '2026-06-30 14:42' } }), '14:42');
+eq('settledArrZ: nada → null', settledArrZ({ status: 'landed', arr: {} }), null);
+eq('schedArrZ: agendada', schedArrZ({ arr: { scheduledUtc: '2026-06-30 14:00' } }), '14:00');
+
+// Registo no PLANEADO (on-block guardado = agendada 14:00) + chegou REAL 14:42 → ATRASADO.
+const stale = { status: 'landed', arr: { scheduledUtc: '2026-06-30 14:00', actualUtc: '2026-06-30 14:42' } };
+eq('registo no planeado + real +42 → atrasado', recordBehindLive(stale, '14:00'), true);
+// Registo JÁ sincronizado (on-block guardado = real 14:42) → NÃO chateia.
+eq('registo já no real → sincronizado (false)', recordBehindLive(stale, '14:42'), false);
+// Registo editado à mão para um 3.º valor (13:00, ≠ planeado e ≠ real) → conservador, false.
+eq('registo noutro valor (editado) → conservador false', recordBehindLive(stale, '13:00'), false);
+// Diferença pequena (real 14:08 vs guardado/planeado 14:00 = 8 min < 10) → não chateia.
+const tiny = { status: 'landed', arr: { scheduledUtc: '2026-06-30 14:00', actualUtc: '2026-06-30 14:08' } };
+eq('atraso pequeno (<thr) → false', recordBehindLive(tiny, '14:00'), false);
+// Meia-noite: guardado/agendada 23:55, real 00:20 (= +25 min, à prova de wrap) → atrasado.
+const wrap = { status: 'landed', arr: { scheduledUtc: '2026-07-01 23:55', actualUtc: '2026-07-02 00:20' } };
+eq('cruza meia-noite → atrasado (wrap ok)', recordBehindLive(wrap, '23:55'), true);
+// Ainda em voo (só estimativa) → sem facto assente → não manda sincronizar.
+const flying = { status: 'active', arr: { scheduledUtc: '2026-06-30 14:00', estimatedUtc: '2026-06-30 14:42' } };
+eq('em voo (só estimativa) → não manda sincronizar', recordBehindLive(flying, '14:00'), false);
+// Robustez: sem on-block guardado, sem feed → false.
+eq('sem storedOnZ → false', recordBehindLive(stale, null), false);
+eq('feed nulo → false', recordBehindLive(null, '14:00'), false);
+
+// storedMatchesReal — LIMPAR o marcador quando o registo apanha o real (± limiar).
+eq('apanhou o real (igual) → true', storedMatchesReal('14:42', '14:42'), true);
+eq('apanhou o real (±8 min) → true', storedMatchesReal('14:50', '14:42'), true);
+eq('ainda no planeado (42 min) → false', storedMatchesReal('14:00', '14:42'), false);
+eq('apanhou o real cruzando meia-noite → true', storedMatchesReal('00:20', '00:18'), true);
+eq('nulo → false', storedMatchesReal(null, '14:42'), false);
 
 console.log(`\nflightStatus (desvio) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

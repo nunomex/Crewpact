@@ -34,7 +34,9 @@ import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
-import { syncReminders, notifyRosterChange, cancelAllReminders, requestRemindersPermission } from './data/reminders';
+import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission } from './data/reminders';
+import { legZulu } from './data/zulu';
+import { storedMatchesReal } from './data/flightStatus';
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -355,6 +357,13 @@ export default function App() {
   useEffect(() => { dutiesRef.current = duties; }, [duties]);
   // Fase 4 — Alterações de escala detetadas (calendário vs guardado). { changed, added, counts }.
   const [rosterChanges, setRosterChanges] = useState({ changed: [], conflict: [], added: [], removed: [], counts: { changed: 0, conflict: 0, added: 0, removed: 0, total: 0 } });
+  // Voo ao vivo — registo ATRASADO face às horas reais. Advisory; a app NUNCA escreve as horas
+  // na duty (a fonte é a escala oficial, sincronizada pelo calendário). Mapa por dia:
+  // { 'YYYY-MM-DD': { flightNo, realArrZ, schedArrZ, at } }. Persistido (sobrevive ao fecho);
+  // limpo quando o on-block guardado apanha o real (sincronizaste). Só sinaliza (pontinho+notif).
+  const [liveSync, setLiveSync] = useState({});
+  const liveSyncHydrated = useRef(false);
+  const lastLiveSyncDates = useRef(null);   // datas já notificadas (dedupe; semeado no load p/ não re-notificar ao arrancar)
 
   // ── Registo FTL por dia ──
   // dayLog: { 'YYYY-MM-DD': { psv, rest, … } }. As calculadoras registam num dia
@@ -774,6 +783,48 @@ export default function App() {
   // Persistir a cache local sempre que mudar (depois de hidratar, com utilizador).
   useEffect(() => { if (dutiesHydrated.current && user?.id) AsyncStorage.setItem(`cp_duties_${user.id}`, JSON.stringify(duties)).catch(() => {}); }, [duties, user?.id]);
 
+  // ── Voo ao vivo: marcadores de "registo atrasado face ao real" (load/save/mark/prune) ──
+  // Persistidos à parte das duties (NÃO tocam na duty — só avisam). Carregar ao entrar.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    AsyncStorage.getItem(`cp_livesync_${user.id}`).then((raw) => {
+      if (cancelled) return;
+      try { if (raw) { const parsed = JSON.parse(raw) || {}; setLiveSync(parsed); lastLiveSyncDates.current = new Set(Object.keys(parsed)); } } catch { /* corrompido → ignora */ }
+      liveSyncHydrated.current = true;
+    }).catch(() => { liveSyncHydrated.current = true; });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+  useEffect(() => { if (liveSyncHydrated.current && user?.id) AsyncStorage.setItem(`cp_livesync_${user.id}`, JSON.stringify(liveSync)).catch(() => {}); }, [liveSync, user?.id]);
+  // O Início deteta e MARCA (o feed ao vivo só existe lá). Idempotente: mesmo real → no-op.
+  const markLiveSync = useCallback((date, info) => {
+    if (!date || !info || !info.realArrZ) return;
+    setLiveSync((prev) => {
+      const cur = prev[date];
+      if (cur && cur.realArrZ === info.realArrZ) return prev;   // já marcado com o mesmo real
+      return { ...prev, [date]: { flightNo: info.flightNo || null, realArrZ: info.realArrZ, schedArrZ: info.schedArrZ || null, at: isoDay() } };
+    });
+  }, []);
+  const dismissLiveSync = useCallback((date) => setLiveSync((prev) => { if (!prev[date]) return prev; const n = { ...prev }; delete n[date]; return n; }), []);
+  // LIMPA sozinho: quando o on-block guardado apanha o real (sincronizaste) ou a duty desaparece.
+  // Corre a cada mudança das duties (a sincronização acaba sempre por mexer nelas).
+  useEffect(() => {
+    if (!liveSyncHydrated.current) return;
+    setLiveSync((prev) => {
+      const dates = Object.keys(prev);
+      if (!dates.length) return prev;
+      let changed = false; const next = { ...prev };
+      for (const date of dates) {
+        const d = duties[date];
+        if (!d || d.deleted) { delete next[date]; changed = true; continue; }       // duty apagada → sinal morto
+        const leg = Array.isArray(d.legs) && d.legs.length ? d.legs[d.legs.length - 1] : (d.block_on ? { on: d.block_on } : null);
+        const storedOnZ = leg ? legZulu(date, leg, 'on') : null;
+        if (storedOnZ && storedMatchesReal(storedOnZ, prev[date].realArrZ)) { delete next[date]; changed = true; }  // apanhou o real
+      }
+      return changed ? next : prev;
+    });
+  }, [duties]);
+
   // Reconstrói o histórico FTL (dayLog) a partir das duties SINCRONIZADAS — preenche só
   // os dias EM FALTA (dispositivo novo / pós-reinstalação: as duties vêm do servidor,
   // mas o dayLog é local). Corre quando a hidratação terminou (loadedUserId, com o
@@ -913,6 +964,16 @@ export default function App() {
     const sig = [...(rc.changed || []), ...(rc.conflict || []), ...(rc.added || []), ...(rc.removed || [])].map((x) => x.date).sort().join(',');
     if (sig && sig !== lastRosterSig.current) { lastRosterSig.current = sig; notifyRosterChange(rc.counts, lang); }
   }, [rosterChanges, remindersOn]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Notifica quando aparece um serviço NOVO com o registo atrasado face ao real (dedupe por
+  // conjunto de datas: só dispara nas datas FRESCAS, nunca ao limpar). NUNCA notifica ao resolver.
+  useEffect(() => {
+    if (!remindersOn) return;
+    const dates = Object.keys(liveSync);
+    const prevSet = lastLiveSyncDates.current || new Set();
+    const fresh = dates.filter((d) => !prevSet.has(d));
+    lastLiveSyncDates.current = new Set(dates);
+    if (fresh.length) notifyLiveSync(dates.length, lang);
+  }, [liveSync, remindersOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ctx = {
     user, setUser: handleSetUser, logout,
@@ -931,6 +992,7 @@ export default function App() {
     duties, saveDuty, removeDuty, addDutyService, updateDutyService, removeDutyService,
     notify,
     rosterChanges, checkRosterChanges,
+    liveSync, markLiveSync, dismissLiveSync,
     openSimulation: () => setSimulateOpen(true),
     calendarId, setCalendarId,
     calendarName, setCalendarName,

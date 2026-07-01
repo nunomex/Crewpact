@@ -13,7 +13,7 @@ import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import { isLongHaulCompany } from '../data/capabilities';
 import PageHeader from '../components/PageHeader';
 import Eyebrow from '../components/Eyebrow';
-import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty, liveFdpVerdict } from '../ftl';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -26,7 +26,7 @@ import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { fetchFlightStatus, hasDeviation, worstDelay } from '../data/flightStatus';
+import { fetchFlightStatus, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ } from '../data/flightStatus';
 import CountUp from '../components/CountUp';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
@@ -211,7 +211,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras, validities } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras, validities, markLiveSync } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -348,22 +348,45 @@ export default function HomeScreen({ navigation }) {
   // PSV máx + fadiga: se houver duty registada nesse dia, usa-a (exata); senão estima pelo voo (1 setor).
   // PSV é por DUTY (apresentação → último on-block, com TODOS os setores) — NÃO por setor.
   // `actual` = PSV realizado/planeado; `over` = excede o máx (para a margem no card).
-  let ndPsvMax = null, ndPsvActual = null, ndPsvOver = false, ndFat = null, ndSectors = null;
+  let ndPsvMax = null, ndPsvActual = null, ndPsvOver = false, ndFat = null, ndSectors = null, ndDuty = null;
   if (flight) {
     const reg = duties[flight.dateISO];
     if (flight.demo) {
       // Voo de exemplo: gera PSV máx + fadiga a partir dos próprios dados (sem registo).
-      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: flight.sectors });
-      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = flight.sectors; ndFat = fatigueFromDuty(d);
+      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: flight.sectors, isPilot });
+      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = flight.sectors; ndFat = fatigueFromDuty(d); ndDuty = d;
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
-      const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0 });
-      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d);
+      // Serviço REGISTADO: crew-aware (isPilot) + casos especiais gravados (205 c/f/g, standby).
+      const sp = reg.special || {};
+      const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0, isPilot, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null });
+      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndPsvOver = !!d.fdp.over; ndSectors = reg.sectors || null; ndFat = fatigueFromDuty(d); ndDuty = d;
     } else if (flight.report) {
       // Só estima PSV máx se o calendário trouxe apresentação REAL — não inventa dep − 1 h.
-      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1 });
+      // (Estimativa a 1 setor: NÃO alimenta o veredicto legal ao vivo — nº de setores incerto.)
+      const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1, isPilot });
       ndPsvMax = d.fdp.maxFdpStr;
     }
   }
+  // Voo ao vivo (#2): recalcula o PSV com o ATRASO REAL à chegada e dá o veredicto legal (105/205).
+  // Só com atraso à chegada (>0 → estica o PSV) E um serviço de nº de setores fiável (reg/demo).
+  // projected = chegada ainda ESTIMADA (sem ATA) → é PROJEÇÃO, não facto consumado.
+  const ndArrDelay = flightStatus ? arrDelayMin(flightStatus) : 0;
+  const liveVerdict = (ndArrDelay > 0 && ndDuty)
+    ? liveFdpVerdict(ndDuty, ndArrDelay, { projected: !(flightStatus.arr && flightStatus.arr.actual) })
+    : null;
+  // O REGISTO guardado está atrasado face à chegada REAL? (aviso de sincronizar a escala eCrew).
+  // on-block GUARDADO em Zulu: setor gravado (onZ autoritativa) → fuso do aeroporto → dispositivo.
+  const ndReg = flight ? duties[flight.dateISO] : null;
+  const ndOnLeg = (ndReg && Array.isArray(ndReg.legs) && ndReg.legs.length)
+    ? ndReg.legs[ndReg.legs.length - 1]
+    : (flight && flight.arrTime ? { on: flight.arrTime, arr: (flightStatus && flightStatus.arr && flightStatus.arr.iata) || null } : null);
+  const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on') : null;
+  const syncBehind = !!(flightStatus && ndStoredOnZ && recordBehindLive(flightStatus, ndStoredOnZ));
+  // Só o Início vê o feed ao vivo → é aqui que se MARCA o sinal persistente (pontinho + notif).
+  // markLiveSync é idempotente (mesmo real → no-op); a limpeza vive no App (quando o registo apanha).
+  useEffect(() => {
+    if (syncBehind && flight) markLiveSync(flight.dateISO, { flightNo, realArrZ: settledArrZ(flightStatus), schedArrZ: schedArrZ(flightStatus) });
+  }, [syncBehind, flightStatus, flight && flight.dateISO, flightNo]); // eslint-disable-line react-hooks/exhaustive-deps
   // Dia do voo para o badge circular (número + dia da semana).
   const ndDayNum = flight ? new Date(flight.dateISO + 'T00:00:00').getDate() : null;
   const ndReportZ = flight ? (airportZulu(flight.dateISO, flight.report, flight.depAirport) || toZulu(flight.dateISO, flight.report)) : null;
@@ -584,6 +607,15 @@ export default function HomeScreen({ navigation }) {
             : diverted ? l('Voo desviado', 'Flight diverted')
             : isArr ? l(`Chega +${w.min} min`, `Arrives +${w.min} min`)
             : l(`Atrasado +${w.min} min`, `Delayed +${w.min} min`);
+          // Veredicto legal do PSV com o atraso REAL (105/205) — supera a nota genérica.
+          const vColor = liveVerdict ? (liveVerdict.verdict === 'over' ? C.redText : liveVerdict.verdict === 'discretion' ? C.warnText : C.greenText) : null;
+          const vText = liveVerdict ? (() => {
+            const pre = liveVerdict.projected ? l('Projeção', 'Projected') : l('Com o atraso', 'With the delay');
+            const psv = l(`PSV ${liveVerdict.realStr} (máx ${liveVerdict.maxStr})`, `FDP ${liveVerdict.realStr} (max ${liveVerdict.maxStr})`);
+            if (liveVerdict.verdict === 'legal') return `${pre}: ${psv} — ${l('dentro do limite', 'within the limit')}.`;
+            if (liveVerdict.verdict === 'discretion') return `${pre}: ${psv} — ${l(`+${liveVerdict.overMaxStr} na discrição do comandante (205 f)`, `+${liveVerdict.overMaxStr} into commander's discretion (205 f)`)}.`;
+            return `${pre}: ${psv} — ${l(`ACIMA da lei: +${liveVerdict.overDiscStr} além da discrição (205 f)`, `OVER the legal limit: +${liveVerdict.overDiscStr} beyond discretion (205 f)`)}.`;
+          })() : null;
           return (
             <Animated.View style={[s.fdelay, { backgroundColor: soft, borderColor: tone + '55' }, seg(1)]}>
               <Ionicons name={cancelled ? 'close-circle' : diverted ? 'git-branch-outline' : 'time'} size={18} color={tone} style={{ marginTop: 1 }} />
@@ -591,7 +623,14 @@ export default function HomeScreen({ navigation }) {
                 <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo}{dep.iata ? ` · ${dep.iata}→${arr.iata || '—'}` : ''}</Text>
                 <Text style={[s.fdelayH, { color: txt }]} numberOfLines={1}>{head}</Text>
                 {!bad ? <Text style={s.fdelayS} numberOfLines={2}>{isArr ? l('Chega', 'Arrives') : l('Sai', 'Departs')} {hm(leg.estimated || leg.actual)} · {l('estava', 'was')} {hm(leg.scheduled)}{!isArr && dep.gate ? ` · ${l('porta', 'gate')} ${dep.gate}` : ''}</Text> : null}
-                {!bad && w.min >= 30 ? <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text> : null}
+                {!bad && vText ? (
+                  <Text style={[s.fdelayNote, { color: vColor, fontFamily: FONT.bold }]} numberOfLines={2}>{vText}</Text>
+                ) : (!bad && w.min >= 30 ? (
+                  <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text>
+                ) : null)}
+                {!bad && syncBehind ? (
+                  <Text style={[s.fdelayNote, { color: C.text, fontFamily: FONT.bold }]} numberOfLines={2}>↻ {l('O teu registo ainda tem o planeado — sincroniza a escala eCrew pelo calendário para o PSV/limites acertarem.', 'Your record still shows the plan — sync your eCrew roster via the calendar so your FDP/limits are correct.')}</Text>
+                ) : null}
               </View>
             </Animated.View>
           );

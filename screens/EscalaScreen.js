@@ -48,7 +48,7 @@ const buildDutiesCsv = (duties) => {
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, notify, removeDutyService,
+  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
     calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -248,6 +248,8 @@ export default function EscalaScreen({ navigation, route }) {
 
   // ── Banner "alterações na escala" (azul, informativo) ──
   const rcCounts = rosterChanges?.counts;
+  // Voo ao vivo — nº de serviços cujo registo está atrasado face às horas reais (pontinho + banner).
+  const lsCount = liveSync ? Object.keys(liveSync).length : 0;
   const rcSub = rcCounts ? [
     ((rcCounts.changed || 0) + (rcCounts.conflict || 0)) ? `${(rcCounts.changed || 0) + (rcCounts.conflict || 0)} ${l('alterada(s)', 'changed')}` : null,
     rcCounts.added ? `${rcCounts.added} ${l('nova(s)', 'new')}` : null,
@@ -266,7 +268,7 @@ export default function EscalaScreen({ navigation, route }) {
               <TouchableOpacity onPress={onSync} disabled={syncing} hitSlop={6} style={s.ib} accessibilityLabel={l('Sincronizar com o calendário', 'Sync with calendar')}>
                 {syncing ? <ActivityIndicator size="small" color={C.sub} /> : <Ionicons name="sync" size={17} color={C.text} />}
                 {/* Pontinho azul quando há mudanças por rever (espelha o banner "A escala mudou"). */}
-                {!syncing && rcCounts?.total ? <View style={s.syncDot} /> : null}
+                {!syncing && (rcCounts?.total || lsCount) ? <View style={s.syncDot} /> : null}
               </TouchableOpacity>
             ) : null}
             {anyDuty ? (
@@ -336,6 +338,14 @@ export default function EscalaScreen({ navigation, route }) {
                 title={l('A escala mudou no calendário', 'Roster changed in calendar')}
                 sub={`${rcSub}${rcSub ? ' · ' : ''}${l('rever', 'review')}`}
                 onPress={() => { select(); setImportSource('calendar'); setImportOpen(true); }} />
+            ) : null}
+
+            {/* Voo ao vivo — registo atrasado face às horas REAIS → sincroniza (âmbar; persiste até apanhar). */}
+            {lsCount ? (
+              <Banner tone="warn" icon="time-outline" actionLabel={syncing ? '' : l('Sincronizar', 'Sync')} style={{ marginTop: 10 }}
+                title={l('Horas reais diferentes do registo', 'Real times differ from your record')}
+                sub={l(`${lsCount} serviço(s) — sincroniza a escala eCrew para o PSV acertar`, `${lsCount} duty(s) — sync your eCrew roster so your FDP is correct`)}
+                onPress={() => { select(); onSync(); }} />
             ) : null}
 
             {/* Resumo do mês — tipografia com separadores, no topo */}

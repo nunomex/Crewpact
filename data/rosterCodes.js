@@ -20,3 +20,14 @@ export const ROSTER_CODES = {
 
 // Códigos da companhia (string slug); default easyJet enquanto não houver outros.
 export const codesFor = (company) => ROSTER_CODES[String(company || '').toLowerCase()] || ROSTER_CODES.easyjet;
+
+// True quando o nº de voo NÃO parece da companhia — SÓ quando TEMOS os códigos dela
+// (modelada) E o nº não casa o seu `flightNo`. False se a companhia não está modelada
+// (fallback = não arriscar falso-alarme) ou o nº casa. Para o aviso SUAVE do "Detetar"
+// no manual (posicionamento noutra companhia é legítimo → o chamador limita a voos operados).
+export const flightNoForeign = (fno, company) => {
+  const slug = String((company && company.slug) || company || '').toLowerCase();
+  const codes = ROSTER_CODES[slug];
+  if (!codes || !codes.flightNo) return false;
+  return !codes.flightNo.test(String(fno || ''));
+};

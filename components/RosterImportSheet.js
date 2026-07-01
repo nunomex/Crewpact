@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption, importSaveFields } from '../data/rosterImport';
-import { parseEasyjetRoster } from '../data/pdfRoster';
+import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
 // expo-pdf-text-extract é NATIVO (não existe em Expo Go) → require LAZY dentro de pickPdf,
@@ -97,6 +97,16 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const r = parseEasyjetRoster(text, company?.slug);
       setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base }));
       setPasteDiag(r.diag);
+      // Guarda SUAVE (não bloqueia): reconheci poucos serviços → provável PDF de outra
+      // companhia OU perfil errado. Avisa e deixa o utilizador decidir (§1/§2).
+      if (rosterLooksForeign(r.diag)) {
+        Alert.alert(
+          l('Confirma o PDF', 'Check the PDF'),
+          l(`Reconheci poucos serviços — isto não parece a escala da ${company?.name || 'tua companhia'}. Confirma que é o PDF da tua escala (ou o teu perfil).`,
+            `Few services recognized — this doesn't look like your ${company?.name || 'company'} roster. Check it's the right PDF (or your profile).`),
+          [{ text: 'OK' }],
+        );
+      }
       setPasteRecurrents(detectRecurrents(text));
       success();
     } catch {

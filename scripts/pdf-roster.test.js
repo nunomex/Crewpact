@@ -26,7 +26,8 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { parseEasyjetRoster } = require(path.resolve('data/pdfRoster.js'));
+const { parseEasyjetRoster, rosterLooksForeign } = require(path.resolve('data/pdfRoster.js'));
+const { flightNoForeign } = require(path.resolve('data/rosterCodes.js'));
 const { dutyFromActivity, buildImportCandidates, importSaveFields } = require(path.resolve('data/rosterImport.js'));
 
 let pass = 0, fail = 0;
@@ -177,6 +178,18 @@ ok('merge: 2 atividades → extra do calendário (tagged)', Array.isArray(mf.ext
 const mf2 = importSaveFields(multiCand, 'calendar', manualExtra);
 ok('merge: calendário (leitura) + manual (guardado) coexistem', mf2.extra.length === 2 && mf2.extra.some((e) => e.source === 'calendar') && mf2.extra.some((e) => e.source === 'manual'));
 ok('merge: source da primária propaga no commit', importSaveFields(singleCand, 'calendar').source === 'calendar');
+
+// ── Guarda suave "companhia errada" (rosterLooksForeign) — não bloqueia, só sinaliza ──
+ok('foreign: maioria other → true', rosterLooksForeign([{ kind: 'other' }, { kind: 'other' }, { kind: 'other' }, { kind: 'flight' }]) === true);   // 3/4 = 0.75 ≥ 0.7
+ok('foreign: escala normal → false', rosterLooksForeign([{ kind: 'flight' }, { kind: 'flight' }, { kind: 'standby_airport' }, { kind: 'off' }]) === false);
+ok('foreign: amostra pequena (<3) → false', rosterLooksForeign([{ kind: 'other' }, { kind: 'other' }]) === false);
+ok('foreign: null/vazio → false', rosterLooksForeign(null) === false);
+
+// ── flightNoForeign: aviso suave do "Detetar" no manual (só companhias modeladas) ──
+ok('nº foreign: TP123 num easyJet → true', flightNoForeign('TP123', { slug: 'easyjet' }) === true);
+ok('nº foreign: EJU7625 num easyJet → false', flightNoForeign('EJU7625', { slug: 'easyjet' }) === false);
+ok('nº foreign: U28903 num easyJet → false', flightNoForeign('U28903', { slug: 'easyjet' }) === false);
+ok('nº foreign: companhia NÃO modelada (tap) → false (não arrisca)', flightNoForeign('TP123', { slug: 'tap' }) === false);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  pdfRoster: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

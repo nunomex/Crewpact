@@ -126,6 +126,26 @@ export async function notifyRosterChange(counts = {}, lang = 'pt') {
   } catch { /* noop */ }
 }
 
+// Registo ATRASADO face às horas reais do voo ao vivo → o utilizador deve sincronizar a escala
+// oficial (eCrew) pelo calendário para o PSV/limites acertarem. Imediata; o CALLER faz o dedupe
+// (só dispara quando aparece um serviço NOVO nesta situação). A app NUNCA escreve as horas reais
+// no registo — só avisa; a fonte manda.
+export async function notifyLiveSync(count = 1, lang = 'pt') {
+  const n = N();
+  if (!n) return;
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const body = count > 1
+    ? l(`${count} serviços com horas reais diferentes do teu registo. Sincroniza a escala eCrew pelo calendário para o PSV acertar.`, `${count} duties have real times that differ from your record. Sync your eCrew roster via the calendar so your FDP is correct.`)
+    : l('As horas reais do voo mudaram face ao teu registo. Sincroniza a escala eCrew pelo calendário para o PSV acertar.', 'The real flight times differ from your record. Sync your eCrew roster via the calendar so your FDP is correct.');
+  try {
+    await ensureChannel();
+    await n.scheduleNotificationAsync({
+      content: { title: l('Sincroniza a escala', 'Sync your roster'), body, data: { kind: 'livesync' }, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
+      trigger: null,   // já
+    });
+  } catch { /* noop */ }
+}
+
 export async function cancelAllReminders() {
   const n = N();
   if (!n) return;

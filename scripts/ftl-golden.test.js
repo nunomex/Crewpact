@@ -580,6 +580,43 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Dia 2 serviços: 10h base entre eles → split', day2.split, true);
 }
 
+// ─────────── Voo ao vivo (#2): veredicto do PSV com o ATRASO REAL (ORO.FTL.105 / 205 b/f) ───────────
+// A lei mede o PSV até ao ÚLTIMO on-block REAL (105) → o atraso à CHEGADA estica o PSV; o teto fica
+// FIXO pela apresentação (205 b); acima do teto = discrição do comandante (205 f: +2h / +3h com
+// repouso a bordo); acima da discrição = ilegal. O motor reusa o computeDiscretion golden.
+{
+  // Serviço PLANEADO fictício: PSV planeado 12:00 (720), teto 13:00 (780). Discrição normal +2h → 15:00 (900).
+  const mk = (act, max, mod) => ({ fdp: { actualFdpMin: act, maxFdpMin: max, modifier: mod || null }, rest: { restMin: 720 } });
+  eq('Live: atraso pequeno (30m) → legal', ftl.liveFdpVerdict(mk(720, 780), 30).verdict, 'legal');            // 750 ≤ 780
+  eq('Live: no teto exato (60m) → legal', ftl.liveFdpVerdict(mk(720, 780), 60).verdict, 'legal');             // 780 = 780
+  eq('Live: acima do teto (90m) → discrição 205f', ftl.liveFdpVerdict(mk(720, 780), 90).verdict, 'discretion'); // 810 ≤ 900
+  eq('Live: limite da discrição (180m) → discrição', ftl.liveFdpVerdict(mk(720, 780), 180).verdict, 'discretion'); // 900 = 900
+  eq('Live: além da discrição (200m) → ilegal', ftl.liveFdpVerdict(mk(720, 780), 200).verdict, 'over');       // 920 > 900
+  eq('Live: PSV realizado (90m) = 13:30', ftl.liveFdpVerdict(mk(720, 780), 90).realStr, '13:30');
+  eq('Live: excesso acima do teto (90m) = +00:30', ftl.liveFdpVerdict(mk(720, 780), 90).overMaxStr, '00:30');
+  eq('Live: excesso além da discrição (200m) = +00:20', ftl.liveFdpVerdict(mk(720, 780), 200).overDiscStr, '00:20');
+  // Repouso a bordo (205 f): discrição vai a +3h (teto disc = 780+180 = 960) → 920 ainda dentro.
+  eq('Live: repouso a bordo → discrição +3h (200m dentro)', ftl.liveFdpVerdict(mk(720, 780, 'augmented'), 200).verdict, 'discretion');
+  eq('Live: atraso 0 → legal (não estica)', ftl.liveFdpVerdict(mk(720, 780), 0).verdict, 'legal');
+  eq('Live: atraso negativo tratado como 0', ftl.liveFdpVerdict(mk(720, 780), -50).realStr, '12:00');
+  eq('Live: sem PSV → null (sem veredicto)', ftl.liveFdpVerdict(mk(null, 780), 30), null);
+  eq('Live: sem teto → null (sem veredicto)', ftl.liveFdpVerdict(mk(720, null), 30), null);
+  eq('Live: d nulo → null', ftl.liveFdpVerdict(null, 30), null);
+  eq('Live: projected propaga', ftl.liveFdpVerdict(mk(720, 780), 30, { projected: true }).projected, true);
+
+  // CREW-AWARE (o utilizador pediu explicitamente: piloto E cabine). O teto vem do computeDuty, que
+  // distingue os dois no repouso a bordo (205 c): piloto por nº de tripulantes, cabine por classe de
+  // instalação. MESMA classe de instalação (c1), MESMO serviço → tetos diferentes por tripulação:
+  // piloto (c1, +1 tripulante) = 16:00 ; cabine (c1) = 18:00. O veredicto ao vivo herda esse teto.
+  const dP = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 1 }, isPilot: true });
+  const dC = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1' }, isPilot: false });
+  eq('Live crew: veredicto usa o teto do PILOTO (16:00)', ftl.liveFdpVerdict(dP, 0).maxStr, dP.fdp.maxFdpStr);
+  eq('Live crew: teto do piloto = 16:00', dP.fdp.maxFdpStr, '16:00');
+  eq('Live crew: veredicto usa o teto da CABINE (18:00)', ftl.liveFdpVerdict(dC, 0).maxStr, dC.fdp.maxFdpStr);
+  eq('Live crew: teto da cabine = 18:00', dC.fdp.maxFdpStr, '18:00');
+  eq('Live crew: mesma classe c1, teto piloto ≠ cabine (205 c distingue)', dP.fdp.maxFdpStr !== dC.fdp.maxFdpStr, true);
+}
+
 // ── Resumo ──
 console.log(`\nFTL golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

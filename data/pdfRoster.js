@@ -105,3 +105,15 @@ export function parseEasyjetRoster(text, company) {
   }
   return { activities, nonflights, diag };
 }
+
+// Guarda SUAVE de "companhia errada": a escala parece de OUTRA companhia (ou é o PDF/
+// calendário errado)? SÓ sinaliza quando a esmagadora maioria dos dias NÃO foi reconhecida
+// (kind 'other'). Amostra pequena → não arrisca o aviso. NUNCA bloqueia — o chamador mostra
+// um aviso e deixa o utilizador decidir (um bloqueio duro rejeitaria uma escala válida com
+// códigos invulgares = falso-negativo, pior). Pura → testável por golden.
+export function rosterLooksForeign(diag, { minItems = 3, threshold = 0.7 } = {}) {
+  const items = Array.isArray(diag) ? diag : [];
+  if (items.length < minItems) return false;
+  const other = items.filter((d) => d && d.kind === 'other').length;
+  return other / items.length >= threshold;
+}
