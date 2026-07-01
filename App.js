@@ -327,7 +327,7 @@ export default function App() {
   const [onboarded, setOnboarded] = useState(false);
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
 
-  const [lang, setLang]                 = useState('pt');
+  const [lang, setLang]                 = useState(() => { const c = getLocales?.()[0]?.languageCode?.toLowerCase(); return c === 'pt' ? 'pt' : 'en'; });   // device: PT→PT, resto→EN
   const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
@@ -617,21 +617,16 @@ export default function App() {
     return () => sub.remove();
   }, [lockEnabled]);
 
-  // Idioma é uma preferência do dispositivo (global) — hidratar no arranque.
-  // Se nunca foi escolhido, deteta a língua do dispositivo (EN para sistemas em
-  // inglês, caso contrário PT). Uma escolha guardada do utilizador prevalece sempre.
+  // Idioma: por defeito segue a língua do TELEMÓVEL (PT→PT, qualquer outra→EN) — já resolvido no
+  // useState acima (síncrono, sem flash no login). Aqui só uma ESCOLHA GUARDADA do utilizador
+  // (no Perfil) prevalece; sem escolha, fica o detetado do dispositivo.
   const langHydrated = useRef(false);
   useEffect(() => {
     (async () => {
       try {
         const saved = await AsyncStorage.getItem('cp_lang');
-        if (saved === 'pt' || saved === 'en') {
-          setLang(saved);
-        } else {
-          const code = getLocales?.()[0]?.languageCode?.toLowerCase();
-          setLang(code === 'en' ? 'en' : 'pt');
-        }
-      } catch { /* storage/locale indisponível — mantém o default 'pt' */ }
+        if (saved === 'pt' || saved === 'en') setLang(saved);
+      } catch { /* storage indisponível — mantém o detetado no useState */ }
       langHydrated.current = true;
     })();
   }, []);

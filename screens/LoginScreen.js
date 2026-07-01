@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
 import StrengthBar from '../components/StrengthBar';
 import OTPInput from '../components/OTPInput';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
 import {
   login,
@@ -71,10 +70,9 @@ const makeF = (C) => StyleSheet.create({
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
-  const { setUser, setSignupMode, lang, setLang } = useContext(AppContext);
+  const { setUser, setSignupMode, lang } = useContext(AppContext);
   const C = useTheme();
   const s = makeS(C);
-  const insets = useSafeAreaInsets();
   // views: 'login' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -220,15 +218,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={[s.langRow, { top: insets.top + 8 }]}>
-        {['pt', 'en'].map((lc) => (
-          <TouchableOpacity key={lc} onPress={() => { select(); setLang(lc); }} activeOpacity={0.8} hitSlop={8}
-            style={[s.langDot, { backgroundColor: lang === lc ? C.red : C.soft }]}
-            accessibilityLabel={lc === 'pt' ? 'Português' : 'English'}>
-            <Text style={[s.langDotTxt, { color: lang === lc ? '#fff' : C.sub }]}>{lc.toUpperCase()}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Idioma segue o telemóvel (PT→PT, resto→EN); a troca manual vive no Perfil. */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[s.scroll, { flexGrow: 1 }, keyboardOpen && { paddingTop: 40 }]}
@@ -374,9 +364,6 @@ export default function LoginScreen() {
 
 const makeS = (C) => StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.canvas },
-  langRow:      { position: 'absolute', right: SPACE.lg, zIndex: 20, flexDirection: 'row', gap: SPACE.sm },
-  langDot:      { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  langDotTxt:   { fontSize: TYPE.label, fontFamily: FONT.bold, letterSpacing: 0.5 },
   scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
   brand:        { alignItems: 'center', marginBottom: 44 },
   ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', marginBottom: 18, ...SHADOW.sm },
