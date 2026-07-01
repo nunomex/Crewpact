@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,12 +7,15 @@ import { getLocales } from 'expo-localization';
 import Eyebrow from '../components/Eyebrow';
 import { countryName as countryNameOf, countryFlag } from '../data/countries';
 import { AppContext, useTheme } from '../data/appContext';
-import { updateProfile, register, validateName, validateEmail, validatePassword } from '../data/auth';
+import { updateProfile, register, verifySignupCode, resendSignup, validateName, validateEmail, validatePassword } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { t, tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import AccountCreated from '../components/AccountCreated';
+import StrengthBar from '../components/StrengthBar';
+import OTPInput from '../components/OTPInput';
+import PrimaryButton from '../components/PrimaryButton';
 
 export default function OnboardingScreen({ signup = false }) {
   const { user, airlines, bases, countries, setProfile, setOnboarded, setUser, setSignupMode, suppressAuth, logout, lang } = useContext(AppContext);
@@ -24,6 +27,44 @@ export default function OnboardingScreen({ signup = false }) {
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
   const [created, setCreated] = useState(null);   // {user, payload} pós-signup → página de transição
+  // Confirmação de email (só ativa se o autoconfirm estiver DESLIGADO na dashboard): quando o
+  // register devolve `needsConfirm`, a conta existe mas sem sessão → pedimos o código OTP.
+  const [confirming, setConfirming] = useState(null);   // { email, payload } | null
+  const [confCode, setConfCode]     = useState('');
+  const [confErr, setConfErr]       = useState('');
+  const [confResent, setConfResent] = useState(false);
+  const [confLeft, setConfLeft]     = useState(0);   // cooldown do reenviar (segundos)
+  const confInFlight = useRef(false);
+
+  const handleConfirmSignup = async () => {
+    if (confInFlight.current) return;
+    if (confCode.length < 6) { setConfErr(lang === 'en' ? 'Enter the 6-digit code.' : 'Introduz o código de 6 dígitos.'); return; }
+    confInFlight.current = true; setSaving(true); setConfErr('');
+    try {
+      const res = await verifySignupCode(confirming.email, confCode, lang);
+      if (!res.ok) { setConfErr(res.error); return; }
+      upsertProfile(res.user?.id, confirming.payload).catch(() => {});   // profiles (best-effort; já há sessão)
+      success();
+      setConfirming(null);
+      setCreated({ user: res.user, payload: confirming.payload });   // → página "Conta criada" + commit
+    } finally { confInFlight.current = false; setSaving(false); }
+  };
+
+  const handleResendSignup = async () => {
+    if (confInFlight.current || confLeft > 0) return;   // bloqueia enquanto o cooldown corre
+    confInFlight.current = true; setConfErr('');
+    try {
+      const res = await resendSignup(confirming.email, lang);
+      if (res.ok) { setConfResent(true); setConfLeft(30); success(); } else { setConfResent(false); setConfErr(res.error); }
+    } finally { confInFlight.current = false; }
+  };
+
+  // Cooldown do "Reenviar código" — decrementa 1/s até 0 (bloqueia o botão entretanto).
+  useEffect(() => {
+    if (confLeft <= 0) return;
+    const id = setTimeout(() => setConfLeft((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [confLeft]);
 
   // Página de transição "Conta criada" → comita a sessão depois de ~2,5s e entra.
   useEffect(() => {
@@ -153,6 +194,13 @@ export default function OnboardingScreen({ signup = false }) {
       const reg = await register(draft.name, draft.email, draft.password, lang, payload);
       suppressAuth.current = false;
       if (!reg.ok) { setSaving(false); setSaveError(reg.error); setStep(0); return; }  // ex.: email já existe → volta ao 1.º passo
+      if (reg.needsConfirm) {
+        // Verificação de email LIGADA → sessão só nasce após o código. Pede-o antes de entrar.
+        setSaving(false);
+        setConfCode(''); setConfErr(''); setConfResent(false); setConfLeft(30);   // o 1.º email já saiu no register → arranca o cooldown
+        setConfirming({ email: reg.email, payload });
+        return;
+      }
       upsertProfile(reg.user?.id, payload).catch(() => {});   // tabela profiles (best-effort; o metadata é a fonte de verdade)
       success();
       // Conta criada → mostra a página de transição; o commit da sessão (setUser…)
@@ -185,6 +233,34 @@ export default function OnboardingScreen({ signup = false }) {
   };
 
   if (created) return <AccountCreated name={draft.name} lang={lang} />;
+
+  // Ecrã de confirmação de email (só aparece com autoconfirm OFF na dashboard).
+  if (confirming) return (
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <View style={styles.confirmWrap}>
+        <View style={styles.confirmIcon}><Ionicons name="mail-open-outline" size={30} color={C.text} /></View>
+        <Text style={styles.confirmTitle}>{lang === 'en' ? 'Confirm your email' : 'Confirma o teu email'}</Text>
+        <Text style={styles.confirmSub}>
+          {lang === 'en' ? 'We sent a 6-digit code to' : 'Enviámos um código de 6 dígitos para'}{'\n'}
+          <Text style={{ color: C.text, fontFamily: FONT.semibold }}>{confirming.email}</Text>
+        </Text>
+        <OTPInput value={confCode} onChange={(v) => { setConfCode(v); setConfErr(''); }} />
+        {confErr ? <Text style={styles.confirmErr}>{confErr}</Text> : (confResent ? <Text style={styles.confirmOk}>{lang === 'en' ? 'Code resent.' : 'Código reenviado.'}</Text> : null)}
+        <PrimaryButton onPress={handleConfirmSignup} disabled={confCode.length < 6} loading={saving}
+          label={lang === 'en' ? 'Confirm' : 'Confirmar'} style={{ height: 54, marginTop: 8, alignSelf: 'stretch' }} />
+        <View style={styles.confirmLinks}>
+          <TouchableOpacity onPress={handleResendSignup} disabled={confLeft > 0} hitSlop={10}>
+            <Text style={[styles.confirmLink, confLeft > 0 && styles.confirmLinkMuted]}>
+              {confLeft > 0
+                ? (lang === 'en' ? `Resend in ${confLeft}s` : `Reenviar em ${confLeft}s`)
+                : (lang === 'en' ? 'Resend code' : 'Reenviar código')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setConfirming(null); setConfCode(''); setConfErr(''); setStep(flow.length - 1); }} hitSlop={10}><Text style={styles.confirmLinkSub}>{lang === 'en' ? 'Change email' : 'Mudar email'}</Text></TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -237,6 +313,7 @@ export default function OnboardingScreen({ signup = false }) {
                 <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.sub} />
               </TouchableOpacity>
             </View>
+            <View style={{ marginTop: 8 }}><StrengthBar password={draft.password} lang={lang} /></View>
             {draft.password && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
           </View>
         ) : s.input === 'date' ? (
@@ -321,6 +398,16 @@ export default function OnboardingScreen({ signup = false }) {
 
 const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.canvas },
+  confirmWrap: { flex: 1, paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center' },
+  confirmIcon: { width: 64, height: 64, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  confirmTitle: { fontSize: 24, fontFamily: FONT.bold, letterSpacing: -0.3, color: C.text, textAlign: 'center' },
+  confirmSub: { fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 20, marginTop: 8 },
+  confirmErr: { fontSize: 13, color: C.red, fontFamily: FONT.medium, textAlign: 'center', marginTop: -8, marginBottom: 4 },
+  confirmOk: { fontSize: 13, color: C.greenText, fontFamily: FONT.medium, textAlign: 'center', marginTop: -8, marginBottom: 4 },
+  confirmLinks: { flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 22 },
+  confirmLink: { fontSize: 14, fontFamily: FONT.bold, color: C.red },
+  confirmLinkMuted: { color: C.sub, fontFamily: FONT.medium },
+  confirmLinkSub: { fontSize: 14, color: C.sub },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 16 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.ink, alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8 },
   pillText: { color: '#fff', fontSize: 11, letterSpacing: 2, fontFamily: FONT.semibold },

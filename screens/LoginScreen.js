@@ -6,6 +6,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
+import StrengthBar from '../components/StrengthBar';
+import OTPInput from '../components/OTPInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
 import {
@@ -67,85 +69,6 @@ const makeF = (C) => StyleSheet.create({
   err:        { fontSize: TYPE.micro, color: C.red, marginTop: SPACE.xs, marginLeft: 2 },
 });
 
-/* ─── StrengthBar ────────────────────────────────────────────────────────── */
-function StrengthBar({ password, lang }) {
-  const C = useTheme();
-  const sb = makeSb(C);
-  const checks = [
-    { label: t('st.8', lang),       ok: password.length >= 8 },
-    { label: t('st.upper', lang),   ok: /[A-Z]/.test(password) },
-    { label: t('st.num', lang),     ok: /[0-9]/.test(password) },
-    { label: t('st.special', lang), ok: /[^A-Za-z0-9]/.test(password) },
-  ];
-  const score = checks.filter(c => c.ok).length;
-  const colors = [C.line, C.red, C.warn, C.warn, C.green];
-  if (!password) return null;
-  return (
-    <View style={sb.wrap}>
-      <View style={sb.bars}>
-        {checks.map((_, i) => (
-          <View key={i} style={[sb.bar, { backgroundColor: i < score ? colors[score] : C.line }]} />
-        ))}
-      </View>
-      <View style={sb.chips}>
-        {checks.map((c, i) => (
-          <View key={i} style={[sb.chip, { backgroundColor: c.ok ? C.greenSoft : C.soft }]}>
-            <Ionicons name={c.ok ? 'checkmark' : 'close'} size={9} color={c.ok ? C.green : C.sub} />
-            <Text style={[sb.chipTxt, { color: c.ok ? C.green : C.sub }]}>{c.label}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-const makeSb = (C) => StyleSheet.create({
-  wrap:    { marginBottom: SPACE.md, marginTop: -4 },
-  bars:    { flexDirection: 'row', gap: SPACE.xs, marginBottom: 6 },
-  bar:     { flex: 1, height: 3, borderRadius: RADIUS.pill },
-  chips:   { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
-  chip:    { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 3 },
-  chipTxt: { fontSize: TYPE.micro, fontFamily: FONT.medium },
-});
-
-/* ─── OTP Input ──────────────────────────────────────────────────────────── */
-function OTPInput({ value, onChange }) {
-  const C = useTheme();
-  const otp = makeOtp(C);
-  const ref = useRef();
-  const digits = Array(8).fill('').map((_, i) => value[i] || '');
-  return (
-    <TouchableOpacity onPress={() => ref.current?.focus()} activeOpacity={1} style={otp.row}>
-      {digits.map((d, i) => (
-        <View key={i} style={[
-          otp.box,
-          value.length === i && otp.boxActive,
-          d !== '' && otp.boxFilled,
-        ]}>
-          <Text style={otp.digit}>{d}</Text>
-        </View>
-      ))}
-      <TextInput
-        ref={ref}
-        value={value}
-        onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, 8))}
-        keyboardType="numeric"
-        maxLength={8}
-        style={otp.hidden}
-        autoFocus
-        caretHidden
-      />
-    </TouchableOpacity>
-  );
-}
-const makeOtp = (C) => StyleSheet.create({
-  row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20 },
-  box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: C.redSoft, borderColor: C.red },
-  boxFilled:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.line },
-  digit:    { fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text },
-  hidden:   { position: 'absolute', opacity: 0, width: 1, height: 1 },
-});
-
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
   const { setUser, setSignupMode, lang, setLang } = useContext(AppContext);
@@ -166,6 +89,14 @@ export default function LoginScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
+  // Cooldown do "Reenviar código": conta para baixo e mantém o botão BLOQUEADO até chegar a 0
+  // (evita pedidos repetidos + o rate-limit do servidor).
+  useEffect(() => {
+    if (resendLeft <= 0) return;
+    const id = setTimeout(() => setResendLeft((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendLeft]);
+
   // Login
   const [lEmail, setLEmail]     = useState('');
   const [lPw, setLPw]           = useState('');
@@ -178,6 +109,8 @@ export default function LoginScreen() {
   const [resetEmail, setResetEmail] = useState('');
   const [code, setCode]           = useState('');
   const [codeErr, setCodeErr]     = useState('');
+  const [resendLeft, setResendLeft] = useState(0);   // cooldown do "reenviar" (s) → bloqueia novo pedido
+  const [resentOk, setResentOk]   = useState(false);
   const [newPw, setNewPw]         = useState('');
   const [newPw2, setNewPw2]       = useState('');
   const [newPwErr, setNewPwErr]   = useState('');
@@ -185,6 +118,7 @@ export default function LoginScreen() {
 
   const lPwRef    = useRef();
   const newPw2Ref = useRef();
+  const inFlight  = useRef(false);   // guarda anti-duplo-submit: ignora toques enquanto há pedido a decorrer
 
   // Shake for validation errors
   const shake = useRef(new Animated.Value(0)).current;
@@ -216,54 +150,73 @@ export default function LoginScreen() {
 
   /* ── Handlers ── */
   const handleLogin = async () => {
+    if (inFlight.current) return;
     setGlobalErr('');
     const eE = validateEmail(lEmail, lang);
     const ePw = validatePassword(lPw, false, lang);
     setLErrEmail(eE || ''); setLErrPw(ePw || '');
     if (eE || ePw) { doShake(); return; }
-    setLoading(true);
-    const res = await login(lEmail, lPw, lang);
-    setLoading(false);
-    if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
-    setUser(res.user);
+    inFlight.current = true; setLoading(true);
+    try {
+      const res = await login(lEmail, lPw, lang);
+      if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
+      setUser(res.user);
+    } finally { inFlight.current = false; setLoading(false); }
   };
 
   const handleRequestReset = async () => {
+    if (inFlight.current) return;
     setFErr('');
     const eE = validateEmail(fInput, lang);
     if (eE) { setFErr(eE); doShake(); return; }
-    setLoading(true);
-    const res = await requestPasswordReset(fInput, lang);
-    setLoading(false);
-    if (!res.ok) { setFErr(res.error); doShake(); return; }
-    setResetEmail(res.email);
-    setCode('');
-    navigateTo('code');
+    inFlight.current = true; setLoading(true);
+    try {
+      const res = await requestPasswordReset(fInput, lang);
+      if (!res.ok) { setFErr(res.error); doShake(); return; }
+      setResetEmail(res.email);
+      setCode(''); setResentOk(false); setResendLeft(30);   // arranca o cooldown ao entrar no ecrã do código
+      navigateTo('code');
+    } finally { inFlight.current = false; setLoading(false); }
+  };
+
+  // Reenviar o código (mesmo email) — bloqueado durante o cooldown; feedback "reenviado" ou erro.
+  const handleResendCode = async () => {
+    if (inFlight.current || resendLeft > 0) return;
+    inFlight.current = true;
+    try {
+      const res = await requestPasswordReset(resetEmail, lang);
+      if (res.ok) { setResentOk(true); setCodeErr(''); setResendLeft(30); success(); }
+      else { setResentOk(false); setCodeErr(res.error); doShake(); }
+    } finally { inFlight.current = false; }
   };
 
   const handleVerifyCode = async () => {
+    if (inFlight.current) return;
     setCodeErr('');
-    if (code.length < 8) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
-    setLoading(true);
-    const res = await verifyResetCode(resetEmail, code, lang);
-    setLoading(false);
-    if (!res.ok) { setCodeErr(res.error); doShake(); return; }
-    setNewPw(''); setNewPw2('');
-    navigateTo('reset');
+    if (code.length < 6) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
+    inFlight.current = true; setLoading(true);
+    try {
+      const res = await verifyResetCode(resetEmail, code, lang);
+      if (!res.ok) { setCodeErr(res.error); doShake(); return; }
+      setNewPw(''); setNewPw2('');
+      navigateTo('reset');
+    } finally { inFlight.current = false; setLoading(false); }
   };
 
   const handleResetPassword = async () => {
+    if (inFlight.current) return;
     setNewPwErr(''); setNewPw2Err('');
     const ePw  = validatePassword(newPw, true, lang);
     const ePw2 = newPw !== newPw2 ? t('login.pwMismatch', lang) : null;
     setNewPwErr(ePw || ''); setNewPw2Err(ePw2 || '');
     if (ePw || ePw2) { doShake(); return; }
-    setLoading(true);
-    const res = await resetPassword(resetEmail, code, newPw, lang);
-    setLoading(false);
-    if (!res.ok) { setNewPwErr(res.error); doShake(); return; }
-    setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
-    navigateTo('login', false);
+    inFlight.current = true; setLoading(true);
+    try {
+      const res = await resetPassword(resetEmail, code, newPw, lang);
+      if (!res.ok) { setNewPwErr(res.error); doShake(); return; }
+      setFInput(''); setCode(''); setNewPw(''); setNewPw2('');
+      navigateTo('login', false);
+    } finally { inFlight.current = false; setLoading(false); }
   };
 
   return (
@@ -367,12 +320,24 @@ export default function LoginScreen() {
                     <Ionicons name="alert-circle" size={16} color={C.red} />
                     <Text style={s.errBannerTxt}>{codeErr}</Text>
                   </View>
+                ) : resentOk ? (
+                  <View style={[s.okBanner, { marginTop: -12 }]}>
+                    <Ionicons name="checkmark-circle" size={16} color={C.green} />
+                    <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
+                  </View>
                 ) : null}
-                <PrimaryButton onPress={handleVerifyCode} disabled={code.length < 8} loading={loading} label={t('login.btnVerify', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
-                <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => { setCode(''); setCodeErr(''); navigateTo('forgot', false); }}>
-                  <Ionicons name="arrow-back" size={14} color={C.sub} />
-                  <Text style={s.linkTxt}>{t('login.resend', lang)}</Text>
-                </TouchableOpacity>
+                <PrimaryButton onPress={handleVerifyCode} disabled={code.length < 6} loading={loading} label={t('login.btnVerify', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
+                <View style={s.codeLinks}>
+                  <TouchableOpacity onPress={handleResendCode} disabled={resendLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
+                    <Text style={[s.linkStrong, resendLeft > 0 && s.linkMuted]}>
+                      {resendLeft > 0 ? t('login.resendIn', lang).replace('{s}', resendLeft) : t('login.resend', lang)}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setCode(''); setCodeErr(''); setResentOk(false); navigateTo('forgot', false); }}>
+                    <Ionicons name="arrow-back" size={13} color={C.sub} />
+                    <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
@@ -432,4 +397,10 @@ const makeS = (C) => StyleSheet.create({
   stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   linkTxt:      { fontSize: TYPE.sub, color: C.sub },
+  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.greenSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.greenSoft },
+  okBannerTxt:  { flex: 1, fontSize: TYPE.sub, color: C.greenText, fontFamily: FONT.medium },
+  codeLinks:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 20 },
+  linkStrong:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
+  linkMuted:    { color: C.sub },
+  backInline:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });
