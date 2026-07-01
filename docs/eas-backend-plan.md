@@ -79,7 +79,17 @@ respetivo do `schema.sql` (idempotente).
 - [ ] Cancelar/fechar o diálogo **não** apaga nada.
 - [ ] Sem rede → mensagem "Sem ligação à internet" (não o genérico) e **nada** apagado.
 
-### Fast-follow (DECIDIDO 2026-07-01, adiado) — período de graça de 7 dias
+### Fast-follow (FEITO 2026-07-01) — período de graça de 7 dias
+
+> **Estado: CONSTRUÍDO.** `delete-account` passou a SOFT-DELETE (marca `app_metadata.deletion_scheduled_at`
+> = agora+7d, preserva o resto, desloga; devolve `scheduledAt`). NOVO `reactivate-account` (limpa a marca,
+> uid do JWT). NOVO `supabase/cron-purge-deletions.sql` (pg_cron 1×/dia → `purge_scheduled_deletions()`
+> apaga `auth.users` cujo prazo expirou; cascades limpam o resto). App: `mapUser.deletionAt`, `deleteAccount`
+> devolve a data, `reactivateAccount` (refresca a sessão), **gate `ReactivateScreen`** no App.js (qualquer
+> `deletionAt` → reativar/sair), copy do diálogo mudada (7 dias, reativável), **NÃO purga o local** (a
+> reativação precisa da escala). **DEPLOY do user:** deploy das 2 funções + correr o SQL do cron (ativar pg_cron).
+> **Trade-off aceite:** dados LOCAIS no dispositivo não se purgam ao agendar (a reativação precisa deles);
+> após o cron apagar no servidor, o local fica órfão até o user reinstalar/entrar (device-only, sandbox).
 
 **Decisão:** o hard-delete acima serve **agora** (requisito das stores cumprido). Como *melhoria*
 (não bloqueador), o apagar passa depois a **soft-delete com 7 dias de graça + reativação** —

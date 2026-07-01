@@ -1,21 +1,12 @@
 // ════════════════════════════════════════════════════════════════════════════
-// Supabase Edge Function: `delete-account`  —  agendar o apagamento (RGPD Art. 17)
+// Supabase Edge Function: `reactivate-account`  —  cancelar o apagamento agendado
 // ════════════════════════════════════════════════════════════════════════════
-// PERÍODO DE GRAÇA de 7 dias (padrão Apple/Meta): em vez de apagar já, MARCA a conta
-// para eliminação em `app_metadata.deletion_scheduled_at` (= agora + 7 d) e desloga.
-// Dentro dos 7 dias, entrar de novo → a app deteta a marca e oferece REATIVAR
-// (função `reactivate-account`). Depois do prazo, o CRON (supabase/cron-purge-deletions.sql)
-// apaga de vez; as CASCADES da BD (schema.sql §1/§5) limpam profiles + duties.
-//
-// SEGURANÇA: corre com SERVICE_ROLE. O uid vem SEMPRE do JWT do chamador (getUser do
-// token), NUNCA do corpo → um utilizador só agenda o apagamento da SUA conta.
-//
-// SEGREDOS: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY injetados pelo runtime (sem `secrets set`).
-// DEPLOY: `supabase functions deploy delete-account` (verify_jwt pode ficar ligado — dupla barreira).
+// Par da `delete-account`: dentro do período de graça, o utilizador entra de novo e a
+// app oferece REATIVAR → esta função LIMPA `app_metadata.deletion_scheduled_at`.
+// Segurança idêntica: SERVICE_ROLE, uid SEMPRE do JWT do chamador (nunca do corpo).
+// DEPLOY: `supabase functions deploy reactivate-account`.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const GRACE_DAYS = 7;   // período de graça antes da eliminação definitiva
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -39,16 +30,21 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  // Identifica o chamador PELO JWT (não confia em nada do corpo).
   const { data: userData, error: getErr } = await admin.auth.getUser(token);
   const uid = userData?.user?.id;
   if (getErr || !uid) return json({ ok: false, error: 'invalid_token' }, 401);
 
-  // AGENDA (soft-delete): marca a data-limite no app_metadata, PRESERVANDO o resto.
-  const scheduledAt = new Date(Date.now() + GRACE_DAYS * 86400 * 1000).toISOString();
-  const app_metadata = { ...(userData.user.app_metadata || {}), deletion_scheduled_at: scheduledAt };
+  // GUARDA DE EXPIRAÇÃO: passado o prazo, NÃO se pode reativar (o cron pode ainda não ter corrido,
+  // mas a promessa é "7 dias e é eliminada"). Fecha a janela de "ressuscitar" uma conta expirada.
+  const scheduled = userData.user.app_metadata?.deletion_scheduled_at;
+  if (scheduled && new Date(scheduled).getTime() < Date.now()) {
+    return json({ ok: false, error: 'expired' }, 410);
+  }
+
+  // Limpa a marca de eliminação (preserva o resto do app_metadata).
+  const app_metadata = { ...(userData.user.app_metadata || {}), deletion_scheduled_at: null };
   const { error: upErr } = await admin.auth.admin.updateUserById(uid, { app_metadata });
   if (upErr) return json({ ok: false, error: upErr.message }, 500);
 
-  return json({ ok: true, scheduledAt });
+  return json({ ok: true });
 });

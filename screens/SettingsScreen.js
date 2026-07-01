@@ -2,7 +2,6 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -93,22 +92,21 @@ export default function SettingsScreen({ navigation }) {
     setDelBusy(true); setDelErr('');
     const res = await deleteAccount(lang);
     if (!res.ok) { setDelBusy(false); setDelErr(res.error); return; }
-    // RGPD Art. 17 TAMBÉM no dispositivo: purga as caches locais deste utilizador
-    // (cp_*_<uid>: escala, validades=saúde, perfil, extras…). O logout() é
-    // deliberadamente NÃO-destrutivo (re-login rápido/offline), por isso a purga
-    // vive AQUI, só no caminho do apagar. getAllKeys → apanha chaves futuras sozinho.
-    try {
-      const uid = user?.id;
-      if (uid) {
-        const keys = await AsyncStorage.getAllKeys();
-        const mine = keys.filter((k) => k.endsWith('_' + uid));
-        if (mine.length) await AsyncStorage.multiRemove(mine);
-      }
-    } catch { /* best-effort — o servidor já apagou; não bloquear o fecho */ }
     setDelBusy(false);
     setDelModal(false); setDelWord('');
     success();
-    logout();   // teardown em memória + volta ao login; a conta já foi apagada no servidor
+    // Período de graça: a conta foi AGENDADA (não apagada já) → NÃO purgar o local (a reativação
+    // precisa da escala). Mostra a data-limite e desloga. Entrar de novo dentro do prazo = reativar.
+    const dateStr = res.scheduledAt ? new Date(res.scheduledAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+    Alert.alert(
+      l('Conta desativada', 'Account deactivated'),
+      dateStr
+        ? l(`A conta será eliminada de vez a ${dateStr}. Até lá, entra de novo para a reativar — a escala e os dados ficam intactos.`,
+             `Your account will be permanently deleted on ${dateStr}. Until then, sign in again to reactivate it — your roster and data stay intact.`)
+        : l('A conta será eliminada de vez dentro de 7 dias. Até lá, entra de novo para a reativar — a escala e os dados ficam intactos.',
+             'Your account will be permanently deleted within 7 days. Until then, sign in again to reactivate it — your roster and data stay intact.'),
+      [{ text: 'OK', onPress: () => logout() }],   // desloga SÓ depois de leres a data (a conta continua agendada)
+    );
   };
 
   // Mudar e-mail (ação de segurança): re-auth password → email novo → código (1 código ao
@@ -498,7 +496,7 @@ export default function SettingsScreen({ navigation }) {
               sub={l('Perfil + escala + FTL + AE, em JSON (RGPD)', 'Profile + roster + FTL + AE, as JSON (GDPR)')}
               onPress={exportData} s={s} C={C} />
             <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')}
-              sub={l('Apaga a conta e todos os dados — definitivo', 'Deletes your account and all data — permanent')}
+              sub={l('Desativa agora · eliminada em 7 dias (reativável)', 'Deactivates now · deleted in 7 days (reversible)')}
               danger onPress={() => { setDelWord(''); setDelErr(''); setDelModal(true); }} last s={s} C={C}
               right={<Ionicons name="chevron-forward" size={15} color={C.red} />} />
           </View>
@@ -531,12 +529,12 @@ export default function SettingsScreen({ navigation }) {
         title={l('Apagar conta', 'Delete account')} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 20 }}>
           <View style={s.delWarn}>
-            <Ionicons name="warning-outline" size={18} color={C.red} />
-            <Text style={s.delWarnTxt}>{l('Esta ação é definitiva e não pode ser anulada.', 'This action is permanent and cannot be undone.')}</Text>
+            <Ionicons name="time-outline" size={18} color={C.red} />
+            <Text style={s.delWarnTxt}>{l('A conta é desativada e eliminada em 7 dias.', 'Your account is deactivated and deleted in 7 days.')}</Text>
           </View>
           <Text style={s.delBody}>
-            {l('Apaga a tua conta e TODOS os dados: perfil, escala, registos FTL e AE. Se quiseres guardar uma cópia, exporta primeiro os teus dados.',
-               'Deletes your account and ALL data: profile, roster, FTL and AE records. If you want to keep a copy, export your data first.')}
+            {l('Tens 7 dias para mudar de ideias: entra de novo dentro do prazo e a conta reativa (a escala e os dados ficam). Passados os 7 dias, é eliminada de vez — perfil, escala, FTL e AE. Queres uma cópia? Exporta primeiro.',
+               'You have 7 days to change your mind: sign in again within that window and the account reactivates (your roster and data stay). After 7 days it is permanently deleted — profile, roster, FTL and AE. Want a copy? Export first.')}
           </Text>
           <Text style={s.fieldLabel}>{l(`Escreve ${CONFIRM_WORD} para confirmar`, `Type ${CONFIRM_WORD} to confirm`)}</Text>
           <View style={s.pwInputRow}>

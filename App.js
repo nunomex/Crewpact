@@ -41,6 +41,7 @@ import { storedMatchesReal } from './data/flightStatus';
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
 import LockScreen         from './screens/LockScreen';
+import ReactivateScreen   from './screens/ReactivateScreen';
 import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
@@ -564,9 +565,22 @@ export default function App() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          handleSetUser(mapUser(session.user));
-          // Sessão restaurada (reabertura), não login fresco → exigir desbloqueio.
-          if (enabled) setLocked(true);
+          let u = session.user;
+          // Se a sessão persistida traz marca de eliminação, VALIDA no servidor (o JWT local pode
+          // estar stale: reativou mas o refresh falhou → getUser traz a marca já limpa; ou o cron já
+          // apagou a conta → getUser dá erro → sai limpo p/ o login, sem cair no gate de reativação).
+          if (u.app_metadata?.deletion_scheduled_at) {
+            try {
+              const { data, error } = await supabase.auth.getUser();
+              if (error) { await supabase.auth.signOut().catch(() => {}); u = null; }
+              else if (data?.user) u = data.user;
+            } catch { /* offline → mantém o local (conservador: mostra o gate, revalida quando houver rede) */ }
+          }
+          if (u) {
+            handleSetUser(mapUser(u));
+            // Sessão restaurada (reabertura), não login fresco → exigir desbloqueio.
+            if (enabled) setLocked(true);
+          }
         }
       } catch { /* sem sessão guardada / storage indisponível */ }
       setAuthLoading(false);
@@ -1017,6 +1031,13 @@ export default function App() {
     // desbloqueio antes de mostrar qualquer dado. Camada por cima — não toca no
     // onboarding nem no fluxo de perfil.
     if (lockEnabled && locked) return <LockScreen />;
+    // Conta AGENDADA para eliminação (período de graça): entrou (dentro do prazo, ou no lag antes do
+    // cron correr) → oferece REATIVAR ou continuar a eliminação (sair). Camada por cima da app.
+    if (user.deletionAt) {
+      return <ReactivateScreen deletionAt={user.deletionAt} lang={lang}
+        onReactivated={(u) => handleSetUser(u || { ...user, deletionAt: null })}
+        onDismiss={logout} />;
+    }
     // Espera a resolução do perfil (profiles → cache → metadata) antes de decidir
     // entre onboarding e app — evita "flash" do onboarding a quem já tem perfil.
     if (loadedUserId !== user.id) return (

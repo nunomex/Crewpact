@@ -15,6 +15,9 @@ export const mapUser = (u) => ({
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
   lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (Art. 66.9) → sem retenção
   instructorRated: u.user_metadata?.instructorRated || false,  // qualificação de instrutor (Art. 42) → opt-in p/ qualquer categoria
+  // Eliminação AGENDADA (período de graça): posta pela Edge Function no app_metadata (só service_role
+  // a escreve → à prova de adulteração). ISO ou null. A app deteta e oferece reativar dentro do prazo.
+  deletionAt: u.app_metadata?.deletion_scheduled_at || null,
   createdAt: u.created_at?.slice(0, 10) || '',
 });
 
@@ -209,23 +212,40 @@ export const changePassword = async (newPw, lang = 'pt') => {
   return { ok: true };
 };
 
-// ─── Apagar conta (RGPD Art. 17) ─────────────────────────────────────────────
-// Chama a Edge Function `delete-account` (corre com service_role e valida o JWT →
-// apaga SÓ o próprio uid; as cascades da BD limpam profiles+duties). O
-// `functions.invoke` junta automaticamente o Authorization da sessão atual.
-// O caller deve correr o `logout()` do AppContext a seguir (teardown local + caches).
+// ─── Apagar conta (RGPD Art. 17) — período de graça de 7 dias ────────────────
+// Chama a Edge Function `delete-account` (service_role, valida o JWT → agenda SÓ o
+// próprio uid). NÃO apaga já: marca `deletion_scheduled_at` (agora + 7 d) e desloga.
+// Dentro do prazo, entrar de novo → a app deteta (user.deletionAt) e oferece reativar.
+// Devolve `scheduledAt` (ISO) p/ a UI mostrar a data. NÃO purga o local (a reativação
+// precisa da escala) — o caller faz só `logout()` (teardown em memória, mantém caches).
 export const deleteAccount = async (lang = 'pt') => {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { ok: false, error: m('generic', lang) };   // sem sessão não há nada a apagar
+  if (!session) return { ok: false, error: m('generic', lang) };
+  let scheduledAt = null;
   try {
     const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) return { ok: false, error: isNetworkError(error) ? m('network', lang) : m('generic', lang) };
+    if (!data?.ok) return { ok: false, error: m('generic', lang) };
+    scheduledAt = data.scheduledAt || null;
+  } catch (e) {
+    return { ok: false, error: isNetworkError(e) ? m('network', lang) : m('generic', lang) };
+  }
+  await supabase.auth.signOut().catch(() => {});   // desloga (a conta continua a existir, agendada)
+  return { ok: true, scheduledAt };
+};
+
+// Reativar (cancelar o apagamento agendado): dentro do prazo, entrar de novo → esta função
+// limpa a marca. Refresca a sessão p/ o JWT deixar de a trazer e devolve o user atualizado.
+export const reactivateAccount = async (lang = 'pt') => {
+  try {
+    const { data, error } = await supabase.functions.invoke('reactivate-account', { method: 'POST' });
     if (error) return { ok: false, error: isNetworkError(error) ? m('network', lang) : m('generic', lang) };
     if (!data?.ok) return { ok: false, error: m('generic', lang) };
   } catch (e) {
     return { ok: false, error: isNetworkError(e) ? m('network', lang) : m('generic', lang) };
   }
-  await supabase.auth.signOut().catch(() => {});   // limpa a sessão local (o token já ficou inválido no servidor)
-  return { ok: true };
+  try { const { data } = await supabase.auth.refreshSession(); return { ok: true, user: data?.user ? mapUser(data.user) : null }; }
+  catch { return { ok: true, user: null }; }
 };
 
 // ─── Mudar e-mail (ação de segurança) ────────────────────────────────────────
