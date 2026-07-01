@@ -632,6 +632,32 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Turnaround <3h: sem extensão (máx = base 13:00)', shortTA.psv.max, '13:00');
 }
 
+// ─────────── Base vs FORA (ORO.FTL.235) por localização real + Alojamento (CS FTL.1.220 d/e) ───────────
+{
+  const { dutyToFtlDay, dayFtlFromDuties } = ftl;
+  // REPOUSO MÍNIMO pela LOCALIZAÇÃO real (último aeroporto das legs vs base). Fora = 10h, base = 12h.
+  const away = dutyToFtlDay({ report_time: '06:00', block_on: '10:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO' }] }, { base: 'LIS' });
+  eq('Fora da base (acaba OPO): repouso mín 10h', away.rest.away, 10);
+  const atBase = dutyToFtlDay({ report_time: '06:00', block_on: '10:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'OPO' }, { dep: 'OPO', arr: 'LIS' }] }, { base: 'LIS' });
+  eq('Na base (acaba LIS): repouso mín 12h', atBase.rest.base, 12);
+  eq('Local desconhecido → conservador 12h', dutyToFtlDay({ report_time: '06:00', block_on: '10:00', sectors: 1 }, {}).rest.base, 12);
+  // FRONTEIRA rest/split usa o local: pausa 10h30 FORA da base ≥ 10h → REST (2 FDP), não split.
+  const svc1 = { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180, legs: [{ dep: 'LIS', arr: 'OPO' }] };
+  const svc2 = { report_time: '20:30', block_on: '23:00', sectors: 1, flight_minutes: 120, legs: [{ dep: 'OPO', arr: 'LIS' }] };
+  eq('Fora: pausa 10h30 ≥ 10h → REST, não split', dayFtlFromDuties([svc1, svc2], { base: 'LIS' }).split, false);
+  eq('Sem base: 10h30 < 12h → split (conservador)', dayFtlFromDuties([{ ...svc1, legs: null }, { ...svc2, legs: null }], {}).split, true);
+  // ALOJAMENTO (opt-in): split de 8h. Sem alojamento a pausa contável limita-se a 6h; COM alojamento
+  // conta toda (220 d/e). FDP combinado 06:00→22:30 = 16h30. Sem: máx 16:00 (over). Com: máx 16:45 (legal).
+  const mk = (acc) => [
+    { report_time: '06:00', block_on: '08:00', sectors: 1, flight_minutes: 120, accommodation: acc },
+    { report_time: '16:00', block_on: '22:30', sectors: 1, flight_minutes: 300 },
+  ];
+  eq('Split 8h SEM alojamento: máx 16:00', dayFtlFromDuties(mk(false), {}).psv.max, '16:00');
+  eq('Split 8h SEM alojamento: 16:30 > 16:00 → over', dayFtlFromDuties(mk(false), {}).psv.over, true);
+  eq('Split 8h COM alojamento: máx 16:45 (pausa toda conta)', dayFtlFromDuties(mk(true), {}).psv.max, '16:45');
+  eq('Split 8h COM alojamento: 16:30 ≤ 16:45 → legal', dayFtlFromDuties(mk(true), {}).psv.over, false);
+}
+
 // ─────────── Voo ao vivo (#2): veredicto do PSV com o ATRASO REAL (ORO.FTL.105 / 205 b/f) ───────────
 // A lei mede o PSV até ao ÚLTIMO on-block REAL (105) → o atraso à CHEGADA estica o PSV; o teto fica
 // FIXO pela apresentação (205 b); acima do teto = discrição do comandante (205 f: +2h / +3h com

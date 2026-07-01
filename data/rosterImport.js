@@ -53,9 +53,10 @@ export const dutyFromActivity = (act, base = null) => {
 
 // Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
 // no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
-export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false) => {
+export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null) => {
   // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
-  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot }); // { psv, servico, voo, rest, parts } ou null
+  // `base` → repouso 12h/10h por localização real (ORO.FTL.235) e a fronteira rest/split.
+  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot, base }); // { psv, servico, voo, rest, parts } ou null
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída
@@ -127,7 +128,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     const prev = byDate.get(date);
     if (prev) {
       prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
-      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot);
+      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, base);
       prev.multi = (prev.duty.extra.length + 1);
       // Re-classifica o DIA COMPLETO (primária + extra) face ao guardado: um serviço a mais/menos
       // face ao guardado é uma mudança (o classify agora é multi-serviço). Novo dia → só legalidade.
@@ -137,7 +138,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     }
     const ex = duties[date];
     const exists = !!(ex && !ex.deleted);
-    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot);
+    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, base);
     // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
     let status = 'ok', diff = [];
     if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }

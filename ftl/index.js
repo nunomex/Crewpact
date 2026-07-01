@@ -167,11 +167,29 @@ const splitFromLegs = (legs) => {
   return { splitBreakH: bestMin / 60, splitBreakStart: start };
 };
 
+// Base vs FORA da base (ORO.FTL.235): decide o repouso mínimo (12h base / 10h fora) e a fronteira
+// rest/split. Deriva do ÚLTIMO aeroporto REAL (legs > rota) vs a base do tripulante — NUNCA por
+// paridade (que é palpite → arriscaria subestimar o repouso). Devolve true (fora, fiável) /
+// false (base, fiável) / null (sem dados → o caller usa o default conservador = na base).
+const endsAwayReliable = (duty, base) => {
+  const b = String(base || '').trim().toUpperCase();
+  if (!b || !duty) return null;
+  let lastAp = (Array.isArray(duty.legs) && duty.legs.length) ? duty.legs[duty.legs.length - 1].arr : null;
+  if (!lastAp && duty.route) { const aps = String(duty.route).split(/[^A-Za-z]+/).filter(Boolean); lastAp = aps[aps.length - 1]; }
+  if (!lastAp) return null;
+  return String(lastAp).trim().toUpperCase() !== b;
+};
+
 // Adapter: registo bruto de duty (tabela `duties`) → entrada do `dayLog` (store FTL),
 // via o motor. A duty não guarda aclimatação/base → defaults 'acc' e na base (inBase).
 // `src:'duty'` marca a entrada como DERIVADA (distingue de um registo manual do simulador).
 // Devolve null sem dados suficientes (sem apresentação ou sem on-block).
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlightMin = null, isPilot = false } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false } = {}) => {
+  // Base vs fora pela localização REAL (ORO.FTL.235: 12h base / 10h fora). Local fiável manda;
+  // desconhecido → o default `inBase` (conservador = na base). `accommodation` (opt-in do user)
+  // é lido em computeDuty (split ≥6h/WOCL conta a pausa toda, CS FTL.1.220 d/e).
+  const away = endsAwayReliable(duty, base);
+  inBase = away == null ? inBase : !away;
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
@@ -280,12 +298,15 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const entries = paired.map((p) => p.entry);
   if (entries.length === 1) return entries[0];
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
+  // Base vs fora do INTERVALO = onde o serviço ANTERIOR acabou (é aí que repousas). Local fiável
+  // (ORO.FTL.235: 12h base / 10h fora); desconhecido → default conservador (na base).
+  const gapInBase = (prev) => { const away = endsAwayReliable(prev, opts.base); return away == null ? (opts.inBase !== false) : !away; };
   // Intervalo ENTRE serviços consecutivos (235 + 220): classifica cada par. `gaps` é indexado
   // (gaps[i] = intervalo entre paired[i] e paired[i+1]) para o agrupamento em blocos; `between`
   // (sem nulos) é o que a UI consome.
   const gaps = [];
   for (let i = 0; i < paired.length - 1; i++) {
-    gaps.push(restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 }));
+    gaps.push(restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: gapInBase(paired[i].duty), postFlightMin: opts.postFlightMin || 0 }));
   }
   const between = gaps.filter(Boolean);
   const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
@@ -307,7 +328,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
     const first = blk[0].duty, last = blk[blk.length - 1].duty;
     let splitBreakH = 0, splitBreakStart = null;
     for (let i = 0; i < blk.length - 1; i++) {
-      const rb = restBetweenDuties(blk[i].duty, blk[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 });
+      const rb = restBetweenDuties(blk[i].duty, blk[i + 1].duty, { inBase: gapInBase(blk[i].duty), postFlightMin: opts.postFlightMin || 0 });
       if (!rb || rb.kind !== 'split') continue;   // só uma pausa 'split' (≥3h) estende; 'continuous' (<3h) não
       const on = parseHhmm(blk[i].duty.block_on), rep = parseHhmm(blk[i + 1].duty.report_time);
       if (on == null || rep == null) continue;
@@ -319,6 +340,8 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
       sectors: blk.reduce((s, p) => s + (Number(p.duty.sectors) || 0), 0),
       flight_minutes: blk.reduce((s, p) => s + (Number(p.duty.flight_minutes) || 0), 0),
       kind: 'flight', special: first.special || null, splitBreakH, splitBreakStart,
+      route: last.route || null,                    // fim do FDP combinado = onde o ÚLTIMO serviço aterra (base/fora)
+      accommodation: !!first.accommodation,          // alojamento na pausa (opt-in) → conta a pausa toda (220 d/e)
     };
     return dutyToFtlDay(combined, opts) || blk[0].entry;
   };
@@ -343,7 +366,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
 // a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
 // sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
 // ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
-export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false } = {}) => {
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null } = {}) => {
   let next = dayLog, changed = false;
   for (const date in duties) {
     const d = duties[date];
@@ -352,9 +375,9 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
-      legs: d.legs,   // p/ derivar o split-duty das pausas em terra (CS FTL.1.220)
+      legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot });
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

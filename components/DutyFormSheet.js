@@ -114,6 +114,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
   const [sbType, setSbType] = useState('airport');  // 'airport' | 'other' (casa/hotel)
   const [sbH, setSbH] = useState(6);                // horas de standby
+  const [accOn, setAccOn] = useState(false);        // alojamento na pausa do split-duty (CS FTL.1.220 d/e) — opt-in
   // Semeia os toggles a partir do `special` guardado (edição / troca de dia).
   const syncSpecial = (sp) => {
     sp = sp || {};
@@ -144,8 +145,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       : (append ? { ...EMPTY, date: iso } : loadFor(iso)));
     setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
     syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
+    const acc = !!(candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation)));
+    setAccOn(acc); if (acc) setAdvOpen(true);
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const goDate = (delta) => { select(); const iso = addDays(form.date, delta); setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
+  const goDate = (delta) => { select(); const iso = addDays(form.date, delta); setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(!!duties[iso]?.accommodation); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
 
   // ── Setores: Detetar (SÓ no manual; histórico→API se houver net) OU à mão (rota: 2 estações + ✓). ──
   // O nº de voo é OBRIGATÓRIO e COMPLETO (sigla+nº, ex. EJU7625); incompleto/vazio → vermelho.
@@ -365,6 +368,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       signOff: form.signOff || null,   // fim de serviço REAL (Duty hours / 210 / repouso)
       legs,
       special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
+      accommodation: isFlight ? accOn : false,   // alojamento na pausa do split (220 d/e) → roster_meta
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -610,7 +614,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAdvOpen((o) => !o); }}>
                 <Ionicons name="construct-outline" size={15} color={C.sub} />
                 <Text style={s.advHeadTxt}>{l('Casos especiais (FTL)', 'Special cases (FTL)')}</Text>
-                {special ? <View style={s.advDot} /> : null}
+                {(special || accOn) ? <View style={s.advDot} /> : null}
                 <Ionicons name={advOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
               </TouchableOpacity>
               {advOpen ? (
@@ -680,6 +684,21 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                         <Stepper label={l('Horas de standby', 'Standby hours')} value={sbH} setValue={setSbH} min={0} max={16} />
                       </View>
                       <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa) E conta para os 28 d (aeroporto 100% · casa 25%).', 'Reduces max FDP (>4h airport · >6h home) AND counts toward the 28 d (airport 100% · home 25%).')}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* 4 · Alojamento na pausa do split-duty (CS FTL.1.220 d/e) */}
+                  <View style={[s.advRow, s.advDivider]}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={s.advTit}>{l('Alojamento na pausa (split)', 'Accommodation during break (split)')}</Text>
+                      <Text style={s.advSub}>220(d)(e)</Text>
+                    </View>
+                    <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  </View>
+                  {accOn ? (
+                    <View style={s.advInset}>
+                      <Text style={s.advHint}>{l('Só conta se houver uma pausa em terra ≥3h neste serviço. Com alojamento adequado, a pausa toda estende o PSV (inclui >6h/WOCL); sem, só até 6h.', 'Only applies if there is a ground break ≥3h in this duty. With suitable accommodation the whole break extends the FDP (incl. >6h/WOCL); without, only up to 6h.')}</Text>
                     </View>
                   ) : null}
 
