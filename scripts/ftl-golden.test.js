@@ -532,9 +532,10 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 // ─────────── Dia com N PERÍODOS DE SERVIÇO (ORO.FTL.210/245) — dayFtlFromDuties ───────────
 {
   const { dayFtlFromDuties, dutyToFtlDay } = ftl;
-  // Serviço 1: 06:00→10:00 (PSV 4h · 3h voo). Serviço 2: 20:00→23:00 (PSV 3h · 2h voo). 2 FDP/dia.
+  // Serviço 1: 06:00→10:00 (PSV 4h · 3h voo). Serviço 2: 22:00→01:00 (PSV 3h · 2h voo). Intervalo
+  // 12h na base ≥ mínimo de repouso (235) → 2 FDP SEPARADOS a sério; somam nos acumulados (210).
   const d1 = { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180 };
-  const d2 = { report_time: '20:00', block_on: '23:00', sectors: 1, flight_minutes: 120 };
+  const d2 = { report_time: '22:00', block_on: '01:00', sectors: 1, flight_minutes: 120 };
   const e1 = dutyToFtlDay(d1), e2 = dutyToFtlDay(d2);
   const day = dayFtlFromDuties([d1, d2]);
   eq('Dia 2 serviços: SERVIÇO soma (210)', day.servico, +((e1.servico + e2.servico)).toFixed(1));
@@ -578,6 +579,40 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const day2 = dayFtlFromDuties([{ report_time: '06:00', block_on: '10:00', flight_minutes: 180 }, { report_time: '20:00', block_on: '23:00', flight_minutes: 120 }]);
   eq('Dia 2 serviços: expõe between[1]', day2.between.length, 1);
   eq('Dia 2 serviços: 10h base entre eles → split', day2.split, true);
+}
+
+// ─────────── Split duty (CS FTL.1.220) — repouso insuficiente mas ≥3h = 1 FDP COMBINADO ───────────
+{
+  const { dayFtlFromDuties } = ftl;
+  // 2 serviços na base, 10h de intervalo (< 12h mín 235, ≥ 3h) → SPLIT DUTY: NÃO são 2 FDP — é 1 FDP
+  // 06:00→23:00 = 17h ("the break itself is fully considered as FDP", ORO.FTL.220). Máx = base(06:00·2
+  // setores)=13:00 + extensão 50% (pausa 10h, sem alojamento → conta 6h → +3:00) = 16:00 → ILEGAL +01:00.
+  const splitBad = dayFtlFromDuties([
+    { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180 },
+    { report_time: '20:00', block_on: '23:00', sectors: 1, flight_minutes: 120 },
+  ]);
+  eq('Split ilegal: 1 FDP combinado = 17:00', splitBad.psv.result, '17:00');
+  eq('Split ilegal: máx 16:00 (base 13:00 + ext 3:00)', splitBad.psv.max, '16:00');
+  eq('Split ilegal: excede → over', splitBad.psv.over, true);
+  eq('Split ilegal: excesso +01:00', splitBad.psv.excess, '01:00');
+  eq('Split ilegal: serviço (210) conta a pausa → 17h', splitBad.servico, 17);
+  eq('Split ilegal: voo = 5h (a pausa não é voo)', splitBad.voo, 5);
+  eq('Split ilegal: flag split exposto', splitBad.split, true);
+  // Split que CABE: 2 serviços curtos com pausa de 3h30 → FDP combinado 09:00→14:30 = 5h30 << máx → legal.
+  const splitOk = dayFtlFromDuties([
+    { report_time: '09:00', block_on: '10:00', sectors: 1, flight_minutes: 60 },
+    { report_time: '13:30', block_on: '14:30', sectors: 1, flight_minutes: 60 },
+  ]);
+  eq('Split legal: 1 FDP combinado = 05:30', splitOk.psv.result, '05:30');
+  eq('Split legal: dentro do máx → não over', splitOk.psv.over, false);
+  eq('Split legal: continua a ser split', splitOk.split, true);
+  // UNIVERSAL: o split-duty (220) NÃO diverge por tripulação (a única divergência do FTL é o repouso
+  // a bordo / 205c, testado à parte). Piloto e cabine → veredicto IDÊNTICO no mesmo dia split.
+  const day = [{ report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180 }, { report_time: '20:00', block_on: '23:00', sectors: 1, flight_minutes: 120 }];
+  const asPilot = dayFtlFromDuties(day, { isPilot: true }), asCabin = dayFtlFromDuties(day, { isPilot: false });
+  eq('Split universal: piloto = cabine (over)', asPilot.psv.over, asCabin.psv.over);
+  eq('Split universal: piloto = cabine (máx)', asPilot.psv.max, asCabin.psv.max);
+  eq('Split universal: piloto = cabine (excesso)', asPilot.psv.excess, asCabin.psv.excess);
 }
 
 // ─────────── Voo ao vivo (#2): veredicto do PSV com o ATRASO REAL (ORO.FTL.105 / 205 b/f) ───────────

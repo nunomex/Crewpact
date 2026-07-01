@@ -1,10 +1,12 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
+import OTPInput from '../components/OTPInput';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
 import PrimaryButton from '../components/PrimaryButton';
@@ -17,7 +19,7 @@ import { RADIUS, TYPE, FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
-import { changePassword, validatePassword, updateProfile } from '../data/auth';
+import { changePassword, validatePassword, updateProfile, deleteAccount, reauthenticate, requestEmailChange, verifyEmailChange } from '../data/auth';
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
@@ -49,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -76,6 +78,99 @@ export default function SettingsScreen({ navigation }) {
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
   const [pwShown, setPwShown] = useState({}); // { [index]: true } — mostrar/esconder por campo
+
+  // Apagar conta (RGPD Art. 17) — ação DEFINITIVA. Gate por palavra escrita (trava toques
+  // acidentais). A Edge Function valida o JWT e apaga só o próprio uid; logout() faz o resto.
+  const CONFIRM_WORD = l('APAGAR', 'DELETE');
+  const [delModal, setDelModal] = useState(false);
+  const [delWord, setDelWord]   = useState('');
+  const [delErr, setDelErr]     = useState('');
+  const [delBusy, setDelBusy]   = useState(false);
+  const delReady = delWord.trim().toUpperCase() === CONFIRM_WORD;
+  const handleDeleteAccount = async () => {
+    if (delBusy) return;
+    if (!delReady) { setDelErr(l(`Escreve ${CONFIRM_WORD} para confirmar.`, `Type ${CONFIRM_WORD} to confirm.`)); return; }
+    setDelBusy(true); setDelErr('');
+    const res = await deleteAccount(lang);
+    if (!res.ok) { setDelBusy(false); setDelErr(res.error); return; }
+    // RGPD Art. 17 TAMBÉM no dispositivo: purga as caches locais deste utilizador
+    // (cp_*_<uid>: escala, validades=saúde, perfil, extras…). O logout() é
+    // deliberadamente NÃO-destrutivo (re-login rápido/offline), por isso a purga
+    // vive AQUI, só no caminho do apagar. getAllKeys → apanha chaves futuras sozinho.
+    try {
+      const uid = user?.id;
+      if (uid) {
+        const keys = await AsyncStorage.getAllKeys();
+        const mine = keys.filter((k) => k.endsWith('_' + uid));
+        if (mine.length) await AsyncStorage.multiRemove(mine);
+      }
+    } catch { /* best-effort — o servidor já apagou; não bloquear o fecho */ }
+    setDelBusy(false);
+    setDelModal(false); setDelWord('');
+    success();
+    logout();   // teardown em memória + volta ao login; a conta já foi apagada no servidor
+  };
+
+  // Mudar e-mail (ação de segurança): re-auth password → email novo → código (1 código ao
+  // novo; "Secure email change" OFF no dashboard; o Supabase avisa o email antigo). O
+  // onAuthStateChange só trata SIGNED_OUT → metemos o user atualizado no contexto à mão.
+  const [emModal, setEmModal]   = useState(false);
+  const [emStep, setEmStep]     = useState('pw');   // 'pw' | 'email' | 'code'
+  const [emPw, setEmPw]         = useState('');
+  const [emNew, setEmNew]       = useState('');
+  const [emCode, setEmCode]     = useState('');
+  const [emErr, setEmErr]       = useState('');
+  const [emBusy, setEmBusy]     = useState(false);
+  const [emShowPw, setEmShowPw] = useState(false);
+  const [emLeft, setEmLeft]     = useState(0);       // cooldown do reenviar (s)
+  const emInFlight = useRef(false);
+  useEffect(() => {
+    if (emLeft <= 0) return;
+    const id = setTimeout(() => setEmLeft((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [emLeft]);
+  const openEmailChange = () => {
+    setEmStep('pw'); setEmPw(''); setEmNew(''); setEmCode(''); setEmErr(''); setEmShowPw(false); setEmLeft(0); setEmModal(true);
+  };
+  const handleEmReauth = async () => {
+    if (emInFlight.current) return;
+    emInFlight.current = true; setEmBusy(true); setEmErr('');
+    try {
+      const res = await reauthenticate(user?.email, emPw, lang);
+      if (!res.ok) { setEmErr(res.error); return; }
+      setEmStep('email'); setEmErr('');
+    } finally { emInFlight.current = false; setEmBusy(false); }
+  };
+  const handleEmRequest = async () => {
+    if (emInFlight.current) return;
+    emInFlight.current = true; setEmBusy(true); setEmErr('');
+    try {
+      const res = await requestEmailChange(emNew, user?.email, lang);
+      if (!res.ok) { setEmErr(res.error); return; }
+      setEmStep('code'); setEmErr(''); setEmLeft(30);   // arranca o cooldown do reenviar
+    } finally { emInFlight.current = false; setEmBusy(false); }
+  };
+  const handleEmResend = async () => {
+    if (emInFlight.current || emLeft > 0) return;
+    emInFlight.current = true; setEmErr('');
+    try {
+      const res = await requestEmailChange(emNew, user?.email, lang);
+      if (res.ok) { setEmLeft(30); success(); } else setEmErr(res.error);
+    } finally { emInFlight.current = false; }
+  };
+  const handleEmVerify = async () => {
+    if (emInFlight.current) return;
+    emInFlight.current = true; setEmBusy(true); setEmErr('');
+    try {
+      const res = await verifyEmailChange(emNew, emCode, lang);
+      if (!res.ok) { setEmErr(res.error); return; }
+      if (res.user) setUser(res.user);   // atualiza o email no cabeçalho/cartão já
+      setEmModal(false); success();
+      Alert.alert(l('E-mail alterado', 'Email changed'),
+        l(`O teu e-mail passou a ${emNew.trim().toLowerCase()}. Usa-o da próxima vez que iniciares sessão.`,
+          `Your email is now ${emNew.trim().toLowerCase()}. Use it next time you sign in.`));
+    } finally { emInFlight.current = false; setEmBusy(false); }
+  };
 
   // Data de início (antiguidade) — guardada no metadata; alimenta o prémio de
   // permanência (AE piloto, Anexo I.9). Edição via diálogo, com máscara AAAA-MM-DD.
@@ -370,6 +465,7 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.gbox}>
             <Row icon="lock-closed-outline" label={t('lock.title', lang)} s={s} C={C}
               right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
+            <Row icon="mail-outline" label={l('Mudar e-mail', 'Change email')} sub={user?.email} onPress={openEmailChange} s={s} C={C} />
             <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => setPwModal(true)} last s={s} C={C} />
           </View>
         </Animated.View>
@@ -394,13 +490,17 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        {/* Os meus dados (RGPD) — exportar */}
+        {/* Os meus dados (RGPD) — exportar (Art. 20) + apagar (Art. 17) */}
         <Animated.View style={seg(5)}>
           <Text style={s.gt}>{l('Os meus dados', 'My data')}</Text>
           <View style={s.gbox}>
             <Row icon="download-outline" label={l('Exportar os meus dados', 'Export my data')}
               sub={l('Perfil + escala + FTL + AE, em JSON (RGPD)', 'Profile + roster + FTL + AE, as JSON (GDPR)')}
-              onPress={exportData} last s={s} C={C} />
+              onPress={exportData} s={s} C={C} />
+            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')}
+              sub={l('Apaga a conta e todos os dados — definitivo', 'Deletes your account and all data — permanent')}
+              danger onPress={() => { setDelWord(''); setDelErr(''); setDelModal(true); }} last s={s} C={C}
+              right={<Ionicons name="chevron-forward" size={15} color={C.red} />} />
           </View>
         </Animated.View>
 
@@ -425,6 +525,82 @@ export default function SettingsScreen({ navigation }) {
         cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
         onCancel={() => setLogoutOpen(false)}
         onConfirm={() => { setLogoutOpen(false); logout(); }} />
+
+      {/* Apagar conta (RGPD Art. 17) — confirmação por palavra escrita + botão destrutivo */}
+      <CenterDialog visible={delModal} onClose={() => { if (!delBusy) setDelModal(false); }}
+        title={l('Apagar conta', 'Delete account')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          <View style={s.delWarn}>
+            <Ionicons name="warning-outline" size={18} color={C.red} />
+            <Text style={s.delWarnTxt}>{l('Esta ação é definitiva e não pode ser anulada.', 'This action is permanent and cannot be undone.')}</Text>
+          </View>
+          <Text style={s.delBody}>
+            {l('Apaga a tua conta e TODOS os dados: perfil, escala, registos FTL e AE. Se quiseres guardar uma cópia, exporta primeiro os teus dados.',
+               'Deletes your account and ALL data: profile, roster, FTL and AE records. If you want to keep a copy, export your data first.')}
+          </Text>
+          <Text style={s.fieldLabel}>{l(`Escreve ${CONFIRM_WORD} para confirmar`, `Type ${CONFIRM_WORD} to confirm`)}</Text>
+          <View style={s.pwInputRow}>
+            <TextInput value={delWord} onChangeText={(v) => { setDelWord(v); setDelErr(''); }}
+              autoCapitalize="characters" autoCorrect={false} placeholder={CONFIRM_WORD} placeholderTextColor={C.sub}
+              style={s.pwInput} editable={!delBusy} />
+          </View>
+          {delErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginTop: 8 }}>{delErr}</Text> : null}
+          <TouchableOpacity onPress={handleDeleteAccount} disabled={delBusy || !delReady} activeOpacity={0.85}
+            style={[s.delBtn, (delBusy || !delReady) && s.delBtnOff]}>
+            <Text style={s.delBtnTxt}>{delBusy ? l('A apagar…', 'Deleting…') : l('Apagar a minha conta', 'Delete my account')}</Text>
+          </TouchableOpacity>
+        </View>
+      </CenterDialog>
+
+      {/* Mudar e-mail — 3 passos: re-auth password → email novo → código (1 código ao novo) */}
+      <CenterDialog visible={emModal} onClose={() => { if (!emBusy) setEmModal(false); }}
+        title={l('Mudar e-mail', 'Change email')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          {emStep === 'pw' && (
+            <>
+              <Text style={s.emSub}>{l('Confirma a tua palavra-passe para continuar.', 'Confirm your password to continue.')}</Text>
+              <Text style={s.fieldLabel}>{t('profile.pwCur', lang)}</Text>
+              <View style={s.pwInputRow}>
+                <TextInput value={emPw} onChangeText={(v) => { setEmPw(v); setEmErr(''); }} secureTextEntry={!emShowPw}
+                  style={s.pwInput} placeholder="••••••••" placeholderTextColor={C.sub} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
+                <TouchableOpacity onPress={() => setEmShowPw((v) => !v)} hitSlop={8} style={s.pwEye}>
+                  <Ionicons name={emShowPw ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
+                </TouchableOpacity>
+              </View>
+              {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
+              <PrimaryButton onPress={handleEmReauth} label={l('Continuar', 'Continue')} loading={emBusy} style={{ marginTop: 14 }} />
+            </>
+          )}
+          {emStep === 'email' && (
+            <>
+              <Text style={s.emSub}>{l('Escreve o teu novo e-mail. Vamos enviar-lhe um código de confirmação.', 'Enter your new email. We’ll send it a confirmation code.')}</Text>
+              <Text style={s.fieldLabel}>{l('Novo e-mail', 'New email')}</Text>
+              <View style={s.pwInputRow}>
+                <TextInput value={emNew} onChangeText={(v) => { setEmNew(v); setEmErr(''); }} keyboardType="email-address"
+                  style={s.pwInput} placeholder="nome@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
+              </View>
+              {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
+              <PrimaryButton onPress={handleEmRequest} label={l('Enviar código', 'Send code')} loading={emBusy} style={{ marginTop: 14 }} />
+            </>
+          )}
+          {emStep === 'code' && (
+            <>
+              <Text style={s.emSub}>
+                {l('Introduz o código de 6 dígitos que enviámos para', 'Enter the 6-digit code we sent to')}{' '}
+                <Text style={{ color: C.text, fontFamily: FONT.semibold }}>{emNew.trim().toLowerCase()}</Text>.
+              </Text>
+              <OTPInput value={emCode} onChange={(v) => { setEmCode(v); setEmErr(''); }} />
+              {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
+              <PrimaryButton onPress={handleEmVerify} disabled={emCode.length < 6} loading={emBusy} label={l('Confirmar', 'Confirm')} style={{ marginTop: 4 }} />
+              <TouchableOpacity onPress={handleEmResend} disabled={emLeft > 0} hitSlop={10} style={{ alignSelf: 'center', marginTop: 16 }}>
+                <Text style={[s.emResend, emLeft > 0 && { color: C.sub }]}>
+                  {emLeft > 0 ? l(`Reenviar em ${emLeft}s`, `Resend in ${emLeft}s`) : l('Reenviar código', 'Resend code')}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </CenterDialog>
 
       {/* Change password modal */}
       <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)} closeLabel={t('common.close', lang)}>
@@ -585,4 +761,15 @@ const makeStyles = (C) => StyleSheet.create({
   baseRowCity: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
   ymLabel: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, marginBottom: 8 },
   ymInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card, letterSpacing: 1, textAlign: 'center' },
+  // Apagar conta (destrutivo)
+  delWarn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redSoft, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 14 },
+  delWarnTxt: { flex: 1, fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.red, lineHeight: 16 },
+  delBody: { fontSize: TYPE.sub, color: C.text, lineHeight: 20, marginBottom: 16 },
+  delBtn: { backgroundColor: C.red, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
+  delBtnOff: { opacity: 0.4 },
+  delBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
+  // Mudar e-mail
+  emSub: { fontSize: TYPE.sub, color: C.text, lineHeight: 20, marginBottom: 16 },
+  emErr: { color: C.red, fontSize: TYPE.label, marginTop: 8 },
+  emResend: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
 });

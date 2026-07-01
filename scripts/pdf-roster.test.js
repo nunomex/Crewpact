@@ -28,7 +28,7 @@ Module._extensions['.js'] = function (m, filename) {
 
 const { parseEasyjetRoster, rosterLooksForeign } = require(path.resolve('data/pdfRoster.js'));
 const { flightNoForeign } = require(path.resolve('data/rosterCodes.js'));
-const { dutyFromActivity, buildImportCandidates, importSaveFields } = require(path.resolve('data/rosterImport.js'));
+const { dutyFromActivity, buildImportCandidates, importSaveFields, buildIncoming } = require(path.resolve('data/rosterImport.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => {
@@ -178,6 +178,23 @@ ok('merge: 2 atividades → extra do calendário (tagged)', Array.isArray(mf.ext
 const mf2 = importSaveFields(multiCand, 'calendar', manualExtra);
 ok('merge: calendário (leitura) + manual (guardado) coexistem', mf2.extra.length === 2 && mf2.extra.some((e) => e.source === 'calendar') && mf2.extra.some((e) => e.source === 'manual'));
 ok('merge: source da primária propaga no commit', importSaveFields(singleCand, 'calendar').source === 'calendar');
+
+// ── Multi-serviço na AUTO-DETEÇÃO (buildIncoming) + snap + re-classify ────────
+// buildIncoming: 2 serviços no MESMO dia → 1 entrada com `extra` (era a raiz do bug do diffRoster).
+const incSame = buildIncoming({ activities: [mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45'), mkAct('2026-06-16', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [] });
+ok('buildIncoming: 2 serviços/dia → 1 entrada', incSame.length === 1);
+ok('buildIncoming: 2.º serviço vira extra (CDG-LGW)', Array.isArray(incSame[0].extra) && incSame[0].extra.length === 1 && incSame[0].extra[0].route === 'CDG-LGW');
+const incDiff = buildIncoming({ activities: [mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45'), mkAct('2026-06-17', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [] });
+ok('buildIncoming: dias diferentes → 2 entradas sem extra', incDiff.length === 2 && !incDiff[0].extra && !incDiff[1].extra);
+// snap capta o dia multi-serviço (base do 3-vias); single-serviço → sem snap.extra.
+ok('snap multi: snap.extra capta o 2.º serviço', Array.isArray(importSaveFields(sameDay[0], 'calendar').snap.extra) && importSaveFields(sameDay[0], 'calendar').snap.extra[0].route === 'CDG-LGW');
+ok('snap single: sem snap.extra', importSaveFields(singleCand, 'calendar').snap.extra === undefined);
+// Re-classify no sheet: dia guardado (1 serviço) + calendário traz um 2.º → changed (não 'same').
+const a1 = mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45');
+const d1 = dutyFromActivity(a1);
+const storedOne = { '2026-06-16': { ...d1, duty_date: '2026-06-16', source: 'calendar', kind: 'flight', snap: { report_time: d1.report_time, block_off: d1.block_off, block_on: d1.block_on, route: d1.route, sectors: d1.sectors, kind: 'flight' } } };
+const twoSvc = buildImportCandidates({ activities: [a1, mkAct('2026-06-16', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [], duties: storedOne, dayLog: {} });
+ok('sheet multi: guardado 1 svc + calendário 2 svc → changed', twoSvc.length === 1 && twoSvc[0].status === 'changed');
 
 // ── Guarda suave "companhia errada" (rosterLooksForeign) — não bloqueia, só sinaliza ──
 ok('foreign: maioria other → true', rosterLooksForeign([{ kind: 'other' }, { kind: 'other' }, { kind: 'other' }, { kind: 'flight' }]) === true);   // 3/4 = 0.75 ≥ 0.7

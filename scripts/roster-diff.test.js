@@ -71,5 +71,35 @@ ok('28 fora da janela NÃO cancelado', !r.removed.some(x => x.date === '2026-06-
 // sem janela → sem cancelamentos
 eq('sem window → removed 0', diffRoster({ incoming, duties }).counts.removed, 0);
 
+// ── Multi-serviço (a lei conta por SERVIÇO, não por dia) ──────────────────────
+const S = (rep, off, on, route, sec) => ({ report_time: rep, block_off: off, block_on: on, route, sectors: sec, kind: 'flight' });
+const AM = S('06:00', '06:40', '10:00', 'LGW-CDG', 1);   // serviço da manhã
+const PM = S('19:00', '19:40', '21:00', 'CDG-LGW', 1);   // serviço da tarde
+// 2 serviços iguais, ORDEM TROCADA → [] (o diff ordena por report; é independente da ordem)
+eq('multi: 2 serviços iguais (ordem trocada) = []',
+  diffDuty({ ...AM, extra: [PM] }, { ...PM, extra: [AM] }), []);
+// report do 1.º serviço mudou → deteta, com o nº do serviço
+const chg = diffDuty({ ...AM, extra: [PM] }, { ...S('06:30', '06:40', '10:00', 'LGW-CDG', 1), extra: [PM] });
+eq('multi: report do 1.º serviço mudou', chg.map((f) => f.key), ['report_time']);
+ok('multi: diff traz o nº do serviço', chg[0].service === 1);
+// serviço a mais (1 → 2) e a menos (2 → 1)
+eq('multi: serviço a mais', diffDuty(AM, { ...AM, extra: [PM] }).map((f) => f.key), ['service_added']);
+eq('multi: serviço a menos', diffDuty({ ...AM, extra: [PM] }, AM).map((f) => f.key), ['service_removed']);
+// classify: calendário ACRESCENTOU um serviço (snap 1, incoming 2) → changed
+eq('classify multi: calendário acrescentou serviço → changed', classify(
+  { ...AM, kind: 'flight', snap: { ...AM } },
+  { ...AM, extra: [PM] },
+).status, 'changed');
+// classify: dia de 2 serviços inalterado (snap capta os 2) → same
+eq('classify multi: 2 serviços inalterados → same', classify(
+  { ...AM, extra: [PM], snap: { ...AM, extra: [PM] } },
+  { ...AM, extra: [PM] },
+).status, 'same');
+// diffRoster: um dia que ganhou um serviço no calendário → changed=1
+eq('diffRoster multi: dia ganhou serviço → changed=1', diffRoster({
+  incoming: [{ duty_date: '2026-07-10', ...AM, extra: [PM] }],
+  duties: { '2026-07-10': { duty_date: '2026-07-10', source: 'calendar', ...AM, snap: { ...AM } } },
+}).counts.changed, 1);
+
 console.log(`\n${fail === 0 ? '✅' : '❌'}  rosterDiff: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

@@ -27,7 +27,7 @@ const M = {
     rate: 'Demasiadas tentativas. Aguarda uns minutos.', network: 'Sem ligação à internet. Verifica a rede.',
     loginOffline: 'Precisas de internet para iniciar sessão. Depois de entrares uma vez, a app funciona offline.',
     generic: 'Ocorreu um erro. Tenta novamente.', confirmEmail: 'Confirma o teu e-mail para ativar a conta.',
-    emailReq: 'Email é obrigatório.', emailInvalid: 'Email inválido.',
+    emailReq: 'Email é obrigatório.', emailInvalid: 'Email inválido.', emailSame: 'Esse já é o teu e-mail.',
     pwReq: 'Palavra-passe é obrigatória.', pwMin: 'Mínimo de 8 caracteres.',
     pwUpper: 'Necessita de pelo menos uma maiúscula.', pwNum: 'Necessita de pelo menos um número.',
     pwLower: 'Necessita de pelo menos uma minúscula.', pwSpecial: 'Necessita de um carácter especial (!@#…).',
@@ -41,7 +41,7 @@ const M = {
     rate: 'Too many attempts. Wait a few minutes.', network: 'No internet connection. Check your network.',
     loginOffline: 'You need internet to sign in. After signing in once, the app works offline.',
     generic: 'An error occurred. Please try again.', confirmEmail: 'Confirm your email to activate the account.',
-    emailReq: 'Email is required.', emailInvalid: 'Invalid email.',
+    emailReq: 'Email is required.', emailInvalid: 'Invalid email.', emailSame: 'That is already your email.',
     pwReq: 'Password is required.', pwMin: 'Minimum 8 characters.',
     pwUpper: 'Needs at least one uppercase letter.', pwNum: 'Needs at least one number.',
     pwLower: 'Needs at least one lowercase letter.', pwSpecial: 'Needs a special character (!@#…).',
@@ -51,8 +51,14 @@ const M = {
 };
 const m = (key, lang) => (M[lang] || M.pt)[key];
 
-// Falha de rede (fetch sem ligação) — em RN surge como "Network request failed".
-const isNetworkError = (error) => /network|fetch/i.test(error?.message || '');
+// Falha de rede (fetch sem ligação). Em RN surge como "Network request failed" (message),
+// mas alguns wrappers escondem-na no NOME da classe (ex. FunctionsFetchError, cuja message
+// é "Failed to send a request…") ou no erro original aninhado (error.context). Cobre os 3.
+const isNetworkError = (error) => {
+  if (!error) return false;
+  const hay = `${error.message || ''} ${error.name || ''} ${error.context?.message || ''}`;
+  return /network|fetch/i.test(hay);
+};
 
 // ─── Translate Supabase error messages ───────────────────────────────────────
 // Preferir o `error.code` (estável) ao texto da mensagem (varia). Distingue OTP EXPIRADO
@@ -201,4 +207,66 @@ export const changePassword = async (newPw, lang = 'pt') => {
   const { error } = await supabase.auth.updateUser({ password: newPw });
   if (error) return { ok: false, error: mapError(error, lang) };
   return { ok: true };
+};
+
+// ─── Apagar conta (RGPD Art. 17) ─────────────────────────────────────────────
+// Chama a Edge Function `delete-account` (corre com service_role e valida o JWT →
+// apaga SÓ o próprio uid; as cascades da BD limpam profiles+duties). O
+// `functions.invoke` junta automaticamente o Authorization da sessão atual.
+// O caller deve correr o `logout()` do AppContext a seguir (teardown local + caches).
+export const deleteAccount = async (lang = 'pt') => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: m('generic', lang) };   // sem sessão não há nada a apagar
+  try {
+    const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) return { ok: false, error: isNetworkError(error) ? m('network', lang) : m('generic', lang) };
+    if (!data?.ok) return { ok: false, error: m('generic', lang) };
+  } catch (e) {
+    return { ok: false, error: isNetworkError(e) ? m('network', lang) : m('generic', lang) };
+  }
+  await supabase.auth.signOut().catch(() => {});   // limpa a sessão local (o token já ficou inválido no servidor)
+  return { ok: true };
+};
+
+// ─── Mudar e-mail (ação de segurança) ────────────────────────────────────────
+// Modelo escolhido: re-auth por password → confirma SÓ o email NOVO (1 código, com
+// "Secure email change" DESLIGADO no dashboard) → o Supabase avisa o email antigo.
+// Sem beco-sem-saída (quem perdeu o email antigo não fica preso) — ver [[auth-login-audit]].
+
+// Re-autentica com a password atual (prova de posse antes de uma ação sensível).
+// signInWithPassword com o email atual → sessão fresca do MESMO utilizador (falha se
+// a password estiver errada, SEM tocar na sessão ativa).
+export const reauthenticate = async (email, password, lang = 'pt') => {
+  if (!password) return { ok: false, error: m('pwReq', lang) };
+  const { error } = await supabase.auth.signInWithPassword({
+    email: (email || '').trim().toLowerCase(), password,
+  });
+  if (error) {
+    if (isNetworkError(error)) return { ok: false, error: m('loginOffline', lang) };
+    return { ok: false, error: mapError(error, lang) };
+  }
+  return { ok: true };
+};
+
+// Pede a mudança para o email NOVO. Com "Secure email change" OFF, o Supabase envia UM
+// código (6 díg, {{ .Token }}) ao email novo. NÃO altera o login já — só após o verifyOtp.
+export const requestEmailChange = async (newEmail, currentEmail, lang = 'pt') => {
+  const clean = (newEmail || '').trim().toLowerCase();
+  const e = validateEmail(clean, lang);
+  if (e) return { ok: false, error: e };
+  if (clean === (currentEmail || '').trim().toLowerCase()) return { ok: false, error: m('emailSame', lang) };
+  const { error } = await supabase.auth.updateUser({ email: clean });
+  if (error) return { ok: false, error: mapError(error, lang) };
+  return { ok: true, email: clean };
+};
+
+// Confirma o email novo com o código (type:'email_change'). Após sucesso o auth.email fica
+// trocado; devolve o user atualizado (o caller mete-o no contexto — o onAuthStateChange
+// da app só reage a SIGNED_OUT, não atualiza sozinho).
+export const verifyEmailChange = async (newEmail, token, lang = 'pt') => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: (newEmail || '').trim().toLowerCase(), token, type: 'email_change',
+  });
+  if (error) return { ok: false, error: mapError(error, lang) };
+  return { ok: true, user: data.user ? mapUser(data.user) : null };
 };

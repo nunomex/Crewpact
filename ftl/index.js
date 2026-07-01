@@ -170,6 +170,9 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, postFlig
   const sp = duty.special || {};
   const d = computeDuty({
     state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf,
+    // Split duty (CS FTL.1.220): quando esta "duty" é um FDP COMBINADO (bloco de serviços com uma
+    // pausa em terra ≥3h), a pausa estende o teto. Default 0/null/false → serviço normal (inalterado).
+    splitBreakH: duty.splitBreakH || 0, splitBreakStart: duty.splitBreakStart || null, accommodation: !!duty.accommodation,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
   });
   if (d.fdp.actualFdpMin == null) return null;
@@ -259,23 +262,60 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const entries = paired.map((p) => p.entry);
   if (entries.length === 1) return entries[0];
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
-  const servico = r1(entries.reduce((s, e) => s + (e.servico || 0), 0));
-  const voo = r1(entries.reduce((s, e) => s + (e.voo || 0), 0));
-  // PSV do dia = o PIOR: prioriza o que EXCEDE; entre vários, o de maior excesso.
+  // Intervalo ENTRE serviços consecutivos (235 + 220): classifica cada par. `gaps` é indexado
+  // (gaps[i] = intervalo entre paired[i] e paired[i+1]) para o agrupamento em blocos; `between`
+  // (sem nulos) é o que a UI consome.
+  const gaps = [];
+  for (let i = 0; i < paired.length - 1; i++) {
+    gaps.push(restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 }));
+  }
+  const between = gaps.filter(Boolean);
+  const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
+  const restShort = between.some((b) => b.kind === 'continuous'); // algum par perto demais (não são 2)
+  // BLOCOS de FDP (CS FTL.1.220): um intervalo 'rest' (≥ mínimo de repouso 235) SEPARA em 2 FDP;
+  // 'split'/'continuous' MANTÊM no mesmo FDP — a pausa conta como FDP ("the break itself is fully
+  // considered as FDP"), é 1 só serviço com o teto ESTENDIDO por 50% da pausa contável (220c).
+  const blocks = [[paired[0]]];
+  for (let i = 0; i < gaps.length; i++) {
+    if (gaps[i] && gaps[i].kind === 'rest') blocks.push([paired[i + 1]]);
+    else blocks[blocks.length - 1].push(paired[i + 1]);
+  }
+  // Entrada FTL de cada bloco: 1 serviço → a sua entrada; N serviços → 1 FDP COMBINADO
+  // (report do 1.º → on-block do último; setores/voo somados; a pausa que estende é a MAIOR
+  // 'split' do bloco — "a single break", 220). Sem alojamento conhecido → conservador (accommodation
+  // false: a parte >6h e a do WOCL não contam para a extensão, CS FTL.1.220 d/e).
+  const blockEntry = (blk) => {
+    if (blk.length === 1) return blk[0].entry;
+    const first = blk[0].duty, last = blk[blk.length - 1].duty;
+    let splitBreakH = 0, splitBreakStart = null;
+    for (let i = 0; i < blk.length - 1; i++) {
+      const rb = restBetweenDuties(blk[i].duty, blk[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 });
+      if (!rb || rb.kind !== 'split') continue;   // só uma pausa 'split' (≥3h) estende; 'continuous' (<3h) não
+      const on = parseHhmm(blk[i].duty.block_on), rep = parseHhmm(blk[i + 1].duty.report_time);
+      if (on == null || rep == null) continue;
+      let gross = rep - on; while (gross < 0) gross += 1440;   // on-block(prev) → report(next) = terra bruta (220b tira 30m dentro do motor)
+      if (gross > splitBreakH * 60) { splitBreakH = gross / 60; splitBreakStart = blk[i].duty.block_on; }   // "a single break": a MAIOR
+    }
+    const combined = {
+      report_time: first.report_time, block_on: last.block_on, signOff: last.signOff || null,
+      sectors: blk.reduce((s, p) => s + (Number(p.duty.sectors) || 0), 0),
+      flight_minutes: blk.reduce((s, p) => s + (Number(p.duty.flight_minutes) || 0), 0),
+      kind: 'flight', special: first.special || null, splitBreakH, splitBreakStart,
+    };
+    return dutyToFtlDay(combined, opts) || blk[0].entry;
+  };
+  const blockEntries = blocks.map(blockEntry);
+  const servico = r1(blockEntries.reduce((s, e) => s + (e.servico || 0), 0));
+  const voo = r1(blockEntries.reduce((s, e) => s + (e.voo || 0), 0));
+  // PSV do dia = o PIOR bloco (legalidade sobre os FDP combinados): prioriza o que EXCEDE.
   const excMin = (p) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String((p && p.excess) || '')); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
-  const worst = entries.reduce((a, b) => {
+  const worst = blockEntries.reduce((a, b) => {
     if (!!b.psv.over !== !!a.psv.over) return b.psv.over ? b : a;
     return excMin(b.psv) > excMin(a.psv) ? b : a;
   });
-  const last = entries[entries.length - 1];
-  // Repouso ENTRE serviços consecutivos (235 + 220): classifica cada par (rest/split/continuous).
-  const between = [];
-  for (let i = 0; i < paired.length - 1; i++) {
-    const rb = restBetweenDuties(paired[i].duty, paired[i + 1].duty, { inBase: opts.inBase !== false, postFlightMin: opts.postFlightMin || 0 });
-    if (rb) between.push(rb);
-  }
-  const split = between.some((b) => b.kind === 'split');         // algum par é split duty (1 FDP)
-  const restShort = between.some((b) => b.kind === 'continuous'); // algum par perto demais (não são 2)
+  const last = blockEntries[blockEntries.length - 1];
+  // `parts` = PSV por SERVIÇO (para o registo 245, uma linha por serviço); a legalidade do dia
+  // vem do FDP combinado (worst). São coisas diferentes de propósito num split-duty.
   return { src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv, servico, voo, rest: last.rest, parts: entries.map((e) => e.psv), between, split, restShort };
 };
 

@@ -15,6 +15,10 @@ export const isNightStop = (route, base, sectors) => {
   return Number(sectors) % 2 === 1;                              // recurso: paridade
 };
 
+// Serviço-irmão (forma de `extra`): normaliza uma duty-row para os campos de um serviço do dia.
+// Partilhado por buildImportCandidates (merge do sheet) e buildIncoming (merge da auto-deteção).
+const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null });
+
 // Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
 // → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
 // `route` = cadeia de aeroportos "LIS-OPO-LIS" (null se algum for desconhecido) —
@@ -113,8 +117,6 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
   const out = [];
   const inDates = new Set();
   const byDate = new Map();   // dia → candidato primário (p/ empilhar 2.º+ FDP do mesmo dia)
-  // Serviço-irmão (forma de `extra`) a partir de uma duty-row de atividade.
-  const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null });
   const make = (duty, kind) => {
     if (!duty) return null;
     duty.kind = kind;
@@ -127,7 +129,10 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
       prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot);
       prev.multi = (prev.duty.extra.length + 1);
-      if (prev.prospect && prev.prospect.ok === false && prev.status === 'ok') prev.status = 'warn';
+      // Re-classifica o DIA COMPLETO (primária + extra) face ao guardado: um serviço a mais/menos
+      // face ao guardado é uma mudança (o classify agora é multi-serviço). Novo dia → só legalidade.
+      if (prev.exists) { const cls = classify(duties[date], prev.duty); prev.status = cls.status; prev.diff = cls.fields; }
+      else if (prev.prospect && prev.prospect.ok === false && prev.status === 'ok') prev.status = 'warn';
       return null;   // já está em `out`; não cria novo candidato
     }
     const ex = duties[date];
@@ -176,7 +181,11 @@ export const importSaveFields = (c, source = 'calendar', existingExtra = null) =
   const readExtra = (d.extra || []).map((e) => ({ ...e, source }));                  // do calendário/PDF (esta leitura)
   const keptManual = (existingExtra || []).filter((e) => e && e.source === 'manual'); // os teus à mão sobrevivem
   const extra = [...readExtra, ...keptManual];
+  // snap = base do 3-vias. Capta o DIA como veio do calendário (primária + serviços-irmãos DESTA
+  // leitura, sem `source`) → o classify multi-serviço distingue "calendário mudou" de "tu editaste"
+  // também nos extras. Single-serviço → sem snap.extra (idêntico ao legado).
   const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind };
+  if (readExtra.length) snap.extra = readExtra.map(({ source: _s, ...f }) => f);
   return {
     report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
     sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route,
@@ -189,7 +198,18 @@ export const importSaveFields = (c, source = 'calendar', existingExtra = null) =
 // deteção automática de alterações (diffRoster). Reaproveita os mesmos mapeadores.
 export const buildIncoming = ({ activities = [], nonflights = [] } = {}) => {
   const out = [];
-  for (const act of activities) { const d = dutyFromActivity(act); if (d) { d.kind = 'flight'; out.push(d); } }
-  for (const nf of nonflights) { const d = dutyFromNonFlight(nf); if (d) { d.kind = nf.kind; out.push(d); } }
+  const byDate = new Map();   // dia → duty primária (2.º+ serviço do dia empilha em `extra`)
+  const add = (d, kind) => {
+    if (!d) return;
+    d.kind = kind;
+    const prev = byDate.get(d.duty_date);
+    // A lei conta por SERVIÇO (210), não por dia: o 2.º+ FDP do mesmo dia funde como `extra`
+    // na primária (em vez de virar uma 2.ª entrada com a mesma data, que o diff comparava mal).
+    if (prev) { prev.extra = [...(prev.extra || []), svcFields(d)]; return; }
+    byDate.set(d.duty_date, d);
+    out.push(d);
+  };
+  for (const act of activities) add(dutyFromActivity(act), 'flight');
+  for (const nf of nonflights) add(dutyFromNonFlight(nf), nf.kind);
   return out;
 };

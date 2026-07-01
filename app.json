@@ -49,7 +49,8 @@
         }
       ],
       "expo-font",
-      "./plugins/withDisableScriptSandboxing"
+      "./plugins/withDisableScriptSandboxing",
+      "expo-secure-store"
     ]
   }
 }

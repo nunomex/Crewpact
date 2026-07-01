@@ -29,12 +29,44 @@ const val = (d, k) => {
   return String(v).trim().toUpperCase();
 };
 
-// Diferenças de campos entre duas duty-rows (antes → depois). [] se iguais.
+// Serviços de um DIA (primária + `extra`), ORDENADOS por report (depois off-block), para uma
+// comparação POSICIONAL estável entre guardado e calendário (a lei conta por serviço, não por
+// dia — um dia pode ter vários FDP). Ordenar torna o diff independente da ordem em que ficaram
+// guardados. Single-serviço = 1 elemento (compatível com o comportamento antigo).
+const servicesOf = (d) => {
+  if (!d) return [];
+  const arr = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+  return arr
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => {
+      const ra = val(a.s, 'report_time'), rb = val(b.s, 'report_time');
+      if (ra !== rb) return ra == null ? 1 : rb == null ? -1 : (ra < rb ? -1 : 1);
+      const oa = val(a.s, 'block_off'), ob = val(b.s, 'block_off');
+      if (oa !== ob) return oa == null ? 1 : ob == null ? -1 : (oa < ob ? -1 : 1);
+      return a.i - b.i;   // desempate estável
+    })
+    .map((x) => x.s);
+};
+
+// Diferenças entre dois DIAS (cada um: primária + `extra`), serviço-a-serviço. [] se iguais.
+// Serviço a mais/menos conta como diferença. Compatível com single-serviço (n=1 → sem tag `service`).
 export const diffDuty = (before, after) => {
+  const bs = servicesOf(before), as = servicesOf(after);
+  const n = Math.max(bs.length, as.length);
   const out = [];
-  for (const f of DIFF_FIELDS) {
-    const a = val(before, f.key), b = val(after, f.key);
-    if (String(a) !== String(b)) out.push({ key: f.key, label: f.label, before: before ? before[f.key] : null, after: after ? after[f.key] : null });
+  for (let i = 0; i < n; i++) {
+    const b = bs[i], a = as[i];
+    const tag = n > 1 ? { service: i + 1 } : {};
+    if (b && a) {
+      for (const f of DIFF_FIELDS) {
+        const x = val(b, f.key), y = val(a, f.key);
+        if (String(x) !== String(y)) out.push({ key: f.key, label: f.label, before: b[f.key] ?? null, after: a[f.key] ?? null, ...tag });
+      }
+    } else if (b && !a) {
+      out.push({ key: 'service_removed', label: { pt: 'Serviço a menos', en: 'Service removed' }, before: b.route ?? b.report_time ?? null, after: null, service: i + 1 });
+    } else if (a && !b) {
+      out.push({ key: 'service_added', label: { pt: 'Serviço a mais', en: 'New service' }, before: null, after: a.route ?? a.report_time ?? null, service: i + 1 });
+    }
   }
   return out;
 };
