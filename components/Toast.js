@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useContext } from 'react';
-import { Animated, View, Text, StyleSheet, AccessibilityInfo, Platform } from 'react-native';
+import { Animated, View, Text, StyleSheet, AccessibilityInfo } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
@@ -58,7 +58,8 @@ export default function Toast({ toast, lang, onHide }) {
   const offlineShift = ctx && ctx.online === false ? 30 : 0;
 
   return (
-    <Animated.View pointerEvents="none" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
+    // Sem accessibilityLiveRegion: o announceForAccessibility já anuncia — os dois juntos liam 2× no TalkBack.
+    <Animated.View pointerEvents="none"
       style={[s.toast, { top: insets.top + 8 + offlineShift, transform: [{ translateY: y }] }]}>
       <View style={[s.icon, { backgroundColor: m.tint(C) }]}>
         <Ionicons name={m.icon} size={18} color="#fff" />

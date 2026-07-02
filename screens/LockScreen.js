@@ -73,7 +73,7 @@ export default function LockScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={s.center}>
         <View style={s.iconWrap}>
           <Ionicons name="lock-closed" size={30} color={C.onDark} />

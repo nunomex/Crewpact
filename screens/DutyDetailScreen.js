@@ -229,8 +229,11 @@ export default function DutyDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         ) : (
           /* Importado → não há Apagar (a fonte manda) e DIZEMOS porquê + o caminho certo
-             (antes era um beco: o botão desaparecia sem uma palavra). */
-          <Text style={s.foot}>{l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
+             (antes era um beco: o botão desaparecia sem uma palavra). O caminho depende da
+             FONTE: PDF não tem botão Sincronizar — reimporta-se o PDF atualizado. */
+          <Text style={s.foot}>{duty.source === 'pdf'
+            ? l('Importado de um PDF — para o remover, importa na Escala o PDF atualizado da escala; os cancelados aparecem na revisão para confirmares.', 'Imported from a PDF — to remove it, import the updated roster PDF in the roster tab; cancellations show up in the review for you to confirm.')
+            : l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
         )}
 
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>

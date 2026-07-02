@@ -11,7 +11,7 @@ import { updateProfile, register, verifySignupCode, resendSignup, validateName, 
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { t, tx } from '../data/i18n';
-import { select, success } from '../data/haptics';
+import { select, success, warning } from '../data/haptics';
 import AccountCreated from '../components/AccountCreated';
 import StrengthBar from '../components/StrengthBar';
 import OTPInput from '../components/OTPInput';
@@ -27,6 +27,7 @@ export default function OnboardingScreen({ signup = false }) {
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
   const [acctBlur, setAcctBlur] = useState({});   // campos já "visitados" → só então mostram erro
+  const [acctTried, setAcctTried] = useState(false); // premiu "Criar conta" inválido → mostra TAMBÉM os vazios
   const markBlur = (k) => setAcctBlur((b) => (b[k] ? b : { ...b, [k]: true }));
   const [created, setCreated] = useState(null);   // {user, payload} pós-signup → página de transição
   // Confirmação de email (só ativa se o autoconfirm estiver DESLIGADO na dashboard): quando o
@@ -222,6 +223,14 @@ export default function OnboardingScreen({ signup = false }) {
   };
 
   const handleNext = () => {
+    // Passo da CONTA: o botão fica sempre premível — inválido → REVELA o que falta nos 3
+    // campos (incl. vazios) em vez de um botão cinzento mudo sem explicação (Nielsen #9).
+    if (s.input === 'account' && !accountValid) {
+      setAcctTried(true);
+      setAcctBlur({ name: true, email: true, password: true });
+      warning();
+      return;
+    }
     // Valida o passo de data ao SAIR dele (a data é opcional → vazia passa pelo Saltar).
     if (s.input === 'date') {
       const v = (draft.serviceStart || '').trim();
@@ -307,11 +316,11 @@ export default function OnboardingScreen({ signup = false }) {
               placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub}
               onBlur={() => markBlur('name')}
               autoCapitalize="words" autoCorrect={false} style={styles.acctInput} />
-            {acctBlur.name && draft.name && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
+            {acctBlur.name && (draft.name || acctTried) && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
             <TextInput value={draft.email} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, email: v }); }}
               placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput}
               onBlur={() => markBlur('email')} />
-            {acctBlur.email && draft.email && validateEmail(draft.email, lang) ? <Text style={styles.acctErr}>{validateEmail(draft.email, lang)}</Text> : null}
+            {acctBlur.email && (draft.email || acctTried) && validateEmail(draft.email, lang) ? <Text style={styles.acctErr}>{validateEmail(draft.email, lang)}</Text> : null}
             <View style={styles.pwRow}>
               <TextInput value={draft.password} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, password: v }); }}
                 onBlur={() => markBlur('password')}
@@ -321,7 +330,7 @@ export default function OnboardingScreen({ signup = false }) {
               </TouchableOpacity>
             </View>
             <View style={{ marginTop: 8 }}><StrengthBar password={draft.password} lang={lang} /></View>
-            {acctBlur.password && draft.password && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
+            {acctBlur.password && (draft.password || acctTried) && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
           </View>
         ) : s.input === 'date' ? (
           <View>
@@ -392,10 +401,13 @@ export default function OnboardingScreen({ signup = false }) {
             <Text style={[styles.btnText, { color: optionalFilled ? C.sub : '#fff' }]}>{lang === 'en' ? 'Skip' : 'Saltar'}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity disabled={!canNext || saving} onPress={handleNext} style={[styles.btnNext, { backgroundColor: canNext && !saving ? C.ink : C.soft }]}>
+        {/* No passo da conta o botão NÃO desativa com o form inválido: premir revela os erros
+            (handleNext). Nos outros passos mantém o comportamento (escolha obrigatória). */}
+        <TouchableOpacity disabled={saving || (s.input !== 'account' && !canNext)} onPress={handleNext}
+          style={[styles.btnNext, { backgroundColor: (s.input === 'account' ? !saving : canNext && !saving) ? C.ink : C.soft }]}>
           {saving
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={[styles.btnText, { color: canNext ? '#fff' : C.sub }]}>{s.input === 'account' ? (lang === 'en' ? 'Create account' : 'Criar conta') : !isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
+            : <Text style={[styles.btnText, { color: (s.input === 'account' || canNext) ? '#fff' : C.sub }]}>{s.input === 'account' ? (lang === 'en' ? 'Create account' : 'Criar conta') : !isLast ? t('onb.continue', lang) : t('onb.enter', lang)}</Text>
           }
         </TouchableOpacity>
       </View>

@@ -17,10 +17,13 @@ export default function BottomSheet({ visible, onClose, title, eyebrow, maxHeigh
   const s = makeStyles(C);
   const hasEye = !!eyebrow;
   // Swipe-para-baixo no cabeçalho/grabber fecha (threshold simples — sem seguir o dedo,
-  // p/ não lutar com o ScrollView do conteúdo).
+  // p/ não lutar com o ScrollView do conteúdo). O PanResponder vive num useRef (cria-se
+  // UMA vez) → chama o onClose via ref, senão prendia o closure do 1.º render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const pan = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => g.dy > 12 && Math.abs(g.dy) > Math.abs(g.dx),
-    onPanResponderRelease: (_, g) => { if (g.dy > 40) onClose && onClose(); },
+    onPanResponderRelease: (_, g) => { if (g.dy > 40 && onCloseRef.current) onCloseRef.current(); },
   })).current;
   const body = scroll
     ? <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 0 }}>{children}</ScrollView>

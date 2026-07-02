@@ -136,6 +136,7 @@ function dutyToFlight(iso, d) {
     legs: Array.isArray(d.legs) ? d.legs : null,   // setores (off/on por leg) p/ o "setor ativo"
     route: d.route || null,                        // p/ o per-diem do DIA (todos os setores)
     blockOn: d.block_on || null, signOff: d.signOff || null,
+    reportDate: reportInstant,   // instante ABSOLUTO do report (o countdown usa-o, como no calendário)
     startDate: new Date(reportInstant.getTime() + 60 * 60 * 1000),
     endDate,
   };
@@ -293,14 +294,18 @@ export default function HomeScreen({ navigation }) {
   // "Dar acesso" FAZ o que diz: dispara o fluxo de ligação na Escala (prompt + escolher o
   // calendário) — antes só mudava de aba e o utilizador tinha de reencontrar o botão certo.
   const requestAccess = () => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { connect: Date.now() } }); };
+  // Efeitos com deps [] guardariam o PRIMEIRO closure de syncFlight (calendarId/company de
+  // arranque — ligar o calendário depois não surtia efeito no foco) → ref sempre atual.
+  const syncRef = useRef(syncFlight);
+  syncRef.current = syncFlight;
   // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
   // para o cartão refletir alterações da escala sem reabrir a app.
-  useFocusEffect(useCallback(() => { syncFlight(); }, []));
+  useFocusEffect(useCallback(() => { syncRef.current(); }, []));
 
   // E também quando a app volta de segundo plano (ex.: a eCrew atualizou o calendário
   // enquanto estava minimizada) → o voo novo aparece sem reabrir a app.
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') syncFlight(); });
+    const sub = AppState.addEventListener('change', (state) => { if (state === 'active') syncRef.current(); });
     return () => sub.remove();
   }, []);
 
@@ -341,11 +346,15 @@ export default function HomeScreen({ navigation }) {
   // Contagem para a apresentação REAL (calendário/registo) quando existe. SEM report real,
   // conta para a PARTIDA e di-lo — antes inventava "partida − 1 h": se o report verdadeiro
   // fosse 1h15 antes, quem confiasse no card chegava 15 min ATRASADO à apresentação.
-  const reportMs = (flight && flight.report && /^\d{1,2}:\d{2}$/.test(flight.report)) ? (() => {
-    const [rh, rm] = flight.report.split(':').map(Number);
-    const dt = new Date(`${flight.dateISO}T00:00:00`); dt.setHours(rh, rm, 0, 0);
-    return isNaN(dt.getTime()) ? null : dt.getTime();
-  })() : null;
+  // Prefere o INSTANTE absoluto (calendário e manual trazem reportDate) — reconstruir de
+  // "dateISO + HH:MM" erra quando o report cai depois da meia-noite ou vem de outro fuso.
+  const reportMs = !flight ? null
+    : flight.reportDate ? (() => { const ts = +new Date(flight.reportDate); return isNaN(ts) ? null : ts; })()
+    : (flight.report && /^\d{1,2}:\d{2}$/.test(flight.report)) ? (() => {
+      const [rh, rm] = flight.report.split(':').map(Number);
+      const dt = new Date(`${flight.dateISO}T00:00:00`); dt.setHours(rh, rm, 0, 0);
+      return isNaN(dt.getTime()) ? null : dt.getTime();
+    })() : null;
   const cdTarget = reportMs != null ? reportMs : (flight ? flight.startDate.getTime() : null);
   const cdMin = cdTarget != null ? Math.round((cdTarget - now) / 60000) : null;
   const cdBase = cdMin == null ? null
@@ -483,12 +492,10 @@ export default function HomeScreen({ navigation }) {
   // 4-5 toques noutra aba). Sem registo desse dia (ex. demo) não é tocável.
   const featuredReg = flight && !flight.demo ? duties[flight.dateISO] : null;
   const featuredTappable = !!(featuredReg && !featuredReg.deleted && featuredReg.report_time);
-  const openFeatured = () => {
-    if (!featuredTappable) return;
-    select();
-    navigation.navigate('Escala', { screen: 'DutyDetail', params: { date: flight.dateISO } });
-  };
-  const openDayDetail = (iso) => { select(); navigation.navigate('Escala', { screen: 'DutyDetail', params: { date: iso } }); };
+  // `initial: false` mete a EscalaMain POR BAIXO do detalhe: o "‹ Voltar" volta à Escala
+  // (sem isto o detalhe vira raiz da stack e o back salta de aba).
+  const openDayDetail = (iso) => { select(); navigation.navigate('Escala', { screen: 'DutyDetail', initial: false, params: { date: iso } }); };
+  const openFeatured = () => { if (featuredTappable) openDayDetail(flight.dateISO); };
 
   const nextDutyEl = flight ? (
     <View>
@@ -729,9 +736,8 @@ export default function HomeScreen({ navigation }) {
         onClose={() => setDetailItem(null)}
         onNav={(dest) => {
           setDetailItem(null);
-          // Destinos: string (aba) OU { root, screen } (ecrã aninhado, ex. Perfil → Validades).
-          if (typeof dest === 'string') navigation.navigate(dest);
-          else if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
+          // Destino: { root, screen? } — aba, opcionalmente com ecrã aninhado (ex. Perfil → Validades).
+          if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
         }} />
     </SafeAreaView>
   );

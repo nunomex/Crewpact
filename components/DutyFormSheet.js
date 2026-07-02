@@ -16,6 +16,7 @@ import { airportZulu } from '../data/zulu';
 import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
+import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -451,7 +452,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
 
         {/* KeyboardAvoiding (padrão do LoginScreen): o rodapé Guardar sobe com o teclado e o scroll
             encolhe — sem isto, sign-off/hora-original/Nota ficavam TAPADOS enquanto se escrevia. */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {/* Data */}
           <Animated.View style={[s.sec, secStyle(0)]}>

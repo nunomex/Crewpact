@@ -1,6 +1,6 @@
 import React, { useState, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, GUTTER, TYPE, FONT, SPACE } from '../data/constants';
 import DetailTopBar from '../components/DetailTopBar';
@@ -8,6 +8,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
+import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext, useTheme } from '../data/appContext';
 import {
   validityCatalog, validityStatus, validityLabel, sortValidities, isNoExpiryType,
@@ -25,6 +26,7 @@ export default function ValidadesScreen({ navigation }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
+  const insets = useSafeAreaInsets();
   const catalog = validityCatalog(isPilot, { instructorRated });
 
   // editing: { id?, type, d, m, y, number, note, aircraft, nationality, level, instrKind, limitations[] }
@@ -36,18 +38,20 @@ export default function ValidadesScreen({ navigation }) {
   const openWith = (obj) => { setEditing(obj); setAttempted(false); baseSnap.current = JSON.stringify(obj); };
   const requestCloseEditing = () => {
     if (editing && JSON.stringify(editing) !== baseSnap.current) {
-      warning();
-      Alert.alert(
-        l('Descartar alterações?', 'Discard changes?'),
-        l('O que preencheste ainda não foi guardado.', 'What you entered has not been saved yet.'),
-        [
-          { text: l('Continuar a editar', 'Keep editing'), style: 'cancel' },
-          { text: l('Descartar', 'Discard'), style: 'destructive', onPress: () => setEditing(null) },
-        ],
-      );
+      confirmDiscard(lang, () => setEditing(null));
       return;
     }
     setEditing(null);
+  };
+  // Trocar de tipo em "nova" recomeça o form do zero → merece o mesmo guard que fechar
+  // (e tocar no tipo JÁ escolhido não pode limpar nada).
+  const requestSwitchType = (id) => {
+    if (editing?.type === id) return;
+    if (editing && JSON.stringify(editing) !== baseSnap.current) {
+      confirmDiscard(lang, () => openWith(blank(id)));
+      return;
+    }
+    openWith(blank(id));
   };
   const blank = (type) => ({ type, d: '', m: '', y: '', number: '', note: '', aircraft: '', nationality: '', level: null, instrKind: null, limitations: [] });
   const openAdd = () => { select(); openWith(blank(catalog[0].id)); };
@@ -208,10 +212,10 @@ export default function ValidadesScreen({ navigation }) {
 
       {/* Adicionar / Editar */}
       <Modal visible={!!editing} transparent animationType="slide" onRequestClose={requestCloseEditing}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={s.mOverlay}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={requestCloseEditing} />
-          <View style={s.sheet}>
+          <View style={[s.sheet, { paddingBottom: Math.max(32, insets.bottom + 12) }]}>
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={s.sheetHead}>
                 <Text style={s.sheetTitle}>{editing?.id ? l('Editar validade', 'Edit item') : l('Nova validade', 'New item')}</Text>
@@ -221,7 +225,7 @@ export default function ValidadesScreen({ navigation }) {
               {!editing?.id ? (
                 <>
                   <Text style={s.fLbl}>{l('Tipo', 'Type')}</Text>
-                  {chipRow(catalog.map((tp) => ({ value: tp.id, label: validityLabel(tp.id, isPilot, lang) })), editing?.type, (id) => openWith(blank(id)), true)}
+                  {chipRow(catalog.map((tp) => ({ value: tp.id, label: validityLabel(tp.id, isPilot, lang) })), editing?.type, requestSwitchType, true)}
                 </>
               ) : (
                 <Text style={[s.fLbl, { marginBottom: 4 }]}>{validityLabel(editing.type, isPilot, lang)}</Text>

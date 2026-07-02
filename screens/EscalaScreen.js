@@ -102,10 +102,11 @@ export default function EscalaScreen({ navigation, route }) {
 
   // Vindo do "Dar acesso ao calendário" do Início → dispara já o fluxo de ligar
   // (prompt + escolher calendário), em vez de deixar o utilizador à procura do botão.
-  const lastConnect = useRef(null);
+  // Consome-e-LIMPA o param: ele persiste no estado de navegação e um ref não sobrevive
+  // ao remount da aba (lazy tabs) → sem limpar, voltar à Escala redisparava o prompt.
   useEffect(() => {
     const c = route.params?.connect;
-    if (c && c !== lastConnect.current) { lastConnect.current = c; connectCalendar(); }
+    if (c) { navigation.setParams({ connect: undefined }); connectCalendar(); }
   }, [route.params?.connect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Voltou do DutyDetailScreen após editar → salta para o mês do serviço e re-acende o realce.
@@ -172,10 +173,12 @@ export default function EscalaScreen({ navigation, route }) {
   const shiftMonth = (delta) => { select(); setMonthDate(new Date(y, m0 + delta, 1)); };
 
   // Resumo do mês: serviços (duties), folgas, per-diem (rota → ae.perDiem).
-  const serviceCount = Object.entries(duties).filter(([iso, d]) => iso.startsWith(ym) && d && !d.deleted && d.report_time).length;
-  // Folgas = dias DECORRIDOS − dias com serviço (a MESMA regra do stats.js → o número bate certo
-  // com as Estatísticas; antes contava o resto do mês por vir como "folga").
-  const elapsedDays = isCurrentMonth ? Number(today.slice(8, 10)) : (ym < today.slice(0, 7) ? daysInMonth : 0);
+  // Serviço = qualquer duty NÃO apagado (a MESMA regra do stats.js — sem exigir report_time,
+  // senão o resumo diverge das Estatísticas e da grelha).
+  const serviceCount = Object.entries(duties).filter(([iso, d]) => iso.startsWith(ym) && d && !d.deleted).length;
+  // Folgas: mês corrente = dias DECORRIDOS − serviços (regra do stats.js); mês passado ou
+  // FUTURO = dias do mês − serviços (no futuro é o PLANO — mostrar 0 contradizia a grelha cheia).
+  const elapsedDays = isCurrentMonth ? Number(today.slice(8, 10)) : daysInMonth;
   const folgaCount = Math.max(0, elapsedDays - serviceCount);
   const catYm = crewAt(ym).category;   // categoria em vigor no mês mostrado (effective-dated)
   const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewFleet }) : null;
@@ -202,6 +205,10 @@ export default function EscalaScreen({ navigation, route }) {
     return (k === 'standby_airport' || k === 'standby_home') ? 'SBY' : k === 'positioning' ? 'POS' : k === 'office' ? 'OFC' : k === 'training' ? 'FRM' : '•';
   };
   const openDay = (iso) => { select(); setSecExpand(false); setDayIso(iso); };
+  // Dia aberto na sheet de detalhe: o duty NÃO apagado desse dia (null = folga real) — o MESMO
+  // critério da grelha, senão um serviço sem report_time abria o ramo "Folga" (mentira).
+  const dayDuty = (dayIso && duties[dayIso] && !duties[dayIso].deleted) ? duties[dayIso] : null;
+  const dayDateLbl = (iso) => { const dt = new Date(`${iso}T00:00:00`); if (isNaN(dt)) return iso; const sx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); };
 
   const GAP = 4;
   const cellW = gridW ? (gridW - GAP * 6) / 7 : 0;
@@ -210,7 +217,7 @@ export default function EscalaScreen({ navigation, route }) {
     const d = duties[iso];
     const dd = Number(iso.slice(8, 10));
     const isToday = iso === today;
-    const isDuty = d && !d.deleted && d.report_time;
+    const isDuty = d && !d.deleted;   // serviço SEM report_time (raro) é serviço na mesma — não "folga"
     const nSvc = isDuty && Array.isArray(d.extra) ? d.extra.length + 1 : 1;   // serviços no dia (210 conta por serviço)
     const col = (firstWeekday + dd - 1) % 7;
     const weekend = col >= 5;
@@ -423,12 +430,10 @@ export default function EscalaScreen({ navigation, route }) {
       {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível).
           FOLGA → vista leve (data + "+ adicionar serviço"): explorar a grelha não dispara o form pesado. */}
       <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)} scroll>
-        {dayIso && !(duties[dayIso] && !duties[dayIso].deleted && duties[dayIso].report_time) ? (() => {
-          const dtF = new Date(`${dayIso}T00:00:00`);
-          const dateLblF = isNaN(dtF) ? dayIso : (() => { const sx = dtF.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); })();
+        {dayIso && !dayDuty ? (() => {
           return (
             <View style={s.dsBody}>
-              <Text style={s.dsDate}>{dateLblF}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
+              <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
               <View style={s.dsOffRow}>
                 <Ionicons name="cafe-outline" size={18} color={C.sub} />
                 <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
@@ -440,16 +445,14 @@ export default function EscalaScreen({ navigation, route }) {
             </View>
           );
         })() : null}
-        {dayIso && duties[dayIso] && !duties[dayIso].deleted && duties[dayIso].report_time ? (() => {
-          const prim = duties[dayIso];
+        {dayDuty ? (() => {
+          const prim = dayDuty;
           const services = [prim, ...(Array.isArray(prim.extra) ? prim.extra : [])];
           const between = (dayLog[dayIso] && Array.isArray(dayLog[dayIso].between)) ? dayLog[dayIso].between : [];
           const multi = services.length > 1;
           const pf = postFlightMin || 0;
           const catD = crewAt(dayIso).category;
           const fmtM = (m) => minToHhmm(Math.max(0, Math.round(m || 0)));
-          const dt = new Date(`${dayIso}T00:00:00`);
-          const dateLbl = isNaN(dt) ? dayIso : (() => { const sx = dt.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); })();
 
           // Um cartão por SERVIÇO do dia (a EASA conta por serviço — 210). idx 0 = primária.
           const renderSvc = (d, idx) => {
@@ -547,7 +550,7 @@ export default function EscalaScreen({ navigation, route }) {
 
           return (
             <View style={s.dsBody}>
-              <Text style={s.dsDate}>{dateLbl}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
+              <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
               {multi ? <Text style={s.dsCount}>{services.length} {l('serviços', 'services')}</Text> : null}
               {rows}
               <View style={s.dsBtns}>

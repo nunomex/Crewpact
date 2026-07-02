@@ -52,7 +52,7 @@ function detailFor(it, lang) {
     const mk = (arr, k) => (arr || []).map((x) => ({ date: x.date, label: KIND[k], k }));
     out.changes = [...mk(raw.changed, 'changed'), ...mk(raw.conflict, 'conflict'), ...mk(raw.added, 'added'), ...mk(raw.removed, 'removed')]
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-    out.navTo = { root: 'Escala', label: l('Rever na Escala', 'Review in roster') };
+    out.navTo = { root: 'Escala', screen: 'EscalaMain', label: l('Rever na Escala', 'Review in roster') };
   } else if (it.id === 'validades') {
     (raw.items || []).forEach((v) => {
       const band = v.st ? v.st.band : 'none';
