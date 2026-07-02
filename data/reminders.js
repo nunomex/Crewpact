@@ -7,13 +7,19 @@
 // (as funções no-op) até reconstruíres o dev build. Tudo local → RGPD-friendly.
 // ⚠️ A forma do `trigger` pode precisar de ajuste fino no dev build conforme a versão.
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { validityLabel } from './validities';
+
+// Expo Go (SDK 53+): o expo-notifications está AMPUTADO e imprime avisos logo no require —
+// aqui os lembretes ficam no-op TOTAL (nem se carrega o módulo). Só no dev build há nativo.
+const IN_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
 let _N;                 // undefined = ainda não tentado · null = indisponível · módulo = ok
 let _handlerSet = false;
 // Carrega o expo-notifications só quando preciso, sem rebentar se o nativo faltar.
 function N() {
   if (_N !== undefined) return _N;
+  if (IN_EXPO_GO) { _N = null; return _N; }
   try {
     _N = require('expo-notifications');
     if (_N && !_handlerSet) {

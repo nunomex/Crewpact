@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions, BackHandler, Appearance } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions, BackHandler, Appearance, Alert } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.4× — chega para melhorar a leitura sem partir os layouts de
@@ -38,6 +38,22 @@ import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
+
+// ── Caixa-negra de crashes (setup sem adb): um erro FATAL de JS fica gravado ANTES de a app
+// morrer e é mostrado num Alert na reabertura seguinte (efeito no App). Sem isto, "a app vai
+// abaixo" no device não diz porquê. Não altera o comportamento: repassa ao handler original.
+try {
+  const prevFatalHandler = global.ErrorUtils && global.ErrorUtils.getGlobalHandler && global.ErrorUtils.getGlobalHandler();
+  if (global.ErrorUtils && global.ErrorUtils.setGlobalHandler) {
+    global.ErrorUtils.setGlobalHandler((e, isFatal) => {
+      try {
+        const msg = `${isFatal ? 'FATAL' : 'não-fatal'} · ${(e && (e.message || String(e))) || '?'}\n${String((e && e.stack) || '').split('\n').slice(1, 7).join('\n')}`;
+        AsyncStorage.setItem('cp_lasterror', msg).catch(() => {});
+      } catch { /* nunca piorar um crash */ }
+      if (prevFatalHandler) prevFatalHandler(e, isFatal);
+    });
+  }
+} catch { /* ambiente sem ErrorUtils */ }
 
 import LoginScreen        from './screens/LoginScreen';
 import OnboardingScreen   from './screens/OnboardingScreen';
@@ -428,6 +444,15 @@ export default function App() {
   const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação (speed-dial) aberto?
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
   const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
+
+  // Caixa-negra: a sessão anterior morreu com erro fatal de JS? Mostra-o UMA vez (e limpa).
+  useEffect(() => {
+    AsyncStorage.getItem('cp_lasterror').then((v) => {
+      if (!v) return;
+      AsyncStorage.removeItem('cp_lasterror').catch(() => {});
+      Alert.alert('Último crash (JS)', String(v).slice(0, 900));
+    }).catch(() => {});
+  }, []);
 
   // ── Duties (escala) ──
   // Escrita imediata em local (offline-first), marcada `dirty` para sincronizar.

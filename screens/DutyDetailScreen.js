@@ -67,7 +67,8 @@ export default function DutyDetailScreen({ route, navigation }) {
 
   // ── Motor FTL (só com report; campos "realizados" só com block-on) ── Duty hours incluem o
   // serviço pós-voo: sign-off REAL (fim − último on) ou o débrief do perfil (ORO.FTL.235c).
-  const pf = (duty.signOff && duty.block_on)
+  // Débrief SÓ em voo (ORO.FTL.235c: sign-off após o último on-block) — num não-voo o fim É o fim.
+  const pf = !isFlight ? 0 : (duty.signOff && duty.block_on)
     ? (() => { const on = clkMin(duty.block_on), so = clkMin(duty.signOff); return (on == null || so == null) ? (ctxAll.postFlightMin || 0) : (so >= on ? so - on : so + 1440 - on); })()
     : (ctxAll.postFlightMin || 0);
   const d = duty.report_time
@@ -211,7 +212,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Text style={s.sectionTitle}>{l('OUTROS SERVIÇOS NESTE DIA', 'OTHER SERVICES THIS DAY')}</Text>
             <Panel rows={duty.extra.map((sv, i) => {
-              const rr = sv.report_time ? computeDuty({ state: 'acc', report: sv.report_time, end: sv.block_on || null, sectors: sv.sectors || 0, postFlightMin: pf }) : null;
+              const rr = sv.report_time ? computeDuty({ state: 'acc', report: sv.report_time, end: sv.block_on || null, sectors: sv.sectors || 0, postFlightMin: (!sv.kind || sv.kind === 'flight') ? (ctxAll.postFlightMin || 0) : 0 }) : null;
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
               const psv = (rr && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;
               return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };

@@ -37,6 +37,7 @@ const ev = (title, { allDay = false, start = '2026-07-01T06:00:00', end = '2026-
 // ── classify: o RISCO existe (títulos pessoais casam códigos) ──
 eq('voo reconhecido', classify('EJU7625 LIS-FNC 06:40-08:15', codes), 'flight');
 eq('standby reconhecido', classify('SBY LIS', codes), 'standby_airport');
+eq('ADTY (código easyJet do airport duty, AE Anexo I.5) → standby aeroporto', classify('ADTY 0600-1400 LIS', codes), 'standby_airport');
 eq('aniversário → other (ignorado)', classify('Aniversário da Ana', codes), 'other');
 eq('FALSO-POSITIVO: "Reserva de mesa" casa standby', classify('Reserva de mesa', codes), 'standby_airport');
 eq('FALSO-POSITIVO: "Office party" casa office', classify('Office party', codes), 'office');

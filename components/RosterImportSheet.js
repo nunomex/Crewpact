@@ -230,7 +230,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+    // Transparente (página opaca) — fullScreen abortava no iOS 26 (transição UIKit c/ teclado).
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>

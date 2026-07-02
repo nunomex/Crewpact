@@ -33,9 +33,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const isFlight = kind === 'flight';
   const cat = crewAt(duty.duty_date).category;
 
-  // Serviço pós-voo (débrief) — sign-off real ou default do perfil.
+  // Serviço pós-voo (débrief) — sign-off real ou default do perfil. SÓ voo (235c).
   const onM = clk(duty.block_on), soM = clk(duty.signOff);
-  const pf = (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
+  const pf = !isFlight ? 0 : (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
 
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
   const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base);
@@ -101,7 +101,8 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const crewTxt = `${isPilot ? l('Piloto', 'Pilot') : l('Cabine', 'Cabin')}${cat ? ` · ${(ae && ae.categoryLabel) ? ae.categoryLabel(cat, lang) : cat}` : ''}${crewContract ? ` · ${(ae && ae.contractLabel) ? ae.contractLabel(crewContract, lang) : crewContract}` : ''}`;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+    // Transparente (página opaca) — fullScreen abortava no iOS 26 (transição UIKit c/ teclado).
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>
@@ -166,7 +167,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
         {/* ── Avançado · casos especiais (FTL) — calculadores da lei reutilizados, pré-preenchidos
             com o serviço simulado. Sem onRegister → puro cálculo, nada é guardado. ── */}
-        <Modal visible={advOpen} animationType="slide" onRequestClose={() => setAdvOpen(false)} presentationStyle="fullScreen">
+        <Modal visible={advOpen} animationType="slide" onRequestClose={() => setAdvOpen(false)} transparent>
           <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
             <View style={s.head}>
               <View style={{ flex: 1 }}>

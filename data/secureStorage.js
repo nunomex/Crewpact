@@ -9,11 +9,17 @@
 // DROP-IN do AsyncStorage: o export default imita a API (getItem/setItem/removeItem/
 // getAllKeys/multiRemove/multiGet/multiSet). Basta trocar o import — ZERO mudanças nos call sites.
 //
-// ⚠️⚠️ FLAG `ENCRYPT`: default **false** = passthrough PURO (comportamento IDÊNTICO ao
-// AsyncStorage — não cifra nada). Pôr a `true` SÓ depois de validar no DEVICE (login →
-// reiniciar → reinstalar → editar escala/validades → confirmar que restaura), como manda
-// a checklist do `docs/eas-backend-plan.md §B`. No setup atual (Windows, sem dev build
-// Android) isto NÃO é verificável → fica FALSE até haver device.
+// ⚠️⚠️ FLAG `ENCRYPT`: **false — a v1 REPROVOU na validação no device (2026-07-02)** com
+// 2 defeitos que MATAM este desenho (aes-js puro):
+//  (1) CONFIRMADO por repro em Node: `aesjs.utils.utf8` CORROMPE caracteres fora do BMP
+//      (emoji, ex. 🌙 U+1F319 → lixo) — o encoder só trata sequências até 3 bytes. Qualquer
+//      valor guardado com emoji (nome do calendário, notas de validades) decifra ERRADO.
+//  (2) AES em JS puro no Hermes (sem JIT) leva SEGUNDOS por blob de ~100KB+ (46ms em
+//      Node×V8 → 20-50× no Hermes) — cada guardar re-escreve o blob inteiro da escala no
+//      thread JS → congela a UI → ANR/crash no "Guardar serviço" (foi assim que se manifestou).
+// A v2 precisa de OUTRO desenho: cifra NATIVA (dev build — react-native-quick-crypto ou
+// MMKV cifrado) ou cifrar SÓ blobs pequenos (validades) com utf8 correto (TextEncoder).
+// NÃO voltar a pôr true com este código.
 //
 // GESTÃO DA CHAVE (à prova de perda de dados — revisão adversarial 2026-07-01):
 //  • A chave-mestra é gerada NO MÁXIMO uma vez, e SÓ quando o SecureStore confirma que
@@ -36,7 +42,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import aesjs from 'aes-js';
 
-// ⚠️ Manter FALSE até validado no device (ver cabeçalho). Ativar = mudar só esta linha.
+// ⚠️ FALSE em definitivo para a v1 — reprovou no device (ver cabeçalho); v2 = outro desenho.
 const ENCRYPT = false;
 
 const PREFIX = 'enc1:';               // formato: enc1:<ivHex>:<ctHex>

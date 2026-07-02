@@ -1,9 +1,10 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform,
   Animated, Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';   // o do RN foi deprecado (RN 0.81)
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
 import StrengthBar from '../components/StrengthBar';

@@ -154,7 +154,7 @@ export default function EscalaScreen({ navigation, route }) {
   const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
 
   const today = isoDay();
-  const anyDuty = Object.values(duties).some((d) => d && !d.deleted && d.report_time);
+  const anyDuty = Object.values(duties).some((d) => d && !d.deleted);   // mesmo critério da grelha/contagem
 
   // ── Mês visível: rótulo, dias, e a lista (começa em hoje no mês atual) ──
   const y = monthDate.getFullYear(), m0 = monthDate.getMonth();
@@ -466,7 +466,7 @@ export default function EscalaScreen({ navigation, route }) {
             if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet); }
             const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
             const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
-            const end = so != null ? so : (onM != null ? onM + pf : null);
+            const end = so != null ? so : (onM != null ? onM + (isFlight ? pf : 0) : null);   // débrief só em voo (235c)
             const endsNext = end != null && rm != null && (end % 1440) < rm;   // serviço acaba no dia seguinte
             const dutyMin = (rm != null && end != null) ? (((end % 1440) >= rm) ? (end % 1440) - rm : (end % 1440) + 1440 - rm) : null;
             return (

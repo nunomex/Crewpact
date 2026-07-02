@@ -9,7 +9,7 @@ export const ROSTER_CODES = {
   easyjet: {
     flightNo:       /\b(EZY|EJU|U2)\s?\d{2,4}[A-Z]?\b/i,           // nº de voo easyJet
     standbyHome:    /\b(HSBY|HSTB|HMSBY)\b/i,                       // standby em casa
-    standbyAirport: /\b(A?SBY|STBY|STANDBY|RESERVE|RESERVA)\b/i,    // standby aeroporto
+    standbyAirport: /\b(ADTY|A?SBY|STBY|STANDBY|RESERVE|RESERVA)\b/i, // standby aeroporto (ADTY = o código easyJet, o mesmo do abono AE Anexo I.5)
     positioning:    /\b(DH|DHD|DEADHEAD|POS|PSN)\b/i,               // posicionamento/deadhead
     training:       /\b(SIM|TRG|RECURRENT|CBT|GS)\b/i,              // formação/simulador
     office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN)\b/i,           // terra/escritório

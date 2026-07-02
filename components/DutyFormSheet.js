@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
@@ -144,6 +144,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
   const initialSnap = useRef('');
   const needBaseline = useRef(false);
+  // ⚠️ Este efeito tem de estar declarado ANTES do efeito de load: os efeitos correm por ordem
+  // de declaração e a captura só pode acontecer no commit SEGUINTE ao load (com o estado novo
+  // já assente). Declarado depois, capturava no MESMO commit os valores do render ANTERIOR
+  // → baseline errada → falso "Descartar alterações?" ao abrir um serviço para editar.
+  useEffect(() => { if (needBaseline.current) { needBaseline.current = false; initialSnap.current = liveSnap(); } });
   useEffect(() => {
     if (!visible) return;
     const iso = date || isoDay();
@@ -159,10 +164,12 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
   const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, accOn, legInput]);
-  useEffect(() => { if (needBaseline.current) { needBaseline.current = false; initialSnap.current = liveSnap(); } });
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
+  // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
+  // quando a transição do Modal corria com o teclado "pinado" — visto no crash report do device.
   const requestClose = () => {
+    Keyboard.dismiss();
     if (!isDirty()) { onClose && onClose(); return; }
     confirmDiscard(lang, () => onClose && onClose());
   };
@@ -289,10 +296,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const firstOff = sectorRows[0] ? (sectorRows[0].off || null) : null;
   const lastOn = sectorRows.length ? (sectorRows[sectorRows.length - 1].on || null) : null;
   // Duty hours = apresentação → FIM. Fim = sign-off REAL; senão último on-block + débrief do perfil
-  // (ORO.FTL.235c). Não-voo: fim = "Fim" (form.on). Volta-a-meia-noite.
+  // (ORO.FTL.235c). NÃO-VOO: o "Fim" (form.on) É o fim do serviço — o sign-off é conceito de voo
+  // (a UI dele nem existe fora do voo; um valor escondido não pode mandar no cálculo).
   const dutyEnd = isFlight
     ? (clkMin(form.signOff) != null ? clkMin(form.signOff) : (clkMin(lastOn) != null ? clkMin(lastOn) + (postFlightMin || 0) : null))
-    : (clkMin(form.signOff) != null ? clkMin(form.signOff) : clkMin(form.on));
+    : clkMin(form.on);
   const dutyMin = (() => { const r = clkMin(form.report); if (r == null || dutyEnd == null) return null; const e = dutyEnd % 1440; return e >= r ? e - r : e + 1440 - r; })();
 
   // Edita off/on de um setor → materializa os legs e escreve no índice. Nº de setores (stepper).
@@ -312,11 +320,19 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
   const requiredKeys = isFlight ? ['report', 'sectors'] : [];
   const missing = requiredKeys.filter((k) => !fieldOk[k]);
-  const formatOk = isFlight || (okOrEmpty(form.report) && okOrEmpty(form.on) && okOrEmpty(form.signOff));
+  // Formato: SÓ os campos que este tipo mostra — validar um campo ESCONDIDO (o sign-off é
+  // UI de voo) travava o guardar do não-voo sem nada visível para corrigir.
+  const formatOk = isFlight
+    ? okOrEmpty(form.signOff)
+    : (okOrEmpty(form.report) && okOrEmpty(form.on));
   const canSave = missing.length === 0 && formatOk;
   // Marca a vermelho um campo obrigatório em falta — só DEPOIS de tentar guardar.
   const showErr = (k) => attemptedSave && requiredKeys.includes(k) && !fieldOk[k];
   const errText = l('Em falta', 'Missing');
+  // Formato errado (não-vazio que não é HH:MM, ex. "17") também fica VERMELHO ao guardar —
+  // a mensagem do rodapé diz "assinalados a vermelho", por isso TÊM de se assinalar.
+  const badClock = (v) => attemptedSave && !!v && !isClock(v);
+  const fmtErr = l('Hora inválida — usa HH:MM', 'Invalid time — use HH:MM');
 
   // `special` derivado dos toggles → null quando nenhum caso ativo. Só voos. Crew-aware (o nº
   // de pilotos só conta para piloto). Alimenta a projeção FTL e o save.
@@ -381,6 +397,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
 
   const onSave = () => {
+    Keyboard.dismiss();   // teclado fora ANTES da transição de fecho (crash iOS 26 — ver requestClose)
     if (!canSave) { setAttemptedSave(true); warning(); return; }   // revela os campos em falta a vermelho
     // Legs detetados/manuais → roster_meta (p/ o estado ao vivo + nº de voo). A aeronave
     // do form sincroniza no 1.º leg. Só voos; senão null. Guarda só o essencial por leg.
@@ -402,7 +419,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       flight_minutes: isFlight ? blockMin : 0,
       route: isFlight ? (form.route.trim() || null) : null,
       kind: form.kind || 'flight', nightStop: hasNs,
-      signOff: form.signOff || null,   // fim de serviço REAL (Duty hours / 210 / repouso)
+      signOff: isFlight ? (form.signOff || null) : null,   // fim REAL (Duty hours/210/repouso) — só voo; não-voo: o Fim é o fim (um sign-off escondido não pode viajar no save)
       legs,
       special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
       accommodation: isFlight ? accOn : false,   // alojamento na pausa do split (220 d/e) → roster_meta
@@ -434,7 +451,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const isEdit = !append && duties[form.date] && !duties[form.date].deleted;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={requestClose} presentationStyle="fullScreen">
+    // Modal TRANSPARENTE (página opaca por cima) — o presentationStyle="fullScreen" rebentava no
+    // iOS 26 (SIGABRT na transição UIKit c/ teclado; crash report do device); o padrão transparente
+    // é o das Validades, provado a funcionar no mesmo iPhone.
+    <Modal visible={visible} animationType="slide" onRequestClose={requestClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
         <View style={s.head}>
@@ -566,7 +586,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           {/* Horas — VOO: apresentação + off/on POR SETOR (legs = fonte) + sign-off; Block e Duty
               hours DERIVAM (só visualização). NÃO-VOO: só Início + Fim (FTL conta início→fim). */}
           <Animated.View style={[s.sec, secStyle(4)]}>
-            <ClockField C={C} s={s} error={showErr('report')} errText={errText} label={isFlight ? t('duties.report', lang) : l('Início', 'Start')} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
+            <ClockField C={C} s={s} error={showErr('report') || badClock(form.report)} errText={badClock(form.report) ? fmtErr : errText} label={isFlight ? t('duties.report', lang) : l('Início', 'Start')} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
             {isFlight ? (
               <>
                 {/* Nº de setores (define as linhas de off/on). Da rota, ou ajustável à mão. */}
@@ -605,7 +625,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 </View>
                 {/* Fim de serviço (sign-off) — opcional; define as Duty hours com débrief real. */}
                 <View style={{ marginTop: 14 }}>
-                  <ClockField C={C} s={s} label={l('Fim de serviço (sign-off)', 'Sign-off (end of duty)')} value={form.signOff} onChange={(v) => setForm((f) => ({ ...f, signOff: v }))} />
+                  <ClockField C={C} s={s} error={badClock(form.signOff)} errText={fmtErr} label={l('Fim de serviço (sign-off)', 'Sign-off (end of duty)')} value={form.signOff} onChange={(v) => setForm((f) => ({ ...f, signOff: v }))} />
                   <Text style={s.routeHint}>{postFlightMin
                     ? l(`Opcional · hora real de fim. Vazio → último on-block + ${postFlightMin}′ de débrief (perfil).`, `Optional · real end time. Empty → last on-block + ${postFlightMin}′ debrief (profile).`)
                     : l('Opcional · hora real de fim (depois do débrief). Define o débrief no Perfil.', 'Optional · real end time (after debrief). Set the debrief in Profile.')}</Text>
@@ -626,7 +646,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               </>
             ) : (
               <View style={{ marginTop: 12 }}>
-                <ClockField C={C} s={s} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+                <ClockField C={C} s={s} error={badClock(form.on)} errText={fmtErr} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
               </View>
             )}
           </Animated.View>

@@ -197,8 +197,11 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // Serviço pós-voo (debrief, ORO.FTL.235c — o operador fixa-o no OM). O sign-off REAL da duty
   // (`signOff` − último on-block, com volta-a-meia-noite) tem PRIORIDADE; senão usa o default
   // passado (min do perfil/OM). Entra no PERÍODO DE SERVIÇO (210 + repouso), como a norma manda.
+  // SÓ VOO: o débrief é o serviço entre o último on-block e o sign-off (235c) — num não-voo
+  // (escritório/formação/posicionamento) o FIM registado É o fim; somar débrief inflava o 210/repouso.
+  const isFl = (duty.kind || 'flight') === 'flight';
   const onMin = parseHhmm(duty.block_on), soMin = parseHhmm(duty.signOff);
-  const pf = soMin != null ? (soMin >= onMin ? soMin - onMin : soMin + 1440 - onMin) : (postFlightMin || 0);
+  const pf = !isFl ? 0 : (soMin != null ? (soMin >= onMin ? soMin - onMin : soMin + 1440 - onMin) : (postFlightMin || 0));
   // Casos especiais (Fase 1) — repouso a bordo (205c), delayed (205g), redução por standby (225):
   // mexem no TETO do PSV deste serviço. Vêm em `duty.special` (persistido em roster_meta).
   const sp = duty.special || {};
@@ -266,7 +269,9 @@ export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0
   const repPrev = parseHhmm(prev.report_time);
   const onPrev = parseHhmm(prev.block_on), soPrev = parseHhmm(prev.signOff);
   const repNext = parseHhmm(next.report_time);
-  let endPrev = soPrev != null ? soPrev : (onPrev != null ? (onPrev + (postFlightMin || 0)) % 1440 : null);
+  // Débrief SÓ se o serviço ANTERIOR for voo (235c) — um escritório acaba no fim registado.
+  const pfPrev = ((prev.kind || 'flight') === 'flight') ? (postFlightMin || 0) : 0;
+  let endPrev = soPrev != null ? soPrev : (onPrev != null ? (onPrev + pfPrev) % 1440 : null);
   if (endPrev == null || repNext == null) return null;
   let gapMin = repNext - endPrev; while (gapMin < 0) gapMin += 1440;          // next reporta depois do fim de prev
   let prevDutyMin = repPrev != null ? endPrev - repPrev : 0; while (prevDutyMin < 0) prevDutyMin += 1440;

@@ -15,6 +15,7 @@ const toMin = (hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ''); retu
 const dutyMinutes = (d, pf = 0) => {
   const r = toMin(d.report_time), e = toMin(d.block_on);
   if (r == null || e == null) return null;
+  if ((d.kind || 'flight') !== 'flight') pf = 0;         // débrief é pós-VOO (235c) — não-voo acaba no fim registado
   const so = toMin(d.signOff);
   const end = so != null ? so : e;                       // fim = sign-off real, senão block_on
   let dur = end >= r ? end - r : (end + 1440 - r);

@@ -272,6 +272,25 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Sem kind (voo): 100% no serviço (12h)', dutyToFtlDay({ report_time: '08:00', block_on: '20:00', sectors: 1 }).servico, 12);
 }
 
+// ─────────── Débrief (postFlightMin) é PÓS-VOO (ORO.FTL.235(c)) — não-voo acaba no fim registado ───────────
+{
+  const { dutyToFtlDay, restBetweenDuties } = ftl;
+  // VOO 08:00→16:00 com débrief 30′ → período de serviço 8h30 (PSV + pós-voo; 105(11)/210(c)).
+  const fl = dutyToFtlDay({ report_time: '08:00', block_on: '16:00', sectors: 1 }, { postFlightMin: 30 });
+  eq('Débrief: voo 8h + 30′ → serviço 8.5', fl.servico, 8.5);
+  // ESCRITÓRIO 09:00→17:00 com o MESMO perfil → 8.0: o débrief é o serviço entre o último
+  // on-block e o sign-off (235c) — sem voo não existe; o "Fim" registado É o fim do serviço.
+  const ofc = dutyToFtlDay({ report_time: '09:00', block_on: '17:00', sectors: 0, kind: 'office' }, { postFlightMin: 30 });
+  eq('Débrief: escritório 8h → serviço 8.0 (sem débrief)', ofc.servico, 8);
+  const trn = dutyToFtlDay({ report_time: '09:00', block_on: '17:00', sectors: 0, kind: 'training' }, { postFlightMin: 30 });
+  eq('Débrief: formação 8h → serviço 8.0 (sem débrief)', trn.servico, 8);
+  // Repouso entre serviços (235): o fim do anterior NÃO-VOO = block_on (sem débrief) → gap maior.
+  const gapOfc = restBetweenDuties({ report_time: '06:00', block_on: '10:00', kind: 'office' }, { report_time: '14:00' }, { postFlightMin: 30 });
+  eq('235: gap após escritório 10:00→14:00 = 240 min (sem débrief)', gapOfc.gapMin, 240);
+  const gapFl = restBetweenDuties({ report_time: '06:00', block_on: '10:00', sectors: 1 }, { report_time: '14:00' }, { postFlightMin: 30 });
+  eq('235: gap após voo 10:30→14:00 = 210 min (com débrief)', gapFl.gapMin, 210);
+}
+
 // ─────────── 205(d)(1) — prolongamento inferido + frequência (máx 2/7d) ───────────
 {
   const { dutyToFtlDay, computeExtensionUsage } = ftl;
