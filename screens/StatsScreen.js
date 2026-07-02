@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
 import HeaderActions from '../components/HeaderActions';
+import PrimaryButton from '../components/PrimaryButton';
 import CountUp from '../components/CountUp';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -48,7 +49,7 @@ function MonthBar({ ratio, color, delay }) {
 // Fase 3 — Estatísticas do ano (YTD). Agrega o store cru `duties` (data/stats.js):
 // horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
 // mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
-export default function StatsScreen() {
+export default function StatsScreen({ navigation }) {
   const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -198,6 +199,9 @@ export default function StatsScreen() {
             <Ionicons name="bar-chart-outline" size={28} color={C.sub} />
             <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
             <Text style={s.emptySub}>{l('Importa ou regista duties para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
+            {/* O vazio DIZ o que fazer — e dá o botão para o fazer (antes era só texto). */}
+            <PrimaryButton onPress={() => { select(); navigation.navigate('Escala'); }} icon="arrow-forward" radius="lg"
+              label={l('Ir para a Escala', 'Go to roster')} style={{ marginTop: 10, alignSelf: 'stretch', marginHorizontal: 30 }} />
           </Animated.View>
         ) : (
           <>
@@ -231,7 +235,7 @@ export default function StatsScreen() {
             <Animated.View style={[s.card, seg(3)]}>
               <Text style={s.cardTitle}>{l('Repouso & fadiga', 'Rest & fatigue')}</Text>
               <View style={s.aeRow}><Text style={s.aeK} numberOfLines={1}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text><Text style={s.aeV}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text></View>
-              {st.reducedRests ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Repousos < 11 h', 'Rests < 11 h')}</Text><Text style={[s.aeV, { color: C.warn || C.text }]}>{st.reducedRests}</Text></View> : null}
+              {st.reducedRests ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Repousos < 11 h', 'Rests < 11 h')}</Text><Text style={[s.aeV, { color: C.warnText || C.text }]}>{st.reducedRests}</Text></View> : null}
               <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text><Text style={s.aeV}>{st.longestStreak} {l('dias', 'days')}</Text></View>
             </Animated.View>
 

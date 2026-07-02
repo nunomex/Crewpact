@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader';
 import HeaderActions from '../components/HeaderActions';
 import AeCalcs from '../components/AeCalcs';
 import Banner from '../components/Banner';
+import SearchModal from '../components/SearchModal';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import { FTL_ARTICLES } from '../data/ftl';
@@ -40,25 +41,15 @@ export default function FtlHubScreen({ navigation }) {
   // SNC sugerido pela deteção de alterações de escala (Fase 4): alteradas + conflitos.
   const sncSuggest = rosterChanges?.counts ? ((rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)) : 0;
 
-  // A aba Cálculos mostra UMA suite: companhia com AE → a suite de pagamento
-  // (AeCalcs); companhia só-FTL → as ferramentas regulamentares (limites).
-  // NB: o FTL (EASA) aplica-se a TODAS as companhias — o motor FTL corre sempre
-  // (estado/limites na Home, projeção no duty). O `rule_type='AE'` só decide o que
-  // ESTA aba apresenta; NÃO desliga o FTL. A companhia AE é, de facto, AE + FTL.
-  if (caps?.pay) {
-    return (
-      <SafeAreaView style={s.safe} edges={['top']}>
-        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
-          <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
-            right={<HeaderActions />} />
-          <Animated.View style={seg(0)}>
-            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} fleet={crewFleet} duties={duties || []}
-              lifestyle={!!caps.lifestyle} instructorRated={instructorRated} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
-          </Animated.View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+  // Pesquisa (artigos FTL + valores AE) — entrada VISÍVEL aqui (a do speed-dial fica como atalho;
+  // ninguém procura uma lupa atrás de um botão "+").
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchBtn = (
+    <TouchableOpacity onPress={() => { select(); setSearchOpen(true); }} hitSlop={6} style={s.searchIb}
+      accessibilityRole="button" accessibilityLabel={l('Pesquisar artigos e valores', 'Search articles and values')}>
+      <Ionicons name="search" size={17} color={C.text} />
+    </TouchableOpacity>
+  );
 
   const articles = FTL_ARTICLES.filter(hasCalc);
   const groups = THEMES.map(th => ({ ...th, items: articles.filter(a => th.codes.includes(a.code)) })).filter(g => g.items.length);
@@ -80,11 +71,62 @@ export default function FtlHubScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // Secção CONSULTAR (artigos da lei + Fontes) — renderizada nos DOIS ramos: a lei FTL é
+  // universal e a missão é "estou legal?"; antes, quem tinha AE (easyJet/TAP) perdia TODO o
+  // acesso navegável aos artigos e à Biblioteca (a aba só mostrava salário).
+  const consultSection = (
+    <>
+      <View style={s.consultHead}>
+        <Text style={[s.sec, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
+        <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openLibrary} hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}>
+          <Ionicons name="library-outline" size={14} color={C.text} />
+          <Text style={s.pdfBtnTxt}>{l('Fontes', 'Sources')}</Text>
+          <Ionicons name="chevron-forward" size={13} color={C.sub} />
+        </TouchableOpacity>
+      </View>
+      {groups.map(g => (
+        <View key={g.id}>
+          <Text style={s.subGroup}>{tx(g.label, lang)}</Text>
+          {g.items.map(article)}
+        </View>
+      ))}
+      {ungrouped.length ? (
+        <View>
+          <Text style={s.subGroup}>{t('ftl.consultTitle', lang)}</Text>
+          {ungrouped.map(article)}
+        </View>
+      ) : null}
+      <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
+    </>
+  );
+
+  // A aba Cálculos mostra a suite conforme a companhia: com AE → pagamento (AeCalcs) + a lei
+  // por baixo; só-FTL → a lei. NB: o FTL (EASA) aplica-se a TODAS as companhias — o motor FTL
+  // corre sempre (estado/limites na Home, projeção no duty).
+  if (caps?.pay) {
+    return (
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
+          <PageHeader eyebrow={ae.AE_LABEL} title={l('Cálculos', 'Calculations')}
+            right={<View style={s.headRight}>{searchBtn}<HeaderActions /></View>} />
+          <Animated.View style={seg(0)}>
+            <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} fleet={crewFleet} duties={duties || []}
+              lifestyle={!!caps.lifestyle} instructorRated={instructorRated} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
+          </Animated.View>
+          <Animated.View style={seg(1)}>
+            {consultSection}
+          </Animated.View>
+        </ScrollView>
+        <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow={t('ftl.eyebrow', lang)} title={l('Cálculos', 'Calculations')}
-          right={<HeaderActions />} />
+          right={<View style={s.headRight}>{searchBtn}<HeaderActions /></View>} />
         {/* Estado 'pending': há acordo coletivo publicado, ainda não modelado → honestidade. */}
         {aeStatus === 'pending' ? (
           <Banner tone="info" icon="document-text-outline"
@@ -106,31 +148,10 @@ export default function FtlHubScreen({ navigation }) {
 
         {/* ── CONSULTAR ── */}
         <Animated.View style={seg(0)}>
-        <View style={s.consultHead}>
-          <Text style={[s.sec, { marginTop: 0, marginBottom: 0 }]}>{l('CONSULTAR', 'REFERENCE')}</Text>
-          <TouchableOpacity style={s.pdfBtn} activeOpacity={0.8} onPress={openLibrary} hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}>
-            <Ionicons name="library-outline" size={14} color={C.text} />
-            <Text style={s.pdfBtnTxt}>{l('Fontes', 'Sources')}</Text>
-            <Ionicons name="chevron-forward" size={13} color={C.sub} />
-          </TouchableOpacity>
-        </View>
-
-        {groups.map(g => (
-          <View key={g.id}>
-            <Text style={s.subGroup}>{tx(g.label, lang)}</Text>
-            {g.items.map(article)}
-          </View>
-        ))}
-        {ungrouped.length ? (
-          <View>
-            <Text style={s.subGroup}>{t('ftl.consultTitle', lang)}</Text>
-            {ungrouped.map(article)}
-          </View>
-        ) : null}
-
-        <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
+          {consultSection}
         </Animated.View>
       </ScrollView>
+      <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
     </SafeAreaView>
   );
 }
@@ -156,6 +177,10 @@ const makeStyles = (C) => StyleSheet.create({
   toolBadge: { alignSelf: 'flex-start', borderRadius: RADIUS.sm - 2, backgroundColor: C.ink, paddingHorizontal: 8, paddingVertical: 3 },
   toolBadgeTxt: { color: '#fff', fontSize: 12, fontFamily: FONT.bold },
   toolTitle: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text, lineHeight: 18 },
+
+  // Cabeçalho: lupa (pesquisa) ao lado do sino/avatar
+  headRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchIb: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
 
   // Consultar: cabeçalho com botão PDF + cartões de artigo
   consultHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.md, marginBottom: 8, marginLeft: 2 },

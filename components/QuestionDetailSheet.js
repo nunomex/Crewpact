@@ -52,7 +52,7 @@ function detailFor(it, lang) {
     const mk = (arr, k) => (arr || []).map((x) => ({ date: x.date, label: KIND[k], k }));
     out.changes = [...mk(raw.changed, 'changed'), ...mk(raw.conflict, 'conflict'), ...mk(raw.added, 'added'), ...mk(raw.removed, 'removed')]
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-    out.navTo = 'Escala';
+    out.navTo = { root: 'Escala', label: l('Rever na Escala', 'Review in roster') };
   } else if (it.id === 'validades') {
     (raw.items || []).forEach((v) => {
       const band = v.st ? v.st.band : 'none';
@@ -60,6 +60,8 @@ function detailFor(it, lang) {
         v: band === 'expired' ? l('Expirado', 'Expired') : band === 'expiring' ? `${v.st.days} d` : l('Válido', 'Valid'),
         tone: band === 'expired' ? 'bad' : band === 'expiring' ? 'warn' : 'ok' });
     });
+    // "Renova com urgência" SEM caminho era um beco — leva a quem gere as validades.
+    out.navTo = { root: 'Perfil', screen: 'Validades', label: l('Gerir validades', 'Manage items') };
   }
   return out;
 }
@@ -125,8 +127,8 @@ function DetailContent({ item, lang, onNav, C, s }) {
       ) : null}
 
       {d.navTo ? (
-        <TouchableOpacity style={s.nav} activeOpacity={0.85} onPress={() => onNav && onNav(d.navTo)}>
-          <Text style={s.navT}>{l('Rever na Escala', 'Review in roster')}</Text>
+        <TouchableOpacity style={s.nav} activeOpacity={0.85} onPress={() => onNav && onNav(d.navTo)} accessibilityRole="button">
+          <Text style={s.navT}>{d.navTo.label}</Text>
           <Ionicons name="arrow-forward" size={16} color="#fff" />
         </TouchableOpacity>
       ) : null}

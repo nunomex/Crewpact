@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
@@ -68,8 +68,10 @@ function ClockField({ label, value, onChange, C, s, flex, error, errText }) {
   return (
     <View style={flex ? { flex: 1 } : null}>
       <Text style={s.lbl}>{label}</Text>
+      {/* number-pad nos 2 SO: o maskClock mete os ':' sozinho, só se escrevem dígitos
+          (numbers-and-punctuation era só-iOS → no Android caía no QWERTY completo). */}
       <TextInput value={value} onChangeText={(v) => onChange(maskClock(v))} placeholder="HH:MM" placeholderTextColor={C.sub}
-        keyboardType="numbers-and-punctuation" maxLength={5} style={[s.input, error && s.inputErr]} />
+        keyboardType="number-pad" maxLength={5} style={[s.input, error && s.inputErr]} />
       {error ? <Text style={s.errTxt}>{errText}</Text> : null}
     </View>
   );
@@ -82,7 +84,8 @@ function SegRow({ options, value, onChange, s }) {
       {options.map((o) => {
         const on = value === o.id;
         return (
-          <TouchableOpacity key={o.id} onPress={() => { select(); onChange(o.id); }} style={[s.segChip, on && s.segChipOn]} activeOpacity={0.85}>
+          <TouchableOpacity key={o.id} onPress={() => { select(); onChange(o.id); }} style={[s.segChip, on && s.segChipOn]} activeOpacity={0.85}
+            accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={o.label}>
             <Text style={[s.segChipTxt, on && s.segChipTxtOn]} numberOfLines={1}>{o.label}</Text>
           </TouchableOpacity>
         );
@@ -135,6 +138,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '' });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
   const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '' });
+  // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
+  // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
+  // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
+  const initialSnap = useRef('');
+  const needBaseline = useRef(false);
   useEffect(() => {
     if (!visible) return;
     const iso = date || isoDay();
@@ -143,12 +151,38 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const f = candidate ? formFromCand(candidate)
       : (editExtra != null ? (exObj ? formFromExtra(exObj, iso) : { ...EMPTY, date: iso })
       : (append ? { ...EMPTY, date: iso } : loadFor(iso)));
-    setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
+    setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); setLegInput('');
     syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
     const acc = !!(candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation)));
     setAccOn(acc); if (acc) setAdvOpen(true);
+    needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const goDate = (delta) => { select(); const iso = addDays(form.date, delta); setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(!!duties[iso]?.accommodation); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); };
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, accOn, legInput]);
+  useEffect(() => { if (needBaseline.current) { needBaseline.current = false; initialSnap.current = liveSnap(); } });
+  const isDirty = () => liveSnap() !== initialSnap.current;
+  // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
+  const requestClose = () => {
+    if (!isDirty()) { onClose && onClose(); return; }
+    confirmDiscard(lang, () => onClose && onClose());
+  };
+  const goDate = (delta) => {
+    const jump = () => {
+      const iso = addDays(form.date, delta);
+      setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(!!duties[iso]?.accommodation); setLegInput('');
+      setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
+      needBaseline.current = true;
+    };
+    // Mudar de dia SUBSTITUI o form — antes descartava em silêncio o que já estava escrito.
+    if (isDirty()) {
+      confirmDiscard(lang, () => { select(); jump(); }, {
+        title: l('Alterações por guardar', 'Unsaved changes'),
+        sub: l('Mudar de dia descarta o que preencheste neste.', 'Changing day discards what you entered here.'),
+        discardLabel: l('Descartar e mudar', 'Discard and switch'),
+      });
+      return;
+    }
+    select(); jump();
+  };
 
   // ── Setores: Detetar (SÓ no manual; histórico→API se houver net) OU à mão (rota: 2 estações + ✓). ──
   // O nº de voo é OBRIGATÓRIO e COMPLETO (sigla+nº, ex. EJU7625); incompleto/vazio → vermelho.
@@ -399,7 +433,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const isEdit = !append && duties[form.date] && !duties[form.date].deleted;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
+    <Modal visible={visible} animationType="slide" onRequestClose={requestClose} presentationStyle="fullScreen">
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
         <View style={s.head}>
@@ -410,11 +444,14 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             </View>
             <Text style={s.h1}>Duty</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}>
+          <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.close} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
             <Ionicons name="close" size={20} color={C.text} />
           </TouchableOpacity>
         </View>
 
+        {/* KeyboardAvoiding (padrão do LoginScreen): o rodapé Guardar sobe com o teclado e o scroll
+            encolhe — sem isto, sign-off/hora-original/Nota ficavam TAPADOS enquanto se escrevia. */}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {/* Data */}
           <Animated.View style={[s.sec, secStyle(0)]}>
@@ -432,7 +469,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               {DUTY_KINDS.map((k) => {
                 const on = form.kind === k;
                 return (
-                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                    accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={t('duties.kind.' + k, lang)}>
                     <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
                   </TouchableOpacity>
                 );
@@ -469,7 +507,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 </TouchableOpacity>
               </View>
               {flightErr ? <Text style={s.errTxt}>{l('Falta o número do voo (sigla + nº, ex. EJU7625).', 'Flight number missing (code + no., e.g. EJU7625).')}</Text> : null}
-              {detectMsg ? <Text style={[s.routeHint, { color: C.warn }]}>{detectMsg}</Text> : null}
+              {detectMsg ? <Text style={[s.routeHint, { color: C.warnText || C.warn }]}>{detectMsg}</Text> : null}
 
               {/* Rota À MÃO — origem → destino + ✓ cria UM setor (com o nº de voo escrito). */}
               {(caps ? caps.route : !!ae) ? (
@@ -491,7 +529,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               {ae && form.route ? (
                 routePd && routePd.ok
                   ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
-                  : (routePd && !routePd.ok ? <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text> : null)
+                  : (routePd && !routePd.ok ? <Text style={[s.routeHint, { color: C.warnText || C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text> : null)
               ) : null}
             </Animated.View>
           ) : null}
@@ -550,9 +588,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                         <View style={[s.secRow, { marginTop: 0 }]}>
                           <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
                           <View style={s.secInputs}>
-                            <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
+                            <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
                             <Text style={s.secArrow}>→</Text>
-                            <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="numbers-and-punctuation" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
+                            <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
                           </View>
                         </View>
                         {(zo || zn) ? <Text style={s.secZ}>{zo ? `${zo}Z` : '—'} → {zn ? `${zn}Z` : '—'}</Text> : null}
@@ -751,6 +789,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             : (isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null)}
           <PrimaryButton onPress={onSave} icon={simulate ? 'play' : undefined} label={simulate ? l('Simular', 'Simulate') : t('common.save', lang)} />
         </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

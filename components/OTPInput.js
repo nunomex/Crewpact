@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import { RADIUS, TYPE, FONT, PALETTE_DARK } from '../data/constants';
 import { useTheme } from '../data/appContext';
 
@@ -35,6 +35,10 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
         maxLength={len}
         style={otp.overlay}
         caretHidden
+        // O teclado SUGERE o código recebido em vez de obrigar a decorar (iOS: QuickType
+        // "From Mail/Messages"; Android: sms-otp).
+        textContentType="oneTimeCode"
+        autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
       />
     </View>
   );

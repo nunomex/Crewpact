@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, FONT } from '../data/constants';
@@ -31,8 +31,9 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
   const confirm = () => { if (!sel) return; success(); const c = (cals || []).find((x) => x.id === sel); onSelect && onSelect(sel, c ? c.title : null); onClose && onClose(); };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
-      <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
+    // Superfície LEVE (uma escolha): pageSheet no iOS (gesto de arrasto do sistema).
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
+      <View style={[s.page, { paddingTop: Platform.OS === 'ios' ? 16 : Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>
             <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Calendário', 'Roster · Calendar')}</Eyebrow></View>

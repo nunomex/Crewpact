@@ -26,6 +26,8 @@ export default function OnboardingScreen({ signup = false }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
+  const [acctBlur, setAcctBlur] = useState({});   // campos já "visitados" → só então mostram erro
+  const markBlur = (k) => setAcctBlur((b) => (b[k] ? b : { ...b, [k]: true }));
   const [created, setCreated] = useState(null);   // {user, payload} pós-signup → página de transição
   // Confirmação de email (só ativa se o autoconfirm estiver DESLIGADO na dashboard): quando o
   // register devolve `needsConfirm`, a conta existe mas sem sessão → pedimos o código OTP.
@@ -299,22 +301,27 @@ export default function OnboardingScreen({ signup = false }) {
                 fosse ele qual fosse. A cura está NO campo da PASSWORD (abaixo):
                 textContentType="oneTimeCode" + autoComplete="off" desativam esse
                 AutoFill e devolvem a escrita a todo o formulário. */}
+            {/* Erros só DEPOIS de sair do campo (blur) — a vermelho à 1.ª letra ("j" → "email
+                inválido") assusta sem ajudar; enquanto se escreve o campo fica neutro. */}
             <TextInput value={draft.name} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, name: v }); }}
               placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub}
+              onBlur={() => markBlur('name')}
               autoCapitalize="words" autoCorrect={false} style={styles.acctInput} />
-            {draft.name && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
+            {acctBlur.name && draft.name && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
             <TextInput value={draft.email} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, email: v }); }}
-              placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput} />
-            {draft.email && validateEmail(draft.email, lang) ? <Text style={styles.acctErr}>{validateEmail(draft.email, lang)}</Text> : null}
+              placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput}
+              onBlur={() => markBlur('email')} />
+            {acctBlur.email && draft.email && validateEmail(draft.email, lang) ? <Text style={styles.acctErr}>{validateEmail(draft.email, lang)}</Text> : null}
             <View style={styles.pwRow}>
               <TextInput value={draft.password} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, password: v }); }}
+                onBlur={() => markBlur('password')}
                 placeholder={lang === 'en' ? 'Password' : 'Palavra-passe'} placeholderTextColor={C.sub} secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} style={styles.pwInput} />
               <TouchableOpacity onPress={() => setShowPw((x) => !x)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.sub} />
               </TouchableOpacity>
             </View>
             <View style={{ marginTop: 8 }}><StrengthBar password={draft.password} lang={lang} /></View>
-            {draft.password && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
+            {acctBlur.password && draft.password && validatePassword(draft.password, true, lang) ? <Text style={styles.acctErr}>{validatePassword(draft.password, true, lang)}</Text> : null}
           </View>
         ) : s.input === 'date' ? (
           <View>

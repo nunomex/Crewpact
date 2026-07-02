@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import PrimaryButton from '../components/PrimaryButton';
@@ -73,6 +73,7 @@ export default function LockScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <View style={s.center}>
         <View style={s.iconWrap}>
           <Ionicons name="lock-closed" size={30} color={C.onDark} />
@@ -94,6 +95,7 @@ export default function LockScreen() {
           <View style={s.pwBox}>
             <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry
               placeholder={t('profile.pwCur', lang)} placeholderTextColor={C.sub} style={s.pwInput} autoFocus
+              textContentType="password" autoComplete="current-password"
               autoCapitalize="none" autoCorrect={false} editable={!pwBusy} onSubmitEditing={submitPw} returnKeyType="go" />
             {pwErr ? <Text style={s.err}>{pwErr}</Text> : null}
             <PrimaryButton onPress={submitPw} loading={pwBusy} disabled={!pw} label={t('lock.unlock', lang)} style={{ marginTop: 12, alignSelf: 'stretch' }} />
@@ -106,6 +108,7 @@ export default function LockScreen() {
       <TouchableOpacity onPress={logout} style={s.logout} hitSlop={8}>
         <Text style={s.logoutTxt}>{t('profile.logout', lang)}</Text>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

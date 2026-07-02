@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions, BackHandler, Appearance } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
-// ampliação a 1.3× — chega para melhorar a leitura sem partir os layouts de
+// ampliação a 1.4× — chega para melhorar a leitura sem partir os layouts de
 // altura fixa (inputs, badges, cartões).
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.maxFontSizeMultiplier = 1.4;
@@ -155,6 +155,14 @@ function FloatingTabBar({ state, navigation }) {
   const toggleMenu = () => { const next = !open; setOpen(next); animateTo(next ? 1 : 0); };
   const fire = (fn) => { closeMenu(); fn(); };
 
+  // Android: o botão/gesto RETROCEDER fecha o speed-dial aberto (superfície temporária) —
+  // antes mudava de aba ou saía da app com o scrim/menu ainda no ecrã (Material back).
+  useEffect(() => {
+    if (!open) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { closeMenu(); return true; });
+    return () => sub.remove();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const go = (route, focused) => {
     closeMenu();
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -204,13 +212,16 @@ function FloatingTabBar({ state, navigation }) {
           {state.routes.map(route => {
             const focused = active.key === route.key;
             const [on, off] = ICON[route.name];
+            const lbl = t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang);
             return (
               <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang)}
+                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
-                <Ionicons name={focused ? on : off} size={24} color={focused ? '#fff' : 'rgba(255,255,255,0.6)'} />
-                {focused && <View style={[tbar.tbDot, { backgroundColor: C.red }]} />}
+                <Ionicons name={focused ? on : off} size={22} color={focused ? '#fff' : 'rgba(255,255,255,0.62)'} />
+                {/* Rótulo SEMPRE visível (Material: "labels on all destinations") — 4 ícones
+                    próximos (stats/calendar/time) obrigavam a adivinhar; o dock navy mantém-se. */}
+                <Text numberOfLines={1} style={[tbar.tbLbl, { color: focused ? '#fff' : 'rgba(255,255,255,0.62)' }]}>{lbl}</Text>
               </TouchableOpacity>
             );
           })}
@@ -309,8 +320,8 @@ const tbar = StyleSheet.create({
   dock: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 26, paddingHorizontal: 8 },
   dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.42, shadowRadius: 26, elevation: 14 },
   tb: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
-  tbHi: { position: 'absolute', width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
-  tbDot: { position: 'absolute', bottom: 8, width: 4, height: 4, borderRadius: 2 },
+  tbHi: { position: 'absolute', width: 52, height: 48, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
+  tbLbl: { fontSize: 9, fontFamily: FONT.semibold, letterSpacing: 0.2, marginTop: 2, maxWidth: '100%' },
   // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
   fabAnchor: { position: 'absolute', right: 20, alignItems: 'flex-end' },
   // FAB vermelho (direita) — maior, quadrado-arredondado a condizer com a dock (raio 26, não círculo)
@@ -347,7 +358,9 @@ export default function App() {
   const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
 
   const [lang, setLang]                 = useState(() => { const c = getLocales?.()[0]?.languageCode?.toLowerCase(); return c === 'pt' ? 'pt' : 'en'; });   // device: PT→PT, resto→EN
-  const [theme, setTheme]               = useState('light'); // 'light' | 'dark' — preferência global do dispositivo
+  // Tema: por defeito segue o SISTEMA (como o idioma); uma escolha guardada no Perfil
+  // (cp_theme) prevalece — antes arrancava sempre em claro e ignorava o modo escuro do SO.
+  const [theme, setTheme]               = useState(() => (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light'));
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)

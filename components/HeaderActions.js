@@ -32,8 +32,11 @@ export default function HeaderActions() {
   return (
     <View style={s.row}>
       <NotificationsBell />
+      {/* O ponto âmbar (perfil incompleto) era SÓ-cor — o leitor de ecrã também o diz. */}
       <TouchableOpacity onPress={() => navigation.navigate('Perfil')} activeOpacity={0.85} hitSlop={8}
-        accessibilityRole="button" accessibilityLabel={t('tab.profile', lang)} style={s.ava}>
+        accessibilityRole="button"
+        accessibilityLabel={`${t('tab.profile', lang)}${setupIncomplete ? ` · ${lang === 'en' ? 'profile incomplete' : 'perfil incompleto'}` : ''}`}
+        style={s.ava}>
         <Text style={s.avaTxt}>{initialsOf(name)}</Text>
         {setupIncomplete ? <View style={s.dot} /> : null}
       </TouchableOpacity>

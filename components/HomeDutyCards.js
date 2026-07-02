@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT, TYPE, RADIUS } from '../data/constants';
 import { useTheme } from '../data/appContext';
@@ -30,7 +30,9 @@ const upcoming = (duties, fromISO) => Object.keys(duties || {})
 // serviço em destaque). VOO → expande em SETORES (cada setor = um voo: `dep→arr · off · Set i/n`);
 // não-voo → uma linha. No serviço em DESTAQUE (`featuredISO`) salta os setores já passados/ativo
 // (índice ≤ `activeIdx`); sem setores → salta o duty inteiro (já está no card de cima).
-export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, featuredISO = null, activeIdx = null }) {
+// `onPressItem(iso)` → cada linha vira BOTÃO para o detalhe desse dia (a tarefa mais
+// frequente — "ver o meu serviço" — passa a estar a um toque, sem caçar o dia na grelha).
+export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, featuredISO = null, activeIdx = null, onPressItem = null }) {
   const C = useTheme(); const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const days = upcoming(duties, isoOf(new Date()));
@@ -54,7 +56,10 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, feat
     <>
       <Eyebrow style={{ marginBottom: 6 }}>{lang === 'en' ? 'UPCOMING' : 'PRÓXIMAS ATIVIDADES'}</Eyebrow>
       {list.length ? list.map((e, i) => (
-        <View key={e.key} style={[s.lrow, i > 0 && s.lrowBorder]}>
+        <TouchableOpacity key={e.key} style={[s.lrow, i > 0 && s.lrowBorder]} disabled={!onPressItem}
+          activeOpacity={0.7} onPress={onPressItem ? () => onPressItem(e.iso) : undefined}
+          accessibilityRole={onPressItem ? 'button' : undefined}
+          accessibilityLabel={onPressItem ? `${fmtDay(e.iso, locale)}, ${e.type === 'sector' ? `${e.dep || '?'}→${e.arr || '?'}` : dutyLine(e, lang)}` : undefined}>
           <Ionicons name={e.type === 'sector' ? 'airplane' : (KIND_ICON[e.kind || 'flight'] || 'ellipse-outline')} size={14} color={C.sub} />
           <Text style={s.lday}>{fmtDay(e.iso, locale)}</Text>
           {e.type === 'sector' ? (() => {
@@ -71,7 +76,8 @@ export function UpcomingDutiesCard({ duties, lang, limit = 4, bare = false, feat
           })() : (
             <Text style={s.ltxt} numberOfLines={1}>{`${dutyLine(e, lang)}${e.report_time ? ` · ${e.report_time}` : ''}${e.nightStop ? ' · 🌙' : ''}`}</Text>
           )}
-        </View>
+          {onPressItem ? <Ionicons name="chevron-forward" size={13} color={C.lineStrong} /> : null}
+        </TouchableOpacity>
       )) : <Text style={s.empty}>{lang === 'en' ? 'No upcoming duties' : 'Sem atividades futuras'}</Text>}
     </>
   );

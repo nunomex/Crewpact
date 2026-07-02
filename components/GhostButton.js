@@ -11,6 +11,7 @@ export default function GhostButton({ label, onPress, icon, radius = 'pill', sty
   const C = useTheme();
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.9}
+      accessibilityRole="button" accessibilityLabel={label}
       style={[s.base, { borderColor: C.line, backgroundColor: C.card, borderRadius: radius === 'lg' ? RADIUS.lg : RADIUS.pill }, style]} {...rest}>
       {icon ? <Ionicons name={icon} size={16} color={C.text} /> : null}
       <Text style={[s.txt, { color: C.text }]}>{label}</Text>

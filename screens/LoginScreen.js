@@ -21,7 +21,7 @@ import { AppContext, useTheme } from '../data/appContext';
 /* ─── Field ──────────────────────────────────────────────────────────────── */
 function Field({ value, onChangeText, placeholder, error, secure,
   autoCapitalize = 'none', keyboardType = 'default',
-  returnKeyType = 'next', onSubmitEditing, inputRef, icon, autoFocus }) {
+  returnKeyType = 'next', onSubmitEditing, inputRef, icon, autoFocus, ...inputProps }) {
   const C = useTheme();
   const f = makeF(C);
   const [show, setShow] = useState(false);
@@ -46,6 +46,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
           style={f.input}
           autoCorrect={false}
           autoFocus={autoFocus}
+          {...inputProps}
         />
         {secure && (
           <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn} hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}>
@@ -262,12 +263,15 @@ export default function LoginScreen() {
             {/* ── LOGIN ── */}
             {view === 'login' && (
               <Animated.View style={{ transform: [{ translateX: shake }] }}>
+                {/* AutoFill do gestor de palavras-passe (iCloud Keychain / Google) — sem escrever à mão. */}
                 <Field value={lEmail} onChangeText={v => { setLEmail(v); setLErrEmail(''); }}
                   placeholder={t('login.email', lang)} error={lErrEmail} icon="mail-outline"
                   keyboardType="email-address" returnKeyType="next"
+                  textContentType="username" autoComplete="email"
                   onSubmitEditing={() => lPwRef.current?.focus()} />
                 <Field value={lPw} onChangeText={v => { setLPw(v); setLErrPw(''); }}
                   placeholder={t('login.password', lang)} error={lErrPw} secure icon="lock-closed-outline"
+                  textContentType="password" autoComplete="current-password"
                   returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
                 <TouchableOpacity style={s.forgotBtn} hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
                   <Text style={s.forgotTxt}>{t('login.forgot', lang)}</Text>

@@ -227,7 +227,11 @@ export default function DutyDetailScreen({ route, navigation }) {
             <Ionicons name="trash-outline" size={16} color={C.redText} />
             <Text style={s.delTxt}>{l('Apagar serviço', 'Delete duty')}</Text>
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          /* Importado → não há Apagar (a fonte manda) e DIZEMOS porquê + o caminho certo
+             (antes era um beco: o botão desaparecia sem uma palavra). */
+          <Text style={s.foot}>{l('Importado do calendário — para o remover, corrige na fonte (eCrew) e toca Sincronizar na Escala; os cancelados aparecem na revisão para confirmares.', 'Imported from the calendar — to remove it, fix it at the source (eCrew) and tap Sync in the roster; cancellations show up in the review for you to confirm.')}</Text>
+        )}
 
         <Text style={s.foot}>{t('common.ftlEstimate', lang)}</Text>
       </ScrollView>

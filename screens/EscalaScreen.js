@@ -68,6 +68,7 @@ export default function EscalaScreen({ navigation, route }) {
 
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
   const [recOpen, setRecOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);   // menu "···" (Registo 245 · CSV) com rótulos
   const [importOpen, setImportOpen] = useState(false);
   const [calPickerOpen, setCalPickerOpen] = useState(false);
   const [hubOpen, setHubOpen] = useState(false);       // hub de importar (calendário | PDF)
@@ -98,6 +99,14 @@ export default function EscalaScreen({ navigation, route }) {
   useEffect(() => {
     if (route.params?.review) { setImportSource('calendar'); setImportOpen(true); }
   }, [route.params?.review]);
+
+  // Vindo do "Dar acesso ao calendário" do Início → dispara já o fluxo de ligar
+  // (prompt + escolher calendário), em vez de deixar o utilizador à procura do botão.
+  const lastConnect = useRef(null);
+  useEffect(() => {
+    const c = route.params?.connect;
+    if (c && c !== lastConnect.current) { lastConnect.current = c; connectCalendar(); }
+  }, [route.params?.connect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Voltou do DutyDetailScreen após editar → salta para o mês do serviço e re-acende o realce.
   const lastFlash = useRef(null);
@@ -133,7 +142,7 @@ export default function EscalaScreen({ navigation, route }) {
     if (res == null) { notify(l('Não consegui ler o calendário', 'Couldn’t read the calendar'), null, 'warn'); return; }
     const n = res.counts?.total || 0;
     notify(n ? l(`${n} alteração(ões) na escala — revê em baixo`, `${n} roster change(s) — review below`)
-             : l('Escala em dia', 'Roster up to date'), null, n ? 'sync' : 'ok');
+             : l('Escala em dia', 'Roster up to date'), null, n ? 'changes' : 'ok');   // âmbar: "por rever" não é "está tudo bem"
   };
   // Hub de importar (mini-fab / cartão "IR" / arranque) → escolher fonte; depois abre o "Confirmar import".
   const openHub = () => { select(); setHubOpen(true); };
@@ -162,9 +171,12 @@ export default function EscalaScreen({ navigation, route }) {
   const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`;
   const shiftMonth = (delta) => { select(); setMonthDate(new Date(y, m0 + delta, 1)); };
 
-  // Resumo do mês: serviços (duties), folgas (dias vazios), per-diem (rota → ae.perDiem).
+  // Resumo do mês: serviços (duties), folgas, per-diem (rota → ae.perDiem).
   const serviceCount = Object.entries(duties).filter(([iso, d]) => iso.startsWith(ym) && d && !d.deleted && d.report_time).length;
-  const folgaCount = Math.max(0, daysInMonth - serviceCount);
+  // Folgas = dias DECORRIDOS − dias com serviço (a MESMA regra do stats.js → o número bate certo
+  // com as Estatísticas; antes contava o resto do mês por vir como "folga").
+  const elapsedDays = isCurrentMonth ? Number(today.slice(8, 10)) : (ym < today.slice(0, 7) ? daysInMonth : 0);
+  const folgaCount = Math.max(0, elapsedDays - serviceCount);
   const catYm = crewAt(ym).category;   // categoria em vigor no mês mostrado (effective-dated)
   const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewFleet }) : null;
   const perDiemTotal = pd ? pd.total : null;
@@ -203,9 +215,19 @@ export default function EscalaScreen({ navigation, route }) {
     const col = (firstWeekday + dd - 1) % 7;
     const weekend = col >= 5;
     const cls = isDuty ? dutyClass(d) : null;
+    // Leitor de ecrã: a célula DIZ o que é (dia, tipo, nº de serviços, pernoita, por sincronizar).
+    const a11y = [
+      `${dd} ${monthName}`,
+      isToday ? l('hoje', 'today') : null,
+      isDuty ? `${nSvc > 1 ? `${nSvc}× ` : ''}${kindLabel(d.kind || 'flight')}${d.kind === 'flight' && d.route ? ` ${d.route}` : ''}` : l('folga', 'day off'),
+      isDuty && d.nightStop ? l('pernoita', 'night stop') : null,
+      isDuty && d.dirty ? l('por sincronizar', 'pending sync') : null,
+    ].filter(Boolean).join(' · ');
     return (
       <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.gc, { width: cellW }, !isDuty && s.gcOff, weekend && s.gcWk, isToday && s.gcNow, iso === flashIso && s.gcFlash]}
-        onPress={() => (isDuty ? openDay(iso) : (select(), setDutyDate(iso)))}
+        accessibilityRole="button" accessibilityLabel={a11y}
+        accessibilityHint={l('Toque abre o detalhe · toque longo edita', 'Tap opens detail · long press edits')}
+        onPress={() => openDay(iso)}
         onLongPress={() => { select(); setDutyDate(iso); }}>
         <Text style={[s.gn, !isDuty && s.gnOff, isToday && s.gnNow]}>{dd}</Text>
         {isDuty ? (
@@ -271,13 +293,12 @@ export default function EscalaScreen({ navigation, route }) {
                 {!syncing && (rcCounts?.total || lsCount) ? <View style={s.syncDot} /> : null}
               </TouchableOpacity>
             ) : null}
+            {/* PDF/CSV (ações raras) vivem num menu "···" com opções ROTULADAS — a fila de
+                ícones sem rótulo confundia (sync vs download competiam pela mesma ideia). */}
             {anyDuty ? (
-              <>
-                <TouchableOpacity onPress={openPdf} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.exportPdf', lang)}><Ionicons name="document-text-outline" size={17} color={C.text} /></TouchableOpacity>
-                <TouchableOpacity onPress={onExport} hitSlop={6} style={s.ib} accessibilityLabel={t('duties.export', lang)}><Ionicons name="share-outline" size={17} color={C.text} /></TouchableOpacity>
-              </>
+              <TouchableOpacity onPress={() => { select(); setMoreOpen(true); }} hitSlop={6} style={s.ib} accessibilityRole="button" accessibilityLabel={l('Mais ações', 'More actions')}><Ionicons name="ellipsis-horizontal" size={17} color={C.text} /></TouchableOpacity>
             ) : null}
-            <TouchableOpacity onPress={openHub} hitSlop={6} style={s.ib} accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
+            <TouchableOpacity onPress={openHub} hitSlop={6} style={s.ib} accessibilityRole="button" accessibilityLabel={l('Importar escala', 'Import roster')}><Ionicons name="download-outline" size={17} color={C.text} /></TouchableOpacity>
             <HeaderActions />
           </View>
         </View>
@@ -379,6 +400,14 @@ export default function EscalaScreen({ navigation, route }) {
                   </>
                 ) : null}
               </View>
+              {/* Legenda — descodifica os códigos/pontos da grelha de relance (Nielsen #6) */}
+              <View style={s.legend}>
+                <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.brand }]} /><Text style={s.legTxt}>{l('voo', 'flight')}</Text></View>
+                <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.warn }]} /><Text style={s.legTxt}>standby</Text></View>
+                <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.sub }]} /><Text style={s.legTxt}>{l('outro', 'other')}</Text></View>
+                <View style={s.legIt}><View style={[s.legDot, { backgroundColor: C.info }]} /><Text style={s.legTxt}>{l('pernoita', 'night stop')}</Text></View>
+                <View style={s.legIt}><View style={[s.legDot, { backgroundColor: C.warn }]} /><Text style={s.legTxt}>{l('por sincronizar', 'pending sync')}</Text></View>
+              </View>
               <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
             </ScrollView>
           </>
@@ -391,9 +420,27 @@ export default function EscalaScreen({ navigation, route }) {
         onDone={({ saved, source }) => { if (saved) notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported'); }}
         onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
-      {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível). */}
-      <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)}>
-        {dayIso && duties[dayIso] ? (() => {
+      {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível).
+          FOLGA → vista leve (data + "+ adicionar serviço"): explorar a grelha não dispara o form pesado. */}
+      <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)} scroll>
+        {dayIso && !(duties[dayIso] && !duties[dayIso].deleted && duties[dayIso].report_time) ? (() => {
+          const dtF = new Date(`${dayIso}T00:00:00`);
+          const dateLblF = isNaN(dtF) ? dayIso : (() => { const sx = dtF.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }); return sx.charAt(0).toUpperCase() + sx.slice(1); })();
+          return (
+            <View style={s.dsBody}>
+              <Text style={s.dsDate}>{dateLblF}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
+              <View style={s.dsOffRow}>
+                <Ionicons name="cafe-outline" size={18} color={C.sub} />
+                <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
+              </View>
+              <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} activeOpacity={0.8} style={s.dsAdd}>
+                <Ionicons name="add" size={18} color={C.brand} />
+                <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })() : null}
+        {dayIso && duties[dayIso] && !duties[dayIso].deleted && duties[dayIso].report_time ? (() => {
           const prim = duties[dayIso];
           const services = [prim, ...(Array.isArray(prim.extra) ? prim.extra : [])];
           const between = (dayLog[dayIso] && Array.isArray(dayLog[dayIso].between)) ? dayLog[dayIso].between : [];
@@ -548,6 +595,28 @@ export default function EscalaScreen({ navigation, route }) {
           setTimeout(() => setImportOpen(true), 350);
         }} />
 
+      {/* Menu "···" — exportações com rótulo (o que cada uma é, sem adivinhar ícones) */}
+      <BottomSheet visible={moreOpen} onClose={() => setMoreOpen(false)} title={l('Exportar', 'Export')} closeLabel={t('common.close', lang)}>
+        <View style={s.hubBody}>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(openPdf, 350); }} style={s.hubOpt}>
+            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="document-text-outline" size={22} color={C.info} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.hubOptT}>{l('Registo FTL.245 (PDF)', 'FTL.245 record (PDF)')}</Text>
+              <Text style={s.hubOptS}>{l('Registo de tempos assinável — a lei exige que o guardes (ORO.FTL.245).', 'Signable times record — the law requires you to keep it (ORO.FTL.245).')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+          </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(onExport, 350); }} style={s.hubOpt}>
+            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="share-outline" size={22} color={C.brand} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.hubOptT}>{l('Exportar CSV', 'Export CSV')}</Text>
+              <Text style={s.hubOptS}>{l('Todos os serviços em tabela — para folhas de cálculo ou backup.', 'All duties as a table — for spreadsheets or backup.')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
       {/* Registo ORO.FTL.245 (PDF assinável) */}
       <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
         title={t('duties.recTitle', lang)} closeLabel={t('common.close', lang)}>
@@ -632,7 +701,7 @@ const makeStyles = (C) => StyleSheet.create({
   // ── Grelha de calendário ──
   wkhead: { flexDirection: 'row', marginTop: 6, marginBottom: 4 },
   wkh: { flex: 1, textAlign: 'center', fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: C.sub },
-  wkhWe: { color: C.lineStrong },
+  wkhWe: { opacity: 0.75 },   // fim-de-semana esbatido mas legível (era lineStrong ≈1.5:1)
   cal: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   gc: { height: 58, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingTop: 5, paddingHorizontal: 4, paddingBottom: 5, backgroundColor: C.card, alignItems: 'flex-start' },
   gcEmpty: { borderColor: 'transparent', backgroundColor: 'transparent' },
@@ -641,10 +710,10 @@ const makeStyles = (C) => StyleSheet.create({
   gcNow: { borderColor: C.red, borderWidth: 2, paddingTop: 4, paddingHorizontal: 3, paddingBottom: 4 },
   gcFlash: { borderColor: C.green, backgroundColor: C.greenSoft },
   gn: { fontSize: 15, fontFamily: FONT.display, letterSpacing: -0.3, lineHeight: 16, color: C.text },
-  gnOff: { color: C.lineStrong },
+  gnOff: { color: C.sub },   // folga LEGÍVEL (sub ≈5:1) — lineStrong dava 1.49:1, quase invisível
   gnNow: { color: C.red },
   svc: { marginTop: 'auto', alignSelf: 'stretch', alignItems: 'center' },
-  code: { fontSize: 8.5, fontFamily: FONT.heavy, letterSpacing: 0.2, textAlign: 'center', maxWidth: '100%' },
+  code: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.2, textAlign: 'center', maxWidth: '100%' },
   bar: { width: '100%', height: 2.5, borderRadius: 99, marginTop: 3 },
   nsdot: { position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: 99, backgroundColor: C.info },
   pendDotG: { position: 'absolute', top: 4, left: 4, width: 5, height: 5, borderRadius: 99, backgroundColor: C.warn || C.sub },
@@ -682,6 +751,8 @@ const makeStyles = (C) => StyleSheet.create({
   dsRest: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
   dsRestDot: { width: 8, height: 8, borderRadius: 99 },
   dsRestTxt: { flex: 1, fontSize: 11.5, fontFamily: FONT.bold },
+  dsOffRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 6, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 14 },
+  dsOffTxt: { flex: 1, fontSize: 13.5, fontFamily: FONT.semibold, color: C.sub },
   dsAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12 },
   dsAddTxt: { fontSize: 13, fontFamily: FONT.bold, color: C.brand },
   dsSvcActs: { flexDirection: 'row', gap: 18, marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: C.line },
@@ -689,6 +760,13 @@ const makeStyles = (C) => StyleSheet.create({
   dsSvcActTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
 
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
+
+  // Legenda da grelha (uma linha, compacta)
+  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 10, paddingHorizontal: 2 },
+  legIt: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legBar: { width: 12, height: 3, borderRadius: 99 },
+  legDot: { width: 6, height: 6, borderRadius: 99 },
+  legTxt: { fontSize: 11, fontFamily: FONT.medium, color: C.sub },
 
   // Arranque (Serviços, sem escala)
   h1Big: { fontSize: 28, fontFamily: FONT.display, letterSpacing: -0.6, color: C.text, marginTop: 6 },

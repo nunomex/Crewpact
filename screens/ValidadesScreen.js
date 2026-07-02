@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput } from 'react-native';
+import React, { useState, useContext, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, GUTTER, TYPE, FONT, SPACE } from '../data/constants';
@@ -7,7 +7,7 @@ import DetailTopBar from '../components/DetailTopBar';
 import PrimaryButton from '../components/PrimaryButton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
-import { select, success } from '../data/haptics';
+import { select, success, warning } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
 import {
   validityCatalog, validityStatus, validityLabel, sortValidities, isNoExpiryType,
@@ -29,14 +29,34 @@ export default function ValidadesScreen({ navigation }) {
 
   // editing: { id?, type, d, m, y, number, note, aircraft, nationality, level, instrKind, limitations[] }
   const [editing, setEditing] = useState(null);
+  const [attempted, setAttempted] = useState(false);   // valida-on-save (padrão do DutyFormSheet): marca o que falta
+  // Dirty-check: baseline do form ao abrir (e ao trocar de tipo em "nova") — fechar com
+  // alterações por guardar pede confirmação em vez de descartar em silêncio.
+  const baseSnap = useRef('');
+  const openWith = (obj) => { setEditing(obj); setAttempted(false); baseSnap.current = JSON.stringify(obj); };
+  const requestCloseEditing = () => {
+    if (editing && JSON.stringify(editing) !== baseSnap.current) {
+      warning();
+      Alert.alert(
+        l('Descartar alterações?', 'Discard changes?'),
+        l('O que preencheste ainda não foi guardado.', 'What you entered has not been saved yet.'),
+        [
+          { text: l('Continuar a editar', 'Keep editing'), style: 'cancel' },
+          { text: l('Descartar', 'Discard'), style: 'destructive', onPress: () => setEditing(null) },
+        ],
+      );
+      return;
+    }
+    setEditing(null);
+  };
   const blank = (type) => ({ type, d: '', m: '', y: '', number: '', note: '', aircraft: '', nationality: '', level: null, instrKind: null, limitations: [] });
-  const openAdd = () => { select(); setEditing(blank(catalog[0].id)); };
+  const openAdd = () => { select(); openWith(blank(catalog[0].id)); };
   const openEdit = (item) => {
     select();
     const ff = fieldsForType(item.type);
     const src = (ff.doneDate || ff.level) ? item.doneDate : item.expiry;   // a data mostrada é a que se introduz
     const p = src ? src.split('-') : ['', '', ''];
-    setEditing({
+    openWith({
       id: item.id, type: item.type, d: p[2] || '', m: p[1] || '', y: p[0] || '',
       number: item.number || '', note: item.note || '', aircraft: item.aircraft || '',
       nationality: item.nationality || '', level: item.level || null, instrKind: item.instrKind || null,
@@ -94,7 +114,9 @@ export default function ValidadesScreen({ navigation }) {
   });
 
   const saveEditing = () => {
-    if (!canSave) return;
+    // Botão sempre ativo: ao premir com o form incompleto, DIZ o que falta (data inválida /
+    // nível por escolher) em vez de um botão cinzento mudo — padrão do DutyFormSheet.
+    if (!canSave) { setAttempted(true); warning(); return; }
     const clean = (v) => ((v || '').trim() || null);
     const up = (v) => { const x = (v || '').trim().toUpperCase(); return x || null; };
     const item = {
@@ -113,7 +135,19 @@ export default function ValidadesScreen({ navigation }) {
     else addValidity(item);
     success(); setEditing(null);
   };
-  const deleteEditing = () => { if (editing?.id) { removeValidity(editing.id); success(); } setEditing(null); };
+  // Apagar é irreversível → confirmação (antes era 1 toque + vibração de "sucesso").
+  const deleteEditing = () => {
+    if (!editing?.id) { setEditing(null); return; }
+    warning();
+    Alert.alert(
+      l('Apagar esta validade?', 'Delete this item?'),
+      l('Não dá para desfazer.', 'This cannot be undone.'),
+      [
+        { text: l('Cancelar', 'Cancel'), style: 'cancel' },
+        { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => { removeValidity(editing.id); success(); setEditing(null); } },
+      ],
+    );
+  };
 
   const sorted = sortValidities(validities);
   const chipRow = (opts, cur, onPick, fmt) => (
@@ -122,7 +156,8 @@ export default function ValidadesScreen({ navigation }) {
         const val = fmt ? o.value : o;
         const on = cur === val;
         return (
-          <TouchableOpacity key={String(val)} onPress={() => { select(); onPick(val); }} style={[s.chip, on && s.chipOn]} activeOpacity={0.85} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }}>
+          <TouchableOpacity key={String(val)} onPress={() => { select(); onPick(val); }} style={[s.chip, on && s.chipOn]} activeOpacity={0.85} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }}
+            accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={String(fmt ? o.label : o)}>
             <Text style={[s.chipTxt, on && s.chipTxtOn]}>{fmt ? o.label : o}</Text>
           </TouchableOpacity>
         );
@@ -172,20 +207,21 @@ export default function ValidadesScreen({ navigation }) {
       </ScrollView>
 
       {/* Adicionar / Editar */}
-      <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
+      <Modal visible={!!editing} transparent animationType="slide" onRequestClose={requestCloseEditing}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={s.mOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setEditing(null)} />
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={requestCloseEditing} />
           <View style={s.sheet}>
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={s.sheetHead}>
                 <Text style={s.sheetTitle}>{editing?.id ? l('Editar validade', 'Edit item') : l('Nova validade', 'New item')}</Text>
-                <TouchableOpacity onPress={() => setEditing(null)} hitSlop={8} style={s.sheetClose}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
+                <TouchableOpacity onPress={requestCloseEditing} hitSlop={8} style={s.sheetClose} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
               </View>
 
               {!editing?.id ? (
                 <>
                   <Text style={s.fLbl}>{l('Tipo', 'Type')}</Text>
-                  {chipRow(catalog.map((tp) => ({ value: tp.id, label: validityLabel(tp.id, isPilot, lang) })), editing?.type, (id) => setEditing(blank(id)), true)}
+                  {chipRow(catalog.map((tp) => ({ value: tp.id, label: validityLabel(tp.id, isPilot, lang) })), editing?.type, (id) => openWith(blank(id)), true)}
                 </>
               ) : (
                 <Text style={[s.fLbl, { marginBottom: 4 }]}>{validityLabel(editing.type, isPilot, lang)}</Text>
@@ -211,17 +247,18 @@ export default function ValidadesScreen({ navigation }) {
               {isRef ? (
                 <Text style={[s.fLbl, { marginTop: 14, color: C.sub, fontFamily: FONT.medium }]}>{l('Não expira — guardado como referência.', 'No expiry — kept as a reference.')}</Text>
               ) : needsLevel ? (
-                <Text style={[s.fLbl, { marginTop: 14, color: C.sub, fontFamily: FONT.medium }]}>{l('Escolhe o nível acima.', 'Choose the level above.')}</Text>
+                <Text style={[s.fLbl, { marginTop: 14, color: attempted ? C.red : C.sub, fontFamily: attempted ? FONT.semibold : FONT.medium }]}>{l('Escolhe o nível acima.', 'Choose the level above.')}</Text>
               ) : (
                 <>
                   <Text style={[s.fLbl, { marginTop: 14 }]}>{usesDone ? l('Feito em', 'Done on') : l('Validade', 'Expiry')}</Text>
                   <View style={s.dateRow}>
-                    <TextInput style={s.dateIn} value={editing?.d} onChangeText={(v) => set({ d: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('DD', 'DD')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
+                    <TextInput style={[s.dateIn, attempted && !formISO && s.dateInErr]} value={editing?.d} onChangeText={(v) => set({ d: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('DD', 'DD')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
                     <Text style={s.dateSep}>/</Text>
-                    <TextInput style={s.dateIn} value={editing?.m} onChangeText={(v) => set({ m: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('MM', 'MM')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
+                    <TextInput style={[s.dateIn, attempted && !formISO && s.dateInErr]} value={editing?.m} onChangeText={(v) => set({ m: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('MM', 'MM')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={2} />
                     <Text style={s.dateSep}>/</Text>
-                    <TextInput style={[s.dateIn, s.dateInY]} value={editing?.y} onChangeText={(v) => set({ y: v.replace(/\D/g, '').slice(0, 4) })} placeholder={l('AAAA', 'YYYY')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={4} />
+                    <TextInput style={[s.dateIn, s.dateInY, attempted && !formISO && s.dateInErr]} value={editing?.y} onChangeText={(v) => set({ y: v.replace(/\D/g, '').slice(0, 4) })} placeholder={l('AAAA', 'YYYY')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={4} />
                   </View>
+                  {attempted && !formISO ? <Text style={s.dateErr}>{l('Data inválida — confere dia, mês e ano.', 'Invalid date — check day, month and year.')}</Text> : null}
                   {derivedISO ? <Text style={s.derived}>→ {l('válido até', 'valid until')} {fmtDate(derivedISO)}</Text> : null}
                 </>
               )}
@@ -263,7 +300,7 @@ export default function ValidadesScreen({ navigation }) {
               {/* Nota livre — sempre */}
               {textField('Nota', 'Note', 'note', l('qualquer nota', 'any note'), { maxLength: 80 })}
 
-              <PrimaryButton onPress={saveEditing} disabled={!canSave} label={t('common.save', lang)} style={{ marginTop: 20 }} />
+              <PrimaryButton onPress={saveEditing} label={t('common.save', lang)} style={{ marginTop: 20 }} />
               {editing?.id ? (
                 <TouchableOpacity onPress={deleteEditing} activeOpacity={0.85} style={s.delBtn} hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}>
                   <Ionicons name="trash-outline" size={16} color={C.red} />
@@ -273,6 +310,7 @@ export default function ValidadesScreen({ navigation }) {
             </ScrollView>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -313,6 +351,8 @@ const makeStyles = (C) => StyleSheet.create({
   chipTxtOn: { color: '#fff' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateIn: { width: 60, backgroundColor: C.soft, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: C.line, paddingHorizontal: 12, paddingVertical: 12, color: C.text, fontSize: TYPE.body, fontFamily: FONT.semibold, textAlign: 'center' },
+  dateInErr: { borderColor: C.red },
+  dateErr: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.red, marginTop: 8 },
   dateInY: { width: 86 },
   dateSep: { fontSize: TYPE.lg, color: C.sub },
   derived: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.greenText, marginTop: 8 },

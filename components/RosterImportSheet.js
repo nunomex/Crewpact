@@ -421,7 +421,7 @@ const makeStyles = (C) => StyleSheet.create({
   markTxt: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.ink },
   cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
   cLegs: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 3, fontVariant: ['tabular-nums'] },
-  cDiff: { fontSize: TYPE.micro, color: C.warn || C.text, fontFamily: FONT.semibold, marginTop: 2 },
+  cDiff: { fontSize: TYPE.micro, color: C.warnText || C.text, fontFamily: FONT.semibold, marginTop: 2 },   // warnText ≥4.5:1 (warn puro dava 2.4:1)
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cEur: { fontSize: 16, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },

@@ -1,37 +1,46 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useContext } from 'react';
+import { Animated, View, Text, StyleSheet, AccessibilityInfo, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
-import { useTheme } from '../data/appContext';
+import { AppContext, useTheme } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { t } from '../data/i18n';
 
-// Toast global de feedback de sincronização (duties → Supabase). Desliza de cima,
-// segura ~2.2s e recolhe. Disparado pelo RESULTADO do flushDuties (App.js):
-//   'sync' = tudo foi para o servidor · 'warn' = ficou offline (vai repetir).
-// É puramente informativo (pointerEvents none) — nunca bloqueia o toque.
+// Toast global de feedback. Desliza de cima, segura o tempo de LER (proporcional ao texto)
+// e recolhe. É puramente informativo (pointerEvents none) — nunca bloqueia o toque.
+//   'sync' = tudo foi para o servidor · 'warn' = ficou offline (vai repetir) ·
+//   'changes' = há alterações POR REVER (âmbar — atenção, não "está tudo bem").
 const META = {
   sync: { icon: 'cloud-done-outline',    tint: (C) => C.green },
   warn: { icon: 'cloud-offline-outline', tint: (C) => C.warn },
   ok:   { icon: 'checkmark-circle',      tint: (C) => C.ink },
   imported: { icon: 'checkmark',         tint: (C) => C.green },  // import concluído (verde)
+  changes:  { icon: 'sync-circle-outline', tint: (C) => C.warn }, // mudanças por rever (âmbar)
 };
 
 export default function Toast({ toast, lang, onHide }) {
   const C = useTheme();
+  const ctx = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const s = makeStyles(C);
   const reduce = useReduceMotion();
   const y = useRef(new Animated.Value(-160)).current;
   const timer = useRef(null);
 
+  const title = toast ? (toast.title || (toast.kind === 'warn' ? t('sync.offline', lang) : t('sync.done', lang))) : '';
+  const sub = toast ? (toast.sub !== undefined ? toast.sub : (toast.kind === 'warn' ? t('sync.offlineSub', lang) : null)) : null;
+  // Tempo no ecrã proporcional ao TEXTO (mín 2.2s, máx 6s) — mensagens longas dão para ler.
+  const holdMs = Math.min(6000, Math.max(2200, 1100 + (title.length + (sub ? sub.length : 0)) * 55));
+
   useEffect(() => {
     if (!toast) return;
     clearTimeout(timer.current);
+    // Leitor de ecrã: anuncia o feedback (o toast é visual e efémero — sem isto era invisível p/ VoiceOver/TalkBack).
+    AccessibilityInfo.announceForAccessibility?.(sub ? `${title}. ${sub}` : title);
     if (reduce) { // reduz-movimento: aparece/sai sem deslizar (o sinal mantém-se pelo ícone+texto)
       y.setValue(0);
-      timer.current = setTimeout(() => { y.setValue(-160); onHide && onHide(); }, 2200);
+      timer.current = setTimeout(() => { y.setValue(-160); onHide && onHide(); }, holdMs);
       return () => clearTimeout(timer.current);
     }
     y.setValue(-160);
@@ -39,23 +48,24 @@ export default function Toast({ toast, lang, onHide }) {
     timer.current = setTimeout(() => {
       Animated.timing(y, { toValue: -160, duration: 260, useNativeDriver: true })
         .start(({ finished }) => { if (finished && onHide) onHide(); });
-    }, 2200);
+    }, holdMs);
     return () => clearTimeout(timer.current);
   }, [toast?.ts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!toast) return null;
   const m = META[toast.kind] || META.ok;
-  const title = toast.title || (toast.kind === 'warn' ? t('sync.offline', lang) : t('sync.done', lang));
-  const sub = toast.sub !== undefined ? toast.sub : (toast.kind === 'warn' ? t('sync.offlineSub', lang) : null);
+  // Offline → desce para baixo da faixa "sem ligação" (senão a própria faixa tapava o toast).
+  const offlineShift = ctx && ctx.online === false ? 30 : 0;
 
   return (
-    <Animated.View pointerEvents="none" style={[s.toast, { top: insets.top + 8, transform: [{ translateY: y }] }]}>
+    <Animated.View pointerEvents="none" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}
+      style={[s.toast, { top: insets.top + 8 + offlineShift, transform: [{ translateY: y }] }]}>
       <View style={[s.icon, { backgroundColor: m.tint(C) }]}>
         <Ionicons name={m.icon} size={18} color="#fff" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={s.title} numberOfLines={1}>{title}</Text>
-        {sub ? <Text style={s.sub} numberOfLines={1}>{sub}</Text> : null}
+        <Text style={s.title} numberOfLines={2}>{title}</Text>
+        {sub ? <Text style={s.sub} numberOfLines={2}>{sub}</Text> : null}
       </View>
     </Animated.View>
   );

@@ -273,6 +273,7 @@ export default function HomeScreen({ navigation }) {
   // ── Próximo voo (calendário) — carrega automaticamente ao abrir ──
   const [calFlight, setCalFlight] = useState(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null);
   const [calOk, setCalOk] = useState(true); // acesso ao calendário do telemóvel
+  const [calErr, setCalErr] = useState(false); // a LEITURA rebentou (≠ "sem voos") — erro visível, não vazio falso
   const [syncing, setSyncing] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
   const syncingRef = useRef(false);
@@ -283,14 +284,15 @@ export default function HomeScreen({ navigation }) {
     try {
       // Só lê o calendário se houver um LIGADO (sem prompt; sem leitura "às cegas").
       const res = calendarId ? await getUpcomingFlight(company, calendarId) : { ok: false, flight: null };
-      setCalOk(res.ok);
+      setCalOk(res.ok); setCalErr(false);
       setCalFlight(res.flight || (SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null)); // sem voo real → mostra o exemplo
-    } catch { setCalFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }
+    } catch { setCalErr(true); setCalFlight(SHOW_DEMO_FLIGHT ? DEMO_FLIGHT : null); }   // falha ≠ vazio: mostra o erro
     setSyncDone(true); setSyncing(false);
     syncingRef.current = false;
   };
-  // Ligar é na Escala (cartão "Ligar" + escolha do calendário). Daqui só encaminha para lá.
-  const requestAccess = () => { select(); navigation.navigate('Escala'); };
+  // "Dar acesso" FAZ o que diz: dispara o fluxo de ligação na Escala (prompt + escolher o
+  // calendário) — antes só mudava de aba e o utilizador tinha de reencontrar o botão certo.
+  const requestAccess = () => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { connect: Date.now() } }); };
   // Re-lê o calendário do telemóvel sempre que o Início ganha foco (não só ao montar),
   // para o cartão refletir alterações da escala sem reabrir a app.
   useFocusEffect(useCallback(() => { syncFlight(); }, []));
@@ -336,12 +338,24 @@ export default function HomeScreen({ navigation }) {
 
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
-  const reportMs = flight ? flight.startDate.getTime() - 60 * 60 * 1000 : null; // apresentação ≈ partida − 1 h
-  const cdMin = reportMs != null ? Math.round((reportMs - now) / 60000) : null;
-  const countdownStr = cdMin == null ? null
+  // Contagem para a apresentação REAL (calendário/registo) quando existe. SEM report real,
+  // conta para a PARTIDA e di-lo — antes inventava "partida − 1 h": se o report verdadeiro
+  // fosse 1h15 antes, quem confiasse no card chegava 15 min ATRASADO à apresentação.
+  const reportMs = (flight && flight.report && /^\d{1,2}:\d{2}$/.test(flight.report)) ? (() => {
+    const [rh, rm] = flight.report.split(':').map(Number);
+    const dt = new Date(`${flight.dateISO}T00:00:00`); dt.setHours(rh, rm, 0, 0);
+    return isNaN(dt.getTime()) ? null : dt.getTime();
+  })() : null;
+  const cdTarget = reportMs != null ? reportMs : (flight ? flight.startDate.getTime() : null);
+  const cdMin = cdTarget != null ? Math.round((cdTarget - now) / 60000) : null;
+  const cdBase = cdMin == null ? null
     : cdMin <= 0 ? t('home.dutyNow', lang)
     : cdMin >= 2880 ? `${t('home.in', lang)} ${Math.round(cdMin / 1440)} ${t('home.days', lang)}` // ≥ 48 h → dias
     : `${t('home.in', lang)} ${Math.floor(cdMin / 60) > 0 ? `${Math.floor(cdMin / 60)} h ` : ''}${cdMin % 60} min`;
+  // Diz PARA QUÊ conta (report vs partida) — nunca um número sem alvo.
+  const countdownStr = cdBase == null ? null
+    : cdMin <= 0 ? cdBase
+    : reportMs != null ? `${l('report', 'report')} ${cdBase}` : `${l('partida', 'departure')} ${cdBase}`;
   const fatColor = (b) => b === 'high' ? C.red : b === 'elevated' ? C.warn : b === 'low' ? C.green : C.onDarkSub; // fill (dot)
   const fatTextColor = (b) => b === 'high' ? C.redText : b === 'elevated' ? C.warnText : b === 'low' ? C.greenText : C.sub; // texto acessível sobre fatBg (*Soft)
   const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
@@ -465,11 +479,25 @@ export default function HomeScreen({ navigation }) {
     dayPerDiem != null ? { l: 'Per-diem', v: `+${fmtEur0(dayPerDiem)}`, green: true } : null,
   ]).filter(Boolean) : [];
 
+  // Tocar no serviço em destaque → detalhe desse dia (a tarefa mais frequente, antes custava
+  // 4-5 toques noutra aba). Sem registo desse dia (ex. demo) não é tocável.
+  const featuredReg = flight && !flight.demo ? duties[flight.dateISO] : null;
+  const featuredTappable = !!(featuredReg && !featuredReg.deleted && featuredReg.report_time);
+  const openFeatured = () => {
+    if (!featuredTappable) return;
+    select();
+    navigation.navigate('Escala', { screen: 'DutyDetail', params: { date: flight.dateISO } });
+  };
+  const openDayDetail = (iso) => { select(); navigation.navigate('Escala', { screen: 'DutyDetail', params: { date: iso } }); };
+
   const nextDutyEl = flight ? (
     <View>
       <Eyebrow style={{ marginBottom: 12 }}>{l('Serviços', 'Duties')}</Eyebrow>
       <View style={s.svc}>
-        <View style={s.svcNd}>
+        <TouchableOpacity activeOpacity={0.75} disabled={!featuredTappable} onPress={openFeatured}
+          accessibilityRole={featuredTappable ? 'button' : undefined}
+          accessibilityHint={featuredTappable ? l('Abre o detalhe do serviço', 'Opens the duty detail') : undefined}
+          style={s.svcNd}>
           <View style={s.svcBadgeWrap}>
             {(stateLevel === 'over' || stateLevel === 'warn') ? (
               <PulseRing size={68} radius={RADIUS.lg} color={C.red} border={stateLevel === 'warn'} duration={2600} />
@@ -482,7 +510,8 @@ export default function HomeScreen({ navigation }) {
           <View style={s.svcNdx}>
             <Eyebrow style={{ flex: 1 }} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : `${l('Voo', 'Flight')}${activeSector ? ` · ${l('Setor', 'Sector')} ${activeSector.idx + 1}/${activeSector.total}` : ''}`}</Eyebrow>
             {/* Texto grande — VOO: o SETOR ATIVO (dep → arr), não a rota inteira. Encolhe, nunca quebra. */}
-            <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{isNonFlight
+            {/* minimumFontScale 0.75 (era 0.5): a info primária do relance nunca encolhe p/ metade. */}
+            <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{isNonFlight
               ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
               : (activeSector ? `${activeSector.leg.dep || '?'} → ${activeSector.leg.arr || '?'}`
                 : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`))}</Text>
@@ -502,7 +531,7 @@ export default function HomeScreen({ navigation }) {
             ) : null}
             {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={s.svcDiv} />
         {/* Grelha 3 colunas com a info do serviço */}
         <View style={s.svcGrid}>
@@ -526,7 +555,7 @@ export default function HomeScreen({ navigation }) {
         {/* Nota honesta: a Zulu manual assume hora LOCAL do aeroporto (não há instante absoluto). */}
         {ndZuluEst ? <Text style={s.svcZuluNote}>{l('Zulu estimada da hora local do aeroporto.', 'Zulu estimated from airport local time.')}</Text> : null}
         {/* Próximas atividades — FUNDIDAS no card Serviços, por baixo do próximo serviço */}
-        <UpcomingDutiesCard duties={duties} lang={lang} bare limit={4} featuredISO={flight.dateISO} activeIdx={activeSector ? activeSector.idx : null} />
+        <UpcomingDutiesCard duties={duties} lang={lang} bare limit={4} featuredISO={flight.dateISO} activeIdx={activeSector ? activeSector.idx : null} onPressItem={openDayDetail} />
       </View>
     </View>
   ) : loadingFlight ? (
@@ -535,11 +564,19 @@ export default function HomeScreen({ navigation }) {
     <View style={s.flightCard}>
       <View style={s.flightTop}>
         <Text style={s.flightEyebrow}>{t('home.nextDuty', lang)}</Text>
-        <View style={[s.flightBadge, { backgroundColor: C.soft }]}>
+        {/* O "refresh" É um botão (antes parecia tocável e não fazia nada). */}
+        <TouchableOpacity onPress={() => { select(); syncFlight(); }} disabled={syncing} style={[s.flightBadge, { backgroundColor: C.soft }]}
+          accessibilityRole="button" accessibilityLabel={l('Atualizar do calendário', 'Refresh from calendar')} hitSlop={6}>
           {syncing ? <ActivityIndicator size="small" color={C.sub} /> : <Ionicons name="refresh" size={14} color={C.sub} />}
-        </View>
+        </TouchableOpacity>
       </View>
-      {!calOk ? (
+      {calErr ? (
+        /* Falha de LEITURA ≠ "sem voos": diz o que aconteceu e o que fazer (Nielsen #9). */
+        <View style={s.flightEmpty}>
+          <Ionicons name="alert-circle-outline" size={18} color={C.warnText} />
+          <Text style={[s.flightEmptyTxt, { color: C.warnText }]}>{l('Não consegui ler o calendário — puxa para atualizar ou verifica a permissão nas Definições.', 'Couldn’t read the calendar — pull to refresh or check the permission in Settings.')}</Text>
+        </View>
+      ) : !calOk ? (
         <View style={s.flightEmpty}>
           <Ionicons name="calendar-outline" size={18} color={C.sub} />
           <View style={{ flex: 1 }}>
@@ -647,7 +684,7 @@ export default function HomeScreen({ navigation }) {
         {/* Card SERVIÇOS (principal) — próximo serviço + próximas atividades FUNDIDOS */}
         <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
         {/* Sem próximo voo (estado vazio): mostra as próximas atividades à parte, p/ não se perderem */}
-        {!flight ? <Animated.View style={seg(3)}><UpcomingDutiesCard duties={duties} lang={lang} /></Animated.View> : null}
+        {!flight ? <Animated.View style={seg(3)}><UpcomingDutiesCard duties={duties} lang={lang} onPressItem={openDayDetail} /></Animated.View> : null}
 
         {/* PERGUNTAS — A+chips. CRÍTICO (ILEGAL/expirado) → alerta vermelho com o conselho à vista
             (segurança FTL grita). O resto → chips coloridos (relance); "escala" toca → Escala. */}
@@ -690,7 +727,12 @@ export default function HomeScreen({ navigation }) {
       {/* Folha "porquê" — abre ao tocar numa pergunta (alerta ou linha). */}
       <QuestionDetailSheet item={detailItem} lang={lang}
         onClose={() => setDetailItem(null)}
-        onNav={(screen) => { setDetailItem(null); navigation.navigate(screen); }} />
+        onNav={(dest) => {
+          setDetailItem(null);
+          // Destinos: string (aba) OU { root, screen } (ecrã aninhado, ex. Perfil → Validades).
+          if (typeof dest === 'string') navigation.navigate(dest);
+          else if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
+        }} />
     </SafeAreaView>
   );
 }
