@@ -71,11 +71,18 @@ export default function DutyDetailScreen({ route, navigation }) {
   const pf = !isFlight ? 0 : (duty.signOff && duty.block_on)
     ? (() => { const on = clkMin(duty.block_on), so = clkMin(duty.signOff); return (on == null || so == null) ? (ctxAll.postFlightMin || 0) : (so >= on ? so - on : so + 1440 - on); })()
     : (ctxAll.postFlightMin || 0);
+  // Passa os CASOS ESPECIAIS gravados (205c/205g/225 + discrição 205f) e o crew — sem eles o
+  // detalhe mostrava um teto errado p/ serviços aumentados/adiados (divergia da folha do dia).
+  const spD = duty.special || {};
   const d = duty.report_time
-    ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf })
+    ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf,
+        isPilot: ctxAll.isPilot, augmented: spD.augmented || null, delayedFrom: spD.delayedFrom || null, preStandby: spD.preStandby || null, discretion: !!spD.discretion })
     : null;
   const fat = (d && hasEnd) ? fatigueFromDuty(d) : null;
-  const over = !!(d && d.fdp && d.fdp.over);
+  // Standby de aeroporto COM alojamento (225(e)) não é PSV → a tabela não o julga; com a
+  // discrição 205(f) declarada, o excesso dentro da margem é LEGAL (só além dela é over).
+  const sbAccD = kind === 'standby_airport' && !!duty.accommodation;
+  const over = sbAccD ? false : !!(d && d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
 
   // ── Per-diem (motor AE) — só voo, piloto AE, rota completa (todos os setores conhecidos) ──
   const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
@@ -189,8 +196,16 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Text style={s.sectionTitle}>{l('FTL · SEGURANÇA', 'FTL · SAFETY')}</Text>
             <Panel rows={[
-              (hasEnd && d.fdp.actualFdpStr) && { k: l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? C.redText : null },
-              d.fdp.maxFdpStr && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr },
+              (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? C.redText : null },
+              (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr },
+              // Standby com alojamento (225(e)): não é PSV — a tabela 205 não o julga.
+              sbAccD && { k: l('PSV', 'FDP'), v: l('não se aplica — standby (225)', 'not applicable — standby (225)') },
+              // Discrição 205(f) declarada: dentro da margem é LEGAL (reportável); só além é excesso.
+              (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
+                v: d.discretion.over
+                  ? l(`ACIMA da margem (máx c/ discrição ${d.discretion.maxStr})`, `BEYOND the margin (max w/ discretion ${d.discretion.maxStr})`)
+                  : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
+                color: d.discretion.over ? C.redText : C.warnText },
               (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: C.redText },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },

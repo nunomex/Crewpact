@@ -680,8 +680,8 @@ export default function HomeScreen({ navigation }) {
           );
         })() : null}
 
-        {/* FTL automático assume aclimatizado/na-base — só vale p/ curto-curso (Hi Fly). */}
-        {isLongHaulCompany(company) ? (
+        {/* FTL automático assume aclimatizado/na-base — aviso p/ longo curso (Hi Fly · TAP WB). */}
+        {isLongHaulCompany(company, crewFleet) ? (
           <Banner tone="warn" icon="information-circle" style={{ marginBottom: SPACE.md }}
             title={l('Cálculo FTL automático', 'Automatic FTL calculation')}
             sub={l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}

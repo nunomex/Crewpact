@@ -14,6 +14,10 @@ import { validityLabel } from './validities';
 // aqui os lembretes ficam no-op TOTAL (nem se carrega o módulo). Só no dev build há nativo.
 const IN_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
+// Motivo de indisponibilidade (p/ a UI DIZER porquê em vez de falhar em silêncio):
+// 'expo-go' = ambiente sem o nativo completo · null = disponível (ou tenta-se).
+export const remindersUnavailableReason = () => (IN_EXPO_GO ? 'expo-go' : null);
+
 let _N;                 // undefined = ainda não tentado · null = indisponível · módulo = ok
 let _handlerSet = false;
 // Carrega o expo-notifications só quando preciso, sem rebentar se o nativo faltar.

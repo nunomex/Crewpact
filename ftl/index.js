@@ -238,16 +238,32 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // no ESTENDIDO, numa banda que permite extensão → conta p/ "máx 2 em 7 dias". Heurística:
   // da escala não se distingue planeado de discrição; marca-se quando CABE na extensão
   // (direção segura — antes avisar a mais). Acima do estendido = ilegal/discrição, não conta.
+  // Discrição do comandante (ORO.FTL.205(f)) USADA neste serviço — declarada em `special`.
+  // O excesso DENTRO da margem (+2h; +3h com repouso a bordo) é LEGAL (e reportável ao
+  // operador); só ALÉM da margem é ilegal. Sem a marca, o teto planeado manda (como antes).
+  const disc205 = sp.discretion
+    ? computeDiscretion({ maxFdpMin: d.fdp.maxFdpMin, actualFdpMin: d.fdp.actualFdpMin, restMin: d.rest.restMin, inFlightRest: !!sp.augmented })
+    : null;
+  // Standby de AEROPORTO com alojamento (ORO.FTL.225(e) cumprido): é STANDBY — conta 100%
+  // como serviço p/ 210/235 (225(c)) mas NÃO é PSV, logo a tabela 205 não o julga. SEM
+  // alojamento a lei trata-o como "duty at the airport" (225(d)): o PSV conta desde o
+  // report → a tabela aplica-se (comportamento anterior, conservador e fiel).
+  const sbAcc = duty.kind === 'standby_airport' && !!duty.accommodation;
   const extFdp = computeFdp({ state, reportMin: repMin, sectors: duty.sectors || 0, extended: true });
-  const usedExtension = !!d.fdp.over && repMin != null && !extFdp.notAllowed
+  // Prolongamento planeado (205(d)) não conta quando o excesso foi DISCRIÇÃO declarada nem em standby.
+  const usedExtension = !sbAcc && !sp.discretion && !!d.fdp.over && repMin != null && !extFdp.notAllowed
     && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
   return {
     src: 'duty', engineVer: ENGINE_VERSION,
     psv: {
-      state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: d.fdp.maxFdpStr,
+      state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: sbAcc ? null : d.fdp.maxFdpStr,
       band: d.fdp.band, start: duty.report_time, end: duty.block_on,
       endNextDay: repMin != null && endMin != null && endMin < repMin,
-      over: d.fdp.over, excess: d.fdp.excessStr, extended: usedExtension, ts: Date.now(),
+      over: sbAcc ? false : (disc205 ? disc205.over : d.fdp.over),
+      excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
+      extended: usedExtension, ts: Date.now(),
+      disc205f: disc205 ? { used: disc205.used, over: disc205.over, maxStr: disc205.maxStr, extStr: disc205.extStr } : undefined,
+      standby: sbAcc || undefined,
     },
     servico: servicoH,
     voo: vooH,

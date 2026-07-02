@@ -114,6 +114,11 @@ eq('longHaul: easyJet não', isLongHaulCompany({ slug: 'easyjet', name: 'easyJet
 eq('longHaul: jet2 não', isLongHaulCompany({ slug: 'jet2', name: 'Jet2' }), false);
 eq('longHaul: flag sobrepõe (nova companhia)', isLongHaulCompany({ slug: 'newco', name: 'New Co', long_haul: true }), true);
 eq('longHaul: sem companhia → false', isLongHaulCompany(null), false);
+// TAP: longo-curso SÓ para quem voa WIDE-BODY (A330/A350) — NB fica em curto/médio.
+eq('longHaul: TAP sem frota → false', isLongHaulCompany({ slug: 'tap', name: 'TAP Air Portugal' }), false);
+eq('longHaul: TAP + WB → true', isLongHaulCompany({ slug: 'tap', name: 'TAP Air Portugal' }, 'WB'), true);
+eq('longHaul: TAP + NB → false', isLongHaulCompany({ slug: 'tap', name: 'TAP Air Portugal' }, 'NB'), false);
+eq('longHaul: easyJet + WB → false (só TAP/Hi Fly)', isLongHaulCompany({ slug: 'easyjet', name: 'easyJet' }, 'WB'), false);
 eq('longHaul: na matriz (Hi Fly)', capabilitiesFor({ company: { slug: 'hifly', name: 'Hi Fly', rule_type: 'FTL' } }).longHaul, true);
 eq('longHaul: na matriz (easyJet) → false', capabilitiesFor({ company: { slug: 'easyjet', rule_type: 'AE' } }).longHaul, false);
 

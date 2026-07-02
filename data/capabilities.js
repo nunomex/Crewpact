@@ -12,9 +12,12 @@ import { getAeForProfile } from '../ae';
 // na-base (válido p/ curto-curso); para estas o pressuposto pode estar errado → a UI
 // avisa e remete p/ a calculadora manual. Preferir a flag da BD (airlines.long_haul);
 // fallback por nome/slug enquanto a coluna não existir na BD.
-export const isLongHaulCompany = (company) =>
+// `fleet` (opcional): a TAP só é longo-curso p/ quem voa WIDE-BODY (A330/A350) —
+// o NB fica em curto/médio e não precisa do aviso de aclimatação. Hi Fly é sempre.
+export const isLongHaulCompany = (company, fleet = null) =>
   !!company && (company.long_haul === true ||
-    /hi.?fly/i.test(`${company.slug || ''} ${company.name || ''}`));
+    /hi.?fly/i.test(`${company.slug || ''} ${company.name || ''}`) ||
+    (fleet === 'WB' && /\btap\b/i.test(`${company.slug || ''} ${company.name || ''}`)));
 
 // NB: o wording (rótulos pt/en) vive no i18n (data/i18n.js), NÃO aqui — a matriz só
 // decide O QUE aparece (comportamento/feature-gating), não COMO se chama.

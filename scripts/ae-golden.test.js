@@ -45,7 +45,7 @@ const cabin = require(path.resolve('ae/easyjetSnpvac.js'));
 const tapPilot = require(path.resolve('ae/tapSpac.js'));
 const tapCabin = require(path.resolve('ae/tapSnpvac.js'));
 const { airportCoord, greatCircleNM, sectorDistanceNM } = require(path.resolve('data/airports.js'));
-const { routeDistancesNM, monthlyPerDiem, aeMonthTotal } = require(path.resolve('data/perdiem.js'));
+const { routeDistancesNM, monthlyPerDiem, monthlyAe, aeMonthTotal } = require(path.resolve('data/perdiem.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => {
@@ -287,6 +287,35 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Per diem mês: sem rota', r.missing, 1);
   eq('Per diem mês: total (jun)', r.total, 155.04);
   eq('Per diem mês: sem categoria → null', monthlyPerDiem(duties, null, ae, { ym: '2026-06' }), null);
+  // POSICIONAMENTO com rota NÃO tem per-diem (Art. 37 = setor VOADO; posicionamento paga só a
+  // pernoita à parte). A rota no posicionamento serve o repouso 235 (local real), não o abono.
+  const dPos = { ...duties, '2026-06-20': { route: 'LIS-MAD', kind: 'positioning' } };
+  const rPos = monthlyPerDiem(dPos, 'FO', ae, { ym: '2026-06' });
+  eq('Per diem mês: posicionamento c/ rota NÃO soma', rPos.total, 155.04);
+  eq('Per diem mês: posicionamento não conta como voo-com-rota', rPos.withRoute, 2);
+  // O mesmo vale na TAP (per-diem por DIA de voo — um dia de posicionamento não é dia de voo).
+  const rTap = monthlyPerDiem({ '2026-06-20': { route: 'LIS-MAD', kind: 'positioning' } }, 'CAB3', tapCabin, { ym: '2026-06' });
+  eq('TAP: dia de posicionamento c/ rota → per-diem 0', rTap.total, 0);
+}
+
+// ── ADTY FINO no mês automático (Anexo I.5 piloto / Art. 58 cabine) ──
+{
+  const sb = (rep, on) => ({ report_time: rep, block_on: on, kind: 'standby_airport' });
+  // Não-chamado ≥4h (08:00→20:00) → 2 setores nominais (FO: 77.52).
+  eq('ADTY mês: não-chamado ≥4h = 2 NS', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
+  // Não-chamado <4h (08:00→11:00) → 1 setor nominal (38.76) — antes pagava 2 achatados.
+  eq('ADTY mês: não-chamado <4h = 1 NS', monthlyAe({ '2026-06-10': sb('08:00', '11:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 38.76);
+  // CHAMADO <4h (standby 2h + VOO no mesmo dia) → 0 (fica só o per-diem do voo).
+  const called = { '2026-06-10': { ...sb('06:00', '08:00'), extra: [{ report_time: '09:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS' }] } };
+  eq('ADTY mês: chamado <4h = 0', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
+  eq('ADTY mês: chamado — per-diem do voo mantém-se', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).perDiem, 62.02);
+  // Voo com standby de AEROPORTO prévio declarado (special 225, 5h) = chamado ≥4h → 2 NS.
+  const viaSpecial = { '2026-06-11': { report_time: '12:00', block_on: '18:00', kind: 'flight', route: 'LIS-OPO-LIS', special: { preStandby: { type: 'airport', standbyH: 5 } } } };
+  eq('ADTY mês: voo c/ preStandby 5h aeroporto = 2 NS', monthlyAe(viaSpecial, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
+  // CABINE (Art. 58): matriz em setores MÉDIOS — CM não-chamado ≥4h = 2×1,2×32,50 = 78 € (não 2 NS=65).
+  eq('ADTY mês cabine: 2 setores MÉDIOS (78 €)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 78);
+  // TAP: o AE não tem o item ADTY → não se inventa prestação (total = base).
+  eq('TAP mês: standby aeroporto sem prestação (total = base)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8287.50);
 }
 
 // ── Caminho único do total AE (aeMonthTotal) — abono UMA vez + extras ──

@@ -118,14 +118,19 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
   const [sbType, setSbType] = useState('airport');  // 'airport' | 'other' (casa/hotel)
   const [sbH, setSbH] = useState(6);                // horas de standby
-  const [accOn, setAccOn] = useState(false);        // alojamento na pausa do split-duty (CS FTL.1.220 d/e) — opt-in
+  // `accOn` = ALOJAMENTO: no voo é o da pausa do split (CS FTL.1.220 d/e); no standby de
+  // AEROPORTO é o do ORO.FTL.225(e) — sem ele, a lei trata o standby como "duty at the
+  // airport" (225(d)) e o PSV conta desde o report. Um só estado, dois artigos.
+  const [accOn, setAccOn] = useState(false);
+  const [discOn, setDiscOn] = useState(false);      // discrição do comandante USADA (ORO.FTL.205(f)) — só voo
   // Semeia os toggles a partir do `special` guardado (edição / troca de dia).
   const syncSpecial = (sp) => {
     sp = sp || {};
     setAugOn(!!sp.augmented); setAugClass(sp.augmented?.restClass || 'c1'); setAugCrew(sp.augmented?.additionalCrew || 1);
     setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
     setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
-    setAdvOpen(!!(sp.augmented || sp.delayedFrom != null || sp.preStandby));
+    setDiscOn(!!sp.discretion);
+    setAdvOpen(!!(sp.augmented || sp.delayedFrom != null || sp.preStandby || sp.discretion));
   };
 
   // Carrega o form a partir do dia: já existe duty → EDITA; senão → vazio (NOVA).
@@ -163,7 +168,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, accOn, legInput]);
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
   // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
@@ -341,8 +346,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const aug = augOn ? { restClass: augClass, additionalCrew: Number(augCrew) } : null;
     const del = (delOn && isClock(delFrom)) ? delFrom : null;
     const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
-    return (aug || del || sb) ? { augmented: aug, delayedFrom: del, preStandby: sb } : null;
-  }, [isFlight, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH]);
+    return (aug || del || sb || discOn) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null } : null;
+  }, [isFlight, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, discOn]);
 
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
@@ -417,12 +422,16 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       block_on: isFlight ? lastOn : (form.on || null),
       sectors: isFlight ? sectorRows.length : 0,
       flight_minutes: isFlight ? blockMin : 0,
-      route: isFlight ? (form.route.trim() || null) : null,
+      // Rota também no POSICIONAMENTO: onde acabas decide o repouso 12h/10h (ORO.FTL.235
+      // por localização real — o motor lê `route` no endsAwayReliable).
+      route: (isFlight || form.kind === 'positioning') ? (form.route.trim() || null) : null,
       kind: form.kind || 'flight', nightStop: hasNs,
       signOff: isFlight ? (form.signOff || null) : null,   // fim REAL (Duty hours/210/repouso) — só voo; não-voo: o Fim é o fim (um sign-off escondido não pode viajar no save)
       legs,
       special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
-      accommodation: isFlight ? accOn : false,   // alojamento na pausa do split (220 d/e) → roster_meta
+      // Alojamento: voo = pausa do split (220 d/e) · standby aeroporto = ORO.FTL.225(e)
+      // (sem ele o standby conta como PSV desde o report — 225(d)).
+      accommodation: (isFlight || form.kind === 'standby_airport') ? accOn : false,
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -647,6 +656,31 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             ) : (
               <View style={{ marginTop: 12 }}>
                 <ClockField C={C} s={s} error={badClock(form.on)} errText={fmtErr} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+                {/* POSICIONAMENTO: rota opcional — onde acabas decide o repouso 12h/10h (235). */}
+                {form.kind === 'positioning' ? (
+                  <View style={{ marginTop: 14 }}>
+                    <Text style={s.lbl}>{l('Rota', 'Route')} <Text style={s.routeHint}>{l('· opcional', '· optional')}</Text></Text>
+                    <TextInput style={s.input} value={form.route} onChangeText={(v) => setForm((f) => ({ ...f, route: v.toUpperCase() }))}
+                      placeholder={l('ex. LIS-MAD', 'e.g. LIS-MAD')} placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={40} />
+                    <Text style={s.routeHint}>{l('Onde acabas define o repouso mínimo: 12 h na base · 10 h fora (ORO.FTL.235).', 'Where you end sets the minimum rest: 12 h at base · 10 h away (ORO.FTL.235).')}</Text>
+                  </View>
+                ) : null}
+                {/* STANDBY AEROPORTO: alojamento (ORO.FTL.225(e)) — sem ele é "duty at the airport" (225(d)). */}
+                {form.kind === 'standby_airport' ? (
+                  <View style={{ marginTop: 14 }}>
+                    <View style={s.nsRow}>
+                      <View style={{ flex: 1, paddingRight: 12 }}>
+                        <Text style={s.advTit}>{l('Alojamento disponibilizado', 'Accommodation provided')}</Text>
+                        <Text style={s.advSub}>ORO.FTL.225(e)</Text>
+                      </View>
+                      <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                        trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                    </View>
+                    <Text style={s.routeHint}>{accOn
+                      ? l('É standby: conta 100% como serviço (210/235) e a tabela do PSV não o julga.', 'It is standby: counts 100% as duty (210/235) and the FDP table does not judge it.')
+                      : l('Sem alojamento, a lei trata-o como serviço no aeroporto — o PSV conta desde o report (ORO.FTL.225(d)(e)).', 'Without accommodation the law treats it as airport duty — the FDP counts from report (ORO.FTL.225(d)(e)).')}</Text>
+                  </View>
+                ) : null}
               </View>
             )}
           </Animated.View>
@@ -760,6 +794,22 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   {accOn ? (
                     <View style={s.advInset}>
                       <Text style={s.advHint}>{l('Só conta se houver uma pausa em terra ≥3h neste serviço. Com alojamento adequado, a pausa toda estende o PSV (inclui >6h/WOCL); sem, só até 6h.', 'Only applies if there is a ground break ≥3h in this duty. With suitable accommodation the whole break extends the FDP (incl. >6h/WOCL); without, only up to 6h.')}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* 5 · Discrição do comandante USADA (ORO.FTL.205(f)) — o excesso dentro da
+                      margem (+2h; +3h c/ repouso a bordo) é LEGAL e reportável, não "ilegal". */}
+                  <View style={[s.advRow, s.advDivider]}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={s.advTit}>{l('Discrição do comandante usada', "Commander's discretion used")}</Text>
+                      <Text style={s.advSub}>205(f)</Text>
+                    </View>
+                    <Switch value={discOn} onValueChange={(v) => { select(); setDiscOn(v); }}
+                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+                  </View>
+                  {discOn ? (
+                    <View style={s.advInset}>
+                      <Text style={s.advHint}>{l('Só circunstâncias imprevistas a partir da apresentação: até +2 h (ou +3 h com repouso a bordo). Dentro da margem o excesso é legal e REPORTÁVEL ao operador; além dela continua ilegal.', 'Unforeseen circumstances at or after reporting only: up to +2 h (or +3 h with in-flight rest). Within the margin the excess is legal and REPORTABLE to the operator; beyond it remains illegal.')}</Text>
                     </View>
                   ) : null}
 

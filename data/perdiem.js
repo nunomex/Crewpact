@@ -35,6 +35,9 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
     // Per-diem é POR setor voado → soma a primária + cada `extra` do dia (multi-serviço; ORO.FTL.210/Cl.52 contam por serviço).
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
       if (!s) continue;
+      // SÓ VOO: um POSICIONAMENTO também pode ter rota (repouso 235 por local real),
+      // mas não tem abono (Art. 37/Cl. 52 = setor VOADO; posicionamento paga só a pernoita).
+      if ((s.kind || 'flight') !== 'flight') continue;
       const dists = routeDistancesNM(s.route);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       total += ae.perDiem(category, dists, index, fleet);   // `fleet` (TAP: WB/NB → coluna A); easyJet ignora o 4.º arg
@@ -62,6 +65,7 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
     count++;
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {   // primária + extra (multi-serviço)
       if (!s) continue;
+      if ((s.kind || 'flight') !== 'flight') continue;   // só setor VOADO tem per-diem (ver monthlyPerDiem)
       const dists = routeDistancesNM(s.route);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       for (const dist of dists) {
@@ -94,9 +98,15 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
 export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
   const office4 = ae.OFFICE4_SECTORS || 0;
-  const ADTY_SECTORS = 2;             // Anexo I.5 — serviço em aeroporto ≥4h não-chamado = 2 setores nominais
   const flights = [];                 // arrays de distâncias (NM) por voo → computeAeMonth
-  let extraSectors = 0, withRoute = 0, missing = 0, count = 0, officeDays = 0, adtyDays = 0, nightStops = 0;
+  let extraSectors = 0, adtyEur = 0, withRoute = 0, missing = 0, count = 0, officeDays = 0, adtyDays = 0, nightStops = 0;
+  // Duração report→fim de um serviço (volta à meia-noite); null sem horas completas.
+  const svcDurMin = (s) => {
+    const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(x || ''); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
+    const r = m(s.report_time), e = m(s.block_on);
+    if (r == null || e == null) return null;
+    return e >= r ? e - r : e + 1440 - r;
+  };
   for (const date in duties) {
     const d = duties[date];
     if (!d || d.deleted) continue;
@@ -105,13 +115,33 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     // Primária + extra (ORO.FTL.210/Cl.52 contam por serviço). Pernoita day-level (Art. 39 = 2×NS, 1 noite/dia).
     const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
     if (svcs.some((s) => s && s.nightStop)) nightStops++;
+    const dayHasFlight = svcs.some((s) => s && (s.kind || 'flight') === 'flight');
+    const dayHasSb = svcs.some((s) => s && s.kind === 'standby_airport');
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
       if (kind === 'office')          { extraSectors += office4;      officeDays++; continue; }
-      if (kind === 'standby_airport') { extraSectors += ADTY_SECTORS; adtyDays++;   continue; }
+      if (kind === 'standby_airport') {
+        // ADTY FINO (Anexo I.5 piloto / Art. 58 cabine) em € via o módulo do AE — as matrizes
+        // diferem (piloto em setores NOMINAIS, cabine em setores MÉDIOS): chamado = há VOO no
+        // mesmo dia; ≥4h pela duração real (sem horas → assume ≥4h, o caso comum). AEs sem o
+        // item (ex. TAP) → 0: não se inventa prestação que o acordo não tem.
+        if (ae.airportStandby) {
+          const dm = svcDurMin(s);
+          adtyEur += ae.airportStandby(category, { called: dayHasFlight, over4h: dm == null ? true : dm >= 240, index });
+          adtyDays++;
+        }
+        continue;
+      }
       // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
       if (kind !== 'flight') continue;
+      // Voo com standby de AEROPORTO prévio declarado (special 225) = FOI CHAMADO do standby →
+      // ADTY pelo tempo de standby (só quando não há duty de standby à parte no mesmo dia).
+      const ps = s.special && s.special.preStandby;
+      if (ae.airportStandby && !dayHasSb && ps && ps.type === 'airport' && Number(ps.standbyH) > 0) {
+        adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index });
+        adtyDays++;
+      }
       const dists = routeDistancesNM(s.route);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
       flights.push(dists);
@@ -119,6 +149,12 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     }
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet });
+  adtyEur = +adtyEur.toFixed(2);
+  if (adtyEur) {
+    month.extras = +(((month.extras || 0) + adtyEur)).toFixed(2);
+    month.variable = +(((month.variable || 0) + adtyEur)).toFixed(2);
+    month.total = +(((month.total || 0) + adtyEur)).toFixed(2);
+  }
   return { ...month, withRoute, missing, count, officeDays, adtyDays, nightStopDays: nightStops };
 };
 

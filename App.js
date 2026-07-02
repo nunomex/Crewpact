@@ -35,7 +35,7 @@ import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
-import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission } from './data/reminders';
+import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 
@@ -1055,6 +1055,16 @@ export default function App() {
   const lastRosterSig = useRef(null);
   const toggleReminders = async (on) => {
     if (on) {
+      // Honesto, não mudo: no Expo Go o toggle não pode ligar (nativo amputado) — DIZ porquê
+      // em vez de falhar em silêncio. No dev build este ramo nunca dispara.
+      if (remindersUnavailableReason() === 'expo-go') {
+        notify(
+          lang === 'en' ? 'Reminders need the full app' : 'Lembretes precisam da app completa',
+          lang === 'en' ? 'Notifications are disabled inside Expo Go — they will work in the final build.' : 'No Expo Go as notificações estão desativadas — ficam prontos na app final.',
+          'warn',
+        );
+        return;
+      }
       const granted = await requestRemindersPermission();
       if (!granted) return;                       // sem permissão → fica desligado
       setRemindersOn(true);

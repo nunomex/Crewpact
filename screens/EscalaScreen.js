@@ -474,7 +474,7 @@ export default function EscalaScreen({ navigation, route }) {
                 <View style={s.dsHead}>
                   {multi ? <View style={s.dsNum}><Text style={s.dsNumTxt}>{idx + 1}</Text></View> : null}
                   <View style={[s.dsBadge, { backgroundColor: kindColor(kind) }]}><Text style={s.dsBadgeTxt}>{kindLabel(kind)}</Text></View>
-                  <Text style={s.dsRoute} numberOfLines={1}>{isFlight ? (d.route || l('Voo', 'Flight')) : kindLabel(kind)}</Text>
+                  <Text style={s.dsRoute} numberOfLines={1}>{isFlight ? (d.route || l('Voo', 'Flight')) : (d.route ? `${kindLabel(kind)} · ${d.route}` : kindLabel(kind))}</Text>
                   {d.nightStop ? <Ionicons name="moon" size={15} color={C.info} /> : null}
                 </View>
 

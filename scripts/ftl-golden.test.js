@@ -291,6 +291,43 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('235: gap após voo 10:30→14:00 = 210 min (com débrief)', gapFl.gapMin, 210);
 }
 
+// ─────────── Discrição do comandante DECLARADA (ORO.FTL.205(f)) ───────────
+{
+  const { dutyToFtlDay } = ftl;
+  // Report 06:00, 2 setores → teto básico 13:00 (Quadro 2). PSV real 06:00→20:00 = 14:00 (+1:00).
+  const base = { report_time: '06:00', block_on: '20:00', sectors: 2, flight_minutes: 600 };
+  // SEM a marca: excede o teto → over (comportamento anterior).
+  eq('205f não declarada: +1h acima do teto → over', dutyToFtlDay(base).psv.over, true);
+  // COM a marca: +1h cabe na margem de +2h → LEGAL (reportável), não over.
+  const disc = dutyToFtlDay({ ...base, special: { discretion: true } });
+  eq('205f declarada: +1h dentro da margem → NÃO over', disc.psv.over, false);
+  eq('205f declarada: marca used', disc.psv.disc205f.used, true);
+  // ALÉM da margem (+2h): 06:00→21:30 = 15:30 > 15:00 → over MESMO com a discrição.
+  const beyond = dutyToFtlDay({ report_time: '06:00', block_on: '21:30', sectors: 2, special: { discretion: true } });
+  eq('205f declarada: +2h30 além da margem → over na mesma', beyond.psv.over, true);
+  // Com repouso a bordo (205c) a margem é +3h: 15:30 real vs teto aumentado — classe 1,
+  // 1 piloto extra → teto próprio do 205(c); aqui valida-se só que a margem usa +3h via augmented.
+  eq('205f declarada: prolongamento 205(d) NÃO conta (não é planeado)', disc.psv.extended, false);
+}
+
+// ─────────── Standby de AEROPORTO × alojamento (ORO.FTL.225(c)(d)(e)) ───────────
+{
+  const { dutyToFtlDay } = ftl;
+  const sb = { report_time: '08:00', block_on: '20:00', sectors: 0, kind: 'standby_airport' };
+  // COM alojamento (225(e) cumprido): é STANDBY — conta 100% p/ 210/235 mas NÃO é PSV
+  // (a tabela 205 não o julga: sem teto, nunca over).
+  const acc = dutyToFtlDay({ ...sb, accommodation: true });
+  eq('225: standby aeroporto c/ alojamento — serviço 100% (12h)', acc.servico, 12);
+  eq('225: c/ alojamento não é PSV → sem teto', acc.psv.max, null);
+  eq('225: c/ alojamento nunca over', acc.psv.over, false);
+  eq('225: c/ alojamento marca standby', acc.psv.standby, true);
+  eq('225: repouso usa a duração total (12h)', acc.rest.basePrev, 12);
+  // SEM alojamento: "duty at the airport" (225(d)) — o PSV conta desde o report → a tabela aplica-se.
+  const noAcc = dutyToFtlDay({ ...sb, block_on: '22:30' });   // 08:00→22:30 = 14:30 > teto (13:00 @08:00, 0-2 set)
+  eq('225: SEM alojamento 14h30 → over (é PSV desde o report)', noAcc.psv.over, true);
+  eq('225: SEM alojamento conta 100% na mesma (14.5h)', noAcc.servico, 14.5);
+}
+
 // ─────────── 205(d)(1) — prolongamento inferido + frequência (máx 2/7d) ───────────
 {
   const { dutyToFtlDay, computeExtensionUsage } = ftl;
