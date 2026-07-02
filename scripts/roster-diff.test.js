@@ -11,7 +11,7 @@ const transform = (src, filename) => babel.transformSync(src, { filename, babelr
 const origJs = Module._extensions['.js'];
 Module._extensions['.js'] = function (m, filename) { if (filename.includes('node_modules')) return origJs(m, filename); m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename); };
 
-const { diffDuty, classify, diffRoster } = require(path.resolve('data/rosterDiff.js'));
+const { diffDuty, classify, diffRoster, shortNoticeCandidates } = require(path.resolve('data/rosterDiff.js'));
 
 let pass = 0, fail = 0;
 const eq = (label, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); if (ok) pass++; else { fail++; console.error(`✗ ${label}\n    esperado: ${JSON.stringify(want)}\n    obtido:   ${JSON.stringify(got)}`); } };
@@ -100,6 +100,23 @@ eq('diffRoster multi: dia ganhou serviço → changed=1', diffRoster({
   incoming: [{ duty_date: '2026-07-10', ...AM, extra: [PM] }],
   duties: { '2026-07-10': { duty_date: '2026-07-10', source: 'calendar', ...AM, snap: { ...AM } } },
 }).counts.changed, 1);
+
+// shortNoticeCandidates — candidatas a SNC: alteradas/conflito/novas a ≤7 dias, por MÊS do serviço
+{
+  const diff = {
+    changed:  [{ date: '2026-07-04' }, { date: '2026-07-20' }],   // a 2.ª fora do horizonte
+    conflict: [{ date: '2026-07-05' }],
+    added:    [{ date: '2026-07-31' }, { date: '2026-08-02' }],   // ambas fora (>7 d de 03/07)
+    removed:  [{ date: '2026-07-04' }],                            // cancelamentos NÃO contam
+  };
+  const c = shortNoticeCandidates(diff, '2026-07-03');
+  eq('SNC: total (2 dentro de 7 dias)', c.total, 2);
+  eq('SNC: por mês do serviço', c.byYm, { '2026-07': 2 });
+  // Horizonte a cavalo de 2 meses: hoje 30/07 → 31/07 e 02/08 entram, cada uma no seu mês.
+  const c2 = shortNoticeCandidates(diff, '2026-07-30');
+  eq('SNC: horizonte cruza o mês', c2.byYm, { '2026-07': 1, '2026-08': 1 });
+  eq('SNC: sem diff → 0', shortNoticeCandidates(null, '2026-07-03').total, 0);
+}
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  rosterDiff: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

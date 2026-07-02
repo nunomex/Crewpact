@@ -212,7 +212,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeExtras, validities, markLiveSync } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -223,8 +223,8 @@ export default function HomeScreen({ navigation }) {
   // as perguntas (descanso/escala/validades) vão por baixo do card Serviços.
   const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeExtras, validities, isPilot, todayISO }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeExtras, validities, isPilot, todayISO, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, lang],
   );
   // Perguntas (por baixo do card Serviços) — "Estou legal?" entra aqui (já ordenado por
   // severidade: ILEGAL sobe ao topo). Mostra-se quando há veredicto (esconde "sem dados").

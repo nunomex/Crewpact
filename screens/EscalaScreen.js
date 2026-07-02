@@ -11,6 +11,7 @@ import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
+import { shortNoticeCandidates } from '../data/rosterDiff';
 import { legZulu } from '../data/zulu';
 import HeaderActions from '../components/HeaderActions';
 import DutyFormSheet from '../components/DutyFormSheet';
@@ -49,7 +50,7 @@ const buildDutiesCsv = (duties) => {
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
-    calendarId, setCalendarId, calendarName, setCalendarName } = useContext(AppContext);
+    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -424,7 +425,32 @@ export default function EscalaScreen({ navigation, route }) {
       <DutyFormSheet visible={!!dutyDate} onClose={() => { setDutyDate(null); setDutyAppend(false); setDutyEditExtra(null); }} date={dutyDate} append={dutyAppend} editExtra={dutyEditExtra}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
-        onDone={({ saved, source }) => { if (saved) notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported'); }}
+        onDone={({ saved, source }) => {
+          if (!saved) return;
+          notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported');
+          // SNC (deteta→confirma): alterações de ÚLTIMA HORA aplicadas → PROPÕE somar aos
+          // Extras do mês do serviço (o AE paga por alteração de curto prazo). Nunca soma
+          // sozinho. DDO/IDO não são verificáveis (a app não regista folgas publicadas) →
+          // vão como lembrete no mesmo diálogo.
+          const hasSnc = !!(ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'snc'));
+          if (!hasSnc || !addAeEvents) return;
+          const cand = shortNoticeCandidates(rosterChanges, today);
+          if (!cand.total) return;
+          setTimeout(() => {
+            Alert.alert(
+              l('Alterações de última hora', 'Short-notice changes'),
+              l(`${cand.total} alteração(ões) a ≤7 dias. Registar como SNC (com o dia de cada uma) nos Extras do mês? Se alguma caiu num dia de folga publicada, marca DDO/WFLY no próprio serviço.`,
+                `${cand.total} change(s) within ≤7 days. Log as SNC (each with its day) in the month's extras? If any fell on a published day off, mark DDO/WFLY on the duty itself.`),
+              [
+                { text: l('Agora não', 'Not now'), style: 'cancel' },
+                { text: l(`Registar +${cand.total} SNC`, `Log +${cand.total} SNC`), onPress: () => {
+                  addAeEvents(cand.dates.map((dt) => ({ date: dt, type: 'snc' })));
+                  success();
+                } },
+              ],
+            );
+          }, 600);
+        }}
         onClose={() => { setImportOpen(false); checkRosterChanges && checkRosterChanges(); }} />
 
       {/* Detalhe do dia (toque na grelha) — serviço com TODOS os setores separados (expandível).

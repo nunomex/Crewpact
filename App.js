@@ -35,6 +35,8 @@ import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming, rangeFromOption } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
+import { countersToEvents } from './data/aeEvents';
+import ExtraEventSheet from './components/ExtraEventSheet';
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
@@ -151,7 +153,7 @@ function FtlStack() {
 function FloatingTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
-  const { lang, openSimulation } = useContext(AppContext);
+  const { lang, openSimulation, openExtra, ae } = useContext(AppContext);
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const ICON = {
@@ -191,6 +193,8 @@ function FloatingTabBar({ state, navigation }) {
     { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'),     run: () => setSearchOpen(true) },
     { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
     { key: 'sim',    icon: 'flask-outline',   label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
+    // Extra do mês (evento datado — DDO/férias/doença/SNC…): só p/ perfis com AE modelado.
+    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet-outline', label: l('Extra do mês', 'Month extra'), run: () => openExtra && openExtra() }] : []),
     { key: 'import', icon: 'download-outline', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
   ];
 
@@ -364,7 +368,14 @@ export default function App() {
 
   // Profile filled during onboarding (pre-populated from user object if available)
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
-  const [aeExtras, setAeExtras] = useState({});              // Extras do mês AE { "YYYY-MM": { <id>: n } } — partilhado por Home/Perfil/Cálculos
+  const [aeExtras, setAeExtras] = useState({});              // LEGADO: contadores antigos — migram p/ eventos no arranque e ficam vazios
+  const [aeEvents, setAeEvents] = useState([]);              // Extras do mês como EVENTOS DATADOS [{id, date, type}] — a fonte única
+  const [extraOpen, setExtraOpen] = useState(false);         // folha "Extra do mês" (mini-FAB / Cálculos)
+  const addAeEvents = (list) => setAeEvents((prev) => [
+    ...prev,
+    ...(list || []).filter((e) => e && e.type && e.date).map((e, i) => ({ id: e.id || `ev${Date.now().toString(36)}${prev.length + i}`, date: e.date, type: e.type })),
+  ]);
+  const removeAeEvent = (id) => setAeEvents((prev) => prev.filter((e) => e.id !== id));
   const [validities, setValidities] = useState([]);          // Validades & docs (premium v1) — local: [{ id, type, expiry, note }]
   const [remindersOn, setRemindersOn] = useState(false);     // Lembretes locais (premium · #3) — opt-in (precisa permissão + dev build)
   const [calendarId, setCalendarId] = useState(null);        // calendário do telemóvel ESCOLHIDO (id); null = não ligado. Lemos SÓ este.
@@ -484,6 +495,10 @@ export default function App() {
           // Casos especiais FTL (Fase 1): repouso a bordo/aumentada (205c), delayed (205g),
           // standby anterior (225) — mexem no TETO do PSV. Persistidos em roster_meta (sem migração).
           special: ('special' in fields) ? fields.special : (ex?.special ?? null),
+          // PAPEL desempenhado (instr/uprank/CCLT/CTI — €/dia ou €/setor conforme a lei) e
+          // FOLGA PUBLICADA trabalhada (ddo/wfly). Persistem em roster_meta.
+          role: ('role' in fields) ? (fields.role || null) : (ex?.role ?? (ex?.instructor ? 'instr' : null)),
+          dayOffWorked: ('dayOffWorked' in fields) ? (fields.dayOffWorked || null) : (ex?.dayOffWorked ?? null),
           // 2.º+ período de serviço no MESMO dia civil (a lei conta períodos, não dias — 210).
           // Array de duties-irmãs (mesma forma da primária); persistido em roster_meta.
           extra: ('extra' in fields) ? (fields.extra && fields.extra.length ? fields.extra : null) : (ex?.extra ?? null),
@@ -524,7 +539,8 @@ export default function App() {
     report_time: f.report_time || null, block_off: f.block_off || null, block_on: f.block_on || null,
     sectors: f.sectors || 0, flight_minutes: f.flight_minutes || 0, route: f.route || null,
     kind: f.kind || 'flight', nightStop: !!f.nightStop, signOff: f.signOff || null,
-    legs: f.legs || null, special: f.special || null, accommodation: !!f.accommodation, source,
+    legs: f.legs || null, special: f.special || null, accommodation: !!f.accommodation,
+    role: f.role || null, dayOffWorked: f.dayOffWorked || null, source,
   });
   // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
@@ -767,7 +783,7 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -778,12 +794,28 @@ export default function App() {
           AsyncStorage.getItem(`cp_reminders_${user.id}`),
           AsyncStorage.getItem(`cp_calendar_id_${user.id}`),
           AsyncStorage.getItem(`cp_calendar_name_${user.id}`),
+          AsyncStorage.getItem(`cp_ae_events_${user.id}`),
         ]);
         if (cancelled) return;
         setCalendarId(ci || null);   // calendário do telemóvel escolhido (id) ou null = não ligado
         setCalendarName(cn || null); // nome do calendário (para o selo "Calendário · <nome>")
         setReadNotifIds(r ? new Set(JSON.parse(r)) : new Set());
-        try { setAeExtras(ax ? (JSON.parse(ax) || {}) : {}); } catch { setAeExtras({}); }   // extras do mês AE
+        // Extras do mês = EVENTOS DATADOS. Os CONTADORES antigos (cp_ae_extras) migram UMA
+        // vez para eventos só-mês ("dia não registado") e o balde antigo esvazia-se —
+        // um só modelo, tudo editável (nada fica "só leitura").
+        try {
+          let events = [];
+          try { events = ev ? (JSON.parse(ev) || []) : []; } catch { events = []; }
+          let counters = {};
+          try { counters = ax ? (JSON.parse(ax) || {}) : {}; } catch { counters = {}; }
+          if (Object.keys(counters).length) {
+            events = [...countersToEvents(counters), ...events];
+            setAeExtras({});   // migrado → esvazia (o efeito de persistência grava o vazio)
+          } else {
+            setAeExtras({});
+          }
+          setAeEvents(events);
+        } catch { setAeEvents([]); setAeExtras({}); }
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
         setRemindersOn(rm === '1');                                                          // lembretes opt-in
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
@@ -844,6 +876,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_read_${user.id}`, JSON.stringify([...readNotifIds])).catch(() => {}); }, [readNotifIds, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_events_${user.id}`, JSON.stringify(aeEvents)).catch(() => {}); }, [aeEvents, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
   useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarId) AsyncStorage.setItem(`cp_calendar_id_${user.id}`, calendarId).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_id_${user.id}`).catch(() => {}); }, [calendarId, user?.id]);
@@ -871,12 +904,12 @@ export default function App() {
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
           // roster_meta (Fase 4): JSON { source, snap, legs, signOff, special } — origem + snapshot
           // + nº de voo + fim de serviço + casos especiais FTL (205c/205g/225).
-          let source = 'manual', snap = null, legs = null, signOff = null, special = null, extra = null, accommodation = false;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; accommodation = m.accommodation || false; extra = (m.extra && m.extra.length) ? m.extra : null; } } catch { /* meta inválida */ }
+          let source = 'manual', snap = null, legs = null, signOff = null, special = null, extra = null, accommodation = false, role = null, dayOffWorked = null;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; accommodation = m.accommodation || false; role = m.role || (m.instructor ? 'instr' : null); dayOffWorked = m.dayOffWorked || null; extra = (m.extra && m.extra.length) ? m.extra : null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special, accommodation, extra,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special, accommodation, role, dayOffWorked, extra,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }
@@ -1098,6 +1131,8 @@ export default function App() {
     profile, setProfile,
     airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
+    aeEvents, addAeEvents, removeAeEvent,
+    openExtra: () => setExtraOpen(true),
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,
@@ -1179,6 +1214,7 @@ export default function App() {
         </NavigationContainer>
         <OfflineBanner />
         {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
+        {onboarded ? <ExtraEventSheet visible={extraOpen} onClose={() => setExtraOpen(false)} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
         {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
             pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}

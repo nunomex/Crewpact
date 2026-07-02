@@ -1,7 +1,9 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { monthlyPerDiem, monthlyPerDiemByBand, monthlyAe } from '../data/perdiem';
+import { eventCounts, eventDateLabel } from '../data/aeEvents';
 import { txv } from '../data/i18n';
 import { AppContext, useTheme } from '../data/appContext';
 
@@ -18,7 +20,7 @@ const GROUP_LABEL = {
 // pagamento (mockup): chips de categoria/contrato, base + setor nominal, per diem
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
-export default function AeCalcs({ ae, category, contract = '12/12', fleet = null, duties = [], lifestyle = false, instructorRated = false, extras = {}, onChangeExtras, sncSuggest = 0 }) {
+export default function AeCalcs({ ae, category, contract = '12/12', fleet = null, duties = [], lifestyle = false, instructorRated = false, events = [], onRemoveEvent, onAddExtra }) {
   const { lang, serviceYears } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
@@ -60,17 +62,14 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
   // o cálculo antigo se a AE não expuser computeAeMonth (ex.: cabine). `cash` (abono
   // p/ falhas, só cabine) soma por cima.
   const month = monthlyAe(duties, category, contract, ae, { ym, index, fleet });
-  // Extras do mês (Passo 4) — contadores manuais/auto que somam ao total. Só os AE
-  // com a mecânica (piloto) os expõem. Valor por unidade via o próprio motor.
-  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
+  // Extras do mês = EVENTOS DATADOS → contados p/ o mês (doença por episódio, Art. 48)
+  // e valorizados pelo próprio motor do AE. A lista mostra cada ocorrência com o dia.
+  const monthEvents = (events || []).filter((e) => e && String(e.date).slice(0, 7) === ym)
+    .sort((a, b) => (String(a.date) < String(b.date) ? -1 : 1));
+  const counts = eventCounts(events, ym);
+  const xt = ae.monthExtras ? ae.monthExtras(category, counts, { index }) : null;
   const xRate = (id) => { const r = ae.monthExtras(category, { [id]: 1 }, { index }); return r.items[0] ? r.items[0].each : 0; };
-  const bump = (id, delta) => {
-    if (!onChangeExtras) return;
-    const cap = (ae.EXTRA_KINDS.find((k) => k.id === id) || {}).cap;
-    let next = Math.max(0, Math.floor(+extras[id] || 0) + delta);
-    if (cap) next = Math.min(next, cap);
-    onChangeExtras({ ...extras, [id]: next });
-  };
+  const kindLabelOf = (id) => { const k = (ae.EXTRA_KINDS || []).find((x) => x.id === id); return (k && k.label && (k.label[lang] || k.label.pt)) || id; };
   // Total único: monthlyAe.total já inclui o abono (cabine, UMA vez); o `cash` só
   // entra no fallback (quando não há computeAeMonth). + extras manuais do mês.
   const total = (month ? month.total : base + (pd ? pd.total : 0) + cash) + (xt ? xt.total : 0);
@@ -163,56 +162,50 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
       ) : null}
-      {month && (month.officeDays > 0 || month.adtyDays > 0 || month.nightStopDays > 0) ? (
+      {month && (month.officeDays > 0 || month.adtyDays > 0 || month.instructorDaysAuto > 0 || month.ddoDaysAuto > 0 || month.wflyDaysAuto > 0 || month.nightStopDays > 0) ? (
         <Text style={s.note}>
-          {l('No total:', 'In total:')} {[
+          {l('Da escala:', 'From the roster:')} {[
             month.officeDays > 0 ? `${month.officeDays} ${l('escritório', 'office')}` : null,
             month.adtyDays > 0 ? `${month.adtyDays} ${l('standby aeroporto', 'airport standby')}` : null,
+            month.instructorDaysAuto > 0 ? `${month.instructorDaysAuto} ${l('dia(s) com papel (instrutor/uprank…)', 'day(s) with a role (instructor/uprank…)')}` : null,
+            month.ddoDaysAuto > 0 ? `${month.ddoDaysAuto} DDO` : null,
+            month.wflyDaysAuto > 0 ? `${month.wflyDaysAuto} WFLY` : null,
             month.nightStopDays > 0 ? `${month.nightStopDays} ${l('paragem(ns) nocturna(s)', 'night stop(s)')}` : null,
           ].filter(Boolean).join(' · ')}
         </Text>
       ) : null}
 
-      {/* ── Extras do mês — contadores que somam ao total (Passo 4) ── */}
+      {/* ── Extras do mês — EVENTOS DATADOS (registados no dia; migrados = "dia não registado").
+          O € de cada tipo vem do monthExtras do AE; a doença conta dias 1-3 POR EPISÓDIO. ── */}
       {xt ? (
         <>
           <Text style={s.group}>{l('EXTRAS DO MÊS', 'THIS MONTH’S EXTRAS')}</Text>
           <View style={s.card}>
-            {ae.EXTRA_KINDS.map((k, i) => {
-              const n = Math.max(0, Math.floor(+extras[k.id] || 0));
-              const each = xRate(k.id);
-              const unit = k.per === 'day' ? l('dia', 'day') : l('evento', 'event');
-              const showSnc = k.id === 'snc' && sncSuggest > 0 && sncSuggest !== n;
-              return (
-                <View key={k.id} style={[s.crow, i > 0 && s.rowBorder]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.cl}>{(k.label && (k.label[lang] || k.label.pt)) || k.id}</Text>
-                    <Text style={s.cs}>
-                      {fmtEur(each)} / {unit}{n > 0 ? ` · = ${fmtEur(+(each * n).toFixed(2))}` : ''}
-                    </Text>
-                    {showSnc ? (
-                      <TouchableOpacity onPress={() => onChangeExtras && onChangeExtras({ ...extras, snc: sncSuggest })} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-                        <Text style={s.autoHint}>{l(`≈${sncSuggest} detetada(s) na escala · aplicar`, `≈${sncSuggest} detected in roster · apply`)}</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                  <View style={s.stepper}>
-                    <TouchableOpacity style={s.stepBtn} activeOpacity={0.7} onPress={() => bump(k.id, -1)} disabled={n <= 0} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Text style={[s.stepSign, n <= 0 && s.stepDim]}>−</Text>
-                    </TouchableOpacity>
-                    <Text style={s.stepN}>{n}</Text>
-                    <TouchableOpacity style={s.stepBtn} activeOpacity={0.7} onPress={() => bump(k.id, +1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Text style={s.stepSign}>+</Text>
-                    </TouchableOpacity>
-                  </View>
+            {monthEvents.length === 0 ? (
+              <Text style={[s.cs, { paddingVertical: 12 }]}>{l('Sem extras registados este mês. Regista no momento — mini-botão "Extra do mês" ou aqui em baixo.', 'No extras logged this month. Log as they happen — the "Month extra" mini-button or below.')}</Text>
+            ) : monthEvents.map((e, i) => (
+              <View key={e.id} style={[s.crow, i > 0 && s.rowBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cl}>{kindLabelOf(e.type)}</Text>
+                  <Text style={s.cs}>{eventDateLabel(e.date, lang)} · {fmtEur(xRate(e.type))}</Text>
                 </View>
-              );
-            })}
+                <TouchableOpacity onPress={() => onRemoveEvent && onRemoveEvent(e.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button" accessibilityLabel={l('Apagar extra', 'Delete extra')}>
+                  <Ionicons name="trash-outline" size={17} color={C.red} />
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
+          {onAddExtra ? (
+            <TouchableOpacity onPress={onAddExtra} activeOpacity={0.8} style={s.addExtra}>
+              <Ionicons name="add" size={16} color={C.brand} />
+              <Text style={s.addExtraTxt}>{l('adicionar extra', 'add extra')}</Text>
+            </TouchableOpacity>
+          ) : null}
           <Text style={s.note}>
             {xt.total > 0
-              ? l(`Soma ${fmtEur(xt.total)} ao total estimado.`, `Adds ${fmtEur(xt.total)} to the estimate.`)
-              : l('Conta dias/eventos do mês que não se inferem da rota (doença, folgas, SNC…).', 'Count this month’s days/events not derived from the route (sick, days off, SNC…).')}
+              ? l(`Soma ${fmtEur(xt.total)} ao total estimado${counts.sickDays != null ? ' · doença: dias 1-3 por episódio (Art. 48)' : ''}.`, `Adds ${fmtEur(xt.total)} to the estimate${counts.sickDays != null ? ' · sick: days 1-3 per episode (Art. 48)' : ''}.`)
+              : l('Ocorrências do mês que não se inferem da rota (doença, férias, IDO, SNC…). Trabalhar em folga (DDO/WFLY) marca-se no próprio serviço.', 'This month’s occurrences not derived from the route (sick, leave, IDO, SNC…). Working a day off (DDO/WFLY) is marked on the duty itself.')}
           </Text>
         </>
       ) : null}
@@ -331,6 +324,8 @@ const makeStyles = (C) => StyleSheet.create({
   stepDim: { color: C.line },
   stepN: { minWidth: 26, textAlign: 'center', fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, fontVariant: ['tabular-nums'] },
   autoHint: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: C.redText, marginTop: 3 },
+  addExtra: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 10 },
+  addExtraTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.brand },
   tag: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.5, color: '#fff', backgroundColor: C.brand, borderRadius: RADIUS.xs, paddingHorizontal: 5, paddingVertical: 2, overflow: 'hidden' },
   note: { fontSize: TYPE.micro, color: C.sub, marginTop: 2, marginLeft: 2 },
   empty: { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.lg, marginLeft: 2 },

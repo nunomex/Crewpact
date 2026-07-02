@@ -13,6 +13,7 @@ import { select } from '../data/haptics';
 import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
+import { roleEurFor } from '../data/perdiem';
 import { legZulu } from '../data/zulu';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -218,6 +219,16 @@ export default function DutyDetailScreen({ route, navigation }) {
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: C.greenText },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
           duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? C.greenText : null },
+          // Papel desempenhado (instr €/dia · uprank €/setor · CCLT/CTI €/dia) — € pela lei via roleEurFor.
+          (() => {
+            const role = duty.role || (duty.instructor ? 'instr' : null);
+            if (!role || !ae) return null;
+            const eur = roleEurFor(ae, catD, role, duty.sectors);
+            const def = (ae.ADDITIONAL_ROLES || []).find((r) => r.id === role);
+            const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
+            return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? C.greenText : null };
+          })(),
+          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: duty.dayOffWorked === 'ddo' ? 'DDO' : 'WFLY', color: C.warnText },
           duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source },
         ]} />
 

@@ -27,19 +27,15 @@ const THEMES = [
 // Aba FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) num só
 // destino. Junta as antigas abas Cálculos e FTL. Toda a matemática vive no motor `ftl/`.
 export default function FtlHubScreen({ navigation }) {
-  const { lang, ae, caps, aeStatus, crewCategory, crewContract, crewFleet, instructorRated, duties, rosterChanges, aeExtras, setAeExtras } = useContext(AppContext);
+  const { lang, ae, caps, aeStatus, crewCategory, crewContract, crewFleet, instructorRated, duties, aeEvents, removeAeEvent, openExtra } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
 
-  // Extras do mês (Passo 4) — no contexto, partilhado por Home/Perfil/Cálculos.
-  const ym = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
-  const extrasMonth = aeExtras[ym] || {};
-  const setExtrasMonth = (next) => setAeExtras((prev) => ({ ...prev, [ym]: next }));
-  // SNC sugerido pela deteção de alterações de escala (Fase 4): alteradas + conflitos.
-  const sncSuggest = rosterChanges?.counts ? ((rosterChanges.counts.changed || 0) + (rosterChanges.counts.conflict || 0)) : 0;
+  // Extras do mês = EVENTOS DATADOS (contexto, partilhado por Home/Perfil/Cálculos).
+  // O AeCalcs mostra a lista do mês; adicionar abre a folha global (mini-FAB partilhado).
 
   // Pesquisa (artigos FTL + valores AE) — entrada VISÍVEL aqui (a do speed-dial fica como atalho;
   // ninguém procura uma lupa atrás de um botão "+").
@@ -111,7 +107,7 @@ export default function FtlHubScreen({ navigation }) {
             right={<View style={s.headRight}>{searchBtn}<HeaderActions /></View>} />
           <Animated.View style={seg(0)}>
             <AeCalcs ae={ae} category={crewCategory} contract={crewContract || '12/12'} fleet={crewFleet} duties={duties || []}
-              lifestyle={!!caps.lifestyle} instructorRated={instructorRated} extras={extrasMonth} onChangeExtras={setExtrasMonth} sncSuggest={sncSuggest} />
+              lifestyle={!!caps.lifestyle} instructorRated={instructorRated} events={aeEvents} onRemoveEvent={removeAeEvent} onAddExtra={openExtra} />
           </Animated.View>
           <Animated.View style={seg(1)}>
             {consultSection}

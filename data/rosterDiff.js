@@ -116,3 +116,28 @@ export const diffRoster = ({ incoming = [], duties = {}, window = null } = {}) =
   };
   return { changed, conflict, added, removed, counts };
 };
+
+// Alterações de "ÚLTIMA HORA" — candidatas a SNC (o AE paga por alteração de escala de curto
+// prazo). Conta serviços ALTERADOS/CONFLITO/NOVOS cuja data cai em [hoje, hoje+horizonte];
+// cancelamentos ficam de fora (não há prestação clara no Anexo I). Devolve { total, byYm }
+// — por mês do SERVIÇO, porque o SNC pertence ao mês em que o serviço acontece. PURO;
+// quem chama PROPÕE ao utilizador (deteta→confirma — nunca soma sozinho ao salário).
+export const shortNoticeCandidates = (diff, todayISO, horizonDays = 7) => {
+  const out = { total: 0, byYm: {}, dates: [] };
+  if (!diff || !todayISO) return out;
+  const d = new Date(todayISO + 'T00:00:00');
+  if (isNaN(d.getTime())) return out;
+  d.setDate(d.getDate() + horizonDays);
+  const p = (n) => String(n).padStart(2, '0');
+  const maxISO = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  for (const it of [...(diff.changed || []), ...(diff.conflict || []), ...(diff.added || [])]) {
+    const date = it && it.date;
+    if (!date || date < todayISO || date > maxISO) continue;
+    out.total++;
+    out.dates.push(date);   // p/ registar o SNC como EVENTO DATADO (não só contagem)
+    const ym = String(date).slice(0, 7);
+    out.byYm[ym] = (out.byYm[ym] || 0) + 1;
+  }
+  out.dates.sort();
+  return out;
+};

@@ -22,6 +22,7 @@ import { changePassword, validatePassword, updateProfile, deleteAccount, reauthe
 import { Seg } from '../components/Stepper';
 import { AppContext, useTheme } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
+import { eventCounts } from '../data/aeEvents';
 import { dataExportJson } from '../data/dataExport';
 
 // Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
@@ -50,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -65,7 +66,7 @@ export default function SettingsScreen({ navigation }) {
   const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
   const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex, fleet: crewFleet }) : null;
   // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
-  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, (aeExtras && aeExtras[ym]) || {}, { index: aeIndex }) : null;
+  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym), { index: aeIndex }) : null;
   const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
   const aeExtrasShown = aeMonth ? +(aeMonth.extras + (aeXt ? aeXt.total : 0)).toFixed(2) : 0;
   const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
@@ -309,7 +310,7 @@ export default function SettingsScreen({ navigation }) {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
         profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, employment, aeCovered },
-        duties, dayLog, aeExtras,
+        duties, dayLog, aeExtras, aeEvents,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
       success();

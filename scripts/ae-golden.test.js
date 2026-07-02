@@ -318,6 +318,51 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('TAP mês: standby aeroporto sem prestação (total = base)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8287.50);
 }
 
+// ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY por condição ──
+{
+  const fl = { report_time: '06:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS', instructor: true };
+  const m = monthlyAe({ '2026-06-10': fl }, 'FO', '12/12', ae, { ym: '2026-06' });
+  eq('Papel: instructor legado → +€120 nos extras (Art. 42)', m.extras, 120);
+  eq('Papel: dia auto contado da escala', m.instructorDaysAuto, 1);
+  eq('Papel: per-diem do voo mantém-se', m.perDiem, 62.02);
+  eq('Papel: role=instr (novo campo) → igual', monthlyAe({ '2026-06-10': { ...fl, instructor: false, role: 'instr' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 120);
+  eq('Papel: sem marca → 0', monthlyAe({ '2026-06-10': { ...fl, instructor: false } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
+  // TAP: o AE não tem o item instrutor → nada derivado (não se inventa prestação).
+  eq('Papel TAP: sem item no AE → 0 dias auto', monthlyAe({ '2026-06-10': fl }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).instructorDaysAuto, 0);
+  // CABINE: uprank paga POR SETOR (Cl. 34 — €16,27×setores do serviço), CCLT €25/dia (Cl. 35).
+  const flC = { report_time: '06:00', block_on: '13:00', kind: 'flight', sectors: 2, role: 'upranker' };
+  eq('Papel cabine: uprank 2 setores = 32.54', monthlyAe({ '2026-06-10': flC }, 'FA', '12/12', cabin, { ym: '2026-06' }).extras, 32.54);
+  eq('Papel cabine: CCLT dia = 25', monthlyAe({ '2026-06-11': { ...flC, sectors: 0, kind: 'training', role: 'cclt' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 25);
+  // DDO/WFLY por CONDIÇÃO do serviço (folga publicada trabalhada) — 1×/dia, € do monthExtras.
+  const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'office', dayOffWorked: 'ddo' };
+  const mD = monthlyAe({ '2026-06-12': ddoDay }, 'FO', '12/12', ae, { ym: '2026-06' });
+  eq('DDO por condição: +0,4% anual (FO 191.00)', mD.extras, 191.00);
+  eq('DDO por condição: contado', mD.ddoDaysAuto, 1);
+  eq('WFLY por condição: +1% anual (FO 477.50)', monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'wfly' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 477.50);
+}
+
+// ── Extras como EVENTOS DATADOS (data/aeEvents.js): contagem por mês + doença por episódio ──
+{
+  const { eventCounts, countersToEvents } = require(path.resolve('data/aeEvents.js'));
+  const ev = (date, type) => ({ id: `${date}_${type}`, date, type });
+  // Contagem simples por mês + evento só-mês (migrado) conta nesse mês.
+  const evs = [ev('2026-06-05', 'snc'), ev('2026-06-20', 'ido'), ev('2026-07-01', 'snc'), ev('2026-06', 'vacDays')];
+  eq('Eventos: contagem do mês', JSON.stringify(eventCounts(evs, '2026-06')), JSON.stringify({ snc: 1, ido: 1, vacDays: 1 }));
+  eq('Eventos: mês seguinte separado', JSON.stringify(eventCounts(evs, '2026-07')), JSON.stringify({ snc: 1 }));
+  // DOENÇA por EPISÓDIO (Art. 48: pagam-se os dias 1-3 de CADA episódio; 4.º+ não).
+  const sick = ['2026-06-10', '2026-06-11', '2026-06-12', '2026-06-13', '2026-06-20'].map((d) => ev(d, 'sickDays'));
+  eq('Doença: episódio de 4 dias paga 3 + episódio de 1 paga 1', eventCounts(sick, '2026-06').sickDays, 4);
+  // Episódio a CAVALO de 2 meses: 30/06+01/07+02/07+03/07 → paga 30/06 (jun) e 01-02/07 (jul).
+  const sickX = ['2026-06-30', '2026-07-01', '2026-07-02', '2026-07-03'].map((d) => ev(d, 'sickDays'));
+  eq('Doença: episódio cruza o mês (jun=1)', eventCounts(sickX, '2026-06').sickDays, 1);
+  eq('Doença: episódio cruza o mês (jul=2)', eventCounts(sickX, '2026-07').sickDays, 2);
+  // Migração dos contadores antigos → eventos só-mês (determinística).
+  const mig = countersToEvents({ '2026-05': { snc: 2, ddo: 1 } });
+  eq('Migração: 3 eventos', mig.length, 3);
+  eq('Migração: mês preservado', mig.every((e) => e.date === '2026-05'), true);
+  eq('Migração: contagem bate', eventCounts(mig, '2026-05').snc, 2);
+}
+
 // ── Caminho único do total AE (aeMonthTotal) — abono UMA vez + extras ──
 {
   // Cabine sem duties: total = base + abono (1657 + 96.66) — NÃO 1850.32 (abono uma vez).

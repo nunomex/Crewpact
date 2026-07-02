@@ -21,14 +21,17 @@ const cleanDuties = (duties = {}) => {
       nightStop: !!d.nightStop,
       signOff: d.signOff || null,                  // fim de serviço real (sign-off)
       legs: Array.isArray(d.legs) ? d.legs : null, // off/on + nº de voo por setor
-      special: d.special || null,                  // casos especiais FTL (205c/205g/225)
+      special: d.special || null,                  // casos especiais FTL (205c/205g/225 + discrição 205f)
+      role: d.role || (d.instructor ? 'instr' : null),   // papel desempenhado (instr/uprank/CCLT/CTI)
+      dayOffWorked: d.dayOffWorked || null,        // folga publicada trabalhada (ddo/wfly)
+      accommodation: !!d.accommodation,            // alojamento (split 220 d/e · standby 225(e))
       source: d.source || 'manual',
     };
   }
   return out;
 };
 
-export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLog = {}, aeExtras = {}, generatedAt = null } = {}) => {
+export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLog = {}, aeExtras = {}, aeEvents = [], generatedAt = null } = {}) => {
   const d = cleanDuties(duties);
   return {
     app: 'CrewPact',
@@ -52,7 +55,8 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
     },
     duties: d,
     ftlDayLog: dayLog || {},
-    aeExtras: aeExtras || {},
+    aeExtras: aeExtras || {},          // legado (contadores migrados — normalmente vazio)
+    aeExtraEvents: Array.isArray(aeEvents) ? aeEvents : [],   // extras como EVENTOS DATADOS
     counts: {
       duties: Object.keys(d).length,
       ftlDays: Object.keys(dayLog || {}).length,

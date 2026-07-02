@@ -5,6 +5,7 @@
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
 import { computeDutyTime, computeFlightTime, computeRest } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
+import { eventCounts } from './aeEvents';
 
 const hasFtlData = (dayLog) =>
   Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0));
@@ -90,13 +91,14 @@ export function rosterStatus(rosterChanges) {
 }
 
 // "Quanto recebo?" — total estimado do mês + a decomposição (só companhias AE).
-export function payStatus({ duties = {}, ae, crewCategory, crewContract, crewFleet, aeExtras, now = new Date() } = {}) {
+// `aeEvents` = extras como EVENTOS DATADOS → contados p/ o mês (doença por episódio).
+export function payStatus({ duties = {}, ae, crewCategory, crewContract, crewFleet, aeEvents, now = new Date() } = {}) {
   if (!ae || !crewCategory) return null;
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const index = ae.indexFactor ? ae.indexFactor(now.getFullYear()) : 1;
   const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet });
   const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
-  const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: (aeExtras && aeExtras[ym]) || {}, fleet: crewFleet }) || base;
+  const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym), fleet: crewFleet }) || base;
   return {
     id: 'pay', status: 'neutral', base, total, variable: +(total - base).toFixed(2),
     perDiem: m ? m.perDiem : 0, nightStops: m ? m.nightStops : 0, extras: m ? m.extras : 0,

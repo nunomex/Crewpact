@@ -42,7 +42,7 @@ const legsForSectors = (route, sectors, prev = []) => {
   });
 };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '' };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null };
 // Aeronave do 1.º leg (auto-fill por deteção). Vive em `legs[0].aircraft`.
 const legAircraft = (d) => (d && Array.isArray(d.legs) && d.legs[0] && d.legs[0].aircraft) || '';
 // Legs com horas por setor para o form. Migração de duties ANTIGAS (só block_off/on, sem off/on
@@ -99,7 +99,7 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot, instructorRated } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
@@ -137,13 +137,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: d.signOff || '' }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: d.signOff || '', role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '' });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '', role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
-  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '' });
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '', role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null });
   // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
   // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
@@ -432,6 +432,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       // Alojamento: voo = pausa do split (220 d/e) · standby aeroporto = ORO.FTL.225(e)
       // (sem ele o standby conta como PSV desde o report — 225(d)).
       accommodation: (isFlight || form.kind === 'standby_airport') ? accOn : false,
+      // PAPEL desempenhado (pago como a lei define: instr €/dia Art. 42 · uprank €/setor
+      // Cl. 34 · CCLT/CTI €/dia Cl. 35) — voo e formação. Substitui o antigo `instructor`.
+      role: (isFlight || form.kind === 'training') ? (form.role || null) : null,
+      // Este dia era FOLGA PUBLICADA e trabalhei: DDO (escalado) ou WFLY (voluntário).
+      dayOffWorked: form.kind === 'reserve' ? null : (form.dayOffWorked || null),
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -700,6 +705,44 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               </View>
             </Animated.View>
           ) : null}
+
+          {/* ── FOLGA PUBLICADA trabalhada — condição de PAGAMENTO (DDO escalado · WFLY
+              voluntário). Só quando o AE tem os itens; conta 1×/dia no salário do mês. ── */}
+          {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <Text style={s.lbl}>{l('Este dia era folga publicada?', 'Was this a published day off?')}</Text>
+              <SegRow s={s} value={form.dayOffWorked || 'no'} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : v })); }}
+                options={[
+                  { id: 'no', label: l('Não', 'No') },
+                  { id: 'ddo', label: 'DDO' },
+                  { id: 'wfly', label: l('WFLY (voluntário)', 'WFLY (volunteer)') },
+                ]} />
+              {form.dayOffWorked ? (
+                <Text style={s.routeHint}>{form.dayOffWorked === 'ddo'
+                  ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
+                  : l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')}</Text>
+              ) : null}
+            </Animated.View>
+          ) : null}
+
+          {/* ── PAPEL desempenhado (Funções do AE) — pago como a lei define: instrutor €/dia
+              (Art. 42), uprank €/SETOR (Cl. 34), CCLT/CTI €/dia (Cl. 35). Voo e formação;
+              opções do próprio módulo do AE (crew-aware); nada quando o AE não tem papéis. ── */}
+          {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {
+            const roles = ae.additionalRolesFor(crewCategory, { instructorRated }) || [];
+            if (!roles.length) return null;
+            return (
+              <Animated.View style={[s.sec, secStyle(5)]}>
+                <Text style={s.lbl}>{l('Papel neste serviço', 'Role on this duty')}</Text>
+                <SegRow s={s} value={form.role || 'none'} onChange={(v) => { select(); setForm((f) => ({ ...f, role: v === 'none' ? null : v })); }}
+                  options={[{ id: 'none', label: l('Nenhum', 'None') }, ...roles.map((r) => ({ id: r.id, label: (r.label && (r.label[lang] || r.label.pt)) || r.id }))]} />
+                {form.role ? (() => {
+                  const r = roles.find((x) => x.id === form.role);
+                  return r ? <Text style={s.routeHint}>{r.sub || ''}{r.unit ? ` · ${r.unit[lang] || r.unit.pt}` : ''}</Text> : null;
+                })() : null}
+              </Animated.View>
+            );
+          })() : null}
 
           {/* ── Casos especiais (FTL) — mexem no TETO do PSV (205c/205g/225). Crew-aware:
               o nº de pilotos só aparece a piloto. Tudo via o motor já testado (golden). ── */}

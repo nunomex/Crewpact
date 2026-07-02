@@ -54,7 +54,7 @@ export const upsertDuty = async (userId, d = {}) => {
       // origem + snapshot da escala (Fase 4) + legs c/ nº de voo (p/ "ao vivo") + sign-off (fim de serviço)
       // + casos especiais FTL (205c/205g/225, Fase 1) + `extra`: 2.º+ período de serviço NO MESMO
       // dia civil (a lei conta PERÍODOS de serviço, não dias — ORO.FTL.210) — JSON num só campo.
-      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null, legs: d.legs || null, signOff: d.signOff || null, special: d.special || null, accommodation: d.accommodation || false, extra: (d.extra && d.extra.length) ? d.extra : null }),
+      roster_meta: JSON.stringify({ source: d.source || 'manual', snap: d.snap || null, legs: d.legs || null, signOff: d.signOff || null, special: d.special || null, accommodation: d.accommodation || false, role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, extra: (d.extra && d.extra.length) ? d.extra : null }),
     };
     const up = (p) => supabase.from('duties').upsert(p, { onConflict: 'user_id,duty_date' });
     let { error } = await up(payload);
