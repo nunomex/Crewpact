@@ -13,6 +13,10 @@
 //       (% atrasados ≥15 min, atraso médio dos atrasados, % cancelados — partidas e
 //       chegadas), agregada do /schedules e CACHEADA 12 min na tabela `airport_stats`
 //       (correr supabase/airport-stats.sql antes; sem a tabela degrada — recalcula sempre).
+//   • Meteo (MET Norway, CC-BY): { wx: 'FNC', lat: 32.6979, lon: -16.7745 } → série
+//       horária TRIMADA (48 h: temp/vento/símbolo/precipitação), CACHEADA 45 min na
+//       tabela `wx_cache` (correr supabase/wx-cache.sql). A app manda as coords
+//       (airports.js tem 5400+); o digest/labels são do cliente (puro, golden).
 //
 // DEPLOY (Dashboard): Edge Functions → Deploy → nome `flight-status` → cola → Deploy.
 //   Segredo: Edge Functions → Secrets → AIRLABS_KEY = <a tua key>.
@@ -25,6 +29,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
 const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
 const STATS_TTL_MIN = 12;
+const METNO = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+const METNO_UA = 'CrewPact/1.0 (crewpact.app; funsnake@gmail.com)';   // TOS do met.no: identificação obrigatória
+const WX_TTL_MIN = 45;   // o modelo atualiza ~1×/h; o TOS pede para não pedir mais
 
 const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
@@ -114,6 +121,42 @@ async function airportStats(key: string, iata: string): Promise<Record<string, a
   return stats;
 }
 
+// Meteo por estação (MET Norway) — série horária TRIMADA a 48 h, cache 45 min em
+// `wx_cache`. Coords vêm da app (arredondadas a 4 casas — pedido do TOS p/ caching).
+// deno-lint-ignore no-explicit-any
+async function stationWx(iata: string, lat: number, lon: number): Promise<Record<string, any> | null> {
+  const code = String(iata || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const la = Math.round(Number(lat) * 1e4) / 1e4, lo = Math.round(Number(lon) * 1e4) / 1e4;
+  if (code.length !== 3 || !isFinite(la) || !isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) return null;
+  try {
+    const { data: c } = await admin().from('wx_cache').select('wx, computed_at').eq('iata', code).maybeSingle();
+    if (c && Date.now() - new Date(c.computed_at).getTime() < WX_TTL_MIN * 60e3) return c.wx;
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  try {
+    const r = await fetch(`${METNO}?lat=${la}&lon=${lo}`, { headers: { 'User-Agent': METNO_UA } });
+    const j = await r.json();
+    // deno-lint-ignore no-explicit-any
+    const ts: any[] = j?.properties?.timeseries || [];
+    if (!ts.length) return null;
+    const horizon = Date.now() + 48 * 3600e3;
+    const series = ts.filter((e) => new Date(e.time).getTime() <= horizon).map((e) => {
+      const inst = e?.data?.instant?.details || {};
+      const n1 = e?.data?.next_1_hours, n6 = e?.data?.next_6_hours, n12 = e?.data?.next_12_hours;
+      const nx = n1 || n6 || n12 || {};
+      return {
+        t: e.time,
+        c: inst.air_temperature ?? null,          // °C
+        w: inst.wind_speed ?? null,               // m/s
+        s: nx?.summary?.symbol_code || null,      // ex. clearsky_day
+        p: (n1 || n6)?.details?.precipitation_amount ?? null,   // mm
+      };
+    });
+    const wx = { iata: code, updatedAt: j?.properties?.meta?.updated_at || null, series };
+    try { await admin().from('wx_cache').upsert({ iata: code, computed_at: new Date().toISOString(), wx }); } catch { /* sem cache */ }
+    return wx;
+  } catch { return null; }
+}
+
 // Procura UM voo no AirLabs por id (iata/icao). Devolve a forma slim ou null.
 async function lookup(key: string, id: string): Promise<ReturnType<typeof slim> | null> {
   const clean = id.toUpperCase().replace(/\s+/g, '');
@@ -145,6 +188,12 @@ Deno.serve(async (req: Request) => {
     if (!ids.length) return json({ ok: false, error: 'no_flight' }, 400);
     const results = await Promise.all(ids.map((id: string) => lookup(key, id)));
     return json({ ok: true, results });
+  }
+
+  // ── Modo METEO (MET Norway): { wx, lat, lon } → série 48 h (não usa a AIRLABS_KEY) ──
+  if (body.wx) {
+    const s = await stationWx(String(body.wx), Number(body.lat), Number(body.lon));
+    return json(s ? { ok: true, found: true, wx: s } : { ok: true, found: false });
   }
 
   // ── Modo AEROPORTO (Airport Intelligence): { airport: 'LIS' } → fotografia de hoje ──

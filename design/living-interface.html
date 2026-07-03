@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Living Interface — o Início que vive o teu dia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --amber:#ffb22e; --green:#39e08a; --red:#ff5a44; --lab:#8a6a2a; --sub:#b98f3e;
+    --canvas:#F4F6F9; --card:#fff; --ink:#14263A; --brand:#1F4E79; --appred:#F5402C;
+    --line:#E4E8EE; --gray:#5D6B7E; --warnS:#FFF4E2; --warnT:#8a5b00; --redS:#FDE9E6; --redT:#a33325; --softS:#EEF2F7;
+    --ui:'Hanken Grotesk',system-ui,sans-serif; --dot:'Doto',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;font-family:var(--ui);color:#e9e9ea;background:#0b0e13;display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 16px 70px}
+  .lead{max-width:600px;text-align:center}
+  .lead h1{font-weight:800;font-size:19px;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--amber);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#98a2b3;line-height:1.55}.lead b{color:#fff}
+
+  /* controlo de estados */
+  .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;max-width:640px}
+  .st{cursor:pointer;border:1px solid #262b33;background:#12161d;color:#98a2b3;font-family:var(--ui);font-weight:700;font-size:11.5px;padding:7px 11px;border-radius:999px;transition:.2s}
+  .st.on{background:var(--amber);border-color:var(--amber);color:#000}
+  .btns{display:flex;gap:8px}
+  .b{cursor:pointer;border:1px solid #262b33;background:#12161d;color:#e9e9ea;font-family:var(--ui);font-weight:700;font-size:12.5px;padding:8px 13px;border-radius:11px}
+
+  /* telefone */
+  .phone{width:394px;max-width:96vw;background:var(--canvas);border-radius:44px;border:10px solid #05070a;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);overflow:hidden;color:var(--ink)}
+  .status{display:flex;justify-content:space-between;padding:12px 26px 4px;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .screen{padding:8px 16px 0;min-height:660px;display:flex;flex-direction:column}
+
+  .eyebrow{font-size:10px;font-weight:800;letter-spacing:1.3px;color:var(--gray);text-transform:uppercase;transition:.3s}
+  .hello{font-size:24px;font-weight:800;letter-spacing:-.4px;margin-top:2px}
+
+  /* zona de AVISOS (estrutura fixa — os cards nascem/morrem AQUI, nada muda de sítio) */
+  .alerts{margin-top:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .al{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:11px 13px;border:1px solid transparent;animation:pop .4s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .al .ic{font-size:15px;line-height:1.2}
+  .al .tt{font-size:12.5px;font-weight:800}
+  .al .ss{font-size:11.5px;font-weight:600;line-height:1.45;margin-top:1px;color:var(--gray)}
+  .al.warn{background:var(--warnS);border-color:#f2d9b0}.al.warn .tt{color:var(--warnT)}
+  .al.red{background:var(--redS);border-color:#f0c3ba}.al.red .tt{color:var(--redT)}
+  .al.soft{background:var(--softS);border-color:var(--line)}.al.soft .tt{color:var(--ink)}
+
+  /* O PAINEL LED (card de destaque — o palco; só o CONTEÚDO muda) */
+  .board{margin-top:10px;position:relative;background:#040301;border:1px solid #1d1707;border-radius:16px;overflow:hidden;box-shadow:0 22px 50px -22px rgba(0,0,0,.65), inset 0 0 60px rgba(0,0,0,.7)}
+  .board::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+  .board::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 30%, transparent 55%, rgba(0,0,0,.55) 100%)}
+  .bh{display:flex;align-items:center;gap:9px;padding:10px 15px;border-bottom:1px solid #1d1707;position:relative;z-index:2}
+  .bh .lg{font-family:var(--dot);font-weight:900;font-size:13px;color:var(--amber);letter-spacing:1px;text-shadow:0 0 8px rgba(255,178,46,.55)}
+  .bh .sp{font-size:9px;font-weight:800;letter-spacing:1.8px;color:var(--lab);text-transform:uppercase;transition:.3s}
+  .bh .lv{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:1px;color:var(--green)}
+  .bh .lv i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:bl 1.4s steps(1) infinite}
+  @keyframes bl{50%{opacity:.25}}
+  .bb{padding:12px 15px 11px;position:relative;z-index:2}
+  .brow{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .blab{flex:0 0 46px;font-size:9.5px;font-weight:800;letter-spacing:1.3px;color:var(--lab);text-transform:uppercase}
+  .val{font-family:var(--dot);font-weight:700;color:var(--amber);text-shadow:0 0 8px rgba(255,178,46,.5);white-space:nowrap;letter-spacing:1px;font-size:16px}
+  .val .ch{display:inline-block}
+  .val.big{font-size:27px;font-weight:900;letter-spacing:2px}.val.big .ar{color:#ffd98a}
+  .val.dim{font-size:13.5px;color:#ffd98a;text-shadow:0 0 7px rgba(255,200,120,.45)}
+  .estrow{display:flex;align-items:center;gap:10px;margin-top:11px;padding-top:10px;border-top:1px dashed #2a2206}
+  .est{font-family:var(--dot);font-weight:900;font-size:13.5px;color:var(--green);text-shadow:0 0 9px rgba(57,224,138,.5);letter-spacing:1px}
+  .estx{margin-left:auto;font-family:var(--dot);font-size:12px;color:var(--sub)}
+  .board.warn .est{color:var(--amber);text-shadow:0 0 9px rgba(255,178,46,.6)}
+  .board.bad .est{color:var(--red);text-shadow:0 0 9px rgba(255,90,68,.6)}
+  .obs{margin-top:8px;font-size:10.5px;color:var(--sub);font-weight:600}
+
+  /* perguntas (chips) — zona fixa; o CONJUNTO adapta-se */
+  .chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:12px;font-weight:700;color:var(--ink);animation:pop .4s ease}
+  .chip.hot{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* dock */
+  .dock{margin-top:auto;background:var(--ink);border-radius:22px 22px 0 0;display:flex;justify-content:space-around;padding:10px 8px 16px}
+  .di{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#8fa1b8}
+  .di.on{color:#fff}
+  .di .ico{font-size:16px}
+
+  /* ficha do design system */
+  .ficha{width:600px;max-width:96vw;background:#12161d;border:1px solid #262b33;border-radius:16px;padding:16px 18px}
+  .ficha h3{font-size:13px;font-weight:800;color:var(--amber);letter-spacing:.4px}
+  .ficha .g{display:grid;grid-template-columns:110px 1fr;gap:7px 12px;margin-top:10px;font-size:12px;line-height:1.5}
+  .ficha .k{font-weight:800;letter-spacing:1px;font-size:10px;color:#98a2b3;text-transform:uppercase;padding-top:2px}
+  .ficha .v{color:#e9e9ea;font-weight:500}
+  .ficha .v b{color:#fff}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Living Interface — o Início que vive o teu dia</h1>
+    <div class="t">motor de estados · determinístico · sem AI</div>
+    <p>A <b>estrutura nunca muda</b> (cabeçalho → avisos → painel → perguntas → dock); o <b>conteúdo</b> de cada zona
+    adapta-se ao estado operacional — derivado da escala + relógio + feeds que a app já tem. O painel é o
+    <b>LED dot-matrix</b> que escolheste. Auto-avança; toca num estado para saltar.</p>
+  </div>
+
+  <div class="nav" id="nav"></div>
+  <div class="btns">
+    <button class="b" id="prev">‹ anterior</button>
+    <button class="b" id="pause">⏸ pausa</button>
+    <button class="b" id="next">seguinte ›</button>
+  </div>
+
+  <div class="phone">
+    <div class="status"><span>14:43</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="screen">
+      <div class="eyebrow" id="eyebrow">OPERAÇÃO · EASYJET · AE</div>
+      <div class="hello">Olá, Nuno</div>
+      <div class="alerts" id="alerts"></div>
+      <div class="board" id="board">
+        <div class="bh"><span class="lg">CREWPACT</span><span class="sp" id="bsp">HOJE</span><span class="lv"><i></i>LIVE</span></div>
+        <div class="bb" id="bb"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="dock">
+        <div class="di on"><span class="ico">▦</span>Início</div>
+        <div class="di"><span class="ico">◫</span>Estatísticas</div>
+        <div class="di"><span class="ico">▤</span>Escala</div>
+        <div class="di"><span class="ico">◔</span>FTL/AE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ficha" id="ficha"></div>
+
+<script>
+(function(){
+  const POOL='ABCDEFGHJKLMNPRSTUVXZ0123456789';
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SKIP=new Set([' ','→',':','/','-','·','#','%','✓','🌙','+','(',')',',']);
+
+  // ── OS ESTADOS (a espinha do Living Interface Design System) ──
+  const STATES=[
+    { id:'folga', name:'Folga', eyebrow:'OPERAÇÃO · FOLGA', sp:'PRÓXIMO SERVIÇO', tone:'',
+      rows:[ ['DATA','QUI 26','val'], ['VOO','LIS→FNC','val big'], ['REPORT','05:30 EM 2 DIAS','val'], ['ZULU','0430Z','val dim'] ],
+      est:'DESCANSA — TUDO OK', estx:'REPOUSO 62H',
+      obs:'Férias: ficam 9 de 22 · sem pendências',
+      alerts:[], chips:[['Escala',''],['Quanto recebo?','']],
+      ficha:{ gatilho:'Sem serviço hoje e o próximo report a mais de 24 h.',
+        aparece:'Próximo serviço em modo calmo, saldo de férias, total do mês.',
+        desaparece:'Countdowns, PSV, avisos operacionais — <b>a app não grita em dia de folga</b>.',
+        anim:'Painel assenta uma vez ao abrir; sem refresh agressivo.',
+        objetivo:'Silêncio merecido. Confiança de que nada está pendente.' } },
+
+    { id:'vespera', name:'Véspera', eyebrow:'OPERAÇÃO · VÉSPERA', sp:'AMANHÃ', tone:'',
+      rows:[ ['DATA','QUI 26','val'], ['VOO','LIS→FNC S2','val big'], ['REPORT','05:30 EM 8H 25M','val'], ['ZULU','0430Z','val dim'] ],
+      est:'REPOUSO MÍNIMO CUMPRIDO', estx:'PSV MÁX 13:00',
+      obs:'acordar ~04:15 · 2 setores · pequeno-almoço no report',
+      alerts:[ ['soft','🌙','Report cedo amanhã','O repouso conta a partir de agora — a véspera é parte do serviço.'] ],
+      chips:[['Estou legal?','hot'],['Quanto descanso?','']],
+      ficha:{ gatilho:'Report nas próximas 6–14 h (noite anterior a serviço).',
+        aparece:'Countdown ao report, confirmação do repouso mínimo, hora de acordar sugerida.',
+        desaparece:'Per-diem/estatísticas do mês — irrelevantes esta noite.',
+        anim:'Só o countdown vive (1×/min); resto estático.',
+        objetivo:'Deitar-se descansado: "está tudo verificado, dorme".' } },
+
+    { id:'prereport', name:'Pré-report', eyebrow:'OPERAÇÃO · DIA DE SERVIÇO', sp:'HOJE', tone:'',
+      rows:[ ['DATA','QUI 26','val'], ['VOO','LIS→FNC S2','val big'], ['REPORT','05:30 EM 1H 05M','val'], ['ZULU','0430Z','val dim'] ],
+      est:'AVIÃO OK · AEROPORTO OK', estx:'PSV MÁX 13:00',
+      obs:'porta 24 · G-UZHB já em LIS ✓ · a horas',
+      alerts:[], chips:[['Estou legal?','hot'],['Simulação','']],
+      ficha:{ gatilho:'Hoje há voo e faltam menos de 4 h para o report.',
+        aparece:'Countdown vivo, inbound do avião (✓/⚠), estado do aeroporto, PSV máximo.',
+        desaparece:'Próximas duties (o foco é HOJE), cards do mês.',
+        anim:'Scramble no countdown a cada minuto; verificações assentam com ✓.',
+        objetivo:'Sair de casa com a certeza de que nada te vai surpreender.' } },
+
+    { id:'disrupcao', name:'Disrupção', eyebrow:'OPERAÇÃO · DIA DE SERVIÇO', sp:'HOJE · ATENÇÃO', tone:'warn',
+      rows:[ ['DATA','QUI 26','val'], ['VOO','LIS→FNC S2','val big'], ['REPORT','05:30 EM 1H 05M','val'], ['ZULU','0430Z','val dim'] ],
+      est:'PARTIDA PODE DERRAPAR +25M', estx:'PSV PROJ 12:40/13:00',
+      obs:'projeção pela rotação — o teu voo ainda não está marcado atrasado',
+      alerts:[ ['warn','✈','O teu avião ainda vem a caminho','EJU7624 CDG→LIS chega ~05:10Z · rotação mín. 35 min — partida pode derrapar ~25 min.'],
+               ['warn','⚡','LIS com atrasos generalizados','54% das partidas atrasadas · média 39 min. Conta com o report/embarque a esticar.'] ],
+      chips:[['Estou legal?','hot'],['Simulação','']],
+      ficha:{ gatilho:'Inbound atrasado, aeroporto "doente", ou atraso no próprio voo.',
+        aparece:'Cards âmbar/vermelhos com a CAUSA, PSV recalculado em projeção, margem de discrição.',
+        desaparece:'O "✓ a horas" — <b>a app nunca afirma o que a rotação já desmente</b>.',
+        anim:'Painel muda para âmbar com scramble; cards de aviso nascem no topo.',
+        objetivo:'"We really have to shine when things go awry" — minutos de avanço sobre o ops.' } },
+
+    { id:'voo', name:'Em voo', eyebrow:'OPERAÇÃO · EM VOO', sp:'AO VIVO', tone:'',
+      rows:[ ['VOO','FNC→LIS','val big'], ['PROG','#####----- 47%','val'], ['CHEGA','~15:39 EM 55M','val'], ['ZULU','1439Z','val dim'] ],
+      est:'NO AR · A HORAS', estx:'PSV 09:12/13:00',
+      obs:'família a acompanhar: 2 links abertos →',
+      alerts:[], chips:[['Partilhar chegada','hot']],
+      ficha:{ gatilho:'Entre off-block e on-block do setor (janela ao vivo).',
+        aparece:'Progresso do voo, ETA com countdown, PSV real a acumular, atalho da família.',
+        desaparece:'Report/countdowns de terra; perguntas de pagamento.',
+        anim:'A barra de progresso LED avança; ETA re-assenta quando a estimativa muda.',
+        objetivo:'Espelho calmo do voo — e a família vê o mesmo, sem te perguntar nada.' } },
+
+    { id:'posvoo', name:'Pós-voo', eyebrow:'OPERAÇÃO · SERVIÇO FECHADO', sp:'HOJE ✓', tone:'',
+      rows:[ ['DUTY','10:42 · 4 SETORES','val'], ['BLOCK','07:56','val'], ['REPOUSO','ATÉ 22:30','val big'], ['AMANHÃ','REPORT 06:15','val dim'] ],
+      est:'LEGAL · DENTRO DOS LIMITES', estx:'MARGEM 2:18',
+      obs:'per-diem hoje +41,08 € · 866 h no ano',
+      alerts:[ ['soft','↻','Sign-off real?','Foi usado o débrief do perfil (+30 min). Se saíste a outra hora, regista — o repouso muda.'] ],
+      chips:[['Quanto descanso?','hot'],['Quanto recebo?','']],
+      ficha:{ gatilho:'Último on-block do dia registado/detetado.',
+        aparece:'Totais do serviço, veredicto legal, repouso mínimo e quando ficas legal amanhã.',
+        desaparece:'Countdowns e avisos de disrupção — acabou; o dia fecha em modo balanço.',
+        anim:'Números finais assentam UMA vez (sem refresh — é história, não live).',
+        objetivo:'Fechar o dia com o veredicto e o amanhã já preparado.' } },
+
+    { id:'pernoita', name:'Pernoita', eyebrow:'OPERAÇÃO · PERNOITA FNC', sp:'FORA DA BASE', tone:'',
+      rows:[ ['NOITE','🌙 FNC','val big'], ['HOTEL','PESTANA CASINO','val'], ['AMANHÃ','REPORT 06:15','val'], ['ZULU','0515Z','val dim'] ],
+      est:'REPOUSO FORA-BASE 10H OK', estx:'235(b) ✓',
+      obs:'per-diem +38,00 € · pequeno-almoço 05:15 · pickup 05:40',
+      alerts:[ ['soft','🏨','Pestana Casino · FNC','Toca para abrir nos mapas · toque longo edita · ☎ disponível.'] ],
+      chips:[['Quanto descanso?','']],
+      ficha:{ gatilho:'Duty de hoje com nightStop e estação ≠ base.',
+        aparece:'Hotel (mapas/ligar), report de amanhã, repouso fora-base, per-diem da noite.',
+        desaparece:'Tudo o que é "em casa" (véspera normal, escala do mês).',
+        anim:'Estático — quarto de hotel é modo descanso.',
+        objetivo:'Tudo o que precisas numa cidade que não é a tua, a um toque.' } },
+
+    { id:'standby', name:'Standby', eyebrow:'OPERAÇÃO · STANDBY', sp:'HOJE · ADTY', tone:'',
+      rows:[ ['TIPO','ADTY AEROPORTO','val'], ['JANELA','06:00–14:00','val big'], ['SE CHAMADO','PSV ATÉ 20:00','val'], ['ZULU','0500Z','val dim'] ],
+      est:'PRONTO · À ESPERA', estx:'225(d) DESDE O REPORT',
+      obs:'ADTY pago 2 NS · sem alojamento → conta como PSV',
+      alerts:[], chips:[['Simulação','hot'],['Estou legal?','']],
+      ficha:{ gatilho:'Duty de hoje é standby (aeroporto/casa) e a janela está ativa.',
+        aparece:'Janela do standby, o "e se fores chamado agora": PSV máximo até que horas (225).',
+        desaparece:'Rotas/sectores (ainda não existem) — nada de fingir um voo.',
+        anim:'O "se chamado" recalcula a cada 15 min (a janela consome-se).',
+        objetivo:'Responder à única pergunta do standby: "até onde me podem levar hoje?".' } },
+  ];
+
+  // ── render ──
+  const $=(id)=>document.getElementById(id);
+  let cur=0, playing=true, timer=null;
+
+  function build(el){const txt=el.getAttribute('data-t')||'';el.innerHTML='';el.__c=[...txt].map(c=>{const s=document.createElement('span');s.className='ch'+(c==='→'?' ar':'');s.textContent=c;el.appendChild(s);return{s,target:c};});}
+  function scramble(el,stagger){const chars=el.__c||[];chars.forEach((o,i)=>{
+    if(SKIP.has(o.target)){o.s.textContent=o.target;return;}
+    if(reduce){o.s.textContent=o.target;return;}
+    let ticks=4+Math.floor(Math.random()*7);const begin=stagger*i+Math.random()*40;
+    setTimeout(function tick(){if(ticks<=0){o.s.textContent=o.target;return;}o.s.textContent=POOL[Math.floor(Math.random()*POOL.length)];ticks--;setTimeout(tick,55);},begin);});}
+
+  function render(i){
+    cur=(i+STATES.length)%STATES.length;
+    const st=STATES[cur];
+    document.querySelectorAll('.st').forEach((b,j)=>b.classList.toggle('on',j===cur));
+    $('eyebrow').textContent=st.eyebrow;
+    $('bsp').textContent=st.sp;
+    const bd=$('board'); bd.className='board'+(st.tone?' '+st.tone:'');
+    // corpo do painel
+    const bb=$('bb'); bb.innerHTML='';
+    st.rows.forEach(([lab,txt,cls])=>{
+      const r=document.createElement('div');r.className='brow';
+      r.innerHTML='<span class="blab">'+lab+'</span>';
+      const v=document.createElement('span');v.className=cls;v.setAttribute('data-t',txt);r.appendChild(v);bb.appendChild(r);
+    });
+    const er=document.createElement('div');er.className='estrow';
+    const e1=document.createElement('span');e1.className='est';e1.setAttribute('data-t',st.est);
+    const e2=document.createElement('span');e2.className='estx';e2.setAttribute('data-t',st.estx);
+    er.appendChild(e1);er.appendChild(e2);bb.appendChild(er);
+    const ob=document.createElement('div');ob.className='obs';ob.textContent=st.obs;bb.appendChild(ob);
+    // scramble em cascata (só os campos-chave — regra fechada)
+    const els=[...bb.querySelectorAll('.val,.est,.estx')];els.forEach(build);
+    els.forEach((el,j)=>setTimeout(()=>scramble(el,40),j*130));
+    // avisos
+    const al=$('alerts');al.innerHTML='';
+    st.alerts.forEach(([tone,ic,tt,ss])=>{const d=document.createElement('div');d.className='al '+tone;
+      d.innerHTML='<span class="ic">'+ic+'</span><div><div class="tt">'+tt+'</div><div class="ss">'+ss+'</div></div>';al.appendChild(d);});
+    // chips
+    const ch=$('chips');ch.innerHTML='';
+    st.chips.forEach(([t,hot])=>{const c=document.createElement('div');c.className='chip'+(hot?' hot':'');c.textContent=t;ch.appendChild(c);});
+    // ficha
+    $('ficha').innerHTML='<h3>'+(cur+1)+'/8 · Estado: '+st.name+'</h3><div class="g">'
+      +'<div class="k">Gatilho</div><div class="v">'+st.ficha.gatilho+'</div>'
+      +'<div class="k">Aparece</div><div class="v">'+st.ficha.aparece+'</div>'
+      +'<div class="k">Desaparece</div><div class="v">'+st.ficha.desaparece+'</div>'
+      +'<div class="k">Animação</div><div class="v">'+st.ficha.anim+'</div>'
+      +'<div class="k">Objetivo</div><div class="v">'+st.ficha.objetivo+'</div></div>';
+  }
+
+  // nav
+  const nav=$('nav');
+  STATES.forEach((st,i)=>{const b=document.createElement('button');b.className='st';b.textContent=(i+1)+' · '+st.name;
+    b.addEventListener('click',()=>{render(i);hold();});nav.appendChild(b);});
+  function step(d){render(cur+d);}
+  function loop(){timer=setInterval(()=>{if(playing)step(1);},7000);}
+  function hold(){playing=false;$('pause').textContent='▶ retomar';}
+  $('prev').addEventListener('click',()=>{step(-1);hold();});
+  $('next').addEventListener('click',()=>{step(1);hold();});
+  $('pause').addEventListener('click',()=>{playing=!playing;$('pause').textContent=playing?'⏸ pausa':'▶ retomar';});
+  render(0);loop();
+})();
+</script>
+</body>
+</html>

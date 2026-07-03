@@ -82,13 +82,16 @@
   e mais 1 chamada AirLabs por minuto por página aberta (posição — quota). O countdown
   "aterra em ~N min" + barra de progresso (FEITOS 2026-07-03) dão ~80% do valor por ~0%
   do custo — o mapa só se a partilha ganhar tração.
-- **Meteo (METAR/TAF) e ground stops** — analisado 2026-07-03, decidido NÃO fazer agora:
-  meteo é GRÁTIS (NOAA Aviation Weather Center, API pública mundial) mas duplica o
-  briefing oficial que a crew já recebe (e crew lê METAR cru); ground stops são grátis
-  SÓ nos EUA (FAA NAS Status — irrelevante p/ rede europeia) e o equivalente europeu
-  (regulações ATFM do EUROCONTROL) não é de acesso livre p/ apps. O Airport
-  Intelligence já mostra o SINTOMA das regulações (% atrasos) — falta só o nome da
-  causa, que o ops dá. Reavaliar se houver operadores US ou pedido real de utilizadores.
+- **Meteo — DECISÃO REVERTIDA no próprio dia (user: "vai buscar da europa uma API de
+  borla, tu escolhes")**: escolhida a **MET Norway** (api.met.no locationforecast 2.0 —
+  europeia, grátis INCL. comercial sob CC-BY 4.0, sem key; obrigações: atribuição
+  visível na UI + User-Agent identificado, ambos tratados). **Canalização FEITA**:
+  Edge flight-status modo `{wx, lat, lon}` (coords do airports.js; série trimada 48 h;
+  cache `wx_cache` TTL 45 min — supabase/wx-cache.sql) + `data/weather.js` (digest PURO
+  `wxDigest` + `wxSymbol`, golden `test:wx` 17). **UI de propósito AINDA NÃO** — a meteo
+  entra pelos estados do Living Interface (pernoita/destino/véspera) quando o redesign
+  assentar. NÃO metar/taf (duplica o briefing). Ground stops mantêm-se FORA (US-only
+  grátis; ATFM europeu inacessível — o Airport Intelligence mostra o sintoma).
 - **Notificações à família ("aterrou ✓")** — NÃO é dev build (a família não tem app;
   seria sempre servidor): web push é grátis mas no iPhone exige adicionar a página ao
   ecrã inicial (fricção); WhatsApp automático = API paga; a variante realista é EMAIL
