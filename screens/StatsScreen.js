@@ -6,6 +6,7 @@ import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import PageHeader from '../components/PageHeader';
 import HeaderActions from '../components/HeaderActions';
 import PrimaryButton from '../components/PrimaryButton';
+import YearShareCard from '../components/YearShareCard';
 import CountUp from '../components/CountUp';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -60,6 +61,7 @@ export default function StatsScreen({ navigation }) {
 
   const [scope, setScope] = useState('year');   // 'year' | 'month'
   const isYear = scope === 'year';
+  const [shareOpen, setShareOpen] = useState(false);   // cartão "Ano de voo" partilhável
 
   // Seletor de ANO (anos com escala + o corrente)
   const years = useMemo(() => {
@@ -311,10 +313,21 @@ export default function StatsScreen({ navigation }) {
               </Animated.View>
             ) : null}
 
+            {/* "Ano de voo" partilhável (só na vista Ano e com voo registado) — o cartão nasce
+                no telemóvel (view-shot) e sai pela folha do sistema; nada vai para servidor. */}
+            {isYear && st.flightMin > 0 ? (
+              <TouchableOpacity onPress={() => { select(); setShareOpen(true); }} activeOpacity={0.85} style={s.shareBtn}
+                accessibilityRole="button" accessibilityLabel={l('Partilhar o meu ano de voo', 'Share my year in the air')}>
+                <Ionicons name="share-outline" size={16} color={C.text} />
+                <Text style={s.shareTxt}>{l('Partilhar o meu ano de voo', 'Share my year in the air')}</Text>
+              </TouchableOpacity>
+            ) : null}
+
             <Text style={s.foot}>{l('Estimativa a partir da tua escala registada. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos).', 'Estimated from your recorded roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only).')}</Text>
           </>
         )}
       </ScrollView>
+      <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
     </SafeAreaView>
   );
 }
@@ -414,6 +427,10 @@ const makeStyles = (C) => StyleSheet.create({
   destChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
   destCode: { fontSize: 13, fontFamily: FONT.heavy, color: C.text, letterSpacing: 0.5 },
   destN: { fontSize: 11, fontFamily: FONT.bold, color: C.sub },
+
+  // Botão "Partilhar o meu ano de voo" (tracejado, discreto — não compete com os dados)
+  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, marginBottom: SPACE.md },
+  shareTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
 
   foot: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, lineHeight: 16, marginTop: 4, paddingHorizontal: 2 },
 });

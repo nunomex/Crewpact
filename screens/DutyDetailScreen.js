@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Linking, Platform, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, FONT, GUTTER } from '../data/constants';
@@ -15,6 +15,7 @@ import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
 import { roleEurFor } from '../data/perdiem';
 import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
+import { createDayShare, legsForShare } from '../data/shareDay';
 import HotelSheet from '../components/HotelSheet';
 import { legZulu } from '../data/zulu';
 
@@ -36,6 +37,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(false);
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
+  const [sharing, setSharing] = useState(false);       // "Partilhar chegada" — link temporário p/ a família
 
   const date = route.params?.date;
   const duty = date ? duties[date] : null;
@@ -43,6 +45,27 @@ export default function DutyDetailScreen({ route, navigation }) {
   const goBack = () => {
     if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
     else navigation.goBack();
+  };
+  // Partilhar a CHEGADA do dia com a família (Flighty→crew): cria um link temporário
+  // (Edge `share-day`, expira em 24 h) que abre no browser SEM app — a última perna do
+  // dia com a ETA real. Só as legs deste dia saem do telemóvel — nunca a escala.
+  const shareArrival = async () => {
+    if (sharing) return;
+    const legs = legsForShare(duty);
+    if (!legs.length) return;
+    select(); setSharing(true);
+    const res = await createDayShare({ date, legs });
+    setSharing(false);
+    if (!res) {
+      Alert.alert(l('Sem ligação', 'No connection'), l('Não consegui criar o link agora — tenta outra vez com rede.', 'Could not create the link — try again when online.'));
+      return;
+    }
+    try {
+      // iOS: o URL vai à parte (link "a sério" → o WhatsApp gera o cartão de pré-visualização;
+      // embutido no texto via share sheet, salta-o). Android ignora `url` → fica no texto.
+      const txt = l(`A minha chegada de hoje (${legs[legs.length - 1].dep}→${legs[legs.length - 1].arr}), em direto:`, `My arrival today (${legs[legs.length - 1].dep}→${legs[legs.length - 1].arr}), live:`);
+      await Share.share(Platform.OS === 'ios' ? { message: txt, url: res.url } : { message: `${txt} ${res.url}` });
+    } catch { /* cancelado */ }
   };
   // Apagar SÓ nos manuais (calendário/PDF cancelam-se pela fonte) — confirmação destrutiva.
   const confirmDelete = () => {
@@ -194,6 +217,15 @@ export default function DutyDetailScreen({ route, navigation }) {
               };
             })} />
           </>
+        ) : null}
+
+        {/* Partilhar chegada — só voos com nº de voo (o link vive 24 h; a família abre no browser). */}
+        {isFlight && legsForShare(duty).length ? (
+          <TouchableOpacity style={s.shareRow} activeOpacity={0.85} onPress={shareArrival} disabled={sharing}
+            accessibilityRole="button" accessibilityLabel={l('Partilhar chegada com alguém', 'Share arrival with someone')}>
+            <Ionicons name="paper-plane-outline" size={15} color={C.brand} />
+            <Text style={s.shareRowTxt}>{sharing ? l('a criar o link…', 'creating the link…') : l('partilhar chegada com alguém', 'share arrival with someone')}</Text>
+          </TouchableOpacity>
         ) : null}
 
         {d ? (
@@ -352,4 +384,7 @@ const makeStyles = (C) => StyleSheet.create({
   hotelPillTxt: { fontSize: 11.5, fontFamily: FONT.heavy, color: C.brand },
   hotelAdd: { borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, alignItems: 'center' },
   hotelAddTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.brand },
+  // "Partilhar chegada" — pill discreta debaixo dos setores (mesma família do hotelAdd)
+  shareRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 11, marginTop: 2, marginBottom: 12 },
+  shareRowTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.brand },
 });

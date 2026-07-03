@@ -19,6 +19,21 @@ export async function fetchFlightStatus(flight) {
   }
 }
 
+// Onde anda o AVIÃO (matrícula) AGORA — o INBOUND, a perna que nos vem buscar. Usa o modo
+// `{ reg }` da mesma Edge (re-deploy necessário). Devolve a forma slim do voo atual da
+// matrícula, ou null (sem dados / função antiga / offline) — degrada em silêncio.
+export async function fetchAircraftStatus(reg) {
+  const id = String(reg || '').toUpperCase().trim();
+  if (!id) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke('flight-status', { body: { reg: id } });
+    if (error || !data || !data.ok || !data.found) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 // A lógica de desvio/atraso (PURA) vive em ./flightDelay — testável por golden (sem supabase).
 // Re-exportada aqui para os consumidores continuarem a importar tudo de um só sítio.
-export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal } from './flightDelay';
+export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap } from './flightDelay';

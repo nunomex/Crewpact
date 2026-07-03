@@ -71,6 +71,7 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
+import FamiliaScreen      from './screens/FamiliaScreen';
 import BibliotecaScreen   from './screens/BibliotecaScreen';
 import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
@@ -285,6 +286,7 @@ function PerfilStack() {
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
+      <Stack.Screen name="Familia"    component={FamiliaScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
@@ -864,6 +866,9 @@ export default function App() {
           // Serviço pós-voo / débrief (min) — definido pelo OM do operador (ORO.FTL.235c). Entra nas
           // Duty hours/210/repouso como fallback do sign-off real. Default 0 até o user o definir.
           const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? 0;
+          // Plafond ANUAL de férias (dias) — CT Art. 238.º: mínimo 22 dias úteis/ano; o AE/
+          // contrato pode dar mais (ou menos, proporcional no ano de entrada). Alimenta o saldo.
+          const vacationDaysYear = resolved.vacationDaysYear ?? localProfile?.vacationDaysYear ?? user.vacationDaysYear ?? 22;
           // Vínculo + cobertura do AE (lei: art. 496º CT). `employment` (por conta de outrem/agência/
           // independente) é o eixo legal; `aeCovered` é o override (raro: empregado não filiado).
           // Default: empregado + coberto → ZERO disrupção para quem já existe.
@@ -872,7 +877,7 @@ export default function App() {
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
           const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, employment, aeCovered });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -1021,6 +1026,7 @@ export default function App() {
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
   const crewFleet = profile?.crewFleet || null;        // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
   const postFlightMin = profile?.postFlightMin || 0;   // débrief/serviço pós-voo (min, do OM) → Duty hours/210/repouso
+  const vacationDaysYear = profile?.vacationDaysYear ?? 22;   // plafond anual de férias (dias; CT Art. 238.º mín. 22 úteis) → saldo
   // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
   // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
@@ -1141,7 +1147,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

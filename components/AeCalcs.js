@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
 import { monthlyPerDiem, monthlyPerDiemByBand, monthlyAe } from '../data/perdiem';
-import { eventCounts, eventDateLabel } from '../data/aeEvents';
+import { eventCounts, eventDateLabel, yearCount } from '../data/aeEvents';
 import { txv } from '../data/i18n';
 import { AppContext, useTheme } from '../data/appContext';
 
@@ -21,7 +21,7 @@ const GROUP_LABEL = {
 // REPARTIDO por setor (curto/médio/longo) e total estimado. Por baixo, o catálogo
 // completo do Anexo I (cada pagamento à parte) + papéis adicionais elegíveis.
 export default function AeCalcs({ ae, category, contract = '12/12', fleet = null, duties = [], lifestyle = false, instructorRated = false, events = [], onRemoveEvent, onAddExtra }) {
-  const { lang, serviceYears } = useContext(AppContext);
+  const { lang, serviceYears, vacationDaysYear } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -207,6 +207,17 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
               ? l(`Soma ${fmtEur(xt.total)} ao total estimado${counts.sickDays != null ? ' · doença: dias 1-3 por episódio (Art. 48)' : ''}.`, `Adds ${fmtEur(xt.total)} to the estimate${counts.sickDays != null ? ' · sick: days 1-3 per episode (Art. 48)' : ''}.`)
               : l('Ocorrências do mês que não se inferem da rota (doença, férias, IDO, SNC…). Trabalhar em folga (DDO/WFLY) marca-se no próprio serviço.', 'This month’s occurrences not derived from the route (sick, leave, IDO, SNC…). Working a day off (DDO/WFLY) is marked on the duty itself.')}
           </Text>
+          {/* Saldo ANUAL de férias — direito anual (Art. 238.º CT); plafond do Perfil. Só onde há registo (vacDays). */}
+          {(ae.EXTRA_KINDS || []).some((k) => k.id === 'vacDays') ? (() => {
+            const vacQuota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
+            const vacTaken = yearCount(events, String(year), 'vacDays');
+            return (
+              <Text style={[s.note, vacTaken > vacQuota && { color: C.redText || C.red }]}>
+                {l(`Férias ${year}: ${vacTaken} de ${vacQuota} dias registados · ficam ${Math.max(0, vacQuota - vacTaken)} (plafond no Perfil).`,
+                   `Leave ${year}: ${vacTaken} of ${vacQuota} days logged · ${Math.max(0, vacQuota - vacTaken)} left (quota in Profile).`)}
+              </Text>
+            );
+          })() : null}
         </>
       ) : null}
 

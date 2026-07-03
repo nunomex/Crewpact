@@ -50,6 +50,7 @@ export const buildDataExport = ({ account = {}, profile = {}, duties = {}, dayLo
       lifestyle: !!profile.lifestyle,
       instructorRated: !!profile.instructorRated,
       postFlightMin: profile.postFlightMin || 0,    // serviço pós-voo/débrief (min, do OM)
+      vacationDaysYear: profile.vacationDaysYear ?? 22,   // plafond anual de férias (dias; CT Art. 238.º)
       employment: profile.employment || 'employee', // vínculo (por conta de outrem/agência/independente)
       aeCovered: profile.aeCovered !== false,        // abrangido pelo AE (cobertura do pagamento)
     },

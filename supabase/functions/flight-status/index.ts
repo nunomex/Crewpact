@@ -7,12 +7,14 @@
 // MODOS (POST):
 //   • Único  (card ao vivo):     { flight_iata: 'U25421' }  ou  { flight_icao: 'EJU7625' }
 //   • Batch  (detetar/auto-fill): { flights: ['EJU7625','EJU7626'] }  → { ok, results:[slim|null] }
+//   • Inbound (rotação):          { reg: 'G-UZHB' } → o voo ATUAL dessa matrícula (o avião
+//       que nos vem buscar) — /flights?reg_number dá o ident, /flight dá a forma slim.
 //
 // DEPLOY (Dashboard): Edge Functions → Deploy → nome `flight-status` → cola → Deploy.
 //   Segredo: Edge Functions → Secrets → AIRLABS_KEY = <a tua key>.
 // DEPLOY (CLI): `supabase functions deploy flight-status` + `supabase secrets set AIRLABS_KEY=...`
 //
-// ⚠️ Se já tinhas a versão anterior deployed, FAZ RE-DEPLOY (esta acrescenta duration/aircraft/batch).
+// ⚠️ Se já tinhas a versão anterior deployed, FAZ RE-DEPLOY (esta acrescenta o modo `reg`/inbound).
 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
 
@@ -95,6 +97,21 @@ Deno.serve(async (req: Request) => {
     if (!ids.length) return json({ ok: false, error: 'no_flight' }, 400);
     const results = await Promise.all(ids.map((id: string) => lookup(key, id)));
     return json({ ok: true, results });
+  }
+
+  // ── Modo INBOUND (rotação): { reg } → onde anda o avião AGORA ──
+  if (body.reg) {
+    const reg = String(body.reg).toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (!reg) return json({ ok: false, error: 'no_reg' }, 400);
+    try {
+      const r = await fetch(`https://airlabs.co/api/v9/flights?reg_number=${encodeURIComponent(reg)}&api_key=${key}`);
+      const j = await r.json();
+      const cur = Array.isArray(j?.response) && j.response.length ? j.response[0] : null;
+      const id = cur && (cur.flight_icao || cur.flight_iata);
+      if (!id) return json({ ok: true, found: false });
+      const s = await lookup(key, String(id));
+      return json(s ? { ok: true, found: true, ...s } : { ok: true, found: false });
+    } catch { return json({ ok: true, found: false }); }
   }
 
   // ── Modo ÚNICO (card ao vivo): { flight_iata|flight_icao } ──

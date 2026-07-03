@@ -21,7 +21,8 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal } = require(path.resolve('data/flightDelay.js'));
+const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap } = require(path.resolve('data/flightDelay.js'));
+const { legsForShare } = require(path.resolve('data/shareDay.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -94,6 +95,32 @@ eq('apanhou o real (±8 min) → true', storedMatchesReal('14:50', '14:42'), tru
 eq('ainda no planeado (42 min) → false', storedMatchesReal('14:00', '14:42'), false);
 eq('apanhou o real cruzando meia-noite → true', storedMatchesReal('00:20', '00:18'), true);
 eq('nulo → false', storedMatchesReal(null, '14:42'), false);
+
+// ── inboundGap — o avião que nos vem buscar (rotação da matrícula) ──
+// Nós: EJU7625, partimos de LIS às 18:00Z. Inbound EJU7624 chega a LIS.
+const OUR = { ourFlight: 'EJU7625', ourDepZ: '2026-07-03 18:00', ourDepIata: 'LIS' };
+const inb = (etaUtc, extra = {}) => ({ flightIata: 'U27624', flightIcao: 'EJU7624', dep: { iata: 'CDG' }, arr: { iata: 'LIS', estimatedUtc: etaUtc }, ...extra });
+// Chega 17:00 + 35 rotação = pronto 17:35 → 25 min de folga, sem atraso projetado.
+eq('inbound folgado → gap 25, proj 0', inboundGap(inb('2026-07-03 17:00'), OUR), { gapMin: 25, projDelayMin: 0, etaZ: '17:00' });
+// Chega 17:50 → pronto 18:25 → partida derrapa ~25 min.
+eq('inbound tarde → proj 25', inboundGap(inb('2026-07-03 17:50'), OUR).projDelayMin, 25);
+// ATA (real) ganha à estimada.
+eq('ATA ganha à estimada', inboundGap(inb('2026-07-03 17:50', { arr: { iata: 'LIS', estimatedUtc: '2026-07-03 17:50', actualUtc: '2026-07-03 17:10' } }), OUR).projDelayMin, 0);
+// A matrícula JÁ está no NOSSO voo → não há inbound (null).
+eq('já é o nosso voo → null', inboundGap({ flightIata: 'U27625', flightIcao: 'EJU7625', arr: { iata: 'FNC', estimatedUtc: '2026-07-03 19:00' } }, OUR), null);
+// O avião vai para OUTRA estação → não é o nosso inbound.
+eq('outra estação → null', inboundGap(inb('2026-07-03 17:00', { arr: { iata: 'OPO', estimatedUtc: '2026-07-03 17:00' } }), OUR), null);
+// Meia-noite: partimos 00:30Z, inbound chega 23:40Z → pronto 00:15 → folga 15 (wrap ok).
+eq('cruza meia-noite (wrap)', inboundGap(inb('2026-07-03 23:40'), { ...OUR, ourDepZ: '00:30' }).gapMin, 15);
+// Sem ETA nenhuma → null (não se inventa projeção).
+eq('sem ETA → null', inboundGap(inb(null), OUR), null);
+
+// ── legsForShare — legs mínimas do link da família (PURA, data/shareDay.js) ──
+const dutyLegs = { legs: [{ flightNo: 'EJU7625', dep: 'LIS', arr: 'FNC' }, { flightNo: 'EJU7626', dep: 'FNC', arr: 'LIS' }] };
+eq('legs do dia (2 pernas)', legsForShare(dutyLegs), [{ flight: 'EJU7625', dep: 'LIS', arr: 'FNC' }, { flight: 'EJU7626', dep: 'FNC', arr: 'LIS' }]);
+eq('fallback rota+nº (sem legs)', legsForShare({ flightNo: 'U2 8903', route: 'LIS-OPO-LIS' }), [{ flight: 'U28903', dep: 'LIS', arr: 'LIS' }]);
+eq('sem nº de voo → []', legsForShare({ route: 'LIS-OPO' }), []);
+eq('duty nula → []', legsForShare(null), []);
 
 console.log(`\nflightStatus (desvio) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

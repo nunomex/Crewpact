@@ -363,6 +363,30 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Migração: 3 eventos', mig.length, 3);
   eq('Migração: mês preservado', mig.every((e) => e.date === '2026-05'), true);
   eq('Migração: contagem bate', eventCounts(mig, '2026-05').snc, 2);
+
+  // BLOCO de dias (datesInRange) — férias de 1 a N dias entram como 1 evento/dia.
+  const { datesInRange } = require(path.resolve('data/aeEvents.js'));
+  eq('Bloco: 7 dias de férias', JSON.stringify(datesInRange('2026-08-03', '2026-08-09')),
+    JSON.stringify(['2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07', '2026-08-08', '2026-08-09']));
+  eq('Bloco: 1 dia (de = até)', JSON.stringify(datesInRange('2026-08-03', '2026-08-03')), JSON.stringify(['2026-08-03']));
+  eq('Bloco: cruza o mês', JSON.stringify(datesInRange('2026-06-29', '2026-07-02')),
+    JSON.stringify(['2026-06-29', '2026-06-30', '2026-07-01', '2026-07-02']));
+  eq('Bloco: invertido → []', datesInRange('2026-08-09', '2026-08-03').length, 0);
+  eq('Bloco: > 62 dias → [] (guarda de typo)', datesInRange('2026-01-01', '2026-12-31').length, 0);
+  eq('Bloco: 62 dias exatos passam', datesInRange('2026-01-01', '2026-03-03').length, 62);
+  eq('Bloco: data inválida → []', datesInRange('2026-8-3', '2026-08-09').length, 0);
+  // Bloco de férias alimenta a contagem do mês: 7 eventos → vacDays 7 (sem teto — ≠ doença).
+  const vac = datesInRange('2026-08-03', '2026-08-09').map((d) => ev(d, 'vacDays'));
+  eq('Bloco: 7 férias contam 7 no mês', eventCounts(vac, '2026-08').vacDays, 7);
+
+  // SALDO anual (yearCount) — o direito a férias é ANUAL (Art. 238.º CT); conta datados
+  // e só-mês do mesmo ano, filtra por tipo, e separa anos.
+  const { yearCount } = require(path.resolve('data/aeEvents.js'));
+  const vy = [...vac, ev('2025-12-30', 'vacDays'), ev('2026-02', 'vacDays'), ev('2026-03-05', 'snc')];
+  eq('Saldo: férias 2026 (7 datadas + 1 só-mês)', yearCount(vy, '2026', 'vacDays'), 8);
+  eq('Saldo: 2025 separado', yearCount(vy, '2025', 'vacDays'), 1);
+  eq('Saldo: filtra o tipo', yearCount(vy, '2026', 'snc'), 1);
+  eq('Saldo: ano inválido → 0', yearCount(vy, '', 'vacDays'), 0);
 }
 
 // ── Caminho único do total AE (aeMonthTotal) — abono UMA vez + extras ──

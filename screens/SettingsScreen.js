@@ -51,7 +51,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -226,10 +226,27 @@ export default function SettingsScreen({ navigation }) {
     updateProfile({ postFlightMin: val }, lang).catch(() => {});
     success();
   };
+  // Plafond ANUAL de férias (dias) — CT Art. 238.º: mínimo 22 dias úteis/ano; o AE/contrato
+  // pode dar mais (ou menos, proporcional no ano de entrada). Alimenta o SALDO (folha do
+  // extra + Cálculos). Só aparece a quem regista férias (AE com suplemento diário, ex. easyJet).
+  const [vacIn, setVacIn] = useState(String(vacationDaysYear ?? 22));
+  useEffect(() => { setVacIn(String(vacationDaysYear ?? 22)); }, [vacationDaysYear]);
+  const commitVacDays = () => {
+    const n = Math.max(1, Math.min(99, Math.floor(+vacIn || 0)));
+    if (!(+vacIn >= 1)) { setVacIn(String(vacationDaysYear ?? 22)); return; }   // inválido → repõe
+    setVacIn(String(n));
+    if (n === (vacationDaysYear ?? 22)) return;
+    setProfile((p) => ({ ...p, vacationDaysYear: n }));
+    updateProfile({ vacationDaysYear: n }, lang).catch(() => {});
+    success();
+  };
   // Vínculo + cobertura pelo AE (lei: art. 496º CT). Só onde a COMPANHIA tem AE (modelado/uncovered).
   // O vínculo manda na cobertura (empregado → coberto; agência/independente → não). `aeCovered` é o
   // override raro do empregado não filiado. Mexer aqui muda o que é PAGAMENTO em toda a app (FTL fica).
   const companyHasAe = !!(caps && caps.companyHasAe) || aeStatus === 'uncovered';
+  // AE com suplemento diário de férias (vacDays nos EXTRA_KINDS, ex. easyJet Art. 38/60) —
+  // é onde o registo (e logo o saldo) existe; TAP compensa por subsídio → sem registo, sem linha.
+  const hasVacExtra = !!(ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays'));
   const saveEmployment = (val) => {
     setProfile((p) => ({ ...p, employment: val }));
     updateProfile({ employment: val }, lang).catch(() => {});
@@ -309,7 +326,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, employment, aeCovered },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered },
         duties, dayLog, aeExtras, aeEvents,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -414,8 +431,17 @@ export default function SettingsScreen({ navigation }) {
               {/* Serviço pós-voo / débrief (min, do OM) — universal; alimenta as Duty hours (fallback do sign-off). */}
               <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
                 sub={l('Débrief após o último calço (do teu OM) — conta para o serviço', 'Debrief after last on-block (from your OM) — counts as duty')}
-                last={!companyHasAe} s={s} C={C}
+                last={!companyHasAe && !hasVacExtra} s={s} C={C}
                 right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
+              {/* Plafond anual de férias (dias) → saldo na folha do extra + Cálculos. Só onde há registo (vacDays). */}
+              {hasVacExtra ? (
+                <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')}
+                  sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT) — ajusta ao teu contrato', 'Legal minimum 22 working days (Art. 238 CT) — adjust to your contract')}
+                  last={!companyHasAe} s={s} C={C}
+                  right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))}
+                    onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2}
+                    accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
+              ) : null}
               {/* Vínculo (lei: art. 496º CT) — só onde a companhia tem AE. Decide a cobertura do pagamento. */}
               {companyHasAe ? (
                 <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')}
@@ -490,7 +516,10 @@ export default function SettingsScreen({ navigation }) {
               onPress={() => navigation.navigate('Validades')} s={s} C={C} />
             <Row icon="bed-outline" label={l('Hotéis de pernoita', 'Night-stop hotels')}
               sub={l('Um por estação — mapas e telefone à mão nos dias 🌙', 'One per station — maps & phone at hand on 🌙 days')}
-              onPress={() => navigation.navigate('Hoteis')} last s={s} C={C} />
+              onPress={() => navigation.navigate('Hoteis')} s={s} C={C} />
+            <Row icon="people-outline" label={l('Família · chegada ao vivo', 'Family · live arrival')}
+              sub={l('Links permanentes — a tua chegada de hoje, no browser deles', 'Permanent links — today’s arrival, in their browser')}
+              onPress={() => navigation.navigate('Familia')} last s={s} C={C} />
           </View>
         </Animated.View>
 
@@ -739,6 +768,8 @@ const makeStyles = (C) => StyleSheet.create({
   aeCardSub: { fontFamily: FONT.medium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 8 },
   gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
   grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
+  // Input compacto "Férias por ano" (dias) — visual do Seg (soft pill), 2 dígitos.
+  vacIn: { minWidth: 56, textAlign: 'center', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8, color: C.text, fontSize: TYPE.body, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
   gi: { width: 36, height: 36, borderRadius: 11, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   giCo: { backgroundColor: C.ink },
   giCoTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 13 },

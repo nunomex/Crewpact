@@ -1,0 +1,3 @@
+# Cloudflare Pages — rewrite: os links da família são /c/<token> (formato de caminho,
+# estilo Flighty; pré-visualiza melhor no WhatsApp) e servem todos o index.html (200).
+/c/* /index.html 200

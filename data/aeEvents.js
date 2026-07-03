@@ -49,6 +49,31 @@ export const eventCounts = (events = [], ym) => {
   return counts;
 };
 
+// Dias ISO consecutivos [from..to] (inclusive) — para registar BLOCOS por-dia (férias 1-7+,
+// doença) como UM evento por dia: o modelo não muda (eventos individuais, apagáveis um a um)
+// e a doença por episódio recebe exatamente os dias consecutivos que o Art. 48 espera.
+// Devolve [] se inválido, invertido, ou maior que `max` dias (guarda contra um typo no
+// ano transformar um bloco de férias em centenas de eventos).
+export const datesInRange = (from, to, { max = 62 } = {}) => {
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  if (!re.test(String(from || '')) || !re.test(String(to || '')) || String(to) < String(from)) return [];
+  const out = [];
+  let cur = String(from);
+  while (cur <= String(to) && out.length <= max) { out.push(cur); cur = nextISO(cur); }
+  return out.length > max ? [] : out;
+};
+
+// Contagem ANUAL de um tipo de evento — o direito a férias é ANUAL (Art. 238.º CT:
+// mínimo 22 dias úteis/ano; o plafond real é o do Perfil), por isso o saldo conta-se
+// ao ano civil. Datados ('YYYY-MM-DD') e só-mês ('YYYY-MM') do mesmo ano contam ambos.
+export const yearCount = (events = [], year, type) => {
+  const y = String(year || '');
+  if (!/^\d{4}$/.test(y) || !type) return 0;
+  let n = 0;
+  for (const e of events) { if (e && e.type === type && String(e.date).slice(0, 4) === y) n++; }
+  return n;
+};
+
 // Migra os CONTADORES antigos ({ 'YYYY-MM': { tipo: n } }) para eventos só-mês.
 // Corre UMA vez (o caller limpa os contadores depois). Determinístico: ids derivados.
 export const countersToEvents = (aeExtras = {}) => {

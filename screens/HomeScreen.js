@@ -25,7 +25,7 @@ import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { fetchFlightStatus, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ } from '../data/flightStatus';
+import { fetchFlightStatus, fetchAircraftStatus, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import CountUp from '../components/CountUp';
@@ -342,6 +342,25 @@ export default function HomeScreen({ navigation }) {
     return () => { cancelled = true; };
   }, [flightNo, inFlightWindow, fsTick]);
 
+  // INBOUND — onde anda o avião que nos vem buscar. Só ANTES da nossa partida (depois é
+  // irrelevante) e só quando o feed traz a matrícula. O atraso propaga-se pela rotação
+  // antes de a API marcar o nosso voo — é aqui que o tripulante ganha minutos de aviso.
+  const [inbound, setInbound] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const reg = flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg;
+    const preDep = !!(flightStatus && flightStatus.dep && !flightStatus.dep.actual);
+    if (!reg || !preDep) { setInbound(null); return; }
+    fetchAircraftStatus(reg).then((st) => { if (!cancelled) setInbound(st); });
+    return () => { cancelled = true; };
+  }, [flightStatus]);
+  const inboundInfo = (inbound && flightStatus) ? inboundGap(inbound, {
+    ourFlight: flightNo,
+    ourDepZ: flightStatus.dep && flightStatus.dep.scheduledUtc,
+    ourDepIata: flightStatus.dep && flightStatus.dep.iata,
+  }) : null;
+  const inboundLate = !!(inboundInfo && inboundInfo.projDelayMin >= 15);
+
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
   // Contagem para a apresentação REAL (calendário/registo) quando existe. SEM report real,
@@ -548,7 +567,8 @@ export default function HomeScreen({ navigation }) {
             ) : null}
             {/* Confirmação POSITIVA ao vivo — SÓ quando a API confirma SEM desvio (senão não afirmamos
                 "a horas" sem saber; o desvio tem o seu próprio card em cima). Subtil, no contexto do serviço. */}
-            {flightStatus && !hasDeviation(flightStatus) ? (
+            {/* Não afirmamos "a horas" quando o AVIÃO (inbound) já vem atrasado — o card âmbar em cima conta a história. */}
+            {flightStatus && !hasDeviation(flightStatus) && !inboundLate ? (
               <Text style={s.svcOntime} numberOfLines={1}>✓ {l('A horas', 'On time')}{flightStatus.dep && flightStatus.dep.gate ? ` · ${l('porta', 'gate')} ${flightStatus.dep.gate}` : ''}</Text>
             ) : null}
             {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
@@ -717,6 +737,21 @@ export default function HomeScreen({ navigation }) {
             </Animated.View>
           );
         })() : null}
+
+        {/* INBOUND atrasado — o desvio ainda não está no NOSSO voo, mas o avião que nos vem
+            buscar chega tarde: aviso âmbar com a projeção (chegada + rotação mín. 35 min).
+            Só antes da partida e quando o nosso voo ainda parece limpo (senão o card de cima manda). */}
+        {flightStatus && !hasDeviation(flightStatus) && inboundLate ? (
+          <Animated.View style={[s.fdelay, { backgroundColor: C.warnSoft, borderColor: C.warn + '55' }, seg(1)]}>
+            <Ionicons name="airplane-outline" size={18} color={C.warn} style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo} · {l('o teu avião ainda vem a caminho', 'your aircraft is still inbound')}</Text>
+              <Text style={[s.fdelayH, { color: C.warnText }]} numberOfLines={1}>{l(`Partida pode derrapar ~${inboundInfo.projDelayMin} min`, `Departure may slip ~${inboundInfo.projDelayMin} min`)}</Text>
+              <Text style={s.fdelayS} numberOfLines={2}>{(inbound.flightIata || '—')} {inbound.dep && inbound.dep.iata ? `${inbound.dep.iata}→${inbound.arr.iata || '—'}` : ''} · {l('chega', 'arrives')} ~{inboundInfo.etaZ}Z · {l('rotação mín. ~35 min', 'min turnaround ~35 min')}</Text>
+              <Text style={s.fdelayNote} numberOfLines={2}>{l('Projeção pela rotação do avião — o teu voo ainda não está marcado como atrasado.', 'Projected from the aircraft rotation — your flight is not flagged as delayed yet.')}</Text>
+            </View>
+          </Animated.View>
+        ) : null}
 
         {/* FTL automático assume aclimatizado/na-base — aviso p/ longo curso (Hi Fly · TAP WB). */}
         {isLongHaulCompany(company, crewFleet) ? (

@@ -78,3 +78,26 @@ export function storedMatchesReal(storedOnZ, realArrZ, thr = 10) {
   const d = _circDiffMin(storedOnZ, realArrZ);
   return d != null && d <= thr;
 }
+
+// ── INBOUND: o avião que nos vem buscar (rotação da matrícula) ──
+// O atraso propaga-se pela rotação ANTES de a API marcar o NOSSO voo como atrasado: se a
+// matrícula ainda está noutra perna e a chegada estimada + rotação mínima passa da nossa
+// partida, o embarque vai derrapar — e o PSV/discrição com ele. `inb` = slim do voo ATUAL
+// da matrícula; `ourFlight` = o nosso ident (se a matrícula JÁ está no nosso voo → null,
+// não há inbound); `ourDepZ` = partida planeada nossa em Zulu ("HH:MM" ou string UTC da
+// API); `ourDepIata` = a nossa estação (o inbound só conta se vier PARA ela); `turnMin` =
+// rotação mínima (~35 min short-haul). Devolve { gapMin, projDelayMin, etaZ } ou null.
+// Circular à prova de meia-noite (janela ±12 h), tudo em Zulu — sem fusos, sem datas.
+export function inboundGap(inb, { ourFlight, ourDepZ, ourDepIata = null, turnMin = 35 } = {}) {
+  if (!inb || !inb.arr) return null;
+  const norm = (x) => String(x || '').toUpperCase().replace(/\s+/g, '');
+  if (ourFlight && (norm(inb.flightIata) === norm(ourFlight) || norm(inb.flightIcao) === norm(ourFlight))) return null;
+  if (ourDepIata && inb.arr.iata && norm(inb.arr.iata) !== norm(ourDepIata)) return null;   // vai para outra estação
+  const etaZ = _hhmmUtc(inb.arr.actualUtc || inb.arr.estimatedUtc || inb.arr.scheduledUtc);
+  const eta = _hhmmToMin(etaZ), dep = _hhmmToMin(ourDepZ);
+  if (eta == null || dep == null) return null;
+  let gap = dep - (eta + (turnMin || 0));      // folga (min) entre "avião pronto" e a nossa partida
+  if (gap < -720) gap += 1440;                 // partida já no dia Zulu seguinte
+  else if (gap > 720) gap -= 1440;
+  return { gapMin: gap, projDelayMin: Math.max(0, -gap), etaZ };
+}

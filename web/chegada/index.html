@@ -1,0 +1,143 @@
+<!doctype html>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  CrewPact — página da FAMÍLIA (partilha da chegada do dia)
+  ═══════════════════════════════════════════════════════════════════════════
+  Ficheiro ESTÁTICO único (index.html) — a pasta `web/chegada` está PRONTA A ARRASTAR
+  para o Cloudflare Pages (upload direto, grátis, sem git). O *.supabase.co não
+  renderiza HTML (anti-phishing do gateway), por isso a página vive num domínio nosso.
+  Lê ?t=<token> e pede os DADOS à Edge `share-day` (GET público &j=1, CORS aberto);
+  re-pede a cada 60 s até aterrar. Zero dependências, zero cookies, noindex.
+  Depois de publicar: criar o secret SHARE_PAGE_URL = URL da página (Edge Functions
+  → Secrets) para os links partilhados saírem já com este endereço.
+-->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Chegada · CrewPact</title>
+<!-- Pré-visualização rica (WhatsApp/iMessage) — estática de propósito: o conteúdo do
+     link é privado/temporário, o cartão só diz o que a página É. -->
+<meta property="og:title" content="Chegada de hoje · CrewPact">
+<meta property="og:description" content="Acompanha a chegada ao vivo — hora estimada e estado do voo. Link temporário criado por um tripulante.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CrewPact">
+<meta property="og:image" content="https://voo.crewpact.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#14263A">
+<style>
+  body{margin:0;background:#14263A;color:#fff;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .card{background:#1F4E79;border-radius:20px;padding:26px 24px;max-width:400px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.2px}
+  .dot{width:8px;height:8px;border-radius:3px;background:#F5402C}
+  .eyebrow{font-size:10.5px;letter-spacing:1.4px;color:rgba(255,255,255,.62);margin-top:20px;text-transform:uppercase;font-weight:800}
+  .flight{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .route{font-size:16px;color:rgba(255,255,255,.85);margin-top:2px;font-weight:600}
+  .eta{font-size:44px;font-weight:800;letter-spacing:-1px;margin-top:14px;font-variant-numeric:tabular-nums}
+  .count{font-size:15px;font-weight:700;color:#fff;margin-top:6px;font-variant-numeric:tabular-nums}
+  .etaSub{font-size:12.5px;color:rgba(255,255,255,.62);margin-top:4px;line-height:1.5}
+  /* Rota com o AVIÃO a viajar (estilo apps premium): tracejado por percorrer,
+     troço vermelho percorrido, avião branco na posição do progresso. */
+  .fly{display:flex;align-items:center;gap:10px;margin-top:18px}
+  .flyCode{font-size:12px;font-weight:800;letter-spacing:.6px;color:rgba(255,255,255,.85)}
+  .flyTrack{position:relative;flex:1;height:22px}
+  .flyDots{position:absolute;left:0;right:0;top:50%;height:2px;transform:translateY(-50%);background-image:linear-gradient(90deg,rgba(255,255,255,.35) 0 5px,transparent 5px 11px);background-size:11px 2px;background-repeat:repeat-x;border-radius:2px}
+  .flyDone{position:absolute;left:0;top:50%;height:3px;transform:translateY(-50%);background:#F5402C;border-radius:3px;transition:width 1s linear}
+  .flyPlane{position:absolute;top:50%;transform:translate(-50%,-50%);transition:left 1s linear;line-height:0}
+  .flyPlane svg{display:block;transform:rotate(90deg);filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+  .status{display:inline-block;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.4px;background:rgba(255,255,255,.12)}
+  .ok{background:#1f7a4d}.warn{background:#a35b00}.bad{background:#b3261e}
+  .foot{font-size:11px;color:rgba(255,255,255,.45);margin-top:22px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="brand"><span class="dot"></span>CrewPact</div>
+  <div id="inner">
+    <div class="eyebrow">A carregar…</div>
+    <div class="route">um instante ✈️</div>
+  </div>
+</div>
+<div class="foot">Link temporário criado por um tripulante · expira sozinho.<br>Atualiza a cada minuto.</div>
+<script>
+(function () {
+  var API = 'https://xfclgmfafkcfylgrogza.supabase.co/functions/v1/share-day';
+  // Token no CAMINHO (/c/<token> — formato Flighty; o WhatsApp pré-visualiza melhor
+  // URLs de caminho do que raiz+query) com fallback ao ?t= antigo (links já enviados).
+  var pm = location.pathname.match(/^\/c\/([a-z2-7]+)/);
+  var t = pm ? pm[1] : (new URLSearchParams(location.search).get('t') || '');
+  var el = document.getElementById('inner');
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var fetchTimer = null, tickTimer = null;
+  var cur = null;       // últimos dados da Edge
+  var clockOff = 0;     // offset servidor−cliente (s) — countdown certo mesmo com relógio torto
+
+  function stopAll() {
+    if (fetchTimer) { clearInterval(fetchTimer); fetchTimer = null; }
+    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+  }
+  function msg(head, sub) { el.innerHTML = '<div class="eyebrow">' + esc(head) + '</div><div class="route">' + esc(sub) + '</div>'; }
+  function nowS() { return Math.floor(Date.now() / 1000) + clockOff; }
+  function fmtMin(min) {
+    if (min >= 90) { var h = Math.floor(min / 60); return '~' + h + ' h ' + (min % 60) + ' min'; }
+    return '~' + min + ' min';
+  }
+
+  // Render a partir de `cur` — chamado no fetch (60 s) E no tick local (20 s), para o
+  // countdown e a barra andarem sem pedir mais nada à API.
+  function render() {
+    var d = cur;
+    if (!d || !d.ok || !d.found) { msg('Link inválido', 'Pede um link novo a quem to enviou.'); stopAll(); return; }
+    if (d.expired) { msg('Link expirado', 'Este link já não está ativo — pede um novo.'); stopAll(); return; }
+    // Link de FAMÍLIA sem voo hoje: não é erro — mantém o refresh (a escala pode aparecer).
+    if (d.noFlight) { msg('Sem chegada hoje', 'Hoje não há voo para acompanhar. Guarda esta página — mostra sempre a chegada do dia. ✈️'); return; }
+    var n = nowS();
+    // Countdown "aterra em ~N min" — só com ETA no futuro e ainda no ar.
+    var count = '';
+    if (!d.landed && d.etaTs && d.etaTs > n) {
+      count = '<div class="count">aterra em ' + fmtMin(Math.max(1, Math.round((d.etaTs - n) / 60))) + '</div>';
+    }
+    // Rota com o avião a viajar — só com partida REAL (depTs) e ETA coerente.
+    var bar = '';
+    if (!d.landed && d.depTs && d.etaTs && d.etaTs > d.depTs) {
+      var pct = Math.max(0, Math.min(100, Math.round(((n - d.depTs) / (d.etaTs - d.depTs)) * 100)));
+      var plane = '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+      bar = '<div class="fly"><span class="flyCode">' + esc(d.dep) + '</span>' +
+            '<div class="flyTrack"><div class="flyDots"></div>' +
+            '<div class="flyDone" style="width:' + pct + '%"></div>' +
+            '<div class="flyPlane" style="left:' + pct + '%">' + plane + '</div></div>' +
+            '<span class="flyCode">' + esc(d.arr) + '</span></div>';
+    }
+    el.innerHTML =
+      '<div class="eyebrow">Chegada de hoje' + (d.legsCount > 1 ? ' · ' + d.legsCount + ' voos' : '') + '</div>' +
+      '<div class="flight">' + (esc(d.flight) || 'Voo') + '</div>' +
+      '<div class="route">' + esc(d.dep) + ' → ' + esc(d.arr) + '</div>' +
+      bar +
+      '<div class="eta">' + (d.etaHm ? '~' + esc(d.etaHm) : '—') + '</div>' +
+      count +
+      '<div class="etaSub">' + (d.etaHm ? 'hora local de ' + esc(d.arr) : 'ainda sem estimativa — volta a abrir mais perto da hora') + (d.landed ? ' · já em terra ✓' : '') + '</div>' +
+      '<span class="status ' + (d.tone === 'none' ? '' : esc(d.tone)) + '">' + esc(d.status) + '</span>';
+    if (d.landed) stopAll();   // aterrou → página final, para de gastar
+  }
+
+  function load() {
+    fetch(API + '?t=' + encodeURIComponent(t) + '&j=1')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        cur = d;
+        if (d && d.nowTs) clockOff = d.nowTs - Math.floor(Date.now() / 1000);
+        render();
+      })
+      .catch(function () { if (!cur) msg('Sem ligação', 'Verifica a internet e recarrega a página.'); });
+  }
+
+  if (!t) { msg('Link inválido', 'Pede um link novo a quem to enviou.'); return; }
+  load();
+  fetchTimer = setInterval(load, 60000);                                    // dados frescos da Edge
+  tickTimer = setInterval(function () { if (cur) render(); }, 20000);       // countdown/barra a andar entre fetches (só com dados)
+})();
+</script>
+</body>
+</html>
