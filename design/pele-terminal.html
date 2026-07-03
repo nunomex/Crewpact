@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele "Terminal" — a mistura (tipográfica + sinalética)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* MISTURA das duas peles do user (branco · preto · amarelo):
+     · HERO = poster tipográfico (número fantasma + palavra condensada sobreposta, ar)
+     · SECUNDÁRIOS = réguas de sinalética (placas amarelas c/ pictogramas, hairlines, setas)
+     · DOCK = barra preta de placa (ativo em placa amarela)
+     · MECÂNICA VIVA: na DISRUPÇÃO o hero VIRA a placa preta (o "sinal" acende) — a
+       própria pele sinaliza a severidade; e nas zonas de alarme o amarelo-marca sai
+       de cena (alarme = laranja/vermelho, nunca a cor da marca). */
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#75756D; --line:#ECEAE4;
+    --yellow:#FFC400; --ok:#1F7A4D; --warn:#E86A10; --bad:#C6362B; --panel:#181818;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 22px 0}
+
+  .greet{font-size:12px;font-weight:600;color:var(--grey)}
+  .side{position:absolute;right:10px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+
+  /* HERO tipográfico (estados calmos) */
+  .hero{position:relative;margin-top:6px;height:196px}
+  .ghostnum{position:absolute;right:12px;top:-10px;font-family:'Barlow Condensed';font-weight:700;font-size:170px;line-height:1;color:var(--ghost);letter-spacing:-4px;font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:46px;font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:.95;letter-spacing:-.5px}
+  .kick{position:absolute;left:2px;bottom:20px;font-size:13px;font-weight:700;color:var(--grey)}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .arrowy{position:absolute;left:2px;top:4px;color:var(--yellow);font-size:24px;font-weight:800}
+
+  /* HERO-PLACA (disrupção): o sinal acende — preto, laranja, régua */
+  .heropanel{margin-top:14px;background:var(--panel);color:#fff;border-radius:16px;padding:16px 17px}
+  .heropanel .plab{font-size:10px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:#FFB38A}
+  .heropanel .pbig{font-family:'Barlow Condensed';font-weight:700;font-size:58px;line-height:1;margin-top:4px;color:#FF9D5C;font-variant-numeric:tabular-nums}
+  .heropanel .psub{font-size:13px;font-weight:600;color:#D8D8D2;margin-top:6px}
+  .heropanel .prule{height:2px;background:var(--warn);margin:12px -17px 0}
+
+  .hr{height:1.5px;background:var(--ink);margin-top:4px}
+
+  /* micro-texto utilitário (poster) */
+  .util{display:flex;gap:16px;padding:13px 2px 11px;border-bottom:1px solid var(--line)}
+  .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.5px;flex:0 0 70px}
+  .util p{font-size:11.5px;font-weight:600;color:var(--grey);line-height:1.6;flex:1}
+  .util p b{color:var(--ink)}
+  .util p .ok{color:var(--ok);font-weight:800}
+  .util p .warn{color:var(--warn);font-weight:800}
+
+  /* réguas de sinalética (secundários) */
+  .slat{display:flex;align-items:center;gap:13px;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .plate{flex:0 0 40px;height:40px;border-radius:10px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+  .plate svg{width:22px;height:22px;fill:#141414}
+  .plate.warnp{background:var(--warn)}.plate.warnp svg{fill:#fff}
+  .sl-main{flex:1;min-width:0}
+  .sl-k{font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey)}
+  .sl-t{font-size:16px;font-weight:800;margin-top:1px;letter-spacing:-.2px}
+  .sl-t .hi{color:var(--warn)}
+  .sl-s{font-size:11.5px;font-weight:600;color:var(--grey);margin-top:1px}
+  .sl-go{font-size:18px;font-weight:800}
+  .donut{width:44px;height:44px;border-radius:50%;background:conic-gradient(var(--dc,var(--yellow)) calc(var(--p)*1%), var(--line) 0);position:relative}
+  .donut i{position:absolute;inset:11px;border-radius:50%;background:var(--paper)}
+  .donut b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--ink)}
+
+  /* dock de placa preta */
+  .dock{margin-top:auto;background:var(--panel);margin-left:-22px;margin-right:-22px;display:flex;justify-content:space-around;align-items:center;padding:12px 10px 22px}
+  .di{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#8f8f88}
+  .di .dp{width:34px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  .di svg{width:15px;height:15px;fill:#8f8f88}
+  .di.on{color:#fff}
+  .di.on .dp{background:var(--yellow)}
+  .di.on svg{fill:#141414}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele "Terminal" — a minha mistura</h1>
+    <div class="t">hero de poster · réguas de placa · dock preto</div>
+    <p>Em cima <b>respira</b> (o hero tipográfico da tua referência); ao meio <b>estrutura</b>
+    (as réguas com placas amarelas da tua foto); em baixo <b>ancora</b> (a placa preta).
+    E a mecânica viva: na <b>disrupção o hero vira a placa preta</b> — o sinal acende-se,
+    e o amarelo-marca sai de cena (alarme é laranja, nunca a cor da marca).</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw on" data-s="folga">1 · Folga</button>
+    <button class="sw" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const IC={
+    plane:'<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>',
+    clock:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 5h-2v6l5 3 1-1.7-4-2.3V7z"/></svg>',
+    sun:'<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5 2 3h-4l2-3zm0 20-2-3h4l-2 3zM2 12l3-2v4l-3-2zm20 0-3 2v-4l3 2zM4.9 4.9 8 6.2 6.2 8 4.9 4.9zm14.2 14.2L16 17.8 17.8 16l1.3 3.1zM4.9 19.1 6.2 16 8 17.8l-3.1 1.3zM19.1 4.9 17.8 8 16 6.2l3.1-1.3z"/></svg>',
+    euro:'<svg viewBox="0 0 24 24"><path d="M15 18.5A6.5 6.5 0 0 1 8.7 14H15v-2H8.2a6.6 6.6 0 0 1 0-2H15V8H8.7A6.5 6.5 0 0 1 15 3.5c1.6 0 3.1.6 4.2 1.6L21 3.3A9 9 0 0 0 6.5 8H3v2h3v2H3v2h3.5A9 9 0 0 0 21 18.7l-1.8-1.8a6.4 6.4 0 0 1-4.2 1.6z"/></svg>',
+    gate:'<svg viewBox="0 0 24 24"><path d="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4v-2h3V5H6v14h3v2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 6 4 4h-3v6h-2v-6H8l4-4z"/></svg>',
+    alert:'<svg viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>',
+    board:'<svg viewBox="0 0 24 24"><path d="M3 4h18v12H3V4zm2 2v8h14V6H5zm-1 12h20v2H4v-2z"/></svg>',
+    cal:'<svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z"/></svg>',
+    scale:'<svg viewBox="0 0 24 24"><path d="M4 4h16v3H4V4zm0 6.5h16v3H4v-3zM4 17h16v3H4v-3z"/></svg>',
+  };
+  const DOCK=[['Início',IC.board],['Estatísticas',IC.scale],['Escala',IC.cal],['FTL/AE',IC.clock]];
+
+  const STATES={
+    folga:{
+      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>',
+      hero:{ghost:'26', word:'Folga', kick:'próximo serviço <span class="y">QUI · LIS→FNC · 05:30</span>', arrow:'↘'},
+      util:{ttl:'Estado', p:'Sem serviços até quinta, <b>sem pendências</b>. Escala sincronizada <span class="ok">✓</span> Repouso em dia.'},
+      slats:[
+        {ic:IC.sun, k:'Férias', t:'ficam 9 de 22', s:'bloco em agosto', go:'→'},
+        {ic:IC.euro, k:'Julho estimado', t:'8 943,17 €', s:'pago no fim do mês', donut:{p:61,lab:'61%'}},
+      ]},
+    prereport:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">LIS→FNC</span>',
+      hero:{ghost:'05:30', word:'Report', kick:'faltam <span class="y">01:05</span> · 04:30Z · 2 setores', arrow:'↑'},
+      util:{ttl:'Checks', p:'Avião <b>G-UZHB</b> já em LIS <span class="ok">✓</span> Aeroporto normal <span class="ok">✓</span> PSV máx <b>13:00</b>.'},
+      slats:[
+        {ic:IC.gate, k:'Porta', t:'24 · Terminal 1', s:'confirmada 04:12', go:'↑'},
+        {ic:IC.euro, k:'Per-diem de hoje', t:'+41,08 €', s:'2 setores · Anexo I', go:'→'},
+      ]},
+    disrupcao:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">LIS→FNC</span>',
+      panel:{lab:'PARTIDA PODE DERRAPAR', big:'+25 min', sub:'inbound EJU7624 chega ~05:10Z · rotação mín. 35 min'},
+      util:{ttl:'Nota', p:'Projeção pela rotação — o teu voo <b>ainda não está marcado</b> como atrasado. Ganhas estes minutos de avanço.'},
+      slats:[
+        {ic:IC.alert, k:'Aeroporto LIS', t:'<span class="hi">54% das partidas atrasadas</span>', s:'média 39 min · agora', go:'→', tone:'warnp'},
+        {ic:IC.clock, k:'PSV projetado', t:'12:40 <span style="color:var(--grey)">/ 13:00</span>', s:'margem 0:20 · discrição 205(f) pronta', donut:{p:97,lab:'97%',dc:'var(--warn)'}},
+      ]},
+  };
+
+  function slat(s){
+    const tail=s.donut
+      ?'<div class="donut" style="--p:'+s.donut.p+(s.donut.dc?';--dc:'+s.donut.dc:'')+'"><i></i><b>'+s.donut.lab+'</b></div>'
+      :'<div class="sl-go">'+s.go+'</div>';
+    return '<div class="slat"><div class="plate '+(s.tone||'')+'">'+s.ic+'</div>'
+      +'<div class="sl-main"><div class="sl-k">'+s.k+'</div><div class="sl-t">'+s.t+'</div>'
+      +(s.s?'<div class="sl-s">'+s.s+'</div>':'')+'</div>'+tail+'</div>';
+  }
+  function render(id){
+    const st=STATES[id];
+    const hero=st.hero
+      ?'<div class="hero"><div class="arrowy">'+st.hero.arrow+'</div><div class="ghostnum">'+st.hero.ghost+'</div><div class="word">'+st.hero.word+'</div><div class="kick">'+st.hero.kick+'</div></div><div class="hr"></div>'
+      :'<div class="heropanel"><div class="plab">'+st.panel.lab+'</div><div class="pbig">'+st.panel.big+'</div><div class="psub">'+st.panel.sub+'</div><div class="prule"></div></div>';
+    document.getElementById('scr').innerHTML=
+      '<div class="greet">'+st.greet+'</div>'
+      +'<div class="side">'+st.side+'</div>'
+      +hero
+      +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
+      +st.slats.map(slat).join('')
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'"><div class="dp">'+d[1]+'</div>'+d[0]+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('folga');
+})();
+</script>
+</body>
+</html>

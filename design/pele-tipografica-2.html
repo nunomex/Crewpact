@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Tipográfica v2 — horas em destaque (ref. Flighty)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* V2 da LÍDER (pele-tipografica) + a referência Flighty do user ("destaque nos
+     números nas horas"): as HORAS são heróis — dígitos grandes tabulares cuja COR
+     é o estado (verde=confirmado/a tempo · laranja=derrapou, antiga RASURADA ao
+     lado · preto=planeado). No branco, o "glow" vira cor+peso. */
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --bad:#C6362B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 22px 0}
+
+  .greet{font-size:12px;font-weight:600;color:var(--grey)}
+  .side{position:absolute;right:10px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+
+  .hero{position:relative;margin-top:6px;height:168px}
+  .ghostnum{position:absolute;right:12px;top:-12px;font-family:'Barlow Condensed';font-weight:700;font-size:150px;line-height:1;color:var(--ghost);letter-spacing:-4px;font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:36px;font-family:'Barlow Condensed';font-weight:700;font-size:52px;line-height:.95;letter-spacing:-.5px}
+  .word.warn{color:var(--warn)}
+  .kick{position:absolute;left:2px;bottom:12px;font-size:13px;font-weight:700;color:var(--grey)}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .arrowy{position:absolute;left:2px;top:2px;color:var(--yellow);font-size:24px;font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:2px}
+
+  /* ── AS HORAS EM DESTAQUE (a novidade da v2) ──
+     linha por aeroporto: código pequeno · HORA GIGANTE colorida pelo estado ·
+     hora antiga rasurada quando derrapa · estado por baixo */
+  .times{padding:12px 2px 6px;border-bottom:1px solid var(--line)}
+  .trow{display:flex;align-items:baseline;gap:12px;padding:7px 0}
+  .tap{flex:0 0 74px;font-size:12px;font-weight:800;letter-spacing:.5px}
+  .tap small{display:block;font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:var(--grey);margin-top:1px}
+  .tbig{font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:1;letter-spacing:0;font-variant-numeric:tabular-nums}
+  .tbig.ok{color:var(--ok)}
+  .tbig.warn{color:var(--warn)}
+  .told{font-family:'Barlow Condensed';font-weight:600;font-size:22px;color:#B9B8B2;text-decoration:line-through;text-decoration-thickness:2px}
+  .tst{margin-left:auto;text-align:right;font-size:11px;font-weight:800}
+  .tst .ok{color:var(--ok)}
+  .tst .warn{color:var(--warn)}
+  .tst small{display:block;font-weight:600;color:var(--grey);margin-top:1px}
+
+  .util{display:flex;gap:16px;padding:12px 2px 10px;border-bottom:1px solid var(--line)}
+  .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.5px;flex:0 0 70px}
+  .util p{font-size:11.5px;font-weight:600;color:var(--grey);line-height:1.6;flex:1}
+  .util p b{color:var(--ink)}
+  .util p .ok{color:var(--ok);font-weight:800}
+  .util p .warn{color:var(--warn);font-weight:800}
+
+  .datarow{display:flex;align-items:center;gap:18px;padding:14px 2px}
+  .bigy{font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:1;color:var(--yellow);letter-spacing:1px;font-variant-numeric:tabular-nums}
+  .bigy small{display:block;font-family:'Hanken Grotesk';font-size:10px;font-weight:800;letter-spacing:2px;color:var(--grey);margin-top:4px}
+  .donutwrap{margin-left:auto;text-align:center}
+  .donut{width:48px;height:48px;border-radius:50%;background:conic-gradient(var(--dc,var(--yellow)) calc(var(--p)*1%), var(--line) 0);position:relative}
+  .donut i{position:absolute;inset:12px;border-radius:50%;background:var(--paper)}
+  .donutwrap small{display:block;font-size:9.5px;font-weight:800;letter-spacing:1.5px;color:var(--grey);margin-top:5px}
+
+  .dock{margin-top:auto;display:flex;justify-content:space-around;align-items:center;padding:14px 6px 24px;border-top:1.5px solid var(--ink)}
+  .di{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--grey);padding-bottom:4px}
+  .di.on{color:var(--ink);border-bottom:3px solid var(--yellow)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Tipográfica v2 — as horas em destaque</h1>
+    <div class="t">a cor do dígito É o estado</div>
+    <p>A tua líder + a referência Flighty: horas GIGANTES tabulares — <b>verde</b> confirmado/a tempo,
+    <b>laranja</b> derrapou (com a antiga <s>rasurada</s> ao lado), preto planeado.
+    No branco, o glow vira cor+peso. Vê a disrupção: as horas contam tudo sem uma palavra.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw on" data-s="folga">1 · Folga</button>
+    <button class="sw" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const STATES={
+    folga:{
+      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>',
+      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta-feira</span>', arrow:'↘'},
+      times:[
+        {ap:'LIS', aps:'REPORT QUI', big:'05:30', cls:'', st:'<span>planeado</span>', sts:'04:30Z'},
+      ],
+      util:{ttl:'Estado', p:'Sem serviços até quinta, <b>sem pendências</b>. Escala sincronizada <span class="ok">✓</span> Férias: ficam <b>9 de 22</b>.'},
+      bigy:{v:'8 943', u:'EUROS · JULHO ESTIMADO'}, donut:{p:61,lab:'MÊS 61%'} },
+    prereport:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
+      hero:{ghost:'01:05', word:'Report', warn:false, kick:'para o report <span class="y">05:30 · 04:30Z</span>', arrow:'↑'},
+      times:[
+        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo ✓</span>', sts:'porta 24'},
+        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'block 1:25'},
+      ],
+      util:{ttl:'Checks', p:'Avião <b>G-UZHB</b> já em LIS <span class="ok">✓</span> Aeroporto normal <span class="ok">✓</span> PSV máx <b>13:00</b>.'},
+      bigy:{v:'41,08', u:'EUR · PER-DIEM DE HOJE'}, donut:{p:8,lab:'PSV 8%'} },
+    disrupcao:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
+      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'o teu avião ainda vem a caminho', arrow:'⚠'},
+      times:[
+        {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa ~25 min</span>', sts:'inbound ~05:10Z'},
+        {ap:'FNC', aps:'CHEGADA', big:'~09:30', cls:'warn', old:'09:05', st:'<span class="warn">projeção</span>', sts:'rotação 35 min'},
+      ],
+      util:{ttl:'Nota', p:'Projeção pela rotação — o teu voo <b>ainda não está marcado</b>. LIS com <span class="warn">54% de atrasos</span> (média 39 min).'},
+      bigy:{v:'12:40', u:'PSV PROJETADO · MÁX 13:00'}, donut:{p:97,lab:'PSV 97%',dc:'var(--warn)'} },
+  };
+  const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
+  function trow(t){
+    return '<div class="trow"><div class="tap">'+t.ap+'<small>'+t.aps+'</small></div>'
+      +'<div class="tbig '+(t.cls||'')+'">'+t.big+'</div>'
+      +(t.old?'<div class="told">'+t.old+'</div>':'')
+      +'<div class="tst">'+t.st+'<small>'+t.sts+'</small></div></div>';
+  }
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="greet">'+st.greet+'</div>'
+      +'<div class="side">'+st.side+'</div>'
+      +'<div class="hero"><div class="arrowy">'+st.hero.arrow+'</div><div class="ghostnum">'+st.hero.ghost+'</div>'
+        +'<div class="word'+(st.hero.warn?' warn':'')+'">'+st.hero.word+'</div><div class="kick">'+st.hero.kick+'</div></div>'
+      +'<div class="hr"></div>'
+      +'<div class="times">'+st.times.map(trow).join('')+'</div>'
+      +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
+      +'<div class="datarow">'
+        +'<div class="bigy">'+st.bigy.v+'<small>'+st.bigy.u+'</small></div>'
+        +'<div class="donutwrap"><div class="donut" style="--p:'+st.donut.p+(st.donut.dc?';--dc:'+st.donut.dc:'')+'"><i></i></div><small>'+st.donut.lab+'</small></div>'
+      +'</div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('folga');
+})();
+</script>
+</body>
+</html>

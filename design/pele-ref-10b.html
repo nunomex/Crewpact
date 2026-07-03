@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele Ref-10B — o ecrã inteiro (cluster + grelha de atalhos com badges)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* A MESMA referência da ref-10, agora O ECRÃ INTEIRO fiel: o cluster de topo
+     (que o user já elogiou) + a GRELHA DE ATALHOS com BADGES (os "App Store 2 /
+     Gmail 50" viram contadores REAIS: mudanças de escala por rever, validades a
+     expirar, extras por registar) + pílula de pesquisa + dock de mosaicos escuros. */
+  :root{
+    --tx:#141414; --grey:#6E6E70; --ghost:rgba(20,20,20,.28); --line:#141414;
+    --red:#E13A2E; --pill:#141414; --paper:#F4F1EC;
+    --ok:#1F7A4D; --warn:#D96018; --tile:#1E2126;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:Manrope,system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:18px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:#fff;background:var(--red);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12px;color:#96a0ad;line-height:1.6}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--red);color:#fff;border-color:var(--red)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #0c0c0d;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--tx)}
+  .waves{position:absolute;inset:0;overflow:hidden}
+  .waves i{position:absolute;border-radius:50%;filter:blur(26px);opacity:.5}
+  .w1{width:520px;height:300px;background:#D9584A;left:-90px;top:300px;transform:rotate(-14deg)}
+  .w2{width:560px;height:280px;background:#B8C4CC;left:-60px;top:420px;transform:rotate(-10deg);opacity:.65}
+  .w3{width:600px;height:320px;background:#5E7186;left:-80px;top:540px;transform:rotate(-8deg)}
+  .w4{width:420px;height:200px;background:#EFE9E0;left:20px;top:250px;transform:rotate(-16deg);opacity:.7}
+  .wavefade{position:absolute;inset:0;background:linear-gradient(180deg, var(--paper) 0%, rgba(244,241,236,.86) 28%, rgba(244,241,236,.2) 52%, rgba(24,30,40,.42) 100%)}
+
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:22px 20px 0}
+
+  /* cluster de topo (o keeper) */
+  .cluster{display:flex;gap:14px}
+  .cleft{flex:1;min-width:0}
+  .divider{width:2.5px;background:var(--line);border-radius:2px}
+  .cright{flex:1.15;min-width:0;text-align:right}
+  .wx{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+  .wx .wico{font-size:17px}
+  .wx small{display:block;font-weight:600;color:var(--grey);font-size:10.5px}
+  .pills{display:flex;align-items:center;gap:8px;margin-top:11px}
+  .pdark{background:var(--pill);color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;letter-spacing:.5px}
+  .pbig{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+  .pred{display:inline-block;background:var(--red);color:#fff;border-radius:8px;padding:4px 10px;font-size:10px;font-weight:800;letter-spacing:1.5px;margin-top:12px;text-transform:uppercase}
+  .ghostn{font-family:'Zilla Slab';font-size:74px;font-weight:700;line-height:1;color:var(--ghost);margin-top:2px;font-variant-numeric:tabular-nums}
+  .dbig{font-family:'Zilla Slab';font-size:60px;font-weight:700;line-height:.95;font-variant-numeric:tabular-nums}
+  .dday{font-family:'Zilla Slab';font-size:25px;font-weight:700;margin-top:2px}
+  .agenda{margin-top:10px}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:4px 0}
+  .ag .a1{font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag .a1 .wa{color:var(--warn)}
+  .ag .a1 .okk{color:var(--ok)}
+  .ag .a2{font-size:9.5px;font-weight:600;color:var(--grey);font-variant-numeric:tabular-nums}
+  .ag .a2 s{color:#A5A5A2}
+  .ag .tick{width:2.5px;height:24px;background:var(--line);border-radius:2px;flex:0 0 auto}
+
+  /* GRELHA DE ATALHOS com badges (a novidade do ecrã inteiro) */
+  .grid{margin-top:auto;display:flex;justify-content:space-between;padding:0 4px}
+  .app{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#F2EFE8;text-shadow:0 1px 8px rgba(0,0,0,.5);position:relative}
+  .app .tile{width:56px;height:56px;border-radius:15px;background:var(--tile);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 22px rgba(0,0,0,.35)}
+  .app .tile svg{width:24px;height:24px;fill:none;stroke:#EDEAE2;stroke-width:1.7}
+  .badge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 4px 10px rgba(225,58,46,.45)}
+  .badge.okb{background:var(--ok)}
+
+  .search{margin:16px auto 12px;background:rgba(255,255,255,.5);backdrop-filter:blur(8px);border-radius:999px;padding:9px 18px;font-size:12px;font-weight:700;color:#3A3A3C;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+
+  .dock{margin:0 -20px;background:rgba(20,26,36,.6);backdrop-filter:blur(12px);display:flex;justify-content:space-around;align-items:center;padding:13px 12px 24px}
+  .dk{width:54px;height:54px;border-radius:15px;background:rgba(255,255,255,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:8px;font-weight:700;color:rgba(255,255,255,.85)}
+  .dk svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.7}
+  .dk.on{background:var(--red)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Ref-10B — o ecrã inteiro</h1>
+    <div class="t">cluster + atalhos com badges</div>
+    <p>A mesma referência, agora completa: o cluster de topo que já gostaste, e por baixo a
+    <b>grelha de atalhos com badges</b> — os "App Store 2 / Gmail 50" viram contadores REAIS:
+    mudanças de escala por rever, validades a expirar, extras por registar. Pesquisa e
+    dock de mosaicos como na imagem.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph">
+    <div class="waves"><i class="w4"></i><i class="w1"></i><i class="w2"></i><i class="w3"></i></div>
+    <div class="wavefade"></div>
+    <div class="scr" id="scr"></div>
+  </div>
+
+<script>
+(function(){
+  const CAL='<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>';
+  const DOCI='<svg viewBox="0 0 24 24"><path d="M6 3.5h9l4 4v13a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20.5v-15A1.5 1.5 0 0 1 6.5 3.5zM14.5 3.5V8H19"/><path d="M9 13h6M9 16.5h4"/></svg>';
+  const PLUSQ='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+  const FAM='<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M14.5 20c.2-2.6 1.6-4.4 4-4.4 2 0 3.3 1.3 3.5 4.4"/></svg>';
+  const HOME='<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9z"/></svg>';
+  const CHART='<svg viewBox="0 0 24 24"><path d="M4 20V9M10 20V4M16 20v-8M22 20H2"/></svg>';
+  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
+  const STATES={
+    folga:{
+      wx:['⛅','21° · pouco nublado','LIS · agora'], pill:['PRÓX','05:30'], red:'FOLGA', ghost:'2d',
+      dbig:'24', dday:'Terça',
+      agenda:[
+        {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30'},
+        {a1:'FNC→LIS 🌙 pernoita', a2:'SEX · report 06:15'},
+        {a1:'Férias: ficam 9 de 22', a2:'bloco em agosto'} ],
+      apps:[ {ic:CAL,l:'Escala',b:null}, {ic:DOCI,l:'Validades',b:'1'}, {ic:PLUSQ,l:'Extras',b:'2'}, {ic:FAM,l:'Família',b:null} ] },
+    prereport:{
+      wx:['☀️','27° · céu limpo','FNC · à chegada'], pill:['REP','05:30'], red:'HOJE', ghost:'1:05',
+      dbig:'26', dday:'Quinta',
+      agenda:[
+        {a1:'<span class="okk">Avião ✓ · Aeroporto ✓</span>', a2:'G-UZHB em LIS · porta 24'},
+        {a1:'EJU7625 · 06:40 → 09:05', a2:'LIS→FNC · a tempo'},
+        {a1:'PSV máx 13:00', a2:'per-diem +41,08 €'} ],
+      apps:[ {ic:CAL,l:'Escala',b:null}, {ic:FAM,l:'Família',b:'2'}, {ic:DOCI,l:'Validades',b:null}, {ic:PLUSQ,l:'Extras',b:null} ] },
+    disrupcao:{
+      wx:['☀️','27° · céu limpo','FNC · à chegada'], pill:['REP','05:30'], red:'⚠ ATENÇÃO', ghost:'+25',
+      dbig:'26', dday:'Quinta',
+      agenda:[
+        {a1:'<span class="wa">Partida ~07:05</span>', a2:'<s>06:40</s> · projeção'},
+        {a1:'Inbound EJU7624', a2:'chega ~05:10Z'},
+        {a1:'<span class="wa">PSV proj 12:40</span> / 13:00', a2:'LIS 54% atrasos'} ],
+      apps:[ {ic:CAL,l:'Escala',b:'1'}, {ic:FAM,l:'Família',b:'2'}, {ic:CLOCKI,l:'Simular',b:null}, {ic:PLUSQ,l:'Extras',b:null} ] },
+  };
+  const DOCKI=[ {ic:HOME,l:'Início',on:true}, {ic:CHART,l:'Estat.'}, {ic:CAL,l:'Escala'}, {ic:CLOCKI,l:'FTL/AE'} ];
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="cluster">'
+        +'<div class="cleft">'
+          +'<div class="wx"><span class="wico">'+st.wx[0]+'</span><span>'+st.wx[1]+'<small>'+st.wx[2]+'</small></span></div>'
+          +'<div class="pills"><span class="pdark">'+st.pill[0]+'</span><span class="pbig">'+st.pill[1]+'</span></div>'
+          +'<div class="pred">'+st.red+'</div>'
+          +'<div class="ghostn">'+st.ghost+'</div>'
+        +'</div>'
+        +'<div class="divider"></div>'
+        +'<div class="cright">'
+          +'<div class="dbig">'+st.dbig+'</div><div class="dday">'+st.dday+'</div>'
+          +'<div class="agenda">'+st.agenda.map(a=>'<div class="ag"><div><div class="a1">'+a.a1+'</div><div class="a2">'+a.a2+'</div></div><div class="tick"></div></div>').join('')+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="grid">'+st.apps.map(a=>'<div class="app">'+(a.b?'<div class="badge">'+a.b+'</div>':'')+'<div class="tile">'+a.ic+'</div>'+a.l+'</div>').join('')+'</div>'
+      +'<div class="search">🔍 procurar na escala</div>'
+      +'<div class="dock">'+DOCKI.map(d=>'<div class="dk'+(d.on?' on':'')+'">'+d.ic+d.l+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>

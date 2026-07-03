@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele Ref-6 — preto industrial, stencil + vermelho (fiel à referência)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Anton&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* PELE AUTÓNOMA (sem mistura) — fiel à referência "setup industrial": PRETO
+     total (vinheta + textura de carbono em CSS — a foto da ref não se replica),
+     LOCKUP em camadas: número STENCIL cinza gigante ⊕ palavra VERMELHA pesada
+     ⊕ faixa preta com o dia em branco espaçado; letra miúda utilitária; chip
+     vermelho do relógio; ícones de linha. Um só acento: VERMELHO. */
+  :root{
+    --bg:#0A0A0B; --tx:#EDEDED; --dim:#6E6E70; --stencil:#3E3E42;
+    --red:#D8281C; --band:#0A0A0B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Barlow Semi Condensed',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:18px;font-weight:700;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:#fff;background:var(--red);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12px;color:#96a0ad;line-height:1.6}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--red);color:#fff;border-color:var(--red)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #050506;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.95);background:var(--bg);color:var(--tx)}
+  /* textura carbono + vinheta (o "escuro fotográfico" sem foto) */
+  .ph::before{content:'';position:absolute;inset:0;background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px),
+    radial-gradient(120% 70% at 50% 0%, rgba(50,50,55,.5), transparent 60%),
+    radial-gradient(140% 90% at 50% 110%, rgba(0,0,0,.8), transparent 60%)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:26px 22px 0}
+
+  .hello{font-size:10px;font-weight:600;letter-spacing:5px;color:var(--dim);text-transform:uppercase}
+
+  /* O LOCKUP em camadas */
+  .lockup{position:relative;margin-top:120px;height:220px}
+  .stnum{position:absolute;right:-4px;top:0;font-family:'Saira Stencil One';font-size:150px;line-height:1;color:var(--stencil);letter-spacing:-4px;font-variant-numeric:tabular-nums}
+  .redword{position:absolute;left:0;bottom:64px;font-family:Anton,sans-serif;font-size:64px;line-height:1;color:var(--red);letter-spacing:1px;text-transform:uppercase;text-shadow:0 4px 24px rgba(216,40,28,.35)}
+  .band{position:absolute;left:0;bottom:34px;background:var(--band);border:1px solid #232326;padding:6px 12px;font-size:13px;font-weight:700;letter-spacing:5px;color:#fff;text-transform:uppercase}
+
+  /* letra miúda utilitária */
+  .fineprint{margin-top:26px;max-width:250px;font-size:10.5px;font-weight:500;letter-spacing:.6px;color:var(--dim);line-height:1.8;text-transform:uppercase}
+  .fineprint b{color:var(--tx);font-weight:700}
+  .fineprint .r{color:var(--red);font-weight:700}
+  .fineline{width:150px;height:1px;background:#2A2A2E;margin:12px 0}
+
+  /* chip vermelho do relógio + ícones de linha */
+  .bottomrow{margin-top:auto;display:flex;align-items:center;gap:20px;padding-bottom:14px}
+  .chipred{background:var(--red);color:#fff;border-radius:8px;padding:7px 12px;font-family:'Barlow Semi Condensed';font-size:16px;font-weight:700;letter-spacing:1px;box-shadow:0 8px 22px rgba(216,40,28,.35);font-variant-numeric:tabular-nums}
+  .chipred small{display:block;font-size:8px;font-weight:600;letter-spacing:2px;opacity:.85}
+  .lineic{margin-left:auto;display:flex;gap:18px}
+  .lineic svg{width:22px;height:22px;fill:none;stroke:var(--tx);stroke-width:1.5;opacity:.85}
+
+  .dock{display:flex;justify-content:space-around;align-items:center;padding:10px 6px 20px;border-top:1px solid #1B1B1E}
+  .di{font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#55555A}
+  .di.on{color:var(--red)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele Ref-6 — preto industrial, stencil + vermelho</h1>
+    <div class="t">um só acento</div>
+    <p>Fiel à referência: o <b>lockup em camadas</b> (número stencil cinza ⊕ palavra vermelha
+    pesada ⊕ faixa com o dia), o "hello!" miúdo, a <b>letra utilitária</b> em caixa alta,
+    o chip vermelho do relógio e os ícones de linha. Preto absoluto, um acento só.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="17" cy="18" r="2.2"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
+  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
+  const BEDI='<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="7" cy="11" r="1.6"/></svg>';
+  const DOCK=['Início','Estat.','Escala','FTL/AE'];
+  const STATES={
+    folga:{
+      hello:'OLÁ, NUNO !',
+      st:'26', red:'Folga', band:'ATÉ QUINTA · LIS→FNC',
+      fine:'PRÓXIMO SERVIÇO QUINTA COM REPORT ÀS <b>05:30</b>. FÉRIAS: FICAM <b>9 DE 22</b>. JULHO SEGUE NOS <b>8 943,17 €</b> ESTIMADOS. TUDO EM DIA.',
+      chip:{v:'2 DIAS', s:'ATÉ AO REPORT'} },
+    prereport:{
+      hello:'BOM DIA, NUNO !',
+      st:'1:05', red:'Report', band:'QUINTA · 2 SETORES',
+      fine:'O <b>G-UZHB</b> JÁ ESTÁ EM LISBOA. PORTA <b>24</b>, TERMINAL 1. NO FUNCHAL: CÉU LIMPO, <b>27°</b>. PSV MÁXIMO DE HOJE <b>13:00</b> · PER-DIEM <b>+41,08 €</b>.',
+      chip:{v:'05:30', s:'REPORT · 04:30Z'} },
+    disrupcao:{
+      hello:'BOM DIA, NUNO !',
+      st:'+25', red:'Atraso', band:'PROJEÇÃO · NOVA ~07:05',
+      fine:'O TEU AVIÃO AINDA VEM A CAMINHO — <b>EJU7624</b> CHEGA ~05:10Z. LISBOA COM <span class="r">54% DAS PARTIDAS ATRASADAS</span> (MÉD. 39M). PSV PROJETADO <span class="r">12:40</span> / MÁX 13:00.',
+      chip:{v:'~07:05', s:'ERA 06:40'} },
+  };
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="hello">'+st.hello+'</div>'
+      +'<div class="lockup"><div class="stnum">'+st.st+'</div><div class="redword">'+st.red+'</div><div class="band">'+st.band+'</div></div>'
+      +'<div class="fineprint">'+st.fine+'<div class="fineline"></div></div>'
+      +'<div class="bottomrow"><div class="chipred">'+st.chip.v+'<small>'+st.chip.s+'</small></div>'
+        +'<div class="lineic">'+SHARE+CLOCKI+BEDI+'</div></div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>

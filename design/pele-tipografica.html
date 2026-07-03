@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele "Tipográfica" — branco · preto · amarelo (sem gato)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Referência do user (poster tipográfico, SEM o gato): branco dominante, número
+     GIGANTE cinza-claro como fundo, palavra condensada preta SOBREPOSTA, amarelo em
+     doses cirúrgicas (setas, horas, dígitos, donut), micro-textos utilitários,
+     rótulos rodados. Zero caixas — a tipografia é a interface. */
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#DEDEDA; --grey:#77776F; --line:#ECEAE4;
+    --yellow:#FFB800; --ok:#1F7A4D; --warn:#E86A10; --bad:#C6362B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:620px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 22px 0;font-family:'Hanken Grotesk',sans-serif}
+
+  .greet{font-size:12px;font-weight:600;color:var(--grey)}
+  /* rótulo RODADO na margem direita (como "VISAKHAPATNAM, INDIA") */
+  .side{position:absolute;right:10px;top:120px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+
+  /* HERO tipográfico: número gigante fantasma + palavra condensada sobreposta */
+  .hero{position:relative;margin-top:8px;height:218px}
+  .ghostnum{position:absolute;right:14px;top:-14px;font-family:'Barlow Condensed';font-weight:700;font-size:190px;line-height:1;color:var(--ghost);letter-spacing:-4px;font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:44px;font-family:'Barlow Condensed';font-weight:700;font-size:56px;line-height:.95;letter-spacing:-.5px;text-transform:capitalize}
+  .kick{position:absolute;left:2px;bottom:18px;font-size:13px;font-weight:700;color:var(--grey)}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .arrowy{position:absolute;left:2px;top:6px;color:var(--yellow);font-size:26px;font-weight:800}
+  .hero.warn .ghostnum{color:#F3D9CB}
+  .hero.warn .word{color:var(--warn)}
+
+  .hr{height:1.5px;background:var(--ink);margin:6px 0 0}
+
+  /* bloco utilitário (estilo "Forecast") */
+  .util{display:flex;gap:16px;padding:14px 2px 12px;border-bottom:1px solid var(--line)}
+  .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.5px;flex:0 0 74px}
+  .util p{font-size:11.5px;font-weight:600;color:var(--grey);line-height:1.6;flex:1}
+  .util p b{color:var(--ink)}
+  .util p .ok{color:var(--ok);font-weight:800}
+  .util p .warn{color:var(--warn);font-weight:800}
+
+  /* linha de dados: dígitos AMARELOS grandes (estilo "1:30") + donut pac-man */
+  .datarow{display:flex;align-items:center;gap:18px;padding:16px 2px}
+  .bigy{font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:1;color:var(--yellow);letter-spacing:1px;font-variant-numeric:tabular-nums}
+  .bigy small{display:block;font-family:'Hanken Grotesk';font-size:10px;font-weight:800;letter-spacing:2px;color:var(--grey);margin-top:4px}
+  .donutwrap{margin-left:auto;text-align:center}
+  .donut{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--dc,var(--yellow)) calc(var(--p)*1%), var(--line) 0)}
+  .donut i{display:block;width:26px;height:26px;border-radius:50%;background:var(--paper);position:relative;top:13px;left:13px}
+  .donutwrap small{display:block;font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--grey);margin-top:6px}
+
+  .dock{margin-top:auto;display:flex;justify-content:space-around;align-items:center;padding:14px 6px 24px;border-top:1.5px solid var(--ink)}
+  .di{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--grey);padding-bottom:4px}
+  .di.on{color:var(--ink);border-bottom:3px solid var(--yellow)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele "Tipográfica" — a tua referência, sem o gato</h1>
+    <div class="t">branco · preto · amarelo cirúrgico</div>
+    <p>Zero caixas: o número gigante fantasma, a palavra condensada sobreposta, o amarelo só
+    onde importa (setas, horas, dígitos, donut), micro-textos utilitários e o rótulo rodado.
+    Compara com a <b>pele-sinaletica.html</b> (da foto das placas) — mesma paleta, sabor diferente.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw on" data-s="folga">1 · Folga</button>
+    <button class="sw" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const STATES={
+    folga:{
+      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>',
+      ghost:'26', word:'Folga', kick:'próximo serviço <span class="y">QUI · LIS→FNC · 05:30</span>', arrow:'↘', warn:false,
+      util:{ttl:'Estado', p:'Sem serviços até quinta. Repouso em dia, <b>sem pendências</b>. Férias: ficam <b>9 de 22</b> — bloco marcado em agosto. A escala está sincronizada <span class="ok">✓</span>'},
+      bigy:{v:'8 943', u:'EUROS · JULHO ESTIMADO'},
+      donut:{p:61, dc:'var(--yellow)', lab:'MÊS 61%'} },
+    prereport:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">LIS→FNC</span>',
+      ghost:'05:30', word:'Report', kick:'faltam <span class="y">01:05</span> · 04:30Z · 2 setores', arrow:'↑', warn:false,
+      util:{ttl:'Checks', p:'Avião <b>G-UZHB</b> já está em LIS <span class="ok">✓</span> Aeroporto normal <span class="ok">✓</span> Porta <b>24</b>, terminal 1. PSV máximo <b>13:00</b> — aclimatizado, 2 setores.'},
+      bigy:{v:'41,08', u:'EUR · PER-DIEM DE HOJE'},
+      donut:{p:8, dc:'var(--yellow)', lab:'PSV 8%'} },
+    disrupcao:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">LIS→FNC</span>',
+      ghost:'+25', word:'Atenção', kick:'partida pode derrapar <span class="y">~25 min</span>', arrow:'⚠', warn:true,
+      util:{ttl:'Causa', p:'O inbound <b>EJU7624</b> chega ~05:10Z (rotação mín. 35 min). LIS com <span class="warn">54% das partidas atrasadas</span>, média 39 min. O teu voo <b>ainda não está marcado</b> como atrasado.'},
+      bigy:{v:'12:40', u:'PSV PROJETADO · MÁX 13:00'},
+      donut:{p:97, dc:'var(--warn)', lab:'PSV 97%'} },
+  };
+  const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="greet">'+st.greet+'</div>'
+      +'<div class="side">'+st.side+'</div>'
+      +'<div class="hero'+(st.warn?' warn':'')+'">'
+        +'<div class="arrowy">'+st.arrow+'</div>'
+        +'<div class="ghostnum">'+st.ghost+'</div>'
+        +'<div class="word">'+st.word+'</div>'
+        +'<div class="kick">'+st.kick+'</div>'
+      +'</div>'
+      +'<div class="hr"></div>'
+      +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
+      +'<div class="datarow">'
+        +'<div class="bigy">'+st.bigy.v+'<small>'+st.bigy.u+'</small></div>'
+        +'<div class="donutwrap"><div class="donut" style="--p:'+st.donut.p+';--dc:'+st.donut.dc+'"><i></i></div><small>'+st.donut.lab+'</small></div>'
+      +'</div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('folga');
+})();
+</script>
+</body>
+</html>

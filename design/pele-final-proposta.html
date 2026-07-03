@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · PROPOSTA FINAL — a fusão dos teus keepers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* A FUSÃO — cada peça vem de um keeper teu:
+     · BASE = a líder tipográfica (branco, nº fantasma + palavra condensada, amarelo
+       cirúrgico, rótulo rodado, micro-texto)                  [“até agora gostei deste”]
+     · HORAS-SISTEMA = dígitos coloridos pelo estado + antiga rasurada     [Flighty]
+     · ZONA DO MEIO ADAPTATIVA = horas do voo OU agenda c/ tracinhos       [ref-10 topo]
+     · AÇÕES COM RÓTULO em fila fixa ao polegar                        [ref-3/8 “UX”]
+     · CHIP DAS HORAS no canto inferior esquerdo (preto c/ dígitos amarelos —
+       o combo legal da paleta)                              [ref-6 “gosto das horas ali”]
+     · FAIXA DE ALERTA em sítio fixo · alarme = LARANJA, nunca amarelo    [regras 3b]
+     · estrutura fixa, conteúdo adaptativo · 1 principal + 2 secundários  [Living Interface] */
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --warnSoft:#FBEAD9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:660px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 22px 0}
+
+  .greet{font-size:12px;font-weight:600;color:var(--grey)}
+  .side{position:absolute;right:10px;top:116px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+
+  /* faixa de alerta — sítio FIXO (3b) */
+  .alertband{margin:10px -22px 0;padding:9px 22px;background:var(--warnSoft);border-top:1px solid #F2CBA5;border-bottom:1px solid #F2CBA5;font-size:11.5px;font-weight:800;color:var(--warn)}
+  .alertband small{display:block;font-weight:600;color:#B07840;margin-top:1px;font-size:10.5px}
+
+  /* HERO da líder */
+  .hero{position:relative;margin-top:4px;height:150px}
+  .ghostnum{position:absolute;right:10px;top:-8px;font-family:'Barlow Condensed';font-weight:700;font-size:132px;line-height:1;color:var(--ghost);letter-spacing:-3px;font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:34px;font-family:'Barlow Condensed';font-weight:700;font-size:48px;line-height:.95;letter-spacing:-.5px}
+  .word.warn{color:var(--warn)}
+  .kick{position:absolute;left:2px;bottom:10px;font-size:12.5px;font-weight:700;color:var(--grey)}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .arrowy{position:absolute;left:2px;top:0;color:var(--yellow);font-size:22px;font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:2px}
+
+  /* ZONA DO MEIO ADAPTATIVA: horas (voo) OU agenda (folga) — o slot é o mesmo */
+  .mid{padding:10px 2px 8px;border-bottom:1px solid var(--line);min-height:118px}
+  .trow{display:flex;align-items:baseline;gap:11px;padding:6px 0}
+  .tap{flex:0 0 70px;font-size:11.5px;font-weight:800}
+  .tap small{display:block;font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--grey);margin-top:1px}
+  .tbig{font-family:'Barlow Condensed';font-weight:700;font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+  .tbig.ok{color:var(--ok)}
+  .tbig.warn{color:var(--warn)}
+  .told{font-family:'Barlow Condensed';font-weight:600;font-size:20px;color:#B9B8B2;text-decoration:line-through;text-decoration-thickness:2px}
+  .tst{margin-left:auto;text-align:right;font-size:10.5px;font-weight:800}
+  .tst .ok{color:var(--ok)}.tst .warn{color:var(--warn)}
+  .tst small{display:block;font-weight:600;color:var(--grey);margin-top:1px}
+  /* agenda c/ tracinhos (ref-10) — mesma zona, estado folga */
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:6px 0}
+  .ag .a1{font-size:13px;font-weight:800}
+  .ag .a2{font-size:10.5px;font-weight:600;color:var(--grey)}
+  .ag .tick{width:2.5px;height:26px;background:var(--ink);border-radius:2px}
+
+  /* micro-texto utilitário (líder) */
+  .util{display:flex;gap:14px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;flex:0 0 62px}
+  .util p{font-size:11px;font-weight:600;color:var(--grey);line-height:1.6;flex:1}
+  .util p b{color:var(--ink)}
+  .util p .ok{color:var(--ok);font-weight:800}
+  .util p .warn{color:var(--warn);font-weight:800}
+
+  /* BARRA DO POLEGAR: chip das horas (ref-6, preto c/ amarelo) + ações com rótulo (3b/8b) */
+  .thumb{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 0 12px}
+  .chip{background:var(--ink);border-radius:12px;padding:8px 13px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
+  .chip .cv{font-family:'Barlow Condensed';font-weight:700;font-size:22px;color:var(--yellow);letter-spacing:.5px;font-variant-numeric:tabular-nums;line-height:1}
+  .chip .cv s{color:#8f8f88;margin-right:5px}
+  .chip small{display:block;font-size:7.5px;font-weight:800;letter-spacing:1.6px;color:#B9B8B2;margin-top:3px;text-transform:uppercase}
+  .acts{margin-left:auto;display:flex;gap:8px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:8.5px;font-weight:700;color:var(--grey)}
+  .act .c{width:42px;height:42px;border-radius:13px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center}
+  .act .c svg{width:17px;height:17px;fill:none;stroke:var(--ink);stroke-width:1.7}
+  .act.hot{color:var(--ink)}
+  .act.hot .c{background:var(--ink);border-color:var(--ink)}
+  .act.hot .c svg{stroke:var(--yellow)}
+
+  .dock{display:flex;justify-content:space-around;align-items:center;padding:10px 6px 20px;border-top:1.5px solid var(--ink)}
+  .di{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:var(--grey);padding-bottom:4px}
+  .di.on{color:var(--ink);border-bottom:3px solid var(--yellow)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>PROPOSTA FINAL — a fusão dos teus keepers</h1>
+    <div class="t">líder + Flighty + ref-6 + ref-10 + o teu UX</div>
+    <p>Base = a tua <b>líder tipográfica</b>. Horas com a <b>cor do estado</b> e a antiga rasurada
+    (Flighty). A zona do meio é <b>adaptativa</b>: horas no dia de voo, agenda com tracinhos
+    na folga (ref-10). Em baixo, a barra do polegar: o <b>chip das horas</b> (ref-6 — preto com
+    dígitos amarelos, o combo legal da paleta) + <b>ações com rótulo</b> (o UX que elogiaste 2×).
+    Alarme = laranja em faixa fixa; o amarelo é só marca.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="17" cy="18" r="2.2"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
+  const BEDI='<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="7" cy="11" r="1.6"/></svg>';
+  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
+  const PLUSI='<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
+  const STATES={
+    folga:{
+      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>', band:null,
+      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC</span>', arrow:'↘'},
+      mid:{agenda:[
+        {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30 · 2 setores'},
+        {a1:'FNC→LIS 🌙 pernoita', a2:'SEX · report 06:15'},
+        {a1:'Férias: ficam 9 de 22', a2:'bloco em agosto'} ]},
+      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">✓</span> · repouso em dia · julho nos <b>8 943,17 €</b> estimados.'},
+      chip:{v:'2 DIAS', s:'até ao report'},
+      acts:[ {ic:PLUSI,l:'Extra',hot:true}, {ic:CLOCKI,l:'Simular'} ] },
+    prereport:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>', band:null,
+      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓', arrow:'↑'},
+      mid:{times:[
+        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo ✓</span>', sts:'porta 24'},
+        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'☀️ 27° limpo'} ]},
+      util:{ttl:'Hoje', p:'<b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · per-diem <b>+41,08 €</b>.'},
+      chip:{v:'05:30', s:'report · 04:30Z'},
+      acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:BEDI,l:'Hotel'}, {ic:CLOCKI,l:'Simular'} ] },
+    disrupcao:{
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
+      band:{t:'⚠ O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
+      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:'⚠'},
+      mid:{times:[
+        {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa</span>', sts:'projeção'},
+        {ap:'FNC', aps:'CHEGADA', big:'~09:30', cls:'warn', old:'09:05', st:'<span class="warn">projeção</span>', sts:'rotação 35m'} ]},
+      util:{ttl:'PSV', p:'projetado <span class="warn">12:40</span> / máx <b>13:00</b> · margem 0:20 · discrição 205(f) pronta.'},
+      chip:{v:'<s>06:40</s>~07:05', s:'nova partida'},
+      acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:CLOCKI,l:'Simular'} ] },
+  };
+  function mid(m){
+    if(m.times) return m.times.map(t=>'<div class="trow"><div class="tap">'+t.ap+'<small>'+t.aps+'</small></div>'
+      +'<div class="tbig '+(t.cls||'')+'">'+t.big+'</div>'+(t.old?'<div class="told">'+t.old+'</div>':'')
+      +'<div class="tst">'+t.st+'<small>'+t.sts+'</small></div></div>').join('');
+    return m.agenda.map(a=>'<div class="ag"><div style="text-align:right"><div class="a1">'+a.a1+'</div><div class="a2">'+a.a2+'</div></div><div class="tick"></div></div>').join('');
+  }
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="greet">'+st.greet+'</div>'
+      +'<div class="side">'+st.side+'</div>'
+      +(st.band?'<div class="alertband">'+st.band.t+'<small>'+st.band.s+'</small></div>':'')
+      +'<div class="hero"><div class="arrowy">'+st.hero.arrow+'</div><div class="ghostnum">'+st.hero.ghost+'</div>'
+        +'<div class="word'+(st.hero.warn?' warn':'')+'">'+st.hero.word+'</div><div class="kick">'+st.hero.kick+'</div></div>'
+      +'<div class="hr"></div>'
+      +'<div class="mid">'+mid(st.mid)+'</div>'
+      +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
+      +'<div class="thumb"><div class="chip"><div class="cv">'+st.chip.v+'</div><small>'+st.chip.s+'</small></div>'
+        +'<div class="acts">'+st.acts.map(a=>'<div class="act'+(a.hot?' hot':'')+'"><div class="c">'+a.ic+'</div>'+a.l+'</div>').join('')+'</div></div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>

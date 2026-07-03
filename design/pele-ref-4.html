@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele Ref-4 — luxo quente, pílulas flutuantes (fiel à referência)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* PELE AUTÓNOMA (sem mistura) — fiel à referência smart-home "luxo quente":
+     tons oliva/dourado sobre fundo desfocado, tipografia display branca grande e
+     simpática, PÍLULAS FLUTUANTES de anotação (frosted) apontadas às coisas,
+     chips brancos de seleção, e a fila de CÍRCULOS de "cenas" (aqui = ações).
+     Conteúdo nosso, 3 estados. */
+  :root{
+    --tx:#F4F1E8; --dim:#B9B29C; --deep:#151310;
+    --pillW:#FFFFFF; --pillWtx:#1E1B14;
+    --frost:rgba(255,255,255,.14); --frostLine:rgba(255,255,255,.22);
+    --gold:#D9B96A; --amb:#F0A054; --ok:#A9CF9E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:Onest,system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:18px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:#1E1B14;background:var(--gold);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12px;color:#96a0ad;line-height:1.6}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--gold);color:#1E1B14;border-color:var(--gold)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);color:var(--tx);
+    background:linear-gradient(165deg,#3B3524 0%,#2A2519 40%,#17150F 100%)}
+  /* “fotografia” quente desfocada */
+  .ph::before{content:'';position:absolute;inset:-50px;background:
+    radial-gradient(260px 300px at 75% 18%, rgba(217,185,106,.28), transparent 70%),
+    radial-gradient(300px 340px at 20% 60%, rgba(150,120,60,.22), transparent 70%),
+    radial-gradient(240px 280px at 80% 85%, rgba(217,185,106,.14), transparent 70%);
+    filter:blur(34px)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:20px 20px 0}
+
+  .toprow{display:flex;align-items:center;gap:11px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#1E1B14}
+  .hi{font-size:14px;font-weight:700}
+  .hi small{display:block;font-size:11px;font-weight:500;color:var(--dim);font-style:italic}
+  .bell{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--pillW);display:flex;align-items:center;justify-content:center}
+  .bell svg{width:17px;height:17px;fill:#1E1B14}
+  .bell.dot::after{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:var(--amb);transform:translate(12px,-12px)}
+
+  /* display grande e simpático */
+  .display{margin-top:18px;font-size:36px;font-weight:600;line-height:1.14;letter-spacing:-.8px}
+  .display b{font-weight:800}
+  .display .wa{color:var(--amb)}
+
+  /* chips de seleção (ativo = branco sólido) */
+  .chips{display:flex;gap:8px;margin-top:16px}
+  .chip{border:1px solid var(--frostLine);background:var(--frost);backdrop-filter:blur(6px);color:var(--tx);border-radius:999px;padding:9px 15px;font-size:12px;font-weight:600}
+  .chip.on{background:var(--pillW);color:var(--pillWtx);border-color:var(--pillW);font-weight:800}
+
+  /* zona “fotografia” com as PÍLULAS FLUTUANTES de anotação */
+  .scene{position:relative;margin-top:14px;height:190px;border-radius:22px;overflow:hidden;
+    background:linear-gradient(150deg, rgba(217,185,106,.24), rgba(90,75,40,.30) 55%, rgba(20,18,12,.4)),
+               radial-gradient(180px 140px at 70% 30%, rgba(255,230,170,.25), transparent 70%)}
+  .scene::before{content:'';position:absolute;inset:0;backdrop-filter:blur(2px)}
+  .tag{position:absolute;display:flex;align-items:center;gap:9px;background:var(--pillW);color:var(--pillWtx);border-radius:999px;padding:9px 14px;font-size:11px;font-weight:700;line-height:1.35;box-shadow:0 12px 28px rgba(0,0,0,.35)}
+  .tag .ic{width:26px;height:26px;border-radius:50%;background:#EFE7D2;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .tag.frost{background:var(--frost);color:var(--tx);border:1px solid var(--frostLine);backdrop-filter:blur(8px);box-shadow:none}
+  .tag.frost .ic{background:rgba(255,255,255,.16)}
+  .tag .wa2{color:var(--amb)}
+  .scene .big{position:absolute;left:16px;bottom:12px;font-size:24px;font-weight:800;letter-spacing:-.5px}
+  .scene .big small{display:block;font-size:11px;font-weight:600;color:var(--dim);letter-spacing:0}
+
+  /* fila de círculos de “cenas” = AÇÕES */
+  .scenes{margin-top:16px}
+  .sh{font-size:13px;font-weight:800;margin-bottom:10px}
+  .orbrow{display:flex;gap:16px}
+  .orb{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;font-weight:600;color:var(--dim)}
+  .orb .c{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--frostLine);background:var(--frost);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-size:19px}
+  .orb.on{color:var(--tx)}
+  .orb.on .c{background:var(--pillW);border-color:var(--pillW);color:#1E1B14}
+
+  .dock{margin-top:auto;display:flex;justify-content:space-around;align-items:center;padding:12px 6px 22px;border-top:1px solid rgba(255,255,255,.08)}
+  .di{font-size:10px;font-weight:600;color:#7A745F}
+  .di.on{color:var(--tx)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele Ref-4 — luxo quente, pílulas flutuantes</h1>
+    <div class="t">oliva · dourado · frosted</div>
+    <p>Fiel à referência: o fundo quente desfocado, o display branco grande e simpático,
+    as <b>pílulas de anotação</b> a flutuar sobre a "cena" (aqui apontam aos factos do teu dia),
+    os <b>chips brancos</b> de seleção e a fila de <b>círculos de cenas</b> — que nas nossas mãos
+    são as ações do estado.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const BELL='<svg viewBox="0 0 24 24"><path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6v-5a6 6 0 0 0-4.5-5.8V4.5a1.5 1.5 0 0 0-3 0v.7A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
+  const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
+  const STATES={
+    folga:{
+      hi:'Olá, Nuno', hisub:'bem-vindo de volta', belldot:false,
+      display:'Folga.<br><b>A app fica de fora.</b>',
+      chips:[['Hoje',1],['Semana',0],['Mês',0]],
+      scene:{big:'QUI 26 <small>próximo · LIS→FNC · report 05:30</small>', tags:[
+        {t:'Férias: ficam <b>9 de 22</b>', ic:'🌴', x:14, y:16, frost:false},
+        {t:'Julho: <b>8 943,17 €</b> estimado', ic:'€', x:96, y:74, frost:true} ]},
+      scenes:[ ['📅','Escala',0], ['➕','Extra',1], ['🧮','Simular',0], ['📈','Stats',0] ] },
+    prereport:{
+      hi:'Bom dia, Nuno', hisub:'quinta · dia de voo', belldot:false,
+      display:'Report em<br><b>1h 05m.</b>',
+      chips:[['Hoje',1],['Voo',0],['Depois',0]],
+      scene:{big:'LIS → FNC <small>06:40 → 09:05 · porta 24 · PSV máx 13:00</small>', tags:[
+        {t:'Avião <b>já em LIS</b> ✓', ic:'✈️', x:14, y:16, frost:false},
+        {t:'FNC à chegada: <b>27° limpo</b>', ic:'☀️', x:110, y:72, frost:true} ]},
+      scenes:[ ['🔗','Partilhar',1], ['🏨','Hotel',0], ['🧮','Simular',0], ['€','Per-diem',0] ] },
+    disrupcao:{
+      hi:'Bom dia, Nuno', hisub:'quinta · atenção ao dia', belldot:true,
+      display:'Partida derrapa<br><b class="wa">~25 min.</b>',
+      chips:[['Agora',1],['Voo',0],['Depois',0]],
+      scene:{big:'~07:05 <small>era 06:40 · chegada ~09:30 · projeção</small>', tags:[
+        {t:'Inbound <b>chega ~05:10Z</b>', ic:'✈️', x:14, y:16, frost:false},
+        {t:'<span class="wa2">LIS 54% atrasos · méd. 39m</span>', ic:'⚠️', x:84, y:72, frost:true} ]},
+      scenes:[ ['🔗','Partilhar',1], ['🧮','Simular',0], ['§','Discrição',0], ['🏨','Hotel',0] ] },
+  };
+  function render(id){
+    const st=STATES[id];
+    const tags=st.scene.tags.map(t=>'<div class="tag'+(t.frost?' frost':'')+'" style="left:'+t.x+'px;top:'+t.y+'px"><span class="ic">'+t.ic+'</span><span>'+t.t+'</span></div>').join('');
+    document.getElementById('scr').innerHTML=
+      '<div class="toprow"><div class="avatar">N</div><div class="hi">'+st.hi+'<small>'+st.hisub+'</small></div><div class="bell'+(st.belldot?' dot':'')+'" style="position:relative">'+BELL+'</div></div>'
+      +'<div class="display">'+st.display+'</div>'
+      +'<div class="chips">'+st.chips.map(c=>'<div class="chip'+(c[1]?' on':'')+'">'+c[0]+'</div>').join('')+'</div>'
+      +'<div class="scene">'+tags+'<div class="big">'+st.scene.big+'</div></div>'
+      +'<div class="scenes"><div class="sh">Ações</div><div class="orbrow">'
+        +st.scenes.map(s=>'<div class="orb'+(s[2]?' on':'')+'"><div class="c">'+s[0]+'</div>'+s[1]+'</div>').join('')+'</div></div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele "Sinalética" — branco · preto · amarelo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Paleta do user: BRANCO principal · PRETO · AMARELO (sinalética de aeroporto).
+     Regras: amarelo NUNCA é texto sobre branco (é PLACA, ou texto sobre preto);
+     avisos = LARANJA/VERMELHO (o amarelo é marca, não alarme). */
+  :root{
+    --paper:#FFFFFF; --ink:#131313; --yellow:#FFCC00; --grey:#6B6B66; --line:#E8E6E0;
+    --ok:#1F7A4D; --warn:#E86A10; --bad:#C6362B; --panel:#1A1A1A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:620px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:22px 20px 0}
+
+  /* cabeçalho estilo "Departures ↑": título + SETA + régua amarela */
+  .greet{font-size:12.5px;font-weight:600;color:var(--grey)}
+  .head{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+  .head h2{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  .head .arrow{margin-left:auto;font-size:24px;font-weight:800}
+  .rule{height:3px;background:var(--yellow);border-radius:2px;margin-top:10px}
+
+  /* PAINEL PRETO (hero) — a placa principal, como a da foto */
+  .panel{margin-top:14px;background:var(--panel);color:#fff;border-radius:16px;padding:16px 17px;position:relative;overflow:hidden}
+  .panel .plab{font-size:10px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:var(--yellow)}
+  .panel .pbig{font-size:46px;font-weight:800;letter-spacing:-1.5px;line-height:1.05;margin-top:4px;font-variant-numeric:tabular-nums}
+  .panel .psub{font-size:13px;font-weight:600;color:#CFCFC8;margin-top:5px}
+  .panel .prule{height:2px;background:var(--yellow);margin:12px -17px 10px;opacity:.9}
+  .panel .pfoot{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--yellow)}
+  .panel.warn .plab{color:#FFB38A}
+  .panel.warn .pbig{color:#FF9D5C}
+  .panel.warn .prule{background:var(--warn)}
+  .panel.warn .pfoot{color:#FFB38A}
+
+  /* SLATS — as réguas empilhadas da sinalética: placa amarela + rótulo + valor + seta */
+  .slats{margin-top:14px;border-top:1px solid var(--line)}
+  .slat{display:flex;align-items:center;gap:13px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .plate{flex:0 0 40px;height:40px;border-radius:10px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+  .plate svg{width:22px;height:22px;fill:#131313}
+  .plate.okp{background:var(--ok)}.plate.okp svg{fill:#fff}
+  .plate.warnp{background:var(--warn)}.plate.warnp svg{fill:#fff}
+  .plate.badp{background:var(--bad)}.plate.badp svg{fill:#fff}
+  .sl-main{flex:1;min-width:0}
+  .sl-k{font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey)}
+  .sl-t{font-size:16.5px;font-weight:800;margin-top:1px;letter-spacing:-.2px}
+  .sl-s{font-size:11.5px;font-weight:600;color:var(--grey);margin-top:1px}
+  .sl-go{font-size:19px;font-weight:800;color:var(--ink)}
+  .sl-t .hi{color:var(--warn)}
+  .sl-t .okt{color:var(--ok)}
+
+  /* dock preto, ativo em placa amarela */
+  .dock{margin-top:auto;background:var(--panel);margin-left:-20px;margin-right:-20px;display:flex;justify-content:space-around;align-items:center;padding:12px 10px 22px}
+  .di{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#8f8f88}
+  .di .dp{width:34px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  .di svg{width:15px;height:15px;fill:#8f8f88}
+  .di.on{color:#fff}
+  .di.on .dp{background:var(--yellow)}
+  .di.on svg{fill:#131313}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele "Sinalética" — a tua paleta</h1>
+    <div class="t">branco principal · preto · amarelo</div>
+    <p>A linguagem da placa do aeroporto aplicada à Home: <b>placas amarelas com pictogramas</b>,
+    réguas empilhadas, o painel preto como destaque (com a régua amarela, como na tua foto),
+    setas como convite. Regras: amarelo nunca é texto sobre branco; <b>avisos são laranja/vermelho</b>
+    — o amarelo é a marca, não o alarme.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw on" data-s="folga">1 · Folga</button>
+    <button class="sw" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  // pictogramas (ISO-7001-ish, simplificados)
+  const IC={
+    plane:'<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>',
+    clock:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 5h-2v6l5 3 1-1.7-4-2.3V7z"/></svg>',
+    sun:'<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5 2 3h-4l2-3zm0 20-2-3h4l-2 3zM2 12l3-2v4l-3-2zm20 0-3 2v-4l3 2zM4.9 4.9 8 6.2 6.2 8 4.9 4.9zm14.2 14.2L16 17.8 17.8 16l1.3 3.1zM4.9 19.1 6.2 16 8 17.8l-3.1 1.3zM19.1 4.9 17.8 8 16 6.2l3.1-1.3z"/></svg>',
+    euro:'<svg viewBox="0 0 24 24"><path d="M15 18.5A6.5 6.5 0 0 1 8.7 14H15v-2H8.2a6.6 6.6 0 0 1 0-2H15V8H8.7A6.5 6.5 0 0 1 15 3.5c1.6 0 3.1.6 4.2 1.6L21 3.3A9 9 0 0 0 6.5 8H3v2h3v2H3v2h3.5A9 9 0 0 0 21 18.7l-1.8-1.8a6.4 6.4 0 0 1-4.2 1.6z"/></svg>',
+    gate:'<svg viewBox="0 0 24 24"><path d="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4v-2h3V5H6v14h3v2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 6 4 4h-3v6h-2v-6H8l4-4z"/></svg>',
+    alert:'<svg viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>',
+    check:'<svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>',
+    board:'<svg viewBox="0 0 24 24"><path d="M3 4h18v12H3V4zm2 2v8h14V6H5zm-1 12h20v2H4v-2z"/></svg>',
+    cal:'<svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z"/></svg>',
+    scale:'<svg viewBox="0 0 24 24"><path d="M4 4h16v3H4V4zm0 6.5h16v3H4v-3zM4 17h16v3H4v-3z"/></svg>',
+  };
+  const DOCK=[['Início',IC.board],['Estatísticas',IC.scale],['Escala',IC.cal],['FTL/AE',IC.clock]];
+
+  const STATES={
+    folga:{
+      greet:'Boa tarde, Nuno', title:'Folga', arrow:'→',
+      panel:{lab:'PRÓXIMO SERVIÇO', big:'2 dias', sub:'QUI 26 · LIS→FNC · report 05:30 · 04:30Z', foot:[IC.plane,'a app fica de fora até lá'], warn:false},
+      slats:[
+        {ic:IC.sun, k:'Férias', t:'ficam 9 de 22', s:'ano civil · bloco em agosto', go:'→'},
+        {ic:IC.euro, k:'Julho', t:'8 943,17 €', s:'estimado até hoje · pago fim do mês', go:'→'},
+      ]},
+    prereport:{
+      greet:'Bom dia, Nuno', title:'Report', arrow:'↑',
+      panel:{lab:'LIS→FNC · 2 SETORES', big:'01:05', sub:'report 05:30 · 04:30Z · PSV máx 13:00', foot:[IC.check,'avião em LIS ✓ · aeroporto ✓'], warn:false},
+      slats:[
+        {ic:IC.gate, k:'Porta', t:'24', s:'terminal 1 · confirmada 04:12', go:'↑'},
+        {ic:IC.euro, k:'Per-diem de hoje', t:'+41,08 €', s:'2 setores · Anexo I', go:'→'},
+      ]},
+    disrupcao:{
+      greet:'Bom dia, Nuno', title:'Atenção', arrow:'⚠',
+      panel:{lab:'PARTIDA PODE DERRAPAR', big:'+25 min', sub:'inbound EJU7624 chega ~05:10Z · rotação mín. 35 min', foot:[IC.alert,'projeção — o teu voo ainda não está marcado'], warn:true},
+      slats:[
+        {ic:IC.plane, k:'Aeroporto LIS', t:'<span class="hi">54% das partidas atrasadas</span>', s:'média 39 min · fotografia de agora', go:'→', tone:'warnp'},
+        {ic:IC.clock, k:'PSV projetado', t:'12:40 <span style="color:var(--grey)">/ 13:00</span>', s:'margem 0:20 · discrição 205(f) pronta se precisares', go:'→'},
+      ]},
+  };
+
+  function slat(s){
+    return '<div class="slat"><div class="plate '+(s.tone||'')+'">'+s.ic+'</div>'
+      +'<div class="sl-main"><div class="sl-k">'+s.k+'</div><div class="sl-t">'+s.t+'</div>'
+      +(s.s?'<div class="sl-s">'+s.s+'</div>':'')+'</div><div class="sl-go">'+s.go+'</div></div>';
+  }
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="greet">'+st.greet+'</div>'
+      +'<div class="head"><h2>'+st.title+'</h2><span class="arrow">'+st.arrow+'</span></div>'
+      +'<div class="rule"></div>'
+      +'<div class="panel'+(st.panel.warn?' warn':'')+'">'
+        +'<div class="plab">'+st.panel.lab+'</div>'
+        +'<div class="pbig">'+st.panel.big+'</div>'
+        +'<div class="psub">'+st.panel.sub+'</div>'
+        +'<div class="prule"></div>'
+        +'<div class="pfoot"><span style="width:16px;height:16px;display:inline-flex">'+st.panel.foot[0].replace('<svg','<svg style="fill:currentColor;width:16px;height:16px"')+'</span>'+st.panel.foot[1]+'</div>'
+      +'</div>'
+      +'<div class="slats">'+st.slats.map(slat).join('')+'</div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'"><div class="dp">'+d[1]+'</div>'+d[0]+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('folga');
+})();
+</script>
+</body>
+</html>

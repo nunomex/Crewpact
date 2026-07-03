@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele Ref-11 — a foto ao anoitecer e o pincel (fiel à referência)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* PELE AUTÓNOMA (última da série) — fiel à referência "Golden Gate ao anoitecer":
+     cenário aéreo em cima a DESVANECER para preto, número em PINCEL manuscrito,
+     dia sublinhado "& mês", e o bloco de CITAÇÃO entre aspas com a narrativa.
+     O cenário é recriado em CSS/SVG — céu de crepúsculo, montanhas, e em vez da
+     ponte, a PISTA iluminada na aproximação (a nossa Golden Gate). */
+  :root{
+    --tx:#F4F2EE; --dim:#9A968E; --black:#0A0A0B;
+    --dusk1:#B8C4CE; --dusk2:#8E8E9C; --mount:#4A3A32; --mount2:#2B221D;
+    --redlight:#E14B3A; --warn:#F0A054;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:Jost,system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:18px;font-weight:700;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:600;letter-spacing:1.4px;color:#0A0A0B;background:#B8C4CE;border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12px;color:#96a0ad;line-height:1.6}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:600;font-size:12px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:#B8C4CE;color:#0A0A0B;border-color:#B8C4CE}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #060607;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.95);background:var(--black);color:var(--tx)}
+
+  /* o CENÁRIO: crepúsculo → montanhas → pista iluminada → desvanece p/ preto */
+  .scene{position:absolute;left:0;right:0;top:0;height:46%;overflow:hidden;
+    background:linear-gradient(180deg, var(--dusk1) 0%, var(--dusk2) 34%, #6E5D52 58%, #3A2E27 100%)}
+  .scene svg{position:absolute;left:0;right:0;bottom:0;width:100%}
+  .fade{position:absolute;left:0;right:0;top:30%;height:26%;background:linear-gradient(180deg, transparent, var(--black) 92%)}
+
+  .scr{position:absolute;inset:0;padding:0 26px}
+
+  /* número em PINCEL + "th" */
+  .brush{position:absolute;right:30px;top:47%;font-family:Caveat;font-weight:700;font-size:110px;line-height:.9;color:var(--tx);transform:rotate(-4deg)}
+  .brush sup{font-size:30px;font-weight:600;margin-left:4px}
+  /* dia sublinhado & mês */
+  .dayline{position:absolute;right:30px;top:62.5%;text-align:right;font-size:21px;font-weight:600;letter-spacing:.5px}
+  .dayline u{text-decoration-thickness:2px;text-underline-offset:5px}
+  .dayline u.warnu{text-decoration-color:var(--warn)}
+  .dayline .amp{color:var(--dim);font-weight:400;margin:0 4px}
+  .yearline{position:absolute;right:32px;top:66.8%;font-size:12px;font-weight:500;letter-spacing:5px;color:var(--dim)}
+
+  /* bloco de CITAÇÃO */
+  .quote{position:absolute;left:34px;right:34px;top:73%;text-align:center}
+  .quote .qm{font-family:Caveat;font-size:26px;color:var(--dim);line-height:.5}
+  .quote .qm.close{text-align:right;display:block;margin-top:4px}
+  .quote p{font-size:11.5px;font-weight:400;color:#CFCCC5;line-height:1.75;letter-spacing:.2px}
+  .quote p b{color:var(--tx);font-weight:600}
+  .quote p .wa{color:var(--warn);font-weight:600}
+
+  /* fila de ícones outline */
+  .icons{position:absolute;left:0;right:0;bottom:26px;display:flex;justify-content:center;gap:38px}
+  .icons svg{width:22px;height:22px;fill:none;stroke:var(--tx);stroke-width:1.4;opacity:.85}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele Ref-11 — o anoitecer e o pincel</h1>
+    <div class="t">foto → preto · manuscrito · citação</div>
+    <p>Fiel à referência: o cenário aéreo a desvanecer para preto (recriado — em vez da
+    Golden Gate, a <b>pista iluminada na aproximação</b>), o número em <b>pincel manuscrito</b>,
+    o dia <b>sublinhado</b> "& mês", e a narrativa entre <b>aspas</b>, como uma citação do teu dia.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph">
+    <div class="scene">
+      <svg viewBox="0 0 394 220" preserveAspectRatio="none">
+        <path d="M0 140 L60 92 L110 128 L170 70 L230 118 L290 84 L340 112 L394 88 L394 220 L0 220 Z" fill="#4A3A32"/>
+        <path d="M0 168 L70 128 L140 158 L210 116 L280 150 L394 122 L394 220 L0 220 Z" fill="#332721" opacity=".92"/>
+        <!-- a pista na aproximação (a nossa Golden Gate) -->
+        <g opacity=".95">
+          <path d="M186 220 L206 220 L200 150 L192 150 Z" fill="#1A1512"/>
+          <path d="M195.2 158 h3.6 M194.6 170 h4.8 M194 184 h6 M193.2 200 h7.6" stroke="#E14B3A" stroke-width="3" stroke-linecap="round"/>
+          <path d="M196.4 150 h1.4" stroke="#F4F2EE" stroke-width="2.4" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+    <div class="fade"></div>
+    <div class="scr" id="scr"></div>
+  </div>
+
+<script>
+(function(){
+  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="17" cy="18" r="2.2"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
+  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
+  const BEDI='<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="7" cy="11" r="1.6"/></svg>';
+  const CALI='<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>';
+  const STATES={
+    folga:{
+      brush:'2d', sup:'', day:'<u>Terça</u><span class="amp">&</span>Julho', wu:'', year:'2 0 2 6',
+      quote:'Sem serviços até quinta — o próximo é <b>LIS→FNC</b> com report às <b>05:30</b>. Férias: ficam <b>9 de 22</b>. Julho segue nos <b>8 943 €</b> estimados. Está tudo em dia.' },
+    prereport:{
+      brush:'1:05', sup:'h', day:'<u>Quinta</u><span class="amp">&</span>Voo', wu:'', year:'0 4 : 3 0 Z',
+      quote:'O <b>G-UZHB</b> já dorme em Lisboa; a porta é a <b>24</b>. No Funchal espera-te <b>céu limpo com 27°</b>. O PSV de hoje estica até às <b>13:00</b> — per-diem <b>+41,08 €</b>.' },
+    disrupcao:{
+      brush:'+25', sup:'m', day:'<u class="warnu">Quinta</u><span class="amp">&</span>Atenção', wu:'warnu', year:'~ 0 7 : 0 5',
+      quote:'O teu avião ainda vem a caminho — o <b>EJU7624</b> chega ~05:10Z. Lisboa acordou difícil: <span class="wa">54% das partidas atrasadas</span>. PSV projetado <span class="wa">12:40</span> / 13:00. O teu voo ainda não está marcado.' },
+  };
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="brush">'+st.brush+(st.sup?'<sup>'+st.sup+'</sup>':'')+'</div>'
+      +'<div class="dayline">'+st.day+'</div>'
+      +'<div class="yearline">'+st.year+'</div>'
+      +'<div class="quote"><span class="qm">“</span><p>'+st.quote+'</p><span class="qm close">”</span></div>'
+      +'<div class="icons">'+CALI+SHARE+BEDI+CLOCKI+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>

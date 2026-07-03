@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Pele Ref-5 — sépia editorial, a espinha vertical (fiel à referência)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* PELE AUTÓNOMA (sem mistura) — fiel à referência "lockscreen poético": papel
+     sépia, NÚMERO gigante, o dia RODADO ao longo de uma linha-espinha vertical,
+     parágrafo em prosa com borda à esquerda (a meteo/narrativa), caixa alta
+     espaçada, fotografia desvanecida em névoa no fundo (recriada em CSS, sem
+     fotos), dois ícones de linha nos cantos. Conteúdo nosso, 3 estados. */
+  :root{
+    --paper:#F0E9DC; --ink:#1B1712; --grey:#8B8072; --line:#1B1712;
+    --mist:#D8CCB8; --warn:#A34A2A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:Poppins,system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:18px;font-weight:700;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:#1B1712;background:#D8CCB8;border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12px;color:#96a0ad;line-height:1.6}.lead b{color:#fff}
+  .switch{display:flex;gap:8px}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:600;font-size:12px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:#D8CCB8;color:#1B1712;border-color:#D8CCB8}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #0a0a0a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;padding:30px 26px 0}
+
+  /* névoa + "fotografia" desvanecida no fundo (sem foto: gradientes + silhueta) */
+  .mist{position:absolute;left:0;right:0;bottom:0;height:300px;pointer-events:none;
+    background:linear-gradient(180deg, transparent 0%, rgba(216,204,184,.5) 40%, #CDBFA6 100%)}
+  .mist svg{position:absolute;right:-20px;bottom:48px;width:280px;height:170px;opacity:.16;fill:#3A2F22}
+  .mist::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, transparent 30%, rgba(240,233,220,.25) 70%, rgba(240,233,220,.55) 100%)}
+
+  /* número gigante + palavra por extenso */
+  .bignum{font-size:104px;font-weight:600;line-height:.95;letter-spacing:-3px;font-variant-numeric:tabular-nums}
+  .bignum.warn{color:var(--warn)}
+  .extenso{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .extenso .dash{width:34px;height:2px;background:var(--ink)}
+  .extenso .w{font-size:15px;font-weight:600;letter-spacing:5px;text-transform:uppercase}
+
+  /* a ESPINHA: linha vertical + dia rodado + data empilhada */
+  .spine{position:relative;margin-top:22px;padding-left:56px;min-height:290px}
+  .spine .vline{position:absolute;left:38px;top:0;bottom:0;width:1.5px;background:var(--line)}
+  .spine .vday{position:absolute;left:8px;top:0;transform:rotate(-90deg) translateX(-100%);transform-origin:left top;font-size:13px;font-weight:600;letter-spacing:6px;text-transform:uppercase;white-space:nowrap}
+  .stacked{font-size:13px;font-weight:600;letter-spacing:4px;line-height:1.65;text-transform:uppercase}
+  .stacked .dim{color:var(--grey)}
+
+  /* parágrafo em prosa com borda à esquerda + ↑↓ */
+  .prose{margin-top:26px;padding-left:14px;border-left:2px solid var(--ink);max-width:250px}
+  .prose p{font-size:11.5px;font-weight:400;color:#4C4234;line-height:1.75}
+  .prose p b{font-weight:600;color:var(--ink)}
+  .prose p .wa{color:var(--warn);font-weight:600}
+  .updown{display:flex;gap:26px;margin-top:12px;font-size:11.5px;font-weight:500;color:#4C4234}
+  .updown b{font-weight:600;color:var(--ink)}
+  .updown .a{font-size:13px}
+
+  .credit{position:absolute;left:26px;bottom:196px;font-size:12px;font-weight:500;color:#4C4234;z-index:1}
+
+  /* ícones de linha nos cantos */
+  .corner{position:absolute;bottom:70px;width:26px;height:26px;z-index:1}
+  .corner svg{width:100%;height:100%;fill:none;stroke:var(--ink);stroke-width:1.6}
+  .corner.l{left:28px}.corner.r{right:28px}
+
+  .dock{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;padding:10px 6px 18px;z-index:1}
+  .di{font-size:9.5px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:#8B8072}
+  .di.on{color:var(--ink);border-bottom:1.5px solid var(--ink);padding-bottom:3px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Pele Ref-5 — sépia editorial, a espinha</h1>
+    <div class="t">papel · névoa · prosa</div>
+    <p>Fiel à referência: o número gigante com a palavra <b>por extenso</b>, o dia <b>rodado</b>
+    ao longo da linha-espinha, o parágrafo em <b>prosa</b> com borda (a narrativa do estado,
+    com a meteo real), a névoa a comer o fundo, e dois ícones de linha nos cantos.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw" data-s="folga">1 · Folga</button>
+    <button class="sw on" data-s="prereport">2 · Pré-report</button>
+    <button class="sw" data-s="disrupcao">3 · Disrupção</button>
+  </div>
+  <div class="ph"><div class="scr" id="scr"></div></div>
+
+<script>
+(function(){
+  const PLANE='<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.4"/><circle cx="17" cy="6" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
+  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2.5"/></svg>';
+  const DOCK=['Início','Estat.','Escala','FTL/AE'];
+  const STATES={
+    folga:{
+      big:'26', warn:false, extenso:'QUINTA-FEIRA', vday:'FOLGA ATÉ LÁ', stacked:'2 DIAS<br><span class="dim">LIS→FNC · 05:30</span>',
+      prose:'Sem serviços até quinta. As férias guardam-te <b>9 de 22</b> dias; julho segue nos <b>8 943,17 €</b> estimados. Está tudo em dia — descansa.',
+      up:'<span class="a">↑</span> limites <b>folgados</b>', down:'<span class="a">↓</span> pendências <b>zero</b>',
+      credit:'por CrewPact · a tua escala' },
+    prereport:{
+      big:'1:05', warn:false, extenso:'PARA O REPORT', vday:'QUINTA · VOO', stacked:'05:30<br><span class="dim">04:30Z · 2 SETORES</span>',
+      prose:'O <b>G-UZHB</b> já dorme em Lisboa; a porta é a <b>24</b>. No Funchal espera-te <b>céu limpo com 27°</b>. O PSV de hoje estica até às <b>13:00</b>.',
+      up:'<span class="a">↑</span> máx <b>13:00</b>', down:'<span class="a">↓</span> per-diem <b>+41,08 €</b>',
+      credit:'EJU7625 · LIS → FNC' },
+    disrupcao:{
+      big:'+25', warn:true, extenso:'MINUTOS DE ATRASO', vday:'QUINTA · ATENÇÃO', stacked:'~07:05<br><span class="dim">ERA 06:40 · PROJEÇÃO</span>',
+      prose:'O teu avião ainda vem a caminho — o <b>EJU7624</b> chega ~05:10Z. Lisboa acordou difícil: <span class="wa">54% das partidas atrasadas</span>. O teu voo ainda não está marcado.',
+      up:'<span class="a">↑</span> PSV proj. <b class="wa" style="color:#A34A2A">12:40</b>', down:'<span class="a">↓</span> margem <b>0:20</b>',
+      credit:'EJU7625 · LIS → FNC' },
+  };
+  function render(id){
+    const st=STATES[id];
+    document.getElementById('scr').innerHTML=
+      '<div class="bignum'+(st.warn?' warn':'')+'">'+st.big+'</div>'
+      +'<div class="extenso"><div class="dash"></div><div class="w">'+st.extenso+'</div></div>'
+      +'<div class="spine"><div class="vline"></div><div class="vday">'+st.vday+'</div>'
+        +'<div class="stacked">'+st.stacked+'</div>'
+        +'<div class="prose"><p>'+st.prose+'</p><div class="updown"><span>'+st.up+'</span><span>'+st.down+'</span></div></div>'
+      +'</div>'
+      +'<div class="credit">'+st.credit+'</div>'
+      +'<div class="mist">'+PLANE+'</div>'
+      +'<div class="corner l">'+SHARE+'</div><div class="corner r">'+CLOCKI+'</div>'
+      +'<div class="dock">'+DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('')+'</div>';
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw');if(!b)return;
+    document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));
+    render(b.dataset.s);
+  });
+  render('prereport');
+})();
+</script>
+</body>
+</html>
