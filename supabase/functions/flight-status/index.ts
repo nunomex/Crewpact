@@ -9,14 +9,24 @@
 //   • Batch  (detetar/auto-fill): { flights: ['EJU7625','EJU7626'] }  → { ok, results:[slim|null] }
 //   • Inbound (rotação):          { reg: 'G-UZHB' } → o voo ATUAL dessa matrícula (o avião
 //       que nos vem buscar) — /flights?reg_number dá o ident, /flight dá a forma slim.
+//   • Aeroporto (Airport Intelligence à crew): { airport: 'LIS' } → fotografia de HOJE
+//       (% atrasados ≥15 min, atraso médio dos atrasados, % cancelados — partidas e
+//       chegadas), agregada do /schedules e CACHEADA 12 min na tabela `airport_stats`
+//       (correr supabase/airport-stats.sql antes; sem a tabela degrada — recalcula sempre).
 //
 // DEPLOY (Dashboard): Edge Functions → Deploy → nome `flight-status` → cola → Deploy.
 //   Segredo: Edge Functions → Secrets → AIRLABS_KEY = <a tua key>.
 // DEPLOY (CLI): `supabase functions deploy flight-status` + `supabase secrets set AIRLABS_KEY=...`
 //
-// ⚠️ Se já tinhas a versão anterior deployed, FAZ RE-DEPLOY (esta acrescenta o modo `reg`/inbound).
+// ⚠️ Se já tinhas a versão anterior deployed, FAZ RE-DEPLOY (esta acrescenta o modo `airport`).
+
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
+const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
+const STATS_TTL_MIN = 12;
+
+const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -66,6 +76,44 @@ const slim = (f: Record<string, any>) => {
   };
 };
 
+// Fotografia do AEROPORTO (hoje): % atrasados (≥15 min), atraso médio DOS ATRASADOS,
+// % cancelados — partidas e chegadas. Cache partilhada em `airport_stats` (TTL 12 min):
+// o custo AirLabs fica ~5 pares de chamadas/hora/aeroporto no pior caso, seja quanta
+// gente estiver a olhar. GÉMEA em share-day/index.ts — manter em sincronia.
+// deno-lint-ignore no-explicit-any
+async function airportStats(key: string, iata: string): Promise<Record<string, any> | null> {
+  const code = String(iata || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  if (code.length !== 3) return null;
+  try {
+    const { data: c } = await admin().from('airport_stats').select('stats, computed_at').eq('iata', code).maybeSingle();
+    if (c && Date.now() - new Date(c.computed_at).getTime() < STATS_TTL_MIN * 60e3) return c.stats;
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  const side = async (param: string) => {
+    try {
+      const r = await fetch(`${AIRLABS_SCH}?${param}=${code}&api_key=${key}`);
+      const j = await r.json();
+      // deno-lint-ignore no-explicit-any
+      const rows: any[] = (!j || j.error || !Array.isArray(j.response)) ? [] : j.response;
+      const dKey = param === 'dep_iata' ? 'dep_delayed' : 'arr_delayed';
+      let n = 0, delayed = 0, cancelled = 0, sum = 0;
+      for (const row of rows) {
+        const st = String(row?.status || '').toLowerCase();
+        if (!st) continue;
+        n++;
+        if (st === 'cancelled' || st === 'canceled') { cancelled++; continue; }
+        const d = Number(row?.[dKey] ?? row?.delayed ?? 0) || 0;
+        if (d >= 15) { delayed++; sum += d; }
+      }
+      return { n, delayedPct: n ? Math.round((delayed / n) * 100) : 0, avgDelayMin: delayed ? Math.round(sum / delayed) : 0, cancelPct: n ? Math.round((cancelled / n) * 100) : 0 };
+    } catch { return { n: 0, delayedPct: 0, avgDelayMin: 0, cancelPct: 0 }; }
+  };
+  const [dep, arr] = await Promise.all([side('dep_iata'), side('arr_iata')]);
+  if (!dep.n && !arr.n) return null;   // plano sem /schedules ou aeroporto desconhecido → sem stats (a app esconde)
+  const stats = { iata: code, dep, arr, computedAt: Math.floor(Date.now() / 1000) };
+  try { await admin().from('airport_stats').upsert({ iata: code, computed_at: new Date().toISOString(), stats }); } catch { /* sem cache */ }
+  return stats;
+}
+
 // Procura UM voo no AirLabs por id (iata/icao). Devolve a forma slim ou null.
 async function lookup(key: string, id: string): Promise<ReturnType<typeof slim> | null> {
   const clean = id.toUpperCase().replace(/\s+/g, '');
@@ -97,6 +145,12 @@ Deno.serve(async (req: Request) => {
     if (!ids.length) return json({ ok: false, error: 'no_flight' }, 400);
     const results = await Promise.all(ids.map((id: string) => lookup(key, id)));
     return json({ ok: true, results });
+  }
+
+  // ── Modo AEROPORTO (Airport Intelligence): { airport: 'LIS' } → fotografia de hoje ──
+  if (body.airport) {
+    const s = await airportStats(key, String(body.airport));
+    return json(s ? { ok: true, found: true, airport: s } : { ok: true, found: false });
   }
 
   // ── Modo INBOUND (rotação): { reg } → onde anda o avião AGORA ──

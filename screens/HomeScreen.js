@@ -25,7 +25,7 @@ import { airportZulu, legZulu } from '../data/zulu';
 import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { fetchFlightStatus, fetchAircraftStatus, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap } from '../data/flightStatus';
+import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import CountUp from '../components/CountUp';
@@ -360,6 +360,21 @@ export default function HomeScreen({ navigation }) {
     ourDepIata: flightStatus.dep && flightStatus.dep.iata,
   }) : null;
   const inboundLate = !!(inboundInfo && inboundInfo.projDelayMin >= 15);
+
+  // AIRPORT INTELLIGENCE — o aeroporto de PARTIDA está "doente" (atrasos/cancelamentos
+  // generalizados)? Complementa o inbound: aquele é o TEU avião, este é o sistémico.
+  // Só antes da partida; a Edge cacheia 12 min → custo fixo por aeroporto, não por olhar.
+  const [depAirport, setDepAirport] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const iata = flightStatus && flightStatus.dep && flightStatus.dep.iata;
+    const preDep = !!(flightStatus && flightStatus.dep && !flightStatus.dep.actual);
+    if (!iata || !preDep) { setDepAirport(null); return; }
+    fetchAirportStats(iata).then((st) => { if (!cancelled) setDepAirport(st); });
+    return () => { cancelled = true; };
+  }, [flightStatus]);
+  const airportDis = (depAirport && flightStatus && flightStatus.dep && !flightStatus.dep.actual)
+    ? airportDisruption(depAirport) : null;
 
   // ── Próximo duty — voo da escala (calendário) + contexto FTL do motor (read-only) ──
   const now = Date.now();
@@ -752,6 +767,30 @@ export default function HomeScreen({ navigation }) {
             </View>
           </Animated.View>
         ) : null}
+
+        {/* AEROPORTO "doente" (Airport Intelligence) — atrasos/cancelamentos generalizados
+            no aeroporto de PARTIDA: o report/PSV vai sentir isto antes de a companhia o dizer.
+            Complementa o inbound (o TEU avião) com o sistémico (o aeroporto inteiro). */}
+        {airportDis ? (() => {
+          const bad = airportDis.tone === 'bad';
+          return (
+            <Animated.View style={[s.fdelay, { backgroundColor: bad ? C.redSoft : C.warnSoft, borderColor: (bad ? C.red : C.warn) + '55' }, seg(1)]}>
+              <Ionicons name="pulse-outline" size={18} color={bad ? C.red : C.warn} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.fdelayQ} numberOfLines={1}>{(flightStatus.dep && flightStatus.dep.iata) || ''} · {l('estado do aeroporto', 'airport status')}</Text>
+                <Text style={[s.fdelayH, { color: bad ? C.redText : C.warnText }]} numberOfLines={1}>
+                  {bad ? l('Disrupção no aeroporto', 'Airport disruption') : l('Atrasos generalizados', 'Widespread delays')}
+                </Text>
+                <Text style={s.fdelayS} numberOfLines={2}>
+                  {airportDis.delayedPct}% {airportDis.side === 'dep' ? l('das partidas atrasadas', 'of departures delayed') : l('das chegadas atrasadas', 'of arrivals delayed')}
+                  {airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}
+                  {airportDis.cancelPct >= 10 ? ` · ${airportDis.cancelPct}% ${l('cancelados', 'cancelled')}` : ''}
+                </Text>
+                <Text style={s.fdelayNote} numberOfLines={2}>{l('Fotografia de hoje no aeroporto — conta com o report/embarque a esticar.', 'Today’s snapshot at the airport — expect report/boarding to stretch.')}</Text>
+              </View>
+            </Animated.View>
+          );
+        })() : null}
 
         {/* FTL automático assume aclimatizado/na-base — aviso p/ longo curso (Hi Fly · TAP WB). */}
         {isLongHaulCompany(company, crewFleet) ? (

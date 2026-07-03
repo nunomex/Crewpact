@@ -88,6 +88,27 @@ export function storedMatchesReal(storedOnZ, realArrZ, thr = 10) {
 // API); `ourDepIata` = a nossa estação (o inbound só conta se vier PARA ela); `turnMin` =
 // rotação mínima (~35 min short-haul). Devolve { gapMin, projDelayMin, etaZ } ou null.
 // Circular à prova de meia-noite (janela ±12 h), tudo em Zulu — sem fusos, sem datas.
+// ── AIRPORT INTELLIGENCE (à crew): o aeroporto está "doente"? ──
+// Julga a fotografia agregada da Edge ({ dep:{n,delayedPct,avgDelayMin,cancelPct},
+// arr:{...} }) com limiares conservadores (GÉMEOS do airportWarn na Edge share-day):
+// amostra mínima 8 voos (madrugada/aeroporto pequeno não afirma nada), warn a ≥30%
+// atrasados ou ≥10% cancelados, bad a ≥50% atrasados ou ≥20% cancelados. Devolve o
+// PIOR lado ({ side:'dep'|'arr', tone:'warn'|'bad', delayedPct, avgDelayMin,
+// cancelPct }) ou null (saudável / sem amostra / sem dados).
+export function airportDisruption(stats) {
+  if (!stats) return null;
+  const judge = (s) => {
+    if (!s || (s.n || 0) < 8) return null;
+    const bad = (s.cancelPct || 0) >= 20 || (s.delayedPct || 0) >= 50;
+    const warn = bad || (s.cancelPct || 0) >= 10 || (s.delayedPct || 0) >= 30;
+    return warn ? { tone: bad ? 'bad' : 'warn', delayedPct: s.delayedPct || 0, avgDelayMin: s.avgDelayMin || 0, cancelPct: s.cancelPct || 0 } : null;
+  };
+  const dep = judge(stats.dep), arr = judge(stats.arr);
+  if (!dep && !arr) return null;
+  const score = (x) => (x ? (x.tone === 'bad' ? 1000 : 0) + x.delayedPct + x.cancelPct : -1);
+  return score(dep) >= score(arr) ? { side: 'dep', ...dep } : { side: 'arr', ...arr };
+}
+
 export function inboundGap(inb, { ourFlight, ourDepZ, ourDepIata = null, turnMin = 35 } = {}) {
   if (!inb || !inb.arr) return null;
   const norm = (x) => String(x || '').toUpperCase().replace(/\s+/g, '');

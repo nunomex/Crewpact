@@ -36,6 +36,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
+const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
+const STATS_TTL_MIN = 12;
 const TTL_HOURS = 24;
 
 const CORS = {
@@ -126,6 +128,42 @@ async function liveFor(key: string, flight: string): Promise<Record<string, any>
   } catch { return null; }
 }
 
+// Fotografia do AEROPORTO (Airport Intelligence) — GÉMEA de flight-status/index.ts,
+// manter em sincronia. Cache `airport_stats` (TTL 12 min) limita o custo AirLabs.
+// deno-lint-ignore no-explicit-any
+async function airportStats(key: string, iata: string): Promise<Record<string, any> | null> {
+  const code = String(iata || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  if (code.length !== 3) return null;
+  try {
+    const { data: c } = await admin().from('airport_stats').select('stats, computed_at').eq('iata', code).maybeSingle();
+    if (c && Date.now() - new Date(c.computed_at).getTime() < STATS_TTL_MIN * 60e3) return c.stats;
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  const side = async (param: string) => {
+    try {
+      const r = await fetch(`${AIRLABS_SCH}?${param}=${code}&api_key=${key}`);
+      const j = await r.json();
+      // deno-lint-ignore no-explicit-any
+      const rows: any[] = (!j || j.error || !Array.isArray(j.response)) ? [] : j.response;
+      const dKey = param === 'dep_iata' ? 'dep_delayed' : 'arr_delayed';
+      let n = 0, delayed = 0, cancelled = 0, sum = 0;
+      for (const row of rows) {
+        const st = String(row?.status || '').toLowerCase();
+        if (!st) continue;
+        n++;
+        if (st === 'cancelled' || st === 'canceled') { cancelled++; continue; }
+        const d = Number(row?.[dKey] ?? row?.delayed ?? 0) || 0;
+        if (d >= 15) { delayed++; sum += d; }
+      }
+      return { n, delayedPct: n ? Math.round((delayed / n) * 100) : 0, avgDelayMin: delayed ? Math.round(sum / delayed) : 0, cancelPct: n ? Math.round((cancelled / n) * 100) : 0 };
+    } catch { return { n: 0, delayedPct: 0, avgDelayMin: 0, cancelPct: 0 }; }
+  };
+  const [dep, arr] = await Promise.all([side('dep_iata'), side('arr_iata')]);
+  if (!dep.n && !arr.n) return null;
+  const stats = { iata: code, dep, arr, computedAt: Math.floor(Date.now() / 1000) };
+  try { await admin().from('airport_stats').upsert({ iata: code, computed_at: new Date().toISOString(), stats }); } catch { /* sem cache */ }
+  return stats;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const url = new URL(req.url);
@@ -179,6 +217,17 @@ Deno.serve(async (req: Request) => {
     const delayed15 = (f?.dep_delayed ?? 0) >= 15;
     const statusCls = landed ? 'ok' : (st === 'cancelled' || st === 'canceled' || st === 'diverted') ? 'bad' : (delayed15 ? 'warn' : '');
     const statusTxt = landed ? 'Aterrou' : st === 'en-route' ? 'No ar' : st === 'scheduled' ? 'Agendado' : (st ? esc(f!.status) : 'Sem dados ao vivo');
+    // Contexto do AEROPORTO de chegada (Airport Intelligence): só quando está mesmo
+    // complicado — limiares GÉMEOS do airportDisruption (data/flightDelay.js): amostra
+    // ≥8, aviso a ≥30% atrasados ou ≥10% cancelados. Explica à família o "porquê".
+    let airportWarn: string | null = null;
+    if (!landed && key && arr && arr !== '—') {
+      const ap = await airportStats(key, arr);
+      const a = ap && ap.arr;
+      if (a && a.n >= 8 && (a.delayedPct >= 30 || a.cancelPct >= 10)) {
+        airportWarn = `${arr} agora: ${a.delayedPct}% das chegadas atrasadas${a.avgDelayMin ? ` · média ${a.avgDelayMin} min` : ''}${a.cancelPct >= 10 ? ` · ${a.cancelPct}% canceladas` : ''}`;
+      }
+    }
     if (wantJson) {
       // Timestamps p/ o countdown ("aterra em ~N min") e a barra de progresso da página —
       // calculados LÁ com o relógio corrigido por `nowTs` (offset servidor−cliente), sem
@@ -187,7 +236,7 @@ Deno.serve(async (req: Request) => {
       const depTs = num(f?.dep_actual_ts);
       return json({ ok: true, found: true, expired: false, date: shareDate, legsCount: legs.length, family: isFamily,
         flight: fno, dep, arr, etaHm, landed, status: statusTxt, tone: statusCls || 'none',
-        etaTs, depTs, nowTs: Math.floor(Date.now() / 1000) });
+        airportWarn, etaTs, depTs, nowTs: Math.floor(Date.now() / 1000) });
     }
     const inner = `
 <div class="eyebrow">Chegada de hoje${legs.length > 1 ? ` · ${legs.length} voos` : ''}</div>
@@ -195,7 +244,7 @@ Deno.serve(async (req: Request) => {
 <div class="route">${dep} → ${arr}</div>
 <div class="eta">${etaHm ? `~${etaHm}` : '—'}</div>
 <div class="etaSub">${etaHm ? `hora local de ${arr}` : 'ainda sem estimativa — volta a abrir mais perto da hora'}${landed ? ' · já em terra ✓' : ''}</div>
-<span class="status ${statusCls}">${statusTxt}</span>`;
+<span class="status ${statusCls}">${statusTxt}</span>${airportWarn ? `<div class="etaSub" style="margin-top:10px">⚠️ ${airportWarn}</div>` : ''}`;
     return html(page(`${fno} ${dep}→${arr} · CrewPact`, inner, !landed));
   }
 

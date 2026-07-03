@@ -34,6 +34,21 @@ export async function fetchAircraftStatus(reg) {
   }
 }
 
+// Fotografia do AEROPORTO (Airport Intelligence à crew): % atrasados/cancelados de hoje,
+// agregada e CACHEADA na Edge (12 min — o custo AirLabs não cresce com quem olha).
+// Devolve { iata, dep:{n,delayedPct,avgDelayMin,cancelPct}, arr:{...} } ou null.
+export async function fetchAirportStats(iata) {
+  const code = String(iata || '').toUpperCase().trim();
+  if (!code) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke('flight-status', { body: { airport: code } });
+    if (error || !data || !data.ok || !data.found) return null;
+    return data.airport || null;
+  } catch {
+    return null;
+  }
+}
+
 // A lógica de desvio/atraso (PURA) vive em ./flightDelay — testável por golden (sem supabase).
 // Re-exportada aqui para os consumidores continuarem a importar tudo de um só sítio.
-export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap } from './flightDelay';
+export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption } from './flightDelay';

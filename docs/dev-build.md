@@ -82,6 +82,13 @@
   e mais 1 chamada AirLabs por minuto por página aberta (posição — quota). O countdown
   "aterra em ~N min" + barra de progresso (FEITOS 2026-07-03) dão ~80% do valor por ~0%
   do custo — o mapa só se a partilha ganhar tração.
+- **Meteo (METAR/TAF) e ground stops** — analisado 2026-07-03, decidido NÃO fazer agora:
+  meteo é GRÁTIS (NOAA Aviation Weather Center, API pública mundial) mas duplica o
+  briefing oficial que a crew já recebe (e crew lê METAR cru); ground stops são grátis
+  SÓ nos EUA (FAA NAS Status — irrelevante p/ rede europeia) e o equivalente europeu
+  (regulações ATFM do EUROCONTROL) não é de acesso livre p/ apps. O Airport
+  Intelligence já mostra o SINTOMA das regulações (% atrasos) — falta só o nome da
+  causa, que o ops dá. Reavaliar se houver operadores US ou pedido real de utilizadores.
 - **Notificações à família ("aterrou ✓")** — NÃO é dev build (a família não tem app;
   seria sempre servidor): web push é grátis mas no iPhone exige adicionar a página ao
   ecrã inicial (fricção); WhatsApp automático = API paga; a variante realista é EMAIL

@@ -118,7 +118,8 @@
       '<div class="eta">' + (d.etaHm ? '~' + esc(d.etaHm) : '—') + '</div>' +
       count +
       '<div class="etaSub">' + (d.etaHm ? 'hora local de ' + esc(d.arr) : 'ainda sem estimativa — volta a abrir mais perto da hora') + (d.landed ? ' · já em terra ✓' : '') + '</div>' +
-      '<span class="status ' + (d.tone === 'none' ? '' : esc(d.tone)) + '">' + esc(d.status) + '</span>';
+      '<span class="status ' + (d.tone === 'none' ? '' : esc(d.tone)) + '">' + esc(d.status) + '</span>' +
+      (d.airportWarn ? '<div class="etaSub" style="margin-top:10px">⚠️ ' + esc(d.airportWarn) + '</div>' : '');
     if (d.landed) stopAll();   // aterrou → página final, para de gastar
   }
 

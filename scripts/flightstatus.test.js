@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap } = require(path.resolve('data/flightDelay.js'));
+const { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption } = require(path.resolve('data/flightDelay.js'));
 const { legsForShare } = require(path.resolve('data/shareDay.js'));
 
 let ok = 0, fail = 0;
@@ -114,6 +114,18 @@ eq('outra estação → null', inboundGap(inb('2026-07-03 17:00', { arr: { iata:
 eq('cruza meia-noite (wrap)', inboundGap(inb('2026-07-03 23:40'), { ...OUR, ourDepZ: '00:30' }).gapMin, 15);
 // Sem ETA nenhuma → null (não se inventa projeção).
 eq('sem ETA → null', inboundGap(inb(null), OUR), null);
+
+// ── airportDisruption — Airport Intelligence: o aeroporto está "doente"? ──
+// Limiares: amostra ≥8 · warn ≥30% atrasados ou ≥10% cancelados · bad ≥50% ou ≥20%.
+const AP = (dep, arr) => ({ iata: 'LIS', dep, arr });
+const S = (n, delayedPct, avgDelayMin = 20, cancelPct = 0) => ({ n, delayedPct, avgDelayMin, cancelPct });
+eq('aeroporto saudável → null', airportDisruption(AP(S(60, 10), S(55, 8))), null);
+eq('amostra pequena (n=5, 80%) → null (não afirma)', airportDisruption(AP(S(5, 80), S(3, 100))), null);
+eq('warn: 35% partidas atrasadas', airportDisruption(AP(S(60, 35, 28), S(55, 10))), { side: 'dep', tone: 'warn', delayedPct: 35, avgDelayMin: 28, cancelPct: 0 });
+eq('warn por cancelamentos (12%)', airportDisruption(AP(S(60, 15, 20, 12), S(55, 10))).tone, 'warn');
+eq('bad: 25% cancelados nas chegadas', airportDisruption(AP(S(60, 10), S(55, 22, 40, 25))), { side: 'arr', tone: 'bad', delayedPct: 22, avgDelayMin: 40, cancelPct: 25 });
+eq('pior lado ganha (dep warn vs arr bad → arr)', airportDisruption(AP(S(60, 34, 25), S(55, 55, 45))).side, 'arr');
+eq('sem stats → null', airportDisruption(null), null);
 
 // ── legsForShare — legs mínimas do link da família (PURA, data/shareDay.js) ──
 const dutyLegs = { legs: [{ flightNo: 'EJU7625', dep: 'LIS', arr: 'FNC' }, { flightNo: 'EJU7626', dep: 'FNC', arr: 'LIS' }] };
