@@ -334,11 +334,13 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Papel cabine: uprank 2 setores = 32.54', monthlyAe({ '2026-06-10': flC }, 'FA', '12/12', cabin, { ym: '2026-06' }).extras, 32.54);
   eq('Papel cabine: CCLT dia = 25', monthlyAe({ '2026-06-11': { ...flC, sectors: 0, kind: 'training', role: 'cclt' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 25);
   // DDO/WFLY por CONDIÇÃO do serviço (folga publicada trabalhada) — 1×/dia, € do monthExtras.
-  const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'office', dayOffWorked: 'ddo' };
+  const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'training', dayOffWorked: 'ddo' };
   const mD = monthlyAe({ '2026-06-12': ddoDay }, 'FO', '12/12', ae, { ym: '2026-06' });
   eq('DDO por condição: +0,4% anual (FO 191.00)', mD.extras, 191.00);
   eq('DDO por condição: contado', mD.ddoDaysAuto, 1);
   eq('WFLY por condição: +1% anual (FO 477.50)', monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'wfly' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 477.50);
+  // ACUMULA com o item do próprio serviço: escritório em folga = OFC4 (58,14) + DDO (191,00).
+  eq('DDO em dia de escritório: OFC4 + DDO = 249.14', monthlyAe({ '2026-06-12': { ...ddoDay, kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 249.14);
 }
 
 // ── Extras como EVENTOS DATADOS (data/aeEvents.js): contagem por mês + doença por episódio ──

@@ -112,6 +112,7 @@ eq('diffRoster multi: dia ganhou serviço → changed=1', diffRoster({
   const c = shortNoticeCandidates(diff, '2026-07-03');
   eq('SNC: total (2 dentro de 7 dias)', c.total, 2);
   eq('SNC: por mês do serviço', c.byYm, { '2026-07': 2 });
+  eq('SNC: datas p/ eventos', c.dates, ['2026-07-04', '2026-07-05']);
   // Horizonte a cavalo de 2 meses: hoje 30/07 → 31/07 e 02/08 entram, cada uma no seu mês.
   const c2 = shortNoticeCandidates(diff, '2026-07-30');
   eq('SNC: horizonte cruza o mês', c2.byYm, { '2026-07': 1, '2026-08': 1 });

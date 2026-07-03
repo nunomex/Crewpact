@@ -232,7 +232,11 @@ function FloatingTabBar({ state, navigation }) {
           {state.routes.map(route => {
             const focused = active.key === route.key;
             const [on, off] = ICON[route.name];
-            const lbl = t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang);
+            // A aba FTL é adaptativa ao perfil: com AE resolvido e coberto (easyJet/TAP) a aba
+            // é lei + acordo → "FTL/AE"; FTL-puro (ou não coberto) mantém "FTL". Só o RÓTULO
+            // muda — o nome da rota fica 'FTL' (navegação intacta).
+            const lbl = route.name === 'FTL' && ae ? 'FTL/AE'
+              : t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang);
             return (
               <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
                 accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}

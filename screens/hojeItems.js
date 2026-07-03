@@ -38,7 +38,7 @@ export const hhmm = (min) => { const x = Math.max(0, Math.round(min || 0)); retu
 // `dayLog` é reconciliado dela — basta um ter conteúdo.
 export const hasAnyData = (ctx) => !!(ctx && ((ctx.duties && ctx.duties.length) || (ctx.dayLog && Object.keys(ctx.dayLog).length)));
 
-// ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeExtras, todayISO }
+// ctx = { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, aeEvents, todayISO }
 export function buildTodayItems(ctx, lang) {
   const { ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);

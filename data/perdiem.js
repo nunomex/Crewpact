@@ -150,6 +150,16 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         }
         continue;
       }
+      // PAPEL desempenhado no serviço (VOO ou FORMAÇÃO — como no form) — pago como a LEI
+      // o define: instrutor €/dia (Art. 42) · uprank €/SETOR (Cl. 34) · CCLT €/dia ·
+      // CTI-Flexi €/dia (Cl. 35). `s.instructor` legado = papel 'instr'. Só AEs com o item.
+      if (kind === 'flight' || kind === 'training') {
+        const role = s.role || (s.instructor ? 'instr' : null);
+        if (role) {
+          const eur = roleEurFor(ae, category, role, s.sectors);
+          if (eur > 0) { instrEur += eur; instructorDaysAuto++; }
+        }
+      }
       // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
       if (kind !== 'flight') continue;
       // Voo com standby de AEROPORTO prévio declarado (special 225) = FOI CHAMADO do standby →
@@ -158,14 +168,6 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       if (ae.airportStandby && !dayHasSb && ps && ps.type === 'airport' && Number(ps.standbyH) > 0) {
         adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index });
         adtyDays++;
-      }
-      // PAPEL desempenhado no serviço (condição, não contador) — pago como a LEI o define:
-      // instrutor €/dia (Art. 42) · uprank €/SETOR (Cl. 34) · CCLT €/dia · CTI-Flexi €/dia
-      // (Cl. 35). `s.instructor` legado lê-se como papel 'instr'. Só AEs com o item.
-      const role = s.role || (s.instructor ? 'instr' : null);
-      if (role) {
-        const eur = roleEurFor(ae, category, role, s.sectors);
-        if (eur > 0) { instrEur += eur; instructorDaysAuto++; }
       }
       const dists = routeDistancesNM(s.route);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
