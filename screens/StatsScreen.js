@@ -50,7 +50,7 @@ function MonthBar({ ratio, color, delay }) {
 // horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
 // mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company } = useContext(AppContext);
+  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -86,9 +86,9 @@ export default function StatsScreen({ navigation }) {
 
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin }),
-    [isYear, duties, year, ym, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin],
+      ? yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents }),
+    [isYear, duties, year, ym, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents],
   );
 
   // Limites FTL cumulativos ATUAIS (janelas rolantes a esta data) — vieram do Início.
@@ -117,6 +117,7 @@ export default function StatsScreen({ navigation }) {
   const chartData = isYear ? st.months : st.days;   // 12 meses · ou dias do mês
   const maxBar = Math.max(1, ...chartData.map((m) => m.flightMin));
   const kindsPresent = STAT_KINDS.filter((k) => st.byKind[k] > 0);
+  const svcTotal = STAT_KINDS.reduce((a, k) => a + (st.byKind[k] || 0), 0);   // nº de SERVIÇOS (≥ dias, multi-serviço)
   const aeBlock = isYear ? st.aeYtd : st.aeMonth;   // bloco AE conforme o âmbito
   const nowD = new Date();
 
@@ -267,7 +268,7 @@ export default function StatsScreen({ navigation }) {
                 <Text style={s.cardTitle}>{l('Por tipo', 'By type')}</Text>
                 {kindsPresent.map((k, idx) => {
                   const n = st.byKind[k];
-                  const r = st.count ? n / st.count : 0;
+                  const r = svcTotal ? n / svcTotal : 0;   // fração dos SERVIÇOS (não dos dias — multi-serviço passava 100%)
                   return (
                     <View key={k} style={[s.kRow, idx > 0 && s.kRowBorder]}>
                       <Text style={s.kLbl} numberOfLines={1}>{kindLabel(k)}</Text>
@@ -279,15 +280,21 @@ export default function StatsScreen({ navigation }) {
               </Animated.View>
             ) : null}
 
-            {/* AE — ganhos estimados (ano: YTD · mês: do mês) */}
+            {/* AE — ganhos estimados (ano: YTD · mês: do mês). As linhas SOMAM ao total
+                (auditável): base + abono p/ falhas (cabine) + per diem + pernoitas +
+                extras da escala (OFC4·ADTY·papéis·DDO/WFLY) + extras do mês (eventos). */}
             {aeBlock ? (
               <Animated.View style={[s.card, seg(5)]}>
                 <View style={s.aeHead}><View style={s.aeDot} /><Text style={s.cardTitle}>{isYear ? l('AE · ganhos no ano (est.)', 'AE · earnings this year (est.)') : l('AE · ganhos do mês (est.)', 'AE · earnings this month (est.)')}</Text></View>
                 <View style={s.aeRow}><Text style={s.aeK}>{l('Base', 'Base')}{isYear ? ` (${st.aeYtd.monthsElapsed} ${l('meses', 'months')})` : ''}</Text><Text style={s.aeV}>{fmtEur0(aeBlock.base)}</Text></View>
+                {aeBlock.cash ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Abono p/ falhas', 'Cash handling')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.cash)}</Text></View> : null}
                 <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Per diem', 'Per diem')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.perDiem)}</Text></View>
-                {!isYear && aeBlock.nightStops ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Pernoitas', 'Night stops')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.nightStops)}</Text></View> : null}
+                {aeBlock.nightStops ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Pernoitas', 'Night stops')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.nightStops)}</Text></View> : null}
+                {aeBlock.extras ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Extras da escala', 'Roster extras')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.extras)}</Text></View> : null}
+                {aeBlock.events ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{isYear ? l('Extras (eventos)', 'Extras (events)') : l('Extras do mês', 'Month extras')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.events)}</Text></View> : null}
                 <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={aeBlock.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
                 {aeBlock.missing ? <Text style={s.aeMiss}>{aeBlock.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
+                {aeBlock.estimated ? <Text style={s.aeMiss}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
                 {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.aeMiss}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
               </Animated.View>
             ) : null}
@@ -304,7 +311,7 @@ export default function StatsScreen({ navigation }) {
               </Animated.View>
             ) : null}
 
-            <Text style={s.foot}>{l('Estimativa a partir da tua escala registada. As horas de serviço usam report → on-block (aprox.).', 'Estimated from your recorded roster. Duty hours use report → on-block (approx.).')}</Text>
+            <Text style={s.foot}>{l('Estimativa a partir da tua escala registada. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos).', 'Estimated from your recorded roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only).')}</Text>
           </>
         )}
       </ScrollView>

@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { yearStats, availableYears, monthStats } = require(path.resolve('data/stats.js'));
+const { yearStats, availableYears, monthStats, ANNUAL_FLIGHT_LIMIT_H } = require(path.resolve('data/stats.js'));
 const { resolveCrew, addCrewChange, migrateCrew } = require(path.resolve('data/crewHistory.js'));
 
 let pass = 0, fail = 0;
@@ -91,6 +91,21 @@ const rr = yearStats(REST_D, { year: 2026, now: new Date('2026-12-31T12:00:00') 
 eq('minRestH = 9', rr.minRestH, 9);
 eq('reducedRests = 1', rr.reducedRests, 1);
 eq('longestStreak = 3', rr.longestStreak, 3);
+
+// Limite do HERO da vista Ano = ANO CIVIL → 900 h (ORO.FTL.210 b), não 1000 (12 meses).
+eq('limite ano civil = 900 h (ORO.FTL.210 b)', ANNUAL_FLIGHT_LIMIT_H, 900);
+
+// ── Repouso com sign-off/débrief — mesma convenção do dutyMinutes (235c): o repouso só
+// começa DEPOIS do pós-voo (sign-off real; senão block_on + débrief, só em voos). ──
+const REST_S = {
+  '2026-05-01': { duty_date: '2026-05-01', report_time: '14:00', block_on: '23:00', kind: 'flight', sectors: 2 },                    // sem sign-off → fim 23:00+30 = 23:30
+  '2026-05-02': { duty_date: '2026-05-02', report_time: '08:00', block_on: '16:00', signOff: '16:45', kind: 'flight', sectors: 2 },  // sign-off REAL manda (sem débrief por cima)
+  '2026-05-03': { duty_date: '2026-05-03', report_time: '10:00', block_on: '18:00', kind: 'office' },                                // não-voo: sem débrief
+};
+const rs = yearStats(REST_S, { year: 2026, postFlightMin: 30, now: new Date('2026-12-31T12:00:00') });
+eq('rest c/ débrief: minRestH 8.5 (23:30→08:00)', rs.minRestH, 8.5);
+eq('rest c/ débrief: reducedRests 1', rs.reducedRests, 1);
+eq('rest c/ débrief: dutyMin 570+525+480', rs.dutyMin, 570 + 525 + 480);   // voo s/ sign-off +30 · sign-off real · office sem débrief
 
 // ── crewHistory: effective-dating da categoria/contrato ──
 const HIST = [
@@ -182,6 +197,54 @@ eq('multi mês: count 1 dia', msM.count, 1);
 eq('multi mês: dia 10 flightMin 380', msM.days[9].flightMin, 380);
 const msMAe = monthStats(MS, { ym: '2026-06', ae: aeStub2, category: 'CPT', now: new Date('2026-06-30T12:00:00') });
 eq('multi mês: aeMonth.perDiem 100 (2 voos)', msMAe.aeMonth.perDiem, 100);
+
+// ── AE completo: as PARCELAS somam ao total (auditável) + eventos do mês + Ano = Σ Meses ──
+// Stub com o contrato inteiro dos 4 AEs reais: computeAeMonth (base/cashHandling/perDiem/
+// nightStops/extras/total) + monthExtras (eventos €60) + OFFICE4_SECTORS (dia de escritório).
+const aeStub3 = {
+  monthlyBase: () => 5000,
+  OFFICE4_SECTORS: 1.5,
+  computeAeMonth: ({ duties = [], nightStops = 0, extraSectors = 0 }) => {
+    const perDiem = duties.length * 50, night = nightStops * 46, extras = +(extraSectors * 10).toFixed(2), cash = 20;
+    return { base: 5000, cashHandling: cash, perDiem, nightStops: night, extras, variable: perDiem + night + extras, total: +(5000 + cash + perDiem + night + extras).toFixed(2) };
+  },
+  monthExtras: (cat, counts = {}) => { const n = Object.values(counts).reduce((a, b) => a + (+b || 0), 0); return { items: [], total: n * 60 }; },
+};
+const EV = [
+  { id: 'e1', date: '2026-01-12', type: 'snc' },   // datado (jan)
+  { id: 'e2', date: '2026-01', type: 'ddo' },      // migrado só-mês (jan)
+  { id: 'e3', date: '2026-02-03', type: 'snc' },   // datado (fev)
+];
+const am3 = monthStats(DUTIES, { ym: '2026-01', ae: aeStub3, category: 'CPT', events: EV, now: new Date('2026-04-15T12:00:00') });
+eq('AE mês: base', am3.aeMonth.base, 5000);
+eq('AE mês: abono p/ falhas (cash)', am3.aeMonth.cash, 20);
+eq('AE mês: perDiem (2 voos ×50)', am3.aeMonth.perDiem, 100);
+eq('AE mês: pernoitas €', am3.aeMonth.nightStops, 46);
+eq('AE mês: eventos jan (snc+ddo ×60)', am3.aeMonth.events, 120);
+eq('AE mês: total c/ eventos', am3.aeMonth.total, 5286);
+eq('AE mês: as parcelas SOMAM ao total', +(am3.aeMonth.base + am3.aeMonth.cash + am3.aeMonth.perDiem + am3.aeMonth.nightStops + am3.aeMonth.extras + am3.aeMonth.events).toFixed(2), am3.aeMonth.total);
+const mm3 = monthStats(DUTIES, { ym: '2026-03', ae: aeStub3, category: 'CPT', events: EV, now: new Date('2026-04-15T12:00:00') });
+eq('AE mês mar: extras da escala (OFC4 1.5×10)', mm3.aeMonth.extras, 15);
+eq('AE mês mar: total (sem eventos)', mm3.aeMonth.total, 5035);
+// Ano: soma mês a mês pelo MESMO caminho (monthlyAe + eventos) → bate com Σ dos meses.
+const ry3 = yearStats(DUTIES, { year: 2026, ae: aeStub3, category: 'CPT', events: EV, now: new Date('2026-04-15T12:00:00') });
+eq('AE ano: base (5000×4)', ry3.aeYtd.base, 20000);
+eq('AE ano: cash (20×4)', ry3.aeYtd.cash, 80);
+eq('AE ano: perDiem', ry3.aeYtd.perDiem, 100);
+eq('AE ano: pernoitas €', ry3.aeYtd.nightStops, 46);
+eq('AE ano: extras da escala', ry3.aeYtd.extras, 15);
+eq('AE ano: eventos (120+60)', ry3.aeYtd.events, 180);
+eq('AE ano: total', ry3.aeYtd.total, 20421);
+let sumM3 = 0;
+for (const mo of ['2026-01', '2026-02', '2026-03', '2026-04']) {
+  const mm = monthStats(DUTIES, { ym: mo, ae: aeStub3, category: 'CPT', events: EV, now: new Date('2026-04-15T12:00:00') });
+  sumM3 += mm.aeMonth.total;
+}
+eq('AE: Ano = soma dos Meses', ry3.aeYtd.total, +sumM3.toFixed(2));
+// Fallback (AE mínimo sem computeAeMonth/monthExtras): campos novos a 0, total inalterado.
+eq('fallback: cash 0', ra.aeYtd.cash, 0);
+eq('fallback: eventos 0', ra.aeYtd.events, 0);
+eq('fallback: total base+perDiem inalterado', ra.aeYtd.total, 20100);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

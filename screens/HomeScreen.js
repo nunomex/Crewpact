@@ -9,7 +9,6 @@ import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { monthlyAe, aeMonthTotal, routeDistancesNM } from '../data/perdiem';
 import { sectorDistanceNM } from '../data/airports';
-import { yearStats, ANNUAL_FLIGHT_LIMIT_H } from '../data/stats';
 import { isLongHaulCompany } from '../data/capabilities';
 import PageHeader from '../components/PageHeader';
 import Eyebrow from '../components/Eyebrow';

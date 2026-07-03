@@ -1,13 +1,16 @@
 // Estatísticas anuais (YTD) a partir das duties (mapa { 'YYYY-MM-DD': duty }).
-// Módulo PURO (sem React/expo) → testável por golden. Para companhias AE, recebe
-// `ae`+category+contract para estimar ganhos YTD (base × meses decorridos + per diem
-// das rotas). Fonte: o store cru `duties` (não o dayLog do motor FTL), para contar
-// TUDO o que está na escala, importado ou manual.
+// Módulo PURO (sem React/expo) → testável por golden. Para companhias AE, estima os
+// ganhos pelo MESMO caminho da vista Mês (monthlyAe mês a mês + eventos do mês via
+// ae.monthExtras) — Ano = soma dos Meses. Fonte: o store cru `duties` (não o dayLog
+// do motor FTL), para contar TUDO o que está na escala, importado ou manual.
 import { monthlyPerDiem, monthlyAe } from './perdiem';
+import { eventCounts } from './aeEvents';
 import { resolveCrew } from './crewHistory';
 
 export const STAT_KINDS = ['flight', 'standby_airport', 'standby_home', 'positioning', 'office', 'training'];
-export const ANNUAL_FLIGHT_LIMIT_H = 1000; // CS-FTL.1: 1000 h de voo em 12 meses consecutivos
+// ORO.FTL.210(b): 900 h de voo por ANO CIVIL — é este o limite da vista Ano (ano civil).
+// Os outros dois da alínea (100 h/28 d e 1000 h/12 meses consecutivos) vivem no motor ftl/.
+export const ANNUAL_FLIGHT_LIMIT_H = 900;
 
 const toMin = (hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 // Duração de serviço (report → FIM), overnight-aware. Fim = sign-off REAL; senão block_on +
@@ -36,7 +39,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, now = new Date() } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date() } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -62,7 +65,14 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
       const kind = s.kind || 'flight';
       byKind[kind] = (byKind[kind] || 0) + 1;
       const rm = toMin(s.report_time), bo = toMin(s.block_on);
-      if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
+      if (dn != null && rm != null && bo != null) {
+        // Fim p/ REPOUSO = mesma convenção do dutyMinutes (sign-off real; senão block_on
+        // + débrief nos voos, 235c) — o repouso só começa depois do pós-voo.
+        const so = toMin(s.signOff);
+        const clk = so != null ? so : bo;
+        const end = dn * 1440 + clk + (clk < rm ? 1440 : 0) + (so == null && (s.kind || 'flight') === 'flight' ? (postFlightMin || 0) : 0);
+        restEntries.push({ start: dn * 1440 + rm, end });
+      }
       const dm = dutyMinutes(s, postFlightMin);
       if (dm != null) { dutyMin += dm; months[mi].dutyMin += dm; }
       if (kind === 'flight') {
@@ -78,10 +88,11 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
 
   // AE YTD (estimativa) — só companhias AE com categoria. A categoria escala o AE inteiro
-  // (base + per-diem + pernoita) e é EFFECTIVE-DATED: somamos MÊS A MÊS com a categoria/
-  // contrato que valia em cada mês → uma promoção a meio do ano NÃO reescreve os meses
-  // anteriores. `crewHistory` é a linha do tempo; sem ela, cai para 1 período (category/
-  // contract escalares) = comportamento antigo (retrocompatível).
+  // e é EFFECTIVE-DATED: somamos MÊS A MÊS com a categoria/contrato que valia em cada mês
+  // → uma promoção NÃO reescreve os meses anteriores. Cada mês soma pelo MESMO caminho da
+  // vista Mês (monthlyAe: base + abono p/ falhas + per-diem + pernoita + OFC4/ADTY/papéis/
+  // DDO-WFLY) + eventos do mês (ae.monthExtras) — o Ano bate com a soma dos Meses. AEs
+  // mínimos sem computeAeMonth caem no cálculo antigo (base + per-diem) — retrocompatível.
   let aeYtd = null;
   const history = (Array.isArray(crewHistory) && crewHistory.length)
     ? crewHistory
@@ -90,20 +101,33 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
     const cy = now.getFullYear();
     const monthsElapsed = (+y < cy) ? 12 : (+y > cy ? 0 : now.getMonth() + 1);
     const index = ae.indexFactor ? ae.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
-    let baseYtd = 0, perDiemYtd = 0, withRoute = 0, missing = 0;
+    let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0;
     for (let mo = 0; mo < monthsElapsed; mo++) {
       const ym = `${y}-${String(mo + 1).padStart(2, '0')}`;
       const { category: catM, contract: ctrM } = resolveCrew(history, ym);
       if (!catM) continue;
-      baseYtd += ae.monthlyBase(catM, { contract: ctrM, index }) || 0;
-      const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet });   // per-diem desse mês, à categoria desse mês (frota → coluna A no TAP)
-      if (pd) { perDiemYtd += pd.total; withRoute += pd.withRoute; missing += pd.missing; }
+      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet });   // à categoria desse mês (frota → coluna A no TAP)
+      if (m) {
+        baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
+        nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
+        wrY += m.withRoute; missY += m.missing;
+      } else {
+        const b = ae.monthlyBase(catM, { contract: ctrM, index }) || 0;
+        baseY += b; totalY += b;
+        const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet });
+        if (pd) { perDiemY += pd.total; totalY += pd.total; wrY += pd.withRoute; missY += pd.missing; }
+      }
+      if (ae.monthExtras) {
+        const xt = ae.monthExtras(catM, eventCounts(events, ym), { index });
+        if (xt && xt.total) { eventsY += xt.total; totalY += xt.total; }
+      }
     }
     aeYtd = {
-      base: +baseYtd.toFixed(2), perDiem: +perDiemYtd.toFixed(2),
-      total: +(baseYtd + perDiemYtd).toFixed(2), monthsElapsed, index,
+      base: +baseY.toFixed(2), cash: +cashY.toFixed(2), perDiem: +perDiemY.toFixed(2),
+      nightStops: +nightY.toFixed(2), extras: +extrasY.toFixed(2), events: +eventsY.toFixed(2),
+      total: +totalY.toFixed(2), monthsElapsed, index,
       estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(+y)) && index > 1,
-      withRoute, missing,
+      withRoute: wrY, missing: missY,
     };
   }
 
@@ -143,7 +167,7 @@ const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 // vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
 // = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
 // EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
-export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, now = new Date() } = {}) => {
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date() } = {}) => {
   const [Y, M] = String(ym || '').split('-').map(Number);
   const y = Y || now.getFullYear();
   const m0 = M ? M - 1 : now.getMonth();
@@ -171,7 +195,14 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
       const kind = s.kind || 'flight';
       byKind[kind] = (byKind[kind] || 0) + 1;
       const rm = toMin(s.report_time), bo = toMin(s.block_on);
-      if (dn != null && rm != null && bo != null) restEntries.push({ start: dn * 1440 + rm, end: dn * 1440 + bo + (bo < rm ? 1440 : 0) });
+      if (dn != null && rm != null && bo != null) {
+        // Fim p/ REPOUSO = mesma convenção do dutyMinutes (sign-off real; senão block_on
+        // + débrief nos voos, 235c) — o repouso só começa depois do pós-voo.
+        const so = toMin(s.signOff);
+        const clk = so != null ? so : bo;
+        const end = dn * 1440 + clk + (clk < rm ? 1440 : 0) + (so == null && (s.kind || 'flight') === 'flight' ? (postFlightMin || 0) : 0);
+        restEntries.push({ start: dn * 1440 + rm, end });
+      }
       const dm = dutyMinutes(s, postFlightMin);
       if (dm != null) dutyMin += dm;
       if (kind === 'flight') {
@@ -205,7 +236,10 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   }
   const minRestH = minRestMin != null ? +(minRestMin / 60).toFixed(1) : null;
 
-  // AE do mês — categoria/contrato EFFECTIVE-DATED desse mês (uma promoção não reescreve o passado).
+  // AE do mês — categoria/contrato EFFECTIVE-DATED desse mês (uma promoção não reescreve o
+  // passado). `events` = extras do mês (eventos datados) valorizados pelo ae.monthExtras →
+  // o total daqui é o MESMO do Início/Cálculos (aeMonthTotal + eventCounts). As parcelas
+  // devolvidas SOMAM ao total (auditável): base+cash+perDiem+nightStops+extras+events.
   let aeMonth = null;
   const history = (Array.isArray(crewHistory) && crewHistory.length)
     ? crewHistory
@@ -214,8 +248,11 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(y) : 1;
     const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet });
+    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr), { index }) : null;
+    const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {
-      base: m.base, perDiem: m.perDiem, nightStops: m.nightStops, total: m.total,
+      base: m.base, cash: m.cashHandling || 0, perDiem: m.perDiem, nightStops: m.nightStops,
+      extras: m.extras || 0, events: eventsEur, total: +((m.total || 0) + eventsEur).toFixed(2),
       withRoute: m.withRoute, missing: m.missing,
       estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(y)) && index > 1,
     };
