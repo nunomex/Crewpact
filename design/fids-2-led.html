@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · FIDS 2 · LED dot-matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&family=Hanken+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --amber:#ffb22e; --amberDim:#7a5512; --green:#39e08a; --red:#ff5a44; --lab:#8a6a2a; --sub:#b98f3e;
+    --ui:'Hanken Grotesk',system-ui,sans-serif; --dot:'Doto',ui-monospace,monospace; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;font-family:var(--ui);color:#e9e9ea;background:#000;display:flex;flex-direction:column;align-items:center;gap:14px;padding:34px 16px 70px}
+  .lead{max-width:540px;text-align:center}.lead h1{font-weight:800;font-size:18px;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--amber);border-radius:999px;padding:4px 11px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#9a9a9a;line-height:1.55}.lead b{color:#fff}
+  .btns{display:flex;gap:9px}.b{cursor:pointer;border:1px solid #2a2206;background:#0c0a04;color:var(--amber);font-family:var(--ui);font-weight:700;font-size:12.5px;padding:9px 14px;border-radius:11px}.b.p{background:var(--amber);color:#000;border-color:var(--amber)}
+
+  .wrap{width:436px;max-width:96vw}
+  .card{position:relative;background:#040301;border:1px solid #1d1707;border-radius:14px;overflow:hidden;box-shadow:0 30px 70px -28px #000, inset 0 0 60px rgba(0,0,0,.7)}
+  /* scanlines + vinheta de tubo */
+  .card::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+  .card::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 30%, transparent 55%, rgba(0,0,0,.55) 100%)}
+
+  .hdr{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #1d1707;position:relative;z-index:2}
+  .hdr .lg{font-family:var(--dot);font-weight:900;font-size:15px;color:var(--amber);letter-spacing:1px;text-shadow:0 0 8px rgba(255,178,46,.55)}
+  .hdr .sp{font-size:9.5px;font-weight:800;letter-spacing:2px;color:var(--lab);text-transform:uppercase}
+  .hdr .ti{margin-left:auto;font-family:var(--dot);font-weight:700;font-size:14px;color:var(--green);text-shadow:0 0 7px rgba(57,224,138,.5)}
+  .hdr .lv{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;letter-spacing:1px;color:var(--green)}
+  .hdr .lv i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:bl 1.4s steps(1) infinite}
+  @keyframes bl{50%{opacity:.25}}
+
+  .body{padding:14px 16px 12px;position:relative;z-index:2}
+  .brow{display:flex;align-items:center;gap:14px;margin-bottom:9px}
+  .blab{flex:0 0 46px;font-size:10px;font-weight:800;letter-spacing:1.4px;color:var(--lab);text-transform:uppercase}
+  .val{font-family:var(--dot);font-weight:700;color:var(--amber);text-shadow:0 0 8px rgba(255,178,46,.5);white-space:nowrap;letter-spacing:1px}
+  .val .ch{display:inline-block}
+  .val.route{font-size:33px;font-weight:900;letter-spacing:2px}.val.route .ar{color:#ffd98a}
+  .val.hora{font-size:18px}.val.zulu{font-size:15px;color:#ffd98a;text-shadow:0 0 7px rgba(255,200,120,.45)}
+  .val.data{font-size:18px}
+  .card.illegal .val{color:var(--red);text-shadow:0 0 9px rgba(255,90,68,.55)}
+  .card.illegal .val.zulu{color:#ff9a8c}
+
+  .estrow{display:flex;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px dashed #2a2206}
+  .est{font-family:var(--dot);font-weight:900;font-size:15px;color:var(--green);text-shadow:0 0 9px rgba(57,224,138,.5);letter-spacing:1px}
+  .card.illegal .est{color:var(--red);text-shadow:0 0 9px rgba(255,90,68,.6)}
+  .estx{margin-left:auto;font-family:var(--dot);font-size:13px;color:var(--sub)}
+  .obs{margin-top:9px;font-size:11px;color:var(--sub);font-weight:600}
+
+  .list{border-top:1px solid #1d1707;position:relative;z-index:2}
+  .lh{display:flex;gap:10px;padding:8px 16px 5px;font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--lab);text-transform:uppercase}
+  .lh .c1{width:70px}.lh .c2{width:78px}.lh .c3{flex:1}.lh .c4{width:40px;text-align:right}
+  .lr{display:flex;gap:10px;align-items:center;padding:7px 16px;border-top:1px solid #140f04;font-family:var(--dot);font-size:13px;color:var(--amber);text-shadow:0 0 6px rgba(255,178,46,.35)}
+  .lr .c1{width:70px}.lr .c2{width:78px;color:#ffd98a}.lr .c3{flex:1;color:var(--sub);font-size:12px}.lr .c4{width:40px;text-align:right;color:var(--green);font-size:11px;font-weight:900}
+</style>
+</head>
+<body>
+  <div class="lead"><h1>FIDS 2 · LED dot-matrix</h1><div class="t">Painel de pontos âmbar</div>
+    <p>Painel de partidas em LED retro (fonte de pontos, brilho âmbar, scanlines). Ao atualizar, os caracteres <b>fazem scramble</b> e assentam — como um painel de aeroporto a refrescar.</p></div>
+  <div class="btns"><button class="b p" id="replay">▸ Atualizar painel</button><button class="b" id="toggle">legal ⇄ ilegal</button></div>
+
+  <div class="wrap">
+    <div class="card" id="card">
+      <div class="hdr"><span class="lg">CREWPACT</span><span class="sp">Próximo serviço</span><span class="ti" id="utc">0805Z</span><span class="lv"><i></i>LIVE</span></div>
+      <div class="body">
+        <div class="brow"><span class="blab">Data</span><span class="val data" data-t="26 QUI"></span></div>
+        <div class="brow"><span class="blab">Voo</span><span class="val route" data-t="LIS→LGW"></span></div>
+        <div class="brow"><span class="blab">Hora</span><span class="val hora" data-t="05:40→09:05"></span></div>
+        <div class="brow"><span class="blab">Zulu</span><span class="val zulu" data-t="0440-0805Z"></span></div>
+        <div class="estrow"><span class="est" id="est" data-t="DENTRO DOS LIMITES"></span><span class="estx" id="estx" data-t="PSV 10:25/13:00"></span></div>
+        <div class="obs">🌙 Pernoita LGW · EZY 8042 · per-diem +38,00 € · em 4 h 12 m</div>
+      </div>
+      <div class="list">
+        <div class="lh"><span class="c1">Data</span><span class="c2">Voo</span><span class="c3">Destino · Hora</span><span class="c4">Est</span></div>
+        <div class="lr"><span class="c1">QUI 26</span><span class="c2">LGW→LIS</span><span class="c3">10:15→13:30 · S2/2 🌙</span><span class="c4">OK</span></div>
+        <div class="lr"><span class="c1">SEX 27</span><span class="c2">STBY</span><span class="c3">AEROPORTO · 06:00</span><span class="c4">OK</span></div>
+        <div class="lr"><span class="c1">SÁB 28</span><span class="c2">LIS→AMS</span><span class="c3">07:20 · S1/2</span><span class="c4">OK</span></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const POOL='ABCDEFGHJKLMNPRSTUVXZ0123456789';
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function build(el){const txt=el.getAttribute('data-t')||'';el.innerHTML='';const chars=[...txt].map(c=>{const s=document.createElement('span');s.className='ch';if(c==='→')s.className='ch ar';s.textContent=c;el.appendChild(s);return{s,target:c};});el.__c=chars;return chars;}
+  const vals=[...document.querySelectorAll('.val,.est,.estx')];
+  vals.forEach(build);
+  function scramble(el,stagger){ const chars=el.__c; chars.forEach((o,i)=>{
+      if(o.target===' '||o.target==='→'||o.target===':'||o.target==='/'||o.target==='-'){o.s.textContent=o.target;return;}
+      if(reduce){o.s.textContent=o.target;return;}
+      let ticks=4+Math.floor(Math.random()*7); const begin=stagger*i+Math.random()*40;
+      setTimeout(function tick(){ if(ticks<=0){o.s.textContent=o.target;return;} o.s.textContent=POOL[Math.floor(Math.random()*POOL.length)]; ticks--; setTimeout(tick,55); }, begin);
+    });}
+  function upd(){ const order=[['.val.data',0],['.val.route',120],['.val.hora',360],['.val.zulu',560],['.est',720],['.estx',720]];
+    order.forEach(([sel,delay])=>{const el=document.querySelector(sel); if(el) setTimeout(()=>scramble(el,45),delay);}); }
+  function rebuild(el,txt){el.setAttribute('data-t',txt);build(el);}
+  document.getElementById('replay').addEventListener('click',upd);
+  document.getElementById('toggle').addEventListener('click',()=>{const ill=document.getElementById('card').classList.toggle('illegal');
+    rebuild(document.getElementById('est'),ill?'ILEGAL · PSV EXCEDE':'DENTRO DOS LIMITES'); rebuild(document.getElementById('estx'),ill?'PSV 13:10/13:00':'PSV 10:25/13:00');
+    scramble(document.getElementById('est'),40); scramble(document.getElementById('estx'),40);});
+  window.addEventListener('load',()=>setTimeout(upd,200));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)upd();});
+})();
+</script>
+</body>
+</html>
