@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,8 @@ import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
 import { shortNoticeCandidates } from '../data/rosterDiff';
+import { nightStopStation, hotelMapsUrl } from '../data/hotels';
+import HotelSheet from '../components/HotelSheet';
 import { legZulu } from '../data/zulu';
 import HeaderActions from '../components/HeaderActions';
 import DutyFormSheet from '../components/DutyFormSheet';
@@ -50,7 +52,7 @@ const buildDutiesCsv = (duties) => {
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
-    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents } = useContext(AppContext);
+    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, hotels } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -63,6 +65,8 @@ export default function EscalaScreen({ navigation, route }) {
   const [dutyAppend, setDutyAppend] = useState(false); // form em modo "+ serviço" (2.º+ período do dia)
   const [dutyEditExtra, setDutyEditExtra] = useState(null); // índice do serviço extra a editar (null = não)
   const [dayIso, setDayIso] = useState(null);     // dia tocado na grelha → sheet de detalhe (setores)
+  const [hotelOpen, setHotelOpen] = useState(false);      // folha do hotel da pernoita (a partir do dia)
+  const [hotelStation, setHotelStation] = useState(null); // estação da pernoita do dia aberto
   const [secExpand, setSecExpand] = useState(false); // sheet: expandir lista de setores se for cheia
   const [gridW, setGridW] = useState(0);          // largura medida da grelha → célula = (W − gaps)/7
   const lastNewDuty = useRef(null);
@@ -574,11 +578,39 @@ export default function EscalaScreen({ navigation, route }) {
           const rows = [];
           services.forEach((svc, i) => { rows.push(renderSvc(svc, i)); if (i < services.length - 1) rows.push(restChip(between[i] || { kind: 'rest', gapMin: 0, requiredMin: 0, place: 'base' }, i)); });
 
+          // Hotel da pernoita do DIA (catálogo por estação) — a linha 🏨 logo ao 1.º toque
+          // na grelha, sem precisar do "Ver tudo". Só quando algum serviço tem pernoita.
+          const nsSvc = services.find((sv) => sv && sv.nightStop);
+          const nsSt = nsSvc ? nightStopStation(nsSvc, base) : null;
+          const nsHotel = nsSt ? (hotels || {})[nsSt] : null;
+          const hotelEl = nsSvc ? (
+            nsHotel ? (
+              <TouchableOpacity style={s.dsHotel} activeOpacity={0.85}
+                onPress={() => { select(); Linking.openURL(hotelMapsUrl(nsHotel.name, nsSt, Platform.OS)).catch(() => {}); }}
+                onLongPress={() => { select(); setHotelStation(nsSt); setHotelOpen(true); }}
+                accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${nsHotel.name}`}
+                accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
+                <Text style={{ fontSize: 15 }}>🏨</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.dsHotelName} numberOfLines={1}>{nsHotel.name}</Text>
+                  {nsHotel.note ? <Text style={s.dsHotelNote} numberOfLines={1}>{nsHotel.note}</Text> : null}
+                </View>
+                <Text style={s.dsHotelGo}>🗺 {l('Mapas', 'Maps')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={s.dsHotelAdd} activeOpacity={0.8}
+                onPress={() => { select(); setHotelStation(nsSt); setHotelOpen(true); }} accessibilityRole="button">
+                <Text style={s.dsHotelAddTxt}>＋ {l('adicionar hotel desta pernoita', 'add this night stop’s hotel')}</Text>
+              </TouchableOpacity>
+            )
+          ) : null;
+
           return (
             <View style={s.dsBody}>
               <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
               {multi ? <Text style={s.dsCount}>{services.length} {l('serviços', 'services')}</Text> : null}
               {rows}
+              {hotelEl}
               <View style={s.dsBtns}>
                 <GhostButton onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
                 <PrimaryButton onPress={() => { const iso = dayIso; setDayIso(null); navigation.navigate('DutyDetail', { date: iso }); }} icon="open-outline" radius="lg" style={{ flex: 1 }} label={l('Ver tudo', 'See all')} />
@@ -615,6 +647,9 @@ export default function EscalaScreen({ navigation, route }) {
           <View style={s.hubNote}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.hubNoteTxt}>{l('Nada sai do telemóvel · confirmas antes de gravar', 'Nothing leaves your phone · you confirm before saving')}</Text></View>
         </View>
       </BottomSheet>
+      {/* Hotel da pernoita — registar/editar a partir da folha do dia. */}
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={hotelStation} />
+
       <CalendarPickerSheet visible={calPickerOpen} onClose={() => setCalPickerOpen(false)} currentId={calendarId}
         onSelect={(id, name) => {
           setCalendarId(id); setCalendarName && setCalendarName(name || null);
@@ -780,6 +815,13 @@ const makeStyles = (C) => StyleSheet.create({
   dsRest: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
   dsRestDot: { width: 8, height: 8, borderRadius: 99 },
   dsRestTxt: { flex: 1, fontSize: 11.5, fontFamily: FONT.bold },
+  // Hotel da pernoita na folha do dia (mesmo idiom do Início)
+  dsHotel: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  dsHotelName: { fontSize: 13, fontFamily: FONT.bold, color: C.text },
+  dsHotelNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
+  dsHotelGo: { fontSize: 11, fontFamily: FONT.heavy, color: C.brand },
+  dsHotelAdd: { borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
+  dsHotelAddTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
   dsOffRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 6, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 14 },
   dsOffTxt: { flex: 1, fontSize: 13.5, fontFamily: FONT.semibold, color: C.sub },
   dsAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12 },

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact · Hotel da pernoita — mockup animado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens da app (data/constants.js, paleta clara) ── */
+  :root{
+    --canvas:#FFFFFF; --card:#FFFFFF; --soft:#F2F2F0; --soft2:#FAFAF9; --ink:#1B1B1B;
+    --red:#F5402C; --brand:#1F4E79; --line:#ECECEA; --text:#1B1B1B; --sub:#6B6B66;
+    --greenSoft:#E2F4EC; --greenText:#1C7A50; --infoSoft:#E4ECFB; --scrim:rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#101216;color:#E8E8E6;font-family:Inter,system-ui,sans-serif;min-height:100vh;
+       display:flex;flex-direction:column;align-items:center;padding:26px 16px 60px}
+  h1{font-family:'Space Grotesk';font-size:20px;letter-spacing:-.3px;margin-bottom:4px}
+  .lead{color:#9a9a94;font-size:13px;margin-bottom:22px;text-align:center;max-width:560px}
+
+  /* ── Telefone ── */
+  .stage{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  .phone{width:340px;height:700px;background:var(--canvas);border-radius:44px;border:10px solid #26282e;
+         overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  .notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:110px;height:26px;background:#26282e;border-radius:16px;z-index:60}
+  .screen{position:absolute;inset:0;padding:56px 18px 18px;opacity:0;transform:translateX(26px);
+          transition:opacity .45s ease,transform .45s ease;pointer-events:none;background:var(--canvas)}
+  .screen.on{opacity:1;transform:none;pointer-events:auto;z-index:5}
+
+  /* ── Componentes fiéis ── */
+  .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:2px;color:var(--sub);text-transform:uppercase;margin-bottom:10px}
+  .svc{background:var(--soft2);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 6px 14px rgba(20,22,26,.08)}
+  .svcTop{display:flex;gap:14px;align-items:center}
+  .badge{width:60px;height:60px;border-radius:18px;background:var(--ink);color:#fff;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 10px 16px rgba(27,27,27,.2)}
+  .badge b{font-family:'Space Grotesk';font-size:30px;line-height:30px}
+  .badge span{font-size:9px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.82)}
+  .rt{font-family:'Space Grotesk';font-size:23px;letter-spacing:-.4px;color:var(--text)}
+  .tm{font-size:12.5px;font-weight:700;color:var(--text);margin-top:3px}
+  .tm i{font-style:normal;color:var(--brand)}
+  .cd{font-size:11.5px;font-weight:700;color:var(--text);margin-top:5px}
+  .cd em{font-style:normal;color:var(--sub)}
+  .night{font-size:11px;font-weight:600;margin-top:5px;color:var(--text)}
+  .hr{height:1px;background:var(--line);margin:14px -16px}
+
+  /* Linha do hotel */
+  .hotelRow{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--brand);border-radius:14px;
+            padding:11px 12px;margin-top:12px;color:var(--brand);font-weight:700;font-size:12.5px;cursor:pointer}
+  .hotelRow.filled{border:1px solid var(--line);border-style:solid;background:var(--card);color:var(--text);cursor:default}
+  .hotelRow .nm{flex:1;min-width:0}
+  .hotelRow .nm b{display:block;font-size:13.5px}
+  .hotelRow .nm span{display:block;font-size:11px;color:var(--sub);font-weight:500;margin-top:2px}
+  .pill{display:flex;align-items:center;gap:5px;background:var(--infoSoft);color:var(--brand);border-radius:99px;
+        padding:7px 11px;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .pill.call{background:var(--greenSoft);color:var(--greenText)}
+  .autoTag{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--greenText);background:var(--greenSoft);
+           border-radius:99px;padding:3px 8px}
+
+  /* Sheet */
+  .sheetWrap{position:absolute;inset:0;background:var(--scrim);z-index:40;display:flex;align-items:flex-end;
+             opacity:0;transition:opacity .4s ease;pointer-events:none}
+  .screen.on .sheetWrap.show{opacity:1;pointer-events:auto}
+  .sheet{background:var(--canvas);border-radius:26px 26px 0 0;width:100%;padding:14px 20px 26px;
+         transform:translateY(100%);transition:transform .5s cubic-bezier(.2,.8,.25,1)}
+  .screen.on .sheetWrap.show .sheet{transform:none}
+  .grab{width:38px;height:4.5px;border-radius:99px;background:#CFCFCB;margin:0 auto 12px}
+  .sheetTitle{font-size:17px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .sheetSub{font-size:11.5px;color:var(--sub);margin-bottom:14px}
+  .lbl{font-size:12px;font-weight:600;color:var(--text);margin:12px 0 6px}
+  .lbl small{color:var(--sub);font-weight:500}
+  .input{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;color:var(--text)}
+  .input.typing::after{content:'';display:inline-block;width:2px;height:14px;background:var(--text);margin-left:2px;
+                       vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .btnSave{background:var(--ink);color:#fff;border-radius:14px;padding:14px;text-align:center;font-weight:700;font-size:14px;margin-top:18px}
+  .privacy{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--greenText);font-weight:700;margin-top:10px;justify-content:center}
+
+  /* Detalhe */
+  .headCard{border-left:4px solid #23B573;background:var(--card);border:1px solid var(--line);border-left-width:4px;
+            border-radius:16px;padding:14px 16px;margin-bottom:14px}
+  .secTitle{font-size:10px;font-weight:800;letter-spacing:2px;color:var(--sub);margin:16px 2px 8px;text-transform:uppercase}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 14px}
+  .prow{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line);font-size:13px}
+  .prow:first-child{border-top:0}
+  .prow .k{color:var(--sub);font-weight:500}
+  .prow .v{font-weight:600;color:var(--text)}
+  .prow .v.green{color:var(--greenText)}
+
+  /* Maps splash */
+  .maps{position:absolute;inset:0;background:#EAF2E9;z-index:50;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:14px;opacity:0;transition:opacity .5s ease;pointer-events:none}
+  .screen.on .maps.show{opacity:1}
+  .maps .grid{position:absolute;inset:0;opacity:.35;
+    background:linear-gradient(#cfe0cc 1px,transparent 1px),linear-gradient(90deg,#cfe0cc 1px,transparent 1px);
+    background-size:34px 34px}
+  .maps .road{position:absolute;left:-10%;top:44%;width:120%;height:16px;background:#fff;border-radius:8px;transform:rotate(-9deg);box-shadow:0 1px 0 #d7d7d2}
+  .pin{width:34px;height:34px;background:var(--red);border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+       display:flex;align-items:center;justify-content:center;box-shadow:0 8px 14px rgba(0,0,0,.25);z-index:2;animation:drop .6s cubic-bezier(.2,.9,.3,1.4)}
+  .pin::after{content:'';width:12px;height:12px;background:#fff;border-radius:50%;transform:rotate(45deg)}
+  @keyframes drop{from{transform:rotate(-45deg) translate(-40px,-40px);opacity:0}}
+  .mapsCard{background:#fff;border-radius:14px;padding:12px 16px;font-size:13px;color:#1B1B1B;font-weight:600;z-index:2;box-shadow:0 10px 22px rgba(0,0,0,.14)}
+  .mapsCard span{display:block;font-size:11px;color:#6B6B66;font-weight:500;margin-top:2px}
+  .mapsHint{font-size:11px;color:#516251;z-index:2;font-weight:700}
+
+  /* ── Painel de passos ── */
+  .side{width:340px;max-width:92vw}
+  .stepTitle{font-family:'Space Grotesk';font-size:17px;margin-bottom:6px;color:#fff}
+  .stepDesc{font-size:13px;line-height:1.55;color:#b9b9b3;min-height:120px}
+  .stepDesc b{color:#e8e8e6}
+  .dots{display:flex;gap:8px;margin:18px 0}
+  .dot{width:34px;height:5px;border-radius:99px;background:#33363d;cursor:pointer;overflow:hidden;position:relative}
+  .dot.done{background:#4d5158}
+  .dot.cur::after{content:'';position:absolute;inset:0;background:var(--red);transform-origin:left;
+                  animation:fill var(--stepMs) linear forwards}
+  @keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  .paused .dot.cur::after{animation-play-state:paused}
+  .nav{display:flex;gap:10px}
+  .nav button{background:#22252b;color:#e8e8e6;border:1px solid #33363d;border-radius:12px;padding:10px 18px;
+              font-size:13px;font-weight:700;cursor:pointer;font-family:Inter}
+  .nav button:hover{background:#2a2e35}
+  .nav button.play{background:var(--red);border-color:var(--red);color:#fff}
+  .fine{margin-top:16px;font-size:11px;color:#7c7c76;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>🏨 Hotel da pernoita — fluxo completo</h1>
+<p class="lead">A escala já sabe onde dormes — não há GPS, não há APIs: o hotel da companhia fica guardado por estação (só no telemóvel) e abre nos mapas ou liga com um toque.</p>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- PASSO 1 · Início, pernoita sem hotel -->
+    <div class="screen" id="s0">
+      <div class="eyebrow">Serviços</div>
+      <div class="svc">
+        <div class="svcTop">
+          <div class="badge"><b>12</b><span>SEX</span></div>
+          <div>
+            <div class="eyebrow" style="margin:0 0 3px">Voo · Setor 1/2</div>
+            <div class="rt">LIS → FNC</div>
+            <div class="tm">06:40 → 08:15 &nbsp;<i>0640–0815Z</i></div>
+            <div class="cd"><em>Hoje ·</em> report em 2 h 10 min</div>
+            <div class="night">🌙 Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
+          </div>
+        </div>
+        <div class="hotelRow" title="adicionar">
+          <span style="font-size:15px">＋</span>
+          <div class="nm"><b style="font-size:12.5px">adicionar hotel desta pernoita</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSO 2 · Sheet de registo -->
+    <div class="screen" id="s1">
+      <div class="eyebrow">Serviços</div>
+      <div class="svc" style="filter:saturate(.9)">
+        <div class="svcTop">
+          <div class="badge"><b>12</b><span>SEX</span></div>
+          <div><div class="rt">LIS → FNC</div><div class="night">🌙 Paragem nocturna</div></div>
+        </div>
+      </div>
+      <div class="sheetWrap show">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetTitle">Hotel da pernoita · FNC</div>
+          <div class="sheetSub">Guarda-se por estação — nas próximas pernoitas no Funchal já cá está.</div>
+          <div class="lbl">Nome do hotel</div>
+          <div class="input typing">Hotel Girassol</div>
+          <div class="lbl">Telefone <small>· opcional</small></div>
+          <div class="input">+351 291 201 100</div>
+          <div class="lbl">Nota <small>· opcional (ex. pickup)</small></div>
+          <div class="input">Pickup 08:40 na receção</div>
+          <div class="btnSave">Guardar</div>
+          <div class="privacy">🔒 Guardado só no teu telemóvel</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSO 3 · Detalhe com hotel + ações -->
+    <div class="screen" id="s2">
+      <div class="eyebrow">Voo · Sexta, 12 jul · hoje</div>
+      <div class="headCard">
+        <div class="rt" style="font-size:20px">LIS → FNC</div>
+        <div class="tm">Report 05:40 · 2 setores</div>
+      </div>
+      <div class="secTitle">Pernoita · FNC</div>
+      <div class="hotelRow filled">
+        <span style="font-size:17px">🏨</span>
+        <div class="nm">
+          <b>Hotel Girassol</b>
+          <span>Pickup 08:40 na receção</span>
+        </div>
+        <div class="pill" id="tapMaps">🗺 Mapas</div>
+        <div class="pill call">📞 Ligar</div>
+      </div>
+      <div class="secTitle">Pagamento · detalhes</div>
+      <div class="panel">
+        <div class="prow"><span class="k">Per-diem (AE)</span><span class="v green">+62,02 €</span></div>
+        <div class="prow"><span class="k">Paragem nocturna</span><span class="v green">+77,52 €</span></div>
+        <div class="prow"><span class="k">Fonte</span><span class="v">Calendário</span></div>
+      </div>
+    </div>
+
+    <!-- PASSO 4 · Abre os mapas -->
+    <div class="screen" id="s3">
+      <div class="maps show">
+        <div class="grid"></div><div class="road"></div>
+        <div class="pin"></div>
+        <div class="mapsCard">Hotel Girassol<span>Estrada Monumental · Funchal</span></div>
+        <div class="mapsHint">A abrir no Apple Maps / Google Maps…</div>
+      </div>
+    </div>
+
+    <!-- PASSO 5 · Reutilização automática -->
+    <div class="screen" id="s4">
+      <div class="eyebrow">Serviços · 26 jul</div>
+      <div class="svc">
+        <div class="svcTop">
+          <div class="badge"><b>26</b><span>SÁB</span></div>
+          <div>
+            <div class="rt">LIS → FNC</div>
+            <div class="tm">14:10 → 15:45</div>
+            <div class="night">🌙 Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
+          </div>
+        </div>
+        <div class="hotelRow filled">
+          <span style="font-size:17px">🏨</span>
+          <div class="nm"><b>Hotel Girassol</b><span>Pickup 08:40 na receção</span></div>
+          <span class="autoTag">automático</span>
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--sub);margin-top:14px;line-height:1.5">
+        Nova pernoita na mesma estação → o hotel aparece sozinho.<br>
+        A companhia mudou de hotel? Toque longo → editar.
+      </p>
+    </div>
+  </div>
+
+  <!-- Painel lateral -->
+  <div class="side">
+    <div class="stepTitle" id="tTitle"></div>
+    <div class="stepDesc" id="tDesc"></div>
+    <div class="dots" id="dots"></div>
+    <div class="nav">
+      <button id="prev">‹ Anterior</button>
+      <button id="play" class="play">⏸ Pausa</button>
+      <button id="next">Seguinte ›</button>
+    </div>
+    <p class="fine">Zero módulos nativos (deep links dos mapas + tel:) · sem GPS nem APIs de lugares · dados locais (RGPD) · só aparece em dias com 🌙 pernoita — ruído zero no resto do mês.</p>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  ['1 · A pernoita convida', 'Num dia com <b>🌙 pernoita</b>, o card do serviço (Início e detalhe) ganha UMA linha discreta: <b>“adicionar hotel desta pernoita”</b>. Sem pernoita, nada aparece — ruído zero.'],
+  ['2 · Registas uma vez', 'Folha leve: <b>nome</b>, <b>telefone (opcional)</b> e uma <b>nota</b> (ex. hora do pickup). Fica guardado <b>por estação</b> — FNC é FNC para sempre — e só no telemóvel.'],
+  ['3 · No detalhe do serviço', 'A secção <b>Pernoita</b> junta tudo: hotel + nota + os dois botões — <b>🗺 Mapas</b> e <b>📞 Ligar</b> — ao lado do € da pernoita que a app já paga.'],
+  ['4 · Um toque → mapas', 'Abre o <b>Apple Maps / Google Maps</b> com a pesquisa certa (nome + cidade). É um deep link do sistema: sem SDK, sem chave de API, funciona offline até ao toque.'],
+  ['5 · Reutiliza sozinho', 'Duas semanas depois, outra pernoita em FNC: <b>a linha já vem preenchida</b>. Registaste uma vez; a escala faz o resto. Editar/limpar: toque longo.'],
+];
+const stepMs = 4200;
+document.documentElement.style.setProperty('--stepMs', stepMs + 'ms');
+let cur = 0, playing = true, timer = null;
+const dots = document.getElementById('dots');
+STEPS.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot'; d.onclick = () => go(i, true);
+  dots.appendChild(d);
+});
+function render() {
+  STEPS.forEach((_, i) => {
+    document.getElementById('s' + i).classList.toggle('on', i === cur);
+    const d = dots.children[i];
+    d.className = 'dot' + (i < cur ? ' done' : i === cur ? ' cur' : '');
+  });
+  document.getElementById('tTitle').textContent = STEPS[cur][0];
+  document.getElementById('tDesc').innerHTML = STEPS[cur][1];
+  // reinicia a barra do passo atual
+  const d = dots.children[cur];
+  d.classList.remove('cur'); void d.offsetWidth; d.classList.add('cur');
+}
+function schedule() {
+  clearTimeout(timer);
+  if (playing) timer = setTimeout(() => go((cur + 1) % STEPS.length), stepMs);
+}
+function go(i, manual) {
+  cur = (i + STEPS.length) % STEPS.length;
+  render(); schedule();
+}
+document.getElementById('prev').onclick = () => go(cur - 1, true);
+document.getElementById('next').onclick = () => go(cur + 1, true);
+document.getElementById('play').onclick = (e) => {
+  playing = !playing;
+  e.target.textContent = playing ? '⏸ Pausa' : '▶ Continuar';
+  document.body.classList.toggle('paused', !playing);
+  schedule();
+};
+document.getElementById('tapMaps').onclick = () => go(3, true);
+render(); schedule();
+</script>
+</body>
+</html>

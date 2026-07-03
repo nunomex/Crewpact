@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, TYPE, FONT, GUTTER } from '../data/constants';
@@ -14,6 +14,8 @@ import { AppContext, useTheme, isoDay, toZulu } from '../data/appContext';
 import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
 import { roleEurFor } from '../data/perdiem';
+import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
+import HotelSheet from '../components/HotelSheet';
 import { legZulu } from '../data/zulu';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -33,6 +35,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   const tabSpace = useTabBarSpace();
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(false);
+  const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
 
   const date = route.params?.date;
   const duty = date ? duties[date] : null;
@@ -214,6 +217,44 @@ export default function DutyDetailScreen({ route, navigation }) {
           </>
         ) : null}
 
+        {/* ── Pernoita: hotel da estação (catálogo pessoal, por IATA) — mapas + ligar.
+            Só em dias com 🌙; toque longo edita; sem registo → convite discreto. ── */}
+        {duty.nightStop ? (() => {
+          const st = nightStopStation(duty, ctxAll.base);
+          const h = st ? (ctxAll.hotels || {})[st] : null;
+          return (
+            <>
+              <Text style={s.sectionTitle}>{l('PERNOITA', 'NIGHT STOP')}{st ? ` · ${st}` : ''}</Text>
+              {h ? (
+                <TouchableOpacity style={s.hotelRow} activeOpacity={0.85}
+                  onPress={() => { select(); Linking.openURL(hotelMapsUrl(h.name, st, Platform.OS)).catch(() => {}); }}
+                  onLongPress={() => { select(); setHotelOpen(true); }}
+                  accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${h.name}`}
+                  accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
+                  <Text style={{ fontSize: 17 }}>🏨</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.hotelName} numberOfLines={1}>{h.name}</Text>
+                    {h.note ? <Text style={s.hotelNote} numberOfLines={1}>{h.note}</Text> : null}
+                  </View>
+                  <View style={s.hotelPill}><Text style={s.hotelPillTxt}>🗺 {l('Mapas', 'Maps')}</Text></View>
+                  {h.phone ? (
+                    <TouchableOpacity style={[s.hotelPill, s.hotelPillCall]} hitSlop={6}
+                      onPress={() => { select(); Linking.openURL(hotelTelUrl(h.phone)).catch(() => {}); }}
+                      accessibilityRole="button" accessibilityLabel={l('Ligar ao hotel', 'Call the hotel')}>
+                      <Text style={[s.hotelPillTxt, { color: C.greenText }]}>📞 {l('Ligar', 'Call')}</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={s.hotelAdd} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }}
+                  accessibilityRole="button">
+                  <Text style={s.hotelAddTxt}>＋ {l('adicionar hotel desta pernoita', 'add this night stop’s hotel')}</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          );
+        })() : null}
+
         <Text style={s.sectionTitle}>{l('PAGAMENTO · DETALHES', 'PAY · DETAILS')}</Text>
         <Panel rows={[
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: C.greenText },
@@ -268,6 +309,8 @@ export default function DutyDetailScreen({ route, navigation }) {
 
       {/* Edição (opção autossuficiente) — o form partilhado; ao guardar, o context atualiza-se e o ecrã reflete. */}
       <DutyFormSheet visible={!!editing} date={date} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setEdited(true); }} />
+      {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, ctxAll.base) : null} />
     </SafeAreaView>
   );
 }
@@ -299,4 +342,14 @@ const makeStyles = (C) => StyleSheet.create({
 
   muted: { fontSize: TYPE.sub, color: C.sub, lineHeight: 19 },
   foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: 14, paddingHorizontal: 2 },
+
+  // Pernoita — hotel da estação (mapas + ligar; tracejado = convite a registar)
+  hotelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 12, paddingVertical: 11 },
+  hotelName: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
+  hotelNote: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },
+  hotelPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.infoSoft, borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 7 },
+  hotelPillCall: { backgroundColor: C.greenSoft },
+  hotelPillTxt: { fontSize: 11.5, fontFamily: FONT.heavy, color: C.brand },
+  hotelAdd: { borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, alignItems: 'center' },
+  hotelAddTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.brand },
 });

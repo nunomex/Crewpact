@@ -70,6 +70,7 @@ import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
+import HoteisScreen       from './screens/HoteisScreen';
 import BibliotecaScreen   from './screens/BibliotecaScreen';
 import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
@@ -283,6 +284,7 @@ function PerfilStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
+      <Stack.Screen name="Hoteis"     component={HoteisScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
@@ -374,6 +376,9 @@ export default function App() {
   const [profile, setProfile] = useState({ company: null }); // FTL/cabine: só o operador (crewType fixo 'cabin')
   const [aeExtras, setAeExtras] = useState({});              // LEGADO: contadores antigos — migram p/ eventos no arranque e ficam vazios
   const [aeEvents, setAeEvents] = useState([]);              // Extras do mês como EVENTOS DATADOS [{id, date, type}] — a fonte única
+  const [hotels, setHotels] = useState({});                  // Hotéis de pernoita POR ESTAÇÃO { IATA: {name, phone?, note?} } — local
+  const saveHotel = (station, h) => setHotels((prev) => ({ ...prev, [String(station).toUpperCase()]: h }));
+  const removeHotel = (station) => setHotels((prev) => { const n = { ...prev }; delete n[String(station).toUpperCase()]; return n; });
   const [extraOpen, setExtraOpen] = useState(false);         // folha "Extra do mês" (mini-FAB / Cálculos)
   const addAeEvents = (list) => setAeEvents((prev) => [
     ...prev,
@@ -787,7 +792,7 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev, ht] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -799,6 +804,7 @@ export default function App() {
           AsyncStorage.getItem(`cp_calendar_id_${user.id}`),
           AsyncStorage.getItem(`cp_calendar_name_${user.id}`),
           AsyncStorage.getItem(`cp_ae_events_${user.id}`),
+          AsyncStorage.getItem(`cp_hotels_${user.id}`),
         ]);
         if (cancelled) return;
         setCalendarId(ci || null);   // calendário do telemóvel escolhido (id) ou null = não ligado
@@ -820,6 +826,7 @@ export default function App() {
           }
           setAeEvents(events);
         } catch { setAeEvents([]); setAeExtras({}); }
+        try { setHotels(ht ? (JSON.parse(ht) || {}) : {}); } catch { setHotels({}); }   // hotéis de pernoita
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
         setRemindersOn(rm === '1');                                                          // lembretes opt-in
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
@@ -881,6 +888,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_daylog_${user.id}`, JSON.stringify(dayLog)).catch(() => {}); }, [dayLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_events_${user.id}`, JSON.stringify(aeEvents)).catch(() => {}); }, [aeEvents, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_hotels_${user.id}`, JSON.stringify(hotels)).catch(() => {}); }, [hotels, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
   useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarId) AsyncStorage.setItem(`cp_calendar_id_${user.id}`, calendarId).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_id_${user.id}`).catch(() => {}); }, [calendarId, user?.id]);
@@ -1137,6 +1145,7 @@ export default function App() {
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),
+    hotels, saveHotel, removeHotel,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,

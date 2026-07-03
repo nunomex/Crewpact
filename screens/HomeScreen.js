@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, RefreshControl, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
@@ -27,6 +27,8 @@ import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fetchFlightStatus, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ } from '../data/flightStatus';
+import { nightStopStation, hotelMapsUrl } from '../data/hotels';
+import HotelSheet from '../components/HotelSheet';
 import CountUp from '../components/CountUp';
 
 // Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
@@ -212,7 +214,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync } = useContext(AppContext);
+  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -497,6 +499,20 @@ export default function HomeScreen({ navigation }) {
   const openDayDetail = (iso) => { select(); navigation.navigate('Escala', { screen: 'DutyDetail', initial: false, params: { date: iso } }); };
   const openFeatured = () => { if (featuredTappable) openDayDetail(flight.dateISO); };
 
+  // ── Hotel da pernoita (catálogo por estação) — só em dias com 🌙. A estação deriva
+  // da ESCALA (registo > estações do voo), nunca de GPS. Sem registo → convite discreto.
+  const [hotelOpen, setHotelOpen] = useState(false);
+  const nsHotelStation = (flight && flight.nightStop) ? (() => {
+    const reg = duties[flight.dateISO];
+    const viaDuty = (reg && !reg.deleted) ? nightStopStation(reg, base) : null;
+    if (viaDuty) return viaDuty;
+    const stns = Array.isArray(flight.stations) ? flight.stations : [];
+    const last = String(stns[stns.length - 1] || flight.arrAirport || '').toUpperCase();
+    const b = String(base || '').toUpperCase();
+    return /^[A-Z]{3}$/.test(last) && last !== b ? last : null;
+  })() : null;
+  const nsHotel = nsHotelStation ? (hotels || {})[nsHotelStation] : null;
+
   const nextDutyEl = flight ? (
     <View>
       <Eyebrow style={{ marginBottom: 12 }}>{l('Serviços', 'Duties')}</Eyebrow>
@@ -539,6 +555,29 @@ export default function HomeScreen({ navigation }) {
             {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
           </View>
         </TouchableOpacity>
+        {/* Hotel da pernoita — registado: toque abre os MAPAS, toque longo edita; sem
+            registo: convite discreto. Só existe em dias com 🌙 (ruído zero no resto). */}
+        {flight.nightStop ? (
+          nsHotel ? (
+            <TouchableOpacity style={s.svcHotel} activeOpacity={0.85}
+              onPress={() => { select(); Linking.openURL(hotelMapsUrl(nsHotel.name, nsHotelStation, Platform.OS)).catch(() => {}); }}
+              onLongPress={() => { select(); setHotelOpen(true); }}
+              accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${nsHotel.name}`}
+              accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
+              <Text style={{ fontSize: 15 }}>🏨</Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.svcHotelName} numberOfLines={1}>{nsHotel.name}</Text>
+                {nsHotel.note ? <Text style={s.svcHotelNote} numberOfLines={1}>{nsHotel.note}</Text> : null}
+              </View>
+              <Text style={s.svcHotelGo}>🗺 {l('Mapas', 'Maps')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={s.svcHotelAdd} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }}
+              accessibilityRole="button">
+              <Text style={s.svcHotelAddTxt}>＋ {l('adicionar hotel desta pernoita', 'add this night stop’s hotel')}</Text>
+            </TouchableOpacity>
+          )
+        ) : null}
         <View style={s.svcDiv} />
         {/* Grelha 3 colunas com a info do serviço */}
         <View style={s.svcGrid}>
@@ -731,6 +770,9 @@ export default function HomeScreen({ navigation }) {
         ) : null}
       </ScrollView>
 
+      {/* Hotel da pernoita — registar/editar (estação derivada da escala). */}
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={nsHotelStation} />
+
       {/* Folha "porquê" — abre ao tocar numa pergunta (alerta ou linha). */}
       <QuestionDetailSheet item={detailItem} lang={lang}
         onClose={() => setDetailItem(null)}
@@ -813,6 +855,13 @@ const makeStyles = (C) => StyleSheet.create({
   svcCellSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub },
   svcCellZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 2, letterSpacing: 0.2 },
   svcZuluNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
+  // Hotel da pernoita (dias com 🌙): registado = cartão tocável (mapas); vazio = convite tracejado
+  svcHotel: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 11, paddingVertical: 9, marginTop: 12 },
+  svcHotelName: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
+  svcHotelNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
+  svcHotelGo: { fontSize: 11, fontFamily: FONT.heavy, color: C.brand },
+  svcHotelAdd: { borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
+  svcHotelAddTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
   svcFat: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3, marginTop: 1 },
   svcFatDot: { width: 7, height: 7, borderRadius: 99 },
   svcFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },

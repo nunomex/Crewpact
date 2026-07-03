@@ -487,7 +487,10 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.gbox}>
             <Row icon="shield-checkmark-outline" label={l('Validades & Documentos', 'Currency & Documents')}
               sub={l('Médico, recorrentes, licença… com estado e datas', 'Medical, recurrents, licence… with status & dates')}
-              onPress={() => navigation.navigate('Validades')} last s={s} C={C} />
+              onPress={() => navigation.navigate('Validades')} s={s} C={C} />
+            <Row icon="bed-outline" label={l('Hotéis de pernoita', 'Night-stop hotels')}
+              sub={l('Um por estação — mapas e telefone à mão nos dias 🌙', 'One per station — maps & phone at hand on 🌙 days')}
+              onPress={() => navigation.navigate('Hoteis')} last s={s} C={C} />
           </View>
         </Animated.View>
 
