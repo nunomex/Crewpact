@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Splash — variantes minimais (fiel ao Início)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* SPLASH — simples e fiel à pele do Início: branco · preto · amarelo, estático.
+     No Expo isto vira um PNG centrado sobre fundo branco (app.json). 4 tratamentos
+     do wordmark para escolher; nenhum tem animação (splash de Expo é imagem). */
+  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --yellow:#FFB800; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .grid{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tag{font-size:12.5px;font-weight:800;color:#fff}
+  .tag.rec{color:var(--yellow)}
+  .tag small{display:block;font-weight:600;color:#96a0ad;font-size:11px;margin-top:2px;max-width:230px;line-height:1.5}
+  .ph{width:300px;height:620px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);background:var(--paper);display:flex;align-items:center;justify-content:center}
+  .ph.rec{box-shadow:0 0 0 2px var(--yellow), 0 40px 90px -30px rgba(0,0,0,.9)}
+
+  /* A · Hanken 800 + ponto amarelo */
+  .wa{font-size:38px;font-weight:800;letter-spacing:-1px;color:var(--ink)}
+  .wa .dot{color:var(--yellow)}
+
+  /* B · display + régua amarela (a linha da placa "Departures") */
+  .wb{text-align:center}
+  .wb .name{font-family:'Barlow Condensed';font-weight:700;font-size:52px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);line-height:1}
+  .wb .rule{height:4px;width:70%;margin:12px auto 0;background:var(--yellow);border-radius:2px}
+  .wb .sub{margin-top:12px;font-size:10px;font-weight:800;letter-spacing:4px;color:var(--grey)}
+
+  /* C · dois pesos (Crew forte · Pact leve) + ponto */
+  .wc{font-size:40px;letter-spacing:-.5px;color:var(--ink)}
+  .wc b{font-weight:800}
+  .wc span{font-weight:300;color:var(--grey)}
+  .wc .dot{color:var(--yellow);font-weight:800}
+
+  /* D · marca em placa (glifo do avião na placa amarela + nome) */
+  .wd{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .wd .plate{width:74px;height:74px;border-radius:20px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+  .wd .plate svg{width:42px;height:42px;fill:var(--ink)}
+  .wd .name{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+  .wd .name .dot{color:var(--yellow)}
+
+  .foot{position:absolute;bottom:34px;font-size:10px;font-weight:700;letter-spacing:2px;color:#C9C6BE;text-transform:uppercase}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Splash — simples, fiel ao Início</h1>
+    <p>Branco · preto · amarelo, <b>estático</b> (no Expo é um PNG centrado). Quatro tratamentos do
+    wordmark. A minha recomendação está com moldura amarela — a <b>régua amarela</b> liga o splash
+    à sinalética de aeroporto e à mesma linha que separa as zonas do Início.</p>
+  </div>
+  <div class="grid">
+    <div class="col">
+      <div class="tag">A · ponto amarelo<small>Hanken 800 · o mais neutro/moderno</small></div>
+      <div class="ph"><div class="wa">CrewPact<span class="dot">.</span></div><div class="foot">FTL · AE</div></div>
+    </div>
+    <div class="col">
+      <div class="tag rec">B · régua amarela ★<small>display condensado + a linha da placa "Departures"</small></div>
+      <div class="ph rec"><div class="wb"><div class="name">CrewPact</div><div class="rule"></div><div class="sub">CREW · PACT</div></div></div>
+    </div>
+    <div class="col">
+      <div class="tag">C · dois pesos<small>Crew forte · pact leve · ponto amarelo</small></div>
+      <div class="ph"><div class="wc"><b>Crew</b><span>pact</span><span class="dot">.</span></div><div class="foot">FTL · AE</div></div>
+    </div>
+    <div class="col">
+      <div class="tag">D · placa + nome<small>o glifo do avião na placa amarela</small></div>
+      <div class="ph"><div class="wd"><div class="plate"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div><div class="name">CrewPact<span class="dot">.</span></div></div></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -247,14 +247,83 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 
 ---
 
-## 6 · Animação (regras)
+## 6 · Movimento & Animação (spec)
 
-- Movimento só nos **campos-chave** quando mudam (countdown, horas, estado) —
-  nunca o cartão inteiro, nunca a mobília.
-- Transição de estado: crossfade/slide subtil do hero; o resto assenta.
-- Countdown vive (1×/min); estados fechados (pós-voo, folga) assentam **uma vez**.
-- Donut anima ao entrar; `prefers-reduced-motion` respeitado sempre.
-- Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports às 04:00).
+**Princípio único: animação é FEEDBACK e SIGNIFICADO, nunca decoração.** Esta é uma
+ferramenta operacional usada às 04:00 — movimento gratuito é fricção (atrasa a leitura,
+gasta bateria, irrita à 500.ª vez). Toda a animação tem de responder a uma de três
+perguntas: "confirmei a ação?", "o que mudou?", "para onde olho?". Se não responde a
+nenhuma, não existe.
+
+### As 6 leis do movimento
+
+1. **Feedback/significado, nunca decoração.**
+2. **Rápido.** 150–250 ms, curva ease-**out** (desacelera). Nada que faça esperar.
+3. **`prefers-reduced-motion` sempre** — via `useReduceMotion` (já no código): tudo cai
+   para instantâneo (durações→0, valores no destino, cascata simultânea, crossfade→corte).
+   Os **haptics ficam** (não são movimento).
+4. **Um momento orquestrado > micro-animações espalhadas.** A entrada escalonada do ecrã
+   é o "momento"; o resto está quieto.
+5. **Haptic emparelhado com o visual** (já temos `haptics`: `select`/`success`/`warning`).
+6. **O teste da 500.ª vez:** se irrita quem abre a app 10×/dia durante meses → corta ou
+   torna invisível (mais rápido, mais subtil).
+
+### Tokens de movimento
+
+| Token | Duração | Curva | Uso |
+|---|---|---|---|
+| `tap` | 100 ms | ease-out | scale 0.97 + opacity ao carregar num alvo |
+| `micro` | 150 ms | ease-out | recolorir horas, chip a marcar, hairline |
+| `standard` | 220 ms | ease-out | crossfade do hero, entrada de zona, faixa de alerta |
+| `stagger` | +50 ms/item | — | atraso entre zonas na entrada do ecrã |
+| `settle` | 500 ms | ease-out | `CountUp` de um valor grande (uma vez) |
+| `donut` | 700 ms | ease-out | anel a encher à entrada (uma vez) |
+| `navbar` | 280 ms | ease-out | pílula a encolher/expandir (nativo iOS 26) |
+| `screen` | nativo | React Navigation | push/slide entre ecrãs |
+
+Nunca molas *bouncy* no conteúdo; ease-out sempre. (Uma mola gentil só no *release* de
+um botão, se sequer.)
+
+### Catálogo — o que anima, onde
+
+- **Toque** (`tap`): todo o alvo premível — botões, chips, réguas, ações do polegar —
+  faz `scale:0.97` + leve escurecer ao pressionar; solta ao largar. + `haptic select`.
+- **Entrada do ecrã** (`stagger`): as zonas revelam em cascata de cima para baixo
+  (greet → hero → meio → util → polegar), via `useEnter` (já existe). UMA vez ao focar.
+- **Transição de estado** (`standard`): o hero (número fantasma + palavra) faz **crossfade**
+  + micro-slide 8 px quando `crewState` muda; o resto assenta sem re-animar.
+- **Valores** — as **horas** recolorem (`micro`) quando o estado muda (verde↔laranja) e a
+  antiga aparece rasurada; o **hero grande** e o **€/per-diem** fazem `CountUp` (`settle`)
+  **uma vez** à entrada; o **donut** enche (`donut`) à entrada.
+- **Countdown**: atualiza a cada minuto — troca o texto sem animação de contador (só o
+  número muda; nada de "roleta"). Estados fechados (pós-voo, folga) assentam UMA vez.
+- **Loading** = **skeletons, não spinners** — `Skeleton` (já existe) com shimmer subtil;
+  UI otimista onde der (mostrar o valor local enquanto o feed chega).
+- **Sucesso** (criar conta, confirmar, gravar): o visto **desenha-se** (~300 ms) +
+  `haptic success`. Erro/inválido: shake curtíssimo (2 px, 1×) + `haptic warning`.
+- **Faixa de alerta** (disrupção): nasce no sítio fixo com fade+slide (`standard`) — nunca
+  "salta"; some com fade quando a condição passa.
+- **Navbar** (`navbar`): pílula encolhe para a aba ativa no scroll-baixo, expande no
+  scroll-cima/toque. Nativo no iOS 26 (Liquid Glass do chrome — ver §4/decisão LG).
+- **Ecrãs** (`screen`): transições nativas do React Navigation; não reinventar.
+
+### O que NÃO anima (proibições)
+
+- O **cartão/ecrã inteiro** a cada foco (enjoa, atrasa a leitura).
+- Qualquer animação que **atrase o acesso à informação** — o report/PSV aparece já, nunca
+  depois de um reveal longo.
+- Molas brincalhonas, parallax, partículas, efeitos decorativos, spinners infinitos.
+- O **conteúdo** com brilho/vidro (ver decisão Liquid Glass): conteúdo é plano/matte; só o
+  chrome do sistema (navbar/sheets) pode brilhar onde o iOS o dá de borla.
+
+### Infraestrutura (já existe — não é dev build)
+
+`react-native-reanimated` (worklets **0.5.1** pinado, SDK 54) · `useEnter` (cascata) ·
+`useReduceMotion` (a lei 3) · `Skeleton` (loading) · `CountUp` (settle) · `haptics`
+(select/success/warning). Corre em Expo Go. **Timing:** a animação é a camada final de
+polish — anima-se os ecrãs NOVOS durante/depois do port, nunca a UI antiga a substituir.
+
+Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports às 04:00).
 
 ## 7 · Fora do Início
 

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Fluxo de auth completo — na pele</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px}
+  .wrap{max-width:1300px;margin:0 auto}
+  h1{font-size:23px;font-weight:800;color:#fff;text-align:center}
+  .sub{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.6;max-width:800px;margin:8px auto 0;text-align:center}.sub b{color:#fff}
+  .grid{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cap{font-size:12.5px;font-weight:800;color:#fff}
+  .cap small{display:block;font-weight:600;color:#96a0ad;font-size:10.5px;margin-top:2px;max-width:240px;line-height:1.5;text-align:center}
+  .ph{width:290px;height:600px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink);box-shadow:0 30px 70px -28px rgba(0,0,0,.85)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:46px 28px 0;text-align:center}
+  .scr.left{align-items:flex-start;text-align:left}
+
+  .back{align-self:flex-start;font-size:12px;font-weight:700;color:var(--grey);margin-bottom:18px}
+  .wm .eye{font-size:8px;font-weight:600;letter-spacing:4px;color:var(--grey);text-transform:uppercase}
+  .wm .rule{height:3.5px;width:120px;background:var(--yellow);margin:8px auto 11px}
+  .wm.l .rule{margin-left:0}
+  .wm .name{font-family:'Barlow Condensed';font-size:32px;line-height:1;letter-spacing:3px;text-transform:uppercase}
+  .wm .name b{font-weight:800}.wm .name span{font-weight:500}
+  .h2{font-family:'Barlow Condensed';font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px}
+  .tagline{font-size:12.5px;font-weight:600;color:var(--grey);margin-bottom:24px;line-height:1.5;max-width:230px}
+  .tagline b{color:var(--ink)}
+
+  .pill{width:100%;display:flex;align-items:center;gap:11px;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;padding:15px 20px;margin-bottom:13px}
+  .pill svg{width:17px;height:17px;fill:var(--grey);flex:0 0 auto}
+  .pill .val{font-size:14px;font-weight:600}
+  .pill .ph2{font-size:14px;font-weight:500;color:#B4B0A8}
+  .pill.focus{border-color:var(--ink)}
+  .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--ink);color:#fff;border-radius:999px;padding:17px;font-size:15px;font-weight:800;letter-spacing:.5px;margin-top:6px}
+  .btn .arr{color:var(--yellow);font-size:18px}
+  .switch{font-size:12px;font-weight:700;color:var(--grey);margin-top:18px}
+  .switch a{color:var(--ink);border-bottom:2px solid var(--yellow);padding-bottom:1px}
+
+  /* OTP */
+  .otp{display:flex;gap:9px;margin:10px 0 8px}
+  .obox{width:38px;height:50px;border:1.5px solid var(--line);border-radius:13px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-size:26px;font-weight:700;color:var(--ink)}
+  .obox.on{border-color:var(--ink)}
+  .obox.cur{border-color:var(--ink);position:relative}
+  .obox.cur:after{content:'';width:2px;height:22px;background:var(--yellow);animation:bl 1s steps(1) infinite}
+  @keyframes bl{50%{opacity:0}}
+  .resend{font-size:12px;font-weight:700;color:var(--grey);margin:16px 0 22px}
+  .resend b{color:#C9C6BE}
+  .sent{font-size:12.5px;font-weight:600;color:var(--grey);margin-bottom:20px;line-height:1.5}
+  .sent b{color:var(--ink)}
+
+  /* Face ID */
+  .hello{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-top:36px}
+  .hello small{display:block;font-size:12.5px;font-weight:600;color:var(--grey);margin-top:3px}
+  .facebtn{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;background:var(--ink);color:#fff;border-radius:16px;padding:19px;font-size:15.5px;font-weight:800;margin-top:22px}
+  .facebtn svg{width:25px;height:25px;stroke:var(--yellow);fill:none;stroke-width:1.6}
+  .escape{font-size:12.5px;font-weight:700;color:var(--grey);margin-top:16px}
+  .escape a{color:var(--ink);border-bottom:2px solid var(--yellow);padding-bottom:1px}
+  .foot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:9px;font-weight:700;letter-spacing:2px;color:#C9C6BE;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fluxo de auth completo — na pele</h1>
+  <p class="sub">O login não é um ecrã só. Aqui estão os que faltavam, todos no <b>login plano reconciliado</b>
+  (wordmark do splash, campos-pílula, hairline, botão preto+seta amarela). Já tinhas: <b>Entrar</b> e <b>Face ID</b>.</p>
+
+  <div class="grid">
+
+    <!-- Criar conta -->
+    <div class="col">
+      <div class="cap">Criar conta<small>email + password + companhia (o resto vem no estado 0)</small></div>
+      <div class="ph"><div class="scr">
+        <div class="wm"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="tagline">Cria a conta em segundos — o resto <b>configura-se sozinho</b>.</div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="ph2">o teu email</span></div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="ph2">cria uma palavra-passe</span></div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg><span class="ph2">a tua companhia</span></div>
+        <div class="btn" style="margin-top:8px">Criar conta <span class="arr">→</span></div>
+        <div class="switch">Já tens conta? <a>Entrar</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- Verificar email (OTP) -->
+    <div class="col">
+      <div class="cap">Verificar email<small>OTP · Resend + crewpact.app (já a funcionar no backend)</small></div>
+      <div class="ph"><div class="scr">
+        <div class="wm"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="h2">Confirma o teu email</div>
+        <div class="sent">Enviámos um código de 6 dígitos para<br><b>funsnake@gmail.com</b></div>
+        <div class="otp"><div class="obox on">4</div><div class="obox on">1</div><div class="obox on">8</div><div class="obox cur"></div><div class="obox"></div><div class="obox"></div></div>
+        <div class="resend">Reenviar código em <b>0:23</b></div>
+        <div class="btn">Verificar <span class="arr">→</span></div>
+        <div class="switch">Email errado? <a>Corrigir</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- Recuperar password (email) -->
+    <div class="col">
+      <div class="cap">Recuperar acesso<small>passo 1 · o código chega por email</small></div>
+      <div class="ph"><div class="scr left">
+        <div class="back">‹ voltar</div>
+        <div class="wm l"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="h2">Esqueci-me</div>
+        <div class="tagline">Escreve o teu email e enviamos um <b>código</b> para criares uma nova palavra-passe.</div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="ph2">o teu email</span></div>
+        <div class="btn">Enviar código <span class="arr">→</span></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- Nova password -->
+    <div class="col">
+      <div class="cap">Nova palavra-passe<small>passo 2 · depois do código</small></div>
+      <div class="ph"><div class="scr left">
+        <div class="back">‹ voltar</div>
+        <div class="wm l"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="h2">Nova palavra-passe</div>
+        <div class="tagline">Escolhe uma nova — mín. 8 caracteres.</div>
+        <div class="pill focus"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="val">••••••••••</span></div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="ph2">confirmar</span></div>
+        <div class="btn" style="margin-top:6px">Guardar <span class="arr">→</span></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- Face ID (recap) -->
+    <div class="col">
+      <div class="cap">Face ID<small>quem volta · biometria-primeiro (já feito no código)</small></div>
+      <div class="ph"><div class="scr">
+        <div class="wm"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="hello" style="margin-top:44px">Olá de novo, Nuno<small>desbloqueia para continuar</small></div>
+        <div class="facebtn"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1.5M15 10v1.5M12 9.5v3l-1.2 1M9.6 15.2s1 1 2.4 1 2.4-1 2.4-1"/></svg> Entrar com Face ID</div>
+        <div class="escape">usar <a>palavra-passe</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Login — 3 layouts na pele (wordmark do splash)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F5F3EE; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:700px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .grid{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tag{font-size:12.5px;font-weight:800;color:#fff}.tag.rec{color:var(--yellow)}
+  .tag small{display:block;font-weight:600;color:#96a0ad;font-size:11px;margin-top:2px;max-width:250px;line-height:1.5}
+  .ph{width:300px;height:640px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink);box-shadow:0 30px 70px -28px rgba(0,0,0,.85)}
+  .ph.rec{box-shadow:0 0 0 2px var(--yellow), 0 30px 70px -28px rgba(0,0,0,.85)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:40px 26px 0}
+
+  /* wordmark do splash (FIDS) — reutilizado */
+  .wm .eye{font-size:8.5px;font-weight:600;letter-spacing:4px;color:var(--grey);text-transform:uppercase}
+  .wm .rule{height:3.5px;background:var(--yellow);margin:9px 0 12px}
+  .wm .name{font-family:'Barlow Condensed';font-size:34px;line-height:1;letter-spacing:3px;text-transform:uppercase;color:var(--ink)}
+  .wm .name b{font-weight:800}.wm .name span{font-weight:500}
+
+  /* form */
+  .lbl{font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-bottom:6px}
+  .field{display:flex;align-items:center;gap:10px;background:var(--soft);border:1.5px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:14px}
+  .field svg{width:17px;height:17px;fill:var(--grey);flex:0 0 auto}
+  .field .val{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .field .ph2{color:#B8B4AC;font-weight:500}
+  .field.focus{border-color:var(--ink)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--ink);color:#fff;border-radius:13px;padding:15px;font-size:15px;font-weight:800;margin-top:4px}
+  .btn .arr{color:var(--yellow);font-size:18px}
+  .links{display:flex;justify-content:space-between;margin-top:16px;font-size:12px;font-weight:700;color:var(--grey)}
+  .links a{color:var(--ink);text-decoration:none;border-bottom:2px solid var(--yellow);padding-bottom:1px}
+  .foot{position:absolute;left:0;right:0;bottom:26px;text-align:center;font-size:10px;font-weight:700;letter-spacing:2px;color:#C9C6BE;text-transform:uppercase}
+
+  /* Face ID */
+  .facewrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:20px}
+  .facebtn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--ink);color:#fff;border-radius:16px;padding:20px;font-size:16px;font-weight:800}
+  .facebtn svg{width:26px;height:26px;stroke:var(--yellow);fill:none;stroke-width:1.6}
+  .hello{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-top:4px}
+  .hello small{display:block;font-size:12.5px;font-weight:600;color:var(--grey);margin-top:3px;letter-spacing:0;text-transform:none}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Login — 3 layouts na pele</h1>
+    <p>Todos com o <b>wordmark do splash</b> (a fila FIDS), campos na pele (fundo suave, hairline, ícones novos),
+    botão preto com a seta amarela. 1 = header de placa · 2 = centrado · 3 = Face ID (utilizador que volta).</p>
+  </div>
+  <div class="grid">
+
+    <!-- 1 · Header de placa (recomendado) -->
+    <div class="col">
+      <div class="tag rec">1 · header de placa ★<small>o wordmark do splash à esquerda, editorial</small></div>
+      <div class="ph rec"><div class="scr">
+        <div class="wm">
+          <div class="eye">FTL · AE · CREW</div><div class="rule"></div>
+          <div class="name"><span>Crew</span><b>Pact</b></div>
+        </div>
+        <div style="font-family:'Barlow Condensed';font-size:22px;font-weight:600;color:var(--ink);margin:22px 0 20px;text-transform:uppercase;letter-spacing:.5px">Bem-vindo de volta</div>
+        <div class="lbl">Email</div>
+        <div class="field"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="val">funsnake@gmail.com</span></div>
+        <div class="lbl">Palavra-passe</div>
+        <div class="field focus"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="val">••••••••••</span></div>
+        <div class="btn">Entrar <span class="arr">→</span></div>
+        <div class="links"><span>Criar conta</span><a>Esqueci-me</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- 2 · Centrado -->
+    <div class="col">
+      <div class="tag">2 · centrado<small>wordmark ao centro, simétrico, clássico</small></div>
+      <div class="ph"><div class="scr" style="align-items:center;text-align:center">
+        <div class="wm" style="text-align:center">
+          <div class="eye">FTL · AE · CREW</div><div class="rule" style="width:120px;margin-left:auto;margin-right:auto"></div>
+          <div class="name"><span>Crew</span><b>Pact</b></div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--grey);margin:16px 0 24px">A tua vida operacional, num sítio.</div>
+        <div style="width:100%;text-align:left">
+          <div class="lbl">Email</div>
+          <div class="field"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="ph2">o teu email</span></div>
+          <div class="lbl">Palavra-passe</div>
+          <div class="field"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="ph2">a tua palavra-passe</span></div>
+          <div class="btn">Entrar <span class="arr">→</span></div>
+        </div>
+        <div class="links" style="width:100%"><span>Criar conta</span><a>Esqueci-me</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+    <!-- 3 · Face ID (utilizador que volta) -->
+    <div class="col">
+      <div class="tag">3 · Face ID<small>quem volta: biometria primeiro (o fluxo que fizemos)</small></div>
+      <div class="ph"><div class="scr" style="align-items:center;text-align:center">
+        <div class="wm" style="text-align:center">
+          <div class="eye">FTL · AE · CREW</div><div class="rule" style="width:120px;margin-left:auto;margin-right:auto"></div>
+          <div class="name"><span>Crew</span><b>Pact</b></div>
+        </div>
+        <div class="hello" style="margin-top:40px">Olá de novo, Nuno<small>desbloqueia para continuar</small></div>
+        <div class="facewrap">
+          <div class="facebtn"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1.5M15 10v1.5M12 9.5v3l-1.2 1M9.6 15.2s1 1 2.4 1 2.4-1 2.4-1"/></svg> Entrar com Face ID</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--grey)">usar <span style="color:var(--ink);border-bottom:2px solid var(--yellow)">palavra-passe</span></div>
+        </div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+  </div>
+</body>
+</html>

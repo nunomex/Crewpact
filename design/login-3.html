@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Login × Início — teste de coerência</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:740px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .grid{display:flex;gap:40px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tag{font-size:13px;font-weight:800;color:#fff}
+  .tag small{display:block;font-weight:600;color:#96a0ad;font-size:11px;margin-top:2px;max-width:260px;line-height:1.5}
+  .ph{width:310px;height:660px;border-radius:42px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink);box-shadow:0 30px 70px -28px rgba(0,0,0,.85)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column}
+
+  /* ===== INÍCIO (a pele) ===== */
+  .in{padding:24px 22px 0}
+  .in .greet{font-size:12px;font-weight:600;color:var(--grey)}
+  .in .side{position:absolute;right:10px;top:120px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;white-space:nowrap}
+  .in .side .y{color:var(--yellow)}
+  .in .hero{position:relative;margin-top:8px;height:150px}
+  .in .ghostnum{position:absolute;right:12px;top:-10px;font-family:'Barlow Condensed';font-weight:700;font-size:128px;line-height:1;color:var(--ghost);letter-spacing:-3px}
+  .in .word{position:absolute;left:0;bottom:30px;font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.95}
+  .in .kick{position:absolute;left:2px;bottom:10px;font-size:12px;font-weight:700;color:var(--grey)}
+  .in .kick .y{color:var(--yellow);font-weight:800}
+  .in .arrowy{position:absolute;left:2px;top:2px;color:var(--yellow);font-size:22px;font-weight:800}
+  .in .hr{height:1.5px;background:var(--ink);margin-top:2px}
+  .in .trow{display:flex;align-items:baseline;gap:11px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .in .tap{flex:0 0 66px;font-size:11px;font-weight:800}
+  .in .tap small{display:block;font-size:8.5px;font-weight:700;letter-spacing:1.3px;color:var(--grey)}
+  .in .tbig{font-family:'Barlow Condensed';font-weight:700;font-size:38px;line-height:1;color:var(--ok)}
+  .in .tst{margin-left:auto;text-align:right;font-size:10px;font-weight:800;color:var(--ok)}
+  .in .tst small{display:block;font-weight:600;color:var(--grey)}
+  .in .util{display:flex;gap:14px;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .in .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;flex:0 0 56px}
+  .in .util p{font-size:11px;font-weight:600;color:var(--grey);line-height:1.55;flex:1}
+  .in .util b{color:var(--ink)}
+  .in .thumb{display:flex;align-items:center;gap:10px;padding:12px 0}
+  .in .chip{background:var(--ink);border-radius:12px;padding:7px 12px}
+  .in .chip .cv{font-family:'Barlow Condensed';font-weight:700;font-size:20px;color:var(--yellow);line-height:1}
+  .in .chip small{display:block;font-size:7px;font-weight:800;letter-spacing:1.4px;color:#B9B8B2;margin-top:3px;text-transform:uppercase}
+  .in .acts{margin-left:auto;display:flex;gap:8px}
+  .in .act{width:38px;height:38px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .in .act.hot{background:var(--ink)}
+  .in .navpill{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;gap:2px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
+  .in .di{font-size:10px;font-weight:800;color:var(--grey);padding:7px 11px;border-radius:999px}
+  .in .di.on{background:var(--ink);color:#fff}
+  .in .di.on i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yellow);margin-right:5px}
+
+  /* ===== LOGIN reconciliado (plano + hairline, mas airoso + pílula) ===== */
+  .lg{align-items:center;padding:52px 30px 0;text-align:center}
+  .lg .wm .eye{font-size:8.5px;font-weight:600;letter-spacing:4px;color:var(--grey);text-transform:uppercase}
+  .lg .wm .rule{height:3.5px;width:130px;background:var(--yellow);margin:9px auto 12px}
+  .lg .wm .name{font-family:'Barlow Condensed';font-size:38px;line-height:1;letter-spacing:3px;text-transform:uppercase}
+  .lg .wm .name b{font-weight:800}.lg .wm .name span{font-weight:500}
+  .lg .tagline{font-size:13px;font-weight:600;color:var(--grey);margin:14px 0 30px;line-height:1.5;max-width:230px}
+  /* mudança-chave: sombra ACHATADA — hairline manda, como no Início */
+  .lg .pill{width:100%;display:flex;align-items:center;gap:12px;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;padding:16px 22px;margin-bottom:14px}
+  .lg .pill svg{width:18px;height:18px;fill:var(--grey);flex:0 0 auto}
+  .lg .pill .val{font-size:14.5px;font-weight:600}
+  .lg .pill .ph2{font-size:14.5px;font-weight:500;color:#B4B0A8}
+  .lg .pill.focus{border-color:var(--ink)}
+  .lg .forgot{align-self:flex-end;font-size:12.5px;font-weight:700;color:var(--ink);border-bottom:2px solid var(--yellow);padding-bottom:1px;margin:2px 4px 22px}
+  .lg .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--ink);color:#fff;border-radius:999px;padding:18px;font-size:15.5px;font-weight:800;letter-spacing:.5px}
+  .lg .btn .arr{color:var(--yellow);font-size:19px}
+  .lg .switch{font-size:12.5px;font-weight:700;color:var(--grey);margin-top:20px}
+  .lg .switch a{color:var(--ink);border-bottom:2px solid var(--yellow);padding-bottom:1px}
+  .lg .foot{position:absolute;left:0;right:0;bottom:24px;text-align:center;font-size:9px;font-weight:700;letter-spacing:2px;color:#C9C6BE;text-transform:uppercase}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Login × Início — combinam?</h1>
+    <p>Os dois lado a lado. Repara no que os UNE: <b>wordmark + régua amarela</b>, o preto+amarelo, a pílula
+    (a nav do Início também é pílula). A mudança que os torna a mesma família: <b>o login ficou plano</b> —
+    hairline a mandar, sem sombras de elevação, como o Início. Mesma tinta, mesmo material.</p>
+  </div>
+  <div class="grid">
+
+    <div class="col">
+      <div class="tag">Início — a pele<small>técnico, plano, hairline, FIDS</small></div>
+      <div class="ph"><div class="scr in">
+        <div class="greet">Bom dia, Nuno</div>
+        <div class="side">EJU7625 · <span class="y">2 SETORES</span></div>
+        <div class="hero"><div class="arrowy">↑</div><div class="ghostnum">1:05</div><div class="word">Report</div><div class="kick">às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓</div></div>
+        <div class="hr"></div>
+        <div class="trow"><div class="tap">LIS<small>PARTIDA</small></div><div class="tbig">06:40</div><div class="tst">a tempo ✓<small>porta 24</small></div></div>
+        <div class="trow"><div class="tap">FNC<small>CHEGADA</small></div><div class="tbig">09:05</div><div class="tst">no plano<small>☀️ 27°</small></div></div>
+        <div class="util"><div class="ttl">Hoje</div><p><b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · per-diem <b>+41,08 €</b>.</p></div>
+        <div class="thumb"><div class="chip"><div class="cv">05:30</div><small>REPORT · 04:30Z</small></div><div class="acts"><div class="act hot">🔗</div><div class="act">🛏</div><div class="act">⏱</div></div></div>
+        <div class="navpill"><div class="di on"><i></i>Início</div><div class="di">Estat.</div><div class="di">Escala</div><div class="di">FTL/AE</div></div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="tag">Entrar — reconciliado<small>o que gostaste, mas plano (pertence)</small></div>
+      <div class="ph"><div class="scr lg">
+        <div class="wm"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
+        <div class="tagline">A tua vida operacional, num sítio.</div>
+        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="ph2">o teu email</span></div>
+        <div class="pill focus"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="val">••••••••••</span></div>
+        <div class="forgot">Esqueci-me</div>
+        <div class="btn">Entrar <span class="arr">→</span></div>
+        <div class="switch">Ainda não tens conta? <a>Criar conta</a></div>
+        <div class="foot">FTL · AE</div>
+      </div></div>
+    </div>
+
+  </div>
+</body>
+</html>

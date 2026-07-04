@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Perfil — adaptação da ref bancária (identidade, não dinheiro)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:720px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .ph{width:330px;height:710px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink);box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}
+  .scr::-webkit-scrollbar{display:none}
+  .pad{padding:0 20px}
+
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:12px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 20px 0}
+  .hdr .bk{font-size:20px;font-weight:800}
+  .hdr .r{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .hdr .bell svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.6}
+  .hdr .av{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+
+  .dash{width:26px;height:3px;background:var(--ink);margin:16px 0 8px}
+  .title{font-family:'Barlow Condensed';font-size:44px;font-weight:700;line-height:.92;text-transform:uppercase;letter-spacing:-.5px}
+
+  /* cartões de tripulante (deslizáveis) */
+  .cards{display:flex;gap:12px;overflow-x:auto;padding:16px 20px 8px;scrollbar-width:none}
+  .cards::-webkit-scrollbar{display:none}
+  .card{flex:0 0 250px;height:150px;border-radius:20px;padding:16px 17px;position:relative;display:flex;flex-direction:column}
+  .card.ink{background:var(--ink);color:#fff}
+  .card.soft{background:var(--soft);color:var(--ink);border:1.5px solid var(--line)}
+  .card .wm{display:flex;align-items:center;gap:6px}
+  .card .wm b{font-family:'Barlow Condensed';font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase}
+  .card.ink .wm b{color:#fff}
+  .card .wm .d{width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+  .card .role{margin-top:auto;font-size:11px;font-weight:700;letter-spacing:.5px;opacity:.8}
+  .card .nm{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-top:2px}
+  .card .foot{display:flex;gap:14px;margin-top:12px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.7}
+  .card .rule{position:absolute;left:17px;right:17px;bottom:52px;height:2px;background:var(--yellow);opacity:.85}
+  .card .kv{font-size:12px;font-weight:700;margin-top:3px}
+  .card .kv span{color:var(--grey)}
+  .dots{display:flex;gap:5px;justify-content:center;margin:2px 0 4px}
+  .dots .dt{width:6px;height:6px;border-radius:50%;background:var(--line)}
+  .dots .dt.on{background:var(--ink)}
+
+  .seclbl{font-size:9.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey);margin:20px 4px 10px}
+
+  /* família (avatares + adicionar) */
+  .fam{display:flex;gap:12px;overflow-x:auto;padding:0 20px 4px;scrollbar-width:none}
+  .fam::-webkit-scrollbar{display:none}
+  .fperson{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;font-weight:700}
+  .fperson .a{width:56px;height:56px;border-radius:50%;background:var(--soft);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:var(--ink)}
+  .fperson.add .a{background:#fff;border:1.5px dashed var(--ink);color:var(--ink);font-size:26px}
+  .fperson small{color:var(--grey);font-weight:600;font-size:9.5px}
+
+  /* secções de definições (rows flat) */
+  .group{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:0 20px}
+  .row{display:flex;align-items:center;gap:13px;padding:13px 14px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .ic{width:34px;height:34px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center}
+  .row .ic svg{width:17px;height:17px;fill:var(--ink)}
+  .row .lb{font-size:13.5px;font-weight:700}
+  .row .lb small{display:block;font-size:10.5px;font-weight:600;color:var(--grey);margin-top:1px}
+  .row .rv{margin-left:auto;font-size:13px;font-weight:800;color:var(--grey);display:flex;align-items:center;gap:6px}
+  .row .rv .chev{color:var(--line);font-weight:800;font-size:15px}
+  .row .rv .y{color:var(--ink)}
+
+  .navpad{height:80px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;gap:2px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
+  .di{font-size:10px;font-weight:800;color:var(--grey);padding:7px 12px;border-radius:999px}
+  .di.on{background:var(--ink);color:#fff}
+  .di.on i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yellow);margin-right:5px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Perfil — a estrutura da tua ref, na pele</h1>
+    <p>Título editorial + cartão-herói + fila de pessoas + secções — <b>mas identidade, não dinheiro</b>:
+    o cartão de banco vira o teu <b>cartão de tripulante</b> (deslizável), o "send money to" vira a tua <b>Família</b>,
+    a lista vira as tuas <b>definições</b>. Tudo plano/matte. <b>Faz scroll dentro do telefone.</b></p>
+  </div>
+
+  <div class="ph"><div class="scr">
+    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="bk">‹</span><span class="r"><span class="bell"><svg viewBox="0 0 24 24"><path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2z"/></svg></span><span class="av">N</span></span></div>
+    <div class="pad"><div class="dash"></div><div class="title">Perfil</div></div>
+
+    <!-- cartões de tripulante -->
+    <div class="cards">
+      <div class="card ink">
+        <div class="wm"><span class="d"></span><b>CrewPact · ID</b></div>
+        <div class="role">EASYJET · PILOTO</div>
+        <div class="nm">Nuno Silva</div>
+        <div class="foot"><span>FO · First Officer</span></div>
+        <div class="rule"></div>
+        <div class="foot" style="position:absolute;left:17px;bottom:16px;opacity:.7"><span>Base LIS</span><span>Desde 2016</span></div>
+      </div>
+      <div class="card soft">
+        <div class="wm"><span class="d"></span><b>Acordo · AE</b></div>
+        <div class="kv" style="margin-top:14px">easyJet × SPAC <span>(pilotos)</span></div>
+        <div class="kv">Contrato <span>12/12</span></div>
+        <div class="kv">Abrangido <span style="color:var(--ok)">✓ empregado</span></div>
+        <div class="role" style="margin-top:auto;opacity:.6">toca para editar ›</div>
+      </div>
+    </div>
+    <div class="dots"><span class="dt on"></span><span class="dt"></span></div>
+
+    <!-- família -->
+    <div class="seclbl pad">A tua família · chegada ao vivo</div>
+    <div class="fam">
+      <div class="fperson add"><div class="a">+</div>adicionar</div>
+      <div class="fperson"><div class="a">M</div>Mãe<small>ativo</small></div>
+      <div class="fperson"><div class="a">A</div>Ana<small>ativo</small></div>
+      <div class="fperson"><div class="a">P</div>Pai<small>ativo</small></div>
+    </div>
+
+    <!-- definições -->
+    <div class="seclbl pad">Perfil</div>
+    <div class="group">
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v3H4V4zm0 6.5h16v3H4v-3zM4 17h16v3H4v-3z"/></svg></div><div class="lb">Categoria</div><div class="rv"><span class="y">FO</span><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2z"/></svg></div><div class="lb">Contrato</div><div class="rv"><span class="y">12/12</span><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 4.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2z"/></svg></div><div class="lb">Base</div><div class="rv"><span class="y">LIS</span><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8V16.5h7.6V14.3A6.5 6.5 0 0 0 12 2.5z"/></svg></div><div class="lb">Serviço pós-voo<small>débrief · do teu OM</small></div><div class="rv"><span class="y">30 min</span><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zM11 2h2v3.2h-2zm0 16.8h2V22h-2zM2 11h3.2v2H2zm16.8 0H22v2h-3.2z"/></svg></div><div class="lb">Férias por ano</div><div class="rv"><span class="y">22</span><span class="chev">›</span></div></div>
+    </div>
+
+    <div class="seclbl pad">Ferramentas</div>
+    <div class="group">
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm1.4 10h9.2v1.9H7.4z"/></svg></div><div class="lb">Validades & Documentos</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 6h3.2v7H3zm0 8h18v5h-2.6v-2.2H5.6V19H3zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8z"/></svg></div><div class="lb">Hotéis de pernoita</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4zm2 2v11a1 1 0 0 0 1 1h11V7a1 1 0 0 0-1-1z"/></svg></div><div class="lb">Biblioteca · fontes oficiais</div><div class="rv"><span class="chev">›</span></div></div>
+    </div>
+
+    <div class="seclbl pad">Segurança & conta</div>
+    <div class="group">
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg></div><div class="lb">Palavra-passe & Face ID</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg></div><div class="lb">Mudar email</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.4c1.5 0 2.7 1.2 2.7 2.7 0 1-.6 1.9-1.5 2.3-.5.3-.7.5-.7 1v.6h-1v-.7c0-1 .5-1.5 1.2-1.9.5-.3.8-.6.8-1.1a1.5 1.5 0 0 0-3 0H10a2.7 2.7 0 0 1 2.7-2.9zM11.4 16h1.2v1.2h-1.2z"/></svg></div><div class="lb">Idioma & tema</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M10.7 3h2.6v8.2h3.2L12 16.4l-4.5-5.2h3.2zM4.5 18.5h15V21h-15z"/></svg></div><div class="lb">Exportar os meus dados</div><div class="rv"><span class="chev">›</span></div></div>
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 3h9v2.4H6.4v13.2H13V21H4z"/><path d="M15.6 7.4 20.2 12l-4.6 4.6-1.7-1.7 1.7-1.7H9v-2.4h6.6z"/></svg></div><div class="lb" style="color:#C6362B">Terminar sessão</div><div class="rv"><span class="chev">›</span></div></div>
+    </div>
+
+    <div class="navpad"></div>
+    <div class="nav"><div class="di">Início</div><div class="di">Estat.</div><div class="di">Escala</div><div class="di">FTL/AE</div></div>
+  </div></div>
+</body>
+</html>
