@@ -7,31 +7,34 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EDEBE4; --yellow:#FFB800; --ok:#118A55; --red:#C6362B; }
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EDEBE4; --yellow:#FFB800; --ok:#118A55; --red:#C6362B; }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
   .lead{max-width:660px;text-align:center}
   .lead h1{font-size:19px;font-weight:800;color:#fff}
   .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
 
-  .ph{width:330px;height:702px;border-radius:42px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
   .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
   .status{display:flex;justify-content:space-between;padding:11px 20px 0;font-size:11px;font-weight:700}
   .hdr{display:flex;align-items:center;padding:9px 16px 2px}
   .hdr .bk{width:32px;height:32px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
   .hdr .ttl{margin:0 auto;font-size:14px;font-weight:800;letter-spacing:.2px}
-  .hdr .r{width:32px;height:32px;display:flex;align-items:center;justify-content:flex-end;color:var(--grey)}
-  .body{padding:6px 18px 0}
+  .hdr .r{width:32px;height:32px;margin-left:auto;display:flex;align-items:center;justify-content:flex-end;color:var(--grey)}
+  .body{padding:2px 20px 0;position:relative}
 
-  /* herói — cartão de tripulante (da V3) */
-  .idhero{background:var(--ink);border-radius:18px;padding:15px 16px;color:#fff;margin-top:6px}
-  .idhero .top{display:flex;align-items:center;gap:12px}
-  .idhero .mono{width:46px;height:46px;border-radius:13px;background:#242320;color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:21px}
-  .idhero .nm{font-size:17px;font-weight:800;letter-spacing:-.2px}
-  .idhero .rl{font-size:11.5px;font-weight:600;color:#b9b7b0;margin-top:1px}
-  .idhero .rule{height:2px;background:var(--yellow);width:42px;margin:13px 0 10px}
-  .idhero .mt{display:flex;gap:16px;font-size:8.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8f8d86}
-  .idhero .mt b{color:#fff}
+  /* herói na LÍNGUA DO INÍCIO — branco, fantasma gigante, amarelo cirúrgico (o "clean") */
+  .greet{font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey);margin-top:2px}
+  .side{position:absolute;right:10px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+  .phero{position:relative;height:218px;margin-top:8px}
+  .pghost{position:absolute;right:14px;top:-14px;font-family:'Barlow Condensed';font-weight:700;font-size:190px;line-height:1;color:var(--ghost);letter-spacing:-4px}
+  .pword{position:absolute;left:0;bottom:44px;font-family:'Barlow Condensed';font-weight:700;font-size:56px;line-height:.95;letter-spacing:-.5px;white-space:nowrap}
+  .pkick{position:absolute;left:2px;bottom:18px;font-size:13px;font-weight:700;color:var(--grey)}
+  .pkick .y{color:var(--yellow);font-weight:800}
+  .phr{height:1.5px;background:var(--ink);margin-top:2px}
+  .pmeta{display:flex;gap:14px;padding:11px 2px 0;font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
+  .pmeta b{color:var(--ink)}
 
   .seclbl{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);display:block;margin:17px 2px 9px}
 
@@ -40,18 +43,19 @@
   .famband .seclbl{margin:0 0 9px}
   .fam{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none}.fam::-webkit-scrollbar{display:none}
   .fadd{flex:0 0 auto;align-self:stretch;width:48px;border-radius:14px;background:var(--paper);border:1.5px dashed #CBC8BF;display:flex;align-items:center;justify-content:center;color:var(--ink)}
-  .fcard{flex:0 0 auto;width:60px;border-radius:14px;background:var(--paper);border:1px solid var(--line);padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px}
-  .fcard .av{width:34px;height:34px;border-radius:50%;background:var(--soft2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:16px;color:var(--ink)}
+  .fcard{flex:0 0 auto;width:60px;border-radius:14px;background:#FBFAF6;border:1.5px solid #DFDCD2;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .fcard .av{width:34px;height:34px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:16px;color:#fff}
   .fcard .fn{font-size:10.5px;font-weight:800}
 
   /* MOSAICOS bento */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .tile{border:1px solid var(--line);border-radius:13px;padding:11px;display:flex;flex-direction:column;gap:8px;min-height:76px}
-  .tile .ic{width:30px;height:30px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
-  .tile .lb{font-size:12px;font-weight:800;line-height:1.15}
-  .tile .vv{font-size:10px;font-weight:700;color:var(--grey);margin-top:-3px}
+  .tile{border:1px solid var(--line);border-radius:12px;padding:9px 11px;display:grid;grid-template-columns:auto 1fr;column-gap:11px;align-content:center;min-height:58px}
+  .tile .ic{grid-column:1;grid-row:1 / 3;align-self:center;width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .tile .ic svg{width:20px;height:20px}
+  .tile .lb{grid-column:2;font-size:11.5px;font-weight:800;line-height:1.12}
+  .tile .vv{grid-column:2;font-size:9.5px;font-weight:700;color:var(--grey);margin-top:1px}
   .tile .vv.k{color:var(--ink)}
-  .tile.wide{grid-column:1 / -1;flex-direction:row;align-items:center;gap:12px;min-height:auto;padding:12px}
+  .tile.wide{grid-column:1 / -1;display:flex;flex-direction:row;align-items:center;gap:12px;min-height:auto;padding:12px}
   .tile.wide .tx{display:flex;flex-direction:column;gap:2px}
   .tile.wide .lb{font-size:12.5px}
   .tile.wide .chev{margin-left:auto;color:#CFCCC3}
@@ -80,15 +84,19 @@
 
   <div class="ph"><div class="scr">
     <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
-    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="17"></i></span><span class="ttl">Perfil</span><span class="r"><i data-ic="ellipsis" data-ic-size="19"></i></span></div>
+    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="17"></i></span><span class="r"><i data-ic="ellipsis" data-ic-size="19"></i></span></div>
     <div class="body">
 
-      <!-- herói -->
-      <div class="idhero">
-        <div class="top"><div class="mono">NS</div><div><div class="nm">Nuno Silva</div><div class="rl">easyJet · Piloto · First Officer</div></div></div>
-        <div class="rule"></div>
-        <div class="mt"><span>Base <b>LIS</b></span><span>Desde <b>2016</b></span><span>easyJet×SPAC</span></div>
+      <!-- herói na língua do Início: branco, fantasma, amarelo -->
+      <div class="greet">O teu perfil</div>
+      <div class="side">EASYJET · <span class="y">PILOTO</span></div>
+      <div class="phero">
+        <div class="pghost">NS</div>
+        <div class="pword">Nuno Silva</div>
+        <div class="pkick">easyJet · Piloto · <span class="y">First Officer</span></div>
       </div>
+      <div class="phr"></div>
+      <div class="pmeta"><span>Desde <b>2016</b></span><span>easyJet × SPAC</span><span>AE <b style="color:var(--ok)">abrangido</b></span></div>
 
       <!-- família — estilo V3 (sem banda, cartões diretos) -->
       <span class="seclbl">A tua família · chegada ao vivo</span>

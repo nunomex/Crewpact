@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Novo serviço — índice de tipos (estilo editorial)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --dot:#D6D3CA; --ghost:#E2E1DC; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:620px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 18px 0}
+  .hdr .bk{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .side{position:absolute;right:9px;top:106px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .side .y{color:var(--yellow)}
+  .body{padding:12px 24px 0}
+
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey)}
+  .nhero{position:relative;height:126px;margin-top:2px}
+  .nghost{position:absolute;right:2px;top:-16px;color:var(--ghost);z-index:0;pointer-events:none;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;font-variant-numeric:tabular-nums}
+  .nword{position:absolute;left:0;bottom:30px;z-index:1;font-family:'Barlow Condensed';font-weight:700;font-size:52px;line-height:.9;text-transform:uppercase;letter-spacing:-.5px}
+  .nkick{position:absolute;left:2px;bottom:9px;z-index:1;font-size:12.5px;font-weight:700;color:var(--grey)}
+  .nhr{height:1.5px;background:var(--ink);margin-top:2px}
+
+  /* índice de tipos — lista limpa (sem linha), ícone em quadrado (token da app) */
+  .list{margin-top:18px}
+  .item{display:flex;align-items:center;gap:14px;padding:13px 2px;border-top:1px solid var(--line);cursor:pointer}
+  .item:first-child{border-top:0}
+  .item .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .item .ic [data-ic] svg{width:20px;height:20px}
+  .item .ti{font-family:'Barlow Condensed';font-weight:700;font-size:22px;line-height:1;letter-spacing:-.2px;color:var(--ink)}
+  .item .de{font-size:11px;font-weight:600;color:var(--grey);margin-top:2px;line-height:1.35}
+  .item .go{margin-left:auto;color:#CFCCC3;flex:0 0 auto}
+
+  .foot{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.55;margin:18px 2px 0}.foot b{color:var(--ink)}
+  .navpad{height:26px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Novo serviço — índice de tipos</h1>
+    <p>Abre no FAB <b>"Serviço"</b>. Lista limpa (<b>sem a linha</b>), ícone em quadrado como as listas da app, títulos condensados mais contidos (22px). Os <b>7 tipos reais</b> (i18n/DutyFormSheet), cada um com o que significa em FTL/AE. Tocar num → abre o <b>formulário</b>.</p>
+  </div>
+
+  <div class="ph"><div class="scr">
+    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span></div>
+    <div class="side">NOVO · <span class="y">SERVIÇOS</span></div>
+
+    <div class="body">
+      <div class="eyb">Novo serviço</div>
+      <div class="nhero">
+        <div class="nghost">07</div>
+        <div class="nword">Serviços</div>
+        <div class="nkick">7 tipos · escolhe um</div>
+      </div>
+      <div class="nhr"></div>
+
+      <div class="list">
+        <div class="item"><span class="ic"><i data-ic="departs"></i></span><div><div class="ti">Voo</div><div class="de">o serviço normal · per-diem da rota</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="gate"></i></span><div><div class="ti">Standby aeroporto</div><div class="de">prevenção no aeroporto · +2 setores (ADTY)</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="home"></i></span><div><div class="ti">Standby casa</div><div class="de">prevenção em casa · conta p/ FTL</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="cal"></i></span><div><div class="ti">Reserva</div><div class="de">dia de reserva · sem horas</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="transfer"></i></span><div><div class="ti">Posicionamento</div><div class="de">deadhead · conta p/ FTL, sem abono</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="book"></i></span><div><div class="ti">Formação</div><div class="de">treino/recorrente · conta p/ FTL</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+        <div class="item"><span class="ic"><i data-ic="doc"></i></span><div><div class="ti">Escritório</div><div class="de">serviço de escritório</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+      </div>
+
+      <div class="foot">Escolhes o tipo → abre o <b>formulário</b> certo (o Voo pede rota/setores/horas; um Standby pede horas e alojamento; a Reserva quase nada). Cada tipo pede só o que precisa.</div>
+      <div class="navpad"></div>
+    </div>
+  </div></div>
+
+  <script src="icons.js"></script>
+</body>
+</html>

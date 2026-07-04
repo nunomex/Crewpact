@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Formulário do serviço (Voo) — stepper vertical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 18px 0}
+  .hdr .bk{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .hdr .cl{margin-left:auto;width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .side{position:absolute;right:9px;top:106px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .side .y{color:var(--yellow)}
+  .body{padding:4px 22px 0}
+
+  /* topo compacto */
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:10px}
+  .hero{position:relative;height:120px;margin-top:2px}
+  .ghost{position:absolute;right:2px;top:-16px;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:26px;font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.9;letter-spacing:-.5px}
+  .kick{position:absolute;left:2px;bottom:8px;font-size:12.5px;font-weight:700;color:var(--grey)}
+  .hr{height:1.5px;background:var(--ink);margin:2px 0 6px}
+
+  /* ── STEPPER VERTICAL (acordeão) ── */
+  .steps{position:relative;margin-top:12px}
+  .steps::before{content:'';position:absolute;left:10.5px;top:12px;bottom:12px;width:2px;background:var(--line)}
+  .step{position:relative;padding-bottom:4px}
+  .node{position:absolute;left:0;top:2px;width:23px;height:23px;border-radius:50%;border:2.5px solid var(--line);background:var(--paper);z-index:1;display:flex;align-items:center;justify-content:center}
+  .node [data-ic]{display:none;color:#fff}
+  .step.done .node{border-color:var(--ok);background:var(--ok)}
+  .step.done .node [data-ic]{display:block}
+  .step.active .node{border-color:var(--ink);background:var(--ink)}
+  .step.active .node::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--yellow)}
+  .shead{display:flex;align-items:baseline;gap:10px;cursor:pointer;padding:1px 0 4px 36px}
+  .stitle{font-family:'Barlow Condensed';font-size:23px;font-weight:700;letter-spacing:-.2px;line-height:1;color:var(--grey)}
+  .step.done .stitle{color:var(--ink)}
+  .step.active .stitle{color:var(--ink)}
+  .ssum{font-size:11.5px;font-weight:600;color:var(--grey)}
+  .step.active .ssum{display:none}
+  .sbody{display:none;padding:9px 0 20px}
+  .step.active .sbody{display:block;background:var(--paper);position:relative;z-index:2}
+
+  /* campos */
+  .flbl{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);margin:14px 0 8px}
+  .flbl:first-child{margin-top:4px}
+  .flbl .opt{color:#B9B8B2;letter-spacing:.5px}
+  .inp{background:var(--soft);border:1.5px solid var(--line);border-radius:12px;height:44px;padding:0 13px;line-height:44px;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden}
+  .inp.ph{color:#A9A79F}
+  .frow{display:flex;gap:8px}.frow .inp{flex:1}
+  .detrow{display:flex;gap:8px}
+  /* rota — caixa compacta de pesquisa (como o AirportRoute da app): 🔍 + chips + ✓ */
+  .rbox{display:flex;align-items:center;gap:9px;background:var(--soft);border:1.5px solid var(--line);border-radius:14px;padding:0 12px;height:46px}
+  .rbox>[data-ic]{color:var(--grey);flex:0 0 auto}
+  .rchip{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;border-radius:10px;padding:5px 8px 5px 11px;font-size:13.5px;font-weight:800;letter-spacing:.4px}
+  .rchip .cx{width:17px;height:17px;border-radius:99px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff}
+  .rarr{color:var(--grey);font-weight:700;font-size:13px}
+  .rph{font-size:14px;font-weight:600;color:#A9A79F}
+  .detect{background:var(--ink);color:var(--yellow);border-radius:12px;padding:0 17px;display:flex;align-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
+  .hint{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.5;margin-top:8px}
+  .legs{display:flex;flex-direction:column;gap:7px;margin-bottom:9px}
+  .leg{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:10px;padding:9px 12px}
+  .leg .no{font-size:13px;font-weight:800}.leg .rt{font-size:12px;font-weight:600;color:var(--grey)}.leg .x{margin-left:auto;color:#B9B8B2}
+  .pd{display:flex;align-items:center;justify-content:space-between;background:var(--okSoft);border-radius:11px;padding:10px 13px;margin-top:10px}
+  .pd .l{font-size:11.5px;font-weight:700;color:#0E7048}.pd .t{font-size:14px;font-weight:800;color:var(--ok)}
+  /* aeronave / campos curtos — largura ao conteúdo (não à comprida) */
+  .short{width:110px}
+
+  /* data — carril de dias */
+  .dmonth{font-family:'Barlow Condensed';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:9px}
+  .daterail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:12px}.daterail::-webkit-scrollbar{display:none}
+  .day{position:relative;flex:0 0 auto;width:57px;border-radius:15px;border:1.5px solid var(--line);padding:11px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .day .wd{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
+  .day .dn{font-family:'Barlow Condensed';font-weight:700;font-size:30px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .day.wknd .wd{color:#C4C2BA}
+  .day.on{background:var(--ink);border-color:var(--ink)}.day.on .wd{color:#B0AEA7}.day.on .dn{color:var(--yellow)}
+  .day.today::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+  .daycal{flex:0 0 auto;width:57px;border-radius:15px;border:1.5px dashed #C7C4BB;display:flex;align-items:center;justify-content:center;color:var(--grey);cursor:pointer}
+
+  /* horas por setor / stepper de setores */
+  .stepc{display:flex;align-items:center;gap:14px}
+  .stepc .b{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .stepc .v{font-family:'Barlow Condensed';font-size:34px;font-weight:700;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
+  .secrow{display:flex;align-items:center;gap:10px;margin-top:9px}
+  .secrow .lab{font-size:12.5px;font-weight:800;flex:1}
+  .secrow .times{display:flex;align-items:center;gap:8px}
+  .secrow .ti{width:66px;background:var(--soft);border:1.5px solid var(--line);border-radius:10px;padding:10px 0;text-align:center;font-size:13.5px;font-weight:700}
+  .secrow .arr{color:var(--grey);font-weight:700}
+  .secz{font-size:10px;font-weight:700;color:#9a8a5a;margin:3px 0 0 2px}
+
+  .ns{display:flex;align-items:center;gap:11px;background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .ns .ic{color:var(--ink)}.ns .t{font-size:13px;font-weight:800}.ns .s{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:1px}.ns .eur{margin-left:auto;font-size:14px;font-weight:800;color:var(--ok)}
+  .adv{display:flex;align-items:center;gap:10px;border:1.5px dashed #C7C4BB;border-radius:13px;padding:12px 13px;margin-top:14px}
+  .adv .t{font-size:12.5px;font-weight:800}.adv .s{font-size:10.5px;font-weight:600;color:var(--grey)}.adv .go{margin-left:auto;color:#CFCCC3}
+
+  .continue{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:12px;padding:11px 18px;font-size:13.5px;font-weight:800;margin-top:16px;cursor:pointer}
+  .continue [data-ic]{color:var(--yellow)}
+  .save{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--ink);color:#fff;border-radius:13px;padding:15px;margin-top:16px;font-size:15px;font-weight:800;cursor:pointer}
+  .save [data-ic]{color:var(--yellow)}
+  .navpad{height:26px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Formulário — FUSÃO (stepper vertical + campos à largura toda)</h1>
+    <p>O teu <b>stepper vertical</b> (linha + nós = o mapa dos passos à esquerda) MAS com os campos do passo aberto a ocupar a <b>largura toda</b>, como no wizard horizontal. A linha faz uma pausa no passo aberto; os feitos fecham com ✓. <b>Clica nos passos ou em "Continuar".</b> Adapta-se: a Reserva teria 1 passo só.</p>
+  </div>
+
+  <div class="ph"><div class="scr">
+    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span><span class="cl"><i data-ic="close" data-ic-size="18"></i></span></div>
+    <div class="side">NOVO · <span class="y">VOO</span></div>
+    <div class="body">
+      <div class="eyb">Novo serviço</div>
+      <div class="hero"><div class="ghost">24</div><div class="word">Voo</div><div class="kick">Qui 24 jul · em 4 passos</div></div>
+      <div class="hr"></div>
+
+      <div class="steps" id="steps">
+
+        <!-- 1 · Quando -->
+        <div class="step active" data-i="0">
+          <span class="node"><i data-ic="check" data-ic-size="11"></i></span>
+          <div class="shead"><span class="stitle">Quando</span><span class="ssum">Qui 24 jul</span></div>
+          <div class="sbody">
+            <div class="dmonth">Julho 2026</div>
+            <div class="daterail">
+              <span class="day"><span class="wd">Ter</span><span class="dn">22</span></span>
+              <span class="day"><span class="wd">Qua</span><span class="dn">23</span></span>
+              <span class="day on today"><span class="wd">Qui</span><span class="dn">24</span></span>
+              <span class="day"><span class="wd">Sex</span><span class="dn">25</span></span>
+              <span class="day wknd"><span class="wd">Sáb</span><span class="dn">26</span></span>
+              <span class="day wknd"><span class="wd">Dom</span><span class="dn">27</span></span>
+              <span class="daycal"><i data-ic="cal" data-ic-size="20"></i></span>
+            </div>
+            <div class="hint">Desliza para o dia · o ● é hoje · calendário para datas distantes.</div>
+            <div class="continue">Continuar <i data-ic="arrow-r" data-ic-size="15"></i></div>
+          </div>
+        </div>
+
+        <!-- 2 · Voos -->
+        <div class="step" data-i="1">
+          <span class="node"><i data-ic="check" data-ic-size="11"></i></span>
+          <div class="shead"><span class="stitle">Voos</span><span class="ssum">EJU7625 · LIS <i data-ic="arrow-dots" data-ic-size="12"></i> FNC</span></div>
+          <div class="sbody">
+            <div class="flbl">Voos</div>
+            <div class="legs"><div class="leg"><span class="no">EJU7625</span><span class="rt">LIS <i data-ic="arrow-dots" data-ic-size="12"></i> FNC · 321</span><span class="x"><i data-ic="close" data-ic-size="14"></i></span></div></div>
+            <div class="detrow"><div class="inp ph" style="width:168px">ex. EJU7625</div><div class="detect">Detetar</div></div>
+            <div class="flbl">Rota <span class="opt">· opcional (per-diem)</span></div>
+            <div class="rbox"><i data-ic="search" data-ic-size="16"></i><span class="rchip">LIS <span class="cx"><i data-ic="close" data-ic-size="10"></i></span></span><i data-ic="arrow-dots" data-ic-size="12"></i><span class="rph">destino · ex. FNC</span></div>
+            <div class="pd"><span class="l">Per diem deste voo</span><span class="t">+23,75 €</span></div>
+            <div class="flbl">Aeronave</div>
+            <div class="inp ph short">ex. 321</div>
+            <div class="continue">Continuar <i data-ic="arrow-r" data-ic-size="15"></i></div>
+          </div>
+        </div>
+
+        <!-- 3 · Horas -->
+        <div class="step" data-i="2">
+          <span class="node"><i data-ic="check" data-ic-size="11"></i></span>
+          <div class="shead"><span class="stitle">Horas</span><span class="ssum">05:30 · 1 setor</span></div>
+          <div class="sbody">
+            <div class="flbl">Apresentação</div>
+            <div class="inp short" style="text-align:center;font-variant-numeric:tabular-nums">05:30</div>
+            <div class="flbl">Nº de setores</div>
+            <div class="stepc"><span class="b"><i data-ic="minus" data-ic-size="16"></i></span><span class="v">1</span><span class="b"><i data-ic="plus" data-ic-size="16"></i></span></div>
+            <div class="flbl">Horas por setor (block)</div>
+            <div class="secrow"><span class="lab">EJU7625 · LIS <i data-ic="arrow-dots" data-ic-size="12"></i> FNC</span><span class="times"><span class="ti">05:45</span><span class="arr">→</span><span class="ti">07:20</span></span></div>
+            <div class="secz">04:45Z → 06:20Z</div>
+            <div class="continue">Continuar <i data-ic="arrow-r" data-ic-size="15"></i></div>
+          </div>
+        </div>
+
+        <!-- 4 · Detalhes -->
+        <div class="step" data-i="3">
+          <span class="node"><i data-ic="check" data-ic-size="11"></i></span>
+          <div class="shead"><span class="stitle">Detalhes</span><span class="ssum">pernoita · +46 €</span></div>
+          <div class="sbody">
+            <div class="flbl">Pernoita</div>
+            <div class="ns"><span class="ic"><i data-ic="moon" data-ic-size="17"></i></span><div><div class="t">Pernoita</div><div class="s">Setores ímpares (1) → fora da base · Art. 39</div></div><span class="eur">+46,00 €</span></div>
+            <div class="adv"><div><div class="t">Casos especiais</div><div class="s">aumentado · atrasado · standby · discrição</div></div><span class="go"><i data-ic="chevron" data-ic-size="16"></i></span></div>
+            <div class="flbl">Nota <span class="opt">· opcional</span></div>
+            <div class="inp ph">ex. atraso na partida…</div>
+            <div class="save"><i data-ic="check" data-ic-size="17"></i> Guardar serviço</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="navpad"></div>
+    </div>
+  </div></div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    var steps = Array.prototype.slice.call(document.querySelectorAll('#steps .step'));
+    function setActive(i){
+      steps.forEach(function(st, j){
+        st.classList.toggle('active', j===i);
+        st.classList.toggle('done', j<i);
+      });
+    }
+    steps.forEach(function(st, i){
+      st.querySelector('.shead').addEventListener('click', function(){ setActive(i); });
+      var cont = st.querySelector('.continue');
+      if(cont) cont.addEventListener('click', function(){ setActive(i+1); });
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Validades em CARTÕES (carteira + adicionar)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 22px 70px}
+  .head{max-width:900px;margin:0 auto 22px;text-align:center}
+  .head h1{font-size:19px;font-weight:800;color:#fff}
+  .head p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.head b{color:#fff}
+  .row2{display:flex;gap:30px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+  .col{width:394px;max-width:96vw}
+  .cap{margin:0 4px 10px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px}.cap .t b{color:var(--yellow)}
+  .cap .d{font-size:11px;color:#8b95a3;line-height:1.5;margin-top:3px}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:13px 24px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;gap:11px;padding:14px 22px 4px}
+  .hdr .bk{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .hdr .ht{font-size:16px;font-weight:800}
+  .hdr .plus{margin-left:auto;width:36px;height:36px;border-radius:11px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center}
+  .side{position:absolute;right:9px;top:110px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .side .y{color:var(--yellow)}
+
+  /* ── CARTEIRA · deck interativo (toca num cartão de trás → vem à frente, rodando) ── */
+  .wallet{position:relative;height:482px;margin:12px 0 0;touch-action:none}
+  .addbtn{display:flex;align-items:center;justify-content:center;gap:9px;margin:16px 22px 4px;padding:14px;border:1.5px solid var(--ink);border-radius:14px;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer}
+  .addbtn [data-ic]{color:var(--ink)}
+  .dcard{position:absolute;top:0;left:50%;margin-left:-160px;width:320px;height:132px;border-radius:22px;padding:17px 18px;background:#E7E5DE;border:1px solid #DAD8D0;color:#9C9A92;cursor:grab;box-shadow:0 6px 16px rgba(0,0,0,.12);transition:transform .5s cubic-bezier(.22,.61,.36,1),background .35s,color .3s,box-shadow .35s}
+  .chead{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800}
+  .chead [data-ic]{color:#b3b1a9}
+  .pill{margin-left:auto;font-size:8.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+  .pill.warn{background:rgba(232,106,16,.2);color:#B5570F}
+  .pill.ok{background:rgba(17,138,85,.18);color:#0E7048}
+  .pill.ref{background:rgba(119,119,111,.16);color:#6b6b64}
+  .cbig{font-family:'Barlow Condensed';font-weight:700;font-size:56px;line-height:1;margin:11px 0 2px;font-variant-numeric:tabular-nums;display:none}
+  .cbig small{font-family:'Hanken Grotesk';font-size:15px;font-weight:700;color:#b9b7b0;margin-left:4px}
+  .cfoot{display:none;gap:26px;margin-top:12px}
+  .cfoot .k{font-size:8.5px;font-weight:800;letter-spacing:1.2px;color:#8f8d86;text-transform:uppercase}
+  .cfoot .v{font-size:13px;font-weight:800;margin-top:3px}
+  .exp{position:absolute;left:-11px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--yellow);display:none;align-items:center;justify-content:center}
+  .accent{position:absolute;right:0;top:22px;bottom:22px;width:3px;border-radius:3px;display:none}
+  /* cartão da FRENTE (ativo) — ink, detalhe completo */
+  .dcard.is-active{height:auto;min-height:170px;background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 26px 54px -16px rgba(0,0,0,.55)}
+  .dcard.is-active .chead{color:#fff}
+  .dcard.is-active .chead [data-ic]{color:#c9c7c0}
+  .dcard.is-active .pill.warn{background:rgba(232,106,16,.24);color:#F79A4A}
+  .dcard.is-active .pill.ok{background:rgba(17,138,85,.24);color:#57C892}
+  .dcard.is-active .pill.ref{background:rgba(255,255,255,.14);color:#c9c7c0}
+  .dcard.is-active .cbig{display:block}
+  .dcard.is-active .cfoot{display:flex}
+  .dcard.is-active .exp{display:flex}
+  .dcard.is-active .accent{display:block}
+
+  .holder{display:flex;gap:34px;margin:8px 24px 0}
+  .holder .k{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--grey);text-transform:uppercase}
+  .holder .v{font-size:14px;font-weight:800;margin-top:3px}
+
+  /* ── ADICIONAR (o que abre no +) ── */
+  /* topo na LÍNGUA DO INÍCIO — fantasma + palavra condensada (como o perfil) */
+  .agreet{font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey);margin:4px 24px 0}
+  .ahero{position:relative;height:168px;margin:2px 22px 0}
+  .aghost{position:absolute;right:-4px;top:0;color:var(--ghost)}
+  .aword{position:absolute;left:0;bottom:40px;font-family:'Barlow Condensed';font-weight:700;font-size:52px;line-height:.9;letter-spacing:-.5px;color:var(--ink)}
+  .akick{position:absolute;left:2px;bottom:15px;font-size:12.5px;font-weight:700;color:var(--grey)}
+  .akick .y{color:var(--yellow);font-weight:800}
+  .ahr{height:1.5px;background:var(--ink);margin:2px 22px 0}
+  /* carteira · herói fantasma compacto (Validades) — empurra o deck p/ baixo */
+  .cgreet{font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey);margin:6px 24px 0}
+  .chero{position:relative;height:120px;margin:2px 22px 0}
+  .cghost{position:absolute;right:2px;top:-16px;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .cword{position:absolute;left:0;bottom:26px;font-family:'Barlow Condensed';font-weight:700;font-size:44px;line-height:.9;letter-spacing:-.5px;color:var(--ink)}
+  .ckick{position:absolute;left:2px;bottom:8px;font-size:12px;font-weight:700;color:var(--grey)}
+  .ckick .w{color:var(--warn);font-weight:800}
+  .qlbl{font-size:9.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin:20px 24px 9px}
+  .glbl{display:block;font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin:17px 24px 8px}
+  /* grelha compacta 3-col — tudo visível, curto, nada escondido (descrição só ao tocar) */
+  .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 22px}
+  .cgt{border:1px solid var(--line);border-radius:12px;padding:12px 6px 11px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;text-align:center;min-height:84px}
+  .cgt .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .cgt .ic svg{width:20px;height:20px}
+  .cgt .nm{font-size:11.5px;font-weight:800;line-height:1.12}
+  .note{margin:16px 24px 0;font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.55}
+  .note b{color:var(--ink)}
+
+  .navpad{height:30px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Validades em cartões — carteira + adicionar</h1>
+    <p>A metáfora de carteira da tua ref, na nossa pele: cartões a preto, <b>estado a mandar a cor</b> (verde·laranja·vermelho, nunca amarelo). O leque é <b>ordenado por urgência</b> e os de trás mostram sempre nome+estado — nada crítico se esconde. Esquerda = a carteira (com o <b>"+"</b>); direita = o que abre no "+".</p>
+  </div>
+
+  <div class="row2">
+
+    <!-- ═══ ECRÃ 1 · CARTEIRA ═══ -->
+    <div class="col">
+      <div class="cap"><div class="t"><b>1</b> · A carteira</div><div class="d"><b>ARRASTA ↑/↓ (ou roda do rato)</b> → o deck roda e o cartão fica ao meio para ver. Por defeito, o que está a <b>expirar</b>. "+" no cabeçalho.</div></div>
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span></div>
+
+        <div class="side">CARTEIRA · <span class="y">5 DOCS</span></div>
+        <div class="cgreet">Documentos</div>
+        <div class="chero">
+          <div class="cghost">05</div>
+          <div class="cword">Validades</div>
+          <div class="ckick">5 documentos · <span class="w">1 a expirar</span></div>
+        </div>
+        <div class="ahr"></div>
+        <div class="wallet" id="wallet"></div>
+
+        <div class="addbtn"><i data-ic="plus" data-ic-size="17"></i> Adicionar documento</div>
+        <div class="navpad"></div>
+      </div></div>
+    </div>
+
+    <!-- ═══ ECRÃ 2 · ADICIONAR ═══ -->
+    <div class="col">
+      <div class="cap"><div class="t"><b>2</b> · Adicionar</div><div class="d">O que abre no "+". <b>Catálogo real do piloto</b> (data/validities.js), em <b>grelha compacta</b> (3 col) por grupo — tudo visível, crew-aware. Escolhes o tipo → formulário certo. Sem foto (RGPD).</div></div>
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="bk"><i data-ic="back" data-ic-size="18"></i></span></div>
+
+        <div class="side">ADICIONAR · <span class="y">DOC</span></div>
+        <div class="agreet">Adicionar</div>
+        <div class="ahero">
+          <div class="aghost"><i data-ic="plus" data-ic-size="150"></i></div>
+          <div class="aword">Novo<br>documento</div>
+          <div class="akick">escolhe o tipo — o cartão <span class="y">desenha-se</span> com os teus dados</div>
+        </div>
+        <div class="ahr"></div>
+
+        <span class="glbl">Documentos</span>
+        <div class="cg">
+          <div class="cgt"><div class="ic"><i data-ic="medical" data-ic-size="17"></i></div><div class="nm">Médico</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="doc" data-ic-size="17"></i></div><div class="nm">Licença</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="passport" data-ic-size="17"></i></div><div class="nm">Passaporte</div></div>
+        </div>
+        <span class="glbl">Qualificações</span>
+        <div class="cg">
+          <div class="cgt"><div class="ic"><i data-ic="plane" data-ic-size="17"></i></div><div class="nm">Type Rating</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="gauge" data-ic-size="17"></i></div><div class="nm">IR</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="globe" data-ic-size="17"></i></div><div class="nm">Inglês ICAO</div></div>
+        </div>
+        <span class="glbl">Formação recorrente</span>
+        <div class="cg">
+          <div class="cgt"><div class="ic"><i data-ic="shield" data-ic-size="17"></i></div><div class="nm">SEP</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="fam" data-ic-size="17"></i></div><div class="nm">CRM</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="alert" data-ic-size="17"></i></div><div class="nm">Dangerous Goods</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="restricted" data-ic-size="17"></i></div><div class="nm">Segurança</div></div>
+          <div class="cgt"><div class="ic"><i data-ic="heart" data-ic-size="17"></i></div><div class="nm">1.ºs socorros</div></div>
+        </div>
+
+        <div class="note"><b>Lista de piloto</b> — a cabine vê o seu conjunto (Atestado <b>CCA</b>, sem type rating/IR/inglês). Introdução <b>manual</b>; a app <b>não guarda foto nem scan</b> (dado de saúde, RGPD Art.9) — vive do estado de validade, que alimenta os avisos e o "estou legal?".</div>
+        <div class="navpad"></div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    var DOCS = [
+      {ic:'medical',  name:'Certificado Médico', status:'A expirar', cls:'warn', big:'45',  unit:'dias', k1:'Expira',   v1:'15 / 09 / 2026', k2:'Classe', v2:'1 · VDL',  accent:'var(--warn)'},
+      {ic:'globe',    name:'Inglês ICAO',        status:'Válido',    cls:'ok',   big:'6',   unit:'nível',k1:'Validade', v1:'Sem prazo',      k2:'Nível',  v2:'6 · Expert',accent:'var(--ok)'},
+      {ic:'plane',    name:'Type Rating',        status:'Válido',    cls:'ok',   big:'Mar', unit:'2027', k1:'Válido até',v1:'31 / 03 / 2027',k2:'Avião',  v2:'A320',     accent:'var(--ok)'},
+      {ic:'passport', name:'Passaporte',         status:'Válido',    cls:'ok',   big:'2029',unit:'',     k1:'Expira',   v1:'08 / 2029',      k2:'País',   v2:'PT',       accent:'var(--ok)'},
+      {ic:'doc',      name:'Licença ATPL(A)',    status:'Referência',cls:'ref',  big:'—',   unit:'',     k1:'Validade', v1:'Não expira',     k2:'Ref',    v2:'PT.FCL',   accent:'#8f8d86'},
+    ];
+    var SLOTS = [
+      {x:-6, y:176, r:1,  s:1,   z:20},  // ativo — centro, mais baixo
+      {x:20, y:90,  r:8,  s:.95, z:13},  // cima-perto
+      {x:50, y:18,  r:15, s:.9,  z:9},   // cima-longe
+      {x:22, y:262, r:8,  s:.95, z:11},  // baixo-perto
+      {x:54, y:330, r:15, s:.9,  z:7},   // baixo-longe
+    ];
+    var order = [0,1,2,3,4];
+    var wallet = document.getElementById('wallet');
+    var cards = DOCS.map(function(doc,i){
+      var el = document.createElement('div');
+      el.className='dcard';
+      el.innerHTML =
+        '<span class="exp"><i data-ic="chevron" data-ic-size="15"></i></span>'
+       +'<span class="accent" style="background:'+doc.accent+'"></span>'
+       +'<div class="chead"><i data-ic="'+doc.ic+'" data-ic-size="16"></i> '+doc.name+' <span class="pill '+doc.cls+'">'+doc.status+'</span></div>'
+       +'<div class="cbig">'+doc.big+(doc.unit?' <small>'+doc.unit+'</small>':'')+'</div>'
+       +'<div class="cfoot"><div><div class="k">'+doc.k1+'</div><div class="v">'+doc.v1+'</div></div><div><div class="k">'+doc.k2+'</div><div class="v">'+doc.v2+'</div></div></div>';
+      wallet.appendChild(el);
+      return el;
+    });
+    function render(){
+      order.forEach(function(docIdx, slotIdx){
+        var el = cards[docIdx], s = SLOTS[slotIdx];
+        el.style.transform = 'translate('+s.x+'px,'+s.y+'px) rotate('+s.r+'deg) scale('+s.s+')';
+        el.style.zIndex = s.z;
+        el.classList.toggle('is-active', slotIdx===0);
+      });
+    }
+    function cycle(dir){
+      if(dir>0) order = order.slice(1).concat(order[0]);              // ↑ o próximo vem ao meio
+      else order = [order[order.length-1]].concat(order.slice(0,-1)); // ↓ o anterior vem ao meio
+      render();
+    }
+    // ARRASTA na vertical: o deck ACOMPANHA o dedo em tempo real; ao largar, assenta no próximo/anterior
+    var startY=null, dragging=false, THRESH=34;
+    wallet.addEventListener('pointerdown',function(e){
+      startY=e.clientY; dragging=true;
+      wallet.style.transition='none'; wallet.style.cursor='grabbing';
+      if(wallet.setPointerCapture){ try{ wallet.setPointerCapture(e.pointerId); }catch(_){ } }
+    });
+    wallet.addEventListener('pointermove',function(e){
+      if(!dragging) return;
+      wallet.style.transform='translateY('+((e.clientY-startY)*0.7)+'px)';  // segue o dedo (leve resistência)
+    });
+    function endDrag(e){
+      if(!dragging) return; dragging=false; wallet.style.cursor='grab';
+      var dy=(e && e.clientY!=null ? e.clientY : startY)-startY;
+      wallet.style.transition='transform .4s cubic-bezier(.22,.61,.36,1)';
+      wallet.style.transform='translateY(0px)';
+      if(dy<-THRESH) cycle(1); else if(dy>THRESH) cycle(-1);
+    }
+    wallet.addEventListener('pointerup',endDrag);
+    wallet.addEventListener('pointercancel',endDrag);
+    window.addEventListener('pointerup',endDrag);
+    var wlock=false;
+    wallet.addEventListener('wheel',function(e){
+      e.preventDefault(); if(wlock) return; wlock=true; setTimeout(function(){ wlock=false; },400);
+      cycle(e.deltaY>0?1:-1);
+    },{passive:false});
+    if(window.CPIcons) CPIcons.hydrate(wallet);
+    render();
+  })();
+  </script>
+</body>
+</html>

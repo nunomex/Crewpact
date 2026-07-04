@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Perfil no topo — onde?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .lead{max-width:760px;text-align:center;margin-bottom:8px}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;width:330px}
+  .cap{text-align:center}
+  .cap .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#0f1218;background:var(--yellow);border-radius:999px;padding:4px 12px}
+  .cap .tag.grey{background:#2a2f38;color:#aeb6c2}
+  .cap h2{font-size:14.5px;font-weight:800;color:#fff;margin-top:8px}
+  .cap p{font-size:11.5px;color:#96a0ad;line-height:1.5;margin-top:4px}
+
+  .ph{width:330px;height:600px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow:hidden}
+  .status{display:flex;justify-content:space-between;padding:11px 20px 0;font-size:10.5px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:11px 18px 0;min-height:34px}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:0 0 auto}
+  .bell{color:var(--grey);display:flex;align-items:center}
+  .side{position:absolute;right:8px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:9px;font-weight:800;letter-spacing:2.6px;color:var(--ink);white-space:nowrap;z-index:5}
+  .side .y{color:var(--yellow)}
+  .body{padding:4px 20px 0}
+  .eyb{font-size:10.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin-top:8px;display:flex;align-items:center;gap:8px}
+  .eyb .avsm{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9.5px;letter-spacing:0}
+  .hero{position:relative;height:96px;margin-top:2px}
+  .ghost{position:absolute;right:0;top:-12px;font-family:'Barlow Condensed';font-weight:700;font-size:104px;line-height:1;letter-spacing:-3px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .word{position:absolute;left:0;bottom:20px;font-family:'Barlow Condensed';font-weight:700;font-size:40px;line-height:.9;letter-spacing:-.5px}
+  .kick{position:absolute;left:1px;bottom:2px;font-size:11.5px;font-weight:700;color:var(--grey)}.kick b{color:var(--ink)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:var(--okSoft);color:var(--ok);margin-top:6px}
+  .pill [data-ic]{color:var(--ok)}
+  .hr{height:1.5px;background:var(--ink);margin:11px 0 12px}
+  .card{border:1px solid var(--line);border-radius:16px;padding:13px}
+  .card .lbl{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey)}
+  .card .rt{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .card .rt .ic{width:34px;height:34px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .card .rt .t{font-size:15px;font-weight:800;font-family:'Barlow Condensed'}
+  .card .rt .s{font-size:11px;font-weight:600;color:var(--grey)}
+  .card .rt .z{margin-left:auto;text-align:right}
+  .card .rt .z .h{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+  .card .rt .z .l{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
+  .rowsvg svg{vertical-align:middle;margin:0 2px}
+
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:15px;display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:0 10px 26px rgba(20,20,18,.14);z-index:6}
+  .di{display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;color:var(--grey);padding:7px 10px;border-radius:999px;white-space:nowrap}
+  .di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+  .fab{position:absolute;right:18px;bottom:70px;width:50px;height:50px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(0,0,0,.3);z-index:6}
+  .spot{position:relative}
+  .spot::after{content:"";position:absolute;inset:-4px;border-radius:inherit;border:2px solid var(--yellow);box-shadow:0 0 0 4px rgba(255,184,0,.18)}
+  .note{position:absolute;font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#0f1218;background:var(--yellow);border-radius:6px;padding:3px 7px;z-index:9;white-space:nowrap}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Se o Perfil ficar no topo — onde exatamente?</h1>
+    <p>Três sítios possíveis no cabeçalho (avatar a amarelo). <b>A minha preferida é a 1</b> — avatar à esquerda, sino à direita: é a convenção das apps de tripulação (a tua foto de referência), equilibra o topo e "tu" ancoras a esquerda.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- TOPO 1 · avatar esquerda + sino direita (RECOMENDADO) -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av spot">NS</span><span class="bell" style="margin-left:auto"><i data-ic="bell" data-ic-size="18"></i></span></div>
+        <div class="note" style="left:16px;top:48px">Perfil</div>
+        <div class="side">INÍCIO · <span class="y">CREW</span></div>
+        <div class="body">
+          <div class="eyb">Bom dia, Nuno</div>
+          <div class="hero"><div class="ghost">1:05</div><div class="word">Report</div><div class="kick">para a <b>apresentação</b> · LIS</div></div>
+          <div class="pill"><i data-ic="check" data-ic-size="11"></i> Dentro do limite FTL</div>
+          <div class="hr"></div>
+          <div class="card"><div class="lbl">Próximo serviço</div>
+            <div class="rt"><span class="ic"><i data-ic="departs" data-ic-size="17"></i></span>
+              <div class="rowsvg"><div class="t">EJU8801</div><div class="s">LIS <i data-ic="arrow-dots" data-ic-size="12"></i> OPO · A320</div></div>
+              <div class="z"><div class="h">07:10</div><div class="l">report</div></div></div>
+          </div>
+        </div>
+        <div class="fab"><i data-ic="plus" data-ic-size="22"></i></div>
+        <div class="nav"><div class="di on"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">Recomendado (topo)</span><h2>1 · Avatar esquerda · sino direita</h2><p>Espalhado: identidade ancora a esquerda, alertas à direita. É o que a tua foto de tripulação mostra e equilibra o cabeçalho.</p></div>
+    </div>
+
+    <!-- TOPO 2 · avatar + sino juntos à direita -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="bell" style="margin-left:auto"><i data-ic="bell" data-ic-size="18"></i></span><span class="av spot" style="margin-left:12px">NS</span></div>
+        <div class="note" style="right:14px;top:48px">Perfil</div>
+        <div class="side">INÍCIO · <span class="y">CREW</span></div>
+        <div class="body">
+          <div class="eyb">Bom dia, Nuno</div>
+          <div class="hero"><div class="ghost">1:05</div><div class="word">Report</div><div class="kick">para a <b>apresentação</b> · LIS</div></div>
+          <div class="pill"><i data-ic="check" data-ic-size="11"></i> Dentro do limite FTL</div>
+          <div class="hr"></div>
+          <div class="card"><div class="lbl">Próximo serviço</div>
+            <div class="rt"><span class="ic"><i data-ic="departs" data-ic-size="17"></i></span>
+              <div class="rowsvg"><div class="t">EJU8801</div><div class="s">LIS <i data-ic="arrow-dots" data-ic-size="12"></i> OPO · A320</div></div>
+              <div class="z"><div class="h">07:10</div><div class="l">report</div></div></div>
+          </div>
+        </div>
+        <div class="fab"><i data-ic="plus" data-ic-size="22"></i></div>
+        <div class="nav"><div class="di on"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag grey">Alternativa</span><h2>2 · Avatar + sino juntos à direita</h2><p>Cluster de controlos no canto direito. Compacto, mas junta duas "coisas tocáveis" e deixa a esquerda vazia.</p></div>
+    </div>
+
+    <!-- TOPO 3 · avatar integrado na saudação -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="bell" style="margin-left:auto"><i data-ic="bell" data-ic-size="18"></i></span></div>
+        <div class="side">INÍCIO · <span class="y">CREW</span></div>
+        <div class="body">
+          <div class="eyb spot" style="padding:3px 6px;border-radius:999px"><span class="avsm">NS</span> Bom dia, Nuno</div>
+          <div class="note" style="left:16px;top:82px">Perfil</div>
+          <div class="hero"><div class="ghost">1:05</div><div class="word">Report</div><div class="kick">para a <b>apresentação</b> · LIS</div></div>
+          <div class="pill"><i data-ic="check" data-ic-size="11"></i> Dentro do limite FTL</div>
+          <div class="hr"></div>
+          <div class="card"><div class="lbl">Próximo serviço</div>
+            <div class="rt"><span class="ic"><i data-ic="departs" data-ic-size="17"></i></span>
+              <div class="rowsvg"><div class="t">EJU8801</div><div class="s">LIS <i data-ic="arrow-dots" data-ic-size="12"></i> OPO · A320</div></div>
+              <div class="z"><div class="h">07:10</div><div class="l">report</div></div></div>
+          </div>
+        </div>
+        <div class="fab"><i data-ic="plus" data-ic-size="22"></i></div>
+        <div class="nav"><div class="di on"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag grey">Elegante</span><h2>3 · Avatar junto à saudação</h2><p>O avatar cola-se ao "Bom dia, Nuno" — identidade integrada no conteúdo, não chrome flutuante. Só que só existe no Início (as outras abas não têm saudação).</p></div>
+    </div>
+
+  </div>
+
+  <script src="icons.js"></script>
+</body>
+</html>

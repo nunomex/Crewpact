@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · FAB de acesso rápido (mini-FABs + minimiza como a navbar)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:620px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .side{position:absolute;right:9px;top:100px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:30}
+  .side .y{color:var(--yellow)}
+  .body{padding:6px 22px 0}
+  .greet{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:6px}
+  .hero{position:relative;height:150px;margin-top:2px}
+  .hghost{position:absolute;right:2px;top:-10px;font-family:'Barlow Condensed';font-weight:700;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .hword{position:absolute;left:0;bottom:30px;font-family:'Barlow Condensed';font-weight:700;font-size:46px;letter-spacing:-.5px}
+  .hkick{position:absolute;left:2px;bottom:11px;font-size:12.5px;font-weight:700;color:var(--grey)}.hkick .y{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin:2px 0 0}
+  .lbl2{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin:16px 2px 10px}
+  .card{border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:10px;display:flex;align-items:center;gap:13px}
+  .card .ic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .card .t{font-size:14px;font-weight:800}
+  .card .s{font-size:11px;font-weight:600;color:var(--grey);margin-top:1px}
+  .card .r{margin-left:auto;font-family:'Barlow Condensed';font-weight:700;font-size:26px;color:var(--ink)}
+  .scrpad{height:150px}
+
+  /* SCRIM (fecha ao tocar fora) */
+  .scrim{position:absolute;inset:0;background:rgba(20,20,18,.16);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+  .scrim.show{opacity:1;pointer-events:auto}
+
+  /* ZONA DE BAIXO: pílula (centro) + FAB (direita) — minimizam juntos */
+  .bottomzone{position:absolute;left:0;right:0;bottom:16px;z-index:50;pointer-events:none}
+  .pill{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14);pointer-events:auto;transition:padding .28s}
+  .di{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--grey);padding:8px 12px;border-radius:999px;white-space:nowrap;transition:max-width .28s,padding .28s,opacity .2s;max-width:120px;overflow:hidden}
+  .di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+  /* minimizado: a pílula encolhe para a aba ativa (como iOS 26) */
+  .pill.min .di:not(.on){max-width:0;padding:8px 0;opacity:0}
+
+  .fabwrap{position:absolute;right:20px;bottom:0;display:flex;flex-direction:column;align-items:flex-end;pointer-events:auto}
+  .minis{display:flex;flex-direction:column;align-items:flex-end;gap:11px;margin-bottom:13px}
+  .mini{display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(14px) scale(.9);transition:opacity .18s,transform .24s;pointer-events:none}
+  .fabwrap.open .mini{opacity:1;transform:none;pointer-events:auto}
+  .fabwrap.open .mini:nth-child(4){transition-delay:0s}
+  .fabwrap.open .mini:nth-child(3){transition-delay:.03s}
+  .fabwrap.open .mini:nth-child(2){transition-delay:.06s}
+  .fabwrap.open .mini:nth-child(1){transition-delay:.09s}
+  .mini .lbl{background:var(--ink);color:#fff;font-size:12px;font-weight:800;padding:7px 11px;border-radius:9px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .mini .c{width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.14)}
+  .mini .c [data-ic] svg{width:19px;height:19px}
+  .fab{width:58px;height:58px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.3);cursor:pointer;transition:transform .3s}
+  .fab.min{transform:scale(.82)}
+  .fab .plus{display:flex;transition:transform .3s}
+  .fabwrap.open .fab .plus{transform:rotate(45deg)}
+
+  .hint{position:absolute;left:0;right:0;bottom:86px;text-align:center;font-size:10px;font-weight:700;color:#B9B8B2;z-index:45;pointer-events:none;transition:opacity .3s}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>FAB de acesso rápido — o que pediste</h1>
+    <p><b>Toca no "+"</b> (baixo-direita) → sobem os mini-FABs (Serviço · Simulação · Extra · Pesquisar) com rótulo.
+    <b>Faz scroll para baixo</b> → o FAB E a pílula <b>minimizam juntos</b> (a pílula encolhe para a aba ativa, o FAB fica mais pequeno); scroll para cima → voltam. A pílula fica ao centro, o FAB à direita.</p>
+  </div>
+
+  <div class="ph">
+    <div class="scr" id="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="side">EASYJET · <span class="y">PILOTO</span></div>
+      <div class="body">
+        <div class="greet">Olá, Nuno</div>
+        <div class="hero">
+          <div class="hghost">1:05</div>
+          <div class="hword">Report</div>
+          <div class="hkick">EJU7625 · LIS→FNC · <span class="y">pré-report</span></div>
+        </div>
+        <div class="hr"></div>
+
+        <div class="lbl2">Próximos · faz scroll para minimizar</div>
+        <div class="card"><div class="ic"><i data-ic="plane" data-ic-size="18"></i></div><div><div class="t">EJU7625 · LIS→FNC</div><div class="s">report 05:30 · 2 setores</div></div><div class="r">1:05</div></div>
+        <div class="card"><div class="ic"><i data-ic="bed" data-ic-size="18"></i></div><div><div class="t">Pernoita · FNC</div><div class="s">Pestana Casino · pickup 05:40</div></div><div class="r">🌙</div></div>
+        <div class="card"><div class="ic"><i data-ic="plane" data-ic-size="18"></i></div><div><div class="t">EJU7630 · FNC→LIS</div><div class="s">report 14:20 · 1 setor</div></div><div class="r">+1</div></div>
+        <div class="card"><div class="ic"><i data-ic="moon" data-ic-size="18"></i></div><div><div class="t">Folga</div><div class="s">quinta</div></div></div>
+        <div class="card"><div class="ic"><i data-ic="restricted" data-ic-size="18"></i></div><div><div class="t">Standby · aeroporto</div><div class="s">06:00–14:00</div></div></div>
+        <div class="card"><div class="ic"><i data-ic="plane" data-ic-size="18"></i></div><div><div class="t">EJU8801 · LIS→OPO</div><div class="s">report 07:10 · 4 setores</div></div><div class="r">2d</div></div>
+        <div class="card"><div class="ic"><i data-ic="gauge" data-ic-size="18"></i></div><div><div class="t">Limites FTL · em dia</div><div class="s">bloco 62h / 100h · 7 dias</div></div></div>
+        <div class="card"><div class="ic"><i data-ic="passport" data-ic-size="18"></i></div><div><div class="t">Médico Classe 1</div><div class="s">expira em 45 dias</div></div></div>
+        <div class="scrpad"></div>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="hint" id="hint">↓ scroll minimiza · ↑ traz de volta</div>
+
+    <div class="bottomzone">
+      <div class="pill" id="pill">
+        <div class="di on"><i data-ic="home" data-ic-size="14"></i>Início</div>
+        <div class="di"><i data-ic="stats" data-ic-size="14"></i>Estat.</div>
+        <div class="di"><i data-ic="cal" data-ic-size="14"></i>Escala</div>
+        <div class="di"><i data-ic="gauge" data-ic-size="14"></i>FTL/AE</div>
+      </div>
+      <div class="fabwrap" id="fabwrap">
+        <div class="minis">
+          <div class="mini"><span class="lbl">Pesquisar</span><span class="c"><i data-ic="search"></i></span></div>
+          <div class="mini"><span class="lbl">Extra do mês</span><span class="c"><i data-ic="wallet"></i></span></div>
+          <div class="mini"><span class="lbl">Simulação</span><span class="c"><i data-ic="clock"></i></span></div>
+          <div class="mini"><span class="lbl">Serviço</span><span class="c"><i data-ic="plane"></i></span></div>
+        </div>
+        <div class="fab" id="fab"><span class="plus"><i data-ic="plus" data-ic-size="26"></i></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    var scr=document.getElementById('scr'), pill=document.getElementById('pill'),
+        fab=document.getElementById('fab'), fabwrap=document.getElementById('fabwrap'),
+        scrim=document.getElementById('scrim'), hint=document.getElementById('hint');
+    var lastY=0;
+    function setMin(on){ pill.classList.toggle('min',on); fab.classList.toggle('min',on); hint.style.opacity = on ? '0' : '1'; }
+    scr.addEventListener('scroll', function(){
+      var y=scr.scrollTop;
+      if(!fabwrap.classList.contains('open')){
+        if(y>lastY+4 && y>28) setMin(true);
+        else if(y<lastY-4) setMin(false);
+      }
+      lastY=y;
+    });
+    function close(){ fabwrap.classList.remove('open'); scrim.classList.remove('show'); }
+    fab.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open=!fabwrap.classList.contains('open');
+      fabwrap.classList.toggle('open',open);
+      scrim.classList.toggle('show',open);
+      if(open) setMin(false);              // ao abrir, expande (nunca abre minimizado)
+    });
+    scrim.addEventListener('click', close);
+    // clicar num mini fecha (simula a ação)
+    Array.prototype.forEach.call(document.querySelectorAll('.mini'), function(m){ m.addEventListener('click', close); });
+  })();
+  </script>
+</body>
+</html>
