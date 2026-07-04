@@ -104,11 +104,10 @@
   .chip small{display:block;font-size:7.5px;font-weight:800;letter-spacing:1.5px;color:#B9B8B2;margin-top:3px;text-transform:uppercase}
   .acts{margin-left:auto;display:flex;gap:8px}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8.5px;font-weight:700;color:var(--grey)}
-  .act .c{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center}
-  .act .c svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:1.7}
+  .act .c{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .act .c svg{width:16px;height:16px}
   .act.hot{color:var(--ink)}
-  .act.hot .c{background:var(--ink);border-color:var(--ink)}
-  .act.hot .c svg{stroke:var(--yellow)}
+  .act.hot .c{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
 
   .dock{display:flex;justify-content:space-around;align-items:center;padding:12px 6px 22px;border-top:1.5px solid var(--ink)}
   .di{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--grey);padding-bottom:4px}
@@ -132,19 +131,20 @@
   </div>
   <div class="ph"><div class="scr" id="scr"></div></div>
 
+<script src="icons.js"></script>
 <script>
 (function(){
-  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="17" cy="18" r="2.2"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
-  const BEDI='<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="7" cy="11" r="1.6"/></svg>';
-  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
-  const PLUSI='<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-  const CALI='<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>';
-  const EYEI='<svg viewBox="0 0 24 24"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>';
+  const SHARE=CPIcons.icon('share');
+  const BEDI=CPIcons.icon('bed');
+  const CLOCKI=CPIcons.icon('clock');
+  const PLUSI=CPIcons.icon('plus');
+  const CALI=CPIcons.icon('cal');
+  const EYEI=CPIcons.icon('eye');
   const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
   const STATES={
     onboarding:{
       greet:'Bem-vindo, Nuno', side:'PRIMEIRA VEZ · <span class="y">SETUP</span>', band:null,
-      hero:{ghost:'✈', word:'Olá!', warn:false, kick:'liga o <span class="y">calendário do telemóvel</span> e o Início ganha vida', arrow:'↘'},
+      hero:{ghost:CPIcons.icon('plane',{size:160}), word:'Olá!', warn:false, kick:'liga o <span class="y">calendário do telemóvel</span> e o Início ganha vida', arrow:CPIcons.icon('arrow-diag',{rot:90,size:26})},
       mid:{setup:{
         step:{n:'1', t:'Ligar o calendário do telemóvel', s:'é daí que a app lê a tua escala — essencial; nunca mais escreves um voo à mão'},
         tip:'No <b>eCrew</b>, ativa o <b>sync para o calendário do telemóvel</b>. Com ele ligado, a escala chega sempre atualizada — e a app trabalha <b>sem erros</b>.' }},
@@ -154,28 +154,28 @@
       acts:[ {ic:CALI,l:'Ligar calendário',hot:true}, {ic:EYEI,l:'Ver exemplo'} ] },
     folga:{
       greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>', band:null,
-      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:'↘'},
+      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:CPIcons.icon('arrow-diag',{rot:90,size:26})},
       mid:{agenda:[
         {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30 · 2 setores'},
-        {a1:'FNC→LIS 🌙 pernoita', a2:'SEX · report 06:15'} ]},
-      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">✓</span> · repouso em dia · férias: ficam <b>9 de 22</b>.'},
+        {a1:'FNC→LIS '+CPIcons.icon('moon',{size:13})+' pernoita', a2:'SEX · report 06:15'} ]},
+      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">'+CPIcons.icon('check',{size:11})+'</span> · repouso em dia · férias: ficam <b>9 de 22</b>.'},
       bigy:{v:'8 943', u:'EUROS · JULHO ESTIMADO'}, donut:{p:61,lab:'MÊS 61%'},
       chip:{v:'2 DIAS', s:'até ao report'},
       acts:[ {ic:PLUSI,l:'Extra',hot:true}, {ic:CLOCKI,l:'Simular'} ] },
     prereport:{
       greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>', band:null,
-      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓', arrow:'↑'},
+      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião '+CPIcons.icon('check',{size:12})+' · aeroporto '+CPIcons.icon('check',{size:12}), arrow:CPIcons.icon('arrow-u',{size:26})},
       mid:{times:[
-        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo ✓</span>', sts:'porta 24'},
-        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'☀️ 27° limpo'} ]},
+        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo '+CPIcons.icon('check',{size:11})+'</span>', sts:'porta 24'},
+        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:CPIcons.icon('sun',{size:12})+' 27° limpo'} ]},
       util:{ttl:'Hoje', p:'<b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · aclimatizado, 2 setores.'},
       bigy:{v:'41,08', u:'EUR · PER-DIEM DE HOJE'}, donut:{p:8,lab:'PSV 8%'},
       chip:{v:'05:30', s:'report · 04:30Z'},
       acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:BEDI,l:'Hotel'}, {ic:CLOCKI,l:'Simular'} ] },
     disrupcao:{
       greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
-      band:{t:'⚠ O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
-      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:'⚠'},
+      band:{t:CPIcons.icon('alert',{size:12})+' O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
+      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:CPIcons.icon('alert',{size:26})},
       mid:{times:[
         {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa</span>', sts:'projeção'},
         {ap:'FNC', aps:'CHEGADA', big:'~09:30', cls:'warn', old:'09:05', st:'<span class="warn">projeção</span>', sts:'rotação 35m'} ]},
@@ -190,8 +190,8 @@
       +'<div class="tst">'+t.st+'<small>'+t.sts+'</small></div></div>').join('');
     if(m.setup){
       return '<div class="stp"><div class="n">'+m.setup.step.n+'</div>'
-        +'<div><div class="t">'+m.setup.step.t+'</div><div class="s">'+m.setup.step.s+'</div></div><div class="go">›</div></div>'
-        +'<div class="tip"><span class="ti">↻</span><p>'+m.setup.tip+'</p></div>';
+        +'<div><div class="t">'+m.setup.step.t+'</div><div class="s">'+m.setup.step.s+'</div></div><div class="go">'+CPIcons.icon('chevron',{size:14})+'</div></div>'
+        +'<div class="tip"><span class="ti">'+CPIcons.icon('sync',{size:14})+'</span><p>'+m.setup.tip+'</p></div>';
     }
     return m.agenda.map(a=>'<div class="ag"><div style="text-align:right"><div class="a1">'+a.a1+'</div><div class="a2">'+a.a2+'</div></div><div class="tick"></div></div>').join('');
   }

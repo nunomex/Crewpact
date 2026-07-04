@@ -43,7 +43,7 @@
   .lg .wm .name b{font-weight:800}.lg .wm .name span{font-weight:500}
   .lg .tagline{font-size:12.5px;font-weight:600;color:var(--grey);margin:12px 0 26px;line-height:1.5;max-width:220px}
   .lg .pill{width:100%;display:flex;align-items:center;gap:11px;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;padding:15px 20px;margin-bottom:13px}
-  .lg .pill svg{width:17px;height:17px;fill:var(--grey);flex:0 0 auto}
+  .lg .pill [data-ic]{color:var(--grey);flex:0 0 auto}
   .lg .pill .val{font-size:14px;font-weight:600}
   .lg .pill .ph2{font-size:14px;font-weight:500;color:#B4B0A8}
   .lg .pill.focus{border-color:var(--ink)}
@@ -81,11 +81,11 @@
   .in .chip small{display:block;font-size:6.5px;font-weight:800;letter-spacing:1.3px;color:#B9B8B2;margin-top:2px;text-transform:uppercase}
   .in .acts{margin-left:auto;display:flex;gap:7px}
   .in .act{width:36px;height:36px;border-radius:11px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px}
-  .in .act.hot{background:var(--ink)}
+  .in .act.hot{background:var(--ink);color:#fff}
   .in .navpill{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:2px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
   .in .di{font-size:9.5px;font-weight:800;color:var(--grey);padding:6px 10px;border-radius:999px}
   .in .di.on{background:var(--ink);color:#fff}
-  .in .di.on i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yellow);margin-right:5px}
+  .in .di [data-ic]{margin-right:4px;vertical-align:-2px}
 </style>
 </head>
 <body>
@@ -109,7 +109,7 @@
       </div></div>
     </div>
 
-    <div class="arrow">→</div>
+    <div class="arrow"><i data-ic="arrow-r" data-ic-size="26"></i></div>
 
     <!-- LOGIN -->
     <div class="step">
@@ -119,15 +119,15 @@
         <div style="height:8px"></div>
         <div class="wm"><div class="eye">FTL · AE · CREW</div><div class="rule"></div><div class="name"><span>Crew</span><b>Pact</b></div></div>
         <div class="tagline">A tua vida operacional, num sítio.</div>
-        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="ph2">o teu email</span></div>
-        <div class="pill focus"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="val">••••••••••</span></div>
+        <div class="pill"><i data-ic="mail" data-ic-size="17"></i><span class="ph2">o teu email</span></div>
+        <div class="pill focus"><i data-ic="lock" data-ic-size="17"></i><span class="val">••••••••••</span></div>
         <div class="forgot">Esqueci-me</div>
-        <div class="btn">Entrar <span class="arr">→</span></div>
+        <div class="btn">Entrar <span class="arr"><i data-ic="arrow-r" data-ic-size="16"></i></span></div>
         <div class="switch">Ainda não tens conta? <a>Criar conta</a></div>
       </div></div>
     </div>
 
-    <div class="arrow">→</div>
+    <div class="arrow"><i data-ic="arrow-r" data-ic-size="26"></i></div>
 
     <!-- INÍCIO -->
     <div class="step">
@@ -135,17 +135,18 @@
       <div class="ph"><div class="scr in">
         <div class="greet">Bom dia, Nuno</div>
         <div class="side">EJU7625 · <span class="y">2 SETORES</span></div>
-        <div class="hero"><div class="arrowy">↑</div><div class="ghostnum">1:05</div><div class="word">Report</div><div class="kick">às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓</div></div>
+        <div class="hero"><div class="arrowy"><i data-ic="arrow-u" data-ic-size="20"></i></div><div class="ghostnum">1:05</div><div class="word">Report</div><div class="kick">às <span class="y">05:30 · 04:30Z</span> · avião <i data-ic="check" data-ic-size="11"></i> · aeroporto <i data-ic="check" data-ic-size="11"></i></div></div>
         <div class="hr"></div>
-        <div class="trow"><div class="tap">LIS<small>PARTIDA</small></div><div class="tbig">06:40</div><div class="tst">a tempo ✓<small>porta 24</small></div></div>
-        <div class="trow"><div class="tap">FNC<small>CHEGADA</small></div><div class="tbig">09:05</div><div class="tst">no plano<small>☀️ 27°</small></div></div>
+        <div class="trow"><div class="tap">LIS<small>PARTIDA</small></div><div class="tbig">06:40</div><div class="tst">a tempo <i data-ic="check" data-ic-size="11"></i><small>porta 24</small></div></div>
+        <div class="trow"><div class="tap">FNC<small>CHEGADA</small></div><div class="tbig">09:05</div><div class="tst">no plano<small><i data-ic="sun" data-ic-size="11"></i> 27°</small></div></div>
         <div class="util"><div class="ttl">Hoje</div><p><b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · per-diem <b>+41,08 €</b>.</p></div>
-        <div class="thumb"><div class="chip"><div class="cv">05:30</div><small>REPORT · 04:30Z</small></div><div class="acts"><div class="act hot">🔗</div><div class="act">🛏</div><div class="act">⏱</div></div></div>
-        <div class="navpill"><div class="di on"><i></i>Início</div><div class="di">Estat.</div><div class="di">Escala</div><div class="di">FTL/AE</div></div>
+        <div class="thumb"><div class="chip"><div class="cv">05:30</div><small>REPORT · 04:30Z</small></div><div class="acts"><div class="act hot"><i data-ic="share" data-ic-size="18"></i></div><div class="act"><i data-ic="bed" data-ic-size="18"></i></div><div class="act"><i data-ic="clock" data-ic-size="18"></i></div></div></div>
+        <div class="navpill"><div class="di on"><i data-ic="home" data-ic-size="12"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="12"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="12"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="12"></i>FTL/AE</div></div>
       </div></div>
     </div>
 
   </div>
 </div>
+<script src="icons.js"></script>
 </body>
 </html>

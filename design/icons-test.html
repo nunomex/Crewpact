@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · icons.js — prova do módulo (fonte única)</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#141414; --yellow:#FFC400; --paper:#F4F2ED; --grey:#77776F; --line:#E4E1D8; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .wrap{max-width:1080px;width:100%}
+  h1{font-size:22px;font-weight:800;color:#fff}
+  .sub{margin-top:6px;font-size:12.5px;color:#96a0ad;line-height:1.6;max-width:760px}.sub b{color:#fff}
+  .sheet{margin-top:18px;background:var(--paper);border-radius:20px;padding:24px;color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .cell{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .plates{display:flex;gap:7px;align-items:center}
+  .p{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+  .p.yl{background:var(--yellow);color:var(--ink)}     /* placa amarela → ícone ink */
+  .p.bk{background:var(--ink);color:var(--yellow)}      /* placa preta → ícone amarelo */
+  .p.bare{color:var(--ink)}                             /* nu no branco */
+  .p.yl [data-ic] svg,.p.bk [data-ic] svg{width:24px;height:24px}
+  .nm{font-size:11px;font-weight:800;font-family:'Barlow Condensed';letter-spacing:.3px}
+  .mini{display:flex;align-items:center;gap:5px;color:var(--grey)}
+  .mini [data-ic]{color:var(--ink)}
+  .rot{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px;display:flex;gap:22px;align-items:center;color:var(--ink)}
+  .rot [data-ic]{color:var(--ink)}
+  .rot .lb{font-size:11px;font-weight:700;color:var(--grey);display:flex;flex-direction:column;align-items:center;gap:6px}
+  code{font-family:ui-monospace,monospace;font-size:11px;background:#eee;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>icons.js — a fonte única a funcionar</h1>
+  <p class="sub">Isto NÃO tem um único <code>&lt;svg&gt;</code> escrito à mão — cada quadrado é
+  <code>&lt;i data-ic="nome"&gt;</code> hidratado pelo módulo. Se todos aparecem sólidos e nítidos, o
+  <b>icons.js</b> está pronto para as páginas assentarem em cima. A <b>cor</b> vem do <code>color:</code> do
+  contexto (placa amarela → ink · placa preta → amarelo), nunca do próprio ícone.</p>
+
+  <div class="sheet">
+    <div class="grid" id="grid"></div>
+
+    <div class="rot">
+      <span style="font-weight:800;font-family:'Barlow Condensed'">Rotação (data-ic-rot):</span>
+      <span class="lb"><i data-ic="chevron" data-ic-size="22"></i>chevron ›</span>
+      <span class="lb"><i data-ic="chevron" data-ic-rot="90" data-ic-size="22"></i>rot 90 ⌄</span>
+      <span class="lb"><i data-ic="chevron" data-ic-rot="180" data-ic-size="22"></i>rot 180 ‹</span>
+      <span class="lb"><i data-ic="arrow-r" data-ic-rot="-45" data-ic-size="22"></i>arrow ↗</span>
+      <span class="lb" style="color:#E8482C"><i data-ic="nome-que-nao-existe" data-ic-size="22"></i>inválido</span>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+  // desenha uma célula por nome — placa amarela · placa preta · nu · mini 16px
+  var g = document.getElementById('grid');
+  CPIcons.names.forEach(function (n) {
+    var c = document.createElement('div');
+    c.className = 'cell';
+    c.innerHTML =
+      '<div class="plates">'
+      + '<div class="p yl"><i data-ic="' + n + '"></i></div>'
+      + '<div class="p bk"><i data-ic="' + n + '"></i></div>'
+      + '<div class="p bare"><i data-ic="' + n + '" data-ic-size="24"></i></div>'
+      + '</div>'
+      + '<div class="nm">' + n + '</div>'
+      + '<div class="mini"><i data-ic="' + n + '" data-ic-size="16"></i><span style="font-size:10px">16px</span></div>';
+    g.appendChild(c);
+  });
+  CPIcons.hydrate();   // hidrata os nós que acabámos de injetar
+</script>
+</body>
+</html>

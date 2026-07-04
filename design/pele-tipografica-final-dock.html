@@ -89,11 +89,10 @@
   .chip small{display:block;font-size:7.5px;font-weight:800;letter-spacing:1.5px;color:#B9B8B2;margin-top:3px;text-transform:uppercase}
   .acts{margin-left:auto;display:flex;gap:8px}
   .act{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8.5px;font-weight:700;color:var(--grey)}
-  .act .c{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center}
-  .act .c svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:1.7}
+  .act .c{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .act .c svg{width:16px;height:16px}
   .act.hot{color:var(--ink)}
-  .act.hot .c{background:var(--ink);border-color:var(--ink)}
-  .act.hot .c svg{stroke:var(--yellow)}
+  .act.hot .c{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
 
   /* secção extra p/ o scroll ser real */
   .nexth{font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.5px;text-transform:uppercase;padding:14px 2px 4px;border-top:1px solid var(--line);margin-top:6px}
@@ -137,45 +136,46 @@
     <div class="dock" id="dock"></div>
   </div>
 
+<script src="icons.js"></script>
 <script>
 (function(){
-  const SHARE='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="17" cy="18" r="2.2"/><path d="M8 11l7-4M8 13l7 4"/></svg>';
-  const BEDI='<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="7" cy="11" r="1.6"/></svg>';
-  const CLOCKI='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg>';
-  const PLUSI='<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  const SHARE=CPIcons.icon('share',{size:16});
+  const BEDI=CPIcons.icon('bed',{size:16});
+  const CLOCKI=CPIcons.icon('clock',{size:16});
+  const PLUSI=CPIcons.icon('plus',{size:16});
   const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
   const STATES={
     folga:{ dockStart:'hidden',
       greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>', band:null,
-      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:'↘'},
+      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:CPIcons.icon('arrow-diag',{size:26,rot:90})},
       mid:{agenda:[
         {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30 · 2 setores'},
-        {a1:'FNC→LIS 🌙 pernoita', a2:'SEX · report 06:15'} ]},
-      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">✓</span> · repouso em dia · férias: ficam <b>9 de 22</b>.'},
+        {a1:'FNC→LIS '+CPIcons.icon('moon',{size:13})+' pernoita', a2:'SEX · report 06:15'} ]},
+      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">'+CPIcons.icon('check',{size:12})+'</span> · repouso em dia · férias: ficam <b>9 de 22</b>.'},
       bigy:{v:'8 943', u:'EUROS · JULHO ESTIMADO'}, donut:{p:61,lab:'MÊS 61%'},
       chip:{v:'2 DIAS', s:'até ao report'},
       acts:[ {ic:PLUSI,l:'Extra',hot:true}, {ic:CLOCKI,l:'Simular'} ],
       next:[ {d:'26',ds:'QUI',t:'EJU7625 · LIS→FNC',s:'report 05:30 · 2 setores'},
-             {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15 · pernoita FNC'},
+             {d:'27',ds:'SEX',t:'FNC→LIS '+CPIcons.icon('moon',{size:13}),s:'report 06:15 · pernoita FNC'},
              {d:'28',ds:'SÁB',t:'Folga',s:'—'},
              {d:'29',ds:'DOM',t:'ADTY · aeroporto',s:'06:00–14:00'} ] },
     prereport:{ dockStart:'visible',
       greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>', band:null,
-      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓', arrow:'↑'},
+      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião '+CPIcons.icon('check',{size:12})+' · aeroporto '+CPIcons.icon('check',{size:12}), arrow:CPIcons.icon('arrow-u',{size:26})},
       mid:{times:[
-        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo ✓</span>', sts:'porta 24'},
-        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'☀️ 27° limpo'} ]},
+        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo '+CPIcons.icon('check',{size:12})+'</span>', sts:'porta 24'},
+        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:CPIcons.icon('sun',{size:12})+' 27° limpo'} ]},
       util:{ttl:'Hoje', p:'<b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · aclimatizado, 2 setores.'},
       bigy:{v:'41,08', u:'EUR · PER-DIEM DE HOJE'}, donut:{p:8,lab:'PSV 8%'},
       chip:{v:'05:30', s:'report · 04:30Z'},
       acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:BEDI,l:'Hotel'}, {ic:CLOCKI,l:'Simular'} ],
-      next:[ {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15 · pernoita FNC'},
+      next:[ {d:'27',ds:'SEX',t:'FNC→LIS '+CPIcons.icon('moon',{size:13}),s:'report 06:15 · pernoita FNC'},
              {d:'28',ds:'SÁB',t:'Folga',s:'—'},
              {d:'29',ds:'DOM',t:'ADTY · aeroporto',s:'06:00–14:00'} ] },
     disrupcao:{ dockStart:'visible',
       greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
-      band:{t:'⚠ O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
-      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:'⚠'},
+      band:{t:CPIcons.icon('alert',{size:13})+' O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
+      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:CPIcons.icon('alert',{size:26})},
       mid:{times:[
         {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa</span>', sts:'projeção'},
         {ap:'FNC', aps:'CHEGADA', big:'~09:30', cls:'warn', old:'09:05', st:'<span class="warn">projeção</span>', sts:'rotação 35m'} ]},
@@ -183,7 +183,7 @@
       bigy:{v:'12:40', u:'PSV PROJETADO · MÁX 13:00'}, donut:{p:97,lab:'PSV 97%',dc:'var(--warn)'},
       chip:{v:'<s>06:40</s>~07:05', s:'nova partida'},
       acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:CLOCKI,l:'Simular'} ],
-      next:[ {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15 · pernoita FNC'},
+      next:[ {d:'27',ds:'SEX',t:'FNC→LIS '+CPIcons.icon('moon',{size:13}),s:'report 06:15 · pernoita FNC'},
              {d:'28',ds:'SÁB',t:'Folga',s:'—'} ] },
   };
   const ph=document.getElementById('ph'), scr=document.getElementById('scr'), dockEl=document.getElementById('dock'), stateEl=document.getElementById('dockstate');
@@ -213,7 +213,7 @@
       +'<div class="thumb"><div class="chip"><div class="cv">'+st.chip.v+'</div><small>'+st.chip.s+'</small></div>'
         +'<div class="acts">'+st.acts.map(a=>'<div class="act'+(a.hot?' hot':'')+'"><div class="c">'+a.ic+'</div>'+a.l+'</div>').join('')+'</div></div>'
       +'<div class="nexth">Próximos</div>'
-      +st.next.map(n=>'<div class="nx"><div class="d">'+n.d+'<small>'+n.ds+'</small></div><div><div class="t">'+n.t+'</div><div class="s">'+n.s+'</div></div><div class="go">›</div></div>').join('');
+      +st.next.map(n=>'<div class="nx"><div class="d">'+n.d+'<small>'+n.ds+'</small></div><div><div class="t">'+n.t+'</div><div class="s">'+n.s+'</div></div><div class="go">'+CPIcons.icon('chevron',{size:14})+'</div></div>').join('');
     dockEl.innerHTML=DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('');
     scr.scrollTop=0;
     setDock(st.dockStart==='hidden');   // Folga nasce escondido — "a app afasta-se"

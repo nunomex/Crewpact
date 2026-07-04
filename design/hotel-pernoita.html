@@ -95,10 +95,8 @@
     background:linear-gradient(#cfe0cc 1px,transparent 1px),linear-gradient(90deg,#cfe0cc 1px,transparent 1px);
     background-size:34px 34px}
   .maps .road{position:absolute;left:-10%;top:44%;width:120%;height:16px;background:#fff;border-radius:8px;transform:rotate(-9deg);box-shadow:0 1px 0 #d7d7d2}
-  .pin{width:34px;height:34px;background:var(--red);border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-       display:flex;align-items:center;justify-content:center;box-shadow:0 8px 14px rgba(0,0,0,.25);z-index:2;animation:drop .6s cubic-bezier(.2,.9,.3,1.4)}
-  .pin::after{content:'';width:12px;height:12px;background:#fff;border-radius:50%;transform:rotate(45deg)}
-  @keyframes drop{from{transform:rotate(-45deg) translate(-40px,-40px);opacity:0}}
+  .pin{color:var(--red);z-index:2;filter:drop-shadow(0 8px 14px rgba(0,0,0,.25));animation:drop .6s cubic-bezier(.2,.9,.3,1.4)}
+  @keyframes drop{from{transform:translateY(-40px);opacity:0}}
   .mapsCard{background:#fff;border-radius:14px;padding:12px 16px;font-size:13px;color:#1B1B1B;font-weight:600;z-index:2;box-shadow:0 10px 22px rgba(0,0,0,.14)}
   .mapsCard span{display:block;font-size:11px;color:#6B6B66;font-weight:500;margin-top:2px}
   .mapsHint{font-size:11px;color:#516251;z-index:2;font-weight:700}
@@ -124,7 +122,7 @@
 </style>
 </head>
 <body>
-<h1>🏨 Hotel da pernoita — fluxo completo</h1>
+<h1><i data-ic="bed" data-ic-size="20"></i> Hotel da pernoita — fluxo completo</h1>
 <p class="lead">A escala já sabe onde dormes — não há GPS, não há APIs: o hotel da companhia fica guardado por estação (só no telemóvel) e abre nos mapas ou liga com um toque.</p>
 
 <div class="stage">
@@ -142,11 +140,11 @@
             <div class="rt">LIS → FNC</div>
             <div class="tm">06:40 → 08:15 &nbsp;<i>0640–0815Z</i></div>
             <div class="cd"><em>Hoje ·</em> report em 2 h 10 min</div>
-            <div class="night">🌙 Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
+            <div class="night"><i data-ic="moon" data-ic-size="13"></i> Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
           </div>
         </div>
         <div class="hotelRow" title="adicionar">
-          <span style="font-size:15px">＋</span>
+          <span style="font-size:15px"><i data-ic="plus" data-ic-size="15"></i></span>
           <div class="nm"><b style="font-size:12.5px">adicionar hotel desta pernoita</b></div>
         </div>
       </div>
@@ -158,7 +156,7 @@
       <div class="svc" style="filter:saturate(.9)">
         <div class="svcTop">
           <div class="badge"><b>12</b><span>SEX</span></div>
-          <div><div class="rt">LIS → FNC</div><div class="night">🌙 Paragem nocturna</div></div>
+          <div><div class="rt">LIS → FNC</div><div class="night"><i data-ic="moon" data-ic-size="13"></i> Paragem nocturna</div></div>
         </div>
       </div>
       <div class="sheetWrap show">
@@ -173,7 +171,7 @@
           <div class="lbl">Nota <small>· opcional (ex. pickup)</small></div>
           <div class="input">Pickup 08:40 na receção</div>
           <div class="btnSave">Guardar</div>
-          <div class="privacy">🔒 Guardado só no teu telemóvel</div>
+          <div class="privacy"><i data-ic="lock" data-ic-size="13"></i> Guardado só no teu telemóvel</div>
         </div>
       </div>
     </div>
@@ -187,13 +185,13 @@
       </div>
       <div class="secTitle">Pernoita · FNC</div>
       <div class="hotelRow filled">
-        <span style="font-size:17px">🏨</span>
+        <span style="font-size:17px"><i data-ic="bed" data-ic-size="17"></i></span>
         <div class="nm">
           <b>Hotel Girassol</b>
           <span>Pickup 08:40 na receção</span>
         </div>
-        <div class="pill" id="tapMaps">🗺 Mapas</div>
-        <div class="pill call">📞 Ligar</div>
+        <div class="pill" id="tapMaps"><i data-ic="pin" data-ic-size="14"></i> Mapas</div>
+        <div class="pill call"><i data-ic="phone" data-ic-size="14"></i> Ligar</div>
       </div>
       <div class="secTitle">Pagamento · detalhes</div>
       <div class="panel">
@@ -207,7 +205,7 @@
     <div class="screen" id="s3">
       <div class="maps show">
         <div class="grid"></div><div class="road"></div>
-        <div class="pin"></div>
+        <div class="pin"><i data-ic="pin" data-ic-size="40"></i></div>
         <div class="mapsCard">Hotel Girassol<span>Estrada Monumental · Funchal</span></div>
         <div class="mapsHint">A abrir no Apple Maps / Google Maps…</div>
       </div>
@@ -222,11 +220,11 @@
           <div>
             <div class="rt">LIS → FNC</div>
             <div class="tm">14:10 → 15:45</div>
-            <div class="night">🌙 Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
+            <div class="night"><i data-ic="moon" data-ic-size="13"></i> Paragem nocturna · <b style="color:var(--greenText)">+77,52 €</b></div>
           </div>
         </div>
         <div class="hotelRow filled">
-          <span style="font-size:17px">🏨</span>
+          <span style="font-size:17px"><i data-ic="bed" data-ic-size="17"></i></span>
           <div class="nm"><b>Hotel Girassol</b><span>Pickup 08:40 na receção</span></div>
           <span class="autoTag">automático</span>
         </div>
@@ -244,19 +242,20 @@
     <div class="stepDesc" id="tDesc"></div>
     <div class="dots" id="dots"></div>
     <div class="nav">
-      <button id="prev">‹ Anterior</button>
-      <button id="play" class="play">⏸ Pausa</button>
-      <button id="next">Seguinte ›</button>
+      <button id="prev"><i data-ic="chevron" data-ic-rot="180" data-ic-size="14"></i> Anterior</button>
+      <button id="play" class="play"><i data-ic="pause" data-ic-size="13"></i> Pausa</button>
+      <button id="next">Seguinte <i data-ic="chevron" data-ic-size="14"></i></button>
     </div>
-    <p class="fine">Zero módulos nativos (deep links dos mapas + tel:) · sem GPS nem APIs de lugares · dados locais (RGPD) · só aparece em dias com 🌙 pernoita — ruído zero no resto do mês.</p>
+    <p class="fine">Zero módulos nativos (deep links dos mapas + tel:) · sem GPS nem APIs de lugares · dados locais (RGPD) · só aparece em dias com <i data-ic="moon" data-ic-size="12"></i> pernoita — ruído zero no resto do mês.</p>
   </div>
 </div>
 
+<script src="icons.js"></script>
 <script>
 const STEPS = [
-  ['1 · A pernoita convida', 'Num dia com <b>🌙 pernoita</b>, o card do serviço (Início e detalhe) ganha UMA linha discreta: <b>“adicionar hotel desta pernoita”</b>. Sem pernoita, nada aparece — ruído zero.'],
+  ['1 · A pernoita convida', 'Num dia com <b><i data-ic="moon" data-ic-size="13"></i> pernoita</b>, o card do serviço (Início e detalhe) ganha UMA linha discreta: <b>“adicionar hotel desta pernoita”</b>. Sem pernoita, nada aparece — ruído zero.'],
   ['2 · Registas uma vez', 'Folha leve: <b>nome</b>, <b>telefone (opcional)</b> e uma <b>nota</b> (ex. hora do pickup). Fica guardado <b>por estação</b> — FNC é FNC para sempre — e só no telemóvel.'],
-  ['3 · No detalhe do serviço', 'A secção <b>Pernoita</b> junta tudo: hotel + nota + os dois botões — <b>🗺 Mapas</b> e <b>📞 Ligar</b> — ao lado do € da pernoita que a app já paga.'],
+  ['3 · No detalhe do serviço', 'A secção <b>Pernoita</b> junta tudo: hotel + nota + os dois botões — <b><i data-ic="pin" data-ic-size="13"></i> Mapas</b> e <b><i data-ic="phone" data-ic-size="13"></i> Ligar</b> — ao lado do € da pernoita que a app já paga.'],
   ['4 · Um toque → mapas', 'Abre o <b>Apple Maps / Google Maps</b> com a pesquisa certa (nome + cidade). É um deep link do sistema: sem SDK, sem chave de API, funciona offline até ao toque.'],
   ['5 · Reutiliza sozinho', 'Duas semanas depois, outra pernoita em FNC: <b>a linha já vem preenchida</b>. Registaste uma vez; a escala faz o resto. Editar/limpar: toque longo.'],
 ];
@@ -277,6 +276,7 @@ function render() {
   });
   document.getElementById('tTitle').textContent = STEPS[cur][0];
   document.getElementById('tDesc').innerHTML = STEPS[cur][1];
+  if (window.CPIcons) CPIcons.hydrate(document.getElementById('tDesc'));
   // reinicia a barra do passo atual
   const d = dots.children[cur];
   d.classList.remove('cur'); void d.offsetWidth; d.classList.add('cur');
@@ -291,9 +291,11 @@ function go(i, manual) {
 }
 document.getElementById('prev').onclick = () => go(cur - 1, true);
 document.getElementById('next').onclick = () => go(cur + 1, true);
-document.getElementById('play').onclick = (e) => {
+document.getElementById('play').onclick = () => {
   playing = !playing;
-  e.target.textContent = playing ? '⏸ Pausa' : '▶ Continuar';
+  document.getElementById('play').innerHTML =
+    (playing ? CPIcons.icon('pause', { size: 13 }) : CPIcons.icon('play', { size: 13 }))
+    + ' ' + (playing ? 'Pausa' : 'Continuar');
   document.body.classList.toggle('paused', !playing);
   schedule();
 };

@@ -86,7 +86,7 @@
   <div class="head">
     <h1>Validades &amp; Documentos — formulário rico</h1>
     <p>Reprodução fiel do ecrã <b>screens/ValidadesScreen.js</b> (mesma paleta e componentes).<br>Toca nos chips de <b>tipo</b> à direita e vê os campos mudarem — igual ao <code>fieldsForType</code> do código.</p>
-    <div class="warn">⚠️ Isto é um mockup HTML, não é a app a correr no telemóvel.</div>
+    <div class="warn"><i data-ic="alert" data-ic-size="15"></i> Isto é um mockup HTML, não é a app a correr no telemóvel.</div>
     <div class="crew">
       <button id="cP" class="on" onclick="setCrew('pilot')">Piloto</button>
       <button id="cC" onclick="setCrew('cabin')">Cabine</button>
@@ -99,12 +99,12 @@
       <div class="notch"></div>
       <div class="screen">
         <div class="scroll">
-          <div class="topbar">‹ Voltar</div>
+          <div class="topbar"><i data-ic="back" data-ic-size="18"></i> Voltar</div>
           <div class="eyebrow">PRO</div>
           <div class="title">Validades &amp; Documentos</div>
           <div class="sub">Acompanha o que expira e renova a tempo.</div>
           <div id="list"></div>
-          <div class="addbtn">＋ Adicionar validade</div>
+          <div class="addbtn"><i data-ic="plus" data-ic-size="16"></i> Adicionar validade</div>
           <div class="foot">Guardado no dispositivo · lembretes 30, 7 e 1 dia antes (se os Lembretes estiverem ligados).</div>
         </div>
         <div class="cap">Lista</div>
@@ -116,7 +116,7 @@
       <div class="notch"></div>
       <div class="screen sheetscreen">
         <div class="sheet">
-          <div class="shead"><h3>Nova validade</h3><div class="x">✕</div></div>
+          <div class="shead"><h3>Nova validade</h3><div class="x"><i data-ic="close" data-ic-size="16"></i></div></div>
           <div class="flbl">Tipo</div>
           <div class="chips" id="typeChips"></div>
           <div id="fields"></div>
@@ -126,6 +126,7 @@
     </div>
   </div>
 
+<script src="icons.js"></script>
 <script>
   /* ── Porte da lógica de data/validities.js ── */
   const CAT = {
@@ -196,7 +197,7 @@
           <span class="sep">/</span>
           <input class="din y" maxlength="4" placeholder="AAAA" value="${st.y}" oninput="upd('y',this.value)">
         </div>
-        <div id="dv" class="derived" style="display:${derived?'block':'none'}">${derived?('→ válido até '+derived):''}</div>`;
+        <div id="dv" class="derived" style="display:${derived?'block':'none'}">${derived?(CPIcons.icon('arrow-r',{size:14})+' válido até '+derived):''}</div>`;
     }
     if(ff.limitations){
       const codes=MED[crew];
@@ -218,7 +219,7 @@
     const y=+st.y,m=+st.m,d=+st.d;
     const derived = usesDone && d&&m&&y && renewM ? deriveExpiry(y,m,d,renewM) : null;
     const dv=document.getElementById('dv');
-    if(dv){ dv.textContent = derived?('→ válido até '+derived):''; dv.style.display = derived?'block':'none'; }
+    if(dv){ dv.innerHTML = derived?(CPIcons.icon('arrow-r',{size:14})+' válido até '+derived):''; dv.style.display = derived?'block':'none'; }
     const isRef = ff.reference || (ff.level && st.level===6);
     const needsLevel = ff.level && !st.level;
     const canSave = !needsLevel && (isRef || (d&&m&&y));
@@ -248,7 +249,7 @@
         <div class="note">${i.note}</div>
       </div>
       <div class="date">${i.date}</div>
-      <div class="chev">›</div>
+      <div class="chev">${CPIcons.icon('chevron',{size:18})}</div>
     </div>`).join('');
 
   renderTypes(); renderFields();

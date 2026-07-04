@@ -144,37 +144,39 @@
     </div>
   </div>
 
+<script src="icons.js"></script>
 <script>
 (function(){
   const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
+  const DOCKIC=['home','stats','cal','gauge'];
   const STATES={
     folga:{
       greet:'Boa tarde, Nuno', band:null,
-      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:'↘'},
+      hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:'<i data-ic="arrow-diag" data-ic-rot="90" data-ic-size="20"></i>'},
       mid:{agenda:[
         {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30'},
-        {a1:'FNC→LIS 🌙 pernoita', a2:'SEX · report 06:15'} ]},
-      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">✓</span> · férias: ficam <b>9 de 22</b> · julho nos <b>8 943 €</b>.'},
-      next:[ {d:'26',ds:'QUI',t:'EJU7625 · LIS→FNC',s:'report 05:30'}, {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15'},
+        {a1:'FNC→LIS <i data-ic="moon" data-ic-size="13"></i> pernoita', a2:'SEX · report 06:15'} ]},
+      util:{ttl:'Estado', p:'Escala sincronizada <span class="ok"><i data-ic="check" data-ic-size="12"></i></span> · férias: ficam <b>9 de 22</b> · julho nos <b>8 943 €</b>.'},
+      next:[ {d:'26',ds:'QUI',t:'EJU7625 · LIS→FNC',s:'report 05:30'}, {d:'27',ds:'SEX',t:'FNC→LIS <i data-ic="moon" data-ic-size="13"></i>',s:'report 06:15'},
              {d:'28',ds:'SÁB',t:'Folga',s:'—'}, {d:'29',ds:'DOM',t:'ADTY · aeroporto',s:'06:00–14:00'}, {d:'30',ds:'SEG',t:'Folga',s:'—'} ] },
     prereport:{
       greet:'Bom dia, Nuno', band:null,
-      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião ✓ · aeroporto ✓', arrow:'↑'},
+      hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião <i data-ic="check" data-ic-size="12"></i> · aeroporto <i data-ic="check" data-ic-size="12"></i>', arrow:'<i data-ic="arrow-u" data-ic-size="20"></i>'},
       mid:{times:[
-        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo ✓</span>', sts:'porta 24'},
-        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'☀️ 27°'} ]},
+        {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo <i data-ic="check" data-ic-size="12"></i></span>', sts:'porta 24'},
+        {ap:'FNC', aps:'CHEGADA', big:'09:05', cls:'ok', st:'<span class="ok">no plano</span>', sts:'<i data-ic="sun" data-ic-size="11"></i> 27°'} ]},
       util:{ttl:'Hoje', p:'<b>G-UZHB</b> já em LIS · PSV máx <b>13:00</b> · per-diem <b>+41,08 €</b>.'},
-      next:[ {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15'}, {d:'28',ds:'SÁB',t:'Folga',s:'—'},
+      next:[ {d:'27',ds:'SEX',t:'FNC→LIS <i data-ic="moon" data-ic-size="13"></i>',s:'report 06:15'}, {d:'28',ds:'SÁB',t:'Folga',s:'—'},
              {d:'29',ds:'DOM',t:'ADTY · aeroporto',s:'06:00–14:00'}, {d:'30',ds:'SEG',t:'Folga',s:'—'} ] },
     disrupcao:{
       greet:'Bom dia, Nuno',
-      band:{t:'⚠ O teu avião ainda vem a caminho', s:'inbound ~05:10Z · LIS 54% atrasos'},
-      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:'⚠'},
+      band:{t:'<i data-ic="alert" data-ic-size="12"></i> O teu avião ainda vem a caminho', s:'inbound ~05:10Z · LIS 54% atrasos'},
+      hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:'<i data-ic="alert" data-ic-size="20"></i>'},
       mid:{times:[
         {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa</span>', sts:'projeção'},
         {ap:'FNC', aps:'CHEGADA', big:'~09:30', cls:'warn', old:'09:05', st:'<span class="warn">projeção</span>', sts:'rot. 35m'} ]},
       util:{ttl:'PSV', p:'projetado <span class="warn">12:40</span> / máx <b>13:00</b> · discrição 205(f) pronta.'},
-      next:[ {d:'27',ds:'SEX',t:'FNC→LIS 🌙',s:'report 06:15'}, {d:'28',ds:'SÁB',t:'Folga',s:'—'},
+      next:[ {d:'27',ds:'SEX',t:'FNC→LIS <i data-ic="moon" data-ic-size="13"></i>',s:'report 06:15'}, {d:'28',ds:'SÁB',t:'Folga',s:'—'},
              {d:'29',ds:'DOM',t:'ADTY · aeroporto',s:'06:00–14:00'} ] },
   };
   function mid(m){
@@ -192,12 +194,12 @@
       +'<div class="mid">'+mid(st.mid)+'</div>'
       +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
       +'<div class="nexth">Próximos</div>'
-      +st.next.map(n=>'<div class="nx"><div class="d">'+n.d+'<small>'+n.ds+'</small></div><div><div class="t">'+n.t+'</div><div class="s">'+n.s+'</div></div><div class="go">›</div></div>').join('');
+      +st.next.map(n=>'<div class="nx"><div class="d">'+n.d+'<small>'+n.ds+'</small></div><div><div class="t">'+n.t+'</div><div class="s">'+n.s+'</div></div><div class="go">'+CPIcons.icon('chevron',{size:15})+'</div></div>').join('');
   }
   const phA=document.getElementById('phA'), scrA=document.getElementById('scrA'), sttA=document.getElementById('sttA');
   const phB=document.getElementById('phB'), scrB=document.getElementById('scrB'), sttB=document.getElementById('sttB');
-  document.getElementById('dockA').innerHTML=DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+d+'</div>').join('');
-  document.getElementById('dockB').innerHTML=DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+(i===0?'<i></i>':'')+d+'</div>').join('');
+  document.getElementById('dockA').innerHTML=DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+CPIcons.icon(DOCKIC[i],{size:15})+' '+d+'</div>').join('');
+  document.getElementById('dockB').innerHTML=DOCK.map((d,i)=>'<div class="di'+(i===0?' on':'')+'">'+(i===0?'<i></i>':'')+CPIcons.icon(DOCKIC[i],{size:15})+' '+d+'</div>').join('');
   function setA(hide){ phA.classList.toggle('hideA',hide); sttA.innerHTML='dock: '+(hide?'<b class="off">escondido</b>':'<b>visível</b>'); }
   function setB(mini){ phB.classList.toggle('miniB',mini); sttB.innerHTML='pílula: '+(mini?'<b class="off">encolhida (só a ativa)</b>':'<b>expandida</b>'); }
   function wire(scr, setFn){
@@ -215,6 +217,7 @@
   function render(id){
     const st=STATES[id];
     scrA.innerHTML=content(st); scrB.innerHTML=content(st);
+    CPIcons.hydrate(scrA); CPIcons.hydrate(scrB);
     scrA.scrollTop=0; scrB.scrollTop=0;
     setA(false); setB(false);
   }

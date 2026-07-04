@@ -3,100 +3,91 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CrewPact · Pictogramas v1 — a gramática das 4 referências</title>
+<title>CrewPact · Pictogramas v1 — servidos por icons.js (fonte única)</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* FOLHA DE PICTOGRAMAS v1 — gramática extraída das 4 referências do user:
-     setas protagonistas (sólidas/pontilhadas/em barras) · pictogramas SÓLIDOS
-     (não contorno) · par de placas (preto-sobre-amarelo ↔ amarelo-sobre-preto)
-     · detalhes técnicos (cantoneiras, pontos). Desenhados DE RAIZ (gramática
-     AIGA-DOT = domínio público; nada copiado). Paleta = RAL 9005/1033/9003,
-     validada pela spec letã da ref 4 — literalmente a paleta da app. */
+  /* FOLHA DE PICTOGRAMAS v1 — agora NÃO tem um único path escrito à mão.
+     Cada glifo vem de design/icons.js (CPIcons), a MESMA fonte que as páginas
+     usam. Editas um path no módulo → a folha e a app mudam juntas. Zero deriva.
+     Gramática: sólidos (não contorno) · par de placas preto↔amarelo · setas
+     protagonistas · paleta RAL 9005/1033/9003 (spec letã) = a paleta da app. */
   :root{ --ink:#141414; --yellow:#FFC400; --paper:#F4F2ED; --grey:#77776F; --line:#E4E1D8; --warn:#E86A10; }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:20px}
   .wrap{max-width:1080px;width:100%}
   h1{font-size:22px;font-weight:800;color:#fff}
-  .sub{margin-top:6px;font-size:12.5px;color:#96a0ad;line-height:1.6;max-width:760px}
-  .sub b{color:#fff}
+  .sub{margin-top:6px;font-size:12.5px;color:#96a0ad;line-height:1.6;max-width:820px}
+  .sub b{color:#fff} .sub code{font-family:ui-monospace,monospace;font-size:11px;background:#1c2230;padding:1px 5px;border-radius:4px;color:#cbd3df}
   .sheet{margin-top:18px;background:var(--paper);border-radius:20px;padding:26px;color:var(--ink)}
   h2{font-family:'Barlow Condensed';font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:22px 0 4px}
   h2:first-child{margin-top:0}
-  .note{font-size:11.5px;color:var(--grey);font-weight:600;line-height:1.6;max-width:720px}
+  h2 .cnt{font-family:'Hanken Grotesk';font-size:11px;font-weight:700;color:var(--grey);letter-spacing:0}
+  .note{font-size:11.5px;color:var(--grey);font-weight:600;line-height:1.6;max-width:760px}
 
   /* família técnica (setas/cantoneiras/pontos) */
   .techrow{display:flex;gap:26px;flex-wrap:wrap;align-items:center;margin-top:14px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:14px}
   .tk{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:10px;font-weight:700;color:var(--grey);letter-spacing:.5px;text-transform:uppercase}
-  .tk svg{width:34px;height:34px;fill:var(--ink)}
-  .tk.y svg{fill:var(--yellow)}
-  .tk .onblack{background:var(--ink);border-radius:9px;padding:7px;display:flex}
+  .tk .g{color:var(--ink)} .tk.y .g{color:var(--yellow)}
+  .tk .onblack{background:var(--ink);border-radius:9px;padding:7px;display:flex;color:var(--yellow)}
   .dots{width:64px;height:34px;background-image:radial-gradient(var(--ink) 1.1px, transparent 1.2px);background-size:7px 7px;opacity:.75;border-radius:4px}
 
   /* grelha de pictogramas: placa amarela · placa preta · nu · inline 16px */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
   .cell{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 12px;display:flex;flex-direction:column;align-items:center;gap:9px}
-  .cell .nm{font-size:11px;font-weight:800}
+  .cell .nm{font-size:11px;font-weight:800;text-align:center}
+  .cell .key{font-family:ui-monospace,monospace;font-size:9px;color:var(--grey)}
   .cell .uses{font-size:9px;font-weight:600;color:var(--grey);text-align:center;line-height:1.4}
   .plates{display:flex;gap:8px;align-items:center}
   .plate{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center}
-  .plate.yl{background:var(--yellow)}
-  .plate.yl svg{width:26px;height:26px;fill:var(--ink)}
-  .plate.bk{background:var(--ink)}
-  .plate.bk svg{width:26px;height:26px;fill:var(--yellow)}
-  .bare{width:24px;height:24px;display:flex}
-  .bare svg{width:24px;height:24px;fill:var(--ink)}
-  .mini{width:16px;height:16px;display:flex;opacity:.85}
-  .mini svg{width:16px;height:16px;fill:var(--ink)}
+  .plate.yl{background:var(--yellow);color:var(--ink)}
+  .plate.bk{background:var(--ink);color:var(--yellow)}
+  .bare{width:24px;height:24px;display:flex;color:var(--ink)}
+  .mini{width:16px;height:16px;display:flex;color:var(--ink);opacity:.85}
 
   /* em contexto: pílula + ações + régua */
   .ctx{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
   .pill{display:flex;align-items:center;gap:2px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
   .pi{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--grey);padding:7px 12px;border-radius:999px}
-  .pi svg{width:14px;height:14px;fill:var(--grey)}
-  .pi.on{background:var(--ink);color:#fff}
-  .pi.on svg{fill:var(--yellow)}
+  .pi.on{background:var(--ink);color:#fff} .pi.on [data-ic]{color:var(--yellow)}
   .actrow{display:flex;gap:10px}
   .act{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--grey)}
-  .act .c{width:42px;height:42px;border-radius:13px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center}
-  .act .c svg{width:18px;height:18px;fill:var(--ink)}
-  .act.hot .c{background:var(--ink);border-color:var(--ink)}
-  .act.hot .c svg{fill:var(--yellow)}
+  .act .c{width:42px;height:42px;border-radius:13px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .act.hot .c{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
   .slat{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);width:100%;max-width:360px}
   .slat .plate{width:38px;height:38px;border-radius:10px}
-  .slat .plate svg{width:22px;height:22px}
   .slat .t{font-size:13px;font-weight:800}
   .slat .s{font-size:10px;font-weight:600;color:var(--grey)}
-  .slat .arr{margin-left:auto}
-  .slat .arr svg{width:20px;height:20px;fill:var(--ink)}
+  .slat .arr{margin-left:auto;color:var(--ink)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Pictogramas CrewPact v1</h1>
-  <p class="sub">A gramática das tuas 4 referências (todas <b>europeias</b> — a ref 4 é a spec de sinalética
-  <b>letã</b>, RAL 9005/1033/9003 = a paleta da app): <b>sólidos</b> (não contorno) · o <b>par de placas</b>
-  (preto-sobre-amarelo ↔ amarelo-sobre-preto) · <b>setas protagonistas</b> · cantoneiras e pontos como tempero.
-  Ancorados no <b>ISO 7001</b> — o standard de sinalética pública da ISO (Genebra), o que os aeroportos europeus
-  usam — e desenhados de raiz, nada copiado. Cada pictograma nos 4 tamanhos/contextos reais da app.</p>
+  <p class="sub">Esta folha já não define ícones — <b>consome</b> a fonte única <code>design/icons.js</code>
+  (o mesmo módulo <code>CPIcons</code> que veste as páginas). Editas um path no módulo e a folha muda com ele:
+  <b>zero deriva</b>. Gramática: <b>sólidos</b> (não contorno) · o <b>par de placas</b>
+  (preto-sobre-amarelo ↔ amarelo-sobre-preto) · <b>setas protagonistas</b> · ancorados no <b>ISO 7001</b>
+  (sinalética pública europeia), desenhados de raiz. Cada pictograma nos 4 contextos reais da app.</p>
 
   <div class="sheet">
-    <h2>A família técnica (as setas mandam)</h2>
+    <h2>A família técnica <span class="cnt">(as setas mandam)</span></h2>
     <div class="techrow" id="tech"></div>
 
-    <h2>Os pictogramas</h2>
+    <h2>Lote 1 · operacional <span class="cnt">(16)</span></h2>
     <p class="note">Placa amarela = destaque/estado · placa preta = chip/dock ativo · nu = inline no branco · 16px = prova de legibilidade pequena.</p>
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid1"></div>
 
-    <h2>Lote 2 · o vocabulário do aeroporto (ISO 7001 · europeu)</h2>
-    <p class="note">Os símbolos de sinalética europeia que têm função REAL na app — partidas/chegadas, porta,
-    passaporte/controlo, médico, transporte, transferência… Ficaram no aeroporto os que não servem (WC, escadas, berçário).</p>
+    <h2>Lote 2 · aeroporto <span class="cnt">(10 · ISO 7001 europeu)</span></h2>
+    <p class="note">Sinalética europeia com função REAL na app — partidas/chegadas, porta, passaporte/controlo, médico, transporte, transferência…</p>
     <div class="grid" id="grid2"></div>
 
-    <h2>Lote 3 · UI chrome (o que a AUDITORIA revelou em falta)</h2>
-    <p class="note">Os ícones "chatos" que a app usa em todo o lado (chevron 15×, close 15×, trash 8×, check 8×…) e
-    que faltavam. Sem estes, os Ionicons não se conseguem substituir. Os essenciais estão aqui; a cauda longa
-    (calculadora, escudo, biblioteca, formação, vínculo, idioma, tema, offline) desenha-se durante o port.</p>
+    <h2>Lote 3 · UI chrome <span class="cnt">(16)</span></h2>
+    <p class="note">A canalização que a app usa em todo o lado (chevron, close, trash, check, mail, lock…) e que os Ionicons faziam antes.</p>
     <div class="grid" id="grid3"></div>
+
+    <h2>Lote 4 · acrescentados no port dos mockups <span class="cnt">(11)</span></h2>
+    <p class="note">Nasceram de necessidades REAIS reportadas ao vestir as páginas (nunca ad-hoc): o módulo cresceu, o canon acompanhou.</p>
+    <div class="grid" id="grid4"></div>
 
     <h2>Em contexto (a pele)</h2>
     <div class="ctx">
@@ -107,56 +98,30 @@
   </div>
 </div>
 
+<script src="icons.js"></script>
 <script>
-(function(){
-  // ── SVGs próprios: sólidos, grelha 24, cantos francos (gramática de sinalética) ──
-  const G={
-    plane:'M21 16v-2l-8-5V3.5C13 2.7 12.33 2 11.5 2S10 2.7 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z',
-    cal:'M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z',
-    stats:'M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z',
-    clock:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1.3 4.4v5l4.1 2.5-1.3 2.1-5-3V6.4h2.2z',
-    bed:'M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z',
-    share:'M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z',
-    fam:'M9 4.5A2.8 2.8 0 1 1 9 10a2.8 2.8 0 0 1 0-5.5zm8 1.6a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zM3 20c0-3.6 2.7-5.9 6-5.9s6 2.3 6 5.9H3zm13.4 0c0-2.4 1-4.1 3.1-4.1 1.8 0 3 1.4 3.2 4.1h-6.3z',
-    wallet:'M3 6.5A2.5 2.5 0 0 1 5.5 4h12A2.5 2.5 0 0 1 20 6.5V8h1v8h-1v1.5A2.5 2.5 0 0 1 17.5 20h-12A2.5 2.5 0 0 1 3 17.5v-11zM15 10.4a1.6 1.6 0 0 0 0 3.2h6v-3.2h-6z',
-    doc:'M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2l-4.2-4.2zM7.4 12h9.2v1.9H7.4V12zm0 4h7v1.9h-7V16z',
-    moon:'M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z',
-    sun:'M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z',
-    alert:'M12 2 1.4 21h21.2L12 2zm-1.1 8.6h2.2v4.6h-2.2v-4.6zm0 6h2.2v2.2h-2.2v-2.2z',
-    home:'M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z',
-    gauge:'M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z',
-    plus:'M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z',
-    tower:'M11 2h2v3h3l-1 5h1.6L18 21h-2.4l-.7-4H9.1l-.7 4H6l1.4-11H9L8 5h3V2zm-.7 9 .5-4h2.4l.5 4h-3.4z',
-  };
-  const A={
-    solidR:'M3 10.6h11.2V6.6L21 12l-6.8 5.4v-4H3v-2.8z',
-    solidU:'M10.6 21V9.8H6.6L12 3l5.4 6.8h-4V21h-2.8z',
-    diag:'M6.2 19.4 4.6 17.8 14.9 7.5H8.4V5.2H18.8V15.6h-2.3V9.1L6.2 19.4z',
-    dotted:'M2.4 10.9h2.4v2.2H2.4v-2.2zm4.4 0h2.4v2.2H6.8v-2.2zm4.4 0h2.4v2.2h-2.4v-2.2zm4.3-2.5L21 12l-4.9 3.6V8.4z',
-    brackets:'M4 4h5.2v2.3H6.3v2.9H4V4zm10.8 0H20v5.2h-2.3V6.3h-2.9V4zM4 14.8h2.3v2.9h2.9V20H4v-5.2zm13.7 0H20V20h-5.2v-2.3h2.9v-2.9z',
-  };
-  const svg=(d)=>'<svg viewBox="0 0 24 24"><path d="'+d+'"/></svg>';
-  const svgE=(d)=>'<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="'+d+'"/></svg>';
-  const svgR=(d,deg)=>'<svg viewBox="0 0 24 24"><g transform="rotate('+deg+' 12 12)"><path d="'+d+'"/></g></svg>';
+(function () {
+  var I = function (name, size) { return CPIcons.icon(name, { size: size || 0 }); };
+  var IR = function (name, rot, size) { return CPIcons.icon(name, { rot: rot, size: size || 0 }); };
 
-  // família técnica
-  document.getElementById('tech').innerHTML=
-    '<div class="tk"><span>'+svg(A.solidU)+'</span>seta sólida ↑</div>'
-    +'<div class="tk"><span>'+svg(A.solidR)+'</span>seta sólida →</div>'
-    +'<div class="tk"><span>'+svg(A.diag)+'</span>seta em barras ↗ (G2K)</div>'
-    +'<div class="tk y"><span class="onblack">'+svg(A.dotted)+'</span>pontilhada técnica (Raen)</div>'
-    +'<div class="tk"><span>'+svg(A.brackets)+'</span>cantoneiras (foco/scan)</div>'
-    +'<div class="tk"><span class="dots"></span>grelha de pontos (textura)</div>';
+  // ── família técnica ──
+  document.getElementById('tech').innerHTML =
+      '<div class="tk"><span class="g">' + I('arrow-u', 34) + '</span>seta sólida ↑</div>'
+    + '<div class="tk"><span class="g">' + I('arrow-r', 34) + '</span>seta sólida →</div>'
+    + '<div class="tk"><span class="g">' + I('arrow-diag', 34) + '</span>seta em barras ↗</div>'
+    + '<div class="tk y"><span class="onblack">' + I('arrow-dots', 34) + '</span>pontilhada técnica</div>'
+    + '<div class="tk"><span class="g">' + I('brackets', 34) + '</span>cantoneiras (foco/scan)</div>'
+    + '<div class="tk"><span class="dots"></span>grelha de pontos (textura)</div>';
 
-  // pictogramas
-  const ICONS=[
+  // ── metadata: [nome no módulo, rótulo, onde se usa] ──
+  var LOTE1 = [
     ['plane','Voo / Serviço','estados · Escala · detetar'],
     ['cal','Escala / Calendário','pílula · estado 0 · sync'],
     ['clock','Simulação / FTL','ações · pílula FTL/AE'],
     ['gauge','PSV / limites','FTL · donut · disrupção'],
     ['stats','Estatísticas','pílula · fecho do mês'],
     ['wallet','Extra / €','ações · per-diem · AE'],
-    ['bed','Hotel / pernoita','estado 6 · dias 🌙'],
+    ['bed','Hotel / pernoita','estado 6 · pernoita'],
     ['share','Partilhar chegada','família · Ano de voo'],
     ['fam','Família','links permanentes'],
     ['doc','Validades','estado 10 · Perfil'],
@@ -167,78 +132,79 @@
     ['plus','Criar','casas contextuais'],
     ['tower','Aeroporto','Airport Intelligence'],
   ];
-  document.getElementById('grid').innerHTML=ICONS.map(([k,nm,uses])=>
-    '<div class="cell"><div class="plates">'
-    +'<div class="plate yl">'+svg(G[k])+'</div>'
-    +'<div class="plate bk">'+svg(G[k])+'</div>'
-    +'<div class="bare">'+svg(G[k])+'</div>'
-    +'<div class="mini">'+svg(G[k])+'</div>'
-    +'</div><div class="nm">'+nm+'</div><div class="uses">'+uses+'</div></div>').join('');
-
-  // ── Lote 2 · vocabulário de aeroporto europeu (ISO 7001), desenhado de raiz ──
-  const wrap=(inner)=>'<svg viewBox="0 0 24 24">'+inner+'</svg>';
-  const P=(d,ev)=>'<path'+(ev?' fill-rule="evenodd"':'')+' d="'+d+'"/>';
-  const planeP='<path d="'+G.plane+'"/>';
-  const L2=[
-    ['departs','Partidas','<g transform="rotate(45 12 12)">'+planeP+'</g><path d="M3 19.2h12v1.7H3z"/>','próximo voo · Escala'],
-    ['arrivs','Chegadas','<g transform="rotate(135 12 12)">'+planeP+'</g><path d="M9 19.2h12v1.7H9z"/>','inbound · família'],
-    ['gate','Porta','<path d="M5 3h5v2H7v14h3v2H5z"/><path d="M14 3h5v18h-5v-2h3V5h-3z"/><path d="M12 8l3.6 3.6h-2.4V17h-2.4v-5.4H8.4z"/>','pré-report · gate'],
-    ['passport','Passaporte','<path fill-rule="evenodd" d="M6 2h11a1.6 1.6 0 0 1 1.6 1.6v16.8A1.6 1.6 0 0 1 17 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm5.5 4.4a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4zM8 15.8h7v1.8H8z"/>','validades · controlo'],
-    ['transfer','Transferência','<path d="M4.6 9.4A8 8 0 0 1 18 7.2V5h2.4v6.4H14V9h2.5A5.6 5.6 0 0 0 6.9 10.3zM19.4 14.6A8 8 0 0 1 6 16.8V19H3.6v-6.4H10V15H7.5a5.6 5.6 0 0 0 9.6 1z"/>','rotação · escala mudou'],
-    ['info','Info','<path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.1 4.6h2.2v2.2h-2.2zm0 3.6h2.2V17h-2.2z"/>','briefing · detalhe'],
-    ['medical','Médico','<path d="M9.2 3h5.6v6.2H21v5.6h-6.2V21H9.2v-6.2H3V9.2h6.2z"/>','validade médica'],
-    ['shuttle','Transporte','<path fill-rule="evenodd" d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5V15.5a1.4 1.4 0 0 1-1 1.35v1.15a1.1 1.1 0 0 1-2.2 0v-1.15H7.2v1.15a1.1 1.1 0 0 1-2.2 0V16.85A1.4 1.4 0 0 1 4 15.5zM6.2 7.2v4h4.9v-4zm6.7 0v4h4.9v-4zM7.6 12.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zm8.8 0a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"/>','pickup · pernoita'],
-    ['ticket','Bilhete','<path d="M3 7A1.5 1.5 0 0 1 4.5 5.5h15A1.5 1.5 0 0 1 21 7v2.2a1.9 1.9 0 0 0 0 3.6V15a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15v-2.2a1.9 1.9 0 0 0 0-3.6z"/>','boarding · briefing'],
-    ['restricted','Restrito','<path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM6.6 10.9h10.8v2.2H6.6z"/>','standby · só-tripulação'],
+  var LOTE2 = [
+    ['departs','Partidas','próximo voo · Escala'],
+    ['arrivs','Chegadas','inbound · família'],
+    ['gate','Porta','pré-report · gate'],
+    ['passport','Passaporte','validades · controlo'],
+    ['transfer','Transferência','rotação · escala mudou'],
+    ['info','Info','briefing · detalhe'],
+    ['medical','Médico','validade médica'],
+    ['shuttle','Transporte','pickup · pernoita'],
+    ['ticket','Bilhete','boarding · briefing'],
+    ['restricted','Restrito','standby · só-tripulação'],
   ];
-  document.getElementById('grid2').innerHTML=L2.map(([k,nm,inner,uses])=>
-    '<div class="cell"><div class="plates">'
-    +'<div class="plate yl">'+wrap(inner)+'</div>'
-    +'<div class="plate bk">'+wrap(inner)+'</div>'
-    +'<div class="bare">'+wrap(inner)+'</div>'
-    +'<div class="mini">'+wrap(inner)+'</div>'
-    +'</div><div class="nm">'+nm+'</div><div class="uses">'+uses+'</div></div>').join('');
-
-  // ── Lote 3 · UI chrome (gaps da auditoria) — desenhados de raiz, mesmo estilo ──
-  const L3=[
-    ['chevron','Chevron ›‹⌄','<path d="M8.5 4.8 15.7 12l-7.2 7.2-2.1-2.1L11.4 12 6.4 6.9z"/>','listas · nav mês · Row (15×) · rotável'],
-    ['close','Fechar','<path d="M6.4 4.9 12 10.5l5.6-5.6 1.5 1.5L13.5 12l5.6 5.6-1.5 1.5L12 13.5l-5.6 5.6-1.5-1.5L10.5 12 4.9 6.4z"/>','sheets · diálogos (15×)'],
-    ['back','Voltar','<path d="M4 12 11 5l2 2-3.5 3.5H20v3H9.5L13 17l-2 2z"/>','DetailTopBar · Login'],
-    ['search','Pesquisar','<path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.3 4.3-2 2-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2.6a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8z"/>','FtlHub · SearchModal · AirportRoute'],
-    ['trash','Apagar','<path d="M9 2.5h6l1 1.5h4V6.5H4V4h4z"/><path d="M6 8h12l-1 12.2a1.8 1.8 0 0 1-1.8 1.6H8.8A1.8 1.8 0 0 1 7 20.2z"/>','apagar (8×)'],
-    ['edit','Editar','<path d="M4 16.6 15 5.6l2.9 2.9L6.9 19.5 3 20.5z"/><path d="M16.3 4.3l1.6-1.6a1.4 1.4 0 0 1 2 0l1.4 1.4a1.4 1.4 0 0 1 0 2l-1.6 1.6z"/>','create-outline (6×)'],
-    ['check','Confirmar','<path d="M9.3 15.7 5 11.4l2-2 2.3 2.3 7.7-7.7 2 2z"/>','checkmark (8×)'],
-    ['ellipsis','Menu …','<path d="M4 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>','ações extra'],
-    ['mail','Email','<path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/>','Login · Settings · OTP'],
-    ['lock','Cadeado','<path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/>','biometria · Login · Escala'],
-    ['bell','Notificações','<path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2zM9.8 19.5a2.2 2.2 0 0 0 4.4 0z"/>','NotificationsBell'],
-    ['download','Importar','<path d="M10.7 3h2.6v8.2h3.2L12 16.4l-4.5-5.2h3.2z"/><path d="M4.5 18.5h15V21h-15z"/>','importar escala · export'],
-    ['pin','Localização','<path fill-rule="evenodd" d="M12 2a7 7 0 0 0-7 7c0 4.8 7 12.5 7 12.5S19 13.8 19 9a7 7 0 0 0-7-7zm0 4.4A2.6 2.6 0 1 1 12 11.6 2.6 2.6 0 0 1 12 6.4z"/>','base · mapas · rota'],
-    ['phone','Telefone','<path d="M6.6 3h2.2l2 4.6-2.3 1.5a11.5 11.5 0 0 0 5.4 5.4l1.5-2.3 4.6 2v2.2c0 1.6-1.4 2.9-3 2.6A16 16 0 0 1 4 6c-.3-1.6 1-3 2.6-3z"/>','ligar ao hotel'],
-    ['bulb','Dica','<path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8V16.5h7.6V14.3A6.5 6.5 0 0 0 12 2.5z"/><path d="M9 18h6v1.3a1.7 1.7 0 0 1-1.7 1.7h-2.6A1.7 1.7 0 0 1 9 19.3z"/>','conselhos · calendário'],
-    ['logout','Sair','<path d="M4 3h9v2.4H6.4v13.2H13V21H4z"/><path d="M15.6 7.4 20.2 12l-4.6 4.6-1.7-1.7 1.7-1.7H9v-2.4h6.6l-1.7-1.7z"/>','terminar sessão'],
+  var LOTE3 = [
+    ['chevron','Chevron ›‹⌄','listas · nav · Row (rotável)'],
+    ['close','Fechar','sheets · diálogos'],
+    ['back','Voltar','DetailTopBar · Login'],
+    ['search','Pesquisar','FtlHub · SearchModal'],
+    ['trash','Apagar','apagar manuais'],
+    ['edit','Editar','editar serviço'],
+    ['check','Confirmar','sucesso · seleção'],
+    ['ellipsis','Menu …','ações extra'],
+    ['mail','Email','Login · OTP · Perfil'],
+    ['lock','Cadeado','biometria · Login'],
+    ['bell','Notificações','cabeçalho'],
+    ['download','Importar','importar escala · export'],
+    ['pin','Localização','base · mapas · rota'],
+    ['phone','Telefone','ligar ao hotel'],
+    ['bulb','Dica','conselhos · calendário'],
+    ['logout','Sair','terminar sessão'],
   ];
-  document.getElementById('grid3').innerHTML=L3.map(([k,nm,inner,uses])=>
-    '<div class="cell"><div class="plates">'
-    +'<div class="plate yl">'+wrap(inner)+'</div>'
-    +'<div class="plate bk">'+wrap(inner)+'</div>'
-    +'<div class="bare">'+wrap(inner)+'</div>'
-    +'<div class="mini">'+wrap(inner)+'</div>'
-    +'</div><div class="nm">'+nm+'</div><div class="uses">'+uses+'</div></div>').join('');
+  var LOTE4 = [
+    ['eye','Ver / mostrar','mostrar password · ver exemplo'],
+    ['user','Conta / pessoa','perfil · criar conta'],
+    ['faceid','Face ID','biometria (rosto)'],
+    ['sync','Sincronizar','Escala · calendário'],
+    ['play','Reproduzir','walkthrough / demo'],
+    ['pause','Pausa','walkthrough / demo'],
+    ['book','Biblioteca','fontes oficiais · Perfil'],
+    ['globe','Idioma','definições'],
+    ['shield','Segurança','Perfil · conta'],
+    ['theme','Tema claro/escuro','definições'],
+    ['rank','Categoria','divisas · Perfil (FO/CPT)'],
+  ];
 
-  // em contexto
-  document.getElementById('pill').innerHTML=
-    '<div class="pi on">'+svg(G.home)+'Início</div>'
-    +'<div class="pi">'+svg(G.stats)+'Estat.</div>'
-    +'<div class="pi">'+svg(G.cal)+'Escala</div>'
-    +'<div class="pi">'+svg(G.gauge)+'FTL/AE</div>';
-  document.getElementById('acts').innerHTML=
-    '<div class="act hot"><div class="c">'+svg(G.share)+'</div>Partilhar</div>'
-    +'<div class="act"><div class="c">'+svg(G.bed)+'</div>Hotel</div>'
-    +'<div class="act"><div class="c">'+svg(G.clock)+'</div>Simular</div>';
-  document.getElementById('slats').innerHTML=
-    '<div class="slat"><div class="plate yl">'+svg(G.plane)+'</div><div><div class="t">EJU7625 · LIS→FNC</div><div class="s">report 05:30 · 2 setores</div></div><div class="arr">'+svg(A.solidR)+'</div></div>'
-    +'<div class="slat"><div class="plate yl">'+svg(G.bed)+'</div><div><div class="t">Pestana Casino · FNC</div><div class="s">pickup 05:40 · mapas</div></div><div class="arr">'+svg(A.solidR)+'</div></div>';
+  function cell(row) {
+    var n = row[0];
+    return '<div class="cell"><div class="plates">'
+      + '<div class="plate yl">' + I(n, 26) + '</div>'
+      + '<div class="plate bk">' + I(n, 26) + '</div>'
+      + '<div class="bare">' + I(n, 24) + '</div>'
+      + '<div class="mini">' + I(n, 16) + '</div>'
+      + '</div><div class="nm">' + row[1] + '</div>'
+      + '<div class="key">' + n + '</div>'
+      + '<div class="uses">' + row[2] + '</div></div>';
+  }
+  document.getElementById('grid1').innerHTML = LOTE1.map(cell).join('');
+  document.getElementById('grid2').innerHTML = LOTE2.map(cell).join('');
+  document.getElementById('grid3').innerHTML = LOTE3.map(cell).join('');
+  document.getElementById('grid4').innerHTML = LOTE4.map(cell).join('');
+
+  // ── em contexto ──
+  document.getElementById('pill').innerHTML =
+      '<div class="pi on">' + I('home', 15) + 'Início</div>'
+    + '<div class="pi">' + I('stats', 15) + 'Estat.</div>'
+    + '<div class="pi">' + I('cal', 15) + 'Escala</div>'
+    + '<div class="pi">' + I('gauge', 15) + 'FTL/AE</div>';
+  document.getElementById('acts').innerHTML =
+      '<div class="act hot"><div class="c">' + I('share', 18) + '</div>Partilhar</div>'
+    + '<div class="act"><div class="c">' + I('bed', 18) + '</div>Hotel</div>'
+    + '<div class="act"><div class="c">' + I('clock', 18) + '</div>Simular</div>';
+  document.getElementById('slats').innerHTML =
+      '<div class="slat"><div class="plate yl">' + I('plane', 22) + '</div><div><div class="t">EJU7625 · LIS→FNC</div><div class="s">report 05:30 · 2 setores</div></div><div class="arr">' + I('arrow-r', 20) + '</div></div>'
+    + '<div class="slat"><div class="plate yl">' + I('bed', 22) + '</div><div><div class="t">Pestana Casino · FNC</div><div class="s">pickup 05:40 · mapas</div></div><div class="arr">' + I('arrow-r', 20) + '</div></div>';
 })();
 </script>
 </body>

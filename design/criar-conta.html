@@ -6,6 +6,7 @@
 <title>CrewPact · Criar conta — fluxo REAL vestido (perfil→credenciais, atómico)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="icons.js"></script>
 <style>
   :root{ --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -45,7 +46,7 @@
 
   /* account step */
   .pill{width:100%;display:flex;align-items:center;gap:10px;background:var(--soft);border:1.5px solid var(--line);border-radius:999px;padding:13px 17px;margin-bottom:11px}
-  .pill svg{width:16px;height:16px;fill:var(--grey);flex:0 0 auto}
+  .pill [data-ic]{color:var(--grey);flex:0 0 auto}
   .pill .val{font-size:13.5px;font-weight:700}
   .pill .ph2{font-size:13.5px;font-weight:500;color:#B4B0A8}
   .pill.focus{border-color:var(--ink)}
@@ -68,8 +69,7 @@
 
   /* transição / success */
   .cc{align-items:center;justify-content:center;text-align:center;padding:0 30px}
-  .cc .big{width:88px;height:88px;border-radius:26px;background:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:22px}
-  .cc .big svg{width:48px;height:48px;fill:var(--ink)}
+  .cc .big{width:88px;height:88px;border-radius:26px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;margin-bottom:22px}
   .cc h2{font-family:'Barlow Condensed';font-size:32px;font-weight:700;text-transform:uppercase}
   .cc p{font-size:13px;font-weight:600;color:var(--grey);margin-top:8px}
   /* OTP */
@@ -94,11 +94,11 @@
       <div class="dots"><span class="s on"></span><span class="s"></span><span class="s"></span><span class="s"></span><span class="s"></span><span class="s"></span></div>
       <div class="title">A tua companhia</div><div class="stit">Escolhe o teu operador.</div>
       <div class="list">
-        <div class="row sel"><div class="badge">EZY</div><div class="rl">easyJet</div><div class="ck on">✓</div></div>
+        <div class="row sel"><div class="badge">EZY</div><div class="rl">easyJet</div><div class="ck on"><i data-ic="check" data-ic-size="14"></i></div></div>
         <div class="row"><div class="badge">TAP</div><div class="rl">TAP Air Portugal</div><div class="ck"></div></div>
         <div class="row"><div class="badge">RYR</div><div class="rl">Ryanair</div><div class="ck"></div></div>
       </div>
-      <div class="foot"><div class="next">Continuar <span class="arr">→</span></div></div>
+      <div class="foot"><div class="next">Continuar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 2 Tipo -->
@@ -107,10 +107,10 @@
       <div class="dots"><span class="s on"></span><span class="s on"></span><span class="s"></span><span class="s"></span><span class="s"></span><span class="s"></span></div>
       <div class="title">És…</div><div class="stit">Piloto ou tripulante de cabine?</div>
       <div class="list">
-        <div class="row sel"><div class="rl">Piloto</div><div class="ck on">✓</div></div>
+        <div class="row sel"><div class="rl">Piloto</div><div class="ck on"><i data-ic="check" data-ic-size="14"></i></div></div>
         <div class="row"><div class="rl">Tripulante de Cabine</div><div class="ck"></div></div>
       </div>
-      <div class="foot"><div class="bk">Voltar</div><div class="next">Continuar <span class="arr">→</span></div></div>
+      <div class="foot"><div class="bk">Voltar</div><div class="next">Continuar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 3 Categoria -->
@@ -121,10 +121,10 @@
       <div class="list">
         <div class="row"><div class="badge">CPT</div><div class="rl">Comandante</div><div class="ck"></div></div>
         <div class="row"><div class="badge">SFO</div><div class="rl">Senior First Officer</div><div class="ck"></div></div>
-        <div class="row sel"><div class="badge">FO</div><div class="rl">First Officer</div><div class="ck on">✓</div></div>
+        <div class="row sel"><div class="badge">FO</div><div class="rl">First Officer</div><div class="ck on"><i data-ic="check" data-ic-size="14"></i></div></div>
         <div class="row"><div class="badge">SO</div><div class="rl">Second Officer</div><div class="ck"></div></div>
       </div>
-      <div class="foot"><div class="bk">Voltar</div><div class="next">Continuar <span class="arr">→</span></div></div>
+      <div class="foot"><div class="bk">Voltar</div><div class="next">Continuar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 4 Base -->
@@ -134,11 +134,11 @@
       <div class="title">Base</div><div class="stit">Onde estás baseado (opcional).</div>
       <div class="list">
         <div class="grouplbl">🇵🇹 Portugal</div>
-        <div class="row sel"><div class="badge">LIS</div><div class="rl">Lisboa</div><div class="ck on">✓</div></div>
+        <div class="row sel"><div class="badge">LIS</div><div class="rl">Lisboa</div><div class="ck on"><i data-ic="check" data-ic-size="14"></i></div></div>
         <div class="row"><div class="badge">OPO</div><div class="rl">Porto</div><div class="ck"></div></div>
         <div class="row"><div class="badge">FAO</div><div class="rl">Faro<small>Base sazonal</small></div><div class="ck"></div></div>
       </div>
-      <div class="foot"><div class="bk">Voltar</div><div class="skip">Saltar</div><div class="next">Continuar <span class="arr">→</span></div></div>
+      <div class="foot"><div class="bk">Voltar</div><div class="skip">Saltar</div><div class="next">Continuar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 5 Data -->
@@ -149,7 +149,7 @@
       <div class="list"><div class="datebox">2016-03-01</div>
         <div class="datehint">Formato AAAA-MM-DD. Podes saltar — é editável depois no Perfil.</div>
       </div>
-      <div class="foot"><div class="bk">Voltar</div><div class="skip">Saltar</div><div class="next">Continuar <span class="arr">→</span></div></div>
+      <div class="foot"><div class="bk">Voltar</div><div class="skip">Saltar</div><div class="next">Continuar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 6 Conta -->
@@ -158,28 +158,28 @@
       <div class="dots"><span class="s on"></span><span class="s on"></span><span class="s on"></span><span class="s on"></span><span class="s on"></span><span class="s on"></span></div>
       <div class="title">Últimos detalhes</div><div class="stit">E a conta nasce completa.</div>
       <div class="list" style="margin-top:14px">
-        <div class="pill"><svg viewBox="0 0 24 24"><path d="M12 3a4.2 4.2 0 1 1 0 8.4A4.2 4.2 0 0 1 12 3zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg><span class="val">Nuno Silva</span></div>
-        <div class="pill"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg><span class="val">funsnake@gmail.com</span></div>
-        <div class="pill focus"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.5 9.5V8a5.5 5.5 0 0 1 11 0v1.5H19v11H5v-11h1.5zm2.5 0h6V8a3 3 0 0 0-6 0v1.5z"/></svg><span class="val">••••••••••</span><span class="eye">👁</span></div>
+        <div class="pill"><i data-ic="user" data-ic-size="16"></i><span class="val">Nuno Silva</span></div>
+        <div class="pill"><i data-ic="mail" data-ic-size="16"></i><span class="val">funsnake@gmail.com</span></div>
+        <div class="pill focus"><i data-ic="lock" data-ic-size="16"></i><span class="val">••••••••••</span><span class="eye"><i data-ic="eye" data-ic-size="18"></i></span></div>
         <div class="strength"><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b"></span></div>
-        <div class="strhint">Palavra-passe forte ✓</div>
+        <div class="strhint">Palavra-passe forte <i data-ic="check" data-ic-size="13"></i></div>
       </div>
-      <div class="foot"><div class="bk">Voltar</div><div class="next">Criar conta <span class="arr">→</span></div></div>
+      <div class="foot"><div class="bk">Voltar</div><div class="next">Criar conta <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div></div>
     </div></div></div>
 
     <!-- 7 OTP -->
     <div class="col"><div class="cap">7 · Confirmar email <small>condicional</small></div><div class="ph"><div class="scr" style="align-items:center;text-align:center;padding-top:60px">
-      <div style="width:60px;height:60px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;margin-bottom:18px"><svg viewBox="0 0 24 24" width="28" height="28" fill="#141414"><path fill-rule="evenodd" d="M2.5 5.5h19A1.5 1.5 0 0 1 23 7v10a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 17V7a1.5 1.5 0 0 1 1.5-1.5zm2.8 2L12 12.4 18.7 7.5z"/></svg></div>
+      <div style="width:60px;height:60px;border-radius:18px;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;margin-bottom:18px"><i data-ic="mail" data-ic-size="28"></i></div>
       <div class="title">Confirma o teu email</div>
       <div class="stit" style="margin-top:10px">Enviámos um código de 6 dígitos para<br><b style="color:#141414">funsnake@gmail.com</b></div>
       <div class="otp"><div class="ob on">4</div><div class="ob on">1</div><div class="ob on">8</div><div class="ob cur"></div><div class="ob"></div><div class="ob"></div></div>
       <div style="font-size:11.5px;font-weight:700;color:var(--grey);margin:10px 0 16px">Reenviar em <b style="color:#C9C6BE">0:23</b></div>
-      <div class="next" style="align-self:stretch">Confirmar <span class="arr">→</span></div>
+      <div class="next" style="align-self:stretch">Confirmar <span class="arr"><i data-ic="arrow-r" data-ic-size="18"></i></span></div>
     </div></div></div>
 
     <!-- 8 Conta criada -->
     <div class="col"><div class="cap">8 · Conta criada</div><div class="ph"><div class="scr cc">
-      <div class="big"><svg viewBox="0 0 24 24"><path d="M9.3 16.4 4.6 11.7l2-2 2.7 2.7 8-8 2 2z"/></svg></div>
+      <div class="big"><i data-ic="check" data-ic-size="48"></i></div>
       <h2>Conta criada</h2>
       <p>A preparar o teu Início…</p>
     </div></div></div>
