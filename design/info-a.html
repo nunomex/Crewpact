@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · INFO — A · drill-down (grupos)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:600px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 20px 0}
+  .hdr .av{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .hdr .r{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+  .hdr .r .bdot{position:absolute;top:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:var(--red);border:2px solid var(--paper)}
+  .side{position:absolute;right:9px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:5}
+  .side .y{color:var(--yellow)}
+  .body{padding:6px 22px 0}
+
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:8px}
+  .hero{position:relative;height:82px;margin-top:2px}
+  .ghost{position:absolute;right:0;top:-22px;font-family:'Barlow Condensed';font-weight:700;font-size:132px;line-height:1;color:var(--ghost)}
+  .mrow{position:absolute;left:0;right:0;bottom:8px}
+  .mrow .word{font-family:'Barlow Condensed';font-weight:700;font-size:42px;line-height:.9;letter-spacing:-.5px}
+  .hr{height:1.5px;background:var(--ink);margin:9px 0 12px}
+
+  .sel{display:flex;gap:8px;margin-bottom:12px}
+  .pill{flex:1;padding:9px 0;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--grey);background:var(--soft);cursor:pointer;border:none;text-align:center}
+  .pill.on{background:var(--ink);color:#fff}
+
+  /* 2.º nível: chips de grupo */
+  .grps{display:flex;gap:7px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}.grps::-webkit-scrollbar{display:none}
+  .gchip{padding:7px 14px;border-radius:10px;font-size:11.5px;font-weight:800;color:var(--grey);background:var(--paper);border:1.5px solid var(--line);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .gchip.on{color:var(--ink);border-color:var(--ink)}
+  .gchip .n{background:var(--soft);border-radius:20px;padding:0 6px;font-size:9px;font-weight:800;color:var(--grey)}
+  .gchip.on .n{background:var(--ink);color:#fff}
+
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .tile{background:var(--soft);border-radius:16px;padding:14px;position:relative;min-height:112px;display:flex;flex-direction:column;cursor:pointer}
+  .tile .arr{position:absolute;top:11px;right:11px;width:24px;height:24px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .tile .v{font-family:'Barlow Condensed';font-weight:700;font-size:35px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .tile .v small{font-size:16px;font-weight:700;color:var(--grey)}
+  .tile .l{font-size:12px;font-weight:800;color:var(--ink);margin-top:auto;line-height:1.2}
+  .tile .a{font-size:9px;font-weight:800;color:var(--grey);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+  .tile.wide{grid-column:1/3;min-height:0;flex-direction:row;align-items:center;gap:12px}
+  .tile.wide .v{font-size:26px}.tile.wide .l{margin-top:0}.tile.wide .txt{flex:1}
+
+  .src{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+  .src:first-of-type{border-top:none}
+  .src .ic{width:32px;height:32px;border-radius:10px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .src .nm{font-size:12.5px;font-weight:700;color:var(--ink)}.src .sub{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:2px}.src .txt{flex:1}.src .ext{color:var(--grey)}
+
+  .foot{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.5;margin:16px 2px 0}.foot b{color:var(--ink)}
+  .navpad{height:80px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
+  .di{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:var(--grey);padding:7px 11px;border-radius:999px}
+  .di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+  .fab{position:absolute;right:20px;bottom:78px;width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.3);z-index:6}
+
+  /* folha de detalhe */
+  .scrim{position:absolute;inset:0;background:rgba(10,10,8,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:26px 26px 0 0;padding:16px 22px 26px;transform:translateY(101%);transition:transform .28s cubic-bezier(.2,.7,.2,1);z-index:21}
+  .sheet.on{transform:translateY(0)}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+  .sheet .sv{font-family:'Barlow Condensed';font-weight:700;font-size:44px;color:var(--ink);line-height:1}.sheet .sv small{font-size:20px;color:var(--grey)}
+  .sheet .snm{font-size:16px;font-weight:800;color:var(--ink);margin-top:3px}
+  .sheet .sart{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:800;margin-top:10px;letter-spacing:.3px}
+  .sheet .sf{font-size:12.5px;font-weight:600;color:var(--grey);line-height:1.55;margin-top:13px}
+  .sheet .sex{background:var(--soft);border-radius:13px;padding:13px 14px;margin-top:13px;font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.45}.sheet .sex .k{color:var(--grey);font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:9px;display:block;margin-bottom:3px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>INFO · A — drill-down por grupos (anti-scroll)</h1>
+    <p>Selector <b>FTL · AE · Fontes</b>, e por baixo <b>chips de grupo</b> (2.º nível) que mostram só <b>3–4 tiles de cada vez</b> — nunca há lista comprida a rolar. Toca num tile → a <b>fórmula abre na folha</b>. O <i>per diem</i> ganha um tile largo (a fórmula não cabe num quadrado). Toca nas pílulas e nos chips.</p>
+  </div>
+
+  <div class="ph">
+    <div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="18"></i><span class="bdot"></span></span></div>
+      <div class="side">INFO · <span class="y">REFERÊNCIA</span></div>
+      <div class="body">
+        <div class="eyb">Referência · easyJet · Piloto</div>
+        <div class="hero"><div class="ghost">§</div><div class="mrow"><span class="word" id="word">A lei</span></div></div>
+        <div class="hr"></div>
+
+        <div class="sel">
+          <button class="pill on" data-t="ftl">FTL</button>
+          <button class="pill" data-t="ae">AE</button>
+          <button class="pill" data-t="fontes">Fontes</button>
+        </div>
+        <div class="grps" id="grps"></div>
+        <div id="stage"></div>
+        <div class="foot" id="foot"></div>
+        <div class="navpad"></div>
+      </div>
+      <div class="fab"><i data-ic="plus" data-ic-size="24"></i></div>
+      <div class="nav"><div class="di"><i data-ic="home" data-ic-size="14"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="14"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="14"></i>Escala</div><div class="di on"><i data-ic="info" data-ic-size="14"></i>INFO</div></div>
+    </div>
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    // rubrica: [valor, unidade, nome, artigo, fórmula, exemplo, wide?]
+    var DATA = {
+      ftl: { word:'A lei', foot:'Limites da lei EASA — <b>universais</b> (piloto = cabine). O teu <b>consumo</b> está nas Estatísticas.',
+        groups:[
+          {name:'Voo', items:[
+            ['900','h','Voo · ano civil','ORO.FTL.210(b)','Teto de horas de VOO por ano civil (jan–dez).','Aplica a todos os tripulantes.'],
+            ['1000','h','Voo · 12 meses','ORO.FTL.210(a)','Janela móvel de 12 meses consecutivos.',''],
+            ['100','h','Voo · 28 dias','ORO.FTL.210','Janela móvel de 28 dias.','']]},
+          {name:'Serviço', items:[
+            ['60','h','Serviço · 7 dias','ORO.FTL.210','Horas de SERVIÇO (duty) em 7 dias consecutivos.',''],
+            ['110','h','Serviço · 14 dias','ORO.FTL.210','',''],
+            ['190','h','Serviço · 28 dias','ORO.FTL.210','',''],]},
+          {name:'Repouso', items:[
+            ['12','h','Repouso mínimo','ORO.FTL.235','Na base: ≥12 h ou o serviço anterior. Fora da base: ≥10 h.','Fora da base = 10 h.'],
+            ['13','h','FDP básico','ORO.FTL.205','Período de serviço de voo máximo; reduz por setores e por hora WOCL.','']]}
+        ]},
+      ae: { word:'O teu AE', foot:'Valores do teu Acordo (SPAC · BTE 40/2023), brutos. Os teus <b>ganhos</b> estão nas Estatísticas.',
+        groups:[
+          {name:'Por voo', items:[
+            ['38,76','€','Setor nominal · FO','Anexo I.2','A tua unidade de conta. SFO 51,50 € · CPT 78,75 € · SO 29,36 €.','O per diem e quase tudo é múltiplo disto.'],
+            ['×NS','','Per diem','Art. 37','Σ setores voados × nominal. Bandas por distância: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.','LIS-OPO-LIS (2 curtos): 2 × 0,8 × 38,76 = 62,02 €.',1],
+            ['2','NS','Pernoita','Art. 39','2 setores nominais por noite fora da base, entre serviços de voo.','FO: 2 × 38,76 = 77,52 €.'],
+            ['2','NS','Dia de férias','Art. 38','Pagamento fixo adicional por cada dia de férias, além do salário.','FO: 77,52 € / dia.']]},
+          {name:'Terra', items:[
+            ['1,5·3','NS','Escritório OFC4/8','Anexo I.14','OFC4 (meio-dia) = 1,5 NS · OFC8 (dia inteiro) = 3 NS.','OFC8 FO: 3 × 38,76 = 116,28 €.'],
+            ['3','NS','Ad-hoc / formação','Art. 43','Deveres em terra + formação em terra/simulador (e-learning = 0).','FO: 116,28 € / dia.'],
+            ['1–2','NS','Serviço aeroporto','Art. 40','ADTY: 1 setor (≤4h) ou 2 setores (>4h / se chamado a voar).','']]},
+          {name:'Perturbação', items:[
+            ['0,4·0,8','%','DDO · IDO','Cl. 68','Trabalhar (DDO) ou infringir (IDO) dia de descanso. % da base ANUAL.','FO: DDO 191 € · IDO 382 €.'],
+            ['1','%','WFLY','Cl. 69','Voluntário em folga. 1% da base anual.','FO: 477,50 €.'],
+            ['60','€','Alteração curta (SNC)','Anexo I.12','Por evento de alteração de escala com curta antecedência.','']]},
+          {name:'Papéis', items:[
+            ['120','€','Instrutor / examinador','Art. 42','Por dia a exercer funções em terra ou simulador.',''],
+            ['60','%','Doença · dias 1-3','Anexo I.10','60% da retribuição base diária, dias 1 a 3 de cada episódio.',''],
+            ['1000','€','Prestação de benefícios','Anexo I.8','Valor anual (FO). CPT 3.500 € · SFO 2.000 €.','']]}
+        ]}
+    };
+    var FONTES = [['globe','Regulamento (UE) 83/2014','FTL · EUR-Lex'],['shield','EASA CS-FTL.1','regras de execução'],['book','AE easyJet · Pilotos (SPAC)','DRE / BTE 40/2023']];
+
+    var arr='<span class="arr"><i data-ic="arrow-diag" data-ic-size="13"></i></span>';
+    var stage=document.getElementById('stage'), grps=document.getElementById('grps'), word=document.getElementById('word'),
+        foot=document.getElementById('foot'), scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet');
+    var cur='ftl', curg=0;
+
+    function renderTiles(items){
+      var h='<div class="tgrid">';
+      items.forEach(function(it,i){
+        var wide=it[6];
+        if(wide){ h+='<div class="tile wide" data-i="'+i+'">'+arr+'<div class="v">'+it[0]+(it[1]?'<small> '+it[1]+'</small>':'')+'</div><div class="txt"><div class="l">'+it[2]+'</div><div class="a">'+it[3]+'</div></div></div>'; }
+        else{ h+='<div class="tile" data-i="'+i+'">'+arr+'<div class="v">'+it[0]+(it[1]?'<small>'+it[1]+'</small>':'')+'</div><div class="l">'+it[2]+'</div><div class="a">'+it[3]+'</div></div>'; }
+      });
+      h+='</div>'; stage.innerHTML=h;
+      stage.querySelectorAll('.tile').forEach(function(t){ t.onclick=function(){ openSheet(items[+t.dataset.i]); }; });
+      if(window.CPIcons) CPIcons.hydrate(stage);
+    }
+    function renderGroups(){
+      var d=DATA[cur]; grps.style.display='flex';
+      grps.innerHTML=d.groups.map(function(g,i){ return '<button class="gchip'+(i===curg?' on':'')+'" data-g="'+i+'">'+g.name+' <span class="n">'+g.items.length+'</span></button>'; }).join('');
+      grps.querySelectorAll('.gchip').forEach(function(c){ c.onclick=function(){ curg=+c.dataset.g; renderGroups(); renderTiles(d.groups[curg].items); }; });
+    }
+    function show(t){
+      cur=t; curg=0;
+      document.querySelectorAll('.pill').forEach(function(p){ p.classList.toggle('on',p.dataset.t===t); });
+      if(t==='fontes'){ grps.style.display='none'; word.textContent='Fontes';
+        stage.innerHTML=FONTES.map(function(s){ return '<div class="src"><span class="ic"><i data-ic="'+s[0]+'" data-ic-size="15"></i></span><div class="txt"><div class="nm">'+s[1]+'</div><div class="sub">'+s[2]+'</div></div><span class="ext"><i data-ic="share" data-ic-size="15"></i></span></div>'; }).join('');
+        foot.innerHTML='Só fontes oficiais — EUR-Lex, EASA, Diário da República.'; if(window.CPIcons) CPIcons.hydrate(stage); return; }
+      var d=DATA[t]; word.textContent=d.word; foot.innerHTML=d.foot; renderGroups(); renderTiles(d.groups[0].items);
+    }
+    function openSheet(it){
+      sheet.innerHTML='<div class="grab"></div><div class="sv">'+it[0]+(it[1]?'<small> '+it[1]+'</small>':'')+'</div><div class="snm">'+it[2]+'</div><span class="sart">'+it[3]+'</span><div class="sf">'+(it[4]||'—')+'</div>'+(it[5]?'<div class="sex"><span class="k">Exemplo</span>'+it[5]+'</div>':'');
+      scrim.classList.add('on'); sheet.classList.add('on');
+    }
+    function closeSheet(){ scrim.classList.remove('on'); sheet.classList.remove('on'); }
+    scrim.onclick=closeSheet;
+    document.querySelectorAll('.pill').forEach(function(p){ p.onclick=function(){ show(p.dataset.t); }; });
+    show('ftl');
+    if(window.CPIcons) CPIcons.hydrate(document);
+  })();
+  </script>
+</body>
+</html>

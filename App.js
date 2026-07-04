@@ -510,6 +510,10 @@ export default function App() {
           // FOLGA PUBLICADA trabalhada (ddo/wfly). Persistem em roster_meta.
           role: ('role' in fields) ? (fields.role || null) : (ex?.role ?? (ex?.instructor ? 'instr' : null)),
           dayOffWorked: ('dayOffWorked' in fields) ? (fields.dayOffWorked || null) : (ex?.dayOffWorked ?? null),
+          // Dia de escritório OFC4/OFC8 (Anexo I.14). Persiste em roster_meta.
+          officeType: ('officeType' in fields) ? (fields.officeType || null) : (ex?.officeType ?? null),
+          // Formação e-learning (sem pagamento variável, Art. 43). Persiste em roster_meta.
+          eLearning: ('eLearning' in fields) ? !!fields.eLearning : (ex?.eLearning ?? false),
           // 2.º+ período de serviço no MESMO dia civil (a lei conta períodos, não dias — 210).
           // Array de duties-irmãs (mesma forma da primária); persistido em roster_meta.
           extra: ('extra' in fields) ? (fields.extra && fields.extra.length ? fields.extra : null) : (ex?.extra ?? null),
@@ -551,7 +555,7 @@ export default function App() {
     sectors: f.sectors || 0, flight_minutes: f.flight_minutes || 0, route: f.route || null,
     kind: f.kind || 'flight', nightStop: !!f.nightStop, signOff: f.signOff || null,
     legs: f.legs || null, special: f.special || null, accommodation: !!f.accommodation,
-    role: f.role || null, dayOffWorked: f.dayOffWorked || null, source,
+    role: f.role || null, dayOffWorked: f.dayOffWorked || null, officeType: f.officeType || null, eLearning: !!f.eLearning, source,
   });
   // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
@@ -921,12 +925,12 @@ export default function App() {
           if (cur && (cur.dirty || cur.deleted)) continue; // pendente local vence
           // roster_meta (Fase 4): JSON { source, snap, legs, signOff, special } — origem + snapshot
           // + nº de voo + fim de serviço + casos especiais FTL (205c/205g/225).
-          let source = 'manual', snap = null, legs = null, signOff = null, special = null, extra = null, accommodation = false, role = null, dayOffWorked = null;
-          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; accommodation = m.accommodation || false; role = m.role || (m.instructor ? 'instr' : null); dayOffWorked = m.dayOffWorked || null; extra = (m.extra && m.extra.length) ? m.extra : null; } } catch { /* meta inválida */ }
+          let source = 'manual', snap = null, legs = null, signOff = null, special = null, extra = null, accommodation = false, role = null, dayOffWorked = null, officeType = null, eLearning = false;
+          try { const m = row.roster_meta ? JSON.parse(row.roster_meta) : null; if (m) { source = m.source || 'manual'; snap = m.snap || null; legs = m.legs || null; signOff = m.signOff || null; special = m.special || null; accommodation = m.accommodation || false; role = m.role || (m.instructor ? 'instr' : null); dayOffWorked = m.dayOffWorked || null; officeType = m.officeType || null; eLearning = !!m.eLearning; extra = (m.extra && m.extra.length) ? m.extra : null; } } catch { /* meta inválida */ }
           merged[row.duty_date] = {
             report_time: row.report_time, block_off: row.block_off, block_on: row.block_on,
             sectors: row.sectors, flight_minutes: row.flight_minutes, route: row.notes || null,
-            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special, accommodation, role, dayOffWorked, extra,
+            kind: row.kind || 'flight', nightStop: !!row.night_stop, source, snap, legs, signOff, special, accommodation, role, dayOffWorked, officeType, eLearning, extra,
             duty_date: row.duty_date, updated_at: row.updated_at, dirty: false, deleted: false,
           };
         }

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · INFO — cores dos cartões</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#FBFAF7;color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 60px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  h1{font-size:18px;font-weight:800}
+  .intro{max-width:680px;text-align:center;font-size:12.5px;color:var(--grey);line-height:1.5;margin-bottom:18px}
+  .block{width:100%;max-width:680px;margin-bottom:26px}
+  .blab{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;padding-left:2px}
+  .blab .n{font-family:'Barlow Condensed';font-weight:700;font-size:22px;color:var(--ink)}
+  .blab .d{font-size:11.5px;font-weight:700;color:var(--grey)}
+  .blab .rec{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:20px;padding:3px 8px;margin-left:6px}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+  .card{border-radius:20px;padding:16px 16px 15px;min-height:150px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .card .edge{position:absolute;left:0;top:16px;bottom:16px;width:4px;border-radius:0 4px 4px 0}
+  .card .cnfc{position:absolute;top:15px;right:16px}
+  .card .cname{font-family:'Barlow Condensed';font-weight:700;font-size:22px;line-height:1;letter-spacing:-.3px}
+  .card .csub{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-top:3px}
+  .card .cstat{font-family:'Barlow Condensed';font-weight:700;font-size:36px;line-height:1;margin-top:auto;letter-spacing:-.5px}.card .cstat small{font-size:16px}
+  .card .cks{font-size:9.5px;font-weight:700;margin-top:3px}
+
+  /* ── 1 · PRETO + acento (estilo carteira Validades) ── */
+  .t-dark .card{background:var(--ink)}
+  .t-dark .cname{color:#fff}.t-dark .csub{color:#8f8f88}.t-dark .cstat{color:#fff}.t-dark .cks{color:#8f8f88}
+  .t-dark .ftl .edge{background:var(--red)}.t-dark .ftl .cnfc{color:var(--red)}
+  .t-dark .ae .edge{background:var(--yellow)}.t-dark .ae .cnfc{color:var(--yellow)}
+  .t-dark .fontes .edge{background:#DDDBD3}.t-dark .fontes .cnfc{color:#DDDBD3}
+
+  /* ── 2 · NEUTRO (soft) + acento ── */
+  .t-neutral .card{background:var(--soft2)}
+  .t-neutral .cname{color:var(--ink)}.t-neutral .csub{color:var(--grey)}.t-neutral .cstat{color:var(--ink)}.t-neutral .cks{color:var(--grey)}
+  .t-neutral .ftl .edge{background:var(--red)}.t-neutral .ftl .cnfc{color:var(--red)}
+  .t-neutral .ae .edge{background:var(--yellow)}.t-neutral .ae .cnfc{color:#C79200}
+  .t-neutral .fontes .edge{background:var(--ink)}.t-neutral .fontes .cnfc{color:var(--ink)}
+
+  /* ── 3 · PAPEL + hairline + acento ── */
+  .t-paper .card{background:var(--paper);border:1px solid var(--line)}
+  .t-paper .cname{color:var(--ink)}.t-paper .csub{color:var(--grey)}.t-paper .cstat{color:var(--ink)}.t-paper .cks{color:var(--grey)}
+  .t-paper .ftl{border-color:#F0D9D5}.t-paper .ftl .edge{background:var(--red)}.t-paper .ftl .cnfc{color:var(--red)}
+  .t-paper .ae{border-color:#F0E4BE}.t-paper .ae .edge{background:var(--yellow)}.t-paper .ae .cnfc{color:#C79200}
+  .t-paper .fontes .edge{background:var(--ink)}.t-paper .fontes .cnfc{color:var(--ink)}
+
+  /* ── 4 · PRETO só o teu AE (dinheiro em destaque) + os outros papel ── */
+  .t-mix .ftl{background:var(--paper);border:1px solid var(--line)}.t-mix .ftl .cname,.t-mix .ftl .cstat{color:var(--ink)}.t-mix .ftl .csub,.t-mix .ftl .cks{color:var(--grey)}.t-mix .ftl .edge{background:var(--red)}.t-mix .ftl .cnfc{color:var(--red)}
+  .t-mix .ae{background:var(--ink)}.t-mix .ae .cname,.t-mix .ae .cstat{color:#fff}.t-mix .ae .csub,.t-mix .ae .cks{color:#8f8f88}.t-mix .ae .edge{background:var(--yellow)}.t-mix .ae .cnfc{color:var(--yellow)}
+  .t-mix .fontes{background:var(--paper);border:1px solid var(--line)}.t-mix .fontes .cname,.t-mix .fontes .cstat{color:var(--ink)}.t-mix .fontes .csub,.t-mix .fontes .cks{color:var(--grey)}.t-mix .fontes .edge{background:var(--ink)}.t-mix .fontes .cnfc{color:var(--ink)}
+</style>
+</head>
+<body>
+  <h1>INFO · cores dos cartões</h1>
+  <div class="intro">Os pastéis saíram. Aqui vão 4 tratamentos <b>on-pele</b> (branco·preto·amarelo, planos, hairline) — a cor do domínio fica só no <b>acento</b> (barra + ícone: FTL vermelho · AE amarelo · Fontes preto), não a pintar o cartão todo. Escolhe o que gostas.</div>
+
+  <div class="block t-dark">
+    <div class="blab"><span class="n">1 · Preto + acento</span><span class="d">estilo carteira Validades · premium, sóbrio</span><span class="rec">recomendado</span></div>
+    <div class="row" id="r1"></div>
+  </div>
+  <div class="block t-neutral">
+    <div class="blab"><span class="n">2 · Neutro + acento</span><span class="d">tom suave único · minimal, leve</span></div>
+    <div class="row" id="r2"></div>
+  </div>
+  <div class="block t-paper">
+    <div class="blab"><span class="n">3 · Papel + hairline</span><span class="d">o mais leve · borda com um toque da cor</span></div>
+    <div class="row" id="r3"></div>
+  </div>
+  <div class="block t-mix">
+    <div class="blab"><span class="n">4 · Só o AE preto</span><span class="d">o dinheiro em destaque · os outros papel</span></div>
+    <div class="row" id="r4"></div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+    var CARDS=[
+      {k:'ftl',ic:'shield',name:'FTL',sub:'A lei · EASA',stat:'900',u:'h',ks:'voo / ano civil'},
+      {k:'ae',ic:'wallet',name:'AE',sub:'easyJet · SPAC',stat:'38,76',u:'€',ks:'setor nominal · FO'},
+      {k:'fontes',ic:'book',name:'Fontes',sub:'oficiais',stat:'3',u:'',ks:'EUR-Lex · EASA · DRE'}
+    ];
+    function cardHTML(c){ return '<div class="card '+c.k+'"><span class="edge"></span><span class="cnfc"><i data-ic="'+c.ic+'" data-ic-size="17"></i></span><div class="cname">'+c.name+'</div><div class="csub">'+c.sub+'</div><div class="cstat">'+c.stat+(c.u?'<small> '+c.u+'</small>':'')+'</div><div class="cks">'+c.ks+'</div></div>'; }
+    ['r1','r2','r3','r4'].forEach(function(id){ document.getElementById(id).innerHTML=CARDS.map(cardHTML).join(''); });
+    if(window.CPIcons) CPIcons.hydrate(document);
+  </script>
+</body>
+</html>

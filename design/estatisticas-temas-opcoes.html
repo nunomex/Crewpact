@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Estatísticas — 4 temas em cards (5 opções)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .lead{max-width:860px;text-align:center;margin-bottom:12px}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .row{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;width:340px}
+  .cap{text-align:center}
+  .cap .tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#0f1218;background:var(--yellow);border-radius:999px;padding:4px 13px}
+  .cap h2{font-size:14.5px;font-weight:800;color:#fff;margin-top:8px}
+  .cap p{font-size:11.5px;color:#96a0ad;line-height:1.5;margin-top:5px}
+  .cap .ex{color:#c7cdd6;font-weight:700;margin-top:6px;display:block;font-size:11px}
+
+  .ph{width:340px;height:820px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:11px 20px 0;font-size:10.5px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:11px 18px 0}
+  .hdr .av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+  .hdr .r{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+  .hdr .r .bdot{position:absolute;top:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid var(--paper)}
+  .side{position:absolute;right:8px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:9px;font-weight:800;letter-spacing:2.6px;color:var(--ink);white-space:nowrap;z-index:5}.side .y{color:var(--yellow)}
+  .body{padding:6px 18px 0}
+  .eyb{font-size:10.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin-top:8px}
+  .htitle{font-family:'Barlow Condensed';font-weight:700;font-size:34px;line-height:1;letter-spacing:-.5px;margin-top:6px}
+  .hr{height:1.5px;background:var(--ink);margin:11px 0 14px}
+  .navpad{height:74px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
+  .di{display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;color:var(--grey);padding:6px 9px;border-radius:999px}
+  .di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+
+  /* ============ A — Bento 2×2 + painel em cima ============ */
+  .a-wrap{width:100%;margin:0 auto;font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink)}
+  .a-wrap *{box-sizing:border-box}
+  .a-state{margin-bottom:20px}.a-state:last-child{margin-bottom:0}
+  .a-caption{display:flex;align-items:center;gap:6px;margin:0 2px 10px;font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--grey)}
+  .a-caption b{color:var(--yellow);font-family:'Barlow Condensed';font-size:12px;font-weight:600;letter-spacing:.04em}
+  .a-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .a-tile{position:relative;display:flex;flex-direction:column;min-height:112px;padding:12px 12px 13px;background:var(--paper);border:1px solid var(--line);border-radius:14px;cursor:pointer}
+  .a-tile-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .a-ic-box{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--soft);color:var(--ink)}
+  .a-idx{font-family:'Barlow Condensed';font-size:14px;font-weight:600;letter-spacing:.06em;color:var(--yellow);font-variant-numeric:tabular-nums}
+  .a-name{margin-bottom:4px;font-size:12.5px;font-weight:600;letter-spacing:.01em;color:var(--grey)}
+  .a-key{font-family:'Barlow Condensed';font-size:25px;line-height:.96;font-weight:600;letter-spacing:.01em;color:var(--ink);font-variant-numeric:tabular-nums}
+  .a-key--red{color:var(--red)}
+  .a-key--money{font-size:21px}
+  .a-cap{margin-top:5px;font-size:11.5px;line-height:1.25;color:var(--grey)}
+  .a-dot{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:999px;background:var(--red);vertical-align:middle}
+  .a-open{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--paper)}
+  .a-open-back{position:absolute;inset:0;z-index:0;padding:10px}
+  .a-dim{opacity:.3;pointer-events:none;filter:saturate(.9)}
+  .a-scrim{position:absolute;inset:0;z-index:1;background:rgba(20,20,20,.05);pointer-events:none}
+  .a-panel{position:relative;z-index:2;margin-top:44px;padding:14px 14px 16px;background:var(--paper);border-top:1px solid var(--line);border-radius:18px 18px 15px 15px}
+  .a-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .a-head-tt{display:flex;align-items:baseline;gap:7px;flex:1;min-width:0}
+  .a-panel-title{font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+  .a-close{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--soft);color:var(--grey);cursor:pointer}
+  .a-panel-sub{margin:0 0 13px;font-size:12px;color:var(--grey)}.a-panel-sub b{font-weight:700}
+  .a-grp{margin:12px 0 8px;font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--grey)}
+  .a-grp:first-of-type{margin-top:2px}
+  .a-win{margin-bottom:13px}.a-win:last-child{margin-bottom:2px}
+  .a-win-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .a-win-name{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .a-win-val{font-family:'Barlow Condensed';font-size:13.5px;font-weight:500;color:var(--grey);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .a-bar{height:6px;margin:7px 0 5px;border-radius:999px;background:var(--soft);overflow:hidden}
+  .a-bar-fill{display:block;height:100%;border-radius:999px}
+  .a-fill-ok{background:var(--ok)}.a-fill-warn{background:var(--warn)}.a-fill-red{background:var(--red)}
+  .a-win-foot{display:flex;align-items:baseline;justify-content:space-between}
+  .a-pct{font-family:'Barlow Condensed';font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .a-left{font-size:11.5px;color:var(--grey)}
+  .a-ok{color:var(--ok)}.a-warn{color:var(--warn)}.a-red{color:var(--red)}
+  .a-w57{width:57%}.a-w72{width:72%}.a-w73{width:73%}.a-w83{width:83%}.a-w84{width:84%}.a-w93{width:93%}
+
+  /* ============ B — Carteira (deck) ============ */
+  .b-wrap{max-width:330px;margin:0 auto;padding:4px 0;font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink)}
+  .b-deck{position:relative;display:flex;flex-direction:column;align-items:center}
+  .b-peek{position:relative;box-sizing:border-box;width:100%;height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--soft);border:1px solid var(--line);border-radius:15px;overflow:hidden;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .b-lv3{width:calc(100% - 36px);z-index:1}
+  .b-lv2{width:calc(100% - 22px);z-index:2;margin-top:-8px}
+  .b-lv1{width:calc(100% - 10px);z-index:3;margin-top:-8px}
+  .b-idx{font-family:'Barlow Condensed';font-weight:600;font-size:13px;letter-spacing:.5px;color:var(--yellow);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .b-idx-lg{font-size:15px}
+  .b-ic{display:inline-flex;align-items:center;justify-content:center;color:var(--grey);flex:0 0 auto}
+  .b-ic-sm{width:30px;height:30px;border-radius:9px;background:var(--paper);border:1px solid var(--line)}
+  .b-ic-lg{width:36px;height:36px;border-radius:11px;color:var(--ink);background:var(--soft);border:1px solid var(--line)}
+  .b-nm{font-size:15px;font-weight:600;color:var(--ink);flex:0 0 auto}
+  .b-st{margin-left:auto;font-size:12.5px;color:var(--grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums}
+  .b-tn{font-family:'Barlow Condensed';font-weight:600;font-variant-numeric:tabular-nums;font-size:14px}
+  .b-tn-lg{font-size:16px}.b-ink{color:var(--ink)}.b-warn{color:var(--warn)}.b-ok{color:var(--ok)}.b-red{color:var(--red)}
+  .b-open{position:relative;box-sizing:border-box;width:100%;z-index:4;margin-top:-8px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 15px 10px}
+  .b-ohead{display:flex;align-items:center;gap:11px}
+  .b-otitle{font-size:18px;font-weight:700;color:var(--ink)}
+  .b-chev{margin-left:auto;color:var(--grey);transform:rotate(180deg);display:inline-flex}
+  .b-hero{display:flex;align-items:center;gap:14px;padding:11px 2px;margin-top:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .b-hero-num{font-family:'Barlow Condensed';font-weight:700;font-size:44px;line-height:.9;font-variant-numeric:tabular-nums}
+  .b-hero-pct{font-size:22px;font-weight:600;margin-left:2px}
+  .b-hero-lab{font-size:13px;line-height:1.35;color:var(--ink);font-weight:600}
+  .b-wins{padding-top:6px}
+  .b-win{padding:8px 0;border-top:1px solid var(--line)}.b-win:first-child{border-top:none}
+  .b-win-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .b-win-nm{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .b-win-rt{font-size:12px;color:var(--grey);white-space:nowrap;font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;gap:6px}
+  .b-pct{font-family:'Barlow Condensed';font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .b-win-fa{color:var(--grey)}
+  .b-track{height:7px;border-radius:5px;background:var(--soft);border:1px solid var(--line);margin:6px 0 4px;overflow:hidden}
+  .b-fill{display:block;height:100%;border-radius:5px}
+  .b-fill-ok{background:var(--ok)}.b-fill-warn{background:var(--warn)}.b-fill-red{background:var(--red)}
+  .b-win-cap{font-size:11px;color:var(--grey);font-variant-numeric:tabular-nums}
+
+  /* ============ C — Acordeão compacto ============ */
+  .c-acc{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--paper);overflow:hidden;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .c-row + .c-row{border-top:1px solid var(--line)}
+  .c-head{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 14px;margin:0;border:0;background:none;text-align:left;cursor:pointer;color:var(--ink)}
+  .c-head:active{background:var(--soft)}
+  .c-idx{flex:none;width:16px;font-family:'Barlow Condensed';font-weight:600;font-size:13px;letter-spacing:.05em;color:var(--yellow);font-variant-numeric:tabular-nums}
+  .c-ico{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--soft);border-radius:9px;color:var(--ink)}
+  .c-name{flex:1 1 auto;min-width:0;font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+  .c-key{flex:none;display:flex;flex-direction:column;align-items:flex-end;line-height:1.02}
+  .c-key-val{font-family:'Barlow Condensed';font-weight:600;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .c-key--red .c-key-val{color:var(--red)}
+  .c-key-sub{margin-top:2px;font-size:10.5px;color:var(--grey);letter-spacing:.01em}
+  .c-chev{flex:none;display:flex;align-items:center;color:var(--grey);transition:transform .18s ease}
+  .c-row--open .c-chev{transform:rotate(180deg);color:var(--ink)}
+  .c-panel{display:none}
+  .c-row--open .c-panel{display:block;margin:0 12px 12px;padding:11px 13px 4px;background:var(--soft);border-radius:12px}
+  .c-panel-cap{margin-bottom:4px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--grey)}
+  .c-rub{display:flex;align-items:center;gap:10px;padding:9px 0}
+  .c-rub + .c-rub{border-top:1px solid var(--line)}
+  .c-rub-ico{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--paper);border:1px solid var(--line);border-radius:7px;color:var(--grey)}
+  .c-rub-name{flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--grey)}
+  .c-rub-val{flex:none;font-family:'Barlow Condensed';font-weight:600;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  /* ============ D — Separadores + 1 painel ============ */
+  .d-wrap{width:100%;max-width:340px;margin:0 auto;font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink)}
+  .d-wrap *{box-sizing:border-box}
+  .d-tabs{display:flex;gap:5px;padding:4px;background:var(--soft);border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+  .d-tab{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 3px 8px;border:0;border-radius:10px;background:transparent;color:var(--grey);cursor:pointer}
+  .d-tab i{color:var(--grey)}
+  .d-tab-lbl{font-size:11px;font-weight:600;letter-spacing:-0.1px;white-space:nowrap}
+  .d-tab--on{background:var(--ink);color:var(--paper)}
+  .d-tab--on i{color:var(--paper)}.d-tab--on .d-tab-lbl{color:var(--paper)}
+  .d-tab-dot{position:absolute;top:6px;right:9px;width:6px;height:6px;border-radius:50%;background:var(--red)}
+  .d-panel{border:1px solid var(--line);border-radius:16px;background:var(--paper);overflow:hidden}
+  .d-phead{display:flex;align-items:center;gap:10px;padding:13px 14px 12px;border-bottom:1px solid var(--line)}
+  .d-picon{flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .d-pttl{flex:1;min-width:0}
+  .d-pname{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--grey)}
+  .d-idx{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:0.5px;color:var(--yellow)}
+  .d-pkey{display:flex;align-items:baseline;gap:7px;margin-top:2px}
+  .d-pkey b{font-family:'Barlow Condensed';font-weight:600;font-size:27px;line-height:1;font-variant-numeric:tabular-nums}
+  .d-pkey span{font-size:11.5px;font-weight:500;color:var(--grey)}
+  .d-pbody{padding:12px 14px 14px}
+  .d-group + .d-group{margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+  .d-glabel{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--grey);margin-bottom:9px}
+  .d-glabel i{color:var(--grey)}
+  .d-ftl{margin-bottom:11px}.d-ftl:last-child{margin-bottom:0}
+  .d-ftl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+  .d-ftl-name{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .d-ftl-pct{font-family:'Barlow Condensed';font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;color:var(--grey)}
+  .d-bar{height:6px;border-radius:4px;background:var(--soft);overflow:hidden}
+  .d-bar-fill{display:block;height:100%;border-radius:4px;background:var(--ok)}
+  .d-bar--ok{background:var(--ok)}.d-bar--warn{background:var(--warn)}.d-bar--red{background:var(--red)}
+  .d-ftl-sub{margin-top:5px;font-size:11px;color:var(--grey);font-variant-numeric:tabular-nums}
+  .d-ok{color:var(--ok)}.d-warn{color:var(--warn)}.d-red{color:var(--red)}
+
+  /* ============ E — Grelha bento + folha por cima ============ */
+  .e-wrap{position:relative;width:100%;max-width:330px;min-height:560px;margin:0 auto;border-radius:20px;overflow:hidden;font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink)}
+  .e-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .e-tile{appearance:none;font:inherit;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:13px 13px 15px;display:flex;flex-direction:column;cursor:pointer}
+  .e-tile__top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+  .e-ic{width:34px;height:34px;border-radius:10px;background:var(--soft);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);flex:none}
+  .e-ic--alarm{background:#F7E9E7;color:var(--red)}
+  .e-idx{font-family:'Barlow Condensed';font-weight:600;font-size:15px;letter-spacing:.09em;color:var(--yellow);font-variant-numeric:tabular-nums}
+  .e-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;letter-spacing:.01em}
+  .e-key{font-family:'Barlow Condensed';font-weight:600;font-size:30px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .e-key--red{color:var(--red)}.e-key--money{font-size:25px}
+  .e-key__u{font-size:15px;font-weight:500;color:var(--grey);margin-left:2px}
+  .e-sub{font-size:11px;color:var(--grey);margin-top:4px;letter-spacing:.01em}
+  .e-scrim{position:absolute;inset:0;background:rgba(20,20,20,.32);border-radius:20px}
+  .e-sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:9px 16px 20px}
+  .e-grab{width:38px;height:4px;border-radius:2px;background:var(--ghost);margin:2px auto 13px}
+  .e-shead{display:flex;align-items:center;gap:11px;margin-bottom:15px}
+  .e-shead__t{flex:1;min-width:0}
+  .e-shead__idx{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+  .e-shead__n{font-family:'Barlow Condensed';color:var(--yellow);letter-spacing:.06em}
+  .e-shead__sub{font-size:11px;color:var(--grey);margin-top:1px}
+  .e-close{appearance:none;border:none;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--grey);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+  .e-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px}
+  .e-hero__big{font-family:'Barlow Condensed';font-weight:600;font-size:47px;line-height:.9;color:var(--ink);font-variant-numeric:tabular-nums}
+  .e-hero__u{font-size:22px;color:var(--grey);font-weight:500}
+  .e-hero__pct{text-align:right}
+  .e-hero__pctn{font-family:'Barlow Condensed';font-weight:600;font-size:24px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .e-hero__pctl{font-size:10.5px;color:var(--grey);margin-top:1px}
+  .e-bar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+  .e-bar__fill{height:100%;background:var(--ink);border-radius:4px}
+  .e-barmeta{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);margin-top:7px;font-variant-numeric:tabular-nums}
+  .e-sec{margin-top:18px}
+  .e-sec__h{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--grey);margin-bottom:11px}
+  .e-chart{display:flex;align-items:flex-end;gap:7px;height:98px}
+  .e-col{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px}
+  .e-col__bar{width:100%;max-width:20px;border-radius:5px 5px 0 0;background:var(--ghost)}
+  .e-col__bar--now{background:var(--yellow)}
+  .e-col__l{font-size:9.5px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em}
+  .e-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+  .e-mini{border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+  .e-mini__h{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);margin-bottom:9px}
+  .e-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;font-size:12.5px}
+  .e-row:last-child{margin-bottom:0}
+  .e-row__k{color:var(--ink);display:inline-flex;align-items:center;gap:5px}
+  .e-row__k [data-ic]{color:var(--grey)}
+  .e-row__v{color:var(--grey);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Estatísticas · os 4 temas em cards pequenos que abrem — 5 opções</h1>
+    <p>Em vez das secções compridas (muito scroll), os 4 temas viram <b>cartões pequenos</b> com valor-chave de relance, e <b>ao tocar abrem</b>. Cada telefone mostra uma abordagem no estado colapsado + um exemplo <b>aberto</b>. Cabeçalho canónico (avatar↖/sino↗) igual em todas. Escolhe a direção e eu refino a escolhida.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- A -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="17"></i><span class="bdot"></span></span></div>
+        <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+        <div class="body">
+          <div class="eyb">Estatísticas · easyJet · AE</div>
+          <div class="htitle">Os teus temas</div>
+          <div class="hr"></div>
+          <div class="a-wrap">
+            <div class="a-state">
+              <div class="a-caption">Colapsado · relance · sem scroll</div>
+              <div class="a-grid">
+                <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="gauge" data-ic-size="18"></i></span><span class="a-idx">01</span></div><div class="a-name">Segurança</div><div class="a-key a-key--red">93%</div><div class="a-cap"><span class="a-dot"></span>Serviço · 28 d</div></div>
+                <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="plane" data-ic-size="18"></i></span><span class="a-idx">02</span></div><div class="a-name">Voo</div><div class="a-key">512,4 h</div><div class="a-cap">57% do teto</div></div>
+                <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="wallet" data-ic-size="18"></i></span><span class="a-idx">03</span></div><div class="a-name">Dinheiro</div><div class="a-key a-key--money">20 553,30 €</div><div class="a-cap">ganhos · AE</div></div>
+                <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="bed" data-ic-size="18"></i></span><span class="a-idx">04</span></div><div class="a-name">Corpo</div><div class="a-key">10,5 h</div><div class="a-cap">repouso mín · 3 curtos</div></div>
+              </div>
+            </div>
+            <div class="a-state">
+              <div class="a-caption">Aberto <b>01</b> Segurança · painel por cima</div>
+              <div class="a-open">
+                <div class="a-open-back a-dim" aria-hidden="true">
+                  <div class="a-grid">
+                    <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="gauge" data-ic-size="18"></i></span><span class="a-idx">01</span></div><div class="a-name">Segurança</div><div class="a-key a-key--red">93%</div><div class="a-cap"><span class="a-dot"></span>Serviço · 28 d</div></div>
+                    <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="plane" data-ic-size="18"></i></span><span class="a-idx">02</span></div><div class="a-name">Voo</div><div class="a-key">512,4 h</div><div class="a-cap">57% do teto</div></div>
+                    <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="wallet" data-ic-size="18"></i></span><span class="a-idx">03</span></div><div class="a-name">Dinheiro</div><div class="a-key a-key--money">20 553,30 €</div><div class="a-cap">ganhos · AE</div></div>
+                    <div class="a-tile"><div class="a-tile-top"><span class="a-ic-box"><i data-ic="bed" data-ic-size="18"></i></span><span class="a-idx">04</span></div><div class="a-name">Corpo</div><div class="a-key">10,5 h</div><div class="a-cap">repouso mín · 3 curtos</div></div>
+                  </div>
+                </div>
+                <div class="a-scrim" aria-hidden="true"></div>
+                <div class="a-panel">
+                  <div class="a-panel-head"><span class="a-ic-box"><i data-ic="gauge" data-ic-size="18"></i></span><span class="a-head-tt"><span class="a-idx">01</span><span class="a-panel-title">Segurança</span></span><span class="a-close"><i data-ic="minus" data-ic-size="16"></i></span></div>
+                  <div class="a-panel-sub">6 janelas FTL · limite mais cheio <b class="a-red">93%</b></div>
+                  <div class="a-grp">Voo</div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">28 dias</span><span class="a-win-val">84 / 100 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-warn a-w84"></span></div><div class="a-win-foot"><span class="a-pct a-warn">84%</span><span class="a-left">faltam 16 h</span></div></div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">Ano civil</span><span class="a-win-val">512 / 900 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-ok a-w57"></span></div><div class="a-win-foot"><span class="a-pct a-ok">57%</span><span class="a-left">faltam 388 h</span></div></div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">12 meses</span><span class="a-win-val">636 / 1000 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-ok a-w72"></span></div><div class="a-win-foot"><span class="a-pct a-ok">64%</span><span class="a-left">faltam 364 h</span></div></div>
+                  <div class="a-grp">Serviço</div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">7 dias</span><span class="a-win-val">52 / 60 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-warn a-w84"></span></div><div class="a-win-foot"><span class="a-pct a-warn">87%</span><span class="a-left">faltam 8 h</span></div></div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">14 dias</span><span class="a-win-val">96 / 110 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-warn a-w84"></span></div><div class="a-win-foot"><span class="a-pct a-warn">87%</span><span class="a-left">faltam 14 h</span></div></div>
+                  <div class="a-win"><div class="a-win-head"><span class="a-win-name">28 dias</span><span class="a-win-val">176 / 190 h</span></div><div class="a-bar"><span class="a-bar-fill a-fill-red a-w93"></span></div><div class="a-win-foot"><span class="a-pct a-red">93%</span><span class="a-left">faltam 14 h</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="navpad"></div>
+        </div>
+        <div class="nav"><div class="di"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">A</span><h2>Bento 2×2 + painel em cima</h2><p>Os 4 num ecrã (2×2). O vermelho do 93% puxa o olho; os outros calmos.</p><span class="ex">Abre: painel desce POR CIMA, grelha esbatida por baixo.</span></div>
+    </div>
+
+    <!-- B -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="17"></i><span class="bdot"></span></span></div>
+        <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+        <div class="body">
+          <div class="eyb">Estatísticas · easyJet · AE</div>
+          <div class="htitle">Os teus temas</div>
+          <div class="hr"></div>
+          <div class="b-wrap">
+            <div class="b-deck">
+              <button class="b-peek b-lv3" type="button"><span class="b-idx">04</span><span class="b-ic b-ic-sm"><i data-ic="bed" data-ic-size="18"></i></span><span class="b-nm">Corpo</span><span class="b-st">mín <b class="b-tn">10,5</b> h · <span class="b-warn">3 curtos</span></span></button>
+              <button class="b-peek b-lv2" type="button"><span class="b-idx">03</span><span class="b-ic b-ic-sm"><i data-ic="wallet" data-ic-size="18"></i></span><span class="b-nm">Dinheiro</span><span class="b-st"><b class="b-tn b-tn-lg b-ink">20 553,30</b> €</span></button>
+              <button class="b-peek b-lv1" type="button"><span class="b-idx">02</span><span class="b-ic b-ic-sm"><i data-ic="plane" data-ic-size="18"></i></span><span class="b-nm">Voo</span><span class="b-st"><b class="b-tn">512,4</b> h · 57%</span></button>
+              <section class="b-open">
+                <header class="b-ohead"><span class="b-idx b-idx-lg">01</span><span class="b-ic b-ic-lg"><i data-ic="gauge" data-ic-size="20"></i></span><span class="b-otitle">Segurança</span><span class="b-chev"><i data-ic="chevron" data-ic-size="16"></i></span></header>
+                <div class="b-hero"><span class="b-hero-num b-red">93<span class="b-hero-pct">%</span></span><span class="b-hero-lab">Serviço · 28 d<br><span class="b-red">faltam 14 h</span></span></div>
+                <div class="b-wins">
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Voo · 28 d</span><span class="b-win-rt"><b class="b-pct b-warn">84%</b><span class="b-win-fa">faltam 16 h</span></span></div><div class="b-track"><span class="b-fill b-fill-warn" style="width:84%"></span></div><div class="b-win-cap">84 / 100 h</div></div>
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Voo · ano</span><span class="b-win-rt"><b class="b-pct b-ok">57%</b><span class="b-win-fa">faltam 388 h</span></span></div><div class="b-track"><span class="b-fill b-fill-ok" style="width:57%"></span></div><div class="b-win-cap">512 / 900 h</div></div>
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Voo · 12 m</span><span class="b-win-rt"><b class="b-pct b-ok">64%</b><span class="b-win-fa">faltam 364 h</span></span></div><div class="b-track"><span class="b-fill b-fill-ok" style="width:64%"></span></div><div class="b-win-cap">636 / 1000 h</div></div>
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Serviço · 7 d</span><span class="b-win-rt"><b class="b-pct b-warn">87%</b><span class="b-win-fa">faltam 8 h</span></span></div><div class="b-track"><span class="b-fill b-fill-warn" style="width:87%"></span></div><div class="b-win-cap">52 / 60 h</div></div>
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Serviço · 14 d</span><span class="b-win-rt"><b class="b-pct b-warn">87%</b><span class="b-win-fa">faltam 14 h</span></span></div><div class="b-track"><span class="b-fill b-fill-warn" style="width:87%"></span></div><div class="b-win-cap">96 / 110 h</div></div>
+                  <div class="b-win"><div class="b-win-top"><span class="b-win-nm">Serviço · 28 d</span><span class="b-win-rt"><b class="b-pct b-red">93%</b><span class="b-win-fa b-red">faltam 14 h</span></span></div><div class="b-track"><span class="b-fill b-fill-red" style="width:93%"></span></div><div class="b-win-cap">176 / 190 h</div></div>
+                </div>
+              </section>
+            </div>
+          </div>
+          <div class="navpad"></div>
+        </div>
+        <div class="nav"><div class="di"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">B</span><h2>Carteira (deck)</h2><p>Um só objeto: o urgente (Segurança) aberto à frente, os outros espreitam. Gesto das Validades.</p><span class="ex">Abre: puxas um → vem à frente e expande no lugar.</span></div>
+    </div>
+
+    <!-- C -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="17"></i><span class="bdot"></span></span></div>
+        <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+        <div class="body">
+          <div class="eyb">Estatísticas · easyJet · AE</div>
+          <div class="htitle">Os teus temas</div>
+          <div class="hr"></div>
+          <ul class="c-acc">
+            <li class="c-row c-row--alarm"><button class="c-head" type="button"><span class="c-idx">01</span><span class="c-ico"><i data-ic="gauge" data-ic-size="18"></i></span><span class="c-name">Segurança</span><span class="c-key c-key--red"><span class="c-key-val">93%</span><span class="c-key-sub">Serviço 28 d</span></span><span class="c-chev"><i data-ic="chevron" data-ic-size="16"></i></span></button></li>
+            <li class="c-row"><button class="c-head" type="button"><span class="c-idx">02</span><span class="c-ico"><i data-ic="plane" data-ic-size="18"></i></span><span class="c-name">Voo</span><span class="c-key"><span class="c-key-val">512,4 h</span><span class="c-key-sub">57% do teto</span></span><span class="c-chev"><i data-ic="chevron" data-ic-size="16"></i></span></button></li>
+            <li class="c-row c-row--open"><button class="c-head" type="button"><span class="c-idx">03</span><span class="c-ico"><i data-ic="wallet" data-ic-size="18"></i></span><span class="c-name">Dinheiro</span><span class="c-key"><span class="c-key-val">20 553,30 €</span><span class="c-key-sub">ganho no ano</span></span><span class="c-chev"><i data-ic="chevron" data-ic-size="16"></i></span></button>
+              <div class="c-panel"><div class="c-panel-cap">Repartição · ano civil · AE</div>
+                <div class="c-rub"><span class="c-rub-ico"><i data-ic="wallet" data-ic-size="14"></i></span><span class="c-rub-name">Base</span><span class="c-rub-val">18 240,00 €</span></div>
+                <div class="c-rub"><span class="c-rub-ico"><i data-ic="plane" data-ic-size="14"></i></span><span class="c-rub-name">Per diem</span><span class="c-rub-val">1 284,50 €</span></div>
+                <div class="c-rub"><span class="c-rub-ico"><i data-ic="moon" data-ic-size="14"></i></span><span class="c-rub-name">Pernoitas</span><span class="c-rub-val">506,00 €</span></div>
+                <div class="c-rub"><span class="c-rub-ico"><i data-ic="plus" data-ic-size="14"></i></span><span class="c-rub-name">Extras</span><span class="c-rub-val">522,80 €</span></div>
+              </div>
+            </li>
+            <li class="c-row"><button class="c-head" type="button"><span class="c-idx">04</span><span class="c-ico"><i data-ic="bed" data-ic-size="18"></i></span><span class="c-name">Corpo</span><span class="c-key"><span class="c-key-val">10,5 h</span><span class="c-key-sub">repouso mín · 3 curtos</span></span><span class="c-chev"><i data-ic="chevron" data-ic-size="16"></i></span></button></li>
+          </ul>
+          <div class="navpad"></div>
+        </div>
+        <div class="nav"><div class="di"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">C</span><h2>Acordeão compacto</h2><p>4 linhas finas (quase sem scroll), leitura tabular. Vermelho só na Segurança.</p><span class="ex">Abre: a linha cresce no lugar, as outras ficam finas.</span></div>
+    </div>
+
+    <!-- D -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="17"></i><span class="bdot"></span></span></div>
+        <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+        <div class="body">
+          <div class="eyb">Estatísticas · easyJet · AE</div>
+          <div class="htitle">Os teus temas</div>
+          <div class="hr"></div>
+          <div class="d-wrap">
+            <div class="d-tabs" role="tablist">
+              <button class="d-tab d-tab--on" role="tab"><span class="d-tab-dot"></span><i data-ic="gauge" data-ic-size="17"></i><span class="d-tab-lbl">Segurança</span></button>
+              <button class="d-tab" role="tab"><i data-ic="plane" data-ic-size="17"></i><span class="d-tab-lbl">Voo</span></button>
+              <button class="d-tab" role="tab"><i data-ic="wallet" data-ic-size="17"></i><span class="d-tab-lbl">Dinheiro</span></button>
+              <button class="d-tab" role="tab"><i data-ic="bed" data-ic-size="17"></i><span class="d-tab-lbl">Corpo</span></button>
+            </div>
+            <div class="d-panel" role="tabpanel">
+              <div class="d-phead"><span class="d-picon"><i data-ic="gauge" data-ic-size="20"></i></span><div class="d-pttl"><div class="d-pname"><span class="d-idx">01</span> Segurança</div><div class="d-pkey"><b class="d-red">93%</b><span>Serviço · 28 dias — o mais cheio</span></div></div></div>
+              <div class="d-pbody">
+                <div class="d-group"><div class="d-glabel"><i data-ic="clock" data-ic-size="12"></i> Serviço</div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">7 dias</span><span class="d-ftl-pct d-warn">87%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--warn" style="width:87%"></span></div><div class="d-ftl-sub">52 / 60 h · faltam 8 h</div></div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">14 dias</span><span class="d-ftl-pct d-warn">87%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--warn" style="width:87%"></span></div><div class="d-ftl-sub">96 / 110 h · faltam 14 h</div></div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">28 dias</span><span class="d-ftl-pct d-red">93%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--red" style="width:93%"></span></div><div class="d-ftl-sub">176 / 190 h · faltam 14 h</div></div>
+                </div>
+                <div class="d-group"><div class="d-glabel"><i data-ic="plane" data-ic-size="12"></i> Voo</div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">28 dias</span><span class="d-ftl-pct d-warn">84%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--warn" style="width:84%"></span></div><div class="d-ftl-sub">84 / 100 h · faltam 16 h</div></div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">Ano civil</span><span class="d-ftl-pct d-ok">57%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--ok" style="width:57%"></span></div><div class="d-ftl-sub">512 / 900 h · faltam 388 h</div></div>
+                  <div class="d-ftl"><div class="d-ftl-top"><span class="d-ftl-name">12 meses</span><span class="d-ftl-pct d-ok">64%</span></div><div class="d-bar"><span class="d-bar-fill d-bar--ok" style="width:64%"></span></div><div class="d-ftl-sub">636 / 1000 h · faltam 364 h</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="navpad"></div>
+        </div>
+        <div class="nav"><div class="di"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">D</span><h2>Separadores + 1 painel</h2><p>4 chips no topo, só 1 painel de cada vez (zero scroll pelos outros). Ponto vermelho da Segurança fica visível noutra aba.</p><span class="ex">Abre: troca o painel no mesmo sítio.</span></div>
+    </div>
+
+    <!-- E -->
+    <div class="col">
+      <div class="ph"><div class="scr">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="17"></i><span class="bdot"></span></span></div>
+        <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+        <div class="body">
+          <div class="eyb">Estatísticas · easyJet · AE</div>
+          <div class="htitle">Os teus temas</div>
+          <div class="hr"></div>
+          <div class="e-wrap">
+            <div class="e-grid">
+              <button class="e-tile" type="button"><div class="e-tile__top"><span class="e-ic e-ic--alarm"><i data-ic="gauge" data-ic-size="19"></i></span><span class="e-idx">01</span></div><div class="e-name">Segurança</div><div class="e-key e-key--red">93<span class="e-key__u">%</span></div><div class="e-sub">Serviço · 28 d</div></button>
+              <button class="e-tile" type="button"><div class="e-tile__top"><span class="e-ic"><i data-ic="plane" data-ic-size="19"></i></span><span class="e-idx">02</span></div><div class="e-name">Voo</div><div class="e-key">512,4<span class="e-key__u">h</span></div><div class="e-sub">57% do teto</div></button>
+              <button class="e-tile" type="button"><div class="e-tile__top"><span class="e-ic"><i data-ic="wallet" data-ic-size="19"></i></span><span class="e-idx">03</span></div><div class="e-name">Dinheiro</div><div class="e-key e-key--money">20 553,30<span class="e-key__u">€</span></div><div class="e-sub">ganhos AE</div></button>
+              <button class="e-tile" type="button"><div class="e-tile__top"><span class="e-ic"><i data-ic="bed" data-ic-size="19"></i></span><span class="e-idx">04</span></div><div class="e-name">Corpo</div><div class="e-key">10,5<span class="e-key__u">h</span></div><div class="e-sub">repouso mín · 3 curtos</div></button>
+            </div>
+            <div class="e-scrim"></div>
+            <div class="e-sheet" role="dialog">
+              <div class="e-grab"></div>
+              <div class="e-shead"><span class="e-ic"><i data-ic="plane" data-ic-size="19"></i></span><div class="e-shead__t"><div class="e-shead__idx"><span class="e-shead__n">02</span> · Voo</div><div class="e-shead__sub">horas de voo · ano civil</div></div><button class="e-close" type="button"><i data-ic="minus" data-ic-size="16"></i></button></div>
+              <div class="e-hero"><div class="e-hero__big">512,4<span class="e-hero__u"> h</span></div><div class="e-hero__pct"><div class="e-hero__pctn">57%</div><div class="e-hero__pctl">do teto</div></div></div>
+              <div class="e-bar"><div class="e-bar__fill" style="width:57%"></div></div>
+              <div class="e-barmeta"><span>faltam 388 h</span><span>teto 900 h · FTL.210</span></div>
+              <div class="e-sec"><div class="e-sec__h"><i data-ic="stats" data-ic-size="13"></i> Por mês</div>
+                <div class="e-chart">
+                  <div class="e-col"><div class="e-col__bar" style="height:65px"></div><div class="e-col__l">Jan</div></div>
+                  <div class="e-col"><div class="e-col__bar" style="height:73px"></div><div class="e-col__l">Fev</div></div>
+                  <div class="e-col"><div class="e-col__bar" style="height:85px"></div><div class="e-col__l">Mar</div></div>
+                  <div class="e-col"><div class="e-col__bar" style="height:80px"></div><div class="e-col__l">Abr</div></div>
+                  <div class="e-col"><div class="e-col__bar" style="height:92px"></div><div class="e-col__l">Mai</div></div>
+                  <div class="e-col"><div class="e-col__bar" style="height:98px"></div><div class="e-col__l">Jun</div></div>
+                  <div class="e-col"><div class="e-col__bar e-col__bar--now" style="height:94px"></div><div class="e-col__l">Jul</div></div>
+                </div>
+              </div>
+              <div class="e-two">
+                <div class="e-mini"><div class="e-mini__h">Tipos</div><div class="e-row"><span class="e-row__k">Voo</span><span class="e-row__v">148</span></div><div class="e-row"><span class="e-row__k">Standby aer.</span><span class="e-row__v">12</span></div><div class="e-row"><span class="e-row__k">Posic.</span><span class="e-row__v">6</span></div></div>
+                <div class="e-mini"><div class="e-mini__h">Destinos</div><div class="e-row"><span class="e-row__k"><i data-ic="pin" data-ic-size="12"></i> OPO</span><span class="e-row__v">×24</span></div><div class="e-row"><span class="e-row__k"><i data-ic="pin" data-ic-size="12"></i> AGP</span><span class="e-row__v">×18</span></div><div class="e-row"><span class="e-row__k"><i data-ic="pin" data-ic-size="12"></i> FNC</span><span class="e-row__v">×16</span></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="navpad"></div>
+        </div>
+        <div class="nav"><div class="di"><i data-ic="home" data-ic-size="13"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="13"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="13"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="13"></i>FTL</div></div>
+      </div></div>
+      <div class="cap"><span class="tag">E</span><h2>Grelha bento + folha por cima</h2><p>2×2 de relance. Toca e o ecrã escurece; sobe uma folha (sheet) por cima com o detalhe.</p><span class="ex">Abre: literalmente "em cima" — folha sobre a grelha.</span></div>
+    </div>
+
+  </div>
+
+  <script src="icons.js"></script>
+</body>
+</html>

@@ -9,14 +9,16 @@ import { select, success, warning } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { datesInRange, yearCount } from '../data/aeEvents';
 
-// "Extra do mês" — regista um EVENTO DATADO (DDO à parte: marca-se no próprio serviço).
-// Tipo + dia → entra no salário do mês do evento, auditável. Aberto pelo mini-FAB do
-// speed-dial e pelo "+ adicionar" dos Cálculos AE. DDO/WFLY ficam FORA da lista (são
-// condições do serviço — marcam-se no form do serviço desse dia, evita o duplo caminho).
+// "Extra do mês" — regista um EVENTO DATADO (ocorrência SEM serviço nesse dia). Tipo +
+// dia → entra no salário do mês do evento, auditável. Aberto pelo mini-FAB do speed-dial
+// e pelo "+ adicionar" dos Cálculos AE. Só EVENTOS: o que é ATRIBUTO de um serviço —
+// folga trabalhada (DDO/WFLY/IDO, Cl.68/69), papel de instrutor (Cl.34/35), e o dever
+// ad-hoc/dia de escritório inteiro (Art. 43 = OFC8, 3 NS — marca-se como serviço `office`
+// dia-inteiro) — marca-se no FORM do serviço desse dia (evita o duplo caminho) e fica FORA daqui.
 // Tipos POR-DIA (férias/doença) aceitam um BLOCO "de–até" → grava UM evento por dia
 // (o modelo não muda: a lista dos Cálculos mostra/apaga dia a dia; a doença por episódio
 // do Art. 48 recebe os dias consecutivos como espera). Duplicados (tipo+dia) não gravam.
-const DUTY_CONDITION_TYPES = new Set(['ddo', 'wfly']);
+const DUTY_CONDITION_TYPES = new Set(['ddo', 'wfly', 'ido', 'instructorDays', 'adhocDays']);
 
 export default function ExtraEventSheet({ visible, onClose }) {
   const { lang, ae, crewCategory, addAeEvents, aeEvents, vacationDaysYear } = useContext(AppContext);

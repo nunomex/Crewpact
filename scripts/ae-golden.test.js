@@ -318,7 +318,7 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('TAP mês: standby aeroporto sem prestação (total = base)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8287.50);
 }
 
-// ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY por condição ──
+// ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY/IDO por condição ──
 {
   const fl = { report_time: '06:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS', instructor: true };
   const m = monthlyAe({ '2026-06-10': fl }, 'FO', '12/12', ae, { ym: '2026-06' });
@@ -334,13 +334,32 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Papel cabine: uprank 2 setores = 32.54', monthlyAe({ '2026-06-10': flC }, 'FA', '12/12', cabin, { ym: '2026-06' }).extras, 32.54);
   eq('Papel cabine: CCLT dia = 25', monthlyAe({ '2026-06-11': { ...flC, sectors: 0, kind: 'training', role: 'cclt' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 25);
   // DDO/WFLY por CONDIÇÃO do serviço (folga publicada trabalhada) — 1×/dia, € do monthExtras.
-  const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'training', dayOffWorked: 'ddo' };
+  const ddoDay = { report_time: '08:00', block_on: '16:00', kind: 'positioning', dayOffWorked: 'ddo' };   // kind sem prestação → isola a condição
   const mD = monthlyAe({ '2026-06-12': ddoDay }, 'FO', '12/12', ae, { ym: '2026-06' });
   eq('DDO por condição: +0,4% anual (FO 191.00)', mD.extras, 191.00);
   eq('DDO por condição: contado', mD.ddoDaysAuto, 1);
   eq('WFLY por condição: +1% anual (FO 477.50)', monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'wfly' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 477.50);
+  // IDO por CONDIÇÃO do serviço (folga infringida — Cl.68, o DOBRO do DDO = 0,8% anual).
+  // Antes era só evento no mini-FAB; agora é atributo do serviço trabalhado, como o DDO.
+  const mI = monthlyAe({ '2026-06-12': { ...ddoDay, dayOffWorked: 'ido' } }, 'FO', '12/12', ae, { ym: '2026-06' });
+  eq('IDO por condição: +0,8% anual (FO 382.00)', mI.extras, 382.00);
+  eq('IDO por condição: contado', mI.idoDaysAuto, 1);
   // ACUMULA com o item do próprio serviço: escritório em folga = OFC4 (58,14) + DDO (191,00).
   eq('DDO em dia de escritório: OFC4 + DDO = 249.14', monthlyAe({ '2026-06-12': { ...ddoDay, kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 249.14);
+  // CABINE trabalho em terra pelo caminho do SERVIÇO (monthlyAe): Art. 70 = 3 NS. O motor usava
+  // ae.OFFICE4_SECTORS (que a cabine não tem) → pagava €0; fallback p/ ae.OFFICE_SECTORS corrige.
+  eq('Cabine office via monthlyAe: 3 NS = 97.50 (Art. 70)', monthlyAe({ '2026-06-12': { kind: 'office' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 97.50);
+  // Dia de escritório piloto — OFC4 (defeito, 1,5 NS) vs OFC8 (dia inteiro = dever ad-hoc
+  // Art. 43, 3 NS). Anexo I.14. O ad-hoc deixou de ser evento do mini-FAB → é o office inteiro.
+  eq('Office OFC4 (defeito, 1,5 NS): FO = 58.14', monthlyAe({ '2026-06-12': { kind: 'office' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 58.14);
+  eq('Office OFC8 (dia inteiro = ad-hoc 3 NS): FO = 116.28', monthlyAe({ '2026-06-12': { kind: 'office', officeType: 'ofc8' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 116.28);
+  // FORMAÇÃO (Art. 43): o FORMANDO em terra/simulador recebe 3 NS; e-learning = 0; se for
+  // INSTRUTOR (role) recebe €120 (Art. 42), não os 3 NS. Cabine (Cl.70 não cobre) = 0.
+  eq('Formação formando terra/sim = 3 NS (FO 116.28)', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 116.28);
+  eq('Formação formando contado', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'FO', '12/12', ae, { ym: '2026-06' }).trainDaysAuto, 1);
+  eq('Formação e-learning = 0 (Art. 43)', monthlyAe({ '2026-06-12': { kind: 'training', eLearning: true } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
+  eq('Formação instrutor (role) = €120, não 3 NS', monthlyAe({ '2026-06-12': { kind: 'training', role: 'instr' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 120);
+  eq('Formação cabine sem item AE = 0 (Cl.70 não cobre)', monthlyAe({ '2026-06-12': { kind: 'training' } }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 0);
 }
 
 // ── Extras como EVENTOS DATADOS (data/aeEvents.js): contagem por mês + doença por episódio ──

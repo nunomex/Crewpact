@@ -162,14 +162,16 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
       {pd && pd.missing > 0 ? (
         <Text style={s.note}>{pd.missing} {l('voo(s) sem rota — per diem parcial', 'flight(s) without route — partial per diem')}</Text>
       ) : null}
-      {month && (month.officeDays > 0 || month.adtyDays > 0 || month.instructorDaysAuto > 0 || month.ddoDaysAuto > 0 || month.wflyDaysAuto > 0 || month.nightStopDays > 0) ? (
+      {month && (month.officeDays > 0 || month.adtyDays > 0 || month.instructorDaysAuto > 0 || month.trainDaysAuto > 0 || month.ddoDaysAuto > 0 || month.wflyDaysAuto > 0 || month.idoDaysAuto > 0 || month.nightStopDays > 0) ? (
         <Text style={s.note}>
           {l('Da escala:', 'From the roster:')} {[
             month.officeDays > 0 ? `${month.officeDays} ${l('escritório', 'office')}` : null,
             month.adtyDays > 0 ? `${month.adtyDays} ${l('standby aeroporto', 'airport standby')}` : null,
             month.instructorDaysAuto > 0 ? `${month.instructorDaysAuto} ${l('dia(s) com papel (instrutor/uprank…)', 'day(s) with a role (instructor/uprank…)')}` : null,
+            month.trainDaysAuto > 0 ? `${month.trainDaysAuto} ${l('formação (terra/sim)', 'training (ground/sim)')}` : null,
             month.ddoDaysAuto > 0 ? `${month.ddoDaysAuto} DDO` : null,
             month.wflyDaysAuto > 0 ? `${month.wflyDaysAuto} WFLY` : null,
+            month.idoDaysAuto > 0 ? `${month.idoDaysAuto} IDO` : null,
             month.nightStopDays > 0 ? `${month.nightStopDays} ${l('paragem(ns) nocturna(s)', 'night stop(s)')}` : null,
           ].filter(Boolean).join(' · ')}
         </Text>
@@ -205,7 +207,7 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
           <Text style={s.note}>
             {xt.total > 0
               ? l(`Soma ${fmtEur(xt.total)} ao total estimado${counts.sickDays != null ? ' · doença: dias 1-3 por episódio (Art. 48)' : ''}.`, `Adds ${fmtEur(xt.total)} to the estimate${counts.sickDays != null ? ' · sick: days 1-3 per episode (Art. 48)' : ''}.`)
-              : l('Ocorrências do mês que não se inferem da rota (doença, férias, IDO, SNC…). Trabalhar em folga (DDO/WFLY) marca-se no próprio serviço.', 'This month’s occurrences not derived from the route (sick, leave, IDO, SNC…). Working a day off (DDO/WFLY) is marked on the duty itself.')}
+              : l('Ocorrências do mês que não se inferem da rota (doença, férias, SNC…). Trabalhar/infringir folga (DDO/WFLY/IDO) marca-se no próprio serviço.', 'This month’s occurrences not derived from the route (sick, leave, SNC…). Working/infringing a day off (DDO/WFLY/IDO) is marked on the duty itself.')}
           </Text>
           {/* Saldo ANUAL de férias — direito anual (Art. 238.º CT); plafond do Perfil. Só onde há registo (vacDays). */}
           {(ae.EXTRA_KINDS || []).some((k) => k.id === 'vacDays') ? (() => {

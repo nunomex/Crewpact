@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Estatísticas — só FTL (dial da Segurança)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --okSoft:#E7F3EC; --warn:#E86A10; --red:#C6362B; --redSoft:#F7E9E7; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .lead{max-width:640px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+
+  .ph{width:394px;max-width:96vw;height:860px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 20px 0}
+  .hdr .av{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .hdr .r{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+  .hdr .r .bdot{position:absolute;top:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:var(--red);border:2px solid var(--paper)}
+  .side{position:absolute;right:9px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:5}.side .y{color:var(--yellow)}
+  .body{padding:6px 22px 0}
+
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:10px}
+  .hero{position:relative;height:84px;margin-top:2px}
+  .ghost{position:absolute;right:2px;top:-8px;font-family:'Barlow Condensed';font-weight:700;font-size:92px;line-height:1;letter-spacing:-3px;color:var(--ghost);font-variant-numeric:tabular-nums}
+  .mrow{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;justify-content:flex-start;gap:9px}
+  .mleft{display:flex;align-items:center;gap:7px;cursor:pointer}
+  .mchev{display:none;align-items:center;color:var(--ink)}
+  .mrow.mes .mchev{display:inline-flex}
+  .word{font-family:'Barlow Condensed';font-weight:700;font-size:42px;line-height:.9;letter-spacing:-.5px}
+  .seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
+  .segb{font-weight:800;font-size:11.5px;color:var(--grey);padding:6px 13px;border-radius:999px}
+  .segb.on{background:var(--ink);color:var(--paper)}
+  .scoperow{margin:0 0 16px}
+  .hr{height:1.5px;background:var(--ink);margin:12px 0 14px}
+  .seyb{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);margin:0 0 4px;display:flex;align-items:center;gap:6px}.seyb .dot{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .div{height:1px;background:var(--line);margin:22px 0 16px}
+
+  /* ── DIAL da SEGURANÇA (topo) — janelas FTL, % na cor do estado ── */
+  .money{display:flex;align-items:center;gap:12px;min-height:236px}
+  .disp{flex:1;min-width:0}
+  .dlab{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
+  .dval{font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:.86;font-variant-numeric:tabular-nums;margin-top:4px;color:var(--ink)}
+  .dval.ok{color:var(--ok)}.dval.warn{color:var(--warn)}.dval.red{color:var(--red)}
+  .dsub{font-size:12.5px;font-weight:600;color:var(--grey);margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.4}.dsub b{color:var(--ink);font-weight:800}
+  .col{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .opt{display:flex;align-items:center;gap:9px;cursor:pointer;background:none;border:0;padding:0;transition:transform .22s cubic-bezier(.2,.7,.2,1)}
+  /* curva do arco = calculada em JS conforme as janelas VISÍVEIS (filtro Mês/Ano) */
+  .onm{font-size:11.5px;font-weight:700;color:var(--grey);white-space:nowrap;transition:color .18s ease}
+  .opt.on .onm{color:var(--ink);font-weight:800}
+  .cir{min-width:44px;height:33px;border-radius:999px;background:var(--soft);display:flex;align-items:center;justify-content:center;padding:0 10px;flex:0 0 auto;transition:background .18s ease}
+  .cir .pc{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+  .opt.ok .cir .pc{color:var(--ok)}.opt.warn .cir .pc{color:var(--warn)}.opt.red .cir .pc{color:var(--red)}
+  .opt.on.ok .cir{background:var(--ok)}.opt.on.warn .cir{background:var(--warn)}.opt.on.red .cir{background:var(--red)}
+  .opt.on .cir{box-shadow:0 5px 13px rgba(20,20,18,.2)}
+  .opt.on .cir .pc{color:var(--paper)}
+
+  /* ── 2 cards (Voo + Corpo) ── */
+  .bento{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .btile{position:relative;display:flex;flex-direction:column;min-height:118px;padding:14px 14px 15px;background:var(--paper);border:1px solid var(--line);border-radius:16px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+  .btile:active{background:var(--soft)}
+  .bt-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+  .bt-ic{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--soft);color:var(--ink);flex:0 0 auto}
+  .bt-idx{font-family:'Barlow Condensed';font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--yellow);font-variant-numeric:tabular-nums}
+  .bt-name{font-size:12.5px;font-weight:700;color:var(--grey);margin-bottom:5px}
+  .bt-key{font-family:'Barlow Condensed';font-weight:700;font-size:29px;line-height:.95;color:var(--ink);font-variant-numeric:tabular-nums}
+  .bt-cap{margin-top:6px;font-size:11px;font-weight:600;color:var(--grey)}
+  .foot{margin:16px 2px 6px;font-size:10.5px;font-weight:600;line-height:1.6;color:var(--grey)}
+
+  .navpad{height:82px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14);z-index:8}
+  .di{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:var(--grey);padding:7px 11px;border-radius:999px}
+  .di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+  .fab{position:absolute;right:20px;bottom:78px;width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.3);z-index:8}
+
+  .scrim{position:absolute;inset:0;background:rgba(20,20,20,.42);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:20}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:84%;overflow-y:auto;scrollbar-width:none;background:var(--paper);border-radius:26px 26px 0 0;padding:9px 20px 24px;transform:translateY(102%);transition:transform .34s cubic-bezier(.2,.85,.2,1);z-index:21}
+  .sheet::-webkit-scrollbar{display:none}
+  .sheet.open{transform:translateY(0)}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--ghost);margin:2px auto 15px}
+  .shead{display:flex;align-items:center;gap:11px;margin-bottom:15px}
+  .sh-ic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:grid;place-items:center;color:var(--ink);flex:0 0 auto}
+  .sh-tt{flex:1;min-width:0}
+  .sh-name{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--grey)}
+  .sh-name .x{font-family:'Barlow Condensed';color:var(--yellow);font-size:13px;letter-spacing:.06em}
+  .sh-sub{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:2px}
+  .s-close{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--grey);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  .bnote{margin-top:15px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;font-weight:600;color:var(--grey);line-height:1.55}.bnote b{color:var(--ink)}
+
+  .vhero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .vbig{font-family:'Barlow Condensed';font-weight:700;font-size:50px;line-height:.85;color:var(--ink);font-variant-numeric:tabular-nums}.vbig .u{font-size:20px;color:var(--grey);font-weight:600}
+  .vpct{text-align:right}.vpct .n{font-family:'Barlow Condensed';font-weight:700;font-size:24px;line-height:1;color:var(--ink)}.vpct .l{font-size:10.5px;color:var(--grey)}
+  .vbar{height:9px;border-radius:999px;background:var(--soft);overflow:hidden}.vbar span{display:block;height:100%;background:var(--ink);border-radius:999px}
+  .vmeta{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);margin-top:7px;font-variant-numeric:tabular-nums}
+  .sec-h{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);margin:18px 0 11px}.sec-h [data-ic]{color:var(--grey)}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:92px}
+  .ccol{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+  .cbar{width:100%;max-width:20px;border-radius:5px 5px 0 0;background:var(--ink)}.cbar.now{background:var(--yellow)}
+  .cx{font-size:9px;font-weight:700;color:var(--grey);text-transform:uppercase}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:16px}
+  .mini{border:1px solid var(--line);border-radius:14px;padding:12px}
+  .mini h4{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--grey);margin-bottom:9px}
+  .mrow2{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:7px}.mrow2:last-child{margin-bottom:0}
+  .mrow2 .k{color:var(--ink);display:inline-flex;align-items:center;gap:5px}.mrow2 .k [data-ic]{color:var(--grey)}
+  .mrow2 .v{color:var(--grey);font-weight:700;font-variant-numeric:tabular-nums}
+
+  .body3{display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:4px}
+  .bcell{padding:4px 8px;text-align:center}.bcell + .bcell{border-left:1px solid var(--line)}
+  .bnum{font-family:'Barlow Condensed';font-weight:700;font-size:34px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .bu{font-size:15px;color:var(--grey);font-weight:600}
+  .blab{font-size:10px;font-weight:700;color:var(--grey);line-height:1.35;margin-top:7px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Estatísticas — só FTL (topo = dial da Segurança)</h1>
+    <p>Para quem <b>não tem AE</b> (sem salário modelado). O topo deixa de ser o dinheiro e passa a ser a <b>Segurança</b>: <b>toca nas bolas</b> (janelas de limite) — a % fica na cor do estado (verde/laranja/vermelho) e o valor grande mostra a % + "faltam X h". A crítica (Serviço 28 d · 93%) aparece já selecionada. Por baixo, só <b>Voo · Corpo</b>. Mesmo cabeçalho e cards, adaptativo ao perfil.</p>
+  </div>
+
+  <div class="ph"><div class="scr">
+    <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+    <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="18"></i><span class="bdot"></span></span></div>
+    <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
+    <div class="body">
+      <div class="eyb">Estatísticas · Ryanair · FTL</div>
+      <div class="hero">
+        <div class="ghost" id="scGhost">ANO</div>
+        <div class="mrow"><div class="mleft" id="periodPick"><span class="word" id="scWord">2026</span><span class="mchev"><i data-ic="chevron" data-ic-rot="90" data-ic-size="16"></i></span></div></div>
+      </div>
+      <div class="hr"></div>
+
+      <div class="scoperow"><div class="seg" id="scope"><span class="segb" data-sc="mes">Mês</span><span class="segb on" data-sc="ano">Ano</span></div></div>
+
+      <div class="seyb"><span class="dot"></span>A tua segurança · janelas FTL · agora</div>
+      <div class="money">
+        <div class="disp">
+          <div class="dlab" id="dLab">Serviço · 28 dias</div>
+          <div class="dval red" id="dVal">93%</div>
+          <div class="dsub" id="dSub">176 / 190 h · <b>faltam 14 h</b></div>
+        </div>
+        <div class="col" id="dcol">
+          <button class="opt warn" data-k="v28" data-when="mes"><span class="onm">Voo 28d</span><span class="cir"><span class="pc">84%</span></span></button>
+          <button class="opt ok" data-k="vano" data-when="ano"><span class="onm">Voo ano</span><span class="cir"><span class="pc">57%</span></span></button>
+          <button class="opt ok" data-k="v12m" data-when="ano"><span class="onm">Voo 12m</span><span class="cir"><span class="pc">64%</span></span></button>
+          <button class="opt warn" data-k="s7" data-when="mes"><span class="onm">Serv 7d</span><span class="cir"><span class="pc">87%</span></span></button>
+          <button class="opt warn" data-k="s14" data-when="mes"><span class="onm">Serv 14d</span><span class="cir"><span class="pc">87%</span></span></button>
+          <button class="opt red on" data-k="s28" data-when="always"><span class="onm">Serv 28d</span><span class="cir"><span class="pc">93%</span></span></button>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="seyb">Mais</div>
+      <div class="bento">
+        <button class="btile" data-sheet="voo">
+          <div class="bt-top"><span class="bt-ic"><i data-ic="plane" data-ic-size="19"></i></span><span class="bt-idx">01</span></div>
+          <div class="bt-name">Voo</div><div class="bt-key" id="vooKey">512,4 h</div><div class="bt-cap" id="vooCap">57% do teto</div>
+        </button>
+        <button class="btile" data-sheet="corpo">
+          <div class="bt-top"><span class="bt-ic"><i data-ic="bed" data-ic-size="19"></i></span><span class="bt-idx">02</span></div>
+          <div class="bt-name">Corpo</div><div class="bt-key" id="corpoKey">10,5 h</div><div class="bt-cap" id="corpoCap">repouso mín · 3 curtos</div>
+        </button>
+      </div>
+
+      <div class="foot">Limites FTL = janelas rolantes a esta data (independentes do ano). Estimativa a partir da tua escala. Toca num tema para o detalhe.</div>
+      <div class="navpad"></div>
+    </div>
+
+    <div class="fab"><i data-ic="plus" data-ic-size="24"></i></div>
+    <div class="nav"><div class="di"><i data-ic="home" data-ic-size="14"></i>Início</div><div class="di on"><i data-ic="stats" data-ic-size="14"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="14"></i>Escala</div><div class="di"><i data-ic="gauge" data-ic-size="14"></i>FTL</div></div>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="sheet" id="sheet-voo">
+    <div class="grab"></div>
+    <div class="shead"><span class="sh-ic"><i data-ic="plane" data-ic-size="19"></i></span><div class="sh-tt"><div class="sh-name"><span class="x">01</span> · Voo</div><div class="sh-sub">horas de voo · ano civil</div></div><span class="s-close"><i data-ic="minus" data-ic-size="16"></i></span></div>
+    <div class="vhero"><div class="vbig">512,4<span class="u"> h</span></div><div class="vpct"><div class="n">57%</div><div class="l">do teto</div></div></div>
+    <div class="vbar"><span style="width:57%"></span></div>
+    <div class="vmeta"><span>faltam 388 h</span><span>teto 900 h · ORO.FTL.210 b</span></div>
+    <div class="sec-h"><i data-ic="stats" data-ic-size="13"></i> Voo por mês</div>
+    <div class="chart">
+      <div class="ccol"><div class="cbar" style="height:65px"></div><div class="cx">jan</div></div>
+      <div class="ccol"><div class="cbar" style="height:73px"></div><div class="cx">fev</div></div>
+      <div class="ccol"><div class="cbar" style="height:85px"></div><div class="cx">mar</div></div>
+      <div class="ccol"><div class="cbar" style="height:80px"></div><div class="cx">abr</div></div>
+      <div class="ccol"><div class="cbar" style="height:92px"></div><div class="cx">mai</div></div>
+      <div class="ccol"><div class="cbar" style="height:100px"></div><div class="cx">jun</div></div>
+      <div class="ccol"><div class="cbar now" style="height:97px"></div><div class="cx">jul</div></div>
+    </div>
+    <div class="two">
+      <div class="mini"><h4>Por tipo</h4>
+        <div class="mrow2"><span class="k">Voo</span><span class="v">152</span></div>
+        <div class="mrow2"><span class="k">Standby aer.</span><span class="v">14</span></div>
+        <div class="mrow2"><span class="k">Posicionamento</span><span class="v">4</span></div>
+      </div>
+      <div class="mini"><h4>Destinos</h4>
+        <div class="mrow2"><span class="k"><i data-ic="pin" data-ic-size="12"></i> STN</span><span class="v">×31</span></div>
+        <div class="mrow2"><span class="k"><i data-ic="pin" data-ic-size="12"></i> OPO</span><span class="v">×19</span></div>
+        <div class="mrow2"><span class="k"><i data-ic="pin" data-ic-size="12"></i> DUB</span><span class="v">×15</span></div>
+      </div>
+    </div>
+    <div class="bnote"><b>158</b> voos · <b>316</b> setores no ano.</div>
+  </div>
+
+  <div class="sheet" id="sheet-corpo">
+    <div class="grab"></div>
+    <div class="shead"><span class="sh-ic"><i data-ic="bed" data-ic-size="19"></i></span><div class="sh-tt"><div class="sh-name"><span class="x">02</span> · Corpo</div><div class="sh-sub">repouso &amp; fadiga · o teu ano</div></div><span class="s-close"><i data-ic="minus" data-ic-size="16"></i></span></div>
+    <div class="body3">
+      <div class="bcell"><div class="bnum">10,5<span class="bu">h</span></div><div class="blab">Menor repouso<br>entre serviços</div></div>
+      <div class="bcell"><div class="bnum">3</div><div class="blab">Repousos<br>abaixo de 11 h</div></div>
+      <div class="bcell"><div class="bnum">5<span class="bu">d</span></div><div class="blab">Sequência máx.<br>de serviço</div></div>
+    </div>
+    <div class="bnote"><b>74</b> dias de folga e <b>22</b> paragens noturnas no ano. Os 3 repousos entre 10 h e 11 h são legais fora de base (ORO.FTL.235) — sem quebra do mínimo.</div>
+  </div>
+
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    var scrim=document.getElementById('scrim');
+    function closeAll(){document.querySelectorAll('.sheet').forEach(function(s){s.classList.remove('open');});scrim.classList.remove('on');}
+    document.querySelectorAll('[data-sheet]').forEach(function(t){
+      t.addEventListener('click',function(){closeAll();document.getElementById('sheet-'+t.getAttribute('data-sheet')).classList.add('open');scrim.classList.add('on');});
+    });
+    scrim.addEventListener('click',closeAll);
+    document.querySelectorAll('.s-close').forEach(function(c){c.addEventListener('click',closeAll);});
+
+    var WIN={
+      v28:{name:'Voo · 28 dias',pc:'84%',sub:'84 / 100 h · <b>faltam 16 h</b>',st:'warn'},
+      vano:{name:'Voo · ano civil',pc:'57%',sub:'512 / 900 h · <b>faltam 388 h</b>',st:'ok'},
+      v12m:{name:'Voo · 12 meses',pc:'64%',sub:'636 / 1000 h · <b>faltam 364 h</b>',st:'ok'},
+      s7:{name:'Serviço · 7 dias',pc:'87%',sub:'52 / 60 h · <b>faltam 8 h</b>',st:'warn'},
+      s14:{name:'Serviço · 14 dias',pc:'87%',sub:'96 / 110 h · <b>faltam 14 h</b>',st:'warn'},
+      s28:{name:'Serviço · 28 dias',pc:'93%',sub:'176 / 190 h · <b>faltam 14 h</b>',st:'red'}
+    };
+    var dLab=document.getElementById('dLab'),dVal=document.getElementById('dVal'),dSub=document.getElementById('dSub');
+    function pick(k){var w=WIN[k];if(!w)return;dLab.textContent=w.name;dVal.textContent=w.pc;dVal.className='dval '+w.st;dSub.innerHTML=w.sub;}
+    document.querySelectorAll('#dcol .opt').forEach(function(b){
+      b.addEventListener('click',function(){document.querySelectorAll('#dcol .opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');pick(b.getAttribute('data-k'));});
+    });
+
+    // toggle Mês/Ano — afeta os cards Voo·Corpo; a Segurança fica "agora" (não muda)
+    var SCOPE={
+      ano:{word:'2026',ghost:'ANO',vooKey:'512,4 h',vooCap:'57% do teto',corpoKey:'10,5 h',corpoCap:'repouso mín · 3 curtos'},
+      mes:{word:'Julho',ghost:'MÊS',vooKey:'58,2 h',vooCap:'em julho',corpoKey:'11,0 h',corpoCap:'repouso mín · 1 curto'}
+    };
+    var scope='ano', curM=6, MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    function filterDial(){
+      var vis=[];
+      document.querySelectorAll('#dcol .opt').forEach(function(b){
+        var w=b.getAttribute('data-when'), show=(w==='always'||w===scope);
+        b.style.display=show?'flex':'none'; if(show)vis.push(b);
+      });
+      var n=vis.length;
+      vis.forEach(function(b,i){var mid=(n-1)/2,t=mid?(i-mid)/mid:0;b.style.transform='translateX('+(-40*(1-Math.cos(t*Math.PI/2))).toFixed(0)+'px)';});
+      var on=document.querySelector('#dcol .opt.on');
+      if(!on||on.style.display==='none'){
+        document.querySelectorAll('#dcol .opt').forEach(function(x){x.classList.remove('on');});
+        var crit=document.querySelector('#dcol .opt[data-k="s28"]')||vis[0];
+        crit.classList.add('on'); pick(crit.getAttribute('data-k'));
+      }
+    }
+    function applyScope(){
+      var s=SCOPE[scope];
+      document.getElementById('scWord').textContent=(scope==='mes')?MONTHS[curM]:s.word;
+      document.querySelector('.mrow').classList.toggle('mes',scope==='mes');
+      document.getElementById('scGhost').textContent=s.ghost;
+      document.getElementById('vooKey').textContent=s.vooKey;
+      document.getElementById('vooCap').textContent=s.vooCap;
+      document.getElementById('corpoKey').textContent=s.corpoKey;
+      document.getElementById('corpoCap').textContent=s.corpoCap;
+      filterDial();
+    }
+    document.querySelectorAll('#scope .segb').forEach(function(seg){
+      seg.addEventListener('click',function(){document.querySelectorAll('#scope .segb').forEach(function(x){x.classList.remove('on');});seg.classList.add('on');scope=seg.getAttribute('data-sc');applyScope();});
+    });
+    document.getElementById('periodPick').addEventListener('click',function(){if(scope!=='mes')return;curM=(curM+1)%12;document.getElementById('scWord').textContent=MONTHS[curM];});
+    applyScope();
+  })();
+  </script>
+</body>
+</html>

@@ -98,11 +98,12 @@ export const roleEurFor = (ae, category, role, sectors = 0) => {
 // modelo da app (1 duty/dia: route + kind) e o `computeAeMonth` do motor. Mapeamento
 // dos kind (em setores nominais, que o motor multiplica pelo NS da categoria):
 //   • flight          → per-diem da rota (distâncias → ae.perDiem)
-//   • office          → OFC4 = 1,5 NS                          (Anexo I.14)
+//   • office          → OFC4 1,5 NS · OFC8 3 NS (officeType)    (Anexo I.14 · cabine Art. 70 = 3 NS)
+//   • training        → FORMANDO em terra/simulador = 3 NS (Art. 43 piloto; só e-learning=0);
+//                       INSTRUTOR (role) = €120 (Art. 42). Cabine (Cl.70 não cobre formação) = 0.
 //   • standby_airport → ADTY ≥4h não-chamado = 2 NS            (Anexo I.5)
-//   • standby_home / positioning / training → 0  (não há prestação de AE no Anexo I
-//     para o piloto: posicionamento conta para FTL mas não paga AE; em formação o
-//     pago é o instrutor, não o formando; standby em casa não tem abono no Anexo I)
+//   • standby_home / positioning → 0  (posicionamento conta p/ FTL mas não paga AE;
+//     standby em casa não tem abono no Anexo I)
 // Paragens nocturnas: contadas das duties marcadas `nightStop` (toggle no formulário),
 // valor fixo Art. 39 = 2 NS/paragem. Módulo PURO. duties = mapa { date: { route, kind,
 // nightStop?, deleted? } }. Devolve o objeto do motor (base, perDiem, nightStops €,
@@ -110,9 +111,11 @@ export const roleEurFor = (ae, category, role, sectors = 0) => {
 // — ou null se faltar ae/categoria/computeAeMonth.
 export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
-  const office4 = ae.OFFICE4_SECTORS || 0;
+  // Dia de escritório: piloto OFC4 = 1,5 NS (Anexo I.14); cabine = 3 NS (Art. 70) — só tem
+  // OFFICE_SECTORS, não OFC4/8 → sem o fallback pagava €0 ao dia de terra da cabine.
+  const office4 = ae.OFFICE4_SECTORS || ae.OFFICE_SECTORS || 0;
   const flights = [];                 // arrays de distâncias (NM) por voo → computeAeMonth
-  let extraSectors = 0, adtyEur = 0, instrEur = 0, withRoute = 0, missing = 0, count = 0, officeDays = 0, adtyDays = 0, instructorDaysAuto = 0, nightStops = 0, ddoDaysAuto = 0, wflyDaysAuto = 0;
+  let extraSectors = 0, adtyEur = 0, instrEur = 0, withRoute = 0, missing = 0, count = 0, officeDays = 0, adtyDays = 0, instructorDaysAuto = 0, nightStops = 0, ddoDaysAuto = 0, wflyDaysAuto = 0, idoDaysAuto = 0, trainDaysAuto = 0;
   // Duração report→fim de um serviço (volta à meia-noite); null sem horas completas.
   const svcDurMin = (s) => {
     const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(x || ''); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
@@ -130,14 +133,22 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     if (svcs.some((s) => s && s.nightStop)) nightStops++;
     const dayHasFlight = svcs.some((s) => s && (s.kind || 'flight') === 'flight');
     const dayHasSb = svcs.some((s) => s && s.kind === 'standby_airport');
-    // Dia de FOLGA PUBLICADA trabalhado (condição no serviço): DDO (escalado) ou WFLY
-    // (voluntário) — conta UMA vez por DIA (a folga é do dia, não do período de serviço).
-    const dow = svcs.find((s) => s && (s.dayOffWorked === 'ddo' || s.dayOffWorked === 'wfly'));
-    if (dow) { if (dow.dayOffWorked === 'ddo') ddoDaysAuto++; else wflyDaysAuto++; }
+    // Dia de FOLGA PUBLICADA trabalhado (condição no serviço): DDO (escalado), WFLY
+    // (voluntário) ou IDO (infringida, sem o aviso devido) — conta UMA vez por DIA (a
+    // folga é do dia, não do período de serviço). Cl.68 junta DDO+IDO ("trabalhar/
+    // infringir dia de descanso"; IDO paga o dobro do DDO); WFLY = Cl.69.
+    const dow = svcs.find((s) => s && (s.dayOffWorked === 'ddo' || s.dayOffWorked === 'wfly' || s.dayOffWorked === 'ido'));
+    if (dow) { if (dow.dayOffWorked === 'ddo') ddoDaysAuto++; else if (dow.dayOffWorked === 'wfly') wflyDaysAuto++; else idoDaysAuto++; }
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
-      if (kind === 'office')          { extraSectors += office4;      officeDays++; continue; }
+      if (kind === 'office') {
+        // Dia de escritório: OFC4 (1,5 NS) por defeito; OFC8 (3 NS = dia inteiro, que a lei
+        // equipara ao dever ad-hoc Art. 43) quando marcado. Cabine = rate único (office4 já
+        // resolve p/ OFFICE_SECTORS). Anexo I.14.
+        extraSectors += (s.officeType === 'ofc8' && ae.OFFICE8_SECTORS) ? ae.OFFICE8_SECTORS : office4;
+        officeDays++; continue;
+      }
       if (kind === 'standby_airport') {
         // ADTY FINO (Anexo I.5 piloto / Art. 58 cabine) em € via o módulo do AE — as matrizes
         // diferem (piloto em setores NOMINAIS, cabine em setores MÉDIOS): chamado = há VOO no
@@ -158,6 +169,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         if (role) {
           const eur = roleEurFor(ae, category, role, s.sectors);
           if (eur > 0) { instrEur += eur; instructorDaysAuto++; }
+        } else if (kind === 'training' && !s.eLearning && ae.ADHOC_SECTORS) {
+          // FORMANDO em formação de terra/simulador = 3 NS (Art. 43 piloto; só e-learning=0).
+          // Gated em ae.ADHOC_SECTORS: só o piloto tem o item — a cabine (Cl.70 NÃO cobre
+          // formação) fica base-only; não se inventa prestação. Não conta como "papel".
+          extraSectors += ae.ADHOC_SECTORS; trainDaysAuto++;
         }
       }
       // standby_home / positioning / training → 0 (sem prestação de AE no Anexo I).
@@ -176,9 +192,10 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     }
   }
   const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet });
-  // DDO/WFLY derivados das condições — valorizados pelo monthExtras do próprio AE (a lei).
-  const condEur = (ddoDaysAuto || wflyDaysAuto) && ae.monthExtras
-    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto }, { index }).total).toFixed(2)
+  // DDO/WFLY/IDO derivados das condições — valorizados pelo monthExtras do próprio AE (a
+  // lei). AE sem o item (ex. TAP) → monthExtras ignora a chave → 0 (não se inventa prestação).
+  const condEur = (ddoDaysAuto || wflyDaysAuto || idoDaysAuto) && ae.monthExtras
+    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index }).total).toFixed(2)
     : 0;
   const plusEur = +(adtyEur + instrEur + condEur).toFixed(2);
   if (plusEur) {
@@ -186,7 +203,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     month.variable = +(((month.variable || 0) + plusEur)).toFixed(2);
     month.total = +(((month.total || 0) + plusEur)).toFixed(2);
   }
-  return { ...month, withRoute, missing, count, officeDays, adtyDays, instructorDaysAuto, ddoDaysAuto, wflyDaysAuto, nightStopDays: nightStops };
+  return { ...month, withRoute, missing, count, officeDays, adtyDays, instructorDaysAuto, trainDaysAuto, ddoDaysAuto, wflyDaysAuto, idoDaysAuto, nightStopDays: nightStops };
 };
 
 // CAMINHO ÚNICO do total mensal AE (€) — usado por Home, Perfil e Cálculos para

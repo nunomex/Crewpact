@@ -301,7 +301,8 @@ export default function DutyDetailScreen({ route, navigation }) {
             const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
             return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? C.greenText : null };
           })(),
-          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: duty.dayOffWorked === 'ddo' ? 'DDO' : 'WFLY', color: C.warnText },
+          duty.dayOffWorked && { k: l('Folga publicada trabalhada', 'Worked published day off'), v: duty.dayOffWorked === 'ddo' ? 'DDO' : duty.dayOffWorked === 'wfly' ? 'WFLY' : 'IDO', color: C.warnText },
+          duty.kind === 'office' && duty.officeType === 'ofc8' && { k: l('Dia de escritório', 'Office day'), v: l('Dia inteiro (OFC8) · 3 setores', 'Full day (OFC8) · 3 sectors') },
           duty.source && { k: l('Fonte', 'Source'), v: sources[duty.source] || duty.source },
         ]} />
 

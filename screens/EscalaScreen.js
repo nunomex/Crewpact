@@ -443,8 +443,8 @@ export default function EscalaScreen({ navigation, route }) {
           setTimeout(() => {
             Alert.alert(
               l('Alterações de última hora', 'Short-notice changes'),
-              l(`${cand.total} alteração(ões) a ≤7 dias. Registar como SNC (com o dia de cada uma) nos Extras do mês? Se alguma caiu num dia de folga publicada, marca DDO/WFLY no próprio serviço.`,
-                `${cand.total} change(s) within ≤7 days. Log as SNC (each with its day) in the month's extras? If any fell on a published day off, mark DDO/WFLY on the duty itself.`),
+              l(`${cand.total} alteração(ões) a ≤7 dias. Registar como SNC (com o dia de cada uma) nos Extras do mês? Se alguma caiu num dia de folga publicada, marca DDO/WFLY/IDO no próprio serviço.`,
+                `${cand.total} change(s) within ≤7 days. Log as SNC (each with its day) in the month's extras? If any fell on a published day off, mark DDO/WFLY/IDO on the duty itself.`),
               [
                 { text: l('Agora não', 'Not now'), style: 'cancel' },
                 { text: l(`Registar +${cand.total} SNC`, `Log +${cand.total} SNC`), onPress: () => {

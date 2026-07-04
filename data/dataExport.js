@@ -24,6 +24,8 @@ const cleanDuties = (duties = {}) => {
       special: d.special || null,                  // casos especiais FTL (205c/205g/225 + discrição 205f)
       role: d.role || (d.instructor ? 'instr' : null),   // papel desempenhado (instr/uprank/CCLT/CTI)
       dayOffWorked: d.dayOffWorked || null,        // folga publicada trabalhada (ddo/wfly)
+      officeType: d.officeType || null,            // dia de escritório OFC4/OFC8 (Anexo I.14)
+      eLearning: !!d.eLearning,                    // formação e-learning (sem pagamento variável)
       accommodation: !!d.accommodation,            // alojamento (split 220 d/e · standby 225(e))
       source: d.source || 'manual',
     };

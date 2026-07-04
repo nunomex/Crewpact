@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · INFO — carteira (lista completa · crew-aware)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1218;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .lead{max-width:600px;text-align:center}.lead h1{font-size:19px;font-weight:800;color:#fff}.lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .demo{display:flex;gap:8px;justify-content:center;margin-top:12px}
+  .demo button{padding:7px 14px;border-radius:999px;border:1px solid #2a2f3a;background:#161a22;color:#96a0ad;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}.demo button.on{background:#fff;color:#0f1218;border-color:#fff}
+  .ph{width:394px;max-width:96vw;height:820px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+  .status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:11px;font-weight:700}
+  .hdr{display:flex;align-items:center;padding:12px 20px 0}
+  .hdr .av{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .hdr .r{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+  .hdr .r .bdot{position:absolute;top:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:var(--red);border:2px solid var(--paper)}
+  .side{position:absolute;right:9px;top:118px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap;z-index:5}.side .y{color:var(--yellow)}
+  .body{padding:6px 22px 0}
+  .eyb{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin-top:8px}
+  .hero{position:relative;height:78px;margin-top:2px}
+  .ghost{position:absolute;right:0;top:-8px;font-family:'Barlow Condensed';font-weight:700;font-size:74px;line-height:1;color:var(--ghost)}
+  .mrow{position:absolute;left:0;right:0;bottom:2px}.mrow .word{font-family:'Barlow Condensed';font-weight:700;font-size:36px;line-height:.9;letter-spacing:-.5px}
+  .hr{height:1.5px;background:var(--ink);margin:10px 0 12px}
+
+  .search{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:13px;padding:11px 13px;margin-bottom:12px}
+  .search input{border:none;background:none;outline:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink);flex:1}.search input::placeholder{color:var(--grey)}
+  .search .clr{color:var(--grey);cursor:pointer;display:none}
+
+  .deck{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -22px;padding:2px 40px}.deck::-webkit-scrollbar{display:none}
+  .card{flex:0 0 84%;scroll-snap-align:center;border-radius:20px;padding:16px 18px;min-height:142px;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--ink)}
+  .card .edge{position:absolute;left:0;top:16px;bottom:16px;width:4px;border-radius:0 4px 4px 0}
+  .card.ftl .edge{background:var(--red)}.card.ae .edge{background:var(--yellow)}.card.fontes .edge{background:#DDDBD3}
+  .card .cname{font-family:'Barlow Condensed';font-weight:700;font-size:23px;color:#fff;line-height:1;letter-spacing:-.3px}
+  .card .csub{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#8f8f88;margin-top:3px}
+  .card .cnfc{position:absolute;top:16px;right:18px}
+  .card.ftl .cnfc{color:var(--red)}.card.ae .cnfc{color:var(--yellow)}.card.fontes .cnfc{color:#DDDBD3}
+  .card .cstat{font-family:'Barlow Condensed';font-weight:700;font-size:38px;color:#fff;line-height:1;margin-top:auto;letter-spacing:-.5px}.card .cstat small{font-size:17px;color:#8f8f88}
+  .card .cks{font-size:10px;font-weight:700;color:#8f8f88;margin-top:3px}
+  .dots{display:flex;gap:6px;justify-content:center;margin:13px 0 4px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:all .2s}.dot.on{background:var(--ink);width:20px;border-radius:3px}
+
+  .grps{display:flex;gap:7px;margin:8px 0 6px;overflow-x:auto;scrollbar-width:none}.grps::-webkit-scrollbar{display:none}
+  .gchip{padding:7px 13px;border-radius:10px;font-size:11.5px;font-weight:800;color:var(--grey);background:var(--paper);border:1.5px solid var(--line);white-space:nowrap;cursor:pointer}.gchip.on{color:var(--ink);border-color:var(--ink)}
+
+  /* LISTA para ler — cada rubrica: nome + valor · fórmula · artigo */
+  .rlabel{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey);margin:14px 2px 2px}
+  @keyframes rowin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .rrow{display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-top:1px solid var(--line);cursor:pointer;animation:rowin .32s cubic-bezier(.2,.7,.2,1) both}
+  @media (prefers-reduced-motion:reduce){.rrow{animation:none!important}}
+  .rrow .rt{flex:1;min-width:0}
+  .rrow .rn{font-size:13px;font-weight:800;color:var(--ink);line-height:1.2}
+  .rrow .rf{font-size:11px;font-weight:600;color:var(--grey);margin-top:4px;line-height:1.45}
+  .rrow .rf .art{color:var(--ink);font-weight:800}
+  .rrow .rdot{display:inline-block;width:6px;height:6px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .rrow .rv{font-family:'Barlow Condensed';font-weight:700;font-size:24px;color:var(--ink);white-space:nowrap;text-align:right;line-height:1.05;font-variant-numeric:tabular-nums}
+  .rrow .rv small{font-size:13px;color:var(--grey);font-weight:700}
+  .rrow .rv.txt{font-size:14px;color:var(--grey);font-family:'Hanken Grotesk';font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+
+  .src{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}.src:first-of-type{border-top:none}
+  .src .ic{width:32px;height:32px;border-radius:10px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .src .nm{font-size:12.5px;font-weight:700;color:var(--ink)}.src .sub{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:2px}.src .txt{flex:1}
+  .empty{text-align:center;color:var(--grey);font-size:12px;font-weight:700;padding:26px 0;display:none}
+
+  .navpad{height:70px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;gap:2px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 7px;box-shadow:0 10px 26px rgba(20,20,18,.14)}
+  .di{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:var(--grey);padding:7px 11px;border-radius:999px}.di.on{background:var(--ink);color:#fff}.di.on [data-ic]{color:var(--yellow)}
+  .fab{position:absolute;right:20px;bottom:78px;width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(0,0,0,.3);z-index:6}
+  .scrim{position:absolute;inset:0;background:rgba(10,10,8,.42);opacity:0;pointer-events:none;transition:opacity .22s;z-index:20}.scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:26px 26px 0 0;padding:16px 22px 26px;transform:translateY(101%);transition:transform .3s cubic-bezier(.2,.75,.2,1);z-index:21}.sheet.on{transform:translateY(0)}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+  .sheet .sv{font-family:'Barlow Condensed';font-weight:700;font-size:44px;color:var(--ink);line-height:1}.sheet .sv small{font-size:20px;color:var(--grey)}
+  .sheet .snm{font-size:16px;font-weight:800;color:var(--ink);margin-top:3px}.sheet .sart{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:800;margin-top:10px}
+  .sheet .sf{font-size:12.5px;font-weight:600;color:var(--grey);line-height:1.55;margin-top:13px}.sheet .sex{background:var(--soft);border-radius:13px;padding:13px 14px;margin-top:13px;font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.45}.sheet .sex .k{color:var(--grey);font-weight:800;text-transform:uppercase;letter-spacing:.5px;font-size:9px;display:block;margin-bottom:3px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>INFO · carteira — lista completa · crew-aware</h1>
+    <p>Cartão vivo (FTL·AE·Fontes) + procura + <b>lista para ler</b>: cada rubrica com <b>valor · fórmula · artigo</b>. <b>Todas</b> as rubricas do catálogo, por grupos (chip). Troca o perfil em baixo — a Cabine muda os artigos/valores; Ryanair fica só com FTL.</p>
+    <div class="demo">
+      <button class="on" data-p="pilot">easyJet · Piloto</button>
+      <button data-p="cabin">easyJet · Cabine</button>
+      <button data-p="ryan">Ryanair · FTL-only</button>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="scr">
+      <div class="status"><span>9:41</span><span>▮▮▮ ⌁ 87%</span></div>
+      <div class="hdr"><span class="av" id="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="18"></i><span class="bdot"></span></span></div>
+      <div class="side">INFO · <span class="y">REFERÊNCIA</span></div>
+      <div class="body">
+        <div class="eyb" id="eyb">Referência · easyJet · Piloto</div>
+        <div class="hero"><div class="ghost">§</div><div class="mrow"><span class="word" id="word">A lei</span></div></div>
+        <div class="hr"></div>
+        <div class="search"><i data-ic="search" data-ic-size="15"></i><input id="q" placeholder="procurar na referência…"><span class="clr" id="clr"><i data-ic="close" data-ic-size="14"></i></span></div>
+        <div id="browse">
+          <div class="deck" id="deck"></div>
+          <div class="dots" id="dots"></div>
+          <div class="grps" id="grps"></div>
+          <div id="stage"></div>
+        </div>
+        <div id="results" style="display:none"></div>
+        <div class="empty" id="empty">Nada encontrado.</div>
+        <div class="navpad"></div>
+      </div>
+      <div class="fab"><i data-ic="plus" data-ic-size="24"></i></div>
+      <div class="nav"><div class="di"><i data-ic="home" data-ic-size="14"></i>Início</div><div class="di"><i data-ic="stats" data-ic-size="14"></i>Estat.</div><div class="di"><i data-ic="cal" data-ic-size="14"></i>Escala</div><div class="di on"><i data-ic="info" data-ic-size="14"></i>INFO</div></div>
+    </div>
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script>
+  (function(){
+    // rubrica = [valor, unidade, nome, artigo, fórmula, exemplo, long?]
+    var FTL={groups:[
+      {name:'Voo',items:[
+        ['900','h','Voo · ano civil','ORO.FTL.210(b)','Teto de horas de voo por ano civil (jan–dez).'],
+        ['1000','h','Voo · 12 meses','ORO.FTL.210(a)','Janela móvel de 12 meses consecutivos.'],
+        ['100','h','Voo · 28 dias','ORO.FTL.210','Janela móvel de 28 dias.']]},
+      {name:'Serviço',items:[
+        ['60','h','Serviço · 7 dias','ORO.FTL.210','Horas de serviço (duty) em 7 dias consecutivos.'],
+        ['110','h','Serviço · 14 dias','ORO.FTL.210','Horas de serviço em 14 dias.'],
+        ['190','h','Serviço · 28 dias','ORO.FTL.210','Horas de serviço em 28 dias.']]},
+      {name:'Repouso & FDP',items:[
+        ['12','h','Repouso mínimo','ORO.FTL.235','Na base ≥12 h ou o serviço anterior; fora da base ≥10 h.','Fora da base = 10 h.'],
+        ['13','h','FDP básico','ORO.FTL.205','Período de serviço de voo máximo; reduz por setores e por hora WOCL.']]}
+    ]};
+    var AE_PILOT={groups:[
+      {name:'Base',items:[
+        ['38,76','€','Setor nominal · FO','Anexo I.2','A tua unidade de conta. SFO 51,50 · CPT 78,75 · SO 29,36.','Quase tudo é múltiplo disto.','Setor nominal (FO)'],
+        ['÷14','·','Remuneração base','Art. 36','Base anual da categoria × fator do contrato, em 14 prestações (12 + férias + Natal).','','Remuneração base']]},
+      {name:'Por voo',items:[
+        ['×NS','·','Per diem','Art. 37','Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.','LIS-OPO-LIS: 2×0,8×38,76 = 62,02 €.'],
+        ['2','NS','Paragem nocturna','Art. 39','2 setores nominais por noite fora da base, entre voos.','FO: 77,52 €.'],
+        ['2','NS','Dia de férias','Art. 38','Pagamento fixo por dia de férias, além do salário.','FO: 77,52 €/dia.'],
+        ['1–2','NS','Serviço aeroporto (ADTY)','Art. 40','1 setor (≤4h) ou 2 (>4h / se chamado a voar).'],
+        ['tabela','·','Posicionamento','Art. 44','€ por categoria × banda de distância (Anexo I.18).','','Posicionamento por ar/terra']]},
+      {name:'Terra & formação',items:[
+        ['3','NS','Dever ad-hoc / formação','Art. 43','Deveres em terra + formação em terra/simulador (e-learning = 0).','FO: 116,28 €.'],
+        ['1,5','NS','Dia de escritório (OFC4)','Anexo I.14','Dia de escritório de meio-dia.','FO: 58,14 €.'],
+        ['3','NS','Dia de escritório (OFC8)','Anexo I.14','Dia de escritório inteiro.','FO: 116,28 €.'],
+        ['120','€','Instrutor / verificador','Art. 42','Por dia a exercer funções em terra/simulador.']]},
+      {name:'Perturbação',items:[
+        ['60','€','Alteração de escala (SNC)','Anexo I.12','Por evento de alteração de escala com curta antecedência.'],
+        ['0,4','%','Trabalhar em folga (DDO)','Cl. 68','0,4% da base anual.','FO: 191 €.'],
+        ['0,8','%','Folga infringida (IDO)','Cl. 68','0,8% da base anual (o dobro do DDO).','FO: 382 €.'],
+        ['1','%','Voluntário em folga (WFLY)','Cl. 69','1% da base anual.','FO: 477,50 €.']]},
+      {name:'Subsídios',items:[
+        ['60','%','Complemento de doença','Anexo I.10','60% da retribuição base diária, dias 1 a 3 de cada episódio.'],
+        ['1000','€','Prestação de benefícios','Anexo I.8','Valor anual (FO). CPT 3.500 · SFO 2.000.'],
+        ['35','%','Complemento de gravidez','Anexo I.11','35% da remuneração mensal base.'],
+        ['5–15','%','Prémio de permanência','Anexo I.9','% da base anual por antiguidade (3.º → 10.º ano).'],
+        ['€/ano','·','Retenção (sazonal)','Anexo I.15','Só em contratos sazonais (não estilo de vida).','','Pagamento de retenção'],
+        ['~2 sem','·','Bónus de performance','Art. 46','Alvo ~2 semanas de base · discricionário/estimativa.','','Bónus anual']]}
+    ]};
+    var AE_CABIN={groups:[
+      {name:'Base',items:[
+        ['32,50','€','Setor nominal · CM','Anexo I.2','A tua unidade. FA 21,00 · CMP 24,00 · FA1 13,45.','','Setor nominal (CM)'],
+        ['÷14','·','Remuneração base','Cl. 50','Base anual × contrato, em 14 prestações.','','Remuneração base']]},
+      {name:'Por voo',items:[
+        ['×NS','·','Per diem','Art. 53','Σ setores voados × nominal. Bandas 0,8 · 1,2 · 1,5 · 2,5.'],
+        ['46','€','Pernoita','Art. 56','Valor FIXO por noite fora da base (≠ pilotos, que é 2 NS).','46,00 €/noite.','Paragem nocturna'],
+        ['2','NS','Dia de férias','Art. 60','2 setores nominais por dia de férias.','CM: 65,00 €.'],
+        ['1–2','NS','Assistência no aeroporto','Art. 58','ADTY em setores médios, conforme chamado/duração.'],
+        ['tabela','·','Posicionamento','Anexo I.18','€ por categoria × banda de distância.','','Posicionamento']]},
+      {name:'Terra',items:[
+        ['3','NS','Trabalho em terra','Art. 70','Deveres em terra sem per diem/posicionamento (rate único, sem OFC4/8).','CM: 97,50 €.']]},
+      {name:'Perturbação',items:[
+        ['20','€','Alteração de escala (SNC)','Art. 66','Por evento qualificável.'],
+        ['1','NS','Irregularidade (RDP)','Art. 67','Por evento (piso €18 FA / €23 CM).','','Irregularidade de escala'],
+        ['115','€','Trabalhar em folga (DDO)','Art. 68','Valor fixo.'],
+        ['140','€','Folga infringida (IDO)','Art. 68','Valor fixo (mais que o DDO).'],
+        ['1','%','Voluntário em folga (WFLY)','Art. 69','1% da base anual.']]},
+      {name:'Papéis',items:[
+        ['16,27','€','Upranker · por setor','Cl. 34','A desempenhar Chefe de Cabine, por setor voado.'],
+        ['25','€','CCLT · por dia','Cl. 35','Verificador de linha, por dia de treino.'],
+        ['4','NS','CTI-Flexi (instrutor)','Cl. 35','Instrutor, por dia (setores nominais de Chefe).']]},
+      {name:'Subsídios',items:[
+        ['5','%','Abono para falhas','Art. 54','5% da base anual, 12 prestações.'],
+        ['350','€','Domínio de língua','Art. 65','3.ª língua €350 + €50 por língua adicional (ano).'],
+        ['425','€','Abono para benefícios','Art. 62','Valor anual (desde abr 2025).'],
+        ['45','%','Complemento de doença','Art. 61','45% da base diária, após o 3.º dia.'],
+        ['~2 sem','·','Bónus de performance','Cl. 63','Alvo ~2 semanas · estimativa.','','Bónus anual']]}
+    ]};
+
+    var DOMAINS={
+      pilot:[
+        {k:'ftl',ic:'shield',name:'FTL',sub:'A lei · EASA',stat:'900',u:'h',ks:'voo/ano · 8 limites',word:'A lei',tag:'var(--red)',data:FTL},
+        {k:'ae',ic:'wallet',name:'AE',sub:'easyJet · SPAC',stat:'38,76',u:'€',ks:'setor nominal · 21 rubricas',word:'O teu AE',tag:'var(--yellow)',data:AE_PILOT},
+        {k:'fontes',ic:'book',name:'Fontes',sub:'oficiais',stat:'3',u:'',ks:'EUR-Lex · EASA · DRE',word:'Fontes',tag:'var(--ink)',list:[['globe','Regulamento (UE) 83/2014','FTL · EUR-Lex'],['shield','EASA CS-FTL.1','regras de execução (Issue 1, Am. 1)'],['book','AE easyJet · Pilotos (SPAC)','DRE / BTE 40/2023']]}
+      ],
+      cabin:[
+        {k:'ftl',ic:'shield',name:'FTL',sub:'A lei · EASA',stat:'900',u:'h',ks:'voo/ano · 8 limites',word:'A lei',tag:'var(--red)',data:FTL},
+        {k:'ae',ic:'wallet',name:'AE',sub:'easyJet · SNPVAC',stat:'32,50',u:'€',ks:'setor nominal · 20 rubricas',word:'O teu AE',tag:'var(--yellow)',data:AE_CABIN},
+        {k:'fontes',ic:'book',name:'Fontes',sub:'oficiais',stat:'3',u:'',ks:'EUR-Lex · EASA · DRE',word:'Fontes',tag:'var(--ink)',list:[['globe','Regulamento (UE) 83/2014','FTL · EUR-Lex'],['shield','EASA CS-FTL.1','regras de execução (Issue 1, Am. 1)'],['book','AE easyJet · Cabine (SNPVAC)','DRE / BTE 8/2024']]}
+      ],
+      ryan:[
+        {k:'ftl',ic:'shield',name:'FTL',sub:'A lei · EASA',stat:'900',u:'h',ks:'voo/ano · 8 limites',word:'A lei',tag:'var(--red)',data:FTL},
+        {k:'fontes',ic:'book',name:'Fontes',sub:'oficiais',stat:'2',u:'',ks:'EUR-Lex · EASA',word:'Fontes',tag:'var(--ink)',list:[['globe','Regulamento (UE) 83/2014','FTL · EUR-Lex'],['shield','EASA CS-FTL.1','regras de execução (Issue 1, Am. 1)']]}
+      ]
+    };
+    var EYB={pilot:'Referência · easyJet · Piloto',cabin:'Referência · easyJet · Cabine',ryan:'Referência · Ryanair · Piloto'};
+
+    var deck=document.getElementById('deck'), dots=document.getElementById('dots'), grps=document.getElementById('grps'), stage=document.getElementById('stage'),
+        browse=document.getElementById('browse'), results=document.getElementById('results'), empty=document.getElementById('empty'),
+        word=document.getElementById('word'), eyb=document.getElementById('eyb'), q=document.getElementById('q'), clr=document.getElementById('clr'),
+        scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet');
+    var prof='pilot', cur=0, gi=0, flat=[];
+    var doms=function(){ return DOMAINS[prof]; };
+
+    function buildFlat(){ flat=[]; doms().forEach(function(D){ if(!D.data) return; D.data.groups.forEach(function(g){ g.items.forEach(function(it){ flat.push({it:it,tag:D.tag}); }); }); }); }
+    function rowHTML(it,tag,idx){
+      var isTxt=(it[1]==='·'||it[1]===''), val=isTxt?('<span class="rv txt">'+it[0]+'</span>'):('<span class="rv">'+it[0]+(it[1]?'<small>'+it[1]+'</small>':'')+'</span>');
+      var dot=tag?'<span class="rdot" style="background:'+tag+'"></span>':'';
+      var d=Math.min((idx||0)*28,200);
+      return '<div class="rrow" data-k="'+it[2]+'" style="animation-delay:'+d+'ms"><div class="rt"><div class="rn">'+it[2]+'</div><div class="rf">'+dot+(it[4]||'')+' · <span class="art">'+it[3]+'</span></div></div>'+val+'</div>';
+    }
+    function bind(scope,pool){ scope.querySelectorAll('.rrow').forEach(function(r){ r.onclick=function(){ var f=pool.find(function(x){ return (x.it?x.it:x)[2]===r.dataset.k; }); openSheet(f.it?f.it:f); }; }); }
+
+    function renderDeck(){ var D=doms();
+      deck.innerHTML=D.map(function(c){ return '<div class="card '+c.k+'"><span class="edge"></span><div class="cname">'+c.name+'</div><div class="csub">'+c.sub+'</div><span class="cnfc"><i data-ic="'+c.ic+'" data-ic-size="17"></i></span><div class="cstat">'+c.stat+(c.u?'<small> '+c.u+'</small>':'')+'</div><div class="cks">'+c.ks+'</div></div>'; }).join('');
+      dots.innerHTML=D.map(function(_,i){ return '<span class="dot'+(i===cur?' on':'')+'"></span>'; }).join('');
+      if(window.CPIcons) CPIcons.hydrate(deck);
+    }
+    function renderContent(){ var c=doms()[cur]; word.textContent=c.word;
+      if(c.list){ grps.style.display='none'; stage.innerHTML=c.list.map(function(s){ return '<div class="src"><span class="ic"><i data-ic="'+s[0]+'" data-ic-size="15"></i></span><div class="txt"><div class="nm">'+s[1]+'</div><div class="sub">'+s[2]+'</div></div><i data-ic="share" data-ic-size="15" style="color:var(--grey)"></i></div>'; }).join(''); if(window.CPIcons) CPIcons.hydrate(stage); return; }
+      grps.style.display='flex';
+      grps.innerHTML=c.data.groups.map(function(g,i){ return '<button class="gchip'+(i===gi?' on':'')+'" data-g="'+i+'">'+g.name+'</button>'; }).join('');
+      grps.querySelectorAll('.gchip').forEach(function(ch){ ch.onclick=function(){ gi=+ch.dataset.g; renderContent(); }; });
+      var items=c.data.groups[gi].items;
+      stage.innerHTML=items.map(function(it,i){ return rowHTML(it,null,i); }).join('');
+      bind(stage,items);
+    }
+    function updActive(){ var i=Math.round(deck.scrollLeft/(deck.scrollWidth/doms().length)); i=Math.max(0,Math.min(doms().length-1,i)); if(i===cur) return; cur=i; gi=0;
+      dots.querySelectorAll('.dot').forEach(function(d,k){ d.classList.toggle('on',k===i); }); renderContent(); }
+    deck.addEventListener('scroll',updActive);
+
+    function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+    function doSearch(){ var v=norm(q.value.trim()); clr.style.display=v?'block':'none';
+      if(!v){ results.style.display='none'; empty.style.display='none'; browse.style.display='block'; renderContent(); return; }
+      browse.style.display='none'; word.textContent='Procura';
+      var hits=flat.filter(function(f){ return norm((f.it[6]||f.it[2])+' '+f.it[2]+' '+f.it[3]+' '+f.it[4]+' '+f.it[0]).indexOf(v)>=0; });
+      if(!hits.length){ results.style.display='none'; empty.style.display='block'; return; }
+      empty.style.display='none'; results.style.display='block';
+      results.innerHTML='<div class="rlabel">'+hits.length+' resultado(s) · a lei e o teu AE</div>'+hits.map(function(f,i){ return rowHTML(f.it,f.tag,i); }).join('');
+      bind(results,hits);
+    }
+    q.addEventListener('input',doSearch);
+    clr.onclick=function(){ q.value=''; doSearch(); q.focus(); };
+
+    function closeSheet(){ scrim.classList.remove('on'); sheet.style.transition=''; sheet.style.transform=''; sheet.classList.remove('on'); }
+    function openSheet(it){ if(!it) return; var isTxt=(it[1]==='·'||it[1]===''); var v=isTxt?it[0]:(it[0]+(it[1]?'<small> '+it[1]+'</small>':''));
+      sheet.innerHTML='<div class="grab"></div><div class="sv">'+v+'</div><div class="snm">'+(it[6]||it[2])+'</div><span class="sart">'+it[3]+'</span><div class="sf">'+(it[4]||'—')+'</div>'+(it[5]?'<div class="sex"><span class="k">Exemplo</span>'+it[5]+'</div>':'');
+      sheet.style.transition=''; sheet.style.transform=''; scrim.classList.add('on'); sheet.classList.add('on'); }
+    scrim.onclick=closeSheet;
+    // ── arrastar a folha para baixo para fechar (pointer = rato + toque) ──
+    var dsy=0, drag=false, ddy=0;
+    sheet.addEventListener('pointerdown',function(e){ drag=true; dsy=e.clientY; ddy=0; sheet.style.transition='none'; try{ sheet.setPointerCapture(e.pointerId); }catch(_){} });
+    sheet.addEventListener('pointermove',function(e){ if(!drag) return; ddy=e.clientY-dsy; if(ddy<0) ddy=0; sheet.style.transform='translateY('+ddy+'px)'; });
+    function endDrag(){ if(!drag) return; drag=false; sheet.style.transition=''; if(ddy>90){ closeSheet(); } else { sheet.style.transform='translateY(0)'; } ddy=0; }
+    sheet.addEventListener('pointerup',endDrag); sheet.addEventListener('pointercancel',endDrag);
+
+    function setProfile(p){ prof=p; cur=0; gi=0; q.value='';
+      document.querySelectorAll('.demo button').forEach(function(b){ b.classList.toggle('on',b.dataset.p===p); });
+      eyb.textContent=EYB[p]; buildFlat(); renderDeck(); doSearch();
+    }
+    document.querySelectorAll('.demo button').forEach(function(b){ b.onclick=function(){ setProfile(b.dataset.p); }; });
+    setProfile('pilot');
+    if(window.CPIcons) CPIcons.hydrate(document);
+  })();
+  </script>
+</body>
+</html>

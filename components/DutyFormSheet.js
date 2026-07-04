@@ -42,7 +42,7 @@ const legsForSectors = (route, sectors, prev = []) => {
   });
 };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false };
 // Aeronave do 1.º leg (auto-fill por deteção). Vive em `legs[0].aircraft`.
 const legAircraft = (d) => (d && Array.isArray(d.legs) && d.legs[0] && d.legs[0].aircraft) || '';
 // Legs com horas por setor para o form. Migração de duties ANTIGAS (só block_off/on, sem off/on
@@ -137,13 +137,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: d.signOff || '', role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: d.signOff || '', role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '', role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '', role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
-  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '', role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null });
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '', role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning });
   // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
   // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
@@ -437,6 +437,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       role: (isFlight || form.kind === 'training') ? (form.role || null) : null,
       // Este dia era FOLGA PUBLICADA e trabalhei: DDO (escalado) ou WFLY (voluntário).
       dayOffWorked: form.kind === 'reserve' ? null : (form.dayOffWorked || null),
+      // Dia de escritório: OFC4 (defeito) / OFC8 = dia inteiro, 3 NS (Anexo I.14). Só no kind office.
+      officeType: form.kind === 'office' ? (form.officeType || null) : null,
+      // Formação e-learning (sem pagamento variável, Art. 43) — só marca no kind training.
+      eLearning: form.kind === 'training' ? !!form.eLearning : false,
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -706,8 +710,42 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             </Animated.View>
           ) : null}
 
+          {/* ── DIA DE ESCRITÓRIO — OFC4 (meio-dia, 1,5 NS) vs OFC8 (dia inteiro, 3 NS, que
+              a lei equipara ao dever ad-hoc do Art. 43). Anexo I.14. Só onde o AE tem OFC8
+              (pilotos); a cabine tem rate único (Art. 70). O ad-hoc deixou de ser evento. ── */}
+          {form.kind === 'office' && ae && ae.OFFICE8_SECTORS ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <Text style={s.lbl}>{l('Duração do dia de escritório', 'Office day length')}</Text>
+              <SegRow s={s} value={form.officeType || 'ofc4'} onChange={(v) => { select(); setForm((f) => ({ ...f, officeType: v === 'ofc4' ? null : v })); }}
+                options={[
+                  { id: 'ofc4', label: l('Meio-dia (OFC4)', 'Half day (OFC4)') },
+                  { id: 'ofc8', label: l('Dia inteiro (OFC8)', 'Full day (OFC8)') },
+                ]} />
+              <Text style={s.routeHint}>{form.officeType === 'ofc8'
+                ? l('Dia inteiro (OFC8) — 3 setores nominais (Anexo I.14; = dever ad-hoc, Art. 43).', 'Full day (OFC8) — 3 nominal sectors (App. I.14; = ad-hoc duty, Art. 43).')
+                : l('Meio-dia (OFC4) — 1,5 setores nominais (Anexo I.14).', 'Half day (OFC4) — 1.5 nominal sectors (App. I.14).')}</Text>
+            </Animated.View>
+          ) : null}
+
+          {/* ── FORMAÇÃO em terra/simulador — o FORMANDO recebe 3 NS (Art. 43); o e-learning
+              não paga. Só piloto (a cabine não tem o item) e quando não há papel de instrutor. ── */}
+          {form.kind === 'training' && !form.role && ae && ae.ADHOC_SECTORS ? (
+            <Animated.View style={[s.sec, secStyle(5)]}>
+              <Text style={s.lbl}>{l('Tipo de formação', 'Training type')}</Text>
+              <SegRow s={s} value={form.eLearning ? 'elearn' : 'ground'} onChange={(v) => { select(); setForm((f) => ({ ...f, eLearning: v === 'elearn' })); }}
+                options={[
+                  { id: 'ground', label: l('Terra / simulador', 'Ground / sim') },
+                  { id: 'elearn', label: 'e-learning' },
+                ]} />
+              <Text style={s.routeHint}>{form.eLearning
+                ? l('E-learning — sem pagamento variável (Art. 43).', 'E-learning — no variable pay (Art. 43).')
+                : l('Formação em terra/simulador — 3 setores nominais ao formando (Art. 43).', 'Ground/sim training — 3 nominal sectors to the trainee (Art. 43).')}</Text>
+            </Animated.View>
+          ) : null}
+
           {/* ── FOLGA PUBLICADA trabalhada — condição de PAGAMENTO (DDO escalado · WFLY
-              voluntário). Só quando o AE tem os itens; conta 1×/dia no salário do mês. ── */}
+              voluntário · IDO infringida). Cl.68/69: são atributos do SERVIÇO desse dia
+              (trabalhaste), não eventos. Só quando o AE tem os itens; conta 1×/dia. ── */}
           {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
             <Animated.View style={[s.sec, secStyle(5)]}>
               <Text style={s.lbl}>{l('Este dia era folga publicada?', 'Was this a published day off?')}</Text>
@@ -715,12 +753,16 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 options={[
                   { id: 'no', label: l('Não', 'No') },
                   { id: 'ddo', label: 'DDO' },
-                  { id: 'wfly', label: l('WFLY (voluntário)', 'WFLY (volunteer)') },
+                  { id: 'wfly', label: 'WFLY' },
+                  ...(ae.EXTRA_KINDS.some((k) => k.id === 'ido') ? [{ id: 'ido', label: 'IDO' }] : []),
                 ]} />
               {form.dayOffWorked ? (
-                <Text style={s.routeHint}>{form.dayOffWorked === 'ddo'
-                  ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
-                  : l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')}</Text>
+                <Text style={s.routeHint}>{
+                  form.dayOffWorked === 'ddo'
+                    ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
+                    : form.dayOffWorked === 'wfly'
+                    ? l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')
+                    : l('Folga infringida (IDO) — trabalho em folga sem o aviso devido; soma ao salário do mês.', 'Infringed day off (IDO) — worked a day off without due notice; adds to the month pay.')}</Text>
               ) : null}
             </Animated.View>
           ) : null}
