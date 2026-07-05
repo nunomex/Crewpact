@@ -4,7 +4,7 @@
 // no scrim fecha. Tudo JS-driven (useNativeDriver:false) — o arrasto usa setValue, e misturar
 // com native-driver bloqueava o gesto/animação. Suave que chegue para uma folha.
 import React, { useRef, useEffect, useState } from 'react';
-import { Modal, View, TouchableWithoutFeedback, Animated, PanResponder, StyleSheet, Dimensions } from 'react-native';
+import { Modal, View, TouchableWithoutFeedback, Animated, PanResponder, StyleSheet, Dimensions, Keyboard, Platform } from 'react-native';
 import { PELE as P } from '../data/constants';
 
 const OUT = Dimensions.get('window').height;
@@ -12,7 +12,9 @@ const OUT = Dimensions.get('window').height;
 export default function PeleSheet({ visible, onClose, children }) {
   const ty = useRef(new Animated.Value(OUT)).current;   // translateY: OUT = fora do ecrã (baixo)
   const op = useRef(new Animated.Value(0)).current;      // opacidade do scrim
+  const kb = useRef(new Animated.Value(0)).current;      // levanta a folha acima do teclado (forms)
   const [shown, setShown] = useState(visible);
+  const [kbOpen, setKbOpen] = useState(false);           // teclado aberto? (scrim fecha o teclado, não a folha)
 
   useEffect(() => {
     if (visible) {
@@ -29,6 +31,16 @@ export default function PeleSheet({ visible, onClose, children }) {
       ]).start(() => setShown(false));
     }
   }, [visible]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Formulários com inputs (ex.: Extra do mês): levanta a folha para o teclado não a tapar.
+  // Inócuo nas folhas sem inputs (o teclado nunca abre → kb fica 0).
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const s1 = Keyboard.addListener(showEvt, (e) => { setKbOpen(true); Animated.timing(kb, { toValue: -((e.endCoordinates && e.endCoordinates.height) || 0), duration: 220, useNativeDriver: false }).start(); });
+    const s2 = Keyboard.addListener(hideEvt, () => { setKbOpen(false); Animated.timing(kb, { toValue: 0, duration: 200, useNativeDriver: false }).start(); });
+    return () => { s1.remove(); s2.remove(); };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const pan = useRef(
     PanResponder.create({
@@ -49,10 +61,10 @@ export default function PeleSheet({ visible, onClose, children }) {
   if (!shown) return null;
   return (
     <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={() => { if (kbOpen) { Keyboard.dismiss(); } else if (onClose) { onClose(); } }}>
         <Animated.View style={[s.scrim, { opacity: op }]} />
       </TouchableWithoutFeedback>
-      <Animated.View style={[s.sheet, { transform: [{ translateY: ty }] }]}>
+      <Animated.View style={[s.sheet, { transform: [{ translateY: Animated.add(ty, kb) }] }]}>
         <View style={s.grabArea} {...pan.panHandlers}><View style={s.grab} /></View>
         {children}
       </Animated.View>

@@ -397,6 +397,11 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   // Bloco de férias alimenta a contagem do mês: 7 eventos → vacDays 7 (sem teto — ≠ doença).
   const vac = datesInRange('2026-08-03', '2026-08-09').map((d) => ev(d, 'vacDays'));
   eq('Bloco: 7 férias contam 7 no mês', eventCounts(vac, '2026-08').vacDays, 7);
+  // Voo NUM dia de férias → esse dia não é "efetivamente gozado" (BTE easyJet) → não conta nem paga.
+  const vacDuties = { '2026-08-05': { kind: 'flight', route: 'LGW-FAO' } };
+  eq('Férias em dia de voo NÃO conta (efetivamente gozado)', eventCounts(vac, '2026-08', vacDuties).vacDays, 6);
+  eq('Férias sem duties conta tudo (retrocompat)', eventCounts(vac, '2026-08', null).vacDays, 7);
+  eq('Voo APAGADO não bloqueia a férias', eventCounts(vac, '2026-08', { '2026-08-05': { kind: 'flight', deleted: true } }).vacDays, 7);
 
   // SALDO anual (yearCount) — o direito a férias é ANUAL (Art. 238.º CT); conta datados
   // e só-mês do mesmo ano, filtra por tipo, e separa anos.

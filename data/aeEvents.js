@@ -20,14 +20,20 @@ const nextISO = (iso) => {
 //    no `ym` só os dias que (a) caem no ym E (b) estão entre os 3 primeiros do episódio.
 //  • Eventos só-mês ('YYYY-MM', migrados): contam nesse mês tal e qual — os contadores
 //    antigos já vinham com o teto aplicado, não se re-aplica lógica de episódio.
-export const eventCounts = (events = [], ym) => {
+// `duties` (opcional) = mapa da escala; se dado, uma AUSÊNCIA (férias/doença) num dia com
+// SERVIÇO não conta — "efetivamente gozado" (BTE easyJet cabine · piloto "não obstante o gozo
+// de férias"): voaste nesse dia → o suplemento não paga aí, a férias remarca-se para outro dia.
+export const eventCounts = (events = [], ym, duties = null) => {
   const counts = {};
   if (!ym) return counts;
   const add = (type, n = 1) => { counts[type] = (counts[type] || 0) + n; };
+  const ABSENCE = new Set(['vacDays', 'sickDays']);
+  const worked = (date) => !!(duties && duties[date] && !duties[date].deleted);   // serviço nesse dia?
   const sickDated = new Set();
   for (const e of events) {
     if (!e || !e.type || !e.date) continue;
     const isMonthOnly = String(e.date).length === 7;
+    if (!isMonthOnly && ABSENCE.has(e.type) && worked(e.date)) continue;   // voou nesse dia → não é gozado
     if (e.type === 'sickDays' && !isMonthOnly) { sickDated.add(e.date); continue; }
     if (String(e.date).slice(0, 7) === ym || (isMonthOnly && e.date === ym)) add(e.type);
   }

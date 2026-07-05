@@ -52,7 +52,7 @@ const buildDutiesCsv = (duties) => {
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
-    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, hotels } = useContext(AppContext);
+    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
@@ -177,6 +177,18 @@ export default function EscalaScreen({ navigation, route }) {
   const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`;
   const shiftMonth = (delta) => { select(); setMonthDate(new Date(y, m0 + delta, 1)); };
 
+  // Extras do mês PROJETADOS na grelha (SÓ-LEITURA, derivados dos aeEvents — NÃO são duties, o
+  // modelo de pagamento não muda). AUSÊNCIA = férias/doença → ocupa o dia (tipo-de-dia); o resto
+  // (snc/rdp) fica só na gestão de extras. Ver [[ae-extras-events]].
+  const extraKinds = (ae && Array.isArray(ae.EXTRA_KINDS)) ? ae.EXTRA_KINDS : [];
+  const extraKindOf = (tp) => extraKinds.find((k) => k.id === tp) || null;
+  const isAbsence = (tp) => tp === 'vacDays' || tp === 'sickDays';   // extras que OCUPAM o dia
+  const extraLabel = (tp) => { const k = extraKindOf(tp); return (k && k.label && (k.label[lang] || k.label.pt)) || tp; };
+  const extraEur = (tp, cat) => (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [tp]: 1 }).total : null;   // cat = categoria EFETIVA-DATADA (crewAt), não a plana
+  const absCode = (tp) => (tp === 'vacDays' ? l('FÉR', 'LVE') : l('DOE', 'SCK'));
+  const dayAbs = {};   // iso → 1.º evento de AUSÊNCIA desse dia (férias/doença)
+  (aeEvents || []).forEach((e) => { if (e && e.date && isAbsence(e.type) && !dayAbs[e.date]) dayAbs[e.date] = e; });
+
   // Resumo do mês: serviços (duties), folgas, per-diem (rota → ae.perDiem).
   // Serviço = qualquer duty NÃO apagado (a MESMA regra do stats.js — sem exigir report_time,
   // senão o resumo diverge das Estatísticas e da grelha).
@@ -184,7 +196,10 @@ export default function EscalaScreen({ navigation, route }) {
   // Folgas: mês corrente = dias DECORRIDOS − serviços (regra do stats.js); mês passado ou
   // FUTURO = dias do mês − serviços (no futuro é o PLANO — mostrar 0 contradizia a grelha cheia).
   const elapsedDays = isCurrentMonth ? Number(today.slice(8, 10)) : daysInMonth;
-  const folgaCount = Math.max(0, elapsedDays - serviceCount);
+  // Ausências (férias/doença) do mês, dentro do decorrido e sem serviço nesse dia — descontam-se
+  // às folgas (um dia de férias não é descanso) e mostram-se à parte no resumo.
+  const absCount = Object.keys(dayAbs).filter((iso) => iso.startsWith(ym) && Number(iso.slice(8, 10)) <= elapsedDays && !(duties[iso] && !duties[iso].deleted)).length;
+  const folgaCount = Math.max(0, elapsedDays - serviceCount - absCount);
   const catYm = crewAt(ym).category;   // categoria em vigor no mês mostrado (effective-dated)
   const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewFleet }) : null;
   const perDiemTotal = pd ? pd.total : null;
@@ -227,25 +242,31 @@ export default function EscalaScreen({ navigation, route }) {
     const col = (firstWeekday + dd - 1) % 7;
     const weekend = col >= 5;
     const cls = isDuty ? dutyClass(d) : null;
-    // Leitor de ecrã: a célula DIZ o que é (dia, tipo, nº de serviços, pernoita, por sincronizar).
+    const abs = !isDuty ? dayAbs[iso] : null;   // ausência (férias/doença) projetada — só-leitura
+    // Leitor de ecrã: a célula DIZ o que é (dia, tipo/ausência, nº de serviços, pernoita, por sincronizar).
     const a11y = [
       `${dd} ${monthName}`,
       isToday ? l('hoje', 'today') : null,
-      isDuty ? `${nSvc > 1 ? `${nSvc}× ` : ''}${kindLabel(d.kind || 'flight')}${d.kind === 'flight' && d.route ? ` ${d.route}` : ''}` : l('folga', 'day off'),
+      isDuty ? `${nSvc > 1 ? `${nSvc}× ` : ''}${kindLabel(d.kind || 'flight')}${d.kind === 'flight' && d.route ? ` ${d.route}` : ''}` : abs ? extraLabel(abs.type) : l('folga', 'day off'),
       isDuty && d.nightStop ? l('pernoita', 'night stop') : null,
       isDuty && d.dirty ? l('por sincronizar', 'pending sync') : null,
     ].filter(Boolean).join(' · ');
     return (
-      <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.gc, { width: cellW }, !isDuty && s.gcOff, weekend && s.gcWk, isToday && s.gcNow, iso === flashIso && s.gcFlash]}
+      <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.gc, { width: cellW }, !isDuty && !abs && s.gcOff, weekend && s.gcWk, abs && s.gcAbs, isToday && s.gcNow, iso === flashIso && s.gcFlash]}
         accessibilityRole="button" accessibilityLabel={a11y}
         accessibilityHint={l('Toque abre o detalhe · toque longo edita', 'Tap opens detail · long press edits')}
         onPress={() => openDay(iso)}
         onLongPress={() => { select(); setDutyDate(iso); }}>
-        <Text style={[s.gn, !isDuty && s.gnOff, isToday && s.gnNow]}>{dd}</Text>
+        <Text style={[s.gn, !isDuty && !abs && s.gnOff, isToday && s.gnNow]}>{dd}</Text>
         {isDuty ? (
           <View style={s.svc}>
             <Text style={[s.code, { color: codeColor(cls) }]} numberOfLines={1}>{nSvc > 1 ? `${nSvc}× ` : ''}{dutyCode(d)}</Text>
             <View style={[s.bar, { backgroundColor: barColor(cls) }]} />
+          </View>
+        ) : abs ? (
+          <View style={s.svc}>
+            <Text style={[s.code, { color: C.greenText }]} numberOfLines={1}>{absCode(abs.type)}</Text>
+            <View style={[s.bar, { backgroundColor: C.green }]} />
           </View>
         ) : null}
         {isDuty && d.nightStop ? <View style={s.nsdot} /> : null}
@@ -389,6 +410,12 @@ export default function EscalaScreen({ navigation, route }) {
               <View style={s.si}><Text style={s.siLbl}>{l('Serviços', 'Duties')}</Text><Text style={s.siVal}>{serviceCount}</Text></View>
               <View style={s.sep} />
               <View style={s.si}><Text style={s.siLbl}>{l('Folgas', 'Days off')}</Text><Text style={s.siVal}>{folgaCount}</Text></View>
+              {absCount > 0 ? (
+                <>
+                  <View style={s.sep} />
+                  <View style={s.si}><Text style={s.siLbl}>{l('Ausências', 'Leave')}</Text><Text style={s.siVal}>{absCount}</Text></View>
+                </>
+              ) : null}
               <View style={s.sep} />
               <View style={s.si}><Text style={s.siLbl}>{l('Per-diem', 'Per diem')}</Text><Text style={[s.siVal, s.siEur]}>{fmtEur(perDiemTotal)}</Text></View>
             </View>
@@ -417,6 +444,7 @@ export default function EscalaScreen({ navigation, route }) {
                 <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.brand }]} /><Text style={s.legTxt}>{l('voo', 'flight')}</Text></View>
                 <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.warn }]} /><Text style={s.legTxt}>standby</Text></View>
                 <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.sub }]} /><Text style={s.legTxt}>{l('outro', 'other')}</Text></View>
+                <View style={s.legIt}><View style={[s.legBar, { backgroundColor: C.green }]} /><Text style={s.legTxt}>{l('férias/doença', 'leave/sick')}</Text></View>
                 <View style={s.legIt}><View style={[s.legDot, { backgroundColor: C.info }]} /><Text style={s.legTxt}>{l('pernoita', 'night stop')}</Text></View>
                 <View style={s.legIt}><View style={[s.legDot, { backgroundColor: C.warn }]} /><Text style={s.legTxt}>{l('por sincronizar', 'pending sync')}</Text></View>
               </View>
@@ -461,13 +489,29 @@ export default function EscalaScreen({ navigation, route }) {
           FOLGA → vista leve (data + "+ adicionar serviço"): explorar a grelha não dispara o form pesado. */}
       <BottomSheet visible={!!dayIso} onClose={() => setDayIso(null)} title={l('Detalhe do dia', 'Day detail')} closeLabel={t('common.close', lang)} scroll>
         {dayIso && !dayDuty ? (() => {
+          const abs = dayAbs[dayIso];   // ausência (férias/doença) desse dia, se houver
+          const absEur = abs ? extraEur(abs.type, crewAt(dayIso).category) : null;   // € pela categoria em vigor nesse dia
           return (
             <View style={s.dsBody}>
               <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
-              <View style={s.dsOffRow}>
-                <Ionicons name="cafe-outline" size={18} color={C.sub} />
-                <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
-              </View>
+              {abs ? (
+                <>
+                  <View style={s.dsOffRow}>
+                    <Ionicons name="briefcase-outline" size={18} color={C.greenText} />
+                    <Text style={s.dsOffTxt}>{extraLabel(abs.type)}{absEur != null ? `  ·  ${fmtEur(absEur)}` : ''}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => Alert.alert(l('Apagar extra', 'Delete extra'), l('Apagar este dia dos extras do mês?', 'Remove this day from the month extras?'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => { removeAeEvent(abs.id); setDayIso(null); } }])}
+                    activeOpacity={0.8} style={s.dsAbsDel} accessibilityRole="button" accessibilityLabel={l('Apagar dos extras', 'Remove from extras')}>
+                    <Ionicons name="trash-outline" size={16} color={C.red} />
+                    <Text style={s.dsAbsDelTxt}>{l('Apagar dos extras', 'Remove from extras')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <View style={s.dsOffRow}>
+                  <Ionicons name="cafe-outline" size={18} color={C.sub} />
+                  <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
+                </View>
+              )}
               <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} activeOpacity={0.8} style={s.dsAdd}>
                 <Ionicons name="add" size={18} color={C.brand} />
                 <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
@@ -609,6 +653,22 @@ export default function EscalaScreen({ navigation, route }) {
             <View style={s.dsBody}>
               <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
               {multi ? <Text style={s.dsCount}>{services.length} {l('serviços', 'services')}</Text> : null}
+              {/* Aviso: havia uma AUSÊNCIA marcada neste dia, mas afinal há serviço → como voaste,
+                  não é "efetivamente gozada" (BTE) e não paga; remarca-a para não a perderes. */}
+              {dayAbs[dayIso] ? (
+                <View style={s.dsAbsWarn}>
+                  <Ionicons name="alert-circle-outline" size={17} color={C.warnText} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.dsAbsWarnT}>{dayAbs[dayIso].type === 'vacDays' ? l('Tinhas férias marcada neste dia', 'You had leave marked here') : l('Tinhas doença marcada neste dia', 'You had sick leave marked here')}</Text>
+                    <Text style={s.dsAbsWarnS}>{dayAbs[dayIso].type === 'vacDays'
+                      ? l('Como voaste, este dia não é férias gozada — o suplemento não paga aqui. Remarca a férias noutro dia para o receberes.', 'Since you flew, this isn’t taken leave — the supplement isn’t paid here. Re-mark the leave on another day to get it.')
+                      : l('Como voaste, este dia não conta como doença.', 'Since you flew, this day doesn’t count as sick leave.')}</Text>
+                    <TouchableOpacity onPress={() => removeAeEvent(dayAbs[dayIso].id)} activeOpacity={0.8} accessibilityRole="button">
+                      <Text style={s.dsAbsWarnLink}>{l('Remover deste dia', 'Remove from this day')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
               {rows}
               {hotelEl}
               <View style={s.dsBtns}>
@@ -770,6 +830,7 @@ const makeStyles = (C) => StyleSheet.create({
   gc: { height: 58, borderWidth: 1, borderColor: C.line, borderRadius: 9, paddingTop: 5, paddingHorizontal: 4, paddingBottom: 5, backgroundColor: C.card, alignItems: 'flex-start' },
   gcEmpty: { borderColor: 'transparent', backgroundColor: 'transparent' },
   gcOff: { backgroundColor: 'transparent' },
+  gcAbs: { backgroundColor: C.greenSoft },   // dia de ausência (férias/doença) — projeção só-leitura
   gcWk: { backgroundColor: C.soft2 },
   gcNow: { borderColor: C.red, borderWidth: 2, paddingTop: 4, paddingHorizontal: 3, paddingBottom: 4 },
   gcFlash: { borderColor: C.green, backgroundColor: C.greenSoft },
@@ -809,6 +870,10 @@ const makeStyles = (C) => StyleSheet.create({
   dsBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
   // Vários serviços no dia (210 conta por serviço): contador + cartão por serviço + repouso entre eles.
   dsCount: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: C.brand, marginTop: 4 },
+  dsAbsWarn: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', backgroundColor: C.warnSoft, borderRadius: RADIUS.lg, padding: 12, marginTop: 12 },
+  dsAbsWarnT: { fontSize: 13, fontFamily: FONT.bold, color: C.warnText },
+  dsAbsWarnS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 16, marginTop: 3 },
+  dsAbsWarnLink: { fontSize: 12.5, fontFamily: FONT.bold, color: C.red, marginTop: 8 },
   dsSvcCard: { marginTop: 12, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13 },
   dsNum: { width: 22, height: 22, borderRadius: 7, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
   dsNumTxt: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff' },
@@ -826,6 +891,8 @@ const makeStyles = (C) => StyleSheet.create({
   dsOffTxt: { flex: 1, fontSize: 13.5, fontFamily: FONT.semibold, color: C.sub },
   dsAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12 },
   dsAddTxt: { fontSize: 13, fontFamily: FONT.bold, color: C.brand },
+  dsAbsDel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, paddingVertical: 8 },
+  dsAbsDelTxt: { fontSize: 13, fontFamily: FONT.bold, color: C.red },
   dsSvcActs: { flexDirection: 'row', gap: 18, marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: C.line },
   dsSvcAct: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dsSvcActTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },

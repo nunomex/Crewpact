@@ -196,7 +196,7 @@ function FloatingTabBar({ state, navigation }) {
     { key: 'duty',   icon: 'plus',     label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
     { key: 'sim',    icon: 'gauge',    label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
     // Extra do mês (evento datado — DDO/férias/doença/SNC…): só p/ perfis com AE modelado.
-    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Extra do mês', 'Month extra'), run: () => openExtra && openExtra() }] : []),
+    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Evento', 'Event'), run: () => openExtra && openExtra() }] : []),
     { key: 'import', icon: 'download', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
   ];
 

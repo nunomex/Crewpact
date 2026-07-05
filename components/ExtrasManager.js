@@ -11,14 +11,14 @@ import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { success, warning } from '../data/haptics';
 
 export default function ExtrasManager({ visible, onClose, onAdd }) {
-  const { lang, ae, crewCategory, aeEvents, removeAeEvent } = useContext(AppContext);
+  const { lang, ae, crewAt, aeEvents, removeAeEvent } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const kindLabel = (type) => {
     const k = ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS.find((x) => x.id === type) : null;
     return (k && k.label && (k.label[lang] || k.label.pt)) || type;
   };
-  const rate = (type) => (ae && ae.monthExtras && crewCategory ? ae.monthExtras(crewCategory, { [type]: 1 }).total : null);
+  const rate = (type, date) => { const cat = date ? crewAt(String(date).slice(0, 7)).category : null; return (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [type]: 1 }).total : null; };   // categoria EFETIVA-DATADA (crewAt), não a plana
   const fmtEur = (n) => {
     if (n == null) return '—';
     const [i, d] = Number(n).toFixed(2).split('.');
@@ -30,7 +30,7 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
     () => (aeEvents || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))),
     [aeEvents],
   );
-  const total = useMemo(() => events.reduce((sum, e) => sum + (rate(e.type) || 0), 0), [events, crewCategory]);   // eslint-disable-line
+  const total = useMemo(() => events.reduce((sum, e) => sum + (rate(e.type, e.date) || 0), 0), [events]);   // eslint-disable-line
 
   const del = (id) => { warning(); removeAeEvent && removeAeEvent(id); };
 
@@ -47,7 +47,7 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
             <View key={e.id} style={[s.row, i > 0 && s.rowB]}>
               <View style={{ flex: 1 }}>
                 <Text style={s.rn}>{kindLabel(e.type)}</Text>
-                <Text style={s.rd}>{eventDateLabel(e.date, lang)} · {fmtEur(rate(e.type))}</Text>
+                <Text style={s.rd}>{eventDateLabel(e.date, lang)} · {fmtEur(rate(e.type, e.date))}</Text>
               </View>
               <TouchableOpacity onPress={() => del(e.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button" accessibilityLabel={l('Apagar extra', 'Delete extra')}>
                 <Icon name="trash" size={17} color={P.red} />

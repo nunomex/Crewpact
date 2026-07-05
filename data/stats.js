@@ -118,7 +118,7 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
         if (pd) { perDiemY += pd.total; totalY += pd.total; wrY += pd.withRoute; missY += pd.missing; }
       }
       if (ae.monthExtras) {
-        const xt = ae.monthExtras(catM, eventCounts(events, ym), { index });
+        const xt = ae.monthExtras(catM, eventCounts(events, ym, duties), { index });
         if (xt && xt.total) { eventsY += xt.total; totalY += xt.total; }
       }
     }
@@ -248,7 +248,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(y) : 1;
     const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet });
-    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr), { index }) : null;
+    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties), { index }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {
       base: m.base, cash: m.cashHandling || 0, perDiem: m.perDiem, nightStops: m.nightStops,
