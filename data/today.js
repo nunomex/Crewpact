@@ -98,7 +98,7 @@ export function payStatus({ duties = {}, ae, crewCategory, crewContract, crewFle
   const index = ae.indexFactor ? ae.indexFactor(now.getFullYear()) : 1;
   const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet });
   const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index });
-  const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties), fleet: crewFleet }) || base;
+  const total = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, ae ? ae.SICK_FIRST3 !== false : true), fleet: crewFleet }) || base;
   return {
     id: 'pay', status: 'neutral', base, total, variable: +(total - base).toFixed(2),
     perDiem: m ? m.perDiem : 0, nightStops: m ? m.nightStops : 0, extras: m ? m.extras : 0,

@@ -373,6 +373,8 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   // DOENÇA por EPISÓDIO (Art. 48: pagam-se os dias 1-3 de CADA episódio; 4.º+ não).
   const sick = ['2026-06-10', '2026-06-11', '2026-06-12', '2026-06-13', '2026-06-20'].map((d) => ev(d, 'sickDays'));
   eq('Doença: episódio de 4 dias paga 3 + episódio de 1 paga 1', eventCounts(sick, '2026-06').sickDays, 4);
+  // Cabine (Art. 61, "após o 3.º"): os dias entrados JÁ são os pagos → contam TODOS (sickFirst3=false).
+  eq('Doença cabine: dias pagos contam TODOS (após 3.º)', eventCounts(sick, '2026-06', null, false).sickDays, 5);
   // Episódio a CAVALO de 2 meses: 30/06+01/07+02/07+03/07 → paga 30/06 (jun) e 01-02/07 (jul).
   const sickX = ['2026-06-30', '2026-07-01', '2026-07-02', '2026-07-03'].map((d) => ev(d, 'sickDays'));
   eq('Doença: episódio cruza o mês (jun=1)', eventCounts(sickX, '2026-06').sickDays, 1);
@@ -410,6 +412,9 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('Saldo: férias 2026 (7 datadas + 1 só-mês)', yearCount(vy, '2026', 'vacDays'), 8);
   eq('Saldo: 2025 separado', yearCount(vy, '2025', 'vacDays'), 1);
   eq('Saldo: filtra o tipo', yearCount(vy, '2026', 'snc'), 1);
+  // Saldo HONESTO: voo num dia de férias → esse dia não conta como gozado (volta ao "por marcar").
+  eq('Saldo honesto: voo em férias não conta', yearCount(vy, '2026', 'vacDays', { '2026-08-05': { kind: 'flight' } }), 7);
+  eq('Saldo honesto: sem duties conta tudo', yearCount(vy, '2026', 'vacDays', null), 8);
   eq('Saldo: ano inválido → 0', yearCount(vy, '', 'vacDays'), 0);
 }
 
@@ -484,7 +489,7 @@ eq('extras vazio → 0', ae.monthExtras('CPT', {}).total, 0);
 eq('extras vazio → sem itens', ae.monthExtras('CPT', {}).items.length, 0);
 eq('extras CPT instrutor×2 + ddo×1 + snc×3',
   ae.monthExtras('CPT', { instructorDays: 2, ddo: 1, snc: 3 }).total, 908);   // 240 + 488 + 180
-eq('extras doença cap 3 (de 5)', ae.monthExtras('CPT', { sickDays: 5 }).total, 522.87);  // 3×174.29
+eq('extras doença SEM teto de mês (Art. 48 é por EPISÓDIO — o eventCounts limita 1-3/episódio)', ae.monthExtras('CPT', { sickDays: 5 }).total, 871.45);  // 5×174.29 — o valuer não corta ao mês
 eq('extras saneia negativos/decimais', ae.monthExtras('CPT', { adhocDays: -2, ido: 1.9 }).total, 976.00); // ido×1
 eq('extras indexados (ddo×1 @1.01)', ae.monthExtras('CPT', { ddo: 1 }, { index: 1.01 }).total, 492.88);
 eq('extras instrutor universal (FO)', ae.monthExtras('FO', { instructorDays: 1 }).total, 120);  // não trancado por categoria

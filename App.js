@@ -197,7 +197,7 @@ function FloatingTabBar({ state, navigation }) {
     { key: 'sim',    icon: 'gauge',    label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
     // Extra do mês (evento datado — DDO/férias/doença/SNC…): só p/ perfis com AE modelado.
     ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Evento', 'Event'), run: () => openExtra && openExtra() }] : []),
-    { key: 'import', icon: 'download', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
+    // Importar SAIU do FAB → botão de sincronizar/importar no header da Escala (hub). O "+" fica só p/ CRIAR.
   ];
 
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });

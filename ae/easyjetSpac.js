@@ -281,11 +281,12 @@ export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 
 //  • instrutor é UNIVERSAL (qualquer categoria qualificada — Art. 42; corrige o
 //    gating por categoria) · snc é auto-preenchível da deteção de alterações (Fase 4)
 //  • doença só conta dias 1-3 (cap) — depois é Segurança Social (Art. 48).
+export const SICK_FIRST3 = true;   // Art. 48 — paga dias 1-3 de CADA episódio (lógica no eventCounts)
 export const EXTRA_KINDS = [
   { id: 'instructorDays', calc: 'instructor', per: 'day',   label: { pt: 'Dias de instrutor',            en: 'Instructor days' } },
   { id: 'adhocDays',      calc: 'adhoc',      per: 'day',   label: { pt: 'Dias ad-hoc',                  en: 'Ad-hoc days' } },
   { id: 'vacDays',        calc: 'vacDay',     per: 'day',   label: { pt: 'Dias de férias',               en: 'Leave days' } },
-  { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença (1-3)',         en: 'Sick days (1-3)' }, cap: 3 },
+  { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença (1-3)',         en: 'Sick days (1-3)' } },   // Art. 48 — 1-3 por EPISÓDIO (limitado no eventCounts); SEM teto de mês
   { id: 'ddo',            calc: 'ddo',        per: 'event', label: { pt: 'Trabalhar em folga (DDO)',     en: 'Worked day off (DDO)' } },
   { id: 'ido',            calc: 'ido',        per: 'event', label: { pt: 'Folga infringida (IDO)',       en: 'Infringed day off (IDO)' } },
   { id: 'wfly',           calc: 'wfly',       per: 'event', label: { pt: 'Voluntário em folga (WFLY)',   en: 'Volunteer day off (WFLY)' } },

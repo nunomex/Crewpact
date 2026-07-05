@@ -18,7 +18,7 @@ import { PELE as P, PELE_FONT as F } from '../data/constants';
 const DUTY_CONDITION_TYPES = new Set(['ddo', 'wfly', 'ido', 'instructorDays', 'adhocDays']);
 
 export default function ExtraEventSheet({ visible, onClose }) {
-  const { lang, ae, crewAt, addAeEvents, aeEvents, vacationDaysYear } = useContext(AppContext);
+  const { lang, ae, crewAt, duties, addAeEvents, aeEvents, vacationDaysYear } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const kinds = (ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS : []).filter((k) => !DUTY_CONDITION_TYPES.has(k.id));
@@ -65,7 +65,7 @@ export default function ExtraEventSheet({ visible, onClose }) {
   // ano do 1.º dia escolhido e mostra o "depois deste registo". NÃO bloqueia acima do
   // plafond (há reporte legal de dias, Art. 240.º) — só avisa.
   const vacYear = type === 'vacDays' && iso ? iso.slice(0, 4) : null;
-  const vacTaken = vacYear ? yearCount(aeEvents || [], vacYear, 'vacDays') : 0;
+  const vacTaken = vacYear ? yearCount(aeEvents || [], vacYear, 'vacDays', duties) : 0;
   const vacAfter = vacTaken + fresh.length;
   const vacQuota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
   // € por unidade (valorização oficial do AE — monthExtras com contagem 1).

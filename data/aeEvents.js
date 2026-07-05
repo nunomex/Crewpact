@@ -23,7 +23,9 @@ const nextISO = (iso) => {
 // `duties` (opcional) = mapa da escala; se dado, uma AUSÊNCIA (férias/doença) num dia com
 // SERVIÇO não conta — "efetivamente gozado" (BTE easyJet cabine · piloto "não obstante o gozo
 // de férias"): voaste nesse dia → o suplemento não paga aí, a férias remarca-se para outro dia.
-export const eventCounts = (events = [], ym, duties = null) => {
+// `sickFirst3` (default true = modelo PILOTO, Art. 48: paga dias 1-3 de cada episódio). A CABINE
+// (Art. 61) paga "após o 3.º" e o utilizador insere só os dias PAGOS → passa `false` → contam todos.
+export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) => {
   const counts = {};
   if (!ym) return counts;
   const add = (type, n = 1) => { counts[type] = (counts[type] || 0) + n; };
@@ -34,7 +36,7 @@ export const eventCounts = (events = [], ym, duties = null) => {
     if (!e || !e.type || !e.date) continue;
     const isMonthOnly = String(e.date).length === 7;
     if (!isMonthOnly && ABSENCE.has(e.type) && worked(e.date)) continue;   // voou nesse dia → não é gozado
-    if (e.type === 'sickDays' && !isMonthOnly) { sickDated.add(e.date); continue; }
+    if (e.type === 'sickDays' && !isMonthOnly && sickFirst3) { sickDated.add(e.date); continue; }   // piloto: episódio 1-3 · cabine (após 3.º) cai no add normal → conta todos
     if (String(e.date).slice(0, 7) === ym || (isMonthOnly && e.date === ym)) add(e.type);
   }
   // Doença por EPISÓDIO: agrupa dias consecutivos (todo o histórico, não só o mês) e
@@ -72,11 +74,20 @@ export const datesInRange = (from, to, { max = 62 } = {}) => {
 // Contagem ANUAL de um tipo de evento — o direito a férias é ANUAL (Art. 238.º CT:
 // mínimo 22 dias úteis/ano; o plafond real é o do Perfil), por isso o saldo conta-se
 // ao ano civil. Datados ('YYYY-MM-DD') e só-mês ('YYYY-MM') do mesmo ano contam ambos.
-export const yearCount = (events = [], year, type) => {
+// `duties` (opcional) = mapa da escala; se dado, uma AUSÊNCIA (férias/doença) DATADA num dia
+// com serviço NÃO conta (voaste → não é "efetivamente gozada" → não é dia de férias tirado; volta
+// ao saldo por marcar). Retrocompat: sem `duties` conta tudo. Ver [[ae-extras-events]].
+export const yearCount = (events = [], year, type, duties = null) => {
   const y = String(year || '');
   if (!/^\d{4}$/.test(y) || !type) return 0;
+  const isAbsence = type === 'vacDays' || type === 'sickDays';
+  const worked = (date) => !!(duties && duties[date] && !duties[date].deleted);
   let n = 0;
-  for (const e of events) { if (e && e.type === type && String(e.date).slice(0, 4) === y) n++; }
+  for (const e of events) {
+    if (!e || e.type !== type || String(e.date).slice(0, 4) !== y) continue;
+    if (isAbsence && String(e.date).length === 10 && worked(e.date)) continue;   // voou nesse dia → não conta
+    n++;
+  }
   return n;
 };
 

@@ -235,7 +235,10 @@ export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [
 // ── "Extras do mês" — contadores por evento/dia que NÃO se inferem da rota ──
 // Cada um valoriza-se com a calculadora respetiva do Anexo I e SOMA ao total mensal.
 // Por evento/dia → rate cheio. snc auto-preenchível da deteção de alterações (Fase 4).
-// Doença: conta os dias PAGOS (após o 3.º — Art. 61); o utilizador insere só esses.
+// Doença: conta os dias PAGOS (após o 3.º — Art. 61); o utilizador insere só esses. Modelo
+// DIFERENTE do piloto: os dias entrados já são os pagos → contam TODOS (o eventCounts NÃO
+// aplica a lógica "1-3 por episódio" quando SICK_FIRST3=false; ver data/aeEvents.js).
+export const SICK_FIRST3 = false;
 export const EXTRA_KINDS = [
   { id: 'vacDays',  calc: 'holidayDay', per: 'day',   label: { pt: 'Dias de férias',                 en: 'Leave days' } },
   { id: 'sickDays', calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença pagos (após 3.º)', en: 'Paid sick days (after 3rd)' } },

@@ -12,6 +12,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
+import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
@@ -51,7 +52,7 @@ function MonthBar({ ratio, color, delay }) {
 // horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
 // mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents } = useContext(AppContext);
+  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -92,6 +93,13 @@ export default function StatsScreen({ navigation }) {
       : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents }),
     [isYear, duties, year, ym, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents],
   );
+
+  // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
+  // (um dia com voo por cima não conta → volta ao "por marcar"). Só p/ perfis com férias no AE.
+  const hasVac = !!(ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays'));
+  const vacQuota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
+  const vacTaken = hasVac ? yearCount(aeEvents || [], year, 'vacDays', duties) : 0;
+  const vacLeft = Math.max(0, vacQuota - vacTaken);
 
   // Limites FTL cumulativos ATUAIS (janelas rolantes a esta data) — vieram do Início.
   // Independentes do mês/ano selecionado (é o consumo agora). `dayLog` = store do motor FTL.
@@ -298,6 +306,18 @@ export default function StatsScreen({ navigation }) {
                 {aeBlock.missing ? <Text style={s.aeMiss}>{aeBlock.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
                 {aeBlock.estimated ? <Text style={s.aeMiss}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
                 {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.aeMiss}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
+              </Animated.View>
+            ) : null}
+
+            {/* Férias — saldo ANUAL (direito Art. 238.º CT), HONESTO: voo em dia de férias não conta
+                (volta ao "por marcar"). Só na vista Ano e p/ perfis com férias no AE. */}
+            {isYear && hasVac ? (
+              <Animated.View style={[s.card, seg(5)]}>
+                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: C.green }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
+                <View style={s.aeRow}><Text style={s.aeK}>{l('Gozados', 'Taken')}</Text><Text style={s.aeV}>{vacTaken}</Text></View>
+                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Por marcar', 'To mark')}</Text><Text style={s.aeV}>{vacLeft}</Text></View>
+                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Direito no ano', 'Annual entitlement')}</Text><Text style={s.aeVtot}>{vacQuota}</Text></View>
+                {vacTaken > vacQuota ? <Text style={s.aeMiss}>{l('Acima do plafond — podes ter dias reportados (Art. 240.º).', 'Over quota — you may have carried days over (Art. 240).')}</Text> : null}
               </Animated.View>
             ) : null}
 
