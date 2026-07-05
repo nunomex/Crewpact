@@ -77,7 +77,6 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
-import FamiliaScreen      from './screens/FamiliaScreen';
 import BibliotecaScreen   from './screens/BibliotecaScreen';
 import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
@@ -285,7 +284,6 @@ function PerfilStack() {
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
-      <Stack.Screen name="Familia"    component={FamiliaScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );

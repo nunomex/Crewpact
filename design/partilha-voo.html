@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Cartão de partilha do voo (layout dataview B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0b0b0d;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:760px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead b{color:#fff}
+  .row{display:flex;gap:40px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:8px}
+  .cap{margin:0 2px 12px;text-align:center}
+  .cap .t{font-family:'Barlow Condensed';font-size:16px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:3px}
+
+  /* ── o CARTÃO (cores fixas — sai igual na imagem) ── */
+  .card{position:relative;border-radius:26px;overflow:hidden;color:rgba(234,248,248,.94);
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.7)}
+  .post{width:360px;height:450px}   /* 4:5 */
+  .story{width:300px;height:534px}  /* 9:16 */
+  .sky{position:absolute;inset:0;background:linear-gradient(176deg,#07272f 0%,#0d454e 30%,#276f70 48%,#6ea283 62%,#e3a765 82%,#a25c33 100%)}
+  .clouds{position:absolute;left:-15%;right:-15%;bottom:0;height:38%;background:
+     radial-gradient(55% 82% at 22% 88%,rgba(255,255,255,.34),transparent 72%),
+     radial-gradient(48% 72% at 60% 96%,rgba(255,255,255,.26),transparent 72%),
+     radial-gradient(44% 64% at 88% 84%,rgba(255,255,255,.20),transparent 72%);filter:blur(2px)}
+  .wing{position:absolute;right:-8%;bottom:-6%;width:86%;height:46%;background:linear-gradient(150deg,#0a1c22 0%,#123338 55%,#1f524d 100%);clip-path:polygon(50% 100%,100% 36%,100% 100%)}
+  .wing:after{content:"";position:absolute;inset:0;clip-path:polygon(50% 100%,100% 36%,100% 39%,53% 100%);background:rgba(255,255,255,.18)}
+  .tint{position:absolute;inset:0;background:rgba(8,40,46,.10)}
+  .hud{position:absolute;inset:0;padding:22px 20px;font-family:'Space Mono',monospace;display:flex;flex-direction:column}
+
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:17px;letter-spacing:-.2px;color:#fff}
+  .brand .dot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  .date{font-size:9px;letter-spacing:1.5px;opacity:.8}
+
+  .coord{position:absolute;font-size:8px;letter-spacing:1px;opacity:.6}
+  .reticle{position:absolute;right:22px;top:78px;opacity:.75}
+  .reticle .lb{font-size:7.5px;letter-spacing:1px;opacity:.85;text-align:center;margin-top:3px}
+
+  .city{margin-top:auto}
+  .nm{font-family:'Barlow Condensed';font-weight:700;font-size:66px;line-height:.86;letter-spacing:-1px;color:#fff;text-shadow:0 2px 22px rgba(0,0,0,.42)}
+  .tag{display:inline-block;font-family:'Space Mono';font-size:9px;font-weight:700;letter-spacing:1.5px;color:#08262c;background:#FFB800;padding:2px 7px;border-radius:4px;vertical-align:super;margin-left:6px}
+  .rt{font-size:11px;letter-spacing:4px;opacity:.9;margin-top:8px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16)}
+  .cell .k{font-size:7.5px;letter-spacing:1.5px;opacity:.65}
+  .cell .v{font-size:13px;font-weight:700;letter-spacing:.5px;margin-top:3px;color:#fff}
+  .cell .v small{font-size:9px;opacity:.7;font-weight:400}
+  .cell.r{text-align:right}
+  .foot{margin-top:14px;font-size:8.5px;letter-spacing:3px;opacity:.72;text-align:center}
+  .foot b{color:#FFB800}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Cartão de partilha do voo — no look "dataview" (B)</h1>
+    <p>O instantâneo bonito que mandas (imagem PNG, view-shot). Não é ao vivo — é para <b>partilhar/publicar</b>. Mesmo layout da B, com os nossos dados: <b>Paris · LIS→CDG · EJU1234 · tempo do destino</b>. Dois formatos: post (4:5) e story (9:16).</p>
+  </div>
+
+  <div class="row">
+
+    <!-- POST 4:5 -->
+    <div>
+      <div class="cap"><div class="t"><b>Post</b> · 4:5</div><div class="d">Para WhatsApp / feed.</div></div>
+      <div class="card post">
+        <div class="sky"></div><div class="clouds"></div><div class="wing"></div><div class="tint"></div>
+        <div class="hud">
+          <div class="top">
+            <div class="brand"><span class="dot"></span>CrewPact</div>
+            <div class="date">06 JUL 2026</div>
+          </div>
+          <div class="coord" style="left:20px;top:64px">38°46′ N</div>
+          <div class="coord" style="left:20px;top:80px">009°08′ W</div>
+          <div class="reticle">
+            <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1"/><circle cx="30" cy="30" r="12" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="1"/><path d="M30 4v12M30 44v12M4 30h12M44 30h12" stroke="rgba(255,255,255,.7)" stroke-width="1"/><rect x="26" y="26" width="8" height="8" fill="none" stroke="#FFB800" stroke-width="1.4" transform="rotate(45 30 30)"/></svg>
+            <div class="lb">CDG</div>
+          </div>
+          <div class="city">
+            <div class="nm">Paris<span class="tag">FRANÇA</span></div>
+            <div class="rt">LIS → CDG</div>
+            <div class="grid">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell r"><div class="k">TEMPO DE VOO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">CHEGADA</div><div class="v">14:05 <small>local</small></div></div>
+              <div class="cell r"><div class="k">TEMP. DESTINO</div><div class="v">21°<small> C ☀</small></div></div>
+            </div>
+            <div class="foot"><b>crewpact.app</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORY 9:16 -->
+    <div>
+      <div class="cap"><div class="t"><b>Story</b> · 9:16</div><div class="d">Para stories / ecrã inteiro.</div></div>
+      <div class="card story">
+        <div class="sky"></div><div class="clouds"></div><div class="wing"></div><div class="tint"></div>
+        <div class="hud">
+          <div class="top">
+            <div class="brand"><span class="dot"></span>CrewPact</div>
+            <div class="date">06 JUL 2026</div>
+          </div>
+          <div class="coord" style="left:20px;top:70px">38°46′ N · 009°08′ W</div>
+          <div class="coord" style="right:20px;top:150px">49°00′ N</div>
+          <div class="coord" style="right:20px;top:166px">002°32′ E</div>
+          <div class="reticle" style="top:120px">
+            <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1"/><circle cx="30" cy="30" r="12" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="1"/><path d="M30 4v12M30 44v12M4 30h12M44 30h12" stroke="rgba(255,255,255,.7)" stroke-width="1"/><rect x="26" y="26" width="8" height="8" fill="none" stroke="#FFB800" stroke-width="1.4" transform="rotate(45 30 30)"/></svg>
+            <div class="lb">CDG</div>
+          </div>
+          <div class="city">
+            <div class="nm">Paris<span class="tag">FRANÇA</span></div>
+            <div class="rt">LIS → CDG</div>
+            <div class="grid">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell r"><div class="k">TEMPO DE VOO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">CHEGADA</div><div class="v">14:05 <small>local</small></div></div>
+              <div class="cell r"><div class="k">TEMP. DESTINO</div><div class="v">21°<small> C ☀</small></div></div>
+            </div>
+            <div class="foot"><b>crewpact.app</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

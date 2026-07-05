@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Chegada — 2 layouts das refs (mapa+cartão · janela dataview)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0b0b0d;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 20px 70px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .lead{max-width:800px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead p{margin-top:8px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead b{color:#fff}
+  .row{display:flex;gap:36px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:8px}
+  .col{width:360px;max-width:96vw}
+  .cap{margin:0 4px 12px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
+  .cap .d{font-size:11px;color:#8b929c;line-height:1.5;margin-top:3px}
+  .ph{width:360px;max-width:96vw;height:760px;border-radius:44px;border:9px solid #04060a;overflow:hidden;position:relative;background:#000}
+  .scr{position:absolute;inset:0;overflow:hidden}
+
+  /* ════════════ A · MAPA + CARTÃO (ref. LHR→LAX) ════════════ */
+  .A{position:absolute;inset:0;display:flex;flex-direction:column;background:#fff}
+  .map{position:relative;height:400px;background:radial-gradient(130% 100% at 60% 25%,#1a3350 0%,#0f2237 55%,#0a1626 100%);overflow:hidden}
+  .map .top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:20px 22px 0;z-index:3}
+  .map .fno{font-family:'Barlow Condensed';font-weight:700;font-size:14px;letter-spacing:1.5px;color:#fff;border:1px solid rgba(255,255,255,.35);padding:4px 9px;border-radius:6px}
+  .map .ic{color:rgba(255,255,255,.7);font-size:17px}
+  .map svg{position:absolute;inset:0;width:100%;height:100%}
+  .down{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:30px;height:30px;border-radius:50%;background:#fff;color:#141414;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 6px 16px rgba(0,0,0,.3);z-index:4}
+
+  .card{flex:1;background:#fff;position:relative;padding:34px 26px 0;display:flex;flex-direction:column}
+  .codes{display:flex;justify-content:space-between;align-items:flex-end}
+  .codes .lbl{font-size:9px;font-weight:800;letter-spacing:1.6px;color:#B3B1A9;text-transform:uppercase}
+  .codes .cd{font-family:'Barlow Condensed';font-weight:700;font-size:66px;line-height:.82;letter-spacing:-2px;color:#141414;margin-top:5px}
+  .codes .ct{font-size:11px;font-weight:600;color:#9C9A92;margin-top:7px}
+  .codes .r{text-align:right}
+  .codes .mid{align-self:center;text-align:center;color:#B3B1A9}
+  .codes .mid .o{font-size:8.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase}
+  .codes .mid .pl{font-size:15px;margin-top:6px;color:#141414}
+
+  .stats{display:flex;justify-content:space-between;margin-top:30px}
+  .stat{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;text-align:center}
+  .stat .ic{width:36px;height:36px;border-radius:50%;border:1.5px solid #E6E3DB;display:flex;align-items:center;justify-content:center;font-size:15px;color:#141414}
+  .stat .v{font-family:'Barlow Condensed';font-weight:700;font-size:19px;color:#141414;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:9.5px;font-weight:700;color:#B3B1A9;letter-spacing:.4px;text-transform:uppercase}
+  .wxA{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:24px;font-size:12px;color:#9C9A92;font-weight:600}
+  .wxA b{font-family:'Barlow Condensed';font-weight:700;font-size:17px;color:#141414;letter-spacing:-.3px}
+  .btn{margin-top:auto;background:#E5342A;color:#fff;text-align:center;padding:19px;font-weight:800;font-size:13.5px;letter-spacing:2px}
+  .tabs{display:flex;justify-content:space-around;align-items:center;padding:13px 0;background:#fff}
+  .tabs span{width:22px;height:22px;border-radius:50%;border:1.6px solid #D9D6CE;display:inline-block}
+  .tabs span.on{background:#141414;border-color:#141414}
+
+  /* ════════════ B · JANELA DATAVIEW (ref. Okinawa) ════════════ */
+  .B{position:absolute;inset:0;background:#05080a}
+  .view{position:absolute;inset:14px;border-radius:40px;overflow:hidden;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.06), inset 0 0 40px rgba(0,0,0,.4)}
+  .sky{position:absolute;inset:0;background:linear-gradient(178deg,#082a33 0%,#0e4a54 34%,#2f7d7c 52%,#7ba887 66%,#e6a765 84%,#a75f34 100%)}
+  .clouds{position:absolute;left:-15%;right:-15%;bottom:2%;height:40%;background:
+     radial-gradient(55% 80% at 22% 85%,rgba(255,255,255,.34),transparent 72%),
+     radial-gradient(48% 70% at 58% 95%,rgba(255,255,255,.26),transparent 72%),
+     radial-gradient(42% 62% at 86% 82%,rgba(255,255,255,.20),transparent 72%);filter:blur(2px)}
+  .wing{position:absolute;right:-10%;bottom:-6%;width:88%;height:52%;background:linear-gradient(150deg,#0a1c22 0%,#123338 55%,#1f524d 100%);clip-path:polygon(52% 100%,100% 34%,100% 100%)}
+  .wing:after{content:"";position:absolute;inset:0;clip-path:polygon(52% 100%,100% 34%,100% 37%,55% 100%);background:rgba(255,255,255,.18)}
+  .hud{position:absolute;inset:0;padding:26px 22px;font-family:'Space Mono',monospace;color:rgba(234,248,248,.94)}
+  .hud .tint{position:absolute;inset:0;background:rgba(9,42,48,.12);pointer-events:none}
+  .hTop{display:flex;justify-content:space-between;align-items:flex-start;position:relative}
+  .hBig{font-family:'Space Mono';font-weight:700;font-size:30px;letter-spacing:1px;color:#fff;line-height:1}
+  .hSm{font-size:8px;letter-spacing:2px;opacity:.72;margin-top:4px}
+  .hTop .r{text-align:right;font-size:9px;letter-spacing:1px;opacity:.85;line-height:1.9}
+  .graph{position:absolute;left:0;right:0;top:64px;height:26px;opacity:.6}
+  .coord{position:absolute;font-size:8px;letter-spacing:1px;opacity:.62}
+  .city{position:absolute;left:22px;top:200px}
+  .city .nm{font-family:'Barlow Condensed';font-weight:700;font-size:62px;line-height:.88;letter-spacing:-1px;color:#fff;text-shadow:0 2px 22px rgba(0,0,0,.4)}
+  .city .tag{display:inline-block;font-family:'Space Mono';font-size:9px;font-weight:700;letter-spacing:1.5px;color:#08262c;background:#FFB800;padding:2px 7px;border-radius:4px;vertical-align:super;margin-left:6px}
+  .city .rt{font-size:11px;letter-spacing:4px;opacity:.9;margin-top:8px}
+  .reticle{position:absolute;left:54%;top:340px}
+  .reticle .lb{font-size:8px;letter-spacing:1px;opacity:.7;margin-top:4px;text-align:center}
+  .hBottom{position:absolute;left:22px;right:22px;bottom:70px}
+  .seat{font-family:'Space Mono';font-weight:700;font-size:26px;color:#fff;letter-spacing:1px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px;margin-top:12px}
+  .cell .k{font-size:7.5px;letter-spacing:1.5px;opacity:.65}
+  .cell .v{font-size:13px;font-weight:700;letter-spacing:.5px;margin-top:3px;color:#fff}
+  .cell .v small{font-size:9px;opacity:.7;font-weight:400}
+  .cell.r{text-align:right}
+  .btabs{position:absolute;left:0;right:0;bottom:24px;display:flex;justify-content:center;gap:26px;font-size:10px;letter-spacing:1.5px;opacity:.7}
+  .btabs .on{opacity:1;color:#FFB800;font-weight:700}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Os dois layouts das tuas fotos — com a nossa informação</h1>
+    <p>Fiéis às referências, só trocada a info: <b>LIS→CDG · EJU1234 · ETA · tempo no destino · CrewPact</b>. <b>A</b> = mapa escuro + cartão branco com rasto vermelho (LHR→LAX). <b>B</b> = HUD "dataview" dentro da <b>janela do avião</b> (Okinawa).</p>
+  </div>
+
+  <div class="row">
+
+    <!-- ════════ A ════════ -->
+    <div class="col">
+      <div class="cap"><div class="t"><b>A</b> · Mapa + cartão</div><div class="d">Mapa com o trajeto e o avião (rasto vermelho), cartão branco com códigos gigantes, os 3 tempos, o tempo no destino, e o botão vermelho.</div></div>
+      <div class="ph"><div class="scr"><div class="A">
+        <div class="map">
+          <div class="top"><div class="fno">EJU1234</div><div class="ic">🔍</div></div>
+          <svg viewBox="0 0 360 400" preserveAspectRatio="xMidYMid slice">
+            <!-- landmassas ténues -->
+            <g fill="rgba(255,255,255,.045)">
+              <path d="M20,150 C60,110 120,120 150,160 C170,190 140,230 100,240 C50,250 10,210 20,150 Z"/>
+              <path d="M210,120 C260,100 320,120 340,170 C350,210 320,250 270,250 C220,250 190,190 210,120 Z"/>
+            </g>
+            <!-- rede de pontos -->
+            <g fill="rgba(255,255,255,.32)">
+              <circle cx="55" cy="140" r="1.3"/><circle cx="90" cy="175" r="1"/><circle cx="120" cy="130" r="1.2"/><circle cx="70" cy="205" r="1"/><circle cx="135" cy="195" r="1.1"/>
+              <circle cx="225" cy="150" r="1.2"/><circle cx="265" cy="130" r="1"/><circle cx="300" cy="165" r="1.3"/><circle cx="255" cy="200" r="1"/><circle cx="315" cy="205" r="1.1"/>
+              <circle cx="160" cy="250" r="1"/><circle cx="200" cy="260" r="1.1"/><circle cx="110" cy="285" r="1"/><circle cx="250" cy="290" r="1"/><circle cx="180" cy="110" r="1"/>
+            </g>
+            <g stroke="rgba(255,255,255,.08)" stroke-width="1">
+              <line x1="55" y1="140" x2="120" y2="130"/><line x1="90" y1="175" x2="135" y2="195"/><line x1="225" y1="150" x2="300" y2="165"/><line x1="265" y1="130" x2="315" y2="205"/>
+            </g>
+            <!-- trajeto (rasto vermelho como a ref) -->
+            <path d="M85,255 Q195,80 300,140" fill="none" stroke="rgba(255,255,255,.30)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.6 5"/>
+            <path d="M85,255 Q195,80 300,140" fill="none" stroke="#E5342A" stroke-width="3.2" stroke-linecap="round" pathLength="100" stroke-dasharray="52 100"/>
+            <circle cx="85" cy="255" r="11" fill="rgba(229,52,42,.20)"/><circle cx="85" cy="255" r="4.2" fill="#E5342A"/>
+            <circle cx="300" cy="140" r="11" fill="rgba(255,255,255,.10)"/><circle cx="300" cy="140" r="4.2" fill="none" stroke="#fff" stroke-width="1.6"/>
+            <g transform="translate(206,132) rotate(60) scale(1.5) translate(-12,-12)"><path fill="#fff" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g>
+          </svg>
+          <div class="down">▾</div>
+        </div>
+        <div class="card">
+          <div class="codes">
+            <div><div class="lbl">De</div><div class="cd">LIS</div><div class="ct">Lisboa</div></div>
+            <div class="mid"><div class="o">Hoje</div><div class="pl">✈</div></div>
+            <div class="r"><div class="lbl">Para</div><div class="cd">CDG</div><div class="ct">Paris</div></div>
+          </div>
+          <div class="stats">
+            <div class="stat"><div class="ic">🛫</div><div class="v">11:45</div><div class="k">Partiu · 06 jul</div></div>
+            <div class="stat"><div class="ic">🕑</div><div class="v">2H 20</div><div class="k">no ar · resta ~40m</div></div>
+            <div class="stat"><div class="ic">🛬</div><div class="v">~14:05</div><div class="k">Chega · 06 jul</div></div>
+          </div>
+          <div class="wxA">☀️ <b>21°</b> · céu limpo em Paris</div>
+          <div class="btn">SEGUIR AO VIVO</div>
+          <div class="tabs"><span></span><span class="on"></span><span></span><span></span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ════════ B ════════ -->
+    <div class="col">
+      <div class="cap"><div class="t"><b>B</b> · Janela dataview</div><div class="d">HUD sobre a janela do avião: cidade gigante, coordenadas, retículo, e a grelha com o <b>tempo do destino</b> (onde eles têm "destination temp").</div></div>
+      <div class="ph"><div class="scr"><div class="B">
+        <div class="view">
+          <div class="sky"></div><div class="clouds"></div><div class="wing"></div>
+          <div class="hud"><div class="tint"></div>
+            <div class="hTop">
+              <div><div class="hBig">34 000</div><div class="hSm">ALTITUDE · PÉS</div></div>
+              <div class="r">▮ EJU1234<br>1 852 KM · 2H20</div>
+            </div>
+            <svg class="graph" viewBox="0 0 320 26" preserveAspectRatio="none"><path d="M0,22 L40,19 L80,11 L120,6 L160,7 L200,5 L240,10 L280,15 L320,21" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.4"/><circle cx="200" cy="5" r="2.6" fill="#FFB800"/></svg>
+            <div class="coord" style="left:22px;top:108px">43° 12′ N</div>
+            <div class="coord" style="right:22px;top:132px">003° 40′ W</div>
+            <div class="city">
+              <div class="nm">Paris<span class="tag">FRANÇA</span></div>
+              <div class="rt">LIS → CDG</div>
+            </div>
+            <div class="coord" style="left:24px;top:292px">49°00′35″ N</div>
+            <div class="coord" style="right:26px;top:316px">002°32′52″ E</div>
+            <div class="reticle">
+              <svg width="82" height="82" viewBox="0 0 82 82"><circle cx="41" cy="41" r="28" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1"/><circle cx="41" cy="41" r="18" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/><path d="M41 4v16M41 62v16M4 41h16M62 41h16" stroke="rgba(255,255,255,.7)" stroke-width="1"/><rect x="35" y="35" width="12" height="12" fill="none" stroke="#FFB800" stroke-width="1.5" transform="rotate(45 41 41)"/></svg>
+              <div class="lb">CDG · RWY 27R</div>
+            </div>
+            <div class="hBottom">
+              <div class="seat">EJU1234</div>
+              <div class="grid">
+                <div class="cell"><div class="k">TEMPO DE VOO</div><div class="v">2:49:12</div></div>
+                <div class="cell r"><div class="k">TEMP. FORA</div><div class="v">−54°<small> C</small></div></div>
+                <div class="cell"><div class="k">CHEGA</div><div class="v">14:05 <small>local</small></div></div>
+                <div class="cell r"><div class="k">TEMP. DESTINO</div><div class="v">21°<small> C ☀</small></div></div>
+              </div>
+            </div>
+            <div class="btabs"><span>Mínimo</span><span class="on">Dataview</span><span>Música</span></div>
+          </div>
+        </div>
+      </div></div></div>
+    </div>
+
+  </div>
+</body>
+</html>

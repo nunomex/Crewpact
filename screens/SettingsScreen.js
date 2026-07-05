@@ -10,37 +10,50 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import PageHeader from '../components/PageHeader';
 import PrimaryButton from '../components/PrimaryButton';
 import Eyebrow from '../components/Eyebrow';
+import Icon from '../components/Icon';
+import PeleSide from '../components/PeleSide';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { RADIUS, TYPE, FONT } from '../data/constants';
+import { RADIUS, TYPE, FONT, PELE, PELE_FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile, deleteAccount, reauthenticate, requestEmailChange, verifyEmailChange } from '../data/auth';
 import { Seg } from '../components/Stepper';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext, useTheme, isoDay } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
 import { dataExportJson } from '../data/dataExport';
+import useFamilyLinks from '../hooks/useFamilyLinks';
+import { getFamilyShares, addFamilyShare, removeFamilyShare, removeFamilySharesForPerson } from '../data/familyShares';
+import FlightShareCard from '../components/FlightShareCard';
 
-// Linha de definições (mockup .gr): ícone (.gi) + rótulo (+ sub) + à direita um
-// segmento, um valor + chevron, ou nada. Toca quando há onPress.
-function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
+// Inicial(is) para o avatar da tira da família: "Mãe"→M, "João Carlos"→JC.
+const familyInitials = (name) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+};
+
+// Ionicons (do render antigo) → ícones da PELE.
+const ROW_IC = { 'ribbon-outline': 'rank', 'briefcase-outline': 'doc', 'location-outline': 'pin', 'calendar-outline': 'cal', 'sunny-outline': 'sun', 'school-outline': 'rank', 'airplane-outline': 'plane', 'time-outline': 'clock', 'language-outline': 'theme', 'contrast-outline': 'theme', 'notifications-outline': 'bell', 'lock-closed-outline': 'lock', 'mail-outline': 'mail', 'key-outline': 'lock', 'library-outline': 'book', 'shield-checkmark-outline': 'shield', 'bed-outline': 'bed', 'people-outline': 'fam', 'download-outline': 'download', 'trash-outline': 'trash', 'log-out-outline': 'logout', 'information-circle-outline': 'info' };
+// Linha de definições (pele): ícone (.gi) + rótulo (+ sub) + à direita um segmento, valor+chevron, ou nada.
+function Row({ icon, label, sub, value, right, onPress, last, danger, s }) {
   const body = (
     <>
       <View style={[s.gi, danger && s.giDanger]}>
-        <Ionicons name={icon} size={17} color={danger ? C.red : C.ink} />
+        <Icon name={ROW_IC[icon] || 'info'} size={17} color={danger ? PELE.red : PELE.ink} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[s.grLabel, danger && { color: C.red }]} numberOfLines={1}>{label}</Text>
+        <Text style={[s.grLabel, danger && { color: PELE.red }]} numberOfLines={1}>{label}</Text>
         {sub ? <Text style={s.grSub} numberOfLines={1}>{sub}</Text> : null}
       </View>
       {right ? right : (
         <View style={s.grRight}>
           {value ? <Text style={s.rv} numberOfLines={1}>{value}</Text> : null}
-          {onPress ? <Ionicons name={danger ? 'log-out-outline' : 'chevron-forward'} size={15} color={danger ? C.red : C.sub} /> : null}
+          {onPress ? <Icon name="chevron" size={15} color={danger ? PELE.red : PELE.grey} /> : null}
         </View>
       )}
     </>
@@ -48,6 +61,20 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s, C }) {
   return onPress
     ? <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[s.gr, !last && s.grBorder]}>{body}</TouchableOpacity>
     : <View style={[s.gr, !last && s.grBorder]}>{body}</View>;
+}
+
+// Mosaico bento do perfil (mockup perfil-final): meio (48%) ou largo; "hot" = ink + amarelo.
+function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot, s }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.tile, wide && s.tileWide, hot && s.tileHot]} accessibilityRole="button" accessibilityLabel={label}>
+      <View style={[s.tIc, hot && s.tIcHot]}><Icon name={ROW_IC[icon] || icon} size={18} color={hot ? PELE.yellow : PELE.ink} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[s.tLb, hot && s.tLbHot]} numberOfLines={2}>{label}</Text>
+        {value ? <Text style={[s.tVv, valueStrong && s.tVvK, hot && s.tVvHot, valueColor ? { color: valueColor } : null]} numberOfLines={1}>{value}</Text> : null}
+      </View>
+      {wide ? <Icon name="chevron" size={15} color={hot ? '#55524b' : PELE.ghost} /> : null}
+    </TouchableOpacity>
+  );
 }
 
 export default function SettingsScreen({ navigation }) {
@@ -58,6 +85,63 @@ export default function SettingsScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [aeModal, setAeModal] = useState(false);       // Serviço & AE (pós-voo/férias/antiguidade/toggles + estimativa)
+  const [prefModal, setPrefModal] = useState(false);   // Idioma & tema
+  const [secModal, setSecModal] = useState(false);     // Segurança (bloqueio/password/apagar)
+  // Família (modelo B) — pessoas (hook) + partilhar UM voo por pessoa (link 24h + imagem, 1 envio) + registo local.
+  const { links: famLinks, reload: reloadFamily, create: createFamily, confirmRevoke: revokeFamily } = useFamilyLinks();
+  const family = Array.isArray(famLinks) ? famLinks : [];
+  const [famAddOpen, setFamAddOpen] = useState(false);
+  const [famLabel, setFamLabel] = useState('');
+  const [famBusy, setFamBusy] = useState(false);
+  const [famView, setFamView] = useState(null);        // pessoa selecionada → opções
+  const [famPick, setFamPick] = useState(false);       // dentro das opções: modo "escolher voo"
+  const [sendCard, setSendCard] = useState(null);      // voo + pessoa → FlightShareCard
+  const [famShares, setFamShares] = useState([]);      // registo local das partilhas
+  useEffect(() => {
+    getFamilyShares(user?.id).then(setFamShares);
+    return navigation.addListener('focus', reloadFamily);
+  }, [navigation, reloadFamily, user?.id]);
+  const fmtFamDate = (iso) => { const d = new Date(`${iso}T00:00:00`); return isNaN(d.getTime()) ? iso : d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'short' }); };
+  // Voos de HOJE (legs da duty de hoje) — o que se pode partilhar.
+  const todayFlights = (() => {
+    const d = duties[isoDay()];
+    if (!d || (d.kind && d.kind !== 'flight')) return [];
+    return Array.isArray(d.legs) ? d.legs.filter((lg) => lg && (lg.flightNo || lg.flight)) : [];
+  })();
+  const openSendFlight = (person, lg, dateISO) => {
+    if (!person || !lg) return;
+    const date = dateISO || isoDay();
+    const dep = String(lg.dep || '').toUpperCase(), arr = String(lg.arr || '').toUpperCase();
+    const fno = String(lg.flightNo || lg.flight || '').toUpperCase().replace(/\s+/g, '');
+    setFamView(null); setFamPick(false);
+    setTimeout(() => setSendCard({
+      personId: person.id, personLabel: person.label,
+      dep, arr, depTime: lg.off || '', arrTime: lg.on || '',
+      flightNo: fno, route: `${dep} → ${arr}`, date, dateLabel: fmtFamDate(date), sectors: 1,
+      legs: [{ flight: fno, dep, arr }],
+    }), 320);   // fecha o pop-up antes de abrir o cartão (evita modal-sobre-modal iOS)
+  };
+  const onFlightSent = async () => {
+    const c = sendCard; if (!c || !user?.id) return;
+    const next = await addFamilyShare(user.id, {
+      personId: c.personId, personLabel: c.personLabel, flightNo: c.flightNo, route: c.route,
+      dep: c.dep, arr: c.arr, depTime: c.depTime, arrTime: c.arrTime, date: c.date, dateLabel: c.dateLabel,
+      sectors: c.sectors, legs: c.legs, sharedAt: Date.now(),
+    });
+    setFamShares(next);
+  };
+  const submitFamAdd = async () => {
+    if (famBusy) return;
+    const lbl = famLabel.trim();
+    if (!lbl) return;
+    setFamBusy(true);
+    const created = await createFamily(lbl);
+    setFamBusy(false);
+    if (!created) { Alert.alert(l('Sem ligação', 'No connection'), l('Não consegui adicionar a pessoa agora — tenta com rede.', 'Could not add the person — try when online.')); return; }
+    success();
+    setFamAddOpen(false); setFamLabel('');
+  };
 
   // Estimativa AE do mês (cartão da secção Companhia) — total interligado do motor.
   const now = new Date();
@@ -348,207 +432,104 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      {/* Perfil é um MODAL que sobe (abre pelo avatar): grabber (arrastar p/ baixo fecha) + ✕ Fechar. */}
-      <View style={{ width: 38, height: 5, borderRadius: 3, backgroundColor: C.line, alignSelf: 'center', marginTop: 6 }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: tabSpace }}>
+      <PeleSide label={String(company?.name || l('CONTA', 'ACCOUNT')).toUpperCase()} accent={String(t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang) || '').toUpperCase()} />
+      {/* Topo (mockup): ‹ voltar (fecha o Perfil empurrado) + ⋯ */}
+      <View style={s.hdr}>
+        <TouchableOpacity style={s.bk} onPress={() => navigation.goBack()} hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
+          <Icon name="back" size={18} color={PELE.ink} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        <Icon name="ellipsis" size={19} color={PELE.grey} />
+      </View>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
 
-        {/* Cabeçalho claro (eyebrow ponto-vermelho + título display) + ✕ Fechar */}
-        <PageHeader eyebrow={t('profile.eyebrow', lang)} title={t('profile.title', lang)}
-          right={
-            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}
-              style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}
-              accessibilityLabel={t('common.close', lang)}>
-              <Ionicons name="close" size={20} color={C.text} />
-            </TouchableOpacity>
-          } />
-
-        {/* User card escuro (mockup .uca) — avatar vermelho + nome + email */}
-        {user && (() => {
+        {/* Herói (mockup) — greet + FANTASMA=iniciais + nome + kick (categoria a amarelo) + régua + meta */}
+        {user ? (() => {
           const displayName = user.name || user.email?.split('@')[0] || '—';
+          const w = String(displayName).trim().split(/\s+/).filter(Boolean);
+          const inits = !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
+          const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : (crewCategory || null);
           return (
-            <Animated.View style={[s.userCard, seg(0)]}>
-              <View style={s.avatar}>
-                <Text style={s.avatarTxt}>{displayName[0]?.toUpperCase() ?? '?'}</Text>
+            <Animated.View style={seg(0)}>
+              <Text style={s.greet}>{t('profile.eyebrow', lang)}</Text>
+              <View style={s.phero}>
+                <Text style={s.pghost} numberOfLines={1} allowFontScaling={false}>{inits}</Text>
+                <Text style={s.pword} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} allowFontScaling={false}>{displayName}</Text>
+                <Text style={s.pkick} numberOfLines={1}>{[company?.name, t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)].filter(Boolean).join(' · ')}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.userName} numberOfLines={1}>{displayName}</Text>
-                <Text style={s.userEmail} numberOfLines={1}>{user.email}</Text>
+              <View style={s.phr} />
+              <View style={s.pmeta}>
+                {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
+                {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
+                {companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ok : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
               </View>
             </Animated.View>
           );
-        })()}
+        })() : null}
 
-        {/* Companhia — badge escuro com o código do operador */}
-        {company ? (
+        {/* Família — tira de cartões ao vivo (mockup perfil-final), logo sob o herói */}
+        <View>
+          <Text style={s.seclbl}>{l('A tua família · chegada ao vivo', 'Your family · live arrival')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.famRow}>
+            <TouchableOpacity style={s.fadd} activeOpacity={0.85} onPress={() => { setFamLabel(''); setFamAddOpen(true); }} accessibilityRole="button" accessibilityLabel={l('Adicionar pessoa', 'Add person')}>
+              <Icon name="plus" size={18} color={PELE.ink} />
+            </TouchableOpacity>
+            {family.map((lk) => (
+              <TouchableOpacity key={lk.id} style={s.fcard} activeOpacity={0.85} onPress={() => setFamView(lk)} accessibilityRole="button" accessibilityLabel={lk.label}>
+                <View style={s.fav}><Text style={s.favTxt}>{familyInitials(lk.label)}</Text></View>
+                <Text style={s.fname} numberOfLines={1}>{lk.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Perfil — mosaicos (categoria/contrato/base → diálogos existentes; serviço/férias → Serviço&AE) */}
+        {ae ? (
           <Animated.View style={seg(1)}>
-            <Text style={s.gt}>{l('Companhia', 'Airline')}</Text>
-            <View style={s.gbox}>
-              <View style={[s.gr, s.grBorder]}>
-                <View style={[s.gi, s.giCo]}><Text style={s.giCoTxt}>{company.code || (company.name?.[0]?.toUpperCase() ?? '—')}</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.grLabel} numberOfLines={1}>{company.name}</Text>
-                  <Text style={s.grSub}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}</Text>
-                </View>
-              </View>
-              {ae ? (
-                <Row icon="ribbon-outline" label={l('Categoria', 'Rank')}
-                  sub={crewCategory && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : l('A tua categoria', 'Your rank')}
-                  value={crewCategory || l('Por definir', 'Not set')} onPress={() => { setChangeFrom(currentYm); setCatModal(true); }} s={s} C={C} />
-              ) : null}
-              {ae ? (
-                <Row icon="briefcase-outline" label={l('Contrato', 'Contract')}
-                  sub={l('Modalidade — afeta a base proporcional', 'Pattern — affects the pro-rated base')}
-                  value={crewContract ? (ae.contractLabel ? ae.contractLabel(crewContract, lang) : crewContract) : l('Por definir', 'Not set')}
-                  onPress={() => { setChangeFrom(currentYm); setContractModal(true); }} s={s} C={C} />
-              ) : null}
-              {ae ? (
-                <Row icon="location-outline" label={l('Base', 'Base')} sub={l('Onde estás baseado', 'Where you are based')}
-                  value={baseObj ? (baseObj.city ? `${baseObj.code} · ${baseObj.city}` : baseObj.code) : (base || l('Por definir', 'Not set'))} onPress={() => setBModal(true)} s={s} C={C} />
-              ) : null}
-              {ae ? (
-                <Row icon="calendar-outline" label={l('Data de início', 'Start date')}
-                  sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')}
-                  value={serviceStart || l('Por definir', 'Not set')} onPress={openStartDate} s={s} C={C} />
-              ) : null}
-              {showLifestyle ? (
-                <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')}
-                  sub={l('Sazonal recebe retenção · estilo de vida não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')}
-                  s={s} C={C}
-                  right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
-              ) : null}
-              {showInstructor ? (
-                <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')}
-                  sub={l('Destrava o papel de instrutor (Art. 42) — só se tiveres a qualificação', 'Unlocks the instructor role (Art. 42) — only if you hold the rating')}
-                  s={s} C={C}
-                  right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
-              ) : null}
-              {showFleet ? (
-                <Row icon="airplane-outline" label={l('Frota', 'Fleet')}
-                  sub={l('Wide-body cobra sempre a tarifa WB de per-diem (AE TAP)', 'Wide-body always charges the WB per-diem rate (TAP agreement)')}
-                  s={s} C={C}
-                  right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
-              ) : null}
-              {/* Serviço pós-voo / débrief (min, do OM) — universal; alimenta as Duty hours (fallback do sign-off). */}
-              <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
-                sub={l('Débrief após o último calço (do teu OM) — conta para o serviço', 'Debrief after last on-block (from your OM) — counts as duty')}
-                last={!companyHasAe && !hasVacExtra} s={s} C={C}
-                right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
-              {/* Plafond anual de férias (dias) → saldo na folha do extra + Cálculos. Só onde há registo (vacDays). */}
-              {hasVacExtra ? (
-                <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')}
-                  sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT) — ajusta ao teu contrato', 'Legal minimum 22 working days (Art. 238 CT) — adjust to your contract')}
-                  last={!companyHasAe} s={s} C={C}
-                  right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))}
-                    onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2}
-                    accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
-              ) : null}
-              {/* Vínculo (lei: art. 496º CT) — só onde a companhia tem AE. Decide a cobertura do pagamento. */}
-              {companyHasAe ? (
-                <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')}
-                  sub={l('Decide se o AE te abrange (pagamento). Agência/independente → não abrangido.', 'Decides if the agreement covers you (pay). Agency/independent → not covered.')}
-                  last={(employment || 'employee') !== 'employee'} s={s} C={C}
-                  right={<Seg options={[{ id: 'employee', label: l('Empresa', 'Employee') }, { id: 'agency', label: l('Agência', 'Agency') }, { id: 'independent', label: l('Indep.', 'Indep.') }]} value={employment || 'employee'} setValue={saveEmployment} />} />
-              ) : null}
-              {/* Override raro: empregado não filiado/não aderente numa empresa que não aplica o AE a todos. */}
-              {companyHasAe && (employment || 'employee') === 'employee' ? (
-                <Row icon="shield-checkmark-outline" label={l('Abrangido pelo AE', 'Covered by agreement')}
-                  sub={l('Filiação/adesão (art. 496º/497º). Quase sempre Sim. Não → FTL-only no pagamento.', 'Union/individual membership (art. 496/497). Almost always Yes. No → FTL-only for pay.')}
-                  last s={s} C={C}
-                  right={<Seg options={[{ id: 'yes', label: l('Sim', 'Yes') }, { id: 'no', label: l('Não', 'No') }]} value={aeCovered === false ? 'no' : 'yes'} setValue={(v) => saveAeCovered(v === 'yes')} />} />
-              ) : null}
+            <Text style={s.seclbl}>{l('Perfil', 'Profile')}</Text>
+            <View style={s.grid}>
+              <Tile icon="ribbon-outline" label={l('Categoria', 'Rank')} value={crewCategory || l('Por definir', 'Not set')} valueStrong onPress={() => { setChangeFrom(currentYm); setCatModal(true); }} s={s} />
+              <Tile icon="briefcase-outline" label={l('Contrato', 'Contract')} value={crewContract ? (ae.contractLabel ? ae.contractLabel(crewContract, lang) : crewContract) : '12/12'} valueStrong onPress={() => { setChangeFrom(currentYm); setContractModal(true); }} s={s} />
+              <Tile icon="location-outline" label={l('Base', 'Base')} value={baseObj ? baseObj.code : (base || l('—', '—'))} valueStrong onPress={() => setBModal(true)} s={s} />
+              {hasVacExtra
+                ? <Tile icon="sunny-outline" label={l('Férias / ano', 'Leave / yr')} value={`${vacationDaysYear ?? 22} ${l('dias', 'days')}`} valueStrong onPress={() => setAeModal(true)} s={s} />
+                : <Tile icon="calendar-outline" label={l('Data de início', 'Start date')} value={serviceStart || l('—', '—')} valueStrong onPress={openStartDate} s={s} />}
+              <Tile icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} value={l(`${postFlightMin || 0} min · débrief do OM`, `${postFlightMin || 0} min · OM debrief`)} wide onPress={() => setAeModal(true)} s={s} />
             </View>
-            {aeMonth ? (
-              <View style={s.aeCard}>
-                <View style={s.aeCardHead}>
-                  <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
-                  <Text style={s.aeCardV}>{fmtEur(aeTotal)}</Text>
-                </View>
-                <Text style={s.aeCardSub}>
-                  {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
-                  {aeExtrasShown ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeExtrasShown)}` : ''}
-                  {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
-                </Text>
-              </View>
-            ) : null}
           </Animated.View>
         ) : null}
 
-        {/* Preferências — idioma / tema */}
+        {/* Ferramentas */}
         <Animated.View style={seg(2)}>
-          <Text style={s.gt}>{l('Preferências', 'Preferences')}</Text>
-          <View style={s.gbox}>
-            <Row icon="language-outline" label={t('profile.language', lang)} s={s} C={C}
-              right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
-            <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s} C={C}
-              right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
-            <Row icon="notifications-outline" label={l('Lembretes', 'Reminders')} sub={l('Validades, próximo serviço e alterações de escala', 'Documents, next duty and roster changes')} last s={s} C={C}
-              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={remindersOn ? 'on' : 'off'} setValue={(v) => toggleReminders(v === 'on')} />} />
+          <Text style={s.seclbl}>{l('Ferramentas', 'Tools')}</Text>
+          <View style={s.grid}>
+            <Tile icon="passport" label={l('Validades & Documentos', 'Currency & Documents')} value={l('médico · recorrentes · licença', 'medical · recurrents · licence')} wide hot onPress={() => navigation.navigate('Validades')} s={s} />
+            <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
+            <Tile icon="library-outline" label={l('Biblioteca', 'Library')} value={l('fontes oficiais', 'official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
+            {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => setAeModal(true)} s={s} /> : null}
           </View>
         </Animated.View>
 
-        {/* Segurança — bloqueio / mudar password */}
+        {/* Segurança & conta */}
         <Animated.View style={seg(3)}>
-          <Text style={s.gt}>{l('Segurança', 'Security')}</Text>
-          <View style={s.gbox}>
-            <Row icon="lock-closed-outline" label={t('lock.title', lang)} s={s} C={C}
-              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
-            <Row icon="mail-outline" label={l('Mudar e-mail', 'Change email')} sub={user?.email} onPress={openEmailChange} s={s} C={C} />
-            <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => setPwModal(true)} last s={s} C={C} />
+          <Text style={s.seclbl}>{l('Segurança & conta', 'Security & account')}</Text>
+          <View style={s.grid}>
+            <Tile icon="shield-checkmark-outline" label={l('Segurança', 'Security')} value={lockEnabled ? l('bloqueio ligado', 'lock on') : l('bloqueio desligado', 'lock off')} valueColor={lockEnabled ? PELE.ok : null} onPress={() => setSecModal(true)} s={s} />
+            <Tile icon="contrast-outline" label={l('Idioma & tema', 'Language & theme')} value={theme === 'dark' ? l('escuro', 'dark') : l('claro', 'light')} valueStrong onPress={() => setPrefModal(true)} s={s} />
+            <Tile icon="mail-outline" label={l('Mudar e-mail', 'Change email')} value={user?.email} onPress={openEmailChange} s={s} />
+            <Tile icon="download-outline" label={l('Exportar dados', 'Export data')} value="RGPD" onPress={exportData} s={s} />
           </View>
         </Animated.View>
 
-        {/* Biblioteca — fontes oficiais (FTL universal + AE por companhia/tipo), crew-aware */}
+        {/* Terminar sessão — linha vermelha, sozinha (fora do mosaico) */}
         <Animated.View style={seg(4)}>
-          <Text style={s.gt}>{l('Biblioteca', 'Library')}</Text>
-          <View style={s.gbox}>
-            <Row icon="library-outline" label={l('Fontes oficiais', 'Official sources')}
-              sub={l('FTL (UE) + AE (BTE) — só links oficiais', 'FTL (EU) + AE (BTE) — official links only')}
-              onPress={() => navigation.navigate('Biblioteca')} last s={s} C={C} />
-          </View>
-        </Animated.View>
-
-        {/* Pro — Validades & Documentos (radar de validades: médico/recorrentes/licença) */}
-        <Animated.View style={seg(5)}>
-          <Text style={s.gt}>Pro</Text>
-          <View style={s.gbox}>
-            <Row icon="shield-checkmark-outline" label={l('Validades & Documentos', 'Currency & Documents')}
-              sub={l('Médico, recorrentes, licença… com estado e datas', 'Medical, recurrents, licence… with status & dates')}
-              onPress={() => navigation.navigate('Validades')} s={s} C={C} />
-            <Row icon="bed-outline" label={l('Hotéis de pernoita', 'Night-stop hotels')}
-              sub={l('Um por estação — mapas e telefone à mão nos dias 🌙', 'One per station — maps & phone at hand on 🌙 days')}
-              onPress={() => navigation.navigate('Hoteis')} s={s} C={C} />
-            <Row icon="people-outline" label={l('Família · chegada ao vivo', 'Family · live arrival')}
-              sub={l('Links permanentes — a tua chegada de hoje, no browser deles', 'Permanent links — today’s arrival, in their browser')}
-              onPress={() => navigation.navigate('Familia')} last s={s} C={C} />
-          </View>
-        </Animated.View>
-
-        {/* Os meus dados (RGPD) — exportar (Art. 20) + apagar (Art. 17) */}
-        <Animated.View style={seg(5)}>
-          <Text style={s.gt}>{l('Os meus dados', 'My data')}</Text>
-          <View style={s.gbox}>
-            <Row icon="download-outline" label={l('Exportar os meus dados', 'Export my data')}
-              sub={l('Perfil + escala + FTL + AE, em JSON (RGPD)', 'Profile + roster + FTL + AE, as JSON (GDPR)')}
-              onPress={exportData} s={s} C={C} />
-            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')}
-              sub={l('Desativa agora · eliminada em 7 dias (reativável)', 'Deactivates now · deleted in 7 days (reversible)')}
-              danger onPress={() => { setDelWord(''); setDelErr(''); setDelModal(true); }} last s={s} C={C}
-              right={<Ionicons name="chevron-forward" size={15} color={C.red} />} />
-          </View>
-        </Animated.View>
-
-        {/* Sobre */}
-        <Animated.View style={seg(6)}>
-          <Text style={s.gt}>{l('Sobre', 'About')}</Text>
-          <View style={s.gbox}>
-            <Row icon="information-circle-outline" label="CrewPact" value={`v${appJson.expo.version}`} last s={s} C={C} />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={seg(7)}>
-          <View style={s.gbox}>
-            <Row icon="log-out-outline" label={l('Terminar sessão', 'Log out')} danger onPress={() => setLogoutOpen(true)} last s={s} C={C} />
-          </View>
+          <TouchableOpacity style={s.logout} activeOpacity={0.85} onPress={() => setLogoutOpen(true)} accessibilityRole="button" accessibilityLabel={l('Terminar sessão', 'Log out')}>
+            <Icon name="logout" size={16} color={PELE.red} />
+            <Text style={s.logoutTxt}>{l('Terminar sessão', 'Log out')}</Text>
+            <View style={{ flex: 1 }} />
+            <Icon name="chevron" size={14} color={PELE.red} />
+          </TouchableOpacity>
+          <Text style={s.foot}>CrewPact · v{appJson.expo.version}</Text>
         </Animated.View>
       </ScrollView>
 
@@ -558,6 +539,80 @@ export default function SettingsScreen({ navigation }) {
         cancelLabel={l('Não', 'No')} confirmLabel={l('Sim, sair', 'Yes, log out')}
         onCancel={() => setLogoutOpen(false)}
         onConfirm={() => { setLogoutOpen(false); logout(); }} />
+
+      {/* Família · adicionar pessoa (inline no Perfil) */}
+      <CenterDialog visible={famAddOpen} onClose={() => { if (!famBusy) setFamAddOpen(false); }}
+        title={l('Adicionar pessoa', 'Add person')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          <Text style={s.fieldLabel}>{l('Nome (só para ti — não aparece no link)', 'Name (just for you — not shown on the link)')}</Text>
+          <TextInput style={s.famInput} value={famLabel} onChangeText={setFamLabel} placeholder={l('ex.: Mãe', 'e.g.: Mom')} placeholderTextColor={C.sub} autoFocus maxLength={40} returnKeyType="done" onSubmitEditing={submitFamAdd} />
+          <PrimaryButton onPress={submitFamAdd} label={famBusy ? l('A adicionar…', 'Adding…') : l('Adicionar', 'Add')} style={{ marginTop: 14 }} />
+          <Text style={s.famHint}>{l('Adiciona a pessoa; depois, no perfil dela, escolhes um voo do dia e envias-lhe o link ao vivo + a imagem — fica registado.', 'Add the person; then, from their profile, pick a day’s flight and send them the live link + image — it stays on record.')}</Text>
+        </View>
+      </CenterDialog>
+
+      {/* Família · opções da pessoa (modelo B): partilhar um voo (link 24h + imagem) + registo + remover */}
+      <CenterDialog visible={!!famView} onClose={() => { setFamView(null); setFamPick(false); }}
+        title={famView?.label || l('Pessoa', 'Person')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 20 }}>
+          {famPick ? (
+            <>
+              <Text style={s.fieldLabel}>{l('Escolhe o voo de hoje', 'Pick today’s flight')}</Text>
+              {todayFlights.length ? todayFlights.map((lg, i) => {
+                const fno = String(lg.flightNo || lg.flight || '').toUpperCase();
+                return (
+                  <TouchableOpacity key={i} style={s.flightRow} activeOpacity={0.85} onPress={() => openSendFlight(famView, lg)} accessibilityRole="button">
+                    <View style={s.flightIc}><Icon name="plane" size={15} color={PELE.ink} /></View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.flightNo}>{fno || l('Voo', 'Flight')}</Text>
+                      <Text style={s.flightRt}>{(lg.dep || '?')} → {(lg.arr || '?')}{lg.off ? `  ·  ${lg.off}` : ''}</Text>
+                    </View>
+                    <Icon name="chevron" size={15} color={PELE.ghost} />
+                  </TouchableOpacity>
+                );
+              }) : <Text style={s.famHint}>{l('Hoje não há voo para partilhar.', 'No flight to share today.')}</Text>}
+              <TouchableOpacity onPress={() => setFamPick(false)} style={s.famBack2} hitSlop={6}><Text style={s.famBack2Txt}>{l('‹ Voltar', '‹ Back')}</Text></TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => setFamPick(true)} style={[s.famShareBtn, !todayFlights.length && { opacity: 0.4 }]} activeOpacity={0.9} disabled={!todayFlights.length} accessibilityRole="button">
+                <Icon name="share" size={16} color={PELE.onInk} />
+                <Text style={s.famShareTxt}>{l('Partilhar um voo', 'Share a flight')}</Text>
+              </TouchableOpacity>
+              {!todayFlights.length ? <Text style={s.famHint}>{l('Sem voo hoje — partilhas quando tiveres um voo no dia.', 'No flight today — share when you have one.')}</Text> : null}
+
+              <Text style={[s.fieldLabel, { marginTop: 18 }]}>{l('Partilhas', 'Shares')}</Text>
+              {famShares.filter((sh) => sh.personId === famView?.id).length ? (
+                famShares.filter((sh) => sh.personId === famView?.id).map((sh) => (
+                  <View key={sh.id} style={s.shareRow}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.shareTop} numberOfLines={1}>{sh.flightNo} · {sh.route}</Text>
+                      <Text style={s.shareSub}>{sh.dateLabel}</Text>
+                    </View>
+                    <TouchableOpacity hitSlop={8} onPress={() => openSendFlight(famView, { dep: sh.dep, arr: sh.arr, off: sh.depTime, on: sh.arrTime, flightNo: sh.flightNo }, sh.date)} accessibilityRole="button" accessibilityLabel={l('Reenviar', 'Resend')}>
+                      <Icon name="share" size={16} color={PELE.ink} />
+                    </TouchableOpacity>
+                    <TouchableOpacity hitSlop={8} onPress={async () => { const next = await removeFamilyShare(user?.id, sh.id); setFamShares(next); }} accessibilityRole="button" accessibilityLabel={l('Apagar registo', 'Delete record')}>
+                      <Icon name="trash" size={16} color={PELE.red} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : <Text style={s.famHint}>{l('Ainda nada partilhado com esta pessoa.', 'Nothing shared with this person yet.')}</Text>}
+
+              <TouchableOpacity onPress={() => { const p = famView; revokeFamily(p, () => { setFamView(null); removeFamilySharesForPerson(user?.id, p?.id).then(setFamShares); }); }} style={s.famRevoke} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={l('Remover pessoa', 'Remove person')}>
+                <Icon name="trash" size={16} color={PELE.red} />
+                <Text style={s.famRevokeTxt}>{l('Remover pessoa', 'Remove person')}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </CenterDialog>
+
+      {/* Enviar um voo a uma pessoa (imagem + link ao vivo, 1 envio) */}
+      <FlightShareCard visible={!!sendCard} onClose={() => setSendCard(null)} onSent={onFlightSent}
+        personLabel={sendCard?.personLabel} dep={sendCard?.dep} arr={sendCard?.arr}
+        depTime={sendCard?.depTime} arrTime={sendCard?.arrTime} flightNo={sendCard?.flightNo}
+        dateLabel={sendCard?.dateLabel} sectors={sendCard?.sectors} date={sendCard?.date} legs={sendCard?.legs} />
 
       {/* Apagar conta (RGPD Art. 17) — confirmação por palavra escrita + botão destrutivo */}
       <CenterDialog visible={delModal} onClose={() => { if (!delBusy) setDelModal(false); }}
@@ -746,38 +801,118 @@ export default function SettingsScreen({ navigation }) {
         </CenterDialog>
       ) : null}
 
+      {/* Serviço & AE — pós-voo, férias, antiguidade + toggles avançados + estimativa do mês */}
+      <CenterDialog visible={aeModal} onClose={() => setAeModal(false)} title={l('Serviço & AE', 'Service & CLA')} closeLabel={t('common.close', lang)}>
+        <ScrollView style={{ maxHeight: 500 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          <View style={s.gbox}>
+            <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} sub={l('Débrief após o último calço (do teu OM)', 'Debrief after last on-block (from your OM)')} s={s}
+              right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
+            {hasVacExtra ? (
+              <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
+                right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))} onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2} accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
+            ) : null}
+            <Row icon="calendar-outline" label={l('Data de início', 'Start date')} sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')} value={serviceStart || l('Por definir', 'Not set')} onPress={() => { setAeModal(false); setTimeout(openStartDate, 300); }} s={s} />
+            {showLifestyle ? (
+              <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')} sub={l('Sazonal recebe retenção · lazer não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')} s={s}
+                right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
+            ) : null}
+            {showInstructor ? (
+              <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')} sub={l('Destrava o papel de instrutor (Art. 42)', 'Unlocks the instructor role (Art. 42)')} s={s}
+                right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
+            ) : null}
+            {showFleet ? (
+              <Row icon="airplane-outline" label={l('Frota', 'Fleet')} sub={l('Wide-body cobra sempre a tarifa WB (AE TAP)', 'Wide-body always charges the WB rate (TAP)')} s={s}
+                right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
+            ) : null}
+            {companyHasAe ? (
+              <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')} sub={l('Decide se o AE te abrange (pagamento).', 'Decides if the agreement covers you (pay).')} last={(employment || 'employee') !== 'employee'} s={s}
+                right={<Seg options={[{ id: 'employee', label: l('Empresa', 'Employee') }, { id: 'agency', label: l('Agência', 'Agency') }, { id: 'independent', label: l('Indep.', 'Indep.') }]} value={employment || 'employee'} setValue={saveEmployment} />} />
+            ) : null}
+            {companyHasAe && (employment || 'employee') === 'employee' ? (
+              <Row icon="shield-checkmark-outline" label={l('Abrangido pelo AE', 'Covered by agreement')} sub={l('Filiação/adesão (art. 496º/497º). Não → FTL-only.', 'Membership (art. 496/497). No → FTL-only.')} last s={s}
+                right={<Seg options={[{ id: 'yes', label: l('Sim', 'Yes') }, { id: 'no', label: l('Não', 'No') }]} value={aeCovered === false ? 'no' : 'yes'} setValue={(v) => saveAeCovered(v === 'yes')} />} />
+            ) : null}
+          </View>
+          {aeMonth ? (
+            <View style={s.aeCard}>
+              <View style={s.aeCardHead}>
+                <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
+                <Text style={s.aeCardV}>{fmtEur(aeTotal)}</Text>
+              </View>
+              <Text style={s.aeCardSub}>
+                {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
+                {aeExtrasShown ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeExtrasShown)}` : ''}
+                {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
+              </Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </CenterDialog>
+
+      {/* Idioma & tema — preferências */}
+      <CenterDialog visible={prefModal} onClose={() => setPrefModal(false)} title={l('Idioma & tema', 'Language & theme')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 16 }}>
+          <View style={s.gbox}>
+            <Row icon="language-outline" label={t('profile.language', lang)} s={s}
+              right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
+            <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s}
+              right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
+            <Row icon="notifications-outline" label={l('Lembretes', 'Reminders')} sub={l('Validades, próximo serviço e alterações', 'Documents, next duty and roster changes')} last s={s}
+              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={remindersOn ? 'on' : 'off'} setValue={(v) => toggleReminders(v === 'on')} />} />
+          </View>
+        </View>
+      </CenterDialog>
+
+      {/* Segurança — bloqueio + mudar password + apagar conta */}
+      <CenterDialog visible={secModal} onClose={() => setSecModal(false)} title={l('Segurança', 'Security')} closeLabel={t('common.close', lang)}>
+        <View style={{ padding: 16 }}>
+          <View style={s.gbox}>
+            <Row icon="lock-closed-outline" label={t('lock.title', lang)} sub={l('Face ID / código do telemóvel', 'Face ID / device passcode')} s={s}
+              right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
+            <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => { setSecModal(false); setTimeout(() => setPwModal(true), 300); }} s={s} />
+            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')} sub={l('Desativa agora · eliminada em 7 dias', 'Deactivates now · deleted in 7 days')} danger last onPress={() => { setSecModal(false); setTimeout(() => { setDelWord(''); setDelErr(''); setDelModal(true); }, 300); }} s={s} />
+          </View>
+        </View>
+      </CenterDialog>
+
     </SafeAreaView>
   );
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
-  // User card escuro (mockup .uca)
-  userCard: { flexDirection: 'row', alignItems: 'center', gap: 15, borderRadius: 24, padding: 18, marginBottom: 14, backgroundColor: C.brand },
-  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: '#fff', fontSize: 24, fontFamily: FONT.semibold },
-  userName: { fontSize: 20, fontFamily: FONT.semibold, color: '#fff' },
-  userEmail: { fontSize: 11.5, fontFamily: FONT.medium, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
-  // Título de secção (mockup .gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
-  gt: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: C.sub, marginTop: 10, marginLeft: 4, marginBottom: 7 },
-  gbox: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden', marginBottom: 13 },
-  aeCard: { backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
+  safe: { flex: 1, backgroundColor: PELE.paper },
+  hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
+  bk: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  // Herói do perfil (mockup perfil-final) — greet + FANTASMA iniciais + nome + kick + régua + meta
+  greet: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 4 },
+  phero: { position: 'relative', minHeight: 150, justifyContent: 'flex-end', paddingBottom: 6, marginTop: 4 },
+  pghost: { position: 'absolute', right: 4, top: -18, fontFamily: PELE_FONT.display, fontSize: 150, lineHeight: 152, letterSpacing: -4, color: PELE.ghost },
+  pword: { fontFamily: PELE_FONT.display, fontSize: 52, letterSpacing: -0.5, color: PELE.ink },
+  pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.grey, marginTop: 8 },
+  pkickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  phr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 4 },
+  pmeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 11 },
+  pmetaTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9.5, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  pmetaB: { color: PELE.ink },
+  // Secções (.gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
+  gt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 17, marginLeft: 2, marginBottom: 9 },
+  gbox: { backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, overflow: 'hidden', marginBottom: 13 },
+  aeCard: { backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
   aeCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  aeCardK: { fontFamily: FONT.heavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', flex: 1, marginRight: 10 },
-  aeCardV: { fontFamily: FONT.semibold, fontSize: 24, color: '#fff', fontVariant: ['tabular-nums'] },
-  aeCardSub: { fontFamily: FONT.medium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 8 },
-  gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 13 },
-  grBorder: { borderBottomWidth: 1, borderBottomColor: C.line },
-  // Input compacto "Férias por ano" (dias) — visual do Seg (soft pill), 2 dígitos.
-  vacIn: { minWidth: 56, textAlign: 'center', backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8, color: C.text, fontSize: TYPE.body, fontFamily: FONT.bold, fontVariant: ['tabular-nums'] },
-  gi: { width: 36, height: 36, borderRadius: 11, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  giCo: { backgroundColor: C.ink },
-  giCoTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 13 },
-  giDanger: { backgroundColor: C.redSoft },
-  grLabel: { fontFamily: FONT.heavy, fontSize: 13.5, color: C.text },
-  grSub: { fontFamily: FONT.medium, fontSize: 11, color: C.sub, marginTop: 1 },
+  aeCardK: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: PELE.onInkSub, flex: 1, marginRight: 10 },
+  aeCardV: { fontFamily: PELE_FONT.display, fontSize: 26, color: PELE.onInk, fontVariant: ['tabular-nums'] },
+  aeCardSub: { fontFamily: PELE_FONT.body, fontSize: 11, color: PELE.onInkSub, marginTop: 8 },
+  gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 12 },
+  grBorder: { borderBottomWidth: 1, borderBottomColor: PELE.line },
+  vacIn: { minWidth: 56, textAlign: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, color: PELE.ink, fontSize: 15, fontFamily: PELE_FONT.bodyBold, fontVariant: ['tabular-nums'] },
+  gi: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  giCo: { backgroundColor: PELE.ink },
+  giCoTxt: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy, fontSize: 13 },
+  giDanger: { backgroundColor: PELE.redSoft },
+  grLabel: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.ink },
+  grSub: { fontFamily: PELE_FONT.body, fontSize: 11, color: PELE.grey, marginTop: 1 },
   grRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rv: { fontFamily: FONT.heavy, fontSize: 11, color: C.sub },
+  rv: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, color: PELE.grey },
   // Modal de password
   fieldLabel: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
@@ -807,4 +942,44 @@ const makeStyles = (C) => StyleSheet.create({
   emSub: { fontSize: TYPE.sub, color: C.text, lineHeight: 20, marginBottom: 16 },
   emErr: { color: C.red, fontSize: TYPE.label, marginTop: 8 },
   emResend: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
+  // Mosaicos bento (mockup perfil-final)
+  seclbl: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 17, marginLeft: 2, marginBottom: 9 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  tile: { width: '48%', marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: PELE.line, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 11, minHeight: 60 },
+  tileWide: { width: '100%' },
+  tileHot: { backgroundColor: PELE.ink, borderColor: PELE.ink },
+  tIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  tIcHot: { backgroundColor: '#242320' },
+  tLb: { fontFamily: PELE_FONT.bodyBold, fontSize: 12, color: PELE.ink, lineHeight: 15 },
+  tLbHot: { color: PELE.onInk },
+  tVv: { fontFamily: PELE_FONT.body, fontSize: 10, color: PELE.grey, marginTop: 2 },
+  tVvK: { color: PELE.ink, fontFamily: PELE_FONT.bodyMed },
+  tVvHot: { color: '#d9c58e' },
+  // Família · tira de cartões (mockup perfil-final)
+  famRow: { flexDirection: 'row', gap: 9, alignItems: 'stretch', paddingVertical: 2, paddingRight: 4 },
+  fadd: { width: 48, minHeight: 66, borderRadius: 14, backgroundColor: PELE.paper, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CBC8BF', alignItems: 'center', justifyContent: 'center' },
+  fcard: { width: 62, borderRadius: 14, backgroundColor: '#FBFAF6', borderWidth: 1.5, borderColor: '#DFDCD2', paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center', gap: 6 },
+  fav: { width: 34, height: 34, borderRadius: 17, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center' },
+  favTxt: { fontFamily: PELE_FONT.display, fontSize: 16, color: PELE.onInk },
+  fname: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 10.5, color: PELE.ink },
+  // Diálogos da família (adicionar / ver link)
+  famInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card },
+  famHint: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, lineHeight: 16, marginTop: 12 },
+  famRevoke: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 10 },
+  famRevokeTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: PELE.red },
+  // Modelo B — opções da pessoa (partilhar voo + registo)
+  famShareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: PELE.ink, borderRadius: 13, paddingVertical: 14 },
+  famShareTxt: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.onInk },
+  flightRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
+  flightIc: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  flightNo: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  flightRt: { fontSize: 12, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 1 },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  shareTop: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  shareSub: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 1 },
+  famBack2: { marginTop: 14, paddingVertical: 6 },
+  famBack2Txt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  logout: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 14, paddingVertical: 13, paddingHorizontal: 13, borderWidth: 1, borderColor: '#F0DDD9', backgroundColor: PELE.redSoft, borderRadius: 13 },
+  logoutTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 12.5, color: PELE.red },
+  foot: { textAlign: 'center', fontFamily: PELE_FONT.body, fontSize: 9.5, color: PELE.grey, marginTop: 16 },
 });
