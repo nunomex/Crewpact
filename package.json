@@ -32,6 +32,8 @@
     "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar && npm run test:validities && npm run test:wx"
   },
   "dependencies": {
+    "@expo-google-fonts/barlow-condensed": "^0.4.1",
+    "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",

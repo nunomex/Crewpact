@@ -132,3 +132,28 @@ export const FONT = {
 };
 // LetterSpacing recomendado para títulos display (negativo = mais apertado/premium).
 export const TRACK_DISPLAY = -0.4;
+
+// ─── Pele nova (2026) — branco·preto·amarelo, plana, hairline ────────────────
+// Adicionada AO LADO da paleta antiga (não a substitui): porta-se ecrã a ecrã, os
+// ecrãs por converter continuam a usar PALETTE_LIGHT. Cores 1:1 com `design/*.html`.
+export const PELE = {
+  paper: '#FFFFFF', ink: '#141414', ghost: '#E2E1DC', grey: '#77776F', line: '#ECEAE4',
+  soft: '#F4F2ED', soft2: '#EFEDE7', yellow: '#FFB800',
+  ok: '#118A55', warn: '#E86A10', red: '#C6362B', info: '#EAF2F7',
+  // tons suaves de estado (cartões "pintados": Hoje, cartões de domínio da INFO)
+  okSoft: '#E7F3EC', warnSoft: '#FBEAD2', redSoft: '#F6E9E6', yellowSoft: '#FBF1D6',
+  // sobre placa PRETA (cartões escuros da carteira · dock · FAB)
+  onInk: '#FFFFFF', onInkSub: '#8F8F88', onInkFaint: '#DDDBD3',
+};
+// Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
+// Hanken Grotesk (corpo/rótulos). Estáticas: a FAMÍLIA carrega o peso (não o fontWeight).
+// Carregadas no App.js via @expo-google-fonts.
+export const PELE_FONT = {
+  display:     'BarlowCondensed_700Bold',       // fantasma · números grandes · palavra condensada
+  displaySemi: 'BarlowCondensed_600SemiBold',
+  displayMed:  'BarlowCondensed_500Medium',
+  body:        'HankenGrotesk_600SemiBold',      // corpo por defeito
+  bodyMed:     'HankenGrotesk_500Medium',
+  bodyBold:    'HankenGrotesk_700Bold',
+  bodyHeavy:   'HankenGrotesk_800ExtraBold',     // eyebrows/rótulos densos (maiúsculas)
+};

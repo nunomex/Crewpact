@@ -19,9 +19,13 @@ import AsyncStorage from './data/secureStorage';   // wrapper de cifra-em-repous
 import NetInfo from '@react-native-community/netinfo';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
+// Pele nova (2026): Barlow Condensed (display/números) + Hanken Grotesk (corpo). Ver PELE_FONT.
+import { BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold } from '@expo-google-fonts/barlow-condensed';
+import { HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk';
 import { getLocales } from 'expo-localization';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE } from './data/constants';
+import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE, PELE, PELE_FONT } from './data/constants';
+import Icon from './components/Icon';   // PORT pele: ícones da tab bar
 import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
@@ -37,6 +41,7 @@ import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
 import ExtraEventSheet from './components/ExtraEventSheet';
+import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
@@ -66,6 +71,7 @@ import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
 import FtlHubScreen       from './screens/FtlHubScreen';
+import InfoScreen         from './screens/InfoScreen';   // PORT pele: aba FTL/AE → INFO (incremental)
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
@@ -140,7 +146,7 @@ function EscalaStack() {
 function FtlStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FtlHub"    component={FtlHubScreen} />
+      <Stack.Screen name="FtlHub"    component={InfoScreen} />{/* PORT: pele INFO (era FtlHubScreen) */}
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
       <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
@@ -158,13 +164,7 @@ function FloatingTabBar({ state, navigation }) {
   const { lang, openSimulation, openExtra, ae } = useContext(AppContext);
   const C = useTheme();
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const ICON = {
-    'Início':       ['home', 'home-outline'],
-    'Estatísticas': ['stats-chart', 'stats-chart-outline'],
-    'Escala':       ['calendar', 'calendar-outline'],
-    'FTL':          ['time', 'time-outline'],
-    'Perfil':       ['person', 'person-outline'],
-  };
+  const ICON = { 'Início': 'home', 'Estatísticas': 'stats', 'Escala': 'cal', 'FTL': 'info', 'Perfil': 'user' };
   const active = state.routes[state.index];
   const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState(false);            // speed-dial expandido?
@@ -192,12 +192,12 @@ function FloatingTabBar({ state, navigation }) {
   // Ações do speed-dial, na ordem baixo→cima a partir do FAB (Pesquisa mais perto).
   // Simulação fica ACIMA do Serviço (decisão do user).
   const ACTIONS = [
-    { key: 'search', icon: 'search',          label: l('Pesquisa', 'Search'),     run: () => setSearchOpen(true) },
-    { key: 'duty',   icon: 'add',             label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
-    { key: 'sim',    icon: 'flask-outline',   label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
+    { key: 'search', icon: 'search',   label: l('Pesquisa', 'Search'),     run: () => setSearchOpen(true) },
+    { key: 'duty',   icon: 'plus',     label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
+    { key: 'sim',    icon: 'gauge',    label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
     // Extra do mês (evento datado — DDO/férias/doença/SNC…): só p/ perfis com AE modelado.
-    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet-outline', label: l('Extra do mês', 'Month extra'), run: () => openExtra && openExtra() }] : []),
-    { key: 'import', icon: 'download-outline', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
+    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Extra do mês', 'Month extra'), run: () => openExtra && openExtra() }] : []),
+    { key: 'import', icon: 'download', label: l('Importar', 'Import'),     run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }) },
   ];
 
   const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
@@ -230,24 +230,23 @@ function FloatingTabBar({ state, navigation }) {
         <TouchableOpacity style={tbar.scrimFill} activeOpacity={1} onPress={closeMenu} />
       </Animated.View>
       <View style={[tbar.wrap, { bottom: fabBottom }]} pointerEvents="box-none">
-        <View style={[tbar.dock, tbar.dockShadow, { backgroundColor: C.brand }]}>
+        <View style={[tbar.dock, tbar.dockShadow]}>
           {state.routes.map(route => {
             const focused = active.key === route.key;
-            const [on, off] = ICON[route.name];
-            // A aba FTL é adaptativa ao perfil: com AE resolvido e coberto (easyJet/TAP) a aba
-            // é lei + acordo → "FTL/AE"; FTL-puro (ou não coberto) mantém "FTL". Só o RÓTULO
-            // muda — o nome da rota fica 'FTL' (navegação intacta).
-            const lbl = route.name === 'FTL' && ae ? 'FTL/AE'
-              : t(`tab.${route.name === 'Estatísticas' ? 'stats' : route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : route.name === 'FTL' ? 'ftl' : 'profile'}`, lang);
+            const ic = ICON[route.name];
+            // A aba "FTL" passou a INFO (aba de REFERÊNCIA: lei FTL + AE explicados; os cálculos
+            // vivem nas Estatísticas). Só o RÓTULO muda — o nome da rota fica 'FTL' (navegação intacta).
+            const lbl = route.name === 'FTL' ? 'INFO'
+              : route.name === 'Estatísticas' ? l('Números', 'Numbers')
+              : t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : 'profile'}`, lang);
             return (
               <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
                 accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}
                 style={tbar.tb}>
                 {focused && <View style={tbar.tbHi} />}
-                <Ionicons name={focused ? on : off} size={22} color={focused ? '#fff' : 'rgba(255,255,255,0.62)'} />
-                {/* Rótulo SEMPRE visível (Material: "labels on all destinations") — 4 ícones
-                    próximos (stats/calendar/time) obrigavam a adivinhar; o dock navy mantém-se. */}
-                <Text numberOfLines={1} style={[tbar.tbLbl, { color: focused ? '#fff' : 'rgba(255,255,255,0.62)' }]}>{lbl}</Text>
+                <Icon name={ic} size={19} color={focused ? PELE.yellow : PELE.grey} />
+                {/* Rótulo SEMPRE visível (labels on all destinations). */}
+                <Text numberOfLines={1} style={[tbar.tbLbl, { color: focused ? PELE.onInk : PELE.grey }]}>{lbl}</Text>
               </TouchableOpacity>
             );
           })}
@@ -258,20 +257,20 @@ function FloatingTabBar({ state, navigation }) {
       <View style={[tbar.fabAnchor, { bottom: fabBottom }]} pointerEvents="box-none">
         {ACTIONS.map((a, i) => ({ ...a, i })).reverse().map((a) => (
           <Animated.View key={a.key} pointerEvents={open ? 'auto' : 'none'} style={[tbar.miniRow, itemAnim(a.i)]}>
-            <View style={[tbar.miniLabel, SHADOW.sm, { backgroundColor: C.card, borderColor: C.line }]}>
-              <Text numberOfLines={1} style={[tbar.miniLabelTxt, { color: C.text }]}>{a.label}</Text>
+            <View style={[tbar.miniLabel, SHADOW.sm, { backgroundColor: PELE.paper, borderColor: PELE.line }]}>
+              <Text numberOfLines={1} style={[tbar.miniLabelTxt, { color: PELE.ink }]}>{a.label}</Text>
             </View>
-            <TouchableOpacity style={[tbar.mini, SHADOW.md, { backgroundColor: a.danger ? C.red : C.ink }]}
+            <TouchableOpacity style={[tbar.mini, SHADOW.md, { backgroundColor: PELE.ink }]}
               activeOpacity={0.85} onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
-              <Ionicons name={a.icon} size={22} color="#fff" />
+              <Icon name={a.icon} size={20} color={PELE.yellow} />
             </TouchableOpacity>
           </Animated.View>
         ))}
-        <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: C.red }]} activeOpacity={0.9}
+        <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: PELE.ink }]} activeOpacity={0.9}
           onPress={toggleMenu} accessibilityRole="button" accessibilityState={{ expanded: open }}
           accessibilityLabel={open ? l('Fechar menu', 'Close menu') : l('Abrir ações', 'Open actions')}>
           <Animated.View style={{ transform: [{ rotate }] }}>
-            <Ionicons name="add" size={30} color="#fff" />
+            <Icon name="plus" size={28} color={PELE.yellow} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -345,22 +344,22 @@ const tbar = StyleSheet.create({
   // em qualquer largura de ecrã (responsivo, em vez do antigo buraco de ~46px).
   wrap: { position: 'absolute', left: 20, right: 100, flexDirection: 'row', alignItems: 'center' },
   // Dock escuro — 4 ícones, ponto vermelho na ativa. flex:1 → preenche o `wrap`.
-  dock: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 26, paddingHorizontal: 8 },
-  dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.42, shadowRadius: 26, elevation: 14 },
+  dock: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 30, paddingHorizontal: 8, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line },
+  dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.14, shadowRadius: 24, elevation: 8 },
   tb: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
-  tbHi: { position: 'absolute', width: 52, height: 48, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.10)' },
-  tbLbl: { fontSize: 9, fontFamily: FONT.semibold, letterSpacing: 0.2, marginTop: 2, maxWidth: '100%' },
+  tbHi: { position: 'absolute', width: 54, height: 50, borderRadius: 16, backgroundColor: PELE.ink },
+  tbLbl: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.2, marginTop: 2, maxWidth: '100%' },
   // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
   fabAnchor: { position: 'absolute', right: 20, alignItems: 'flex-end' },
   // FAB vermelho (direita) — maior, quadrado-arredondado a condizer com a dock (raio 26, não círculo)
-  fab: { width: 64, height: 64, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  fabShadow: { shadowColor: '#F5402C', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
-  // Mini-FAB do speed-dial: rótulo (chip card+hairline, o idiom dos chips da app) +
-  // quadrado-arredondado (RADIUS.xl, a condizer com a dock/FAB — não círculo), alinhado ao centro do FAB.
+  fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  fabShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.28, shadowRadius: 20, elevation: 12 },
+  // Mini-FAB do speed-dial (pele): chip de rótulo BRANCO (paper+hairline+ink) +
+  // círculo INK com ícone AMARELO (a condizer com o FAB), alinhado ao centro do FAB.
   miniRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   miniLabel: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, marginRight: 12 },
-  miniLabelTxt: { fontFamily: FONT.semibold, fontSize: TYPE.label },
-  mini: { width: 56, height: 56, borderRadius: RADIUS.xl, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
+  miniLabelTxt: { fontFamily: PELE_FONT.bodyBold, fontSize: TYPE.label },
+  mini: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
 });
 
 export default function App() {
@@ -369,7 +368,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   // Fonte Inter (1:1 com o mockup, igual em iOS+Android). Carrega os pesos que o
   // design usa; aplica-se por ecrã via FONT (fontFamily) à medida que se porta.
-  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold });
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold,
+    BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold,
+    HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold });
   const fontsReady = fontsLoaded || !!fontError; // erro a carregar → arranca na mesma (fonte do sistema)
   const suppressAuth = useRef(false);
   const hydrated = useRef(false);
@@ -381,7 +382,8 @@ export default function App() {
   const [hotels, setHotels] = useState({});                  // Hotéis de pernoita POR ESTAÇÃO { IATA: {name, phone?, note?} } — local
   const saveHotel = (station, h) => setHotels((prev) => ({ ...prev, [String(station).toUpperCase()]: h }));
   const removeHotel = (station) => setHotels((prev) => { const n = { ...prev }; delete n[String(station).toUpperCase()]; return n; });
-  const [extraOpen, setExtraOpen] = useState(false);         // folha "Extra do mês" (mini-FAB / Cálculos)
+  const [extraOpen, setExtraOpen] = useState(false);         // GESTÃO de extras (mini-FAB) — lista/apagar
+  const [addExtraOpen, setAddExtraOpen] = useState(false);   // formulário de ADICIONAR extra (aberto pela gestão)
   const addAeEvents = (list) => setAeEvents((prev) => [
     ...prev,
     ...(list || []).filter((e) => e && e.type && e.date).map((e, i) => ({ id: e.id || `ev${Date.now().toString(36)}${prev.length + i}`, date: e.date, type: e.type })),
@@ -1237,7 +1239,10 @@ export default function App() {
         </NavigationContainer>
         <OfflineBanner />
         {onboarded ? <SimulationFlow visible={simulateOpen} onClose={() => setSimulateOpen(false)} /> : null}
-        {onboarded ? <ExtraEventSheet visible={extraOpen} onClose={() => setExtraOpen(false)} /> : null}
+        {/* Dois Modais NÃO podem transicionar ao mesmo tempo (iOS trava): fecha um, espera a
+            saída (~240ms), só depois abre o outro. */}
+        {onboarded ? <ExtrasManager visible={extraOpen} onClose={() => setExtraOpen(false)} onAdd={() => { setExtraOpen(false); setTimeout(() => setAddExtraOpen(true), 340); }} /> : null}
+        {onboarded ? <ExtraEventSheet visible={addExtraOpen} onClose={() => { setAddExtraOpen(false); setTimeout(() => setExtraOpen(true), 340); }} /> : null}
         <Toast toast={toast} lang={lang} onHide={() => setToast(null)} />
         {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
             pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}
