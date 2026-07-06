@@ -1,0 +1,16 @@
+# Fins de linha — normaliza tudo a LF. Mata o churn CRLF do Windows (core.autocrlf):
+# o Git deixa de converter e de avisar, e a árvore fica determinística em qualquer SO.
+* text=auto eol=lf
+
+# Binários — nunca aplicar conversão de fim de linha (evita corrupção).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
