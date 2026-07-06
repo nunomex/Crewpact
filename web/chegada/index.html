@@ -2,16 +2,15 @@
 <!-- ═══════════════════════════════════════════════════════════════════════════
   CrewPact — página da FAMÍLIA (partilha da chegada do dia)
   ═══════════════════════════════════════════════════════════════════════════
-  Ficheiro ESTÁTICO único (index.html) — a pasta `web/chegada` está PRONTA A ARRASTAR
-  para o Cloudflare Pages (upload direto, grátis, sem git). O *.supabase.co não
-  renderiza HTML (anti-phishing do gateway), por isso a página vive num domínio nosso.
-  Lê /c/<token> (ou ?t=) e pede os DADOS à Edge `share-day` (GET público &j=1, CORS
-  aberto); re-pede a cada 60 s até aterrar. Zero dependências, zero cookies, noindex.
-  Depois de publicar: criar o secret SHARE_PAGE_URL = URL da página (Edge Functions
-  → Secrets) para os links partilhados saírem já com este endereço.
-  PELE: mesma linguagem do CARTÃO de partilha (poster editorial — fantasma do código +
-  valor grande + tira de dados, paleta cream/teal, dia/noite pela hora de quem abre),
-  mas VIVO (ETA/countdown/progresso/estado da Edge, atualiza sozinho).
+  Ficheiro ESTÁTICO único (index.html) — PRONTA A ARRASTAR para o Cloudflare Pages
+  (upload direto, grátis, sem git). O *.supabase.co não renderiza HTML (anti-phishing
+  do gateway), por isso a página vive num domínio nosso (voo.crewpact.app). Lê
+  /c<token> (ou ?t=) e pede os DADOS à Edge `share-day` (GET público &j=1, CORS aberto);
+  re-pede a cada 60 s até aterrar. Zero dependências, zero cookies, noindex.
+  Depois de publicar: secret SHARE_PAGE_URL = URL da página (Edge → Secrets).
+  PELE: linguagem do CARTÃO de partilha (fantasma do DESTINO + ANEL de countdown que
+  enche com o progresso + tira Partida·Chegada·Duração·Tempo), dia/noite pela hora de
+  quem abre. Mesmo cérebro (dados da Edge, atualiza sozinho).
 -->
 <html lang="pt">
 <head>
@@ -29,22 +28,21 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#141414">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  /* Mesma paleta do CARTÃO: DIA (cream) por defeito · NOITE (teal) na html.night — pela hora de quem abre */
   html{--bg:#F4F1E8;--ink:#141414;--sub:#8A8574;--faint:#B3B1A9;--ghost:rgba(20,20,20,.05);--line:rgba(20,20,20,.14);
-       --accent:#B9820A;--accentbg:rgba(255,184,0,.16);--track:rgba(20,20,20,.13);--done:#B9820A;--ok:#0E7A4B;--okbg:rgba(17,138,85,.12);--plane:#141414}
+       --accent:#B9820A;--accentbg:rgba(255,184,0,.16);--track:rgba(20,20,20,.10);--glow:rgba(185,130,10,.5);--ok:#0E7A4B;--okbg:rgba(17,138,85,.12)}
   html.night{--bg:#0C3A3B;--ink:#fff;--sub:rgba(255,255,255,.62);--faint:rgba(255,255,255,.42);--ghost:rgba(255,255,255,.06);--line:rgba(255,255,255,.16);
-       --accent:#FFB800;--accentbg:rgba(255,184,0,.18);--track:rgba(255,255,255,.2);--done:#FFB800;--ok:#46C98A;--okbg:rgba(70,201,138,.18);--plane:#FFB800}
+       --accent:#FFB800;--accentbg:rgba(255,184,0,.18);--track:rgba(255,255,255,.16);--glow:rgba(255,184,0,.55);--ok:#46C98A;--okbg:rgba(70,201,138,.18)}
   body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
-  html.night body{background:radial-gradient(110% 55% at 82% 6%,rgba(255,184,0,.10),transparent 55%),var(--bg)}
-  html:not(.night) body{background:radial-gradient(110% 55% at 82% 6%,rgba(255,184,0,.14),transparent 55%),var(--bg)}
-  .wrap{position:relative;max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:26px 24px 22px;overflow:hidden}
-  #inner{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  html.night body{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.10),transparent 55%),var(--bg)}
+  html:not(.night) body{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.14),transparent 55%),var(--bg)}
+  /* 100dvh = altura VISÍVEL (a barra do Safari não tapa); 100vh = fallback. */
+  .wrap{position:relative;max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:26px 24px 22px;overflow:hidden}
+  #inner{flex:1;display:flex;flex-direction:column}
 
-  /* FANTASMA — código da ORIGEM (a viagem: origem esbatida → destino brilha no herói), CONTIDO (não sangra) */
-  .ghost{position:absolute;right:2px;top:-18px;font-family:'Barlow Condensed';font-weight:800;font-size:190px;line-height:.8;letter-spacing:-6px;color:var(--ghost);z-index:0;pointer-events:none}
+  .ghost{position:absolute;right:2px;top:-16px;font-family:'Barlow Condensed';font-weight:800;font-size:190px;line-height:.8;letter-spacing:-6px;color:var(--ghost);z-index:0;pointer-events:none}
   .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
   .brand{display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:-.2px}
   .bdot{width:9px;height:9px;border-radius:3px;background:#FFB800}
@@ -52,47 +50,49 @@
   .live.done{background:var(--okbg);color:var(--ok)}
   .live .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
 
-  /* HERÓI (em baixo, editorial como o cartão) */
-  .hero{position:relative;z-index:2}
+  /* HERÓI = ANEL (centrado). O anel enche com o PROGRESSO do voo; o número é o countdown. */
+  .hero{position:relative;z-index:2;margin:auto 0;display:flex;flex-direction:column;align-items:center}
   .eyb{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:var(--sub)}
-  .big{font-family:'Barlow Condensed';font-weight:800;font-size:96px;line-height:.85;letter-spacing:-3px;color:var(--ink);margin-top:6px;font-variant-numeric:tabular-nums}
-  .big .u{font-size:38px;color:var(--sub);letter-spacing:-1px}
-  .sub{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.5}
-  .sub b{color:var(--accent);font-weight:800}.sub .ok{color:var(--ok);font-weight:800}
-  /* linha de progresso (LIS · —✈— · CDG) — subtil, estilo tira */
-  .prog{display:flex;align-items:center;gap:11px;margin-top:20px}
-  .pc{font-family:'Barlow Condensed';font-weight:700;font-size:18px;letter-spacing:.5px;color:var(--ink)}
-  .track{position:relative;flex:1;height:20px}
-  .dots{position:absolute;left:0;right:0;top:50%;height:2px;transform:translateY(-50%);background-image:linear-gradient(90deg,var(--track) 0 5px,transparent 5px 11px);background-size:11px 2px;background-repeat:repeat-x;border-radius:2px}
-  .done{position:absolute;left:0;top:50%;height:3px;transform:translateY(-50%);background:var(--done);border-radius:3px;transition:width 1s linear}
-  .plane{position:absolute;top:50%;transform:translate(-50%,-50%);transition:left 1s linear;line-height:0}
-  .plane svg{display:block;transform:rotate(90deg);filter:drop-shadow(0 2px 5px rgba(0,0,0,.3))}
-  .plane path{fill:var(--plane)}
-  /* tira de dados LIVE (como a do cartão) */
-  .strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
-  .cell .k{font-family:'Hanken Grotesk';font-weight:800;font-size:8.5px;letter-spacing:1px;color:var(--sub);text-transform:uppercase}
-  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:20px;letter-spacing:-.3px;color:var(--ink);margin-top:3px}
-  .cell .v.warn{color:var(--accent)}.cell .v.okc{color:var(--ok)}
-  .warn{font-size:12.5px;color:var(--accent);margin-top:14px;line-height:1.5;font-weight:600;position:relative;z-index:2}
-  .msub{font-size:14px;color:var(--sub);margin-top:8px;line-height:1.6;position:relative;z-index:2}
-  .foot{position:relative;z-index:2;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:11px;color:var(--faint);line-height:1.7}
+  .ring{position:relative;width:224px;height:224px;margin-top:16px}
+  .ring svg{transform:rotate(-90deg)}
+  .rbg{fill:none;stroke:var(--track);stroke-width:9}
+  .rfg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 9px var(--glow));animation:fill 2.4s cubic-bezier(.3,.8,.3,1) forwards}
+  .rctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .rnum{font-family:'Barlow Condensed';font-weight:800;font-size:92px;line-height:.8;color:var(--ink);font-variant-numeric:tabular-nums}
+  .rnum .u{font-size:30px;color:var(--sub)}
+  .rlab{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-top:8px}
+  .rok{font-family:'Barlow Condensed';font-weight:800;font-size:56px;color:var(--ok);line-height:1}
+  /* Rota VIVA: o avião atravessa LIS •——✈—— FNC pela posição do progresso (eixo do ESPAÇO;
+     o anel dá o TEMPO). Subtil de propósito — detalhe sob o anel, não segundo herói. */
+  .route{display:flex;align-items:center;gap:11px;margin-top:24px;align-self:stretch}
+  .rc{font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:.6px;color:var(--ink);flex:0 0 auto}
+  .track{position:relative;flex:1;height:2px;background:var(--track);border-radius:2px}
+  .track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px}
+  .track .plane{position:absolute;top:50%;color:var(--accent);transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px var(--glow));display:flex;line-height:0}
+  .route.done .fill{background:var(--ok)}.route.done .plane{color:var(--ok)}
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:20px;padding-top:15px;border-top:1px solid var(--line);align-self:stretch}
+  .k{font-weight:800;font-size:8px;letter-spacing:.8px;color:var(--sub);text-transform:uppercase}
+  .v{font-family:'Barlow Condensed';font-weight:700;font-size:18px;letter-spacing:-.3px;color:var(--ink);margin-top:3px}.v.okc{color:var(--ok)}
+  .warn{font-size:12.5px;color:var(--accent);margin-top:14px;line-height:1.5;font-weight:600;text-align:center}
+  .msub{font-size:14px;color:var(--sub);margin-top:8px;line-height:1.6}
+  .foot{position:relative;z-index:2;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:11px;color:var(--faint);line-height:1.7}
 
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
-  @media (prefers-reduced-motion:reduce){.live .p{animation:none}}
+  @keyframes fill{from{stroke-dasharray:0 100}}
+  @media (prefers-reduced-motion:reduce){.live .p,.rfg{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="inner">
     <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
-    <div class="hero"><div class="eyb">A carregar…</div><div class="msub">um instante ✈️</div></div>
+    <div class="hero" style="margin:auto 0"><div class="eyb">A carregar…</div><div class="msub">um instante ✈️</div></div>
   </div>
   <div class="foot">Link de um tripulante · expira sozinho.<br>Atualiza a cada minuto.</div>
 </div>
 <script>
 (function () {
   var API = 'https://xfclgmfafkcfylgrogza.supabase.co/functions/v1/share-day';
-  // Token no CAMINHO (/c/<token> — formato Flighty) com fallback ao ?t= antigo (links já enviados).
   var pm = location.pathname.match(/^\/c\/([a-z2-7]+)/);
   var t = pm ? pm[1] : (new URLSearchParams(location.search).get('t') || '');
   var el = document.getElementById('inner');
@@ -104,22 +104,23 @@
   // Tema pela hora LOCAL de quem abre (dia 07–19 cream · resto teal).
   (function () { var h = new Date().getHours(); if (h < 7 || h >= 20) document.documentElement.className = 'night'; })();
 
+  // símbolo met.no → emoji (mínimo; desconhecido → sem emoji, nunca inventa).
+  // Avião a apontar para a DIREITA (airliner do Material rodado 90°) — atravessa a rota.
+  var PLANE = '<svg viewBox="0 0 24 24" width="15" height="15"><path transform="rotate(90 12 12)" fill="currentColor" d="M22 16v-2l-8.5-5V3.5C13.5 2.67 12.83 2 12 2s-1.5.67-1.5 1.5V9L2 14v2l8.5-2.5V19L8 20.5V22l4-1 4 1v-1.5L13.5 19v-5.5L22 16z"/></svg>';
+  var WXE = { clearsky: '☀️', fair: '🌤', partlycloudy: '⛅', cloudy: '☁️', fog: '🌫', lightrain: '🌦', lightrainshowers: '🌦', rain: '🌧', rainshowers: '🌧', heavyrain: '⛈', heavyrainshowers: '⛈', thunderstorm: '⛈', sleet: '🌨', snow: '❄️', snowshowers: '🌨' };
+  function wxEmoji(code) { var b = String(code || '').replace(/_(day|night|polartwilight)$/, ''); if (b.indexOf('thunder') >= 0) return '⛈'; if (/_night$/.test(String(code || '')) && b === 'clearsky') return '🌙'; return WXE[b] || ''; }
+  function fmtDur(min) { var m = Number(min); if (!isFinite(m) || m <= 0) return '—'; return Math.floor(m / 60) + 'H' + String(m % 60).padStart(2, '0'); }
+
   function stopAll() {
     if (fetchTimer) { clearInterval(fetchTimer); fetchTimer = null; }
     if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
   }
   function msg(head, sub) {
     el.innerHTML = '<div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>' +
-      '<div class="hero"><div class="eyb">' + esc(head) + '</div><div class="msub">' + esc(sub) + '</div></div>';
+      '<div class="hero" style="margin:auto 0;align-items:flex-start"><div class="eyb">' + esc(head) + '</div><div class="msub">' + esc(sub) + '</div></div>';
   }
   function nowS() { return Math.floor(Date.now() / 1000) + clockOff; }
-  function fmtMin(min) {
-    if (min >= 90) { var h = Math.floor(min / 60); return '~' + h + ' h ' + (min % 60) + ' min'; }
-    return '~' + min + ' min';
-  }
 
-  // Render a partir de `cur` — chamado no fetch (60 s) E no tick local (20 s), para o
-  // countdown e o progresso andarem sem pedir mais nada à API.
   function render() {
     var d = cur;
     if (!d || !d.ok || !d.found) { msg('Link inválido', 'Pede um link novo a quem to enviou.'); stopAll(); return; }
@@ -129,39 +130,41 @@
     var minsLeft = (!d.landed && d.etaTs && d.etaTs > n) ? Math.max(1, Math.round((d.etaTs - n) / 60)) : null;
     var pct = 0;
     if (d.landed) pct = 100;
-    else if (d.depTs && d.etaTs && d.etaTs > d.depTs) pct = Math.max(0, Math.min(100, Math.round(((n - d.depTs) / (d.etaTs - d.depTs)) * 100)));
+    else if (d.depTs && d.etaTs && d.etaTs > d.depTs) pct = Math.max(2, Math.min(100, Math.round(((n - d.depTs) / (d.etaTs - d.depTs)) * 100)));
 
-    // Grande = ETA (hora local do destino). A tira leva os valores vivos (Voo · Falta · Estado).
-    var big = d.etaHm ? '<div class="big">' + (d.landed ? '' : '~') + esc(d.etaHm) + '</div>'
-                      : '<div class="big">—</div>';
-    var subLine = d.etaHm
-      ? 'hora local de ' + esc(d.arr) + (d.landed ? ' · <span class="ok">já em terra ✓</span>' : (minsLeft != null ? ' · <b>aterra em ' + fmtMin(minsLeft) + '</b>' : ''))
-      : 'ainda sem estimativa — volta a abrir mais perto da hora';
+    // Centro do anel: countdown (min p/ aterrar) · ou ✓ quando aterra · ou "—" sem estimativa.
+    var ctr = d.landed
+      ? '<div class="rok">✓</div><div class="rlab" style="color:var(--ok)">Aterrou</div>'
+      : (minsLeft != null
+        ? '<div class="rnum">' + minsLeft + '<span class="u">min</span></div><div class="rlab">p/ aterrar</div>'
+        : '<div class="rnum" style="font-size:44px">—</div><div class="rlab">sem estimativa</div>');
+    var ringStyle = d.landed ? ' style="stroke:var(--ok);filter:drop-shadow(0 0 9px rgba(14,122,75,.5))"' : '';
 
-    // Progresso (só com partida real e ETA coerente; ou completo se aterrou).
-    var prog = '';
-    if (d.landed || (d.depTs && d.etaTs && d.etaTs > d.depTs)) {
-      var plane = '<svg width="19" height="19" viewBox="0 0 24 24"><path' + (d.landed ? ' style="fill:var(--ok)"' : '') + ' d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
-      prog = '<div class="prog"><span class="pc">' + (esc(d.dep) || '—') + '</span>' +
-             '<span class="track"><span class="dots"></span><span class="done" style="width:' + pct + '%' + (d.landed ? ';background:var(--ok)' : '') + '"></span>' +
-             '<span class="plane" style="left:' + pct + '%">' + plane + '</span></span>' +
-             '<span class="pc">' + (esc(d.arr) || '—') + '</span></div>';
-    }
+    // Tira: Partida · Chegada · Duração · Tempo (do destino). "—" quando não há dado.
+    var tempo = (d.wxC != null && d.wxC !== '') ? (esc(d.wxC) + '°' + (wxEmoji(d.wxSym) ? ' ' + wxEmoji(d.wxSym) : '')) : '—';
+    var chega = d.etaHm ? (d.landed ? '' : '~') + esc(d.etaHm) : '—';
 
-    var falta = d.landed ? '<span class="v okc">em terra</span>' : '<span class="v' + (minsLeft != null ? ' warn' : '') + '">' + (minsLeft != null ? fmtMin(minsLeft) : '—') + '</span>';
     el.innerHTML =
-      '<div class="ghost">' + (esc(d.dep) || '') + '</div>' +   /* fantasma = ORIGEM (a viagem) */
+      '<div class="ghost">' + (esc(d.arr) || '') + '</div>' +   /* fantasma = DESTINO (a chegada é o assunto) */
       '<div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div>' +
         '<span class="live' + (d.landed ? ' done' : '') + '"><span class="p"></span>' + (d.landed ? 'Aterrou' : 'Ao vivo') + '</span></div>' +
       '<div class="hero">' +
-        '<div class="eyb">Chegada de hoje' + (d.legsCount > 1 ? ' · ' + d.legsCount + ' voos' : '') + '</div>' +
-        big +
-        '<div class="sub">' + subLine + '</div>' +
-        prog +
+        '<div class="eyb">Chegada de hoje' + (d.legsCount > 1 ? ' · ' + d.legsCount + ' voos' : (d.flight ? ' · ' + esc(d.flight) : '')) + '</div>' +
+        '<div class="ring"><svg width="224" height="224" viewBox="0 0 224 224">' +
+          '<circle class="rbg" cx="112" cy="112" r="100"/>' +
+          '<circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="' + pct + ' 100"' + ringStyle + '/>' +
+        '</svg><div class="rctr">' + ctr + '</div></div>' +
+        '<div class="route' + (d.landed ? ' done' : '') + '">' +
+          '<span class="rc">' + (esc(d.dep) || '—') + '</span>' +
+          '<div class="track"><div class="fill" style="width:' + pct + '%"></div>' +
+            '<div class="plane" style="left:' + pct + '%">' + PLANE + '</div></div>' +
+          '<span class="rc">' + (esc(d.arr) || '—') + '</span>' +
+        '</div>' +
         '<div class="strip">' +
-          '<div class="cell"><div class="k">Voo</div><div class="v">' + (esc(d.flight) || '—') + '</div></div>' +
-          '<div class="cell"><div class="k">Falta</div>' + falta + '</div>' +
-          '<div class="cell"><div class="k">Estado</div><div class="v' + (d.landed ? ' okc' : (d.tone === 'warn' || d.tone === 'bad' ? ' warn' : '')) + '">' + (esc(d.status) || (d.landed ? 'Aterrou' : 'No ar')) + '</div></div>' +
+          '<div><div class="k">Partida</div><div class="v">' + (d.depHm ? esc(d.depHm) : '—') + '</div></div>' +
+          '<div><div class="k">Chegada</div><div class="v">' + chega + '</div></div>' +
+          '<div><div class="k">Duração</div><div class="v">' + fmtDur(d.durationMin) + '</div></div>' +
+          '<div><div class="k">Tempo</div><div class="v">' + tempo + '</div></div>' +
         '</div>' +
         (d.airportWarn ? '<div class="warn">⚠️ ' + esc(d.airportWarn) + '</div>' : '') +
       '</div>';
@@ -182,7 +185,7 @@
   if (!t) { msg('Link inválido', 'Pede um link novo a quem to enviou.'); return; }
   load();
   fetchTimer = setInterval(load, 60000);                                    // dados frescos da Edge
-  tickTimer = setInterval(function () { if (cur) render(); }, 20000);       // countdown/progresso a andar entre fetches
+  tickTimer = setInterval(function () { if (cur) render(); }, 20000);       // countdown/anel a andar entre fetches
 })();
 </script>
 </body>

@@ -23,7 +23,12 @@
 //   (o --no-verify-jwt é OBRIGATÓRIO: o GET é público por design; o POST valida a
 //    sessão à mão cá dentro. Segredos já existentes: AIRLABS_KEY; usa também
 //    SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY, injetados.)
-// ANTES: correr supabase/share-day.sql no SQL Editor (tabela + RLS + purga).
+//   Importa ./airports-coords.ts (catálogo IATA→coords, gerado por scripts/build-share-coords.js)
+//   — o bundler da CLI inclui-o; re-gerar se data/airports.json mudar.
+// ANTES: correr no SQL Editor: supabase/share-day.sql (tabela + RLS + purga),
+//   supabase/wx-cache.sql (cache do TEMPO, partilhada com flight-status) e
+//   supabase/flight-live.sql (cache curta do voo ao vivo, TTL 60 s — limita as
+//   chamadas AirLabs no link público). Todas degradam se faltarem (só perdem cache).
 //
 // ⚠️ HTML NO *.supabase.co É BLOQUEADO (verificado 2026-07-03): o gateway reescreve
 //    text/html → text/plain + CSP sandbox (anti-phishing) — a página NÃO renderiza no
@@ -34,11 +39,19 @@
 //    (Edge Functions → Secrets) — sem ele, o link cai no functions.supabase.co (texto cru).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import COORDS from './airports-coords.ts';   // { IATA: [lat, lon] } — gerado por scripts/build-share-coords.js
 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
 const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
 const STATS_TTL_MIN = 12;
+const LIVE_TTL_SEC = 60;   // cache do voo ao vivo: 60 s alinha com o refresh da página → ~1 chamada/voo/min
 const TTL_HOURS = 24;
+// Meteo do destino (MET Norway) — para a célula "Tempo" da página. GÉMEO de
+// flight-status/index.ts: mesma função e MESMA cache `wx_cache` (chave por iata),
+// por isso reutiliza-se a linha de cache entre as duas Edges. Manter em sincronia.
+const METNO = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+const METNO_UA = 'CrewPact/1.0 (crewpact.app; funsnake@gmail.com)';   // TOS do met.no: identificação obrigatória
+const WX_TTL_MIN = 45;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +73,14 @@ const newToken = () => {
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 const num = (v: unknown) => (v == null || v === '' ? null : Number(v));
+
+// Coordenadas do aeroporto por código IATA (catálogo embebido) — para o TEMPO do destino
+// funcionar em QUALQUER link, incluindo os de FAMÍLIA (que resolvem as legs sem coords).
+const coordFor = (code: unknown): { lat: number; lon: number } | null => {
+  const c = String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+  const e = (COORDS as Record<string, [number, number]>)[c];
+  return e ? { lat: e[0], lon: e[1] } : null;
+};
 
 // ── Página HTML (mobile-first, sem JS além do refresh; estética FIDS/navy da app) ──
 function page(title: string, inner: string, refresh = false) {
@@ -87,18 +108,16 @@ ${inner}
 </div><div class="foot">Link temporário criado por um tripulante · expira sozinho.<br>Atualiza a cada minuto.</div></body></html>`;
 }
 
-// Legs de HOJE de um utilizador (link de FAMÍLIA): lê a duty do dia na tabela `duties`
-// (a app sincroniza-a) e extrai as legs com nº de voo do roster_meta — primária + cada
-// serviço `extra` (multi-serviço), SÓ kind voo. [] = sem voo hoje (a página di-lo).
-async function familyLegsFor(uid: string): Promise<{ flight: string; dep: string; arr: string }[]> {
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: duty } = await admin().from('duties')
-    .select('kind, roster_meta').eq('user_id', uid).eq('duty_date', today).maybeSingle();
+// Extrai as legs de voo de UMA duty (roster_meta) — primária + cada serviço `extra`
+// (multi-serviço), SÓ kind voo. Guarda o `on` (hora de chegada de parede) da última leg,
+// usado para reconhecer um red-eye. [] se a duty não tiver voos.
+// deno-lint-ignore no-explicit-any
+function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; on: string }[] {
   if (!duty) return [];
   // deno-lint-ignore no-explicit-any
   let meta: Record<string, any> = {};
   try { meta = JSON.parse(duty.roster_meta || '{}') || {}; } catch { /* legado sem meta */ }
-  const out: { flight: string; dep: string; arr: string }[] = [];
+  const out: { flight: string; dep: string; arr: string; on: string }[] = [];
   const push = (legs: unknown) => {
     if (!Array.isArray(legs)) return;
     for (const lg of legs) {
@@ -106,7 +125,7 @@ async function familyLegsFor(uid: string): Promise<{ flight: string; dep: string
       const l = lg as Record<string, any>;
       const flight = String(l?.flightNo || l?.flight || '').toUpperCase().replace(/\s+/g, '');
       if (!flight) continue;
-      out.push({ flight, dep: String(l?.dep || '').toUpperCase().slice(0, 3), arr: String(l?.arr || '').toUpperCase().slice(0, 3) });
+      out.push({ flight, dep: String(l?.dep || '').toUpperCase().slice(0, 3), arr: String(l?.arr || '').toUpperCase().slice(0, 3), on: String(l?.on || '') });
     }
   };
   if ((duty.kind || 'flight') === 'flight') push(meta.legs);
@@ -114,6 +133,31 @@ async function familyLegsFor(uid: string): Promise<{ flight: string; dep: string
     if (ex && (ex.kind || 'flight') === 'flight') push(ex.legs);
   }
   return out;
+}
+
+// Legs da chegada a mostrar num link de FAMÍLIA + o DIA a que pertencem. Normalmente é HOJE
+// (UTC). EXCEÇÃO red-eye: um voo que parte no dia D e aterra depois da MEIA-NOITE UTC (dia D+1)
+// deixaria de aparecer ("sem chegada hoje") com o avião ainda no ar, porque a duty está datada
+// em D. Então: se hoje não tem voo, ainda estamos nas pequenas horas UTC (<06h) e ONTEM teve um
+// voo a chegar nas pequenas horas (`on` da última leg <06h → red-eye), mostra a chegada de ONTEM.
+// O `day` volta como o dia REAL do voo → a chave VOO|DIA da memória do aterrou casa dos dois
+// lados da meia-noite (às 23h de D e às 00h15 de D+1 é a mesma chave). [] = sem chegada hoje.
+async function familyLegsFor(uid: string): Promise<{ legs: { flight: string; dep: string; arr: string }[]; day: string }> {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const readDuty = async (d: string) =>
+    (await admin().from('duties').select('kind, roster_meta').eq('user_id', uid).eq('duty_date', d).maybeSingle()).data;
+
+  let legs = legsFromDuty(await readDuty(today));
+  let day = today;
+  if (!legs.length && now.getUTCHours() < 6) {
+    const yest = new Date(now.getTime() - 24 * 3600e3).toISOString().slice(0, 10);
+    const yLegs = legsFromDuty(await readDuty(yest));
+    const lastOn = yLegs.length ? yLegs[yLegs.length - 1].on : '';
+    const h = /^(\d{1,2}):/.exec(lastOn);
+    if (h && Number(h[1]) < 6) { legs = yLegs; day = yest; }   // chegada de ontem nas pequenas horas → red-eye
+  }
+  return { legs: legs.map(({ flight, dep, arr }) => ({ flight, dep, arr })), day };   // não expõe o `on`
 }
 
 // deno-lint-ignore no-explicit-any
@@ -126,6 +170,37 @@ async function liveFor(key: string, flight: string): Promise<Record<string, any>
     const j = await r.json();
     return j && !j.error ? (j.response || null) : null;
   } catch { return null; }
+}
+
+// liveFor + CACHE (`flight_live`) com DUAS funções:
+//  (1) Cache curta (TTL 60 s) — o GET é PÚBLICO e um link de família é permanente; sem cache,
+//      cada refresh/pessoa/ataque martelava o AirLabs. Disciplina de wx_cache/airport_stats.
+//  (2) MEMÓRIA do "aterrou" — o /flight do AirLabs LARGA o voo do feed pouco depois de aterrar;
+//      sem memória, quem abrisse o link mais tarde perdia o "Aterrou" (regredia p/ "sem estimativa").
+//      Ao ver `arr_actual` OU status 'landed' uma vez, guardamos e devolvemos SEMPRE esse estado o
+//      resto do dia, sem re-chamar (também poupa quota: um voo aterrado = 0 chamadas AirLabs).
+// Chave por VOO+DIA → o mesmo nº de voo de amanhã NÃO herda o aterrou de hoje. Cacheia também o
+// null ("voo que o AirLabs não conhece"). Degrada se a tabela faltar. Correr supabase/flight-live.sql.
+
+// "Aterrado" TEM de casar com a página (landed = st==='landed' || arr_actual): o AirLabs marca
+// muitos voos como 'landed' por POSIÇÃO, sem hora real de calços (arr_actual null). Se a memória
+// só olhasse a arr_actual, esses regrediam a "sem dados" quando o AirLabs largasse o voo.
+// deno-lint-ignore no-explicit-any
+const isLanded = (d: any) => !!(d && (d.arr_actual || String(d.status || '').toLowerCase() === 'landed'));
+
+// deno-lint-ignore no-explicit-any
+async function liveCached(key: string, flight: string, day: string): Promise<Record<string, any> | null> {
+  const clean = String(flight || '').toUpperCase().replace(/\s+/g, '');
+  if (!clean) return null;
+  const rowKey = day ? `${clean}|${day}` : clean;   // voo+dia — sem colisão com o mesmo voo noutro dia
+  try {
+    const { data: c } = await admin().from('flight_live').select('data, computed_at').eq('flight', rowKey).maybeSingle();
+    if (c && isLanded(c.data)) return c.data;   // já aterrou → memória: fica aterrado o dia todo (nunca re-busca → nunca é apagado com null)
+    if (c && Date.now() - new Date(c.computed_at).getTime() < LIVE_TTL_SEC * 1000) return c.data ?? null;   // cache 60 s
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  const f = await liveFor(key, clean);
+  try { await admin().from('flight_live').upsert({ flight: rowKey, computed_at: new Date().toISOString(), data: f }); } catch { /* sem cache */ }
+  return f;
 }
 
 // Fotografia do AEROPORTO (Airport Intelligence) — GÉMEA de flight-status/index.ts,
@@ -164,6 +239,37 @@ async function airportStats(key: string, iata: string): Promise<Record<string, a
   return stats;
 }
 
+// Meteo por estação (MET Norway) — série horária a 48 h, cache 45 min em `wx_cache`
+// (chave por iata). GÉMEA de flight-status/index.ts — MESMA forma do blob e MESMA
+// linha de cache, para as duas Edges partilharem o pedido. Coords vêm da app.
+// deno-lint-ignore no-explicit-any
+async function stationWx(iata: string, lat: number, lon: number): Promise<Record<string, any> | null> {
+  const code = String(iata || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const la = Math.round(Number(lat) * 1e4) / 1e4, lo = Math.round(Number(lon) * 1e4) / 1e4;
+  if (code.length !== 3 || !isFinite(la) || !isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) return null;
+  try {
+    const { data: c } = await admin().from('wx_cache').select('wx, computed_at').eq('iata', code).maybeSingle();
+    if (c && Date.now() - new Date(c.computed_at).getTime() < WX_TTL_MIN * 60e3) return c.wx;
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  try {
+    const r = await fetch(`${METNO}?lat=${la}&lon=${lo}`, { headers: { 'User-Agent': METNO_UA } });
+    const j = await r.json();
+    // deno-lint-ignore no-explicit-any
+    const ts: any[] = j?.properties?.timeseries || [];
+    if (!ts.length) return null;
+    const horizon = Date.now() + 48 * 3600e3;
+    const series = ts.filter((e) => new Date(e.time).getTime() <= horizon).map((e) => {
+      const inst = e?.data?.instant?.details || {};
+      const n1 = e?.data?.next_1_hours, n6 = e?.data?.next_6_hours, n12 = e?.data?.next_12_hours;
+      const nx = n1 || n6 || n12 || {};
+      return { t: e.time, c: inst.air_temperature ?? null, w: inst.wind_speed ?? null, s: nx?.summary?.symbol_code || null, p: (n1 || n6)?.details?.precipitation_amount ?? null };
+    });
+    const wx = { iata: code, updatedAt: j?.properties?.meta?.updated_at || null, series };
+    try { await admin().from('wx_cache').upsert({ iata: code, computed_at: new Date().toISOString(), wx }); } catch { /* sem cache */ }
+    return wx;
+  } catch { return null; }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const url = new URL(req.url);
@@ -187,7 +293,7 @@ Deno.serve(async (req: Request) => {
       shareDate = row.share_date;
     } else if (token) {
       const fam = (await admin().from('family_links').select('uid').eq('token', token).maybeSingle()).data;
-      if (fam) { found = true; isFamily = true; legs = await familyLegsFor(fam.uid); shareDate = new Date().toISOString().slice(0, 10); }
+      if (fam) { found = true; isFamily = true; const fr = await familyLegsFor(fam.uid); legs = fr.legs; shareDate = fr.day; }
     }
     if (!found) {
       if (wantJson) return json({ ok: true, found: false });
@@ -205,7 +311,7 @@ Deno.serve(async (req: Request) => {
     // Última perna do dia = a chegada que interessa à família.
     const last = legs[legs.length - 1] || {};
     const key = Deno.env.get('AIRLABS_KEY') || '';
-    const f = key && last.flight ? await liveFor(key, last.flight) : null;
+    const f = key && last.flight ? await liveCached(key, last.flight, shareDate || '') : null;
 
     const dep = esc(f?.dep_iata || last.dep || '—');
     const arr = esc(f?.arr_iata || last.arr || '—');
@@ -234,8 +340,23 @@ Deno.serve(async (req: Request) => {
       // custo extra de API. depTs SÓ com partida real (progresso de voo no chão não existe).
       const etaTs = num(f?.arr_actual_ts) ?? num(f?.arr_estimated_ts) ?? num(f?.arr_time_ts);
       const depTs = num(f?.dep_actual_ts);
+      // Tira do cartão: Partida (hora real/estimada/prevista) + Duração (minutos de voo AirLabs).
+      const depT = f?.dep_actual || f?.dep_estimated || f?.dep_time || null;   // hora LOCAL de partida
+      const depHm = depT ? esc(String(depT).slice(11, 16)) : null;
+      const durationMin = num(f?.duration);
+      // Tempo AGORA no destino — coords do catálogo embebido (funciona em TODOS os links,
+      // família incluída; a Edge não recebe coords). series[0] = agora. stationWx cacheia 45 min.
+      let wxC: number | null = null, wxSym: string | null = null;
+      const arrCode = String(f?.arr_iata || last.arr || '');
+      const cc = coordFor(arrCode);
+      if (cc) {
+        const w = await stationWx(arrCode, cc.lat, cc.lon);
+        // deno-lint-ignore no-explicit-any
+        const s0: any = w && Array.isArray(w.series) ? w.series[0] : null;
+        if (s0 && s0.c != null) { wxC = Math.round(Number(s0.c)); wxSym = s0.s || null; }
+      }
       return json({ ok: true, found: true, expired: false, date: shareDate, legsCount: legs.length, family: isFamily,
-        flight: fno, dep, arr, etaHm, landed, status: statusTxt, tone: statusCls || 'none',
+        flight: fno, dep, arr, etaHm, depHm, durationMin, wxC, wxSym, landed, status: statusTxt, tone: statusCls || 'none',
         airportWarn, etaTs, depTs, nowTs: Math.floor(Date.now() / 1000) });
     }
     const inner = `

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Link ao vivo — anel de countdown (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#08080a;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:860px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:30px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:24px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:320px}
+  .cap .n{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:6px;background:#FFB800;color:#141414;font-family:'Barlow Condensed';font-weight:800;font-size:12px;letter-spacing:.5px;margin-bottom:8px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.7px}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+
+  .ph{width:320px;height:660px;border-radius:42px;border:9px solid #04060a;overflow:hidden;position:relative;background:var(--bg)}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 22px 20px;overflow:hidden}
+  .wrap:before{content:"";position:absolute;inset:0;pointer-events:none}
+  .day .wrap:before{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.14),transparent 55%)}
+  .night .wrap:before{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.10),transparent 55%)}
+  .inner{position:relative;flex:1;display:flex;flex-direction:column}
+  .ghost{position:absolute;right:2px;top:-16px;font-family:'Barlow Condensed';font-weight:800;font-size:170px;line-height:.8;letter-spacing:-6px;color:var(--ghost);z-index:0}
+  .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+  .brand{display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:-.2px;color:var(--ink)}
+  .bdot{width:9px;height:9px;border-radius:3px;background:#FFB800}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accentbg);color:var(--accent)}
+  .live.done{background:var(--okbg);color:var(--ok)}
+  .live .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
+
+  /* HERÓI = ANEL (centrado). O anel enche com o PROGRESSO do voo; o número é o countdown. */
+  .hero{position:relative;z-index:2;margin:auto 0;display:flex;flex-direction:column;align-items:center}
+  .eyb{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:var(--sub);align-self:center}
+  .ring{position:relative;width:224px;height:224px;margin-top:16px}
+  .ring svg{transform:rotate(-90deg)}
+  .rbg{fill:none;stroke:var(--track);stroke-width:9}
+  .rfg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 9px var(--glow));animation:fill 2.4s cubic-bezier(.3,.8,.3,1) forwards}
+  .rctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .rnum{font-family:'Barlow Condensed';font-weight:800;font-size:92px;line-height:.8;color:var(--ink);font-variant-numeric:tabular-nums}
+  .rnum .u{font-size:30px;color:var(--sub)}
+  .rlab{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-top:8px}
+  .rok{font-family:'Barlow Condensed';font-weight:800;font-size:52px;color:var(--ok);line-height:1}
+  .rt{font-family:'Barlow Condensed';font-weight:700;font-size:20px;letter-spacing:.5px;color:var(--ink);margin-top:22px}
+  .sub{font-size:12.5px;color:var(--sub);margin-top:6px;text-align:center}.sub b{color:var(--ink);font-weight:800}.sub .ok{color:var(--ok);font-weight:800}
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:20px;padding-top:15px;border-top:1px solid var(--line);align-self:stretch}
+  .cell{}
+  .k{font-weight:800;font-size:8.5px;letter-spacing:1px;color:var(--sub);text-transform:uppercase}
+  .v{font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:-.3px;color:var(--ink);margin-top:3px}.v.okc{color:var(--ok)}
+  .foot{position:relative;z-index:2;text-align:center;font-size:11px;color:var(--faint);line-height:1.6;padding-top:14px}
+
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  @keyframes fill{from{stroke-dasharray:0 100}}
+  .day{--bg:#F4F1E8;--ink:#141414;--sub:#8A8574;--faint:#B3B1A9;--ghost:rgba(20,20,20,.05);--line:rgba(20,20,20,.14);--accent:#B9820A;--accentbg:rgba(255,184,0,.16);--track:rgba(20,20,20,.10);--glow:rgba(185,130,10,.5);--ok:#0E7A4B;--okbg:rgba(17,138,85,.12)}
+  .night{--bg:#0C3A3B;--ink:#fff;--sub:rgba(255,255,255,.62);--faint:rgba(255,255,255,.42);--ghost:rgba(255,255,255,.06);--line:rgba(255,255,255,.16);--accent:#FFB800;--accentbg:rgba(255,184,0,.18);--track:rgba(255,255,255,.16);--glow:rgba(255,184,0,.55);--ok:#46C98A;--okbg:rgba(70,201,138,.18)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Link ao vivo — anel de countdown</h1>
+    <p>O <b>anel é o herói</b>: o número gigante é o <b>countdown</b>, e o anel a encher é o <b>progresso do voo</b> (substitui a linha LIS—✈—CDG). Mantém as assinaturas do cartão (fantasma da origem, marca, paleta, tira). Abre no browser para ver o anel a desenhar-se + o brilho.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- DIA · no ar -->
+    <div class="item">
+      <div class="cap"><div class="n">DIA · NO AR</div><div class="t">A meio</div><div class="d">Anel a ~30% (progresso), "78" ao centro. Rota + hora por baixo.</div></div>
+      <div class="ph day"><div class="wrap"><div class="inner">
+        <div class="ghost">CDG</div>
+        <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><span class="live"><span class="p"></span>Ao vivo</span></div>
+        <div class="hero">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="ring">
+            <svg width="224" height="224" viewBox="0 0 224 224">
+              <circle class="rbg" cx="112" cy="112" r="100"/>
+              <circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="30 100"/>
+            </svg>
+            <div class="rctr"><div class="rnum">78<span class="u">min</span></div><div class="rlab">p/ aterrar</div></div>
+          </div>
+          <div class="rt">LIS → CDG · EJU1234</div>
+          <div class="strip">
+            <div class="cell"><div class="k">Partida</div><div class="v">13:13</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">~15:33</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2H20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">21° ☀</div></div>
+          </div>
+        </div>
+        <div class="foot">Link de um tripulante · atualiza sozinho.</div>
+      </div></div></div>
+    </div>
+
+    <!-- NOITE · perto de aterrar -->
+    <div class="item">
+      <div class="cap"><div class="n">NOITE · PERTO</div><div class="t">Quase lá</div><div class="d">Anel quase cheio (~85%), "18". O drama do final.</div></div>
+      <div class="ph night"><div class="wrap"><div class="inner">
+        <div class="ghost">CDG</div>
+        <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><span class="live"><span class="p"></span>Ao vivo</span></div>
+        <div class="hero">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="ring">
+            <svg width="224" height="224" viewBox="0 0 224 224">
+              <circle class="rbg" cx="112" cy="112" r="100"/>
+              <circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="85 100"/>
+            </svg>
+            <div class="rctr"><div class="rnum">18<span class="u">min</span></div><div class="rlab">p/ aterrar</div></div>
+          </div>
+          <div class="rt">LIS → CDG · EJU1234</div>
+          <div class="strip">
+            <div class="cell"><div class="k">Partida</div><div class="v">20:45</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">~23:05</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2H20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">13° 🌙</div></div>
+          </div>
+        </div>
+        <div class="foot">Link de um tripulante · atualiza sozinho.</div>
+      </div></div></div>
+    </div>
+
+    <!-- DIA · aterrou -->
+    <div class="item">
+      <div class="cap"><div class="n">DIA · ATERROU</div><div class="t">Chegou</div><div class="d">Anel completo verde, ✓ ao centro, hora real. Para de atualizar.</div></div>
+      <div class="ph day"><div class="wrap"><div class="inner">
+        <div class="ghost">CDG</div>
+        <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><span class="live done"><span class="p"></span>Aterrou</span></div>
+        <div class="hero">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="ring">
+            <svg width="224" height="224" viewBox="0 0 224 224">
+              <circle class="rbg" cx="112" cy="112" r="100"/>
+              <circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="100 100" style="stroke:var(--ok);filter:drop-shadow(0 0 9px rgba(14,122,75,.5))"/>
+            </svg>
+            <div class="rctr"><div class="rok">✓</div><div class="rlab" style="color:var(--ok)">Aterrou</div></div>
+          </div>
+          <div class="rt">LIS → CDG · EJU1234</div>
+          <div class="strip">
+            <div class="cell"><div class="k">Partida</div><div class="v">12:08</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">14:28</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2H20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">21° ☀</div></div>
+          </div>
+        </div>
+        <div class="foot">Link de um tripulante · terminou.</div>
+      </div></div></div>
+    </div>
+
+  </div>
+</body>
+</html>
