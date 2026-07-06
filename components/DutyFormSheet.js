@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
 import AirportRoute from './AirportRoute';
 import PrimaryButton from './PrimaryButton';
-import Eyebrow from './Eyebrow';
-import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
+import Icon from './Icon';
+import PeleSide from './PeleSide';
+import { RADIUS, GUTTER, PELE, PELE_FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
@@ -17,7 +18,7 @@ import { DUTY_KINDS } from '../data/duties';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import { confirmDiscard } from '../data/confirmDiscard';
-import { AppContext, useTheme, isoDay } from '../data/appContext';
+import { AppContext, isoDay } from '../data/appContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -63,6 +64,24 @@ const seedLegs = (d) => {
 // pernoita. Standby de casa (estás em casa) e escritório (estás na base) ficam de fora. Voo = auto.
 const NIGHTSTOP_KINDS = ['positioning', 'training', 'standby_airport'];
 
+// Pele: o form deixou de seguir o tema (é sempre a pele clara). Mapa de cores com os MESMOS
+// nomes que o render/estilos já usam (C.text, C.sub, C.ink…) → os campos ficam pele sem mexer neles.
+const C = {
+  text: PELE.ink, sub: PELE.grey, ink: PELE.ink, line: PELE.line, soft: PELE.soft,
+  card: PELE.paper, canvas: PELE.paper, red: PELE.red, brand: '#9A8A5A',
+  green: PELE.ok, greenText: PELE.ok, ok: PELE.ok, warn: PELE.warn, warnText: PELE.warn, bad: PELE.red,
+};
+// Ícone da pele por tipo (índice novo-servico).
+const KIND_ICON = { flight: 'departs', standby_airport: 'gate', standby_home: 'home', reserve: 'cal', positioning: 'transfer', training: 'book', office: 'doc' };
+// Passos do stepper por tipo (só o que o tipo precisa).
+const stepsFor = (kind) => {
+  const st = ['quando'];
+  if (kind === 'flight') st.push('voos');
+  st.push('horas');
+  if (kind !== 'reserve') st.push('detalhes');
+  return st;
+};
+
 // Campo "HH:MM" — rótulo em cima, campo a toda a largura (`flex` para par lado-a-lado).
 // `error` → contorno vermelho + legenda `errText` (validação ao guardar).
 function ClockField({ label, value, onChange, C, s, flex, error, errText }) {
@@ -100,12 +119,12 @@ function SegRow({ options, value, onChange, s }) {
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
   const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot, instructorRated } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
+  const [phase, setPhase] = useState('type');   // 'type' = índice dos tipos · 'form' = stepper
+  const [step, setStep] = useState(0);          // passo aberto no stepper
 
   // ── Casos especiais (FTL) — mexem no TETO do PSV (205c/205g/225). Toggles locais; o objeto
   // `special` deriva deles (mais abaixo) e alimenta a projeção FTL e o save. Crew-aware. ──
@@ -163,6 +182,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       : (editExtra != null ? (exObj ? formFromExtra(exObj, iso) : { ...EMPTY, date: iso })
       : (append ? { ...EMPTY, date: iso } : loadFor(iso)));
     setForm(f); setAttemptedSave(false); setFlightErr(false); setDetectMsg(null); setLegInput('');
+    // Novo (ou + serviço) → começa no ÍNDICE de tipos; editar/candidato/editExtra → direto ao stepper.
+    const isNew = !candidate && (editExtra == null) && (append || !(duties[iso] && !duties[iso].deleted));
+    setPhase(isNew ? 'type' : 'form'); setStep(0);
     syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
     const acc = !!(candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation)));
     setAccOn(acc); if (acc) setAdvOpen(true);
@@ -269,6 +291,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     };
   };
   const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: NIGHTSTOP_KINDS.includes(k) ? f.nightStop : false })); };
+  const pickType = (k) => { pickKind(k); setPhase('form'); setStep(0); };   // índice → escolhe tipo → abre o stepper
 
   const isFlight = form.kind === 'flight';
   // Pernoita: VOO → derivada da PARIDADE dos setores (ímpar=pernoita, par=não; sem toggle).
@@ -467,6 +490,417 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   };
 
   const isEdit = !append && duties[form.date] && !duties[form.date].deleted;
+  // ── Stepper: passos por tipo, resumos (fechado), e navegação de datas em carril. ──
+  const kindLabel = form.kind ? t('duties.kind.' + form.kind, lang) : '';
+  const steps = stepsFor(form.kind);
+  const STEP_TITLE = { quando: l('Quando', 'When'), voos: l('Voos', 'Flights'), horas: l('Horas', 'Hours'), detalhes: l('Detalhes', 'Details') };
+  const stepSummary = (key) => {
+    if (key === 'quando') return fmtDate(form.date) || '—';
+    if (key === 'voos') return (form.legs || []).length ? `${form.legs[0].flightNo || '—'}${form.route ? ` · ${form.route}` : ''}` : '—';
+    if (key === 'horas') return form.report ? (isFlight ? `${form.report} · ${Number(form.sectors) || 0} ${l('setor', 'sector')}${(Number(form.sectors) || 0) === 1 ? '' : (lang === 'en' ? 's' : 'es')}` : `${form.report}${form.on ? ` → ${form.on}` : ''}`) : '—';
+    // detalhes
+    const bits = [hasNs ? l('pernoita', 'night stop') : null, special ? l('casos especiais', 'special') : null, form.dayOffWorked ? form.dayOffWorked.toUpperCase() : null].filter(Boolean);
+    return bits.length ? bits.join(' · ') : (nsEur != null ? `+${fmtPd(nsEur)}` : '—');
+  };
+  const dayNum = form.date ? String(new Date(`${form.date}T00:00:00`).getDate()).padStart(2, '0') : '—';
+  const railMonth = form.date ? (() => { const d = new Date(`${form.date}T00:00:00`); const m = d.toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return m.charAt(0).toUpperCase() + m.slice(1); })() : '';
+  // Carril: -2..+4 dias à volta do dia atual; tocar num → goDate(delta) (com dirty-check).
+  const railDays = form.date ? [-2, -1, 0, 1, 2, 3, 4].map((off) => { const iso = addDays(form.date, off); const d = new Date(`${iso}T00:00:00`); return { iso, off, wd: d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', ''), dn: d.getDate(), today: iso === isoDay() }; }) : [];
+  const canBackToIndex = !candidate && (editExtra == null) && !isEdit;   // veio do índice → back volta lá
+  const TYPE_DESC = (k) => ({
+    flight: l('o serviço normal · per-diem da rota', 'the normal duty · route per diem'),
+    standby_airport: l('prevenção no aeroporto · +2 setores (ADTY)', 'airport standby · +2 sectors (ADTY)'),
+    standby_home: l('prevenção em casa · conta p/ FTL', 'home standby · counts for FTL'),
+    reserve: l('dia de reserva · sem horas', 'reserve day · no hours'),
+    positioning: l('deadhead · conta p/ FTL, sem abono', 'deadhead · counts for FTL, no allowance'),
+    training: l('treino/recorrente · conta p/ FTL', 'training/recurrent · counts for FTL'),
+    office: l('serviço de escritório', 'office duty'),
+  })[k] || '';
+  const goToDate = (off) => { if (off !== 0) goDate(off); };
+
+  // Corpo de cada passo (o MESMO JSX dos campos, só reorganizado por passo).
+  const bodyQuando = (
+    <>
+      <Text style={s.dmonth}>{railMonth}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.daterail} keyboardShouldPersistTaps="handled">
+        {railDays.map((d) => {
+          const on = d.off === 0;
+          return (
+            <TouchableOpacity key={d.iso} onPress={() => goToDate(d.off)} activeOpacity={0.85} style={[s.day, on && s.dayOn]}>
+              <Text style={[s.dayWd, on && s.dayWdOn]}>{d.wd}</Text>
+              <Text style={[s.dayDn, on && s.dayDnOn]}>{d.dn}</Text>
+              {d.today ? <View style={s.dayDot} /> : null}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+      <Text style={s.routeHint}>{l('Desliza para o dia · o ● é hoje.', 'Swipe to the day · the ● is today.')}</Text>
+    </>
+  );
+
+  const bodyVoos = (
+    <>
+      <Text style={s.lbl}>{l('Voos', 'Flights')}</Text>
+      {(form.legs || []).length ? (
+        <View style={s.legList}>
+          {form.legs.map((lg, i) => (
+            <View key={i} style={s.legChip}>
+              <Text style={s.legChipNo} numberOfLines={1}>{lg.flightNo || '—'}</Text>
+              <Text style={s.legChipRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}{lg.aircraft ? ` · ${lg.aircraft}` : ''}{lg.off ? ` · ${lg.off}` : ''}</Text>
+              <TouchableOpacity onPress={() => removeLeg(i)} hitSlop={8}><Icon name="close" size={14} color={C.sub} /></TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      <View style={s.legRow}>
+        <TextInput value={legInput}
+          onChangeText={(v) => { setLegInput(v.toUpperCase().replace(/\s+/g, '')); setDetectMsg(null); setFlightErr(false); }}
+          onSubmitEditing={onDetect}
+          placeholder={l('Nº de voo · ex. EJU7625', 'Flight no. · e.g. EJU7625')}
+          placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={8} style={[s.input, { flex: 1 }, flightErr && s.inputErr]} />
+        <TouchableOpacity onPress={onDetect} disabled={!legInput || detecting} style={[s.detectBtn, (!legInput || detecting) && s.detectBtnOff]} activeOpacity={0.85}>
+          {detecting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.detectBtnTxt}>{l('Detetar', 'Detect')}</Text>}
+        </TouchableOpacity>
+      </View>
+      {flightErr ? <Text style={s.errTxt}>{l('Falta o número do voo (sigla + nº, ex. EJU7625).', 'Flight number missing (code + no., e.g. EJU7625).')}</Text> : null}
+      {detectMsg ? <Text style={[s.routeHint, { color: C.warn }]}>{detectMsg}</Text> : null}
+      {(caps ? caps.route : !!ae) ? (
+        <>
+          <Text style={[s.lbl, { marginTop: 14 }]}>{l('Rota · opcional (per-diem)', 'Route · optional (per diem)')}</Text>
+          <AirportRoute onAdd={addManualSector} error={flightErr} />
+          <Text style={s.routeHint}>{l('Opcional · só alimenta o per-diem (AE). Origem → destino + ✓ adiciona o setor.', 'Optional · only feeds the per diem (AE). Origin → destination + ✓ adds the sector.')}</Text>
+        </>
+      ) : null}
+      {form.route ? (
+        <View style={s.routeVis}>
+          <Text style={s.routeVisLbl}>{l('Rota', 'Route')}</Text>
+          <Text style={s.routeVisTxt} numberOfLines={1}>{form.route}</Text>
+        </View>
+      ) : null}
+      {ae && form.route ? (
+        routePd && routePd.ok
+          ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
+          : (routePd && !routePd.ok ? <Text style={[s.routeHint, { color: C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text> : null)
+      ) : null}
+      <Text style={[s.lbl, { marginTop: 16 }]}>{l('Aeronave', 'Aircraft')}</Text>
+      <TextInput value={form.aircraft}
+        onChangeText={(v) => setForm((f) => ({ ...f, aircraft: v.toUpperCase().replace(/\s+/g, '') }))}
+        placeholder={l('ex. 321 (opcional)', 'e.g. 321 (optional)')}
+        placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={5} style={s.input} />
+    </>
+  );
+
+  const bodyHoras = (
+    <>
+      <ClockField C={C} s={s} error={showErr('report') || badClock(form.report)} errText={badClock(form.report) ? fmtErr : errText} label={isFlight ? t('duties.report', lang) : l('Início', 'Start')} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
+      {isFlight ? (
+        <>
+          <View style={{ marginTop: 16 }}>
+            <Text style={s.lbl}>{t('ftl.sectors', lang)}</Text>
+            <View style={s.stepc}>
+              <TouchableOpacity style={s.stepcB} onPress={() => { select(); setSectorCount(Math.max(0, (Number(form.sectors) || 0) - 1)); }} activeOpacity={0.8}><Text style={{ fontSize: 24, lineHeight: 26, color: PELE.ink, fontFamily: PELE_FONT.display }}>−</Text></TouchableOpacity>
+              <Text style={s.stepcV}>{Number(form.sectors) || 0}</Text>
+              <TouchableOpacity style={s.stepcB} onPress={() => { select(); setSectorCount(Math.min(12, (Number(form.sectors) || 0) + 1)); }} activeOpacity={0.8}><Icon name="plus" size={16} color={PELE.ink} /></TouchableOpacity>
+            </View>
+            <Text style={s.routeHint}>{l('Nº de setores — é o que o FTL conta (mínimo legal). A rota (em Voos) é opcional, só para o per-diem.', 'Number of sectors — what FTL counts (legal minimum). The route (in Flights) is optional, only for per diem.')}</Text>
+          </View>
+          <View style={{ marginTop: 16 }}>
+            <Text style={s.lbl}>{l('Horas por setor (block)', 'Times per sector (block)')}</Text>
+            {sectorRows.length ? sectorRows.map((lg, i) => {
+              const lab = (lg.dep && lg.arr) ? `${lg.dep}→${lg.arr}` : l(`Setor ${i + 1}`, `Sector ${i + 1}`);
+              const offBad = showErr('sectors') && clkMin(lg.off) == null;
+              const onBad = showErr('sectors') && clkMin(lg.on) == null;
+              const zo = lg.offZ || airportZulu(form.date, lg.off, lg.dep);
+              const zn = lg.onZ || airportZulu(form.date, lg.on, lg.arr);
+              return (
+                <View key={i} style={{ marginTop: 8 }}>
+                  <View style={[s.secRow, { marginTop: 0 }]}>
+                    <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
+                    <View style={s.secInputs}>
+                      <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
+                      <Text style={s.secArrow}>→</Text>
+                      <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
+                    </View>
+                  </View>
+                  {(zo || zn) ? <Text style={s.secZ}>{zo ? `${zo}Z` : '—'} → {zn ? `${zn}Z` : '—'}</Text> : null}
+                </View>
+              );
+            }) : <Text style={s.routeHint}>{l('Aumenta os setores acima para meter as horas.', 'Increase the sectors above to enter times.')}</Text>}
+            {showErr('sectors') ? <Text style={s.errTxt}>{l('Preenche o off e o on de cada setor.', 'Fill off and on for every sector.')}</Text> : null}
+            {sectorRows.some((lg) => !lg.offZ) ? (
+              <Text style={s.routeHint}>{l('A Zulu (UTC) usa o fuso do aeroporto — assume que as horas são locais do aeroporto.', 'Zulu (UTC) uses the airport timezone — assumes times are airport-local.')}</Text>
+            ) : null}
+          </View>
+          <View style={{ marginTop: 16 }}>
+            <ClockField C={C} s={s} error={badClock(form.signOff)} errText={fmtErr} label={l('Fim de serviço (sign-off)', 'Sign-off (end of duty)')} value={form.signOff} onChange={(v) => setForm((f) => ({ ...f, signOff: v }))} />
+            <Text style={s.routeHint}>{postFlightMin
+              ? l(`Opcional · hora real de fim. Vazio → último on-block + ${postFlightMin}′ de débrief (perfil).`, `Optional · real end time. Empty → last on-block + ${postFlightMin}′ debrief (profile).`)
+              : l('Opcional · hora real de fim (depois do débrief). Define o débrief no Perfil.', 'Optional · real end time (after debrief). Set the debrief in Profile.')}</Text>
+          </View>
+          <View style={s.calcRow}>
+            <View style={s.calcCell}>
+              <Text style={s.calcLab}>{l('Block hours', 'Block hours')}</Text>
+              <Text style={s.calcVal}>{blockMin ? minToHhmm(blockMin) : '—'}</Text>
+              <Text style={s.calcSub}>{l('Σ block dos setores', 'Σ sector block')}</Text>
+            </View>
+            <View style={s.calcCell}>
+              <Text style={s.calcLab}>{l('Duty hours', 'Duty hours')}</Text>
+              <Text style={s.calcVal}>{dutyMin != null ? minToHhmm(dutyMin) : '—'}</Text>
+              <Text style={s.calcSub}>{clkMin(form.signOff) != null ? l('apres. → sign-off', 'report → sign-off') : (postFlightMin ? l(`apres. → on + ${postFlightMin}′`, `report → on + ${postFlightMin}′`) : l('apres. → último on', 'report → last on'))}</Text>
+            </View>
+          </View>
+        </>
+      ) : (
+        <View style={{ marginTop: 14 }}>
+          <ClockField C={C} s={s} error={badClock(form.on)} errText={fmtErr} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
+          {form.kind === 'positioning' ? (
+            <View style={{ marginTop: 16 }}>
+              <Text style={s.lbl}>{l('Rota', 'Route')} <Text style={{ color: PELE.grey, fontFamily: PELE_FONT.body }}>{l('· opcional', '· optional')}</Text></Text>
+              <TextInput style={s.input} value={form.route} onChangeText={(v) => setForm((f) => ({ ...f, route: v.toUpperCase() }))}
+                placeholder={l('ex. LIS-MAD', 'e.g. LIS-MAD')} placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={40} />
+              <Text style={s.routeHint}>{l('Onde acabas define o repouso mínimo: 12 h na base · 10 h fora (ORO.FTL.235).', 'Where you end sets the minimum rest: 12 h at base · 10 h away (ORO.FTL.235).')}</Text>
+            </View>
+          ) : null}
+          {form.kind === 'standby_airport' ? (
+            <View style={{ marginTop: 16 }}>
+              <View style={s.nsRow}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Alojamento disponibilizado', 'Accommodation provided')}</Text>
+                  <Text style={s.advSub}>ORO.FTL.225(e)</Text>
+                </View>
+                <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              <Text style={s.routeHint}>{accOn
+                ? l('É standby: conta 100% como serviço (210/235) e a tabela do PSV não o julga.', 'It is standby: counts 100% as duty (210/235) and the FDP table does not judge it.')
+                : l('Sem alojamento, a lei trata-o como serviço no aeroporto — o PSV conta desde o report (ORO.FTL.225(d)(e)).', 'Without accommodation the law treats it as airport duty — the FDP counts from report (ORO.FTL.225(d)(e)).')}</Text>
+            </View>
+          ) : null}
+        </View>
+      )}
+    </>
+  );
+
+  const bodyDetalhes = (
+    <>
+      {isFlight && Number(form.sectors) >= 1 ? (
+        <View style={[s.nsCard, flightNs ? s.nsCardOn : null]}>
+          <Icon name="moon" size={17} color={flightNs ? C.ink : C.sub} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.nsCardT, flightNs ? null : { color: C.sub }]}>{flightNs ? l('Pernoita', 'Night stop') : l('Sem pernoita', 'No night stop')}</Text>
+            <Text style={s.nsHint}>{flightNs
+              ? l(`Setores ímpares (${form.sectors}) → acabas fora da base · abono AE (Art. 39)`, `Odd sectors (${form.sectors}) → ends away from base · AE allowance (Art. 39)`)
+              : l(`Setores pares (${form.sectors}) → ida-e-volta à base`, `Even sectors (${form.sectors}) → round trip to base`)}</Text>
+          </View>
+          {flightNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
+        </View>
+      ) : null}
+      {canNightStop ? (
+        <View style={[s.nsRow, { marginTop: 14 }]}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={s.lbl}>{l('Pernoita', 'Night stop')}</Text>
+            <Text style={s.nsHint}>{l('Liga se pernoitares fora da base · abono AE (Art. 39)', 'Turn on if you overnight away from base · AE allowance (Art. 39)')}</Text>
+          </View>
+          {manualNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
+          <Switch value={!!form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
+            trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+        </View>
+      ) : null}
+      {form.kind === 'office' && ae && ae.OFFICE8_SECTORS ? (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.lbl}>{l('Duração do dia de escritório', 'Office day length')}</Text>
+          <SegRow s={s} value={form.officeType || 'ofc4'} onChange={(v) => { select(); setForm((f) => ({ ...f, officeType: v === 'ofc4' ? null : v })); }}
+            options={[
+              { id: 'ofc4', label: l('Meio-dia (OFC4)', 'Half day (OFC4)') },
+              { id: 'ofc8', label: l('Dia inteiro (OFC8)', 'Full day (OFC8)') },
+            ]} />
+          <Text style={s.routeHint}>{form.officeType === 'ofc8'
+            ? l('Dia inteiro (OFC8) — 3 setores nominais (Anexo I.14; = dever ad-hoc, Art. 43).', 'Full day (OFC8) — 3 nominal sectors (App. I.14; = ad-hoc duty, Art. 43).')
+            : l('Meio-dia (OFC4) — 1,5 setores nominais (Anexo I.14).', 'Half day (OFC4) — 1.5 nominal sectors (App. I.14).')}</Text>
+        </View>
+      ) : null}
+      {form.kind === 'training' && !form.role && ae && ae.ADHOC_SECTORS ? (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.lbl}>{l('Tipo de formação', 'Training type')}</Text>
+          <SegRow s={s} value={form.eLearning ? 'elearn' : 'ground'} onChange={(v) => { select(); setForm((f) => ({ ...f, eLearning: v === 'elearn' })); }}
+            options={[
+              { id: 'ground', label: l('Terra / simulador', 'Ground / sim') },
+              { id: 'elearn', label: 'e-learning' },
+            ]} />
+          <Text style={s.routeHint}>{form.eLearning
+            ? l('E-learning — sem pagamento variável (Art. 43).', 'E-learning — no variable pay (Art. 43).')
+            : l('Formação em terra/simulador — 3 setores nominais ao formando (Art. 43).', 'Ground/sim training — 3 nominal sectors to the trainee (Art. 43).')}</Text>
+        </View>
+      ) : null}
+      {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.lbl}>{l('Este dia era folga publicada?', 'Was this a published day off?')}</Text>
+          <SegRow s={s} value={form.dayOffWorked || 'no'} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : v })); }}
+            options={[
+              { id: 'no', label: l('Não', 'No') },
+              { id: 'ddo', label: 'DDO' },
+              { id: 'wfly', label: 'WFLY' },
+              ...(ae.EXTRA_KINDS.some((k) => k.id === 'ido') ? [{ id: 'ido', label: 'IDO' }] : []),
+            ]} />
+          {form.dayOffWorked ? (
+            <Text style={s.routeHint}>{
+              form.dayOffWorked === 'ddo'
+                ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
+                : form.dayOffWorked === 'wfly'
+                ? l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')
+                : l('Folga infringida (IDO) — trabalho em folga sem o aviso devido; soma ao salário do mês.', 'Infringed day off (IDO) — worked a day off without due notice; adds to the month pay.')}</Text>
+          ) : null}
+        </View>
+      ) : null}
+      {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {
+        const roles = ae.additionalRolesFor(crewCategory, { instructorRated }) || [];
+        if (!roles.length) return null;
+        return (
+          <View style={{ marginTop: 16 }}>
+            <Text style={s.lbl}>{l('Papel neste serviço', 'Role on this duty')}</Text>
+            <SegRow s={s} value={form.role || 'none'} onChange={(v) => { select(); setForm((f) => ({ ...f, role: v === 'none' ? null : v })); }}
+              options={[{ id: 'none', label: l('Nenhum', 'None') }, ...roles.map((r) => ({ id: r.id, label: (r.label && (r.label[lang] || r.label.pt)) || r.id }))]} />
+            {form.role ? (() => {
+              const r = roles.find((x) => x.id === form.role);
+              return r ? <Text style={s.routeHint}>{r.sub || ''}{r.unit ? ` · ${r.unit[lang] || r.unit.pt}` : ''}</Text> : null;
+            })() : null}
+          </View>
+        );
+      })() : null}
+      {isFlight ? (
+        <View style={{ marginTop: 16 }}>
+          <TouchableOpacity style={s.advHead} activeOpacity={0.7}
+            onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAdvOpen((o) => !o); }}>
+            <Icon name="gauge" size={15} color={C.sub} />
+            <Text style={s.advHeadTxt}>{l('Casos especiais (FTL)', 'Special cases (FTL)')}</Text>
+            {(special || accOn) ? <View style={s.advDot} /> : null}
+            <Icon name="chevron" size={16} color={C.sub} rot={advOpen ? 270 : 90} />
+          </TouchableOpacity>
+          {advOpen ? (
+            <View style={s.advBody}>
+              <View style={s.advRow}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Tripulação aumentada / repouso a bordo', 'Augmented crew / in-flight rest')}</Text>
+                  <Text style={s.advSub}>205(c)</Text>
+                </View>
+                <Switch value={augOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAugOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              {augOn ? (
+                <View style={s.advInset}>
+                  <Text style={s.advFieldLbl}>{l('Classe da instalação de repouso', 'Rest facility class')}</Text>
+                  <SegRow s={s} value={augClass} onChange={setAugClass} options={[
+                    { id: 'c1', label: l('Classe 1', 'Class 1') },
+                    { id: 'c2', label: l('Classe 2', 'Class 2') },
+                    { id: 'c3', label: l('Classe 3', 'Class 3') },
+                  ]} />
+                  {isPilot ? (
+                    <>
+                      <Text style={[s.advFieldLbl, { marginTop: 11 }]}>{l('Pilotos extra', 'Additional pilots')}</Text>
+                      <SegRow s={s} value={String(augCrew)} onChange={(v) => setAugCrew(Number(v))} options={[
+                        { id: '1', label: l('+1 · 3 no total', '+1 · 3 total') },
+                        { id: '2', label: l('+2 · 4 no total', '+2 · 4 total') },
+                      ]} />
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
+              <View style={[s.advRow, s.advDivider]}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Apresentação adiada', 'Delayed reporting')}</Text>
+                  <Text style={s.advSub}>205(g)</Text>
+                </View>
+                <Switch value={delOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setDelOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              {delOn ? (
+                <View style={s.advInset}>
+                  <ClockField C={C} s={s} label={l('Hora original da apresentação', 'Original reporting time')} value={delFrom} onChange={setDelFrom} />
+                  <Text style={s.advHint}>{l('A apresentação (acima) é a ADIADA. O PSV máx recalcula pela hora mais limitativa.', 'The report (above) is the DELAYED one. Max FDP recalculates by the more limiting time.')}</Text>
+                </View>
+              ) : null}
+              <View style={[s.advRow, s.advDivider]}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Standby antes deste serviço', 'Standby before this duty')}</Text>
+                  <Text style={s.advSub}>225</Text>
+                </View>
+                <Switch value={sbOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSbOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              {sbOn ? (
+                <View style={s.advInset}>
+                  <Text style={s.advFieldLbl}>{l('Tipo de standby', 'Standby type')}</Text>
+                  <SegRow s={s} value={sbType} onChange={setSbType} options={[
+                    { id: 'airport', label: l('Aeroporto', 'Airport') },
+                    { id: 'other', label: l('Casa / hotel', 'Home / hotel') },
+                  ]} />
+                  <View style={{ marginTop: 11 }}>
+                    <Stepper label={l('Horas de standby', 'Standby hours')} value={sbH} setValue={setSbH} min={0} max={16} />
+                  </View>
+                  <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa) E conta para os 28 d (aeroporto 100% · casa 25%).', 'Reduces max FDP (>4h airport · >6h home) AND counts toward the 28 d (airport 100% · home 25%).')}</Text>
+                </View>
+              ) : null}
+              <View style={[s.advRow, s.advDivider]}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Alojamento na pausa (split)', 'Accommodation during break (split)')}</Text>
+                  <Text style={s.advSub}>220(d)(e)</Text>
+                </View>
+                <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              {accOn ? (
+                <View style={s.advInset}>
+                  <Text style={s.advHint}>{l('Só conta se houver uma pausa em terra ≥3h neste serviço. Com alojamento adequado, a pausa toda estende o PSV (inclui >6h/WOCL); sem, só até 6h.', 'Only applies if there is a ground break ≥3h in this duty. With suitable accommodation the whole break extends the FDP (incl. >6h/WOCL); without, only up to 6h.')}</Text>
+                </View>
+              ) : null}
+              <View style={[s.advRow, s.advDivider]}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Discrição do comandante usada', "Commander's discretion used")}</Text>
+                  <Text style={s.advSub}>205(f)</Text>
+                </View>
+                <Switch value={discOn} onValueChange={(v) => { select(); setDiscOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
+              </View>
+              {discOn ? (
+                <View style={s.advInset}>
+                  <Text style={s.advHint}>{l('Só circunstâncias imprevistas a partir da apresentação: até +2 h (ou +3 h com repouso a bordo). Dentro da margem o excesso é legal e REPORTÁVEL ao operador; além dela continua ilegal.', 'Unforeseen circumstances at or after reporting only: up to +2 h (or +3 h with in-flight rest). Within the margin the excess is legal and REPORTABLE to the operator; beyond it remains illegal.')}</Text>
+                </View>
+              ) : null}
+              {psvPreview ? (
+                <View style={s.advPreview}>
+                  <Text style={s.advPreviewLbl}>{l('PSV máx', 'Max FDP')}</Text>
+                  <Text style={s.advPreviewVal}>
+                    {psvPreview.base}<Text style={s.advPreviewArrow}>{'   →   '}</Text>
+                    {psvPreview.notAllowed
+                      ? <Text style={{ color: C.red }}>{l('não permitido', 'not allowed')}</Text>
+                      : <Text style={{ color: C.greenText }}>{psvPreview.eff}</Text>}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+      {isFlight && prospect ? (
+        <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
+          <View style={s.projHead}>
+            <Icon name={prospect.ok ? 'check' : 'alert'} size={15} color={prospect.ok ? C.ok : C.warn} />
+            <Text style={s.projTitle}>{prospect.ok ? t('duties.projOk', lang) : t('duties.projWarn', lang)}</Text>
+          </View>
+          <Text style={s.projMeta}>{t('duties.projDuty', lang)} {h1n(prospect.servico28)}/190 h · {t('duties.projFlight', lang)} {h1n(prospect.voo28)}/100 h</Text>
+          {prospect.fatigue ? (
+            <View style={s.fatRow}>
+              <View style={[s.fatDot, { backgroundColor: fatigueColor(prospect.fatigue.band) }]} />
+              <Text style={s.fatLbl}>{t('duties.fatigueLbl', lang)}: </Text>
+              <Text style={[s.fatVal, { color: fatigueColor(prospect.fatigue.band) }]}>{fatigueLbl(prospect.fatigue.band)} ({prospect.fatigue.score})</Text>
+            </View>
+          ) : null}
+          {prospect.issues.map((it, i) => <Text key={i} style={s.projIssue}>• {issueLbl(it)}</Text>)}
+        </View>
+      ) : null}
+    </>
+  );
+  const STEP_BODY = { quando: bodyQuando, voos: bodyVoos, horas: bodyHoras, detalhes: bodyDetalhes };
 
   return (
     // Modal TRANSPARENTE (página opaca por cima) — o presentationStyle="fullScreen" rebentava no
@@ -474,586 +908,231 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     // é o das Validades, provado a funcionar no mesmo iPhone.
     <Modal visible={visible} animationType="slide" onRequestClose={requestClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-        {/* Cabeçalho — eyebrow + título + fechar (mesmo padrão dos ecrãs) */}
-        <View style={s.head}>
-          <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}>
-              <View style={s.eyebrowDot} />
-              <Eyebrow>{simulate ? l('Simulação', 'Simulation') : onCandidate ? l('Import · Corrigir', 'Import · Fix') : editExtra != null ? l('Escala · Editar serviço', 'Roster · Edit service') : append ? l('Escala · + serviço no dia', 'Roster · + service') : l(isEdit ? 'Escala · Editar duty' : 'Escala · Nova duty', isEdit ? 'Roster · Edit duty' : 'Roster · New duty')}</Eyebrow>
+        {phase === 'type' ? (
+          <>
+            <View style={s.hdr}>
+              <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.bk} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Icon name="back" size={18} color={PELE.ink} /></TouchableOpacity>
             </View>
-            <Text style={s.h1}>Duty</Text>
-          </View>
-          <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.close} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
-            <Ionicons name="close" size={20} color={C.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* KeyboardAvoiding (padrão do LoginScreen): o rodapé Guardar sobe com o teclado e o scroll
-            encolhe — sem isto, sign-off/hora-original/Nota ficavam TAPADOS enquanto se escrevia. */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {/* Data */}
-          <Animated.View style={[s.sec, secStyle(0)]}>
-            <View style={s.datepick}>
-              <TouchableOpacity onPress={() => goDate(-1)} hitSlop={8} style={s.dateNav}><Ionicons name="chevron-back" size={18} color={C.text} /></TouchableOpacity>
-              <Text style={s.dateTxt}>{fmtDate(form.date)}{form.date === isoDay() ? ` · ${t('cal.today', lang)}` : ''}</Text>
-              <TouchableOpacity onPress={() => goDate(1)} hitSlop={8} style={s.dateNav}><Ionicons name="chevron-forward" size={18} color={C.text} /></TouchableOpacity>
-            </View>
-          </Animated.View>
-
-          {/* Tipo de atividade */}
-          <Animated.View style={[s.sec, secStyle(1)]}>
-            <Text style={s.lbl}>{t('duties.kindLabel', lang)}</Text>
-            <View style={s.kindWrap}>
-              {DUTY_KINDS.map((k) => {
-                const on = form.kind === k;
-                return (
-                  <TouchableOpacity key={k} onPress={() => pickKind(k)} style={[s.kindChip, on && s.kindChipOn]} activeOpacity={0.85} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                    accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={t('duties.kind.' + k, lang)}>
-                    <Text style={[s.kindChipTxt, on && s.kindChipTxtOn]}>{t('duties.kind.' + k, lang)}</Text>
+            <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={l('SERVIÇOS', 'SERVICES')} />
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : l('Novo serviço', 'New service')}</Text>
+              <View style={s.hero}>
+                <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{String(DUTY_KINDS.length).padStart(2, '0')}</Text>
+                <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{l('Serviços', 'Services')}</Text>
+                <Text style={s.kick}>{DUTY_KINDS.length} {l('tipos · escolhe um', 'types · pick one')}</Text>
+              </View>
+              <View style={s.hr} />
+              <View style={s.list}>
+                {DUTY_KINDS.map((k, i) => (
+                  <TouchableOpacity key={k} style={[s.item, i === 0 && { borderTopWidth: 0 }]} activeOpacity={0.7} onPress={() => pickType(k)} accessibilityRole="button" accessibilityLabel={t('duties.kind.' + k, lang)}>
+                    <View style={s.itemIc}><Icon name={KIND_ICON[k] || 'doc'} size={20} color={PELE.ink} /></View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.itemTi}>{t('duties.kind.' + k, lang)}</Text>
+                      <Text style={s.itemDe}>{TYPE_DESC(k)}</Text>
+                    </View>
+                    <Icon name="chevron" size={16} color={PELE.ghost} />
                   </TouchableOpacity>
-                );
-              })}
+                ))}
+              </View>
+            </ScrollView>
+          </>
+        ) : (
+          <>
+            <View style={s.hdr}>
+              <TouchableOpacity onPress={() => { if (canBackToIndex) { setPhase('type'); setStep(0); } else { requestClose(); } }} hitSlop={8} style={s.bk} accessibilityRole="button" accessibilityLabel={canBackToIndex ? l('Mudar tipo', 'Change type') : t('common.close', lang)}><Icon name="back" size={18} color={PELE.ink} /></TouchableOpacity>
+              <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.cl} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Icon name="close" size={18} color={PELE.ink} /></TouchableOpacity>
             </View>
-            {kindInfo ? <Text style={s.kindInfo}>{kindInfo}</Text> : null}
-          </Animated.View>
-
-          {/* VOOS — escreve o nº e toca Detetar: auto-preenche rota/horas/aeronave (histórico→API).
-              Vários números = vários setores (ida-volta) → agrega. Não-destrutivo. */}
-          {isFlight ? (
-            <Animated.View style={[s.sec, secStyle(2)]}>
-              <Text style={s.lbl}>{l('Voos', 'Flights')}</Text>
-              {(form.legs || []).length ? (
-                <View style={s.legList}>
-                  {form.legs.map((lg, i) => (
-                    <View key={i} style={s.legChip}>
-                      <Text style={s.legChipNo} numberOfLines={1}>{lg.flightNo || '—'}</Text>
-                      <Text style={s.legChipRt} numberOfLines={1}>{lg.dep || '?'}→{lg.arr || '?'}{lg.aircraft ? ` · ${lg.aircraft}` : ''}{lg.off ? ` · ${lg.off}` : ''}</Text>
-                      <TouchableOpacity onPress={() => removeLeg(i)} hitSlop={8}><Ionicons name="close" size={14} color={C.sub} /></TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-              {/* Nº de voo (sigla+nº) + Detetar (só manual; histórico→API). Vermelho se incompleto/vazio. */}
-              <View style={s.legRow}>
-                <TextInput value={legInput}
-                  onChangeText={(v) => { setLegInput(v.toUpperCase().replace(/\s+/g, '')); setDetectMsg(null); setFlightErr(false); }}
-                  onSubmitEditing={onDetect}
-                  placeholder={l('Nº de voo · ex. EJU7625', 'Flight no. · e.g. EJU7625')}
-                  placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={8} style={[s.input, { flex: 1 }, flightErr && s.inputErr]} />
-                <TouchableOpacity onPress={onDetect} disabled={!legInput || detecting} style={[s.detectBtn, (!legInput || detecting) && s.detectBtnOff]} activeOpacity={0.85}>
-                  {detecting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.detectBtnTxt}>{l('Detetar', 'Detect')}</Text>}
-                </TouchableOpacity>
+            <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={kindLabel.toUpperCase()} />
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : isEdit ? l('Editar serviço', 'Edit service') : l('Novo serviço', 'New service')}</Text>
+              <View style={s.hero}>
+                <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{dayNum}</Text>
+                <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{kindLabel}</Text>
+                <Text style={s.kick}>{fmtDate(form.date)} · {steps.length} {l('passos', 'steps')}</Text>
               </View>
-              {flightErr ? <Text style={s.errTxt}>{l('Falta o número do voo (sigla + nº, ex. EJU7625).', 'Flight number missing (code + no., e.g. EJU7625).')}</Text> : null}
-              {detectMsg ? <Text style={[s.routeHint, { color: C.warnText || C.warn }]}>{detectMsg}</Text> : null}
-
-              {/* Rota À MÃO — origem → destino + ✓ cria UM setor (com o nº de voo escrito). */}
-              {(caps ? caps.route : !!ae) ? (
-                <>
-                  <Text style={[s.lbl, { marginTop: 13 }]}>{l('Rota · opcional (per-diem)', 'Route · optional (per diem)')}</Text>
-                  <AirportRoute onAdd={addManualSector} error={flightErr} />
-                  <Text style={s.routeHint}>{l('Opcional · só alimenta o per-diem (AE). Origem → destino + ✓ adiciona o setor. O FTL precisa só dos setores + horas.', 'Optional · only feeds the per diem (AE). Origin → destination + ✓ adds the sector. FTL needs only sectors + times.')}</Text>
-                </>
-              ) : null}
-
-              {/* Rota (VISUALIZAÇÃO, só leitura) — cadeia dos setores, qualquer fonte (Detetar/manual/PDF/calendário). */}
-              {form.route ? (
-                <View style={s.routeVis}>
-                  <Text style={s.routeVisLbl}>{l('Rota', 'Route')}</Text>
-                  <Text style={s.routeVisTxt} numberOfLines={1}>{form.route}</Text>
-                </View>
-              ) : null}
-              {/* Per-diem do voo (AE) — derivado da rota. */}
-              {ae && form.route ? (
-                routePd && routePd.ok
-                  ? <View style={s.pdBox}><Text style={s.pdLab}>{l('Per diem deste voo', 'Per diem for this duty')}</Text><Text style={s.pdTag}>+{fmtPd(routePd.eur)}</Text></View>
-                  : (routePd && !routePd.ok ? <Text style={[s.routeHint, { color: C.warnText || C.warn }]}>{l('Rota não reconhecida — não conta para o per-diem', 'Route not recognised — won’t count for per diem')}</Text> : null)
-              ) : null}
-            </Animated.View>
-          ) : null}
-
-          {/* Aeronave — código IATA curto (ex. 321), auto-preenchido pelo Detetar. Editável. */}
-          {isFlight ? (
-            <Animated.View style={[s.sec, secStyle(3)]}>
-              <Text style={s.lbl}>{l('Aeronave', 'Aircraft')}</Text>
-              <TextInput value={form.aircraft}
-                onChangeText={(v) => setForm((f) => ({ ...f, aircraft: v.toUpperCase().replace(/\s+/g, '') }))}
-                placeholder={l('ex. 321 (opcional)', 'e.g. 321 (optional)')}
-                placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={5} style={s.input} />
-            </Animated.View>
-          ) : null}
-
-          {/* Pernoita — derivada da PARIDADE dos setores (debaixo da rota). Sem toggle:
-              ÍMPAR → pernoita; PAR → sem pernoita. Atualiza ao definires os setores/rota. */}
-          {isFlight && Number(form.sectors) >= 1 ? (
-            <Animated.View style={[s.sec, secStyle(3)]}>
-              <View style={[s.nsCard, flightNs ? s.nsCardOn : null]}>
-                <Ionicons name={flightNs ? 'moon' : 'moon-outline'} size={17} color={flightNs ? C.ink : C.sub} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.nsCardT, flightNs ? null : { color: C.sub }]}>{flightNs ? l('Pernoita', 'Night stop') : l('Sem pernoita', 'No night stop')}</Text>
-                  <Text style={s.nsHint}>{flightNs
-                    ? l(`Setores ímpares (${form.sectors}) → acabas fora da base · abono AE (Art. 39)`, `Odd sectors (${form.sectors}) → ends away from base · AE allowance (Art. 39)`)
-                    : l(`Setores pares (${form.sectors}) → ida-e-volta à base`, `Even sectors (${form.sectors}) → round trip to base`)}</Text>
-                </View>
-                {flightNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
-              </View>
-            </Animated.View>
-          ) : null}
-
-          {/* Horas — VOO: apresentação + off/on POR SETOR (legs = fonte) + sign-off; Block e Duty
-              hours DERIVAM (só visualização). NÃO-VOO: só Início + Fim (FTL conta início→fim). */}
-          <Animated.View style={[s.sec, secStyle(4)]}>
-            <ClockField C={C} s={s} error={showErr('report') || badClock(form.report)} errText={badClock(form.report) ? fmtErr : errText} label={isFlight ? t('duties.report', lang) : l('Início', 'Start')} value={form.report} onChange={(v) => setForm((f) => ({ ...f, report: v }))} />
-            {isFlight ? (
-              <>
-                {/* Nº de setores (define as linhas de off/on). Da rota, ou ajustável à mão. */}
-                <View style={{ marginTop: 14 }}>
-                  <Stepper label={t('ftl.sectors', lang)} value={form.sectors} setValue={setSectorCount} min={0} max={12} />
-                  <Text style={[s.routeHint, { marginTop: 8 }]}>{l('Nº de setores — é o que o FTL conta (mínimo legal). A rota (em Voos) é opcional, só para o per-diem.', 'Number of sectors — what FTL counts (legal minimum). The route (in Flights) is optional, only for per diem.')}</Text>
-                </View>
-                {/* off/on de cada setor (block_off/on + Block hours derivam). Sempre editável. */}
-                <View style={{ marginTop: 14 }}>
-                  <Text style={s.lbl}>{l('Horas por setor (block)', 'Times per sector (block)')}</Text>
-                  {sectorRows.length ? sectorRows.map((lg, i) => {
-                    const lab = (lg.dep && lg.arr) ? `${lg.dep}→${lg.arr}` : l(`Setor ${i + 1}`, `Sector ${i + 1}`);
-                    const offBad = showErr('sectors') && clkMin(lg.off) == null;
-                    const onBad = showErr('sectors') && clkMin(lg.on) == null;
-                    // Zulu por prioridade: autoritativa (offZ/onZ) → fuso do aeroporto (origem/destino).
-                    const zo = lg.offZ || airportZulu(form.date, lg.off, lg.dep);
-                    const zn = lg.onZ || airportZulu(form.date, lg.on, lg.arr);
-                    return (
-                      <View key={i} style={{ marginTop: 8 }}>
-                        <View style={[s.secRow, { marginTop: 0 }]}>
-                          <Text style={s.secLab} numberOfLines={1}>{lg.flightNo ? `${lg.flightNo} · ` : ''}{lab}</Text>
-                          <View style={s.secInputs}>
-                            <TextInput value={lg.off} onChangeText={(v) => setSectorTime(i, 'off', v)} placeholder={l('off', 'off')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, offBad && s.inputErr]} />
-                            <Text style={s.secArrow}>→</Text>
-                            <TextInput value={lg.on} onChangeText={(v) => setSectorTime(i, 'on', v)} placeholder={l('on', 'on')} placeholderTextColor={C.sub} keyboardType="number-pad" maxLength={5} style={[s.secInput, onBad && s.inputErr]} />
-                          </View>
+              <View style={s.hr} />
+              {kindInfo ? <Text style={[s.routeHint, { marginTop: 10 }]}>{kindInfo}</Text> : null}
+              <View style={s.steps}>
+                <View style={s.stepLine} />
+                {steps.map((key, i) => {
+                  const active = step === i, done = step > i, last = i === steps.length - 1;
+                  return (
+                    <View key={key} style={s.step}>
+                      <View style={[s.node, done && s.nodeDone, active && s.nodeActive]}>
+                        {done ? <Icon name="check" size={11} color={PELE.onInk} /> : active ? <View style={s.nodeDot} /> : null}
+                      </View>
+                      <TouchableOpacity style={s.shead} activeOpacity={0.7} onPress={() => { select(); setStep(i); }} accessibilityRole="button">
+                        <Text style={[s.stitle, (active || done) && s.stitleOn]}>{STEP_TITLE[key]}</Text>
+                        {!active ? <Text style={s.ssum} numberOfLines={1}>{stepSummary(key)}</Text> : null}
+                      </TouchableOpacity>
+                      {active ? (
+                        <View style={s.sbody}>
+                          {STEP_BODY[key]}
+                          {!last ? (
+                            <TouchableOpacity style={s.contBtn} activeOpacity={0.85} onPress={() => { select(); setStep(i + 1); }}>
+                              <Text style={s.contBtnTxt}>{l('Continuar', 'Continue')}</Text>
+                              <Icon name="arrow-r" size={15} color={PELE.yellow} />
+                            </TouchableOpacity>
+                          ) : null}
                         </View>
-                        {(zo || zn) ? <Text style={s.secZ}>{zo ? `${zo}Z` : '—'} → {zn ? `${zn}Z` : '—'}</Text> : null}
-                      </View>
-                    );
-                  }) : <Text style={s.routeHint}>{l('Adiciona setores na secção Voos para meter as horas.', 'Add sectors in the Flights section to enter times.')}</Text>}
-                  {showErr('sectors') ? <Text style={s.errTxt}>{l('Preenche o off e o on de cada setor.', 'Fill off and on for every sector.')}</Text> : null}
-                  {sectorRows.some((lg) => !lg.offZ) ? (
-                    <Text style={s.routeHint}>{l('A Zulu (UTC) usa o fuso do aeroporto — assume que as horas são locais do aeroporto.', 'Zulu (UTC) uses the airport timezone — assumes times are airport-local.')}</Text>
-                  ) : null}
-                </View>
-                {/* Fim de serviço (sign-off) — opcional; define as Duty hours com débrief real. */}
-                <View style={{ marginTop: 14 }}>
-                  <ClockField C={C} s={s} error={badClock(form.signOff)} errText={fmtErr} label={l('Fim de serviço (sign-off)', 'Sign-off (end of duty)')} value={form.signOff} onChange={(v) => setForm((f) => ({ ...f, signOff: v }))} />
-                  <Text style={s.routeHint}>{postFlightMin
-                    ? l(`Opcional · hora real de fim. Vazio → último on-block + ${postFlightMin}′ de débrief (perfil).`, `Optional · real end time. Empty → last on-block + ${postFlightMin}′ debrief (profile).`)
-                    : l('Opcional · hora real de fim (depois do débrief). Define o débrief no Perfil.', 'Optional · real end time (after debrief). Set the debrief in Profile.')}</Text>
-                </View>
-                {/* Dois campos SÓ de visualização — derivados, mas contam para os limites. */}
-                <View style={s.calcRow}>
-                  <View style={s.calcCell}>
-                    <Text style={s.calcLab}>{l('Block hours', 'Block hours')}</Text>
-                    <Text style={s.calcVal}>{blockMin ? minToHhmm(blockMin) : '—'}</Text>
-                    <Text style={s.calcSub}>{l('Σ block dos setores', 'Σ sector block')}</Text>
-                  </View>
-                  <View style={s.calcCell}>
-                    <Text style={s.calcLab}>{l('Duty hours', 'Duty hours')}</Text>
-                    <Text style={s.calcVal}>{dutyMin != null ? minToHhmm(dutyMin) : '—'}</Text>
-                    <Text style={s.calcSub}>{clkMin(form.signOff) != null ? l('apres. → sign-off', 'report → sign-off') : (postFlightMin ? l(`apres. → on + ${postFlightMin}′`, `report → on + ${postFlightMin}′`) : l('apres. → último on', 'report → last on'))}</Text>
-                  </View>
-                </View>
-              </>
-            ) : (
-              <View style={{ marginTop: 12 }}>
-                <ClockField C={C} s={s} error={badClock(form.on)} errText={fmtErr} label={l('Fim', 'End')} value={form.on} onChange={(v) => setForm((f) => ({ ...f, on: v }))} />
-                {/* POSICIONAMENTO: rota opcional — onde acabas decide o repouso 12h/10h (235). */}
-                {form.kind === 'positioning' ? (
-                  <View style={{ marginTop: 14 }}>
-                    <Text style={s.lbl}>{l('Rota', 'Route')} <Text style={s.routeHint}>{l('· opcional', '· optional')}</Text></Text>
-                    <TextInput style={s.input} value={form.route} onChangeText={(v) => setForm((f) => ({ ...f, route: v.toUpperCase() }))}
-                      placeholder={l('ex. LIS-MAD', 'e.g. LIS-MAD')} placeholderTextColor={C.sub} autoCapitalize="characters" autoCorrect={false} maxLength={40} />
-                    <Text style={s.routeHint}>{l('Onde acabas define o repouso mínimo: 12 h na base · 10 h fora (ORO.FTL.235).', 'Where you end sets the minimum rest: 12 h at base · 10 h away (ORO.FTL.235).')}</Text>
-                  </View>
-                ) : null}
-                {/* STANDBY AEROPORTO: alojamento (ORO.FTL.225(e)) — sem ele é "duty at the airport" (225(d)). */}
-                {form.kind === 'standby_airport' ? (
-                  <View style={{ marginTop: 14 }}>
-                    <View style={s.nsRow}>
-                      <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text style={s.advTit}>{l('Alojamento disponibilizado', 'Accommodation provided')}</Text>
-                        <Text style={s.advSub}>ORO.FTL.225(e)</Text>
-                      </View>
-                      <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
-                        trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                    </View>
-                    <Text style={s.routeHint}>{accOn
-                      ? l('É standby: conta 100% como serviço (210/235) e a tabela do PSV não o julga.', 'It is standby: counts 100% as duty (210/235) and the FDP table does not judge it.')
-                      : l('Sem alojamento, a lei trata-o como serviço no aeroporto — o PSV conta desde o report (ORO.FTL.225(d)(e)).', 'Without accommodation the law treats it as airport duty — the FDP counts from report (ORO.FTL.225(d)(e)).')}</Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Pernoita (NÃO-VOO) — toggle manual só onde podes acabar fora da base (posicionamento,
-              formação, standby aeroporto). O voo deriva de acabar FORA DA BASE (Art. 39/56). */}
-          {canNightStop ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <View style={s.nsRow}>
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text style={s.lbl}>{l('Pernoita', 'Night stop')}</Text>
-                  <Text style={s.nsHint}>{l('Liga se pernoitares fora da base · abono AE (Art. 39)', 'Turn on if you overnight away from base · AE allowance (Art. 39)')}</Text>
-                </View>
-                {manualNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
-                <Switch value={!!form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-              </View>
-            </Animated.View>
-          ) : null}
-
-          {/* ── DIA DE ESCRITÓRIO — OFC4 (meio-dia, 1,5 NS) vs OFC8 (dia inteiro, 3 NS, que
-              a lei equipara ao dever ad-hoc do Art. 43). Anexo I.14. Só onde o AE tem OFC8
-              (pilotos); a cabine tem rate único (Art. 70). O ad-hoc deixou de ser evento. ── */}
-          {form.kind === 'office' && ae && ae.OFFICE8_SECTORS ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <Text style={s.lbl}>{l('Duração do dia de escritório', 'Office day length')}</Text>
-              <SegRow s={s} value={form.officeType || 'ofc4'} onChange={(v) => { select(); setForm((f) => ({ ...f, officeType: v === 'ofc4' ? null : v })); }}
-                options={[
-                  { id: 'ofc4', label: l('Meio-dia (OFC4)', 'Half day (OFC4)') },
-                  { id: 'ofc8', label: l('Dia inteiro (OFC8)', 'Full day (OFC8)') },
-                ]} />
-              <Text style={s.routeHint}>{form.officeType === 'ofc8'
-                ? l('Dia inteiro (OFC8) — 3 setores nominais (Anexo I.14; = dever ad-hoc, Art. 43).', 'Full day (OFC8) — 3 nominal sectors (App. I.14; = ad-hoc duty, Art. 43).')
-                : l('Meio-dia (OFC4) — 1,5 setores nominais (Anexo I.14).', 'Half day (OFC4) — 1.5 nominal sectors (App. I.14).')}</Text>
-            </Animated.View>
-          ) : null}
-
-          {/* ── FORMAÇÃO em terra/simulador — o FORMANDO recebe 3 NS (Art. 43); o e-learning
-              não paga. Só piloto (a cabine não tem o item) e quando não há papel de instrutor. ── */}
-          {form.kind === 'training' && !form.role && ae && ae.ADHOC_SECTORS ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <Text style={s.lbl}>{l('Tipo de formação', 'Training type')}</Text>
-              <SegRow s={s} value={form.eLearning ? 'elearn' : 'ground'} onChange={(v) => { select(); setForm((f) => ({ ...f, eLearning: v === 'elearn' })); }}
-                options={[
-                  { id: 'ground', label: l('Terra / simulador', 'Ground / sim') },
-                  { id: 'elearn', label: 'e-learning' },
-                ]} />
-              <Text style={s.routeHint}>{form.eLearning
-                ? l('E-learning — sem pagamento variável (Art. 43).', 'E-learning — no variable pay (Art. 43).')
-                : l('Formação em terra/simulador — 3 setores nominais ao formando (Art. 43).', 'Ground/sim training — 3 nominal sectors to the trainee (Art. 43).')}</Text>
-            </Animated.View>
-          ) : null}
-
-          {/* ── FOLGA PUBLICADA trabalhada — condição de PAGAMENTO (DDO escalado · WFLY
-              voluntário · IDO infringida). Cl.68/69: são atributos do SERVIÇO desse dia
-              (trabalhaste), não eventos. Só quando o AE tem os itens; conta 1×/dia. ── */}
-          {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <Text style={s.lbl}>{l('Este dia era folga publicada?', 'Was this a published day off?')}</Text>
-              <SegRow s={s} value={form.dayOffWorked || 'no'} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : v })); }}
-                options={[
-                  { id: 'no', label: l('Não', 'No') },
-                  { id: 'ddo', label: 'DDO' },
-                  { id: 'wfly', label: 'WFLY' },
-                  ...(ae.EXTRA_KINDS.some((k) => k.id === 'ido') ? [{ id: 'ido', label: 'IDO' }] : []),
-                ]} />
-              {form.dayOffWorked ? (
-                <Text style={s.routeHint}>{
-                  form.dayOffWorked === 'ddo'
-                    ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
-                    : form.dayOffWorked === 'wfly'
-                    ? l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')
-                    : l('Folga infringida (IDO) — trabalho em folga sem o aviso devido; soma ao salário do mês.', 'Infringed day off (IDO) — worked a day off without due notice; adds to the month pay.')}</Text>
-              ) : null}
-            </Animated.View>
-          ) : null}
-
-          {/* ── PAPEL desempenhado (Funções do AE) — pago como a lei define: instrutor €/dia
-              (Art. 42), uprank €/SETOR (Cl. 34), CCLT/CTI €/dia (Cl. 35). Voo e formação;
-              opções do próprio módulo do AE (crew-aware); nada quando o AE não tem papéis. ── */}
-          {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {
-            const roles = ae.additionalRolesFor(crewCategory, { instructorRated }) || [];
-            if (!roles.length) return null;
-            return (
-              <Animated.View style={[s.sec, secStyle(5)]}>
-                <Text style={s.lbl}>{l('Papel neste serviço', 'Role on this duty')}</Text>
-                <SegRow s={s} value={form.role || 'none'} onChange={(v) => { select(); setForm((f) => ({ ...f, role: v === 'none' ? null : v })); }}
-                  options={[{ id: 'none', label: l('Nenhum', 'None') }, ...roles.map((r) => ({ id: r.id, label: (r.label && (r.label[lang] || r.label.pt)) || r.id }))]} />
-                {form.role ? (() => {
-                  const r = roles.find((x) => x.id === form.role);
-                  return r ? <Text style={s.routeHint}>{r.sub || ''}{r.unit ? ` · ${r.unit[lang] || r.unit.pt}` : ''}</Text> : null;
-                })() : null}
-              </Animated.View>
-            );
-          })() : null}
-
-          {/* ── Casos especiais (FTL) — mexem no TETO do PSV (205c/205g/225). Crew-aware:
-              o nº de pilotos só aparece a piloto. Tudo via o motor já testado (golden). ── */}
-          {isFlight ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <TouchableOpacity style={s.advHead} activeOpacity={0.7}
-                onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAdvOpen((o) => !o); }}>
-                <Ionicons name="construct-outline" size={15} color={C.sub} />
-                <Text style={s.advHeadTxt}>{l('Casos especiais (FTL)', 'Special cases (FTL)')}</Text>
-                {(special || accOn) ? <View style={s.advDot} /> : null}
-                <Ionicons name={advOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} />
-              </TouchableOpacity>
-              {advOpen ? (
-                <View style={s.advBody}>
-                  {/* 1 · Repouso a bordo / tripulação aumentada (205c) */}
-                  <View style={s.advRow}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={s.advTit}>{l('Tripulação aumentada / repouso a bordo', 'Augmented crew / in-flight rest')}</Text>
-                      <Text style={s.advSub}>205(c)</Text>
-                    </View>
-                    <Switch value={augOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAugOn(v); }}
-                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                  </View>
-                  {augOn ? (
-                    <View style={s.advInset}>
-                      <Text style={s.advFieldLbl}>{l('Classe da instalação de repouso', 'Rest facility class')}</Text>
-                      <SegRow s={s} value={augClass} onChange={setAugClass} options={[
-                        { id: 'c1', label: l('Classe 1', 'Class 1') },
-                        { id: 'c2', label: l('Classe 2', 'Class 2') },
-                        { id: 'c3', label: l('Classe 3', 'Class 3') },
-                      ]} />
-                      {isPilot ? (
-                        <>
-                          <Text style={[s.advFieldLbl, { marginTop: 11 }]}>{l('Pilotos extra', 'Additional pilots')}</Text>
-                          <SegRow s={s} value={String(augCrew)} onChange={(v) => setAugCrew(Number(v))} options={[
-                            { id: '1', label: l('+1 · 3 no total', '+1 · 3 total') },
-                            { id: '2', label: l('+2 · 4 no total', '+2 · 4 total') },
-                          ]} />
-                        </>
                       ) : null}
                     </View>
-                  ) : null}
-
-                  {/* 2 · Apresentação adiada (205g) */}
-                  <View style={[s.advRow, s.advDivider]}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={s.advTit}>{l('Apresentação adiada', 'Delayed reporting')}</Text>
-                      <Text style={s.advSub}>205(g)</Text>
-                    </View>
-                    <Switch value={delOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setDelOn(v); }}
-                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                  </View>
-                  {delOn ? (
-                    <View style={s.advInset}>
-                      <ClockField C={C} s={s} label={l('Hora original da apresentação', 'Original reporting time')} value={delFrom} onChange={setDelFrom} />
-                      <Text style={s.advHint}>{l('A apresentação (acima) é a ADIADA. O PSV máx recalcula pela hora mais limitativa.', 'The report (above) is the DELAYED one. Max FDP recalculates by the more limiting time.')}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* 3 · Standby antes deste serviço (225) */}
-                  <View style={[s.advRow, s.advDivider]}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={s.advTit}>{l('Standby antes deste serviço', 'Standby before this duty')}</Text>
-                      <Text style={s.advSub}>225</Text>
-                    </View>
-                    <Switch value={sbOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSbOn(v); }}
-                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                  </View>
-                  {sbOn ? (
-                    <View style={s.advInset}>
-                      <Text style={s.advFieldLbl}>{l('Tipo de standby', 'Standby type')}</Text>
-                      <SegRow s={s} value={sbType} onChange={setSbType} options={[
-                        { id: 'airport', label: l('Aeroporto', 'Airport') },
-                        { id: 'other', label: l('Casa / hotel', 'Home / hotel') },
-                      ]} />
-                      <View style={{ marginTop: 11 }}>
-                        <Stepper label={l('Horas de standby', 'Standby hours')} value={sbH} setValue={setSbH} min={0} max={16} />
-                      </View>
-                      <Text style={s.advHint}>{l('Reduz o PSV máx (>4h aeroporto · >6h casa) E conta para os 28 d (aeroporto 100% · casa 25%).', 'Reduces max FDP (>4h airport · >6h home) AND counts toward the 28 d (airport 100% · home 25%).')}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* 4 · Alojamento na pausa do split-duty (CS FTL.1.220 d/e) */}
-                  <View style={[s.advRow, s.advDivider]}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={s.advTit}>{l('Alojamento na pausa (split)', 'Accommodation during break (split)')}</Text>
-                      <Text style={s.advSub}>220(d)(e)</Text>
-                    </View>
-                    <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
-                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                  </View>
-                  {accOn ? (
-                    <View style={s.advInset}>
-                      <Text style={s.advHint}>{l('Só conta se houver uma pausa em terra ≥3h neste serviço. Com alojamento adequado, a pausa toda estende o PSV (inclui >6h/WOCL); sem, só até 6h.', 'Only applies if there is a ground break ≥3h in this duty. With suitable accommodation the whole break extends the FDP (incl. >6h/WOCL); without, only up to 6h.')}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* 5 · Discrição do comandante USADA (ORO.FTL.205(f)) — o excesso dentro da
-                      margem (+2h; +3h c/ repouso a bordo) é LEGAL e reportável, não "ilegal". */}
-                  <View style={[s.advRow, s.advDivider]}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={s.advTit}>{l('Discrição do comandante usada', "Commander's discretion used")}</Text>
-                      <Text style={s.advSub}>205(f)</Text>
-                    </View>
-                    <Switch value={discOn} onValueChange={(v) => { select(); setDiscOn(v); }}
-                      trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
-                  </View>
-                  {discOn ? (
-                    <View style={s.advInset}>
-                      <Text style={s.advHint}>{l('Só circunstâncias imprevistas a partir da apresentação: até +2 h (ou +3 h com repouso a bordo). Dentro da margem o excesso é legal e REPORTÁVEL ao operador; além dela continua ilegal.', 'Unforeseen circumstances at or after reporting only: up to +2 h (or +3 h with in-flight rest). Within the margin the excess is legal and REPORTABLE to the operator; beyond it remains illegal.')}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* Preview do teto do PSV (base → efetivo), via o motor */}
-                  {psvPreview ? (
-                    <View style={s.advPreview}>
-                      <Text style={s.advPreviewLbl}>{l('PSV máx', 'Max FDP')}</Text>
-                      <Text style={s.advPreviewVal}>
-                        {psvPreview.base}<Text style={s.advPreviewArrow}>{'   →   '}</Text>
-                        {psvPreview.notAllowed
-                          ? <Text style={{ color: C.red }}>{l('não permitido', 'not allowed')}</Text>
-                          : <Text style={{ color: C.greenText }}>{psvPreview.eff}</Text>}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              ) : null}
-            </Animated.View>
-          ) : null}
-
-          {/* Projeção FTL — só voo, assim que há apresentação válida. Usa as horas DERIVADAS dos setores. */}
-          {isFlight && prospect ? (
-            <Animated.View style={[s.sec, secStyle(5)]}>
-              <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
-                <View style={s.projHead}>
-                  <Ionicons name={prospect.ok ? 'checkmark-circle' : 'alert-circle'} size={15} color={prospect.ok ? (C.ok || C.text) : (C.warn || C.text)} />
-                  <Text style={s.projTitle}>{prospect.ok ? t('duties.projOk', lang) : t('duties.projWarn', lang)}</Text>
-                </View>
-                <Text style={s.projMeta}>{t('duties.projDuty', lang)} {h1n(prospect.servico28)}/190 h · {t('duties.projFlight', lang)} {h1n(prospect.voo28)}/100 h</Text>
-                {prospect.fatigue ? (
-                  <View style={s.fatRow}>
-                    <View style={[s.fatDot, { backgroundColor: fatigueColor(prospect.fatigue.band) }]} />
-                    <Text style={s.fatLbl}>{t('duties.fatigueLbl', lang)}: </Text>
-                    <Text style={[s.fatVal, { color: fatigueColor(prospect.fatigue.band) }]}>{fatigueLbl(prospect.fatigue.band)} ({prospect.fatigue.score})</Text>
-                  </View>
-                ) : null}
-                {prospect.issues.map((it, i) => <Text key={i} style={s.projIssue}>• {issueLbl(it)}</Text>)}
+                  );
+                })}
               </View>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
-
-        {/* Rodapé fixo — Guardar. Botão SEMPRE ativo: ao premir com campos em falta, revela-os a
-            vermelho (mais descobrível que um botão desativado em silêncio). */}
-        <View style={s.foot}>
-          {attemptedSave && !canSave
-            ? <Text style={[s.footHint, { color: C.red }]}>{l('Faltam campos — preenche os assinalados a vermelho.', 'Missing fields — fill the ones marked red.')}</Text>
-            : (isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null)}
-          <PrimaryButton onPress={onSave} icon={simulate ? 'play' : undefined} label={simulate ? l('Simular', 'Simulate') : t('common.save', lang)} />
-        </View>
-        </KeyboardAvoidingView>
+            </ScrollView>
+            <View style={s.foot}>
+              {attemptedSave && !canSave
+                ? <Text style={[s.footHint, { color: PELE.red }]}>{l('Faltam campos — preenche os assinalados a vermelho.', 'Missing fields — fill the ones marked red.')}</Text>
+                : (isFlight ? <Text style={s.footHint}>{t('duties.reportReq', lang)}</Text> : null)}
+              <PrimaryButton onPress={() => { if (!canSave) { const hi = steps.indexOf('horas'); if (hi >= 0) setStep(hi); } onSave(); }} icon={simulate ? 'play' : undefined} label={simulate ? l('Simular', 'Simulate') : t('common.save', lang)} />
+            </View>
+            </KeyboardAvoidingView>
+          </>
+        )}
       </View>
     </Modal>
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: C.canvas },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
-  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  body: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24, gap: 16 },
-  sec: {},
-  lbl: { fontSize: 12, fontFamily: FONT.bold, color: C.text, marginBottom: 7 },
-  input: { borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 13, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text },
-  inputErr: { borderColor: C.red },
-  errTxt: { fontSize: 11, fontFamily: FONT.semibold, color: C.red, marginTop: 5 },
-  row2: { flexDirection: 'row', gap: 9 },
-  datepick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 8, paddingVertical: 6 },
-  dateNav: { width: 38, height: 38, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
-  dateTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text },
-  kindWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  kindChip: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, backgroundColor: C.card },
-  kindChipOn: { borderColor: C.ink, backgroundColor: C.ink },
-  kindChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
-  kindChipTxtOn: { color: '#fff' },
-  kindInfo: { fontSize: 12, color: C.text, fontFamily: FONT.semibold, marginTop: 10, marginLeft: 2 },
-  nsHint: { fontSize: 11, color: C.sub, marginTop: 3, fontFamily: FONT.medium },
-  routeHint: { fontSize: 11.5, color: C.sub, marginTop: 7, fontFamily: FONT.medium },
-  // Rota BLOQUEADA (auto-detetada) — estações read-only + selo "Detetado" + botão "Editar".
-  routeLocked: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.soft, borderRadius: 16, paddingLeft: 14, paddingRight: 8, paddingVertical: 8 },
-  routeLockedTxt: { flex: 1, fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.6 },
-  routeLockTag: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  routeLockTagTxt: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub },
-  routeEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, borderRadius: RADIUS.pill, paddingHorizontal: 11, paddingVertical: 7 },
-  routeEditTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.brand },
-  // Horas por setor — linha [rota] [off → on]
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: PELE.paper },
+  // Cabeçalho pele (‹ back + ✕ close)
+  hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8 },
+  bk: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  cl: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  body: { paddingHorizontal: GUTTER, paddingTop: 4, paddingBottom: 28 },
+  // Herói
+  eyb: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 8 },
+  hero: { position: 'relative', minHeight: 118, marginTop: 2, justifyContent: 'flex-end', paddingBottom: 6 },
+  ghost: { position: 'absolute', right: 2, top: -16, fontFamily: PELE_FONT.display, fontSize: 130, lineHeight: 130, letterSpacing: -4, color: PELE.ghost, fontVariant: ['tabular-nums'] },
+  word: { fontFamily: PELE_FONT.display, fontSize: 48, letterSpacing: -0.5, color: PELE.ink, textTransform: 'uppercase' },
+  kick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
+  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 2 },
+
+  // Índice de tipos (novo-servico)
+  list: { marginTop: 14 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, borderTopWidth: 1, borderTopColor: PELE.line },
+  itemIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  itemTi: { fontFamily: PELE_FONT.display, fontSize: 22, letterSpacing: -0.2, color: PELE.ink },
+  itemDe: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 2, lineHeight: 15 },
+
+  // Stepper vertical (acordeão)
+  steps: { position: 'relative', marginTop: 12 },
+  stepLine: { position: 'absolute', left: 10.5, top: 12, bottom: 12, width: 2, backgroundColor: PELE.line },
+  step: { position: 'relative', paddingBottom: 4 },
+  node: { position: 'absolute', left: 0, top: 2, width: 23, height: 23, borderRadius: 12, borderWidth: 2.5, borderColor: PELE.line, backgroundColor: PELE.paper, zIndex: 1, alignItems: 'center', justifyContent: 'center' },
+  nodeDone: { borderColor: PELE.ok, backgroundColor: PELE.ok },
+  nodeActive: { borderColor: PELE.ink, backgroundColor: PELE.ink },
+  nodeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.yellow },
+  shead: { flexDirection: 'row', alignItems: 'baseline', gap: 10, paddingLeft: 36, paddingTop: 1, paddingBottom: 4 },
+  stitle: { fontFamily: PELE_FONT.display, fontSize: 23, letterSpacing: -0.2, color: PELE.grey },
+  stitleOn: { color: PELE.ink },
+  ssum: { fontSize: 11.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, flexShrink: 1 },
+  sbody: { paddingLeft: 36, paddingTop: 4, paddingBottom: 16 },
+  // Botão "Continuar"
+  contBtn: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.ink, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 18, marginTop: 16 },
+  contBtnTxt: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.onInk },
+
+  // Carril de datas
+  dmonth: { fontFamily: PELE_FONT.display, fontSize: 19, textTransform: 'uppercase', letterSpacing: 0.3, color: PELE.ink, marginBottom: 9 },
+  daterail: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
+  day: { position: 'relative', width: 57, borderRadius: 15, borderWidth: 1.5, borderColor: PELE.line, paddingVertical: 10, alignItems: 'center', gap: 3 },
+  dayWd: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  dayDn: { fontFamily: PELE_FONT.display, fontSize: 30, lineHeight: 30, color: PELE.ink, fontVariant: ['tabular-nums'] },
+  dayOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
+  dayWdOn: { color: 'rgba(255,255,255,0.65)' },
+  dayDnOn: { color: PELE.yellow },
+  dayDot: { position: 'absolute', bottom: -8, width: 5, height: 5, borderRadius: 3, backgroundColor: PELE.yellow },
+
+  // Campos
+  lbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.2, textTransform: 'uppercase', color: PELE.grey, marginBottom: 8 },
+  input: { borderWidth: 1.5, borderColor: PELE.line, backgroundColor: PELE.soft, borderRadius: 12, paddingHorizontal: 13, paddingVertical: 12, fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  inputErr: { borderColor: PELE.red },
+  errTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.red, marginTop: 5 },
+  routeHint: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 8, lineHeight: 16 },
+
+  // Setores — horas off/on
   secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8 },
-  secLab: { flex: 1, fontSize: 12.5, fontFamily: FONT.semibold, color: C.text },
-  secTimes: { fontSize: 13, fontFamily: FONT.bold, color: C.sub, fontVariant: ['tabular-nums'] },
+  secLab: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   secInputs: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  secInput: { width: 64, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, fontSize: 14, fontFamily: FONT.semibold, color: C.text, textAlign: 'center' },
-  secArrow: { fontSize: 13, color: C.sub },
-  secZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 4, letterSpacing: 0.2, alignSelf: 'flex-end' },
-  // Dois campos só de visualização — Block hours · Duty hours
+  secInput: { width: 66, borderWidth: 1.5, borderColor: PELE.line, backgroundColor: PELE.soft, borderRadius: 10, paddingVertical: 10, fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textAlign: 'center' },
+  secArrow: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyBold },
+  secZ: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: '#9A8A5A', fontVariant: ['tabular-nums'], marginTop: 4, alignSelf: 'flex-end' },
+  // Stepper de setores (± inline, pele)
+  stepc: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 2 },
+  stepcB: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
+  stepcV: { fontFamily: PELE_FONT.display, fontSize: 34, minWidth: 36, textAlign: 'center', color: PELE.ink, fontVariant: ['tabular-nums'] },
+  // Block · Duty
   calcRow: { flexDirection: 'row', gap: 9, marginTop: 14 },
-  calcCell: { flex: 1, backgroundColor: C.soft, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
-  calcLab: { fontSize: 11, fontFamily: FONT.bold, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.6 },
-  calcVal: { fontSize: 22, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'], marginTop: 3 },
-  calcSub: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2 },
-  // Secção "Voos" — chips dos legs detetados + input/botão Detetar
+  calcCell: { flex: 1, backgroundColor: PELE.soft, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
+  calcLab: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, textTransform: 'uppercase', letterSpacing: 0.6 },
+  calcVal: { fontSize: 22, fontFamily: PELE_FONT.display, color: PELE.ink, fontVariant: ['tabular-nums'], marginTop: 3 },
+  calcSub: { fontSize: 10, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 2 },
+
+  // Voos — chips das legs + Detetar
   legList: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 9 },
-  legChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingLeft: 11, paddingRight: 8, paddingVertical: 6 },
-  legChipNo: { fontSize: 12, fontFamily: FONT.heavy, color: C.text, letterSpacing: 0.3 },
-  legChipRt: { fontSize: 11, fontFamily: FONT.medium, color: C.sub },
+  legChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: PELE.soft, borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingLeft: 11, paddingRight: 8, paddingVertical: 6 },
+  legChipNo: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, letterSpacing: 0.3 },
+  legChipRt: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey },
   legRow: { flexDirection: 'row', gap: 9, alignItems: 'stretch' },
-  detectBtn: { backgroundColor: C.ink, borderRadius: 16, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', minWidth: 92 },
+  detectBtn: { backgroundColor: PELE.ink, borderRadius: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', minWidth: 92 },
   detectBtnOff: { opacity: 0.4 },
-  detectBtnTxt: { color: '#fff', fontSize: 13.5, fontFamily: FONT.semibold },
-  // Rota (visualização só leitura) — cadeia dos setores
-  routeVis: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, marginTop: 11 },
-  routeVisLbl: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
-  routeVisTxt: { flex: 1, fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.5, textAlign: 'right' },
-  pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
-  pdLab: { fontSize: 11.5, color: C.green || C.sub, fontFamily: FONT.semibold },
-  pdTag: { fontSize: 12, fontFamily: FONT.heavy, color: '#fff', backgroundColor: C.green || C.ink, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, overflow: 'hidden' },
-  // Pernoita derivada (sem toggle) — indicador debaixo da rota.
-  nsCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.soft, borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line },
-  nsCardOn: { borderColor: C.ink },
-  nsCardT: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
-  nsEur: { fontSize: 15, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'], marginLeft: 8 },
+  detectBtnTxt: { color: PELE.onInk, fontSize: 13, fontFamily: PELE_FONT.bodyBold },
+  routeVis: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: PELE.soft, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, marginTop: 11 },
+  routeVisLbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  routeVisTxt: { flex: 1, fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, letterSpacing: 0.5, textAlign: 'right' },
+  pdBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: PELE.okSoft, borderRadius: 11, paddingHorizontal: 13, paddingVertical: 10, marginTop: 10 },
+  pdLab: { fontSize: 11.5, color: PELE.ok, fontFamily: PELE_FONT.bodyBold },
+  pdTag: { fontSize: 14, fontFamily: PELE_FONT.display, color: PELE.ok },
+
+  // Pernoita
+  nsCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: PELE.soft, borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: PELE.line },
+  nsCardOn: { borderColor: PELE.ink },
+  nsCardT: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  nsEur: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'], marginLeft: 8 },
   nsRow: { flexDirection: 'row', alignItems: 'center' },
-  proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACE.md },
-  projOk: { borderColor: C.line, backgroundColor: C.soft },
-  projWarn: { borderColor: (C.warn || C.sub), backgroundColor: C.card },
+  nsHint: { fontSize: 11, color: PELE.grey, marginTop: 3, fontFamily: PELE_FONT.body },
+
+  // Projeção FTL
+  proj: { borderRadius: RADIUS.md, borderWidth: 1, padding: 14, marginTop: 14 },
+  projOk: { borderColor: PELE.line, backgroundColor: PELE.soft },
+  projWarn: { borderColor: PELE.warn, backgroundColor: PELE.warnSoft },
   projHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  projTitle: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text },
-  projMeta: { fontSize: TYPE.micro, color: C.sub, marginTop: 6, fontFamily: FONT.medium },
-  projIssue: { fontSize: TYPE.micro, color: (C.warn || C.text), marginTop: 4, fontFamily: FONT.semibold },
+  projTitle: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  projMeta: { fontSize: 11, color: PELE.grey, marginTop: 6, fontFamily: PELE_FONT.body },
+  projIssue: { fontSize: 11, color: PELE.warn, marginTop: 4, fontFamily: PELE_FONT.bodyBold },
   fatRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   fatDot: { width: 8, height: 8, borderRadius: 99, marginRight: 7 },
-  fatLbl: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.semibold },
-  fatVal: { fontSize: TYPE.micro, fontFamily: FONT.heavy },
-  foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
-  footHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginBottom: 8 },
+  fatLbl: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyBold },
+  fatVal: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy },
+
+  // Rodapé
+  foot: { paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: PELE.line, backgroundColor: PELE.paper },
+  footHint: { fontSize: 11, color: PELE.grey, textAlign: 'center', marginBottom: 8, fontFamily: PELE_FONT.body },
 
   // Segmented control (casos especiais)
   segRow: { flexDirection: 'row', gap: 6 },
-  segChip: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 8, backgroundColor: C.card, alignItems: 'center' },
-  segChipOn: { borderColor: C.ink, backgroundColor: C.ink },
-  segChipTxt: { fontSize: 12, fontFamily: FONT.semibold, color: C.sub },
-  segChipTxtOn: { color: '#fff' },
+  segChip: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 8, backgroundColor: PELE.paper, alignItems: 'center' },
+  segChipOn: { borderColor: PELE.ink, backgroundColor: PELE.ink },
+  segChipTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  segChipTxtOn: { color: PELE.onInk },
 
   // Disclosure "Casos especiais (FTL)"
-  advHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 14, backgroundColor: C.card },
-  advHeadTxt: { flex: 1, fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
-  advDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.brand },
-  advBody: { borderWidth: 1, borderColor: C.line, borderTopWidth: 0, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, marginTop: -2, paddingHorizontal: 13, paddingBottom: 13, backgroundColor: C.soft },
+  advHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, backgroundColor: PELE.paper },
+  advHeadTxt: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  advDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.yellow },
+  advBody: { borderWidth: 1, borderColor: PELE.line, borderTopWidth: 0, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, marginTop: -2, paddingHorizontal: 13, paddingBottom: 13, backgroundColor: PELE.soft },
   advRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 13 },
-  advDivider: { borderTopWidth: 1, borderTopColor: C.line, marginTop: 13 },
-  advTit: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
-  advSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub, marginTop: 2 },
+  advDivider: { borderTopWidth: 1, borderTopColor: PELE.line, marginTop: 13 },
+  advTit: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  advSub: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 2 },
   advInset: { marginTop: 10, paddingLeft: 2 },
-  advFieldLbl: { fontSize: 11, fontFamily: FONT.bold, color: C.sub, marginBottom: 6 },
-  advHint: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 8, lineHeight: 15 },
-  advPreview: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line },
-  advPreviewLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
-  advPreviewVal: { fontSize: 15, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
-  advPreviewArrow: { color: C.sub },
+  advFieldLbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey, marginBottom: 6 },
+  advHint: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 8, lineHeight: 15 },
+  advPreview: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: PELE.line },
+  advPreviewLbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  advPreviewVal: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ink, fontVariant: ['tabular-nums'] },
+  advPreviewArrow: { color: PELE.grey },
 });

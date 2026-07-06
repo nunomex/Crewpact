@@ -104,7 +104,10 @@ export default function EscalaScreen({ navigation, route }) {
     if (n && n !== lastNewDuty.current) {
       lastNewDuty.current = n;
       const t0 = new Date(); setMonthDate(new Date(t0.getFullYear(), t0.getMonth(), 1));
-      setDutyDate(isoDay());
+      const today = isoDay();
+      // O FAB CRIA sempre um serviço novo → mostra o índice de tipos. Dia com serviço → ACRESCENTA (append); vazio → primário.
+      setDutyAppend(!!(duties[today] && !duties[today].deleted));
+      setDutyDate(today);
     }
   }, [route.params?.newDuty]);
 
@@ -166,7 +169,7 @@ export default function EscalaScreen({ navigation, route }) {
   // Hub de importar (mini-fab / cartão "IR" / arranque) → escolher fonte; depois abre o "Confirmar import".
   const openHub = () => { select(); setHubOpen(true); };
   const openImport = (src) => { setImportSource(src || 'calendar'); setHubOpen(false); setImportOpen(true); };
-  const addManual = () => { select(); setHubOpen(false); setDutyDate(isoDay()); };
+  const addManual = () => { select(); setHubOpen(false); const today = isoDay(); setTimeout(() => { setDutyAppend(!!(duties[today] && !duties[today].deleted)); setDutyDate(today); }, 340); };   // criar serviço novo (índice); dia ocupado → append. Sequenciado p/ não travar (Modal→Modal)
 
   // ── € (cêntimos, NUNCA arredonda — money-no-rounding) ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
@@ -270,6 +273,8 @@ export default function EscalaScreen({ navigation, route }) {
     return (k === 'standby_airport' || k === 'standby_home') ? 'SBY' : k === 'positioning' ? 'POS' : k === 'office' ? 'OFC' : k === 'training' ? 'FRM' : k === 'reserve' ? 'RES' : '•';
   };
   const openDay = (iso) => { select(); setSecExpand(false); setDayIso(iso); };
+  // Fecha a sheet do dia (Modal) e só DEPOIS abre o form (Modal) — 2 Modais ao mesmo tempo TRAVAM no iOS.
+  const afterSheet = (fn) => { setDayIso(null); setTimeout(fn, 340); };
   // Dia aberto na sheet de detalhe: o duty NÃO apagado desse dia (null = folga real) — o MESMO
   // critério da grelha, senão um serviço sem report_time abria o ramo "Folga" (mentira).
   const dayDuty = (dayIso && duties[dayIso] && !duties[dayIso].deleted) ? duties[dayIso] : null;
@@ -537,7 +542,7 @@ export default function EscalaScreen({ navigation, route }) {
                   <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
                 </View>
               )}
-              <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} activeOpacity={0.8} style={s.dsAdd}>
+              <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(false); setDutyDate(iso); }); }} activeOpacity={0.8} style={s.dsAdd}>
                 <Icon name="plus" size={16} color={PELE.ink} />
                 <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
               </TouchableOpacity>
@@ -619,7 +624,7 @@ export default function EscalaScreen({ navigation, route }) {
                 {/* Serviço EXTRA (idx>0): editar/apagar individual (a primária trata-se nos botões de baixo). */}
                 {multi && idx > 0 ? (
                   <View style={s.dsSvcActs}>
-                    <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyEditExtra(idx - 1); setDutyDate(iso); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
+                    <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(false); setDutyEditExtra(idx - 1); setDutyDate(iso); }); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
                       <Icon name="edit" size={14} color={PELE.ink} /><Text style={s.dsSvcActTxt}>{l('Editar', 'Edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { const iso = dayIso, ix = idx - 1; Alert.alert(l('Apagar serviço', 'Delete service'), l('Apagar este serviço do dia? Os outros mantêm-se.', 'Delete this service? The others stay.'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeDutyService(iso, ix) }]); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
@@ -704,14 +709,14 @@ export default function EscalaScreen({ navigation, route }) {
               )) : null}
               {hotelEl}
               <View style={s.dsBtns}>
-                <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(false); setDutyDate(iso); }} activeOpacity={0.85} style={s.dsBtnGhost} accessibilityRole="button" accessibilityLabel={l('Editar', 'Edit')}>
+                <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(false); setDutyDate(iso); }); }} activeOpacity={0.85} style={s.dsBtnGhost} accessibilityRole="button" accessibilityLabel={l('Editar', 'Edit')}>
                   <Icon name="edit" size={16} color={PELE.ink} /><Text style={s.dsBtnGhostTxt}>{l('Editar', 'Edit')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); navigation.navigate('DutyDetail', { date: iso }); }} activeOpacity={0.85} style={s.dsBtnPrimary} accessibilityRole="button" accessibilityLabel={l('Ver tudo', 'See all')}>
+                <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => navigation.navigate('DutyDetail', { date: iso })); }} activeOpacity={0.85} style={s.dsBtnPrimary} accessibilityRole="button" accessibilityLabel={l('Ver tudo', 'See all')}>
                   <Text style={s.dsBtnPrimaryTxt}>{l('Ver tudo', 'See all')}</Text><Icon name="chevron" size={15} color={PELE.yellow} />
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => { const iso = dayIso; setDayIso(null); setDutyAppend(true); setDutyDate(iso); }} activeOpacity={0.8} style={s.dsAdd}>
+              <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(true); setDutyDate(iso); }); }} activeOpacity={0.8} style={s.dsAdd}>
                 <Icon name="plus" size={16} color={PELE.ink} />
                 <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
               </TouchableOpacity>
