@@ -1,31 +1,80 @@
-import React, { useRef, useContext, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Alert, Share, Platform } from 'react-native';
+import React, { useRef, useContext, useState, useEffect } from 'react';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Alert, Share, Platform, Dimensions } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import Icon from './Icon';
 import PrimaryButton from './PrimaryButton';
 import { PELE, PELE_FONT } from '../data/constants';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 import { createDayShare } from '../data/shareDay';
+import { airportInfo } from '../data/airports';
+import { fetchStationWx, wxDigest, wxSymbol } from '../data/weather';
 
 // "Enviar um voo a uma pessoa" (modelo B) — pré-visualiza o cartão do voo (imagem) e, ao enviar:
 //   1) cria o LINK AO VIVO (24h) desse voo (createDayShare)
 //   2) captura o cartão em PNG (view-shot)
 //   3) faz UM envio pela folha do sistema: imagem + link na legenda
 //   4) avisa (onSent) para o Perfil registar a partilha na pessoa.
-// Cartão em ink fixo (cores iguais para todos). Sem tripulação, sem escala.
-const INK = '#141414';
-const SUB = 'rgba(255,255,255,0.60)';
-const LINE = 'rgba(255,255,255,0.14)';
+// CARTÃO editorial "destination-hero" (poster): destino GIGANTE + fantasma do código +
+// tira de dados (VOO · CHEGOU · DURAÇÃO · TEMPO). Cores FIXAS (sai igual na imagem) ·
+// auto dia/noite pela hora de chegada · sem tripulação/escala/URL. O TEMPO do destino é
+// buscado sozinho (MET Norway, via Edge); a DURAÇÃO vem calculada (hora-bloco, fusos certos).
 
-export default function FlightShareCard({ visible, onClose, dep, arr, depTime, arrTime, flightNo, dateLabel, sectors, date, legs, personLabel, onSent }) {
+export default function FlightShareCard({ visible, onClose, dep, arr, depTime, arrTime, flightNo, dateLabel, sectors, duration, date, legs, personLabel, onSent }) {
   const { lang } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const shotRef = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [wx, setWx] = useState(null);   // { c, sym } tempo AGORA no destino (ou null)
+
+  // Destino → cidade (ex.: CDG → Paris). Limpa o parêntesis do catálogo
+  // ("Paris (Roissy-en-France…)" → "Paris"). Sem cidade? cai no código.
+  const info = airportInfo(arr);
+  const city = ((info && info.city) || '').split(' (')[0].trim() || arr || '—';
+
+  // Data no canto (como o mockup): "06 JUL 2026" (2 díg · mês curto MAIÚSC · ano).
+  // À parte do dateLabel (que é a data amigável do registo de partilhas).
+  const cardDate = (() => {
+    const d = new Date(`${date}T00:00:00`);
+    if (isNaN(d.getTime())) return String(dateLabel || '').toUpperCase();
+    return d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\./g, '').toUpperCase();
+  })();
+
+  // Tempo AGORA no destino (assíncrono, cacheado 45 min na Edge). Só com a folha aberta.
+  useEffect(() => {
+    let alive = true;
+    setWx(null);
+    if (!visible || !arr) return () => { alive = false; };
+    (async () => {
+      const raw = await fetchStationWx(arr);
+      if (!alive || !raw) return;
+      const dig = wxDigest(raw.series);
+      if (dig && dig.nowC != null) setWx({ c: dig.nowC, sym: wxSymbol(dig.nowSym, lang).emoji });
+    })();
+    return () => { alive = false; };
+  }, [visible, arr, lang]);
+
+  // Tema do cartão pela hora de CHEGADA (dia 07–19 → cream · resto → teal escuro).
+  const night = (() => { const h = parseInt(String(arrTime || '').split(':')[0], 10); return Number.isFinite(h) ? (h < 7 || h >= 20) : false; })();
+  const TH = night
+    ? { bg: '#0C3A3B', ink: '#FFFFFF', sub: 'rgba(255,255,255,0.60)', ghost: 'rgba(255,255,255,0.06)', line: 'rgba(255,255,255,0.16)' }
+    : { bg: '#F4F1E8', ink: '#141414', sub: '#8A8574', ghost: 'rgba(20,20,20,0.05)', line: 'rgba(20,20,20,0.14)' };
+
+  // Dimensões FIXAS (4:5) — capturas fiáveis no view-shot e escala como o mockup.
+  const CW = Math.min(Dimensions.get('window').width - 40, 380);
+  const CH = Math.round(CW * 1.25);
+  const ghostFs = Math.round(CW * 0.72);
+  const cityFs = Math.round(CW * 0.28);
+
+  // Tira de dados = linha do tempo do voo (PARTIDA · CHEGADA · DURAÇÃO · TEMPO no destino).
+  // O nº do voo NÃO entra aqui — já está em cima, na linha da rota.
+  const cells = [
+    [l('Partida', 'Departure'), depTime || '—'],
+    [l('Chegada', 'Arrival'), arrTime || '—'],
+    [l('Duração', 'Duration'), duration || '—'],
+    [l('Tempo', 'Weather'), wx ? `${wx.c}° ${wx.sym}` : '—'],
+  ];
 
   const send = async () => {
     if (busy) return;
@@ -38,11 +87,9 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
       return;
     }
     try {
-      // 2) imagem
       const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
       const fileUri = uri.startsWith('file') ? uri : `file://${uri}`;
       const caption = l(`O meu voo de hoje — ${dep} → ${arr}. Acompanha a chegada ao vivo:`, `My flight today — ${dep} → ${arr}. Follow the arrival live:`);
-      // 3) UM envio: imagem + link na legenda (iOS mostra os dois na folha)
       await Share.share(Platform.OS === 'android'
         ? { message: `${caption} ${res.url}`, url: fileUri }
         : { url: fileUri, message: `${caption} ${res.url}` });
@@ -59,36 +106,29 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
         <View style={s.top}>
           <Text style={s.topTitle} numberOfLines={1}>{personLabel ? l(`Enviar à ${personLabel}`, `Send to ${personLabel}`) : l('O teu voo', 'Your flight')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
-            <Icon name="close" size={20} color={C.text} />
+            <Icon name="close" size={20} color={PELE.ink} />
           </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-          {/* O CARTÃO (capturado tal e qual — ink fixo, não segue o tema) */}
-          <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }} style={s.card}>
-            <View style={s.head}>
-              <Text style={s.brand}>CrewPact</Text>
-              <Text style={s.date}>{dateLabel}</Text>
+          {/* O CARTÃO — capturado tal e qual (cores fixas, não segue o tema da app) */}
+          <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }} style={[s.card, { width: CW, height: CH, backgroundColor: TH.bg }]}>
+            {/* Fantasma = ORIGEM (a viagem: origem esbatida → destino brilha no herói). */}
+            <Text style={[s.ghost, { fontSize: ghostFs, lineHeight: ghostFs, top: -Math.round(CW * 0.02), color: TH.ghost }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4} allowFontScaling={false}>{dep || ''}</Text>
+            <View style={s.cTop}>
+              <View style={s.brandRow}><View style={s.cDot} /><Text style={[s.cBrand, { color: TH.ink }]}>CrewPact</Text></View>
+              <Text style={[s.cDate, { color: TH.sub }]} numberOfLines={1}>{cardDate}</Text>
             </View>
-            <Text style={s.eyebrow} numberOfLines={1}>{l('VOO', 'FLIGHT')}{flightNo ? ` · ${flightNo}` : ''}</Text>
-            <View style={s.routeRow}>
-              <View style={s.end}>
-                <Text style={s.code}>{dep || '—'}</Text>
-                {depTime ? <Text style={s.time}>{depTime}</Text> : null}
+            <View style={s.cHero}>
+              <Text style={[s.cCity, { fontSize: cityFs, lineHeight: cityFs, color: TH.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} allowFontScaling={false}>{city}</Text>
+              <Text style={[s.cRt, { color: TH.sub }]} numberOfLines={1}>{dep} → {arr}{flightNo ? `   ·   ${flightNo}` : ''}</Text>
+              <View style={[s.cStrip, { borderTopColor: TH.line }]}>
+                {cells.map(([k, v]) => (
+                  <View key={k} style={s.cCell}>
+                    <Text style={[s.cK, { color: TH.sub }]} numberOfLines={1}>{k.toUpperCase()}</Text>
+                    <Text style={[s.cV, { color: TH.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>{v}</Text>
+                  </View>
+                ))}
               </View>
-              <View style={s.mid}>
-                <View style={s.line} />
-                <View style={s.planeWrap}><Icon name="plane" size={18} color={PELE.yellow} /></View>
-                <View style={s.line} />
-              </View>
-              <View style={[s.end, { alignItems: 'flex-end' }]}>
-                <Text style={s.code}>{arr || '—'}</Text>
-                {arrTime ? <Text style={s.time}>{arrTime}</Text> : null}
-              </View>
-            </View>
-            <View style={s.foot}>
-              <View style={s.dot} />
-              <Text style={s.footTxt}>crewpact.app</Text>
-              {sectors ? <Text style={[s.footTxt, { marginLeft: 'auto' }]}>{sectors} {l(sectors === 1 ? 'setor' : 'setores', sectors === 1 ? 'sector' : 'sectors')}</Text> : null}
             </View>
           </ViewShot>
 
@@ -100,27 +140,27 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: C.canvas },
+const s = StyleSheet.create({
+  // Chrome (pele)
+  page: { flex: 1, backgroundColor: PELE.paper },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 58, paddingBottom: 6 },
-  topTitle: { fontSize: 17, fontFamily: PELE_FONT.bodyBold, color: C.text, flex: 1, marginRight: 12 },
-  scroll: { padding: 20, paddingBottom: 40 },
+  topTitle: { fontSize: 17, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, flex: 1, marginRight: 12 },
+  scroll: { padding: 20, paddingBottom: 40, alignItems: 'center' },
+  hint: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 19, marginTop: 16, alignSelf: 'stretch' },
 
-  card: { backgroundColor: INK, borderRadius: 24, padding: 24, overflow: 'hidden' },
-  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  brand: { fontSize: 16, fontFamily: PELE_FONT.display, color: '#fff', letterSpacing: -0.3 },
-  date: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: SUB },
-  eyebrow: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.2, textTransform: 'uppercase', color: PELE.yellow, marginTop: 22 },
-  routeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  end: { minWidth: 92 },
-  code: { fontSize: 46, lineHeight: 48, fontFamily: PELE_FONT.display, color: '#fff', letterSpacing: -1 },
-  time: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: SUB, marginTop: 4 },
-  mid: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, marginBottom: 16 },
-  line: { flex: 1, height: 1.5, backgroundColor: LINE },
-  planeWrap: { paddingHorizontal: 8 },
-  foot: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 22, borderTopWidth: 1, borderTopColor: LINE, paddingTop: 14 },
-  dot: { width: 8, height: 8, borderRadius: 3, backgroundColor: PELE.yellow },
-  footTxt: { fontSize: 11.5, fontFamily: PELE_FONT.bodyBold, color: SUB, letterSpacing: 0.3 },
-
-  hint: { fontSize: 13, color: C.sub, fontFamily: PELE_FONT.body, lineHeight: 19, marginTop: 14 },
+  // Cartão editorial (dimensões fixas por inline; cores por inline)
+  card: { borderRadius: 24, padding: 22, overflow: 'hidden', justifyContent: 'space-between' },
+  ghost: { position: 'absolute', left: 0, right: 2, textAlign: 'right', fontFamily: PELE_FONT.displayHeavy, letterSpacing: -6 },
+  cTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 2 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: PELE.yellow },
+  cBrand: { fontFamily: PELE_FONT.display, fontSize: 17, letterSpacing: -0.2 },
+  cDate: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5 },
+  cHero: { zIndex: 2 },
+  cCity: { fontFamily: PELE_FONT.displayHeavy, letterSpacing: -3 },
+  cRt: { fontFamily: PELE_FONT.bodyBold, fontSize: 11, letterSpacing: 4, marginTop: 10 },
+  cStrip: { flexDirection: 'row', gap: 6, marginTop: 18, paddingTop: 15, borderTopWidth: 1 },
+  cCell: { flex: 1 },
+  cK: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 8, letterSpacing: 0.8 },
+  cV: { fontFamily: PELE_FONT.display, fontSize: 19, letterSpacing: -0.3, marginTop: 3 },
 });

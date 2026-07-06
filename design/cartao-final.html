@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Cartão de partilha — editorial refinado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0c;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:840px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:340px}
+  .cap .t{font-family:'Barlow Condensed';font-size:16px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+
+  /* ── moldura do cartão · cores FIXAS (vira imagem PNG) ── */
+  .card{position:relative;border-radius:24px;overflow:hidden;box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
+  .post{width:340px;height:425px}   /* 4:5 */
+  .story{width:300px;height:534px}  /* 9:16 */
+
+  /* FANTASMA — a assinatura da app (código do destino, gigante, esbatido) */
+  .ghost{position:absolute;right:-14px;top:-30px;font-family:'Barlow Condensed';font-weight:800;font-size:280px;line-height:.8;letter-spacing:-10px;pointer-events:none;z-index:1}
+  .pad{position:absolute;inset:0;padding:22px 22px;display:flex;flex-direction:column;z-index:2}
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  .date{font-family:'Space Mono';font-size:9px;letter-spacing:1.5px}
+  .pill{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:18px;padding:6px 12px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .pill .pd{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .hero{margin-top:auto}
+  .city{font-family:'Barlow Condensed';font-weight:900;font-size:96px;line-height:.82;letter-spacing:-3px;margin-left:-3px}
+  .story .city{font-size:108px}
+  .rt{font-family:'Space Mono';font-size:11px;letter-spacing:5px;margin-top:12px}
+  .strip{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:20px;padding-top:15px}
+  .cell .k{font-family:'Space Mono';font-size:7.5px;letter-spacing:1px}
+  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:17px;margin-top:3px}
+  .foot{margin-top:14px;font-family:'Space Mono';font-size:8.5px;letter-spacing:3px;text-align:center}
+
+  /* ── DIA (cream editorial) ── */
+  .day{background:#F4F1E8;color:#141414}
+  .day:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 4%,rgba(255,184,0,.14),transparent 55%);z-index:1}
+  .day .ghost{color:rgba(20,20,20,.05)}
+  .day .brand{color:#141414}.day .date{color:#8a8574}
+  .day .city{color:#141414}
+  .day .rt{color:#8a8574}
+  .day .strip{border-top:1px solid rgba(20,20,20,.14)}
+  .day .cell .k{color:#a29a86}.day .cell .v{color:#141414}
+  .day .foot{color:#a29a86}.day .foot b{color:#B9820A}
+  .pill.ok{background:rgba(17,138,85,.12);color:#0E7A4B}
+  .pill.air{background:rgba(255,184,0,.18);color:#B9820A}
+
+  /* ── NOITE (deep teal editorial) ── */
+  .night{background:linear-gradient(165deg,#0d3a3b 0%,#08262c 60%,#061a20 100%);color:#eaf3f2}
+  .night:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 4%,rgba(255,184,0,.18),transparent 52%);z-index:1}
+  .night .ghost{color:rgba(255,255,255,.055)}
+  .night .brand{color:#fff}.night .date{color:rgba(255,255,255,.5)}
+  .night .city{color:#fff;text-shadow:0 2px 26px rgba(0,0,0,.4)}
+  .night .rt{color:rgba(255,255,255,.6)}
+  .night .strip{border-top:1px solid rgba(255,255,255,.16)}
+  .night .cell .k{color:rgba(255,255,255,.55)}.night .cell .v{color:#fff}
+  .night .foot{color:rgba(255,255,255,.5)}.night .foot b{color:#FFB800}
+  .night .pill.ok{background:rgba(70,201,138,.18);color:#7EE6B0}
+  .night .pill.air{background:rgba(255,184,0,.2);color:#FFC93a}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Cartão — editorial "destination-hero", refinado</h1>
+    <p>O destino gigante é o herói (lê-se em miniatura). Assinatura da app = o <b>fantasma</b> do código atrás. <b>Auto dia/noite</b> pela hora de chegada. <b>Tira de dados</b> por baixo. Estado <b>Aterrou ✓</b> (o caso normal) ou <b>No ar</b>. Tempo e cidade reais.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- ATERROU · DIA -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>Aterrou</b> · dia · post 4:5</div><div class="d">O caso normal (mandas ao aterrar). Cream, selo verde.</div></div>
+      <div class="card post day">
+        <div class="ghost">CDG</div>
+        <div class="pad">
+          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><div class="date">06 JUL 2026</div></div>
+          <span class="pill ok"><span class="pd"></span>Aterrou · 14:28</span>
+          <div class="hero">
+            <div class="city">Paris</div>
+            <div class="rt">L I S → C D G · EJU1234</div>
+            <div class="strip">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell"><div class="k">CHEGOU</div><div class="v">14:28</div></div>
+              <div class="cell"><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">TEMPO</div><div class="v">21° ☀</div></div>
+            </div>          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATERROU · NOITE -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>Aterrou</b> · noite · post</div><div class="d">Mesmo cartão, chegada à noite → tema escuro (auto).</div></div>
+      <div class="card post night">
+        <div class="ghost">CDG</div>
+        <div class="pad">
+          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><div class="date">06 JUL 2026</div></div>
+          <span class="pill ok"><span class="pd"></span>Aterrou · 23:02</span>
+          <div class="hero">
+            <div class="city">Paris</div>
+            <div class="rt">L I S → C D G · EJU1234</div>
+            <div class="strip">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell"><div class="k">CHEGOU</div><div class="v">23:02</div></div>
+              <div class="cell"><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">TEMPO</div><div class="v">13° 🌙</div></div>
+            </div>          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NO AR · DIA -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>No ar</b> · dia · post</div><div class="d">Variante em progresso (selo âmbar, chegada estimada).</div></div>
+      <div class="card post day">
+        <div class="ghost">CDG</div>
+        <div class="pad">
+          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><div class="date">06 JUL 2026</div></div>
+          <span class="pill air"><span class="pd"></span>No ar · aterra ~14:35</span>
+          <div class="hero">
+            <div class="city">Paris</div>
+            <div class="rt">L I S → C D G · EJU1234</div>
+            <div class="strip">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell"><div class="k">CHEGADA</div><div class="v">~14:35</div></div>
+              <div class="cell"><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">TEMPO</div><div class="v">21° ☀</div></div>
+            </div>          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORY 9:16 · NOITE -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>Story</b> · 9:16 · noite</div><div class="d">Formato ecrã-inteiro (stories). Mesma linguagem.</div></div>
+      <div class="card story night">
+        <div class="ghost" style="font-size:320px;top:-10px">CDG</div>
+        <div class="pad">
+          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div><div class="date">06 JUL 2026</div></div>
+          <span class="pill ok"><span class="pd"></span>Aterrou · 23:02</span>
+          <div class="hero">
+            <div class="city">Paris</div>
+            <div class="rt">L I S → C D G · EJU1234</div>
+            <div class="strip">
+              <div class="cell"><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="cell"><div class="k">CHEGOU</div><div class="v">23:02</div></div>
+              <div class="cell"><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div class="cell"><div class="k">TEMPO</div><div class="v">13° 🌙</div></div>
+            </div>          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

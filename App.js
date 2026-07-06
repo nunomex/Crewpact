@@ -70,7 +70,6 @@ import BiometricOfferScreen from './screens/BiometricOfferScreen';
 import HomeScreen         from './screens/HomeScreen';
 import EscalaScreen       from './screens/EscalaScreen';
 import DutyDetailScreen   from './screens/DutyDetailScreen';
-import FtlHubScreen       from './screens/FtlHubScreen';
 import InfoScreen         from './screens/InfoScreen';   // PORT pele: aba FTL/AE → INFO (incremental)
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';

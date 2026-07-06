@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Cartão de partilha do voo — 5 variações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0c;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:820px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:340px}
+  .cap .n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#FFB800;color:#141414;font-family:'Barlow Condensed';font-weight:800;font-size:14px;margin-bottom:8px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.7px}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+
+  /* moldura comum do cartão — 4:5 (post). Cores FIXAS: sai igual na imagem. */
+  .card{position:relative;width:340px;height:425px;border-radius:24px;overflow:hidden;box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
+  .brandBar{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800;flex:0 0 auto}
+
+  /* ═══════ 1 · BOARDING PASS (brutalista, papel) ═══════ */
+  .bp{background:#F4F1E8;color:#141414;font-family:'Space Mono',monospace}
+  .bp .pad{position:absolute;inset:0;padding:20px 22px;display:flex;flex-direction:column}
+  .bp .brandBar{color:#141414}
+  .bp .head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #141414;padding-bottom:12px}
+  .bp .seq{font-size:9px;letter-spacing:1.5px;font-weight:700;opacity:.7}
+  .bp .route{display:flex;align-items:center;justify-content:space-between;margin-top:22px}
+  .bp .code{font-family:'Barlow Condensed';font-weight:800;font-size:66px;line-height:.8;letter-spacing:-2px}
+  .bp .arrow{flex:1;height:2px;background:repeating-linear-gradient(90deg,#141414 0 7px,transparent 7px 13px);margin:0 12px;position:relative}
+  .bp .arrow:after{content:"";position:absolute;right:-2px;top:-4px;border-left:9px solid #141414;border-top:5px solid transparent;border-bottom:5px solid transparent}
+  .bp .cities{display:flex;justify-content:space-between;font-size:9px;letter-spacing:1px;font-weight:700;margin-top:6px}
+  .bp .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 8px;margin-top:26px}
+  .bp .k{font-size:8px;letter-spacing:1px;opacity:.6}
+  .bp .v{font-size:15px;font-weight:700;margin-top:3px;font-family:'Barlow Condensed'}
+  .bp .stub{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;border-top:2px dashed #141414;padding-top:14px;position:relative}
+  .bp .notch{position:absolute;width:20px;height:20px;border-radius:50%;background:#0a0a0c;top:-10px}
+  .bp .bars{height:44px;flex:1;margin-right:14px;background:repeating-linear-gradient(90deg,#141414 0 2px,transparent 2px 3px,#141414 3px 6px,transparent 6px 9px,#141414 9px 10px,transparent 10px 13px)}
+  .bp .flag{font-family:'Barlow Condensed';font-weight:800;font-size:13px;background:#FFB800;padding:3px 8px;letter-spacing:.5px}
+
+  /* ═══════ 2 · DEPARTURES BOARD (split-flap, âmbar) ═══════ */
+  .db{background:#0c0d0f;color:#FFB800;font-family:'Space Mono',monospace}
+  .db:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);pointer-events:none}
+  .db .pad{position:absolute;inset:0;padding:20px 22px;display:flex;flex-direction:column}
+  .db .brandBar{color:#f3f3ee}
+  .db .head{display:flex;justify-content:space-between;align-items:center;color:#7d7f74;font-size:9px;letter-spacing:1.5px;border-bottom:1px solid rgba(255,184,0,.25);padding-bottom:12px}
+  .db .board{margin-top:20px;display:flex;flex-direction:column;gap:7px}
+  .db .flap{display:flex;align-items:center;gap:4px}
+  .db .ch{background:linear-gradient(180deg,#1c1d16 0 49%,#141509 51% 100%);border:1px solid #000;border-radius:3px;width:30px;height:40px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:27px;color:#FFC93a;box-shadow:inset 0 -1px 0 rgba(255,255,255,.06);position:relative}
+  .db .ch:after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.55)}
+  .db .ch.sm{width:22px;height:32px;font-size:19px}
+  .db .rowlab{font-size:8px;letter-spacing:1.5px;color:#7d7f74;margin:14px 0 5px}
+  .db .line{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:1px;color:#e9e6d8;padding:7px 0;border-bottom:1px solid rgba(255,184,0,.14)}
+  .db .line b{color:#FFB800}
+  .db .status{margin-top:auto;display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:1px;color:#46C98A}
+  .db .status .blink{width:9px;height:9px;border-radius:50%;background:#46C98A;box-shadow:0 0 10px #46C98A}
+  .db .foot{margin-top:12px;font-size:8px;letter-spacing:3px;color:#7d7f74;text-align:center}
+
+  /* ═══════ 3 · EDITORIAL POSTER (revista) ═══════ */
+  .ed{background:#12403f;color:#f2efe6}
+  .ed:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 85% 5%,rgba(255,184,0,.20),transparent 55%),radial-gradient(90% 70% at 10% 100%,rgba(0,0,0,.4),transparent 60%)}
+  .ed .pad{position:absolute;inset:0;padding:22px 22px;display:flex;flex-direction:column}
+  .ed .brandBar{color:#f2efe6}
+  .ed .idx{margin-top:20px;font-family:'Space Mono';font-size:10px;letter-spacing:3px;opacity:.72}
+  .ed .hero{margin-top:auto}
+  .ed .big{font-family:'Barlow Condensed';font-weight:900;font-size:104px;line-height:.82;letter-spacing:-3px;color:#fff;margin-left:-4px}
+  .ed .big span{color:#FFB800}
+  .ed .rt{font-family:'Space Mono';font-size:12px;letter-spacing:6px;margin-top:14px;opacity:.9}
+  .ed .meta{display:flex;justify-content:space-between;margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.22)}
+  .ed .meta .k{font-family:'Space Mono';font-size:8px;letter-spacing:1.5px;opacity:.6}
+  .ed .meta .v{font-family:'Barlow Condensed';font-weight:700;font-size:18px;margin-top:2px}
+  .ed .stamp{position:absolute;right:18px;top:120px;font-family:'Barlow Condensed';font-weight:800;font-size:13px;color:#141414;background:#FFB800;padding:4px 9px;transform:rotate(6deg);letter-spacing:.5px}
+
+  /* ═══════ 4 · GREAT-CIRCLE MAP (cartográfico, premium) ═══════ */
+  .gc{background:#070b12;color:#dfe7f0}
+  .gc:before{content:"";position:absolute;inset:0;background:
+    linear-gradient(90deg,rgba(120,160,220,.09) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(180deg,rgba(120,160,220,.09) 1px,transparent 1px) 0 0/40px 40px;
+    mask:radial-gradient(120% 100% at 50% 40%,#000 55%,transparent 100%)}
+  .gc:after{content:"";position:absolute;inset:0;background:radial-gradient(80% 55% at 50% 30%,rgba(255,184,0,.10),transparent 70%)}
+  .gc .pad{position:absolute;inset:0;padding:20px 22px;display:flex;flex-direction:column}
+  .gc .brandBar{color:#eaf1fb}
+  .gc .head{display:flex;justify-content:space-between;color:#6f7f97;font-family:'Space Mono';font-size:8.5px;letter-spacing:1.5px;margin-top:4px}
+  .gc .map{position:relative;margin-top:8px;height:150px}
+  .gc .map svg{width:100%;height:100%;overflow:visible}
+  .gc .lab{position:absolute;font-family:'Space Mono';font-size:8px;letter-spacing:1px;color:#8fa0b8}
+  .gc .city{margin-top:auto}
+  .gc .nm{font-family:'Barlow Condensed';font-weight:800;font-size:58px;line-height:.85;letter-spacing:-1.5px;color:#fff}
+  .gc .rt{font-family:'Space Mono';font-size:11px;letter-spacing:4px;color:#FFB800;margin-top:8px}
+  .gc .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(143,160,184,.2)}
+  .gc .k{font-family:'Space Mono';font-size:7.5px;letter-spacing:1.3px;color:#6f7f97}
+  .gc .v{font-family:'Barlow Condensed';font-weight:700;font-size:16px;margin-top:2px;color:#fff}
+  .gc .r{text-align:right}
+  .gc .foot{margin-top:12px;font-family:'Space Mono';font-size:8px;letter-spacing:3px;color:#6f7f97;text-align:center}
+
+  /* ═══════ 5 · COCKPIT HUD / PFD (instrumento) ═══════ */
+  .hd{background:#04110a;color:#5CFF9E;font-family:'Space Mono',monospace}
+  .hd:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(92,255,158,.05) 0 1px,transparent 1px 4px);pointer-events:none}
+  .hd:after{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 45%,rgba(92,255,158,.10),transparent 75%)}
+  .hd .pad{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column}
+  .hd .brandBar{color:#d8ffe8}
+  .hd .head{display:flex;justify-content:space-between;color:#3ea877;font-size:8.5px;letter-spacing:1.5px;margin-top:3px}
+  .hd .adi{position:relative;margin:14px auto 0;width:150px;height:150px}
+  .hd .rd{position:absolute;font-size:8px;letter-spacing:1px;color:#8affc4}
+  .hd .route{display:flex;align-items:baseline;justify-content:center;gap:12px;margin-top:14px}
+  .hd .code{font-family:'Barlow Condensed';font-weight:700;font-size:40px;color:#d8ffe8;letter-spacing:-1px}
+  .hd .code small{font-size:15px;color:#3ea877}
+  .hd .tape{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(92,255,158,.28);padding-top:12px;text-align:center}
+  .hd .tape .k{font-size:7px;letter-spacing:1px;color:#3ea877}
+  .hd .tape .v{font-family:'Barlow Condensed';font-weight:700;font-size:17px;color:#d8ffe8;margin-top:2px}
+  .hd .amber{color:#FFB800}
+  .hd .foot{margin-top:11px;font-size:8px;letter-spacing:3px;color:#3ea877;text-align:center}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Cartão de partilha do voo — 5 direções "brutais"</h1>
+    <p>O instantâneo (PNG, view-shot) que mandas quando aterras. Cinco linguagens distintas, todas na <b>nossa pele</b> (Barlow Condensed · Space Mono · amarelo). Mesmos dados: <b>LIS → CDG · Paris · EJU1234 · 21° ☀</b>. Formato post 4:5. Diz-me o número que queres (ou mistura).</p>
+  </div>
+
+  <div class="row">
+
+    <!-- 1 · BOARDING PASS -->
+    <div class="item">
+      <div class="cap"><div class="n">1</div><div class="t">Cartão de embarque</div><div class="d">Brutalista, papel, monospace. Picotado + código de barras.</div></div>
+      <div class="card bp">
+        <div class="pad">
+          <div class="head"><div class="brandBar"><span class="bdot"></span>CrewPact</div><div class="seq">SEQ 042 · 06 JUL</div></div>
+          <div class="route"><div class="code">LIS</div><div class="arrow"></div><div class="code">CDG</div></div>
+          <div class="cities"><span>LISBOA</span><span>PARIS</span></div>
+          <div class="grid">
+            <div><div class="k">VOO</div><div class="v">EJU1234</div></div>
+            <div><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+            <div><div class="k">CHEGADA</div><div class="v">14:05</div></div>
+          </div>
+          <div class="stub"><span class="notch" style="left:-32px"></span><span class="notch" style="right:-32px"></span>
+            <div class="bars"></div>
+            <div style="text-align:right"><div class="k" style="font-size:8px;opacity:.6">DESTINO</div><div class="flag">PARIS 21°</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · DEPARTURES BOARD -->
+    <div class="item">
+      <div class="cap"><div class="n">2</div><div class="t">Painel de partidas</div><div class="d">Split-flap âmbar sobre preto. Nostálgico de aeroporto.</div></div>
+      <div class="card db">
+        <div class="pad">
+          <div class="head"><div class="brandBar"><span class="bdot"></span>CrewPact</div><span>ARRIVALS · 06 JUL 2026</span></div>
+          <div class="rowlab">DESTINO</div>
+          <div class="board">
+            <div class="flap"><div class="ch">P</div><div class="ch">A</div><div class="ch">R</div><div class="ch">I</div><div class="ch">S</div></div>
+          </div>
+          <div class="line"><span>VOO <b>EJU1234</b></span><span>LIS › CDG</span></div>
+          <div class="line"><span>CHEGADA <b>14:05</b></span><span>2H20 · 21° ☀</span></div>
+          <div class="status"><span class="blink"></span>ATERROU · ON TIME</div>
+          <div class="foot">C R E W P A C T . A P P</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · EDITORIAL POSTER -->
+    <div class="item">
+      <div class="cap"><div class="n">3</div><div class="t">Poster editorial</div><div class="d">Revista. Cidade gigante a sangrar, refinado, muito ar.</div></div>
+      <div class="card ed">
+        <div class="pad">
+          <div class="brandBar"><span class="bdot"></span>CrewPact</div>
+          <div class="idx">Nº 042 — CHEGADA DE HOJE</div>
+          <div class="stamp">21° ☀</div>
+          <div class="hero">
+            <div class="big">PA<span>RI</span>S</div>
+            <div class="rt">L I S → C D G</div>
+            <div class="meta">
+              <div><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div><div class="k">CHEGADA</div><div class="v">14:05</div></div>
+              <div><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · GREAT-CIRCLE MAP -->
+    <div class="item">
+      <div class="cap"><div class="n">4</div><div class="t">Mapa great-circle</div><div class="d">Cartográfico, premium. Arco a brilhar sobre grelha lat/long.</div></div>
+      <div class="card gc">
+        <div class="pad">
+          <div class="brandBar"><span class="bdot"></span>CrewPact</div>
+          <div class="head"><span>38°46′N 009°08′W</span><span>49°00′N 002°32′E</span></div>
+          <div class="map">
+            <span class="lab" style="left:2%;bottom:8%">LIS</span>
+            <span class="lab" style="right:2%;top:2%">CDG</span>
+            <svg viewBox="0 0 300 150">
+              <path d="M14,132 Q150,-18 286,26" fill="none" stroke="rgba(255,184,0,.9)" stroke-width="2.4" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(255,184,0,.7))"/>
+              <circle cx="14" cy="132" r="5" fill="#FFB800"/>
+              <circle cx="286" cy="26" r="5" fill="#fff"/>
+              <circle cx="286" cy="26" r="11" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+              <g transform="translate(196,44) rotate(28)"><path fill="#fff" d="M11 1l1.6 6.5L20 10l-7.4 2.5L11 20l-1.6-7.5L2 10l7.4-2.5z" transform="scale(.9)"/></g>
+            </svg>
+          </div>
+          <div class="city">
+            <div class="nm">Paris</div>
+            <div class="rt">L I S → C D G</div>
+            <div class="grid">
+              <div><div class="k">VOO</div><div class="v">EJU1234</div></div>
+              <div class="r"><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div><div class="k">CHEGADA · LOCAL</div><div class="v">14:05</div></div>
+              <div class="r"><div class="k">DESTINO</div><div class="v">21° ☀</div></div>
+            </div>
+            <div class="foot">C R E W P A C T . A P P</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 · COCKPIT HUD -->
+    <div class="item">
+      <div class="cap"><div class="n">5</div><div class="t">HUD de cabine</div><div class="d">Instrumento. Horizonte artificial + leitura técnica verde.</div></div>
+      <div class="card hd">
+        <div class="pad">
+          <div class="brandBar"><span class="bdot"></span>CrewPact</div>
+          <div class="head"><span>FLT EJU1234</span><span>06 JUL · 14:05Z</span></div>
+          <div class="adi">
+            <svg viewBox="0 0 150 150" width="150" height="150">
+              <defs><clipPath id="c"><circle cx="75" cy="75" r="66"/></clipPath></defs>
+              <g clip-path="url(#c)">
+                <rect x="0" y="0" width="150" height="80" fill="#0a2e58"/>
+                <rect x="0" y="80" width="150" height="90" fill="#5a3a12"/>
+                <line x1="0" y1="80" x2="150" y2="80" stroke="#5CFF9E" stroke-width="2"/>
+                <path d="M30 55 h90 M40 100 h70" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+              </g>
+              <circle cx="75" cy="75" r="66" fill="none" stroke="rgba(92,255,158,.55)" stroke-width="1.5"/>
+              <path d="M40 75 h20 M90 75 h20 M75 6 v10" stroke="#FFB800" stroke-width="2.5"/>
+              <circle cx="75" cy="75" r="3" fill="#FFB800"/>
+            </svg>
+            <span class="rd" style="left:-2px;top:64px">HDG 041</span>
+            <span class="rd amber" style="right:-6px;top:64px" >FL350</span>
+          </div>
+          <div class="route"><span class="code">LIS <small>›</small> CDG</span></div>
+          <div class="tape">
+            <div><div class="k">FLIGHT</div><div class="v">EJU1234</div></div>
+            <div><div class="k">ENR</div><div class="v">2H20</div></div>
+            <div><div class="k">ETA LOC</div><div class="v amber">14:05</div></div>
+            <div><div class="k">DEST</div><div class="v">21°</div></div>
+          </div>
+          <div class="foot">C R E W P A C T . A P P</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

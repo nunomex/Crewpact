@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Switch, ScrollView, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, ActivityIndicator, Alert, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { Stepper } from './Stepper';
 import AirportRoute from './AirportRoute';
 import PrimaryButton from './PrimaryButton';

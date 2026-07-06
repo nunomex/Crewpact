@@ -1,15 +1,12 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OTPInput from '../components/OTPInput';
 import useTabBarSpace from '../hooks/useTabBarSpace';
-import PageHeader from '../components/PageHeader';
 import PrimaryButton from '../components/PrimaryButton';
-import Eyebrow from '../components/Eyebrow';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
@@ -17,19 +14,20 @@ import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { RADIUS, TYPE, FONT, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, TYPE, PELE, PELE_FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile, deleteAccount, reauthenticate, requestEmailChange, verifyEmailChange } from '../data/auth';
 import { Seg } from '../components/Stepper';
-import { AppContext, useTheme, isoDay } from '../data/appContext';
+import { AppContext, isoDay } from '../data/appContext';
 import { monthlyAe } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
 import { dataExportJson } from '../data/dataExport';
 import useFamilyLinks from '../hooks/useFamilyLinks';
 import { getFamilyShares, addFamilyShare, removeFamilyShare, removeFamilySharesForPerson } from '../data/familyShares';
 import FlightShareCard from '../components/FlightShareCard';
+import { legZulu } from '../data/zulu';
 
 // Inicial(is) para o avatar da tira da família: "Mãe"→M, "João Carlos"→JC.
 const familyInitials = (name) => {
@@ -38,8 +36,8 @@ const familyInitials = (name) => {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 };
 
-// Ionicons (do render antigo) → ícones da PELE.
-const ROW_IC = { 'ribbon-outline': 'rank', 'briefcase-outline': 'doc', 'location-outline': 'pin', 'calendar-outline': 'cal', 'sunny-outline': 'sun', 'school-outline': 'rank', 'airplane-outline': 'plane', 'time-outline': 'clock', 'language-outline': 'theme', 'contrast-outline': 'theme', 'notifications-outline': 'bell', 'lock-closed-outline': 'lock', 'mail-outline': 'mail', 'key-outline': 'lock', 'library-outline': 'book', 'shield-checkmark-outline': 'shield', 'bed-outline': 'bed', 'people-outline': 'fam', 'download-outline': 'download', 'trash-outline': 'trash', 'log-out-outline': 'logout', 'information-circle-outline': 'info' };
+// Nomes de ícone antigos (do render antigo) → ícones da PELE.
+const ROW_IC = { 'ribbon-outline': 'rank', 'briefcase-outline': 'doc', 'location-outline': 'pin', 'calendar-outline': 'cal', 'sunny-outline': 'sun', 'school-outline': 'rank', 'airplane-outline': 'plane', 'time-outline': 'clock', 'language-outline': 'globe', 'contrast-outline': 'theme', 'notifications-outline': 'bell', 'lock-closed-outline': 'lock', 'mail-outline': 'mail', 'key-outline': 'lock', 'library-outline': 'book', 'shield-checkmark-outline': 'shield', 'bed-outline': 'bed', 'people-outline': 'fam', 'download-outline': 'download', 'trash-outline': 'trash', 'log-out-outline': 'logout', 'information-circle-outline': 'info' };
 // Linha de definições (pele): ícone (.gi) + rótulo (+ sub) + à direita um segmento, valor+chevron, ou nada.
 function Row({ icon, label, sub, value, right, onPress, last, danger, s }) {
   const body = (
@@ -80,8 +78,6 @@ function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot,
 
 export default function SettingsScreen({ navigation }) {
   const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const seg = useEnter(); // entrada escalonada das secções
@@ -115,11 +111,16 @@ export default function SettingsScreen({ navigation }) {
     const date = dateISO || isoDay();
     const dep = String(lg.dep || '').toUpperCase(), arr = String(lg.arr || '').toUpperCase();
     const fno = String(lg.flightNo || lg.flight || '').toUpperCase().replace(/\s+/g, '');
+    // Duração = hora-bloco (on − off em Zulu, fusos certos via legZulu; trata a viragem de dia).
+    const toMin = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
+    const om = toMin(legZulu(date, lg, 'off')), nm = toMin(legZulu(date, lg, 'on'));
+    const blockMin = (om != null && nm != null) ? ((nm - om + 1440) % 1440) : null;
+    const duration = blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '';
     setFamView(null); setFamPick(false);
     setTimeout(() => setSendCard({
       personId: person.id, personLabel: person.label,
       dep, arr, depTime: lg.off || '', arrTime: lg.on || '',
-      flightNo: fno, route: `${dep} → ${arr}`, date, dateLabel: fmtFamDate(date), sectors: 1,
+      flightNo: fno, route: `${dep} → ${arr}`, date, dateLabel: fmtFamDate(date), sectors: 1, duration,
       legs: [{ flight: fno, dep, arr }],
     }), 320);   // fecha o pop-up antes de abrir o cartão (evita modal-sobre-modal iOS)
   };
@@ -546,7 +547,7 @@ export default function SettingsScreen({ navigation }) {
         title={l('Adicionar pessoa', 'Add person')} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 20 }}>
           <Text style={s.fieldLabel}>{l('Nome (só para ti — não aparece no link)', 'Name (just for you — not shown on the link)')}</Text>
-          <TextInput style={s.famInput} value={famLabel} onChangeText={setFamLabel} placeholder={l('ex.: Mãe', 'e.g.: Mom')} placeholderTextColor={C.sub} autoFocus maxLength={40} returnKeyType="done" onSubmitEditing={submitFamAdd} />
+          <TextInput style={s.famInput} value={famLabel} onChangeText={setFamLabel} placeholder={l('ex.: Mãe', 'e.g.: Mom')} placeholderTextColor={PELE.grey} autoFocus maxLength={40} returnKeyType="done" onSubmitEditing={submitFamAdd} />
           <PrimaryButton onPress={submitFamAdd} label={famBusy ? l('A adicionar…', 'Adding…') : l('Adicionar', 'Add')} style={{ marginTop: 14 }} />
           <Text style={s.famHint}>{l('Adiciona a pessoa; depois, no perfil dela, escolhes um voo do dia e envias-lhe o link ao vivo + a imagem — fica registado.', 'Add the person; then, from their profile, pick a day’s flight and send them the live link + image — it stays on record.')}</Text>
         </View>
@@ -613,14 +614,14 @@ export default function SettingsScreen({ navigation }) {
       <FlightShareCard visible={!!sendCard} onClose={() => setSendCard(null)} onSent={onFlightSent}
         personLabel={sendCard?.personLabel} dep={sendCard?.dep} arr={sendCard?.arr}
         depTime={sendCard?.depTime} arrTime={sendCard?.arrTime} flightNo={sendCard?.flightNo}
-        dateLabel={sendCard?.dateLabel} sectors={sendCard?.sectors} date={sendCard?.date} legs={sendCard?.legs} />
+        dateLabel={sendCard?.dateLabel} sectors={sendCard?.sectors} duration={sendCard?.duration} date={sendCard?.date} legs={sendCard?.legs} />
 
       {/* Apagar conta (RGPD Art. 17) — confirmação por palavra escrita + botão destrutivo */}
       <CenterDialog visible={delModal} onClose={() => { if (!delBusy) setDelModal(false); }}
         title={l('Apagar conta', 'Delete account')} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 20 }}>
           <View style={s.delWarn}>
-            <Ionicons name="time-outline" size={18} color={C.red} />
+            <Icon name="clock" size={18} color={PELE.red} />
             <Text style={s.delWarnTxt}>{l('A conta é desativada e eliminada em 7 dias.', 'Your account is deactivated and deleted in 7 days.')}</Text>
           </View>
           <Text style={s.delBody}>
@@ -630,10 +631,10 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.fieldLabel}>{l(`Escreve ${CONFIRM_WORD} para confirmar`, `Type ${CONFIRM_WORD} to confirm`)}</Text>
           <View style={s.pwInputRow}>
             <TextInput value={delWord} onChangeText={(v) => { setDelWord(v); setDelErr(''); }}
-              autoCapitalize="characters" autoCorrect={false} placeholder={CONFIRM_WORD} placeholderTextColor={C.sub}
+              autoCapitalize="characters" autoCorrect={false} placeholder={CONFIRM_WORD} placeholderTextColor={PELE.grey}
               style={s.pwInput} editable={!delBusy} />
           </View>
-          {delErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginTop: 8 }}>{delErr}</Text> : null}
+          {delErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginTop: 8 }}>{delErr}</Text> : null}
           <TouchableOpacity onPress={handleDeleteAccount} disabled={delBusy || !delReady} activeOpacity={0.85}
             style={[s.delBtn, (delBusy || !delReady) && s.delBtnOff]}>
             <Text style={s.delBtnTxt}>{delBusy ? l('A apagar…', 'Deleting…') : l('Apagar a minha conta', 'Delete my account')}</Text>
@@ -651,9 +652,9 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.fieldLabel}>{t('profile.pwCur', lang)}</Text>
               <View style={s.pwInputRow}>
                 <TextInput value={emPw} onChangeText={(v) => { setEmPw(v); setEmErr(''); }} secureTextEntry={!emShowPw}
-                  style={s.pwInput} placeholder="••••••••" placeholderTextColor={C.sub} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
+                  style={s.pwInput} placeholder="••••••••" placeholderTextColor={PELE.grey} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
                 <TouchableOpacity onPress={() => setEmShowPw((v) => !v)} hitSlop={8} style={s.pwEye}>
-                  <Ionicons name={emShowPw ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
+                  <Icon name="eye" size={19} color={PELE.grey} />
                 </TouchableOpacity>
               </View>
               {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
@@ -666,7 +667,7 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.fieldLabel}>{l('Novo e-mail', 'New email')}</Text>
               <View style={s.pwInputRow}>
                 <TextInput value={emNew} onChangeText={(v) => { setEmNew(v); setEmErr(''); }} keyboardType="email-address"
-                  style={s.pwInput} placeholder="nome@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
+                  style={s.pwInput} placeholder="nome@exemplo.com" placeholderTextColor={PELE.grey} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
               </View>
               {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
               <PrimaryButton onPress={handleEmRequest} label={l('Enviar código', 'Send code')} loading={emBusy} style={{ marginTop: 14 }} />
@@ -676,13 +677,13 @@ export default function SettingsScreen({ navigation }) {
             <>
               <Text style={s.emSub}>
                 {l('Introduz o código de 6 dígitos que enviámos para', 'Enter the 6-digit code we sent to')}{' '}
-                <Text style={{ color: C.text, fontFamily: FONT.semibold }}>{emNew.trim().toLowerCase()}</Text>.
+                <Text style={{ color: PELE.ink, fontFamily: PELE_FONT.body }}>{emNew.trim().toLowerCase()}</Text>.
               </Text>
               <OTPInput value={emCode} onChange={(v) => { setEmCode(v); setEmErr(''); }} />
               {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
               <PrimaryButton onPress={handleEmVerify} disabled={emCode.length < 6} loading={emBusy} label={l('Confirmar', 'Confirm')} style={{ marginTop: 4 }} />
               <TouchableOpacity onPress={handleEmResend} disabled={emLeft > 0} hitSlop={10} style={{ alignSelf: 'center', marginTop: 16 }}>
-                <Text style={[s.emResend, emLeft > 0 && { color: C.sub }]}>
+                <Text style={[s.emResend, emLeft > 0 && { color: PELE.grey }]}>
                   {emLeft > 0 ? l(`Reenviar em ${emLeft}s`, `Resend in ${emLeft}s`) : l('Reenviar código', 'Resend code')}
                 </Text>
               </TouchableOpacity>
@@ -703,15 +704,15 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.fieldLabel}>{f.label}</Text>
               <View style={s.pwInputRow}>
                 <TextInput value={f.val} onChangeText={f.set} secureTextEntry={!pwShown[i]}
-                  style={s.pwInput} placeholderTextColor={C.sub} placeholder="••••••••" autoCapitalize="none" autoCorrect={false} />
+                  style={s.pwInput} placeholderTextColor={PELE.grey} placeholder="••••••••" autoCapitalize="none" autoCorrect={false} />
                 <TouchableOpacity onPress={() => setPwShown(p => ({ ...p, [i]: !p[i] }))} hitSlop={8} style={s.pwEye}
                   accessibilityLabel={pwShown[i] ? t('profile.pwHide', lang) : t('profile.pwShow', lang)}>
-                  <Ionicons name={pwShown[i] ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
+                  <Icon name="eye" size={19} color={PELE.grey} />
                 </TouchableOpacity>
               </View>
             </View>
           ))}
-          {pwErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
+          {pwErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
           <PrimaryButton onPress={handleChangePw} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
@@ -721,11 +722,11 @@ export default function SettingsScreen({ navigation }) {
         <View style={{ padding: 20 }}>
           <Text style={s.fieldLabel}>{l('Data (AAAA-MM-DD)', 'Date (YYYY-MM-DD)')}</Text>
           <View style={s.pwInputRow}>
-            <TextInput value={sdVal} onChangeText={(v) => setSdVal(maskDate(v))} placeholder="2016-03-01" placeholderTextColor={C.sub}
+            <TextInput value={sdVal} onChangeText={(v) => setSdVal(maskDate(v))} placeholder="2016-03-01" placeholderTextColor={PELE.grey}
               keyboardType="numbers-and-punctuation" maxLength={10} style={s.pwInput} autoCorrect={false} />
           </View>
           <Text style={s.sdHint}>{l('Calcula a antiguidade para o prémio de permanência (Anexo I.9). Deixa vazio para remover.', 'Computes seniority for the loyalty bonus (Appendix I.9). Leave empty to clear.')}</Text>
-          {sdErr ? <Text style={{ color: C.red, fontSize: TYPE.label, marginBottom: 10 }}>{sdErr}</Text> : null}
+          {sdErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginBottom: 10 }}>{sdErr}</Text> : null}
           <PrimaryButton onPress={saveStartDate} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
@@ -735,17 +736,17 @@ export default function SettingsScreen({ navigation }) {
         <ScrollView style={{ maxHeight: 440 }} contentContainerStyle={{ padding: 20 }}>
           {baseGroups.length ? baseGroups.map((g) => (
             <View key={g.cc}>
-              <Eyebrow style={{ marginTop: 12, marginBottom: 8 }}>{countryFlag(g.cc)} {cName(g.cc)}</Eyebrow>
+              <Text style={[s.eyebrow, { marginTop: 12, marginBottom: 8 }]}>{countryFlag(g.cc)} {cName(g.cc)}</Text>
               {g.items.map((b) => {
                 const on = base === b.code;
                 return (
                   <TouchableOpacity key={b.code} onPress={() => saveBase(b.code)} style={[s.baseRow, on && s.baseRowOn]} activeOpacity={0.85}>
                     <View style={s.baseRowBadge}><Text style={s.baseRowBadgeTxt}>{b.code}</Text></View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.baseRowCity, on && { color: C.red }]}>{b.city || b.code}</Text>
+                      <Text style={[s.baseRowCity, on && { color: PELE.red }]}>{b.city || b.code}</Text>
                       {b.seasonal ? <Text style={s.sdHint}>{l('Base sazonal', 'Seasonal base')}</Text> : null}
                     </View>
-                    {on && <Ionicons name="checkmark-circle" size={20} color={C.red} />}
+                    {on && <Icon name="check" size={20} color={PELE.red} />}
                   </TouchableOpacity>
                 );
               })}
@@ -762,7 +763,7 @@ export default function SettingsScreen({ navigation }) {
         <CenterDialog visible={catModal} onClose={() => setCatModal(false)} title={l('A tua categoria', 'Your rank')} closeLabel={t('common.close', lang)}>
           <View style={{ padding: 20 }}>
             <Text style={s.ymLabel}>{l('A partir de que mês (promoção)', 'From which month (promotion)')}</Text>
-            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={C.sub}
+            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={PELE.grey}
               keyboardType="numbers-and-punctuation" maxLength={7} style={s.ymInput} />
             <View style={[s.baseWrap, { marginTop: 14 }]}>
               {ae.CATEGORIES.map((id) => {
@@ -785,7 +786,7 @@ export default function SettingsScreen({ navigation }) {
         <CenterDialog visible={contractModal} onClose={() => setContractModal(false)} title={l('O teu contrato', 'Your contract')} closeLabel={t('common.close', lang)}>
           <View style={{ padding: 20 }}>
             <Text style={s.ymLabel}>{l('A partir de que mês', 'From which month')}</Text>
-            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={C.sub}
+            <TextInput value={changeFrom} onChangeText={(v) => setChangeFrom(maskYm(v))} placeholder={currentYm} placeholderTextColor={PELE.grey}
               keyboardType="numbers-and-punctuation" maxLength={7} style={s.ymInput} />
             <View style={[s.baseWrap, { marginTop: 14 }]}>
               {ae.CONTRACTS.map((id) => {
@@ -880,7 +881,7 @@ export default function SettingsScreen({ navigation }) {
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
+const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
   bk: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
@@ -910,34 +911,35 @@ const makeStyles = (C) => StyleSheet.create({
   grRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6 },
   rv: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, color: PELE.grey },
   // Modal de password
-  fieldLabel: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 6 },
-  pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14 },
-  pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: C.text },
+  eyebrow: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey },
+  fieldLabel: { fontSize: TYPE.label, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 6 },
+  pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: PELE.line, borderRadius: 12, paddingHorizontal: 14 },
+  pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: PELE.ink },
   pwEye: { padding: 4, marginLeft: 6 },
-  sdHint: { fontSize: TYPE.label, color: C.sub, marginTop: 8, marginBottom: 10, lineHeight: 16 },
+  sdHint: { fontSize: TYPE.label, color: PELE.grey, marginTop: 8, marginBottom: 10, lineHeight: 16 },
   baseWrap: { flexDirection: 'row', gap: 8 },
-  baseChip: { flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', backgroundColor: C.card },
-  baseChipOn: { borderColor: C.red, backgroundColor: C.redSoft },
-  baseChipTxt: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.sub },
-  baseChipTxtOn: { color: C.red },
-  baseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, backgroundColor: C.card },
-  baseRowOn: { borderColor: C.red, backgroundColor: C.redSoft },
-  baseRowBadge: { minWidth: 42, height: 38, borderRadius: RADIUS.sm, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  baseRowBadgeTxt: { color: '#fff', fontSize: 12.5, fontFamily: FONT.bold },
-  baseRowCity: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: C.text },
-  ymLabel: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, marginBottom: 8 },
-  ymInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card, letterSpacing: 1, textAlign: 'center' },
+  baseChip: { flex: 1, borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', backgroundColor: PELE.paper },
+  baseChipOn: { borderColor: PELE.red, backgroundColor: PELE.redSoft },
+  baseChipTxt: { fontSize: TYPE.body, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  baseChipTxtOn: { color: PELE.red },
+  baseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, backgroundColor: PELE.paper },
+  baseRowOn: { borderColor: PELE.red, backgroundColor: PELE.redSoft },
+  baseRowBadge: { minWidth: 42, height: 38, borderRadius: RADIUS.sm, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  baseRowBadgeTxt: { color: '#fff', fontSize: 12.5, fontFamily: PELE_FONT.bodyBold },
+  baseRowCity: { fontSize: TYPE.sub, fontFamily: PELE_FONT.body, color: PELE.ink },
+  ymLabel: { fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.grey, marginBottom: 8 },
+  ymInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper, letterSpacing: 1, textAlign: 'center' },
   // Apagar conta (destrutivo)
-  delWarn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redSoft, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 14 },
-  delWarnTxt: { flex: 1, fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.red, lineHeight: 16 },
-  delBody: { fontSize: TYPE.sub, color: C.text, lineHeight: 20, marginBottom: 16 },
-  delBtn: { backgroundColor: C.red, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
+  delWarn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 14 },
+  delWarnTxt: { flex: 1, fontSize: TYPE.label, fontFamily: PELE_FONT.body, color: PELE.red, lineHeight: 16 },
+  delBody: { fontSize: TYPE.sub, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
+  delBtn: { backgroundColor: PELE.red, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
   delBtnOff: { opacity: 0.4 },
-  delBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
+  delBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: PELE_FONT.bodyBold },
   // Mudar e-mail
-  emSub: { fontSize: TYPE.sub, color: C.text, lineHeight: 20, marginBottom: 16 },
-  emErr: { color: C.red, fontSize: TYPE.label, marginTop: 8 },
-  emResend: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
+  emSub: { fontSize: TYPE.sub, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
+  emErr: { color: PELE.red, fontSize: TYPE.label, marginTop: 8 },
+  emResend: { fontSize: TYPE.sub, fontFamily: PELE_FONT.bodyBold, color: PELE.red },
   // Mosaicos bento (mockup perfil-final)
   seclbl: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 17, marginLeft: 2, marginBottom: 9 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
@@ -959,18 +961,18 @@ const makeStyles = (C) => StyleSheet.create({
   favTxt: { fontFamily: PELE_FONT.display, fontSize: 16, color: PELE.onInk },
   fname: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 10.5, color: PELE.ink },
   // Diálogos da família (adicionar / ver link)
-  famInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card },
-  famHint: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, lineHeight: 16, marginTop: 12 },
+  famInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper },
+  famHint: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 16, marginTop: 12 },
   famRevoke: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 10 },
-  famRevokeTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: PELE.red },
+  famRevokeTxt: { fontSize: TYPE.sub, fontFamily: PELE_FONT.body, color: PELE.red },
   // Modelo B — opções da pessoa (partilhar voo + registo)
   famShareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: PELE.ink, borderRadius: 13, paddingVertical: 14 },
   famShareTxt: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.onInk },
-  flightRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
+  flightRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: PELE.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, marginTop: 8 },
   flightIc: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   flightNo: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   flightRt: { fontSize: 12, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 1 },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: PELE.line },
   shareTop: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   shareSub: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 1 },
   famBack2: { marginTop: 14, paddingVertical: 6 },

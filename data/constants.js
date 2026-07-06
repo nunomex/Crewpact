@@ -150,6 +150,7 @@ export const PELE = {
 // Carregadas no App.js via @expo-google-fonts.
 export const PELE_FONT = {
   display:     'BarlowCondensed_700Bold',       // fantasma · números grandes · palavra condensada
+  displayHeavy:'BarlowCondensed_800ExtraBold',   // display pesado (cartão de partilha, poster)
   displaySemi: 'BarlowCondensed_600SemiBold',
   displayMed:  'BarlowCondensed_500Medium',
   body:        'HankenGrotesk_600SemiBold',      // corpo por defeito

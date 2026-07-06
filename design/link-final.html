@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Link ao vivo — cinemático refinado (troca de herói por fase)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#08080a;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:860px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .flow{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:1px;color:#8b929c;text-transform:uppercase;margin-top:18px;display:flex;gap:10px;align-items:center;justify-content:center}
+  .flow b{color:#FFB800}.flow .ar{color:#4a4d55}
+  .row{display:flex;gap:30px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:22px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:320px}
+  .cap .n{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:6px;background:#FFB800;color:#141414;font-family:'Barlow Condensed';font-weight:800;font-size:12px;letter-spacing:.5px;margin-bottom:8px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.7px}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+
+  .ph{width:320px;height:680px;border-radius:42px;border:9px solid #04060a;overflow:hidden;position:relative}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:0 24px;color:var(--ink);background:var(--bg)}
+  .status{display:flex;justify-content:space-between;padding:13px 2px 0;font-size:10.5px;font-weight:700;color:var(--faint)}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px;margin-top:8px;color:var(--ink)}
+  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--accentbg);color:var(--accent)}
+  .live .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
+  .eyb{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--accent);margin-top:22px}
+  .route{display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px}
+  .code{font-family:'Barlow Condensed';font-weight:700;font-size:48px;line-height:.85;letter-spacing:-2px;color:var(--ink)}
+  .city{font-size:9.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+  .r{text-align:right}
+  .fno{font-size:11px;font-weight:700;color:var(--sub);margin-top:2px;letter-spacing:.3px}
+  .wx{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid var(--line);border-radius:14px}
+  .wx .tp{font-family:'Barlow Condensed';font-weight:700;font-size:20px;letter-spacing:-.5px;color:var(--ink)}
+  .wx .cd{font-size:11.5px;color:var(--sub);line-height:1.3}.wx .cd b{color:var(--ink);font-weight:800}
+  .foot{margin-top:auto;padding:16px 0 20px;border-top:1px solid var(--line);text-align:center}
+  .foot .b{font-family:'Barlow Condensed';font-weight:700;font-size:12px;letter-spacing:.5px;color:var(--sub)}
+  .foot .s{font-size:10px;color:var(--faint);margin-top:3px}
+
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  @keyframes flowdash{to{stroke-dashoffset:-100}}
+  @keyframes bob{0%,100%{transform:translate(-50%,-50%) rotate(var(--rot,6deg)) translateY(0)}50%{transform:translate(-50%,-50%) rotate(var(--rot,6deg)) translateY(-3px)}}
+  @keyframes breathe{0%,100%{opacity:.92}50%{opacity:1}}
+  @keyframes ringdraw{from{stroke-dashoffset:var(--circ)}to{stroke-dashoffset:var(--off)}}
+
+  /* temas */
+  .day{--bg:linear-gradient(178deg,#eaf3fb 0%,#f8f4ec 48%,#fbeede 100%);--ink:#141414;--sub:#77776F;--faint:#B3B1A9;--line:#ECEAE4;--accent:#B9820A;--accentbg:rgba(255,184,0,.16);--track:rgba(20,20,20,.14);--ok:#0E7A4B;--okbg:rgba(17,138,85,.12);--plane:#141414}
+  .night{--bg:linear-gradient(180deg,#0a1230 0%,#0e1327 50%,#161233 100%);--ink:#fff;--sub:rgba(255,255,255,.62);--faint:rgba(255,255,255,.4);--line:rgba(255,255,255,.12);--accent:#FFB800;--accentbg:rgba(255,184,0,.18);--track:rgba(255,255,255,.22);--ok:#46C98A;--okbg:rgba(70,201,138,.18);--plane:#FFB800}
+  .day .scr:before,.night .scr:before{content:"";position:absolute;inset:0;animation:breathe 6s ease-in-out infinite;pointer-events:none}
+  .night .scr:before{background:radial-gradient(70% 40% at 50% 22%,rgba(255,184,0,.08),transparent 70%)}
+
+  .arcBase{fill:none;stroke:var(--track);stroke-width:2;stroke-dasharray:1.5 4}
+  .arcDone{fill:none;stroke:var(--accent);stroke-width:3.4;stroke-linecap:round;stroke-dasharray:5 4;animation:flowdash 2.4s linear infinite}
+  .arcOk{fill:none;stroke:var(--ok);stroke-width:3.6;stroke-linecap:round}
+  .plane{position:absolute;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28))}
+  .pill{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:7px 13px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .pill .pd{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .pill.ok{background:var(--okbg);color:var(--ok)}
+
+  /* FASE 1 · arco-herói */
+  .fly{position:relative;margin-top:20px}
+  .eta{font-family:'Barlow Condensed';font-weight:700;font-size:58px;line-height:1;letter-spacing:-2px;color:var(--ink);margin-top:22px;font-variant-numeric:tabular-nums}
+  .count{font-size:14px;font-weight:800;color:var(--accent);margin-top:6px}
+  .sub{font-size:12px;color:var(--sub);margin-top:3px}
+  .s1 .wx{margin-top:16px}
+  .s1 .live{align-self:flex-start;margin-top:16px}
+
+  /* FASE 2 · countdown-herói (arco encolhe p/ tira no topo) */
+  .miniarc{margin-top:16px;display:flex;align-items:center;gap:10px}
+  .miniarc svg{flex:0 0 auto}
+  .miniarc .mtxt{font-size:11px;color:var(--sub)}.miniarc .mtxt b{color:var(--ink);font-weight:800}
+  .cdwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ringwrap{position:relative;width:224px;height:224px}
+  .ringwrap svg{transform:rotate(-90deg)}
+  .rbg{fill:none;stroke:var(--track);stroke-width:8}
+  .rfg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;--circ:628;--off:200;stroke-dasharray:628;stroke-dashoffset:200;animation:ringdraw 2.4s cubic-bezier(.3,.8,.3,1) forwards;filter:drop-shadow(0 0 9px var(--accentbg))}
+  .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ctr .big{font-family:'Barlow Condensed';font-weight:700;font-size:92px;line-height:.8;color:var(--ink);font-variant-numeric:tabular-nums}
+  .ctr .u{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-top:8px}
+  .cdwrap .st{display:flex;align-items:center;gap:8px;margin-top:24px;font-family:'Barlow Condensed';font-weight:700;font-size:20px;color:var(--accent)}
+  .cdwrap .st .p{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;box-shadow:0 0 9px var(--accent)}
+  .cdwrap .wxl{font-size:12.5px;color:var(--sub);margin-top:12px}.cdwrap .wxl b{color:var(--ink)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Link ao vivo — cinemático, com troca de herói por fase</h1>
+    <p>Uma página só, que <b>reorganiza a ênfase</b> ao longo do voo. Mesmo cérebro (progresso real, atualiza sozinha), <b>auto dia/noite</b> pela hora local do destino. Abre no browser para ver o arco a fluir e o countdown a pulsar.</p>
+    <div class="flow">CEDO/MEIO <b>arco manda</b> <span class="ar">→</span> PERTO DE ATERRAR <b>countdown domina</b> <span class="ar">→</span> <b>Aterrou ✓</b></div>
+  </div>
+
+  <div class="row">
+
+    <!-- FASE 1 · meio de voo · dia · arco-herói -->
+    <div class="item">
+      <div class="cap"><div class="n">FASE 1 · DIA</div><div class="t">Meio de voo — arco manda</div><div class="d">O arco é o herói (progresso espacial). Flui, avião a flutuar.</div></div>
+      <div class="ph"><div class="scr day s1">
+        <div class="status"><span>13:30</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="eyb">Chegada de hoje</div>
+        <div class="route"><div><div class="code">LIS</div><div class="city">Lisboa</div><div class="fno">EJU1234</div></div><div class="r"><div class="code">CDG</div><div class="city">Paris</div></div></div>
+        <div class="fly">
+          <svg viewBox="0 0 300 96" style="width:100%"><path class="arcBase" d="M8,86 Q150,2 292,86"/><path class="arcDone" d="M8,86 Q150,2 292,86" stroke-dasharray="5 4"/></svg>
+          <div class="plane" style="left:41%;top:44%;--rot:-2deg"><svg width="22" height="22" viewBox="0 0 24 24"><g transform="rotate(90 12 12)"><path style="fill:var(--plane)" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g></svg></div>
+        </div>
+        <div class="eta">~14:35</div>
+        <div class="count">aterra em ~1 h 05 min</div>
+        <div class="sub">hora local de Paris</div>
+        <div class="wx"><span style="font-size:19px">☀️</span><span class="tp">21°</span><span class="cd"><b>Céu limpo</b> em Paris · vento fraco</span></div>
+        <span class="live"><span class="p"></span>Ao vivo</span>
+        <div class="foot"><div class="b" style="font-size:12px;color:var(--sub)">Link de um tripulante · atualiza sozinho</div></div>
+      </div></div>
+    </div>
+
+    <!-- FASE 2 · perto de aterrar · noite · countdown-herói -->
+    <div class="item">
+      <div class="cap"><div class="n">FASE 2 · NOITE</div><div class="t">Perto de aterrar — countdown domina</div><div class="d">O arco encolhe p/ tira; o countdown cresce e pulsa. O drama.</div></div>
+      <div class="ph"><div class="scr night">
+        <div class="status"><span>22:47</span><span>▮▮▮ ⌁ 64%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact<span style="flex:1"></span><span class="live"><span class="p"></span>Ao vivo</span></div>
+        <div class="miniarc">
+          <svg width="120" height="26" viewBox="0 0 120 26"><path class="arcBase" d="M4,22 Q60,2 116,10"/><path class="arcDone" d="M4,22 Q60,2 116,10" stroke-dasharray="4 3"/><circle cx="4" cy="22" r="3" style="fill:var(--accent)"/><circle cx="116" cy="10" r="3.4" fill="none" style="stroke:var(--faint)" stroke-width="1.5"/></svg>
+          <div class="mtxt"><b>LIS → CDG</b> · EJU1234</div>
+        </div>
+        <div class="cdwrap">
+          <div class="eyb" style="margin-top:0">Chegada de hoje · Paris</div>
+          <div class="ringwrap" style="margin-top:18px">
+            <svg width="224" height="224" viewBox="0 0 224 224"><circle class="rbg" cx="112" cy="112" r="100"/><circle class="rfg" cx="112" cy="112" r="100"/></svg>
+            <div class="ctr"><div class="big">18</div><div class="u">min p/ aterrar</div></div>
+          </div>
+          <div class="st"><span class="p"></span>NO AR · ~23:05</div>
+          <div class="wxl"><b>13° 🌙</b> · limpo em Paris, boa p/ aterrar</div>
+        </div>
+        <div class="foot"><div class="b" style="font-size:12px;color:var(--sub)">Link de um tripulante · atualiza sozinho</div></div>
+      </div></div>
+    </div>
+
+    <!-- FASE 3 · aterrou · dia -->
+    <div class="item">
+      <div class="cap"><div class="n">FASE 3 · DIA</div><div class="t">Aterrou</div><div class="d">Arco completo verde, hora real, selo. Para de atualizar.</div></div>
+      <div class="ph"><div class="scr day s1">
+        <div class="status"><span>14:31</span><span>▮▮▮ ⌁ 86%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="eyb">Chegada de hoje</div>
+        <div class="route"><div><div class="code">LIS</div><div class="city">Lisboa</div><div class="fno">EJU1234</div></div><div class="r"><div class="code">CDG</div><div class="city">Paris</div></div></div>
+        <div class="fly">
+          <svg viewBox="0 0 300 96" style="width:100%"><path class="arcBase" d="M8,86 Q150,2 292,86"/><path class="arcOk" d="M8,86 Q150,2 292,86"/><circle cx="8" cy="86" r="4.4" style="fill:var(--ok)"/><circle cx="292" cy="86" r="4.4" style="fill:var(--ok)"/></svg>
+          <div class="plane" style="left:96%;top:86%;--rot:26deg"><svg width="22" height="22" viewBox="0 0 24 24"><g transform="rotate(90 12 12)"><path fill="#0E7A4B" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g></svg></div>
+        </div>
+        <div class="eta">14:28</div>
+        <div class="sub">hora local de Paris · já em terra ✓</div>
+        <div class="wx" style="margin-top:16px"><span style="font-size:19px">☀️</span><span class="tp">21°</span><span class="cd"><b>Céu limpo</b> em Paris</span></div>
+        <span class="pill ok" style="margin-top:16px"><span class="pd"></span>Aterrou</span>
+        <div class="foot"><div class="b" style="font-size:12px;color:var(--sub)">Link de um tripulante · terminou</div></div>
+      </div></div>
+    </div>
+
+  </div>
+</body>
+</html>

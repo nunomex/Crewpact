@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Página do link ao vivo — 5 variações com efeitos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#08080a;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:840px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:32px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:330px}
+  .cap .n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#FFB800;color:#141414;font-family:'Barlow Condensed';font-weight:800;font-size:14px;margin-bottom:8px}
+  .cap .t{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.7px}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+
+  .ph{width:330px;height:700px;border-radius:42px;border:9px solid #04060a;overflow:hidden;position:relative;background:#000}
+  .scr{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column}
+  .status{display:flex;justify-content:space-between;padding:13px 24px 0;font-size:10.5px;font-weight:700;position:relative;z-index:5}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:17px;letter-spacing:-.2px;position:relative;z-index:5}
+  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .live .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  @keyframes flow{to{stroke-dashoffset:-100}}
+  @keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+  @keyframes bob{0%,100%{transform:translate(-50%,-50%) rotate(var(--rot)) translateY(0)}50%{transform:translate(-50%,-50%) rotate(var(--rot)) translateY(-3px)}}
+  @keyframes breathe{0%,100%{opacity:.9}50%{opacity:1}}
+  @keyframes twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-40px)}}
+  @keyframes fill{from{width:0}to{width:var(--w)}}
+  @keyframes shimmer{0%{transform:translateX(-120%)}60%,100%{transform:translateX(320%)}}
+  @keyframes glide{0%{offset-distance:8%}100%{offset-distance:72%}}
+  @keyframes ringdraw{from{stroke-dashoffset:var(--circ)}to{stroke-dashoffset:var(--off)}}
+  @keyframes glow{0%,100%{opacity:.5}50%{opacity:1}}
+
+  /* ════ 1 · CINEMÁTICO AO VIVO (dia · pele) ════ */
+  .k1{background:#FBFAF7;color:#141414}
+  .k1 .sky{position:absolute;inset:0;background:linear-gradient(178deg,#eaf3fb 0%,#f8f4ec 46%,#fbeede 100%);animation:breathe 6s ease-in-out infinite}
+  .k1 .status{color:#a9a89f}
+  .k1 .brand{color:#141414;padding:0 24px}
+  .k1 .body{position:relative;z-index:2;padding:26px 24px 0;flex:1;display:flex;flex-direction:column}
+  .k1 .eyb{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#B9820A}
+  .k1 .route{display:flex;justify-content:space-between;align-items:flex-start;margin-top:12px}
+  .k1 .code{font-family:'Barlow Condensed';font-weight:700;font-size:56px;line-height:.85;letter-spacing:-2px}
+  .k1 .city{font-size:10px;font-weight:700;color:#B3B1A9;text-transform:uppercase;letter-spacing:.4px;margin-top:5px}
+  .k1 .r{text-align:right}
+  .k1 .fno{font-size:11px;font-weight:700;color:#77776F;margin-top:2px;letter-spacing:.4px}
+  .k1 .fly{position:relative;margin-top:16px}
+  .k1 .arcBase{fill:none;stroke:rgba(20,20,20,.14);stroke-width:2;stroke-dasharray:1.5 4}
+  .k1 .arcDone{fill:none;stroke:#B9820A;stroke-width:3.4;stroke-linecap:round;stroke-dasharray:5 4;animation:flow 2.4s linear infinite}
+  .k1 .plane{position:absolute;left:57%;top:47%;--rot:6deg;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28))}
+  .k1 .eta{font-family:'Barlow Condensed';font-weight:700;font-size:62px;line-height:1;letter-spacing:-2px;margin-top:24px;font-variant-numeric:tabular-nums}
+  .k1 .count{font-size:14px;font-weight:800;color:#B9820A;margin-top:6px}
+  .k1 .sub{font-size:12px;color:#77776F;margin-top:3px}
+  .k1 .wx{display:flex;align-items:center;gap:9px;margin-top:16px;padding:11px 14px;border:1px solid #ECEAE4;border-radius:14px}
+  .k1 .wx .tp{font-family:'Barlow Condensed';font-weight:700;font-size:22px;letter-spacing:-.5px}
+  .k1 .wx .cd{font-size:12px;color:#77776F;line-height:1.35}.k1 .wx .cd b{color:#141414;font-weight:800}
+  .k1 .live{background:rgba(255,184,0,.16);color:#B9820A;align-self:flex-start;margin-top:16px}
+  .k1 .foot{margin-top:auto;padding:20px 0 24px;border-top:1px solid #ECEAE4;text-align:center}
+  .k1 .foot .b{font-family:'Barlow Condensed';font-weight:700;font-size:12px;letter-spacing:.5px;color:#77776F}
+  .k1 .foot .s{font-size:10px;color:#B3B1A9;margin-top:3px}
+
+  /* ════ 2 · MAPA GREAT-CIRCLE (noite · full-bleed) ════ */
+  .k2{background:#060912}
+  .k2 .grid{position:absolute;inset:0;background:
+    linear-gradient(90deg,rgba(120,160,220,.10) 1px,transparent 1px) 0 0/44px 44px,
+    linear-gradient(180deg,rgba(120,160,220,.10) 1px,transparent 1px) 0 0/44px 44px;
+    animation:drift 22s linear infinite;mask:radial-gradient(120% 90% at 50% 42%,#000 55%,transparent 100%)}
+  .k2 .glowbg{position:absolute;inset:0;background:radial-gradient(70% 45% at 50% 34%,rgba(255,184,0,.12),transparent 70%)}
+  .k2 .status{color:#5a6b86}
+  .k2 .brand{color:#eaf1fb;padding:0 24px}
+  .k2 .map{position:absolute;left:0;right:0;top:120px;height:300px}
+  .k2 .map svg{width:100%;height:100%;overflow:visible}
+  .k2 .arcBase{fill:none;stroke:rgba(120,160,220,.25);stroke-width:1.5;stroke-dasharray:2 4}
+  .k2 .arcDraw{fill:none;stroke:#FFB800;stroke-width:2.6;stroke-linecap:round;--len:320;stroke-dasharray:320;stroke-dashoffset:320;animation:draw 3.4s ease-out forwards;filter:drop-shadow(0 0 6px rgba(255,184,0,.7))}
+  .k2 .pl2{offset-path:path('M22,250 Q165,-30 300,58');offset-rotate:auto;animation:glide 5s ease-in-out infinite alternate;filter:drop-shadow(0 0 8px rgba(255,255,255,.6))}
+  .k2 .cdot{fill:#FFB800}
+  .k2 .lab{position:absolute;font-family:'Space Mono';font-size:9px;letter-spacing:1px;color:#8fa0b8}
+  .k2 .scrim{position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(180deg,transparent,#060912 62%)}
+  .k2 .info{position:absolute;left:24px;right:24px;bottom:26px;z-index:3}
+  .k2 .eyb{font-family:'Space Mono';font-size:9px;letter-spacing:2px;color:#FFB800}
+  .k2 .nm{font-family:'Barlow Condensed';font-weight:800;font-size:62px;line-height:.85;letter-spacing:-1.5px;color:#fff;margin-top:6px}
+  .k2 .rt{font-family:'Space Mono';font-size:11px;letter-spacing:4px;color:#8fa0b8;margin-top:8px}
+  .k2 .eta2{display:flex;align-items:baseline;gap:12px;margin-top:16px}
+  .k2 .eta2 .big{font-family:'Barlow Condensed';font-weight:700;font-size:46px;color:#fff;letter-spacing:-1px}
+  .k2 .eta2 .c{font-size:13px;font-weight:800;color:#FFB800}
+  .k2 .live{background:rgba(255,184,0,.16);color:#FFB800;position:absolute;right:24px;top:60px;z-index:5}
+
+  /* ════ 3 · ANEL DE COUNTDOWN (dramático · minimal) ════ */
+  .k3{background:radial-gradient(120% 90% at 50% 30%,#141a2e,#070810 70%)}
+  .k3 .status{color:#5a6b86}
+  .k3 .brand{color:#eef1f7;padding:0 24px}
+  .k3 .wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2}
+  .k3 .eyb{font-size:10px;letter-spacing:2.4px;text-transform:uppercase;font-weight:800;color:#8b93ad}
+  .k3 .rt{font-family:'Barlow Condensed';font-weight:700;font-size:28px;letter-spacing:1px;color:#fff;margin-top:8px}
+  .k3 .ringwrap{position:relative;width:236px;height:236px;margin-top:26px}
+  .k3 .ringwrap svg{transform:rotate(-90deg)}
+  .k3 .rbg{fill:none;stroke:rgba(255,255,255,.09);stroke-width:9}
+  .k3 .rfg{fill:none;stroke:#FFB800;stroke-width:9;stroke-linecap:round;--circ:660;--off:250;stroke-dasharray:660;stroke-dashoffset:250;animation:ringdraw 2.6s cubic-bezier(.3,.8,.3,1) forwards;filter:drop-shadow(0 0 10px rgba(255,184,0,.6))}
+  .k3 .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .k3 .num{font-family:'Barlow Condensed';font-weight:700;font-size:96px;line-height:.8;color:#fff;font-variant-numeric:tabular-nums}
+  .k3 .unit{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8b93ad;font-weight:800;margin-top:8px}
+  .k3 .status2{display:flex;align-items:center;gap:8px;margin-top:30px;font-family:'Barlow Condensed';font-weight:700;font-size:22px;color:#FFB800}
+  .k3 .status2 .p{width:8px;height:8px;border-radius:50%;background:#FFB800;animation:pulse 1.5s infinite;box-shadow:0 0 10px #FFB800}
+  .k3 .wx{font-size:12.5px;color:#8b93ad;margin-top:12px}.k3 .wx b{color:#fff}
+  .k3 .foot{margin-top:auto;padding:18px 0 22px;text-align:center;position:relative;z-index:2}
+  .k3 .foot .b{font-family:'Barlow Condensed';font-weight:700;font-size:12px;color:#5a6b86;letter-spacing:.5px}
+
+  /* ════ 4 · BOARDING PASS AO VIVO (dia) ════ */
+  .k4{background:#EDE7DA}
+  .k4 .status{color:#a29a86}
+  .k4 .brand{color:#141414;padding:0 24px}
+  .k4 .body{padding:22px 22px 0;flex:1;display:flex;flex-direction:column}
+  .k4 .pass{background:#fff;border-radius:20px;padding:20px;box-shadow:0 20px 44px -18px rgba(0,0,0,.35);position:relative;overflow:hidden}
+  .k4 .shine{position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);animation:shimmer 3.6s ease-in-out infinite}
+  .k4 .eyb{font-family:'Space Mono';font-size:9px;letter-spacing:1.5px;color:#B9820A;font-weight:700}
+  .k4 .route{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .k4 .code{font-family:'Barlow Condensed';font-weight:800;font-size:46px;line-height:.85;color:#141414;letter-spacing:-1.5px}
+  .k4 .prog{position:relative;height:3px;background:rgba(20,20,20,.12);border-radius:2px;flex:1;margin:0 12px}
+  .k4 .prog .f{position:absolute;left:0;top:0;bottom:0;background:#B9820A;border-radius:2px;--w:60%;animation:fill 2.4s ease-out forwards}
+  .k4 .prog .pl{position:absolute;top:-9px;left:60%;transform:translateX(-50%);color:#B9820A;animation:bob 2.6s infinite;--rot:90deg}
+  .k4 .cities{display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:#77776F;letter-spacing:.5px;margin-top:6px;text-transform:uppercase}
+  .k4 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 6px;margin-top:20px;padding-top:16px;border-top:1px dashed rgba(20,20,20,.2)}
+  .k4 .k{font-family:'Space Mono';font-size:8px;letter-spacing:.8px;color:#a29a86}
+  .k4 .v{font-family:'Barlow Condensed';font-weight:700;font-size:17px;color:#141414;margin-top:2px}
+  .k4 .liverow{display:flex;align-items:center;gap:9px;margin-top:20px}
+  .k4 .live{background:rgba(255,184,0,.18);color:#B9820A}
+  .k4 .cnt{font-family:'Barlow Condensed';font-weight:700;font-size:20px;color:#141414}
+  .k4 .foot{margin-top:auto;padding:18px 0 22px;text-align:center}
+  .k4 .foot .b{font-family:'Barlow Condensed';font-weight:700;font-size:12px;color:#8a8270;letter-spacing:.5px}
+
+  /* ════ 5 · CÉU AMBIENTE (noite · atmosférico) ════ */
+  .k5{background:linear-gradient(180deg,#0a0f2a 0%,#131a3f 45%,#3a2a52 100%)}
+  .k5 .aur{position:absolute;inset:0;background:
+     radial-gradient(50% 40% at 20% 18%,rgba(70,201,138,.22),transparent 70%),
+     radial-gradient(60% 44% at 82% 12%,rgba(120,110,255,.22),transparent 70%);
+     filter:blur(6px);animation:breathe 7s ease-in-out infinite}
+  .k5 .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:twinkle 3s infinite}
+  .k5 .status{color:rgba(255,255,255,.5)}
+  .k5 .brand{color:#fff;padding:0 24px}
+  .k5 .body{position:relative;z-index:3;padding:26px 24px 0;flex:1;display:flex;flex-direction:column;color:#fff}
+  .k5 .eyb{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#FFB800}
+  .k5 .route{display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px}
+  .k5 .code{font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:.85;letter-spacing:-2px}
+  .k5 .city{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+  .k5 .r{text-align:right}
+  .k5 .trail{position:relative;height:70px;margin-top:12px}
+  .k5 .trail .line{position:absolute;left:6%;right:6%;top:52%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,184,0,.7) 60%,#FFB800);border-radius:2px}
+  .k5 .trail .pl{position:absolute;left:66%;top:52%;transform:translate(-50%,-50%) rotate(90deg);animation:bob 2.8s infinite;--rot:90deg;filter:drop-shadow(0 0 10px rgba(255,184,0,.9))}
+  .k5 .eta{font-family:'Barlow Condensed';font-weight:700;font-size:64px;line-height:1;letter-spacing:-2px;margin-top:14px;font-variant-numeric:tabular-nums}
+  .k5 .count{font-size:14px;font-weight:800;color:#FFB800;margin-top:6px}
+  .k5 .sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+  .k5 .wx{display:flex;align-items:center;gap:9px;margin-top:18px;padding:11px 14px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.04)}
+  .k5 .wx .tp{font-family:'Barlow Condensed';font-weight:700;font-size:22px}
+  .k5 .wx .cd{font-size:12px;color:rgba(255,255,255,.6);line-height:1.35}.k5 .wx .cd b{color:#fff;font-weight:800}
+  .k5 .live{background:rgba(255,184,0,.18);color:#FFB800;align-self:flex-start;margin-top:16px}
+  .k5 .foot{margin-top:auto;padding:20px 0 24px;border-top:1px solid rgba(255,255,255,.12);text-align:center}
+  .k5 .foot .b{font-family:'Barlow Condensed';font-weight:700;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.5px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Página do link ao vivo — 5 direções com efeitos</h1>
+    <p>Parte do teu <b>chegada.html</b> (arco, tempo, countdown, tema pela hora) — mas <b>viva</b>: arco a fluir, avião a deslizar, anéis, aurora. Mesmo cérebro (progresso real, atualiza sozinha). Passa o rato / abre no browser para ver as animações. Diz-me o número (ou a mistura).</p>
+  </div>
+
+  <div class="row">
+
+    <!-- 1 · CINEMÁTICO -->
+    <div class="item">
+      <div class="cap"><div class="n">1</div><div class="t">Cinemático ao vivo</div><div class="d">O teu layout, mas vivo: arco a fluir, avião a flutuar, "AO VIVO" a pulsar.</div></div>
+      <div class="ph k1"><div class="scr">
+        <div class="sky"></div>
+        <div class="status"><span>14:20</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="body">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="route"><div><div class="code">LIS</div><div class="city">Lisboa</div><div class="fno">EJU1234</div></div><div class="r"><div class="code">CDG</div><div class="city">Paris</div></div></div>
+          <div class="fly">
+            <svg viewBox="0 0 300 84" style="width:100%"><path class="arcBase" d="M8,74 Q150,6 292,74"/><path class="arcDone" d="M8,74 Q150,6 292,74"/></svg>
+            <div class="plane"><svg width="22" height="22" viewBox="0 0 24 24"><g transform="rotate(90 12 12)"><path fill="#141414" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g></svg></div>
+          </div>
+          <div class="eta">~14:35</div>
+          <div class="count">aterra em ~40 min</div>
+          <div class="sub">hora local de Paris</div>
+          <div class="wx"><span style="font-size:20px">☀️</span><span class="tp">21°</span><span class="cd"><b>Céu limpo</b> em Paris<br>vento fraco</span></div>
+          <span class="live"><span class="p"></span>Ao vivo</span>
+          <div class="foot"><div class="b">crewpact.app</div><div class="s">Link de um tripulante · atualiza sozinho</div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 2 · MAPA -->
+    <div class="item">
+      <div class="cap"><div class="n">2</div><div class="t">Mapa great-circle</div><div class="d">Full-bleed. O arco desenha-se e o avião percorre-o, coordenadas.</div></div>
+      <div class="ph k2"><div class="scr">
+        <div class="grid"></div><div class="glowbg"></div>
+        <div class="status"><span>22:47</span><span>▮▮▮ ⌁ 64%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <span class="live"><span class="p"></span>Ao vivo</span>
+        <div class="map">
+          <span class="lab" style="left:6%;bottom:12%">LIS · 38°N</span>
+          <span class="lab" style="right:4%;top:8%">CDG · 49°N</span>
+          <svg viewBox="0 0 330 300">
+            <path class="arcBase" d="M22,250 Q165,-30 300,58"/>
+            <path class="arcDraw" d="M22,250 Q165,-30 300,58"/>
+            <circle class="cdot" cx="22" cy="250" r="5"/>
+            <circle cx="300" cy="58" r="5" fill="#fff"/><circle cx="300" cy="58" r="12" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
+            <g class="pl2"><path fill="#fff" d="M0 -2 L11 0 L0 2 L3 0 Z" transform="scale(1.6)"/></g>
+          </svg>
+        </div>
+        <div class="scrim"></div>
+        <div class="info">
+          <div class="eyb">CHEGADA DE HOJE</div>
+          <div class="nm">Paris</div>
+          <div class="rt">L I S → C D G · EJU1234</div>
+          <div class="eta2"><span class="big">~23:05</span><span class="c">aterra em ~18 min</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 3 · ANEL -->
+    <div class="item">
+      <div class="cap"><div class="n">3</div><div class="t">Anel de countdown</div><div class="d">O countdown é o herói. Anel a encher, número gigante, brilho.</div></div>
+      <div class="ph k3"><div class="scr">
+        <div class="status"><span>22:47</span><span>▮▮▮ ⌁ 64%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="wrap">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="rt">LIS → CDG</div>
+          <div class="ringwrap">
+            <svg width="236" height="236" viewBox="0 0 236 236">
+              <circle class="rbg" cx="118" cy="118" r="105"/>
+              <circle class="rfg" cx="118" cy="118" r="105"/>
+            </svg>
+            <div class="ctr"><div class="num">18</div><div class="unit">min p/ aterrar</div></div>
+          </div>
+          <div class="status2"><span class="p"></span>NO AR · ~23:05</div>
+          <div class="wx"><b>13° 🌙</b> · limpo em Paris</div>
+        </div>
+        <div class="foot"><div class="b">crewpact.app · atualiza sozinho</div></div>
+      </div></div>
+    </div>
+
+    <!-- 4 · BOARDING PASS AO VIVO -->
+    <div class="item">
+      <div class="cap"><div class="n">4</div><div class="t">Cartão ao vivo</div><div class="d">Boarding pass com barra de progresso a encher + avião a deslizar.</div></div>
+      <div class="ph k4"><div class="scr">
+        <div class="status"><span>14:20</span><span>▮▮▮ ⌁ 87%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="body">
+          <div class="pass">
+            <div class="shine"></div>
+            <div class="eyb">CHEGADA DE HOJE · EJU1234</div>
+            <div class="route"><div class="code">LIS</div><div class="prog"><div class="f"></div><div class="pl"><svg width="18" height="18" viewBox="0 0 24 24"><g transform="rotate(90 12 12)"><path fill="#B9820A" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g></svg></div></div><div class="code">CDG</div></div>
+            <div class="cities"><span>Lisboa</span><span>Paris</span></div>
+            <div class="grid">
+              <div><div class="k">CHEGADA</div><div class="v">~14:35</div></div>
+              <div><div class="k">DURAÇÃO</div><div class="v">2H20</div></div>
+              <div><div class="k">DESTINO</div><div class="v">21° ☀</div></div>
+            </div>
+          </div>
+          <div class="liverow"><span class="live"><span class="p"></span>Ao vivo</span><span class="cnt">aterra em ~40 min</span></div>
+          <div class="foot"><div class="b">crewpact.app · atualiza sozinho</div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 5 · CÉU AMBIENTE -->
+    <div class="item">
+      <div class="cap"><div class="n">5</div><div class="t">Céu ambiente</div><div class="d">Atmosférico: aurora a respirar, estrelas, avião com rasto a brilhar.</div></div>
+      <div class="ph k5"><div class="scr">
+        <div class="aur"></div>
+        <div class="stars" id="stars5"></div>
+        <div class="status"><span>22:47</span><span>▮▮▮ ⌁ 64%</span></div>
+        <div class="brand"><span class="bdot"></span>CrewPact</div>
+        <div class="body">
+          <div class="eyb">Chegada de hoje</div>
+          <div class="route"><div><div class="code">LIS</div><div class="city">Lisboa</div></div><div class="r"><div class="code">CDG</div><div class="city">Paris</div></div></div>
+          <div class="trail"><div class="line"></div><div class="pl"><svg width="24" height="24" viewBox="0 0 24 24"><g transform="rotate(90 12 12)"><path fill="#FFB800" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g></svg></div></div>
+          <div class="eta">~23:05</div>
+          <div class="count">aterra em ~18 min</div>
+          <div class="sub">hora local de Paris · EJU1234</div>
+          <div class="wx"><span style="font-size:20px">🌙</span><span class="tp">13°</span><span class="cd"><b>Limpo</b> em Paris<br>boa para aterrar</span></div>
+          <span class="live"><span class="p"></span>Ao vivo</span>
+          <div class="foot"><div class="b">crewpact.app · atualiza sozinho</div></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <script>
+    // estrelas da variação 5 (posições fixas p/ o mockup não mexer entre reloads)
+    var box = document.getElementById('stars5');
+    var pts = [[12,14],[28,8],[46,20],[63,11],[78,24],[88,9],[18,30],[70,32],[38,38],[54,44],[8,40],[92,36],[24,52],[82,50]];
+    pts.forEach(function(p,i){ var s=document.createElement('i'); s.style.left=p[0]+'%'; s.style.top=p[1]+'%'; s.style.animationDelay=(i*0.28)+'s'; box.appendChild(s); });
+  </script>
+</body>
+</html>

@@ -2,15 +2,14 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, GUTTER, TYPE, SPACE, FONT, SHADOW, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, GUTTER, TYPE, SPACE, SHADOW, PELE, PELE_FONT } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
 import PeleHeader, { peleWord } from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { AppContext, useTheme, isoDay } from '../data/appContext';
+import { AppContext, isoDay } from '../data/appContext';
 import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
@@ -56,8 +55,6 @@ const buildDutiesCsv = (duties) => {
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
     calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, vacationDaysYear } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -246,7 +243,6 @@ export default function EscalaScreen({ navigation, route }) {
 
   const weekdayShort = (iso) => { const dt = new Date(`${iso}T00:00:00`); if (isNaN(dt)) return ''; const str = dt.toLocaleDateString(locale, { weekday: 'short' }).replace('.', ''); return str.charAt(0).toUpperCase() + str.slice(1); };
   const kindLabel = (kind) => (kind === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang));
-  const kindColor = (kind) => (kind === 'flight' ? C.brand : (kind === 'standby_airport' || kind === 'standby_home') ? C.warnText : C.sub);
 
   // ── Grelha de calendário ── 1.º dia da semana (Segunda=0), rótulos, código/cor por tipo.
   const firstWeekday = ((new Date(y, m0, 1).getDay()) + 6) % 7;   // Dom=0 → Seg=0
@@ -254,8 +250,6 @@ export default function EscalaScreen({ navigation, route }) {
   const prevDim = new Date(y, m0, 0).getDate();   // dias do mês anterior (p/ os dias "fora" no início)
   const trailCount = (7 - ((firstWeekday + daysInMonth) % 7)) % 7;   // dias do mês seguinte p/ completar a última semana
   const dutyClass = (d) => { const k = d.kind || 'flight'; return k === 'flight' ? 'flight' : (k === 'standby_airport' || k === 'standby_home') ? 'sby' : 'pos'; };
-  const codeColor = (cls) => cls === 'flight' ? C.brand : cls === 'sby' ? C.warnText : C.sub;
-  const barColor = (cls) => cls === 'flight' ? C.brand : cls === 'sby' ? C.warn : C.sub;
   // Cor da etiqueta POR TIPO de serviço — cada um o SEU tom distinto (pastéis suaves p/ diferenciar; voo escuro).
   const KIND_TINT = { flight: PELE.ink, standby_airport: '#E4E1D8', standby_home: '#E4E1D8', reserve: '#EAE4F2', positioning: '#E4ECFB', office: '#EDE6D6', training: '#FBEAD2' };
   const tagBg = (k) => KIND_TINT[k] || PELE.soft2;
@@ -383,14 +377,14 @@ export default function EscalaScreen({ navigation, route }) {
             <Text style={s.lead}>{l('Ainda não tens escala. Liga o calendário do telemóvel (ou importa por PDF) e mostramos os teus serviços aqui.', "You have no roster yet. Connect your phone calendar (or import a PDF) and we'll show your duties here.")}</Text>
 
             <View style={s.connectBig}>
-              <View style={s.connectBigIc}><Ionicons name="calendar-outline" size={22} color={C.text} /></View>
+              <View style={s.connectBigIc}><Icon name="cal" size={22} color={PELE.ink} /></View>
               <Text style={s.connectBigT}>{calendarId ? l('Calendário ligado', 'Calendar connected') : l('Liga o teu calendário', 'Connect your calendar')}</Text>
               <Text style={s.connectBigS}>{calendarId
                 ? l('Sem serviços lidos do calendário. Tenta importar de novo (podes mudar o intervalo) ou usa o PDF.', 'No duties read from the calendar. Try importing again (you can change the range) or use a PDF.')
                 : l('Importamos os teus serviços do calendário do telemóvel, assim que mudam. Tu só confirmas.', 'We import your duties from the phone calendar whenever they change. You just confirm.')}</Text>
-              <View style={s.privRow}><Ionicons name="lock-closed-outline" size={13} color={C.greenText} /><Text style={s.privTxt}>{l('Só de leitura · nada é alterado no teu calendário', 'Read-only · nothing is changed in your calendar')}</Text></View>
+              <View style={s.privRow}><Icon name="lock" size={13} color={PELE.ok} /><Text style={s.privTxt}>{l('Só de leitura · nada é alterado no teu calendário', 'Read-only · nothing is changed in your calendar')}</Text></View>
               {!calendarId ? (
-                <View style={s.connectTip}><Ionicons name="bulb-outline" size={13} color={C.warnText} /><Text style={s.connectTipTxt}>{l('Melhor com um calendário só para a escala (o feed do eCrew) — aniversários e eventos pessoais ficam de fora.', 'Best with a calendar just for your roster (the eCrew feed) — birthdays and personal events stay out.')}</Text></View>
+                <View style={s.connectTip}><Icon name="bulb" size={13} color={PELE.warn} /><Text style={s.connectTipTxt}>{l('Melhor com um calendário só para a escala (o feed do eCrew) — aniversários e eventos pessoais ficam de fora.', 'Best with a calendar just for your roster (the eCrew feed) — birthdays and personal events stay out.')}</Text></View>
               ) : null}
               <PrimaryButton onPress={calendarId ? () => openImport('calendar') : connectCalendar} icon={calendarId ? 'refresh' : 'arrow-forward'} radius="lg" style={{ marginTop: 14 }}
                 label={calendarId ? l('Importar agora', 'Import now') : l('Ligar ao calendário', 'Connect calendar')} />
@@ -430,7 +424,7 @@ export default function EscalaScreen({ navigation, route }) {
             {/* Grelha do mês — cabeçalho dos dias + células. Toca num serviço → setores (sheet);
                 toca/longo numa folga → inserir. */}
             <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
+                refreshControl={<RefreshControl refreshing={refreshing} tintColor={PELE.grey} colors={[PELE.grey]}
                   onRefresh={async () => {
                     setRefreshing(true); const t0 = Date.now();
                     try { await checkRosterChanges?.(); } catch { /* ignora */ }
@@ -633,8 +627,8 @@ export default function EscalaScreen({ navigation, route }) {
 
           // Faixa de REPOUSO ENTRE serviços (235 + split duty 220) — rest/split/continuous.
           const restChip = (rb, i) => {
-            const tone = rb.kind === 'rest' ? C.green : rb.kind === 'split' ? C.warn : C.red;
-            const bg = rb.kind === 'rest' ? C.greenSoft : rb.kind === 'split' ? C.warnSoft : C.redSoft;
+            const tone = rb.kind === 'rest' ? PELE.ok : rb.kind === 'split' ? PELE.warn : PELE.red;
+            const bg = rb.kind === 'rest' ? PELE.okSoft : rb.kind === 'split' ? PELE.warnSoft : PELE.redSoft;
             const place = rb.place === 'away' ? l('fora', 'away') : l('base', 'base');
             const txt = rb.kind === 'rest'
               ? l(`Repouso entre serviços · ${fmtM(rb.gapMin)} (mín ${fmtM(rb.requiredMin)} ${place}) ✓`, `Rest between · ${fmtM(rb.gapMin)} (min ${fmtM(rb.requiredMin)}) ✓`)
@@ -698,7 +692,7 @@ export default function EscalaScreen({ navigation, route }) {
               {/* Extras PAGOS neste dia trabalhado (SNC/RDP) — compensações por cima do serviço. */}
               {dayOv[dayIso] ? dayOv[dayIso].map((e) => (
                 <View key={e.id} style={s.dsOvRow}>
-                  <Icon name="cash" size={14} color={PELE.ok} />
+                  <Icon name="wallet" size={14} color={PELE.ok} />
                   <Text style={s.dsOvTxt}>{extraLabel(e.type)}{extraEur(e.type, catD) != null ? `  ·  +${fmtEur(extraEur(e.type, catD))}` : ''}</Text>
                 </View>
               )) : null}
@@ -811,20 +805,20 @@ export default function EscalaScreen({ navigation, route }) {
       <BottomSheet visible={moreOpen} onClose={() => setMoreOpen(false)} title={l('Exportar', 'Export')} closeLabel={t('common.close', lang)}>
         <View style={s.hubBody}>
           <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(openPdf, 350); }} style={s.hubOpt}>
-            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="document-text-outline" size={22} color={C.info} /></View>
+            <View style={s.hubOptIc}><Icon name="doc" size={22} color={PELE.ink} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.hubOptT}>{l('Registo FTL.245 (PDF)', 'FTL.245 record (PDF)')}</Text>
               <Text style={s.hubOptS}>{l('Registo de tempos assinável — a lei exige que o guardes (ORO.FTL.245).', 'Signable times record — the law requires you to keep it (ORO.FTL.245).')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+            <Icon name="chevron" size={18} color={PELE.grey} />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(onExport, 350); }} style={s.hubOpt}>
-            <View style={[s.hubOptIc, { backgroundColor: C.infoSoft }]}><Ionicons name="share-outline" size={22} color={C.brand} /></View>
+            <View style={s.hubOptIc}><Icon name="share" size={22} color={PELE.ink} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.hubOptT}>{l('Exportar CSV', 'Export CSV')}</Text>
               <Text style={s.hubOptS}>{l('Todos os serviços em tabela — para folhas de cálculo ou backup.', 'All duties as a table — for spreadsheets or backup.')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={C.lineStrong} />
+            <Icon name="chevron" size={18} color={PELE.grey} />
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -836,10 +830,10 @@ export default function EscalaScreen({ navigation, route }) {
           <Text style={s.recSub}>{t('duties.recSub', lang)}</Text>
           <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.recName', lang)}</Text>
           <TextInput value={recForm.name} onChangeText={(v) => setRecForm(f => ({ ...f, name: v }))}
-            placeholder={t('duties.recNamePh', lang)} placeholderTextColor={C.sub} style={s.recInput} />
+            placeholder={t('duties.recNamePh', lang)} placeholderTextColor={PELE.grey} style={s.recInput} />
           <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.recId', lang)}</Text>
           <TextInput value={recForm.crewId} onChangeText={(v) => setRecForm(f => ({ ...f, crewId: v }))}
-            placeholder={t('duties.recIdPh', lang)} placeholderTextColor={C.sub} autoCapitalize="characters" style={s.recInput} />
+            placeholder={t('duties.recIdPh', lang)} placeholderTextColor={PELE.grey} autoCapitalize="characters" style={s.recInput} />
 
           <PrimaryButton onPress={onGeneratePdf} icon="document-text-outline" style={{ marginTop: 20 }} label={t('duties.recGenerate', lang)} />
           <Text style={s.formHint}>{t('duties.recHint', lang)}</Text>
@@ -872,7 +866,7 @@ export default function EscalaScreen({ navigation, route }) {
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
+const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   body: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 16 },
 
@@ -907,15 +901,15 @@ const makeStyles = (C) => StyleSheet.create({
   monthLabel: { flex: 1, textAlign: 'center', fontSize: 32, fontFamily: PELE_FONT.display, letterSpacing: -0.5, color: PELE.ink },
 
   // Selo do calendário (ligado)
-  selo: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8, marginTop: 11 },
-  seloT: { fontSize: 12, fontFamily: FONT.semibold, color: C.text, maxWidth: '64%' },
-  seloChg: { fontSize: 12, fontFamily: FONT.bold, color: C.ink },
+  selo: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: PELE.soft2, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8, marginTop: 11 },
+  seloT: { fontSize: 12, fontFamily: PELE_FONT.body, color: PELE.ink, maxWidth: '64%' },
+  seloChg: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
 
   // Cartão "Ligar ao calendário"
-  connectCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginTop: 11 },
-  connectIc: { width: 40, height: 40, borderRadius: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  connectT: { fontSize: 14.5, fontFamily: FONT.bold, color: C.text },
-  connectS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 2, lineHeight: 15 },
+  connectCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft2, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, padding: 13, marginTop: 11 },
+  connectIc: { width: 40, height: 40, borderRadius: 11, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
+  connectT: { fontSize: 14.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  connectS: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 2, lineHeight: 15 },
 
   // Banner de alterações (azul, informativo)
 
@@ -931,27 +925,27 @@ const makeStyles = (C) => StyleSheet.create({
   vacChipStrong: { fontFamily: PELE_FONT.bodyHeavy },
 
   // Cards de dia
-  day: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8, ...SHADOW.sm },
-  dayFlash: { backgroundColor: C.greenSoft, borderColor: C.green },
-  off: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingVertical: 9, paddingHorizontal: 14, marginBottom: 8 },
+  day: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8, ...SHADOW.sm },
+  dayFlash: { backgroundColor: PELE.okSoft, borderColor: PELE.ok },
+  off: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: PELE.soft2, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: 9, paddingHorizontal: 14, marginBottom: 8 },
   dnum: { width: 42, alignItems: 'center' },
-  dwd: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
-  dwdOff: { color: C.lineStrong },
-  dd: { fontSize: 20, fontFamily: FONT.display, color: C.text, lineHeight: 22 },
-  ddOff: { color: C.lineStrong },
-  ddToday: { color: C.red },
-  todaydot: { width: 5, height: 5, borderRadius: 99, backgroundColor: C.red, marginTop: 3 },
+  dwd: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  dwdOff: { color: PELE.grey },
+  dd: { fontSize: 20, fontFamily: PELE_FONT.display, color: PELE.ink, lineHeight: 22 },
+  ddOff: { color: PELE.grey },
+  ddToday: { color: PELE.red },
+  todaydot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.red, marginTop: 3 },
   dmid: { flex: 1, minWidth: 0 },
   drow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  badgeTxt: { fontSize: 9, fontFamily: FONT.heavy, letterSpacing: 0.4, textTransform: 'uppercase', color: '#fff' },
-  route: { flex: 1, fontSize: 15, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
-  nschip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.infoSoft, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
-  nschipTxt: { fontSize: 11, fontFamily: FONT.heavy, color: C.info },
-  pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.warn || C.sub },
-  meta: { fontSize: 12, fontFamily: FONT.medium, color: C.sub, marginTop: 3, fontVariant: ['tabular-nums'] },
-  eur: { fontSize: 14, fontFamily: FONT.display, color: C.greenText },
-  offlbl: { flex: 1, fontSize: 13, fontFamily: FONT.bold, color: C.sub },
+  badgeTxt: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.4, textTransform: 'uppercase', color: '#fff' },
+  route: { flex: 1, fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, letterSpacing: -0.2 },
+  nschip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: PELE.info, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
+  nschipTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: PELE.info },
+  pendDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.warn },
+  meta: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3, fontVariant: ['tabular-nums'] },
+  eur: { fontSize: 14, fontFamily: PELE_FONT.display, color: PELE.ok },
+  offlbl: { flex: 1, fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
 
   // ── Grelha de calendário ──
   wkhead: { flexDirection: 'row', marginTop: 6, marginBottom: 5 },
@@ -1041,7 +1035,7 @@ const makeStyles = (C) => StyleSheet.create({
   dsSvcAct: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dsSvcActTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
 
-  foot: { fontSize: 11, color: C.sub, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
+  foot: { fontSize: 11, color: PELE.grey, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
 
   // Legenda da grelha (uma linha, compacta)
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 10, paddingHorizontal: 2 },
@@ -1055,23 +1049,23 @@ const makeStyles = (C) => StyleSheet.create({
   legTxt2: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
 
   // Arranque (Serviços, sem escala)
-  h1Big: { fontSize: 28, fontFamily: FONT.display, letterSpacing: -0.6, color: C.text, marginTop: 6 },
-  lead: { fontSize: 13.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 20, marginTop: 8 },
-  connectBig: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 18 },
-  connectBigIc: { width: 46, height: 46, borderRadius: 13, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  connectBigT: { fontSize: 16.5, fontFamily: FONT.bold, color: C.text, letterSpacing: -0.2 },
-  connectBigS: { fontSize: 12.5, fontFamily: FONT.medium, color: C.sub, lineHeight: 18, marginTop: 6 },
+  h1Big: { fontSize: 28, fontFamily: PELE_FONT.display, letterSpacing: -0.6, color: PELE.ink, marginTop: 6 },
+  lead: { fontSize: 13.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 20, marginTop: 8 },
+  connectBig: { backgroundColor: PELE.soft2, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 18 },
+  connectBigIc: { width: 46, height: 46, borderRadius: 13, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  connectBigT: { fontSize: 16.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, letterSpacing: -0.2 },
+  connectBigS: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18, marginTop: 6 },
   privRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 },
-  privTxt: { fontSize: 11, fontFamily: FONT.bold, color: C.greenText },
-  connectTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginTop: 12, padding: 11, borderRadius: RADIUS.md, backgroundColor: C.warnSoft, borderWidth: 1, borderColor: C.warn + '55' },
-  connectTipTxt: { flex: 1, fontSize: 11.5, lineHeight: 16, fontFamily: FONT.medium, color: C.text },
+  privTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.ok },
+  connectTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginTop: 12, padding: 11, borderRadius: RADIUS.md, backgroundColor: PELE.warnSoft, borderWidth: 1, borderColor: PELE.warn + '55' },
+  connectTipTxt: { flex: 1, fontSize: 11.5, lineHeight: 16, fontFamily: PELE_FONT.bodyMed, color: PELE.ink },
   orline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
-  orlineBar: { flex: 1, height: 1, backgroundColor: C.line },
-  orlineTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.lineStrong },
+  orlineBar: { flex: 1, height: 1, backgroundColor: PELE.line },
+  orlineTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
 
   // Cartão "IR" (no mês, calendário por ligar) → hub
-  goBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 9 },
-  goBtnTxt: { color: '#fff', fontSize: 13, fontFamily: FONT.heavy, letterSpacing: 0.3 },
+  goBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: PELE.ink, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 9 },
+  goBtnTxt: { color: '#fff', fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3 },
 
   // Hub de importar
   hubTitle: { fontFamily: PELE_FONT.display, fontSize: 26, letterSpacing: -0.3, color: PELE.ink, marginBottom: 6 },
@@ -1087,8 +1081,8 @@ const makeStyles = (C) => StyleSheet.create({
 
   // Folha do registo FTL.245
   form: { padding: 20 },
-  fieldLbl: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.text, marginBottom: 8 },
-  recSub: { fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-  recInput: { backgroundColor: C.soft, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: C.line, color: C.text, fontSize: TYPE.body },
-  formHint: { fontSize: 11, color: C.sub, textAlign: 'center', marginTop: 10 },
+  fieldLbl: { fontSize: TYPE.label, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 8 },
+  recSub: { fontSize: TYPE.sub, color: PELE.grey, lineHeight: 18 },
+  recInput: { backgroundColor: PELE.soft, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: PELE.line, color: PELE.ink, fontSize: TYPE.body },
+  formHint: { fontSize: 11, color: PELE.grey, textAlign: 'center', marginTop: 10 },
 });
