@@ -7,7 +7,7 @@ import { RADIUS, GUTTER, TYPE, SPACE, FONT, SHADOW, PELE, PELE_FONT } from '../d
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
-import NotificationsBell from '../components/NotificationsBell';
+import PeleHeader, { peleWord } from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, useTheme, isoDay } from '../data/appContext';
@@ -20,10 +20,8 @@ import { yearCount } from '../data/aeEvents';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import { legZulu } from '../data/zulu';
-import HeaderActions from '../components/HeaderActions';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
-import Eyebrow from '../components/Eyebrow';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
 import BottomSheet from '../components/BottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
@@ -365,18 +363,18 @@ export default function EscalaScreen({ navigation, route }) {
       <View style={s.body}>
         {/* Topo pele (mockup) — avatar↖ · sino↗. Ferramentas realojadas: importar→FAB "+" ·
             sync→pull-to-refresh · export→link no fundo da grelha. */}
-        <View style={s.hdr}>
-          <TouchableOpacity style={s.av} onPress={() => navigation.navigate('Perfil')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={l('Perfil', 'Profile')}>
-            <Text style={s.avTxt}>{initials}</Text>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          {/* Sincronizar/Importar — botão do header (ex-selo/cartão do fundo); PONTO âmbar se há alterações/dessincronia */}
-          <TouchableOpacity style={s.hdrBtn} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
-            <Icon name={calendarId ? 'sync' : 'download'} size={19} color={PELE.ink} />
-            {(rcCounts?.total || lsCount) ? <View style={s.hdrDot} /> : null}
-          </TouchableOpacity>
-          <NotificationsBell />
-        </View>
+        <PeleHeader
+          initials={initials}
+          onAvatar={() => navigation.navigate('Perfil')}
+          actions={
+            /* Sincronizar/Importar — botão do header; PONTO âmbar se há alterações/dessincronia */
+            <TouchableOpacity style={s.hdrBtn} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
+              <Icon name={calendarId ? 'sync' : 'download'} size={19} color={PELE.ink} />
+              {(rcCounts?.total || lsCount) ? <View style={s.hdrDot} /> : null}
+            </TouchableOpacity>
+          }
+          bell
+        />
 
         {!anyDuty ? (
           /* ── Arranque (Serviços) — sem escala: informativo + formas de importar ── */
@@ -404,25 +402,22 @@ export default function EscalaScreen({ navigation, route }) {
           </ScrollView>
         ) : (
           <View style={s.monthWrap} {...monthPan.panHandlers}>
-            <Text style={s.eyebrow} numberOfLines={1}>{l('A tua escala', 'Your roster')}{calendarId && calendarName ? ` · ${calendarName}` : ''}</Text>
-            {/* Header pele — eyebrow + hero (MÊS=hero Barlow + fantasma=nº do mês) + régua */}
-            <View style={s.hero}>
-              {/* FANTASMA gigante = o ANO (indica o ano; muda quando mudas de ano) */}
-              <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{y}</Text>
-              {/* MÊS (só o mês — o ano é o fantasma) + ▾ subtil · linha AMARELA subtil por baixo quando é o mês atual */}
-              <View style={s.heroRow}>
+            <PeleHeader
+              eyebrow={`${l('A tua escala', 'Your roster')}${calendarId && calendarName ? ` · ${calendarName}` : ''}`}
+              ghost={y}
+              word={
+                /* MÊS (só o mês — o ano é o fantasma) + ▾ · linha AMARELA por baixo quando é o mês atual · swipe muda mês */
                 <Animated.View style={{ transform: [{ translateX: rowX }] }}>
                   <TouchableOpacity style={s.mBtn} onPress={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={l(`Mudar de mês · ${monthLabel}`, `Change month · ${monthLabel}`)}>
                     <View style={s.wordWrap}>
-                      <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{monthName.charAt(0).toUpperCase() + monthName.slice(1)}</Text>
+                      <Text style={peleWord} numberOfLines={1} allowFontScaling={false}>{monthName.charAt(0).toUpperCase() + monthName.slice(1)}</Text>
                       {isCurrentMonth ? <View style={s.nowBar} /> : null}
                     </View>
                     <Icon name="chevron" rot={90} size={16} color={PELE.grey} />
                   </TouchableOpacity>
                 </Animated.View>
-              </View>
-            </View>
-            <View style={s.hr} />
+              }
+            />
 
             {/* Resumo do mês — estilo mockup (Barlow, à esquerda, sem separadores); no TOPO (sempre visível, opção 2) */}
             <View style={s.summ}>
@@ -885,9 +880,7 @@ const makeStyles = (C) => StyleSheet.create({
   eyeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   eyebrowWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.ink },
-  hdr: { flexDirection: 'row', alignItems: 'center', paddingTop: 12 },
   monthWrap: { flex: 1 },
-  eyebrow: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 10 },
   tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ib: { width: 38, height: 38, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
   syncDot: { position: 'absolute', top: 7, right: 7, width: 9, height: 9, borderRadius: 99, backgroundColor: PELE.info, borderWidth: 1.5, borderColor: PELE.paper },
@@ -895,16 +888,9 @@ const makeStyles = (C) => StyleSheet.create({
   // Mês navegável
   monthBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
   marrow: { width: 36, height: 36, borderRadius: 12, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  hero: { position: 'relative', marginTop: 8, minHeight: 108, justifyContent: 'flex-end' },
-  ghost: { position: 'absolute', right: 2, top: -16, fontFamily: PELE_FONT.display, fontSize: 130, lineHeight: 132, letterSpacing: -4, color: PELE.ghost },
-  heroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 12, marginBottom: 14 },
   mBtn: { flexDirection: 'row', alignItems: 'flex-end', gap: 9 },
   wordWrap: { position: 'relative' },
-  word: { fontFamily: PELE_FONT.display, fontSize: 44, letterSpacing: -0.5, color: PELE.ink },
   nowBar: { position: 'absolute', left: 0, bottom: -5, width: 26, height: 2.5, borderRadius: 2, backgroundColor: PELE.yellow },   // mês atual — acento curto fixo (marca)
-  av: { width: 36, height: 36, borderRadius: 18, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center' },
-  avTxt: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy, fontSize: 14 },
   hdrBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
   hdrDot: { position: 'absolute', top: 7, right: 7, width: 9, height: 9, borderRadius: 5, backgroundColor: PELE.warn, borderWidth: 1.5, borderColor: PELE.paper },
   mpTitle: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink, letterSpacing: -0.3, marginBottom: 14 },

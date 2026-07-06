@@ -12,6 +12,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import Eyebrow from '../components/Eyebrow';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
+import PeleHeader from '../components/PeleHeader';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -451,13 +452,13 @@ export default function SettingsScreen({ navigation }) {
           const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : (crewCategory || null);
           return (
             <Animated.View style={seg(0)}>
-              <Text style={s.greet}>{t('profile.eyebrow', lang)}</Text>
-              <View style={s.phero}>
-                <Text style={s.pghost} numberOfLines={1} allowFontScaling={false}>{inits}</Text>
-                <Text style={s.pword} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} allowFontScaling={false}>{displayName}</Text>
-                <Text style={s.pkick} numberOfLines={1}>{[company?.name, t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)].filter(Boolean).join(' · ')}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>
-              </View>
-              <View style={s.phr} />
+              <PeleHeader
+                size="detail"
+                eyebrow={t('profile.eyebrow', lang)}
+                ghost={inits}
+                word={displayName}
+                kick={<Text style={s.pkick} numberOfLines={1}>{[company?.name, t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)].filter(Boolean).join(' · ')}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>}
+              />
               <View style={s.pmeta}>
                 {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
                 {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
@@ -883,14 +884,9 @@ const makeStyles = (C) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
   bk: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  // Herói do perfil (mockup perfil-final) — greet + FANTASMA iniciais + nome + kick + régua + meta
-  greet: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 4 },
-  phero: { position: 'relative', minHeight: 150, justifyContent: 'flex-end', paddingBottom: 6, marginTop: 4 },
-  pghost: { position: 'absolute', right: 4, top: -18, fontFamily: PELE_FONT.display, fontSize: 150, lineHeight: 152, letterSpacing: -4, color: PELE.ghost },
-  pword: { fontFamily: PELE_FONT.display, fontSize: 52, letterSpacing: -0.5, color: PELE.ink },
+  // Herói do perfil — fantasma/nome/eyebrow/régua vêm do PeleHeader (size 'detail'); só o kick fica (categoria a amarelo)
   pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.grey, marginTop: 8 },
   pkickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
-  phr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 4 },
   pmeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 11 },
   pmetaTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9.5, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   pmetaB: { color: PELE.ink },

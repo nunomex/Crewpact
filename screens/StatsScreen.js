@@ -1,13 +1,13 @@
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
-import PageHeader from '../components/PageHeader';
-import HeaderActions from '../components/HeaderActions';
-import PrimaryButton from '../components/PrimaryButton';
-import YearShareCard from '../components/YearShareCard';
+import { PELE, PELE_FONT, GUTTER, RADIUS } from '../data/constants';
+import Icon from '../components/Icon';
+import PeleSide from '../components/PeleSide';
+import PeleSheet from '../components/PeleSheet';
+import PeleHeader from '../components/PeleHeader';
 import CountUp from '../components/CountUp';
+import YearShareCard from '../components/YearShareCard';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -16,9 +16,13 @@ import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 
-const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
+// Cor do estado da janela FTL (≥90% vermelho · ≥70% laranja · resto verde) — pele.
+const barColor = (r) => (r >= 0.9 ? PELE.red : r >= 0.7 ? PELE.warn : PELE.ok);
+
+// Curva do arco das bolas (translateX por índice) — recria o efeito do mockup para N opções.
+const arcX = (i, n) => { const mid = (n - 1) / 2; const tt = mid ? (i - mid) / mid : 0; return -Math.round(40 * (1 - Math.cos((tt * Math.PI) / 2))); };
 
 // Barra que enche de 0 → valor ao montar (mesma sensação das barras da Home).
 function GrowBar({ ratio, color, track, fill, delay = 200 }) {
@@ -45,16 +49,13 @@ function MonthBar({ ratio, color, delay }) {
     if (reduce) { h.setValue(target); return; }
     Animated.timing(h, { toValue: target, duration: 700, delay, useNativeDriver: false }).start();
   }, [target, h, delay, reduce]);
-  return <Animated.View style={{ width: '64%', borderRadius: 4, backgroundColor: color, height: h.interpolate({ inputRange: [0, 1], outputRange: ['2%', '100%'] }) }} />;
+  return <Animated.View style={{ width: '100%', maxWidth: 20, borderTopLeftRadius: 5, borderTopRightRadius: 5, backgroundColor: color, height: h.interpolate({ inputRange: [0, 1], outputRange: ['2%', '100%'] }) }} />;
 }
 
-// Fase 3 — Estatísticas do ano (YTD). Agrega o store cru `duties` (data/stats.js):
-// horas de voo vs limite anual, serviço, setores, dias, paragens nocturnas, gráfico
-// mensal, repartição por tipo, destinos e — companhias AE — ganhos YTD estimados.
+// Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
+// abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
+  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -62,7 +63,11 @@ export default function StatsScreen({ navigation }) {
 
   const [scope, setScope] = useState('year');   // 'year' | 'month'
   const isYear = scope === 'year';
+  const [dialSel, setDialSel] = useState(null);        // bola selecionada no dial (chave)
+  const [sheet, setSheet] = useState(null);            // folha de detalhe aberta: 'seg' | 'voo' | 'corpo'
   const [shareOpen, setShareOpen] = useState(false);   // cartão "Ano de voo" partilhável
+
+  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
 
   // Seletor de ANO (anos com escala + o corrente)
   const years = useMemo(() => {
@@ -81,9 +86,9 @@ export default function StatsScreen({ navigation }) {
     const d = new Date(Y, M - 1 + delta, 1);
     setYm(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
-  const monthTitle = (() => {
+  const monthName = (() => {
     const [Y, M] = ym.split('-').map(Number);
-    const x = new Date(Y, M - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    const x = new Date(Y, M - 1, 1).toLocaleDateString(locale, { month: 'long' });
     return x.charAt(0).toUpperCase() + x.slice(1);
   })();
 
@@ -110,6 +115,7 @@ export default function StatsScreen({ navigation }) {
     return { rows: [...flight.map((w) => ({ ...w, grp: 'voo' })), ...duty.map((w) => ({ ...w, grp: 'serv' }))], has };
   }, [dayLog]);
   const limLabel = (w) => w.id === 'year' ? l('Ano civil', 'Calendar year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} ${l('dias', 'days')}`;
+  const shortLim = (w) => `${w.grp === 'voo' ? l('Voo', 'Flt') : l('Serv', 'Duty')} ${w.id === 'year' ? l('ano', 'yr') : w.id === '12m' ? '12m' : `${w.days}d`}`;
 
   // Formatação
   const nf = (n) => Number(n).toLocaleString(locale);
@@ -120,6 +126,7 @@ export default function StatsScreen({ navigation }) {
     const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
     return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`;
   };
+  const fmtPc1 = (frac) => `${(Math.max(0, frac || 0) * 100).toLocaleString(locale, { maximumFractionDigits: 1 })}%`;
   const monthAbbr = (i) => new Date(2020, i, 1).toLocaleDateString(locale, { month: 'short' }).replace('.', '').slice(0, 3);
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
@@ -130,327 +137,494 @@ export default function StatsScreen({ navigation }) {
   const svcTotal = STAT_KINDS.reduce((a, k) => a + (st.byKind[k] || 0), 0);   // nº de SERVIÇOS (≥ dias, multi-serviço)
   const aeBlock = isYear ? st.aeYtd : st.aeMonth;   // bloco AE conforme o âmbito
   const nowD = new Date();
+  const empty = st.count === 0;
 
-  const tiles = [
-    { ic: 'briefcase-outline', label: l('Serviço', 'Duty'), value: fmtH(st.dutyHours) },
-    { ic: 'calendar-outline', label: l('Dias de escala', 'Duty days'), value: nf(st.count) },
-    { ic: 'sunny-outline', label: l('Dias de folga', 'Days off'), value: nf(st.offDays) },
-    { ic: 'moon-outline', label: l('Paragens noct.', 'Night stops'), value: nf(st.nightStops) },
-  ];
+  // ── Modo do dial: com AE = Ganhos · sem AE = Segurança ──
+  const mode = ae ? 'money' : 'safety';
+  const A = aeBlock || {};
+  const total = A.total || 0;
+  const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
+  const baseSub = isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`;
+  const moneyOpts = [
+    { k: 'total', nm: l('Total', 'Total'), ic: 'stats', val: total },
+    { k: 'base', nm: l('Base', 'Base'), ic: 'wallet', val: A.base || 0, sub: baseSub },
+    (A.perDiem > 0) && { k: 'diem', nm: l('Per diem', 'Per diem'), ic: 'plane', val: A.perDiem, sub: `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}` },
+    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
+    (extrasSum > 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença)', 'roster (roles · OFC) + events (DDO · sick)') },
+  ].filter(Boolean);
+
+  // Janelas FTL como opções do dial da Segurança (filtradas pelo âmbito Mês/Ano; a 28 d de serviço = sempre).
+  const safetyRows = limits.rows.map((w) => {
+    const r = w.limit ? w.done / w.limit : 0;
+    const when = (w.id === 'year' || w.id === '12m') ? 'ano' : (w.grp === 'serv' && w.days === 28) ? 'always' : 'mes';
+    return { k: w.grp + (w.id || w.days), nm: shortLim(w), r, done: w.done, limit: w.limit, w, when };
+  });
+  const safetyVis = safetyRows.filter((o) => o.when === 'always' || o.when === (isYear ? 'ano' : 'mes'));
+  const fullest = safetyRows.reduce((a, b) => (b.r > (a ? a.r : -1) ? b : a), null);   // janela mais cheia (card Segurança)
+
+  // Opções e seleção corrente do dial (derivada — cai no default se a chave já não é visível)
+  const curOpts = mode === 'money' ? moneyOpts : safetyVis;
+  const defaultKey = mode === 'money' ? 'total' : (safetyVis.reduce((a, b) => (b.r > (a ? a.r : -1) ? b : a), null) || {}).k;
+  const selKey = curOpts.find((o) => o.k === dialSel) ? dialSel : defaultKey;
+  const selMoney = mode === 'money' ? (moneyOpts.find((o) => o.k === selKey) || moneyOpts[0]) : null;
+  const selSafe = mode === 'safety' ? (safetyVis.find((o) => o.k === selKey) || safetyVis[0]) : null;
+
+  const pickDial = (k) => { select(); setDialSel(k); };
+  const openSheet = (id) => { select(); setSheet(id); };
+
+  // Índices dos cards/folhas (Segurança só existe como card no modo Ganhos)
+  const idx = mode === 'money' ? { seg: '01', voo: '02', corpo: '03' } : { voo: '01', corpo: '02' };
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
-        <PageHeader
+      <PeleSide label={l('ESTATÍSTICAS', 'STATISTICS')} accent={String(isYear ? year : ym.slice(0, 4))} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
+        <PeleHeader
           eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
-          title={isYear ? l('O teu ano', 'Your year') : l('O teu mês', 'Your month')}
-          right={<HeaderActions />}
+          ghost={isYear ? l('ANO', 'YEAR') : l('MÊS', 'MONTH')}
+          word={isYear ? String(year) : monthName}
+          wordTrailing={!isYear ? (
+            <View style={s.mnav}>
+              <TouchableOpacity onPress={() => { select(); shiftMonth(-1); }} hitSlop={8} style={s.mnavBtn} activeOpacity={0.7}>
+                <Icon name="chevron" size={15} color={PELE.ink} rot={180} />
+              </TouchableOpacity>
+              <TouchableOpacity disabled={ym >= nowYm} onPress={() => { select(); shiftMonth(1); }} hitSlop={8} style={[s.mnavBtn, ym >= nowYm && s.mnavBtnOff]} activeOpacity={0.7}>
+                <Icon name="chevron" size={15} color={ym >= nowYm ? PELE.grey : PELE.ink} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          initials={initials}
+          onAvatar={() => navigation.navigate('Perfil')}
+          bell
         />
 
-        {/* Toggle Mês ⇄ Ano */}
-        <Animated.View style={[s.scope, seg(0)]}>
-          {[['month', l('Mês', 'Month')], ['year', l('Ano', 'Year')]].map(([id, label]) => {
-            const on = scope === id;
-            return (
-              <TouchableOpacity key={id} onPress={() => { select(); setScope(id); }} activeOpacity={0.85} style={[s.scopeChip, on && s.scopeChipOn]}>
-                <Text style={[s.scopeTxt, on && s.scopeTxtOn]}>{label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </Animated.View>
-
-        {/* Período: ano = chips · mês = navegador ‹ › */}
-        {isYear ? (
-          years.length > 1 ? (
-            <Animated.View style={[s.years, seg(0)]}>
-              {years.map((y) => {
-                const on = y === year;
-                return (
-                  <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                    <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </Animated.View>
-          ) : null
-        ) : (
-          <Animated.View style={[s.mnav, seg(0)]}>
-            <TouchableOpacity onPress={() => { select(); shiftMonth(-1); }} hitSlop={10} style={s.mnavBtn} activeOpacity={0.8}>
-              <Ionicons name="chevron-back" size={18} color={C.text} />
-            </TouchableOpacity>
-            <Text style={s.mnavTxt}>{monthTitle}</Text>
-            <TouchableOpacity disabled={ym >= nowYm} onPress={() => { select(); shiftMonth(1); }} hitSlop={10} style={[s.mnavBtn, ym >= nowYm && s.mnavBtnOff]} activeOpacity={0.8}>
-              <Ionicons name="chevron-forward" size={18} color={ym >= nowYm ? C.sub : C.text} />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
-        {/* Limites FTL · atuais — janelas cumulativas (vieram do Início). Consumo a ESTA
-            data; independentes do mês/ano selecionado. */}
-        {limits.has ? (
-          <Animated.View style={[s.card, s.limCard, seg(1)]}>
-            <View style={s.limHead}><View style={s.limDot} /><Text style={s.limTitle}>{l('Limites FTL · atuais', 'FTL limits · current')}</Text></View>
-            {limits.rows.map((w, i) => {
-              const r = w.limit ? w.done / w.limit : 0;
+        {/* Segmento Mês ⇄ Ano */}
+        <View style={s.scoperow}>
+          <View style={s.segWrap}>
+            {[['month', l('Mês', 'Month')], ['year', l('Ano', 'Year')]].map(([id, label]) => {
+              const on = scope === id;
               return (
-                <View key={w.grp + w.id} style={[s.limWin, i > 0 && s.limWinB]}>
-                  <View style={s.limTop}>
-                    <Text style={s.limNm} numberOfLines={1}>{w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · {limLabel(w)}</Text>
-                    <Text style={s.limVl}>{Math.round(r * 100)}% · <Text style={s.limVlb}>{Math.round(w.done)}</Text>/{Math.round(w.limit)} h</Text>
-                  </View>
-                  <GrowBar ratio={r} color={barColor(r, C)} track={s.limTrack} fill={s.limFill} delay={200 + i * 40} />
-                </View>
+                <TouchableOpacity key={id} onPress={() => { select(); setScope(id); }} activeOpacity={0.85} style={[s.segb, on && s.segbOn]}>
+                  <Text style={[s.segTxt, on && s.segTxtOn]}>{label}</Text>
+                </TouchableOpacity>
               );
             })}
-          </Animated.View>
+          </View>
+        </View>
+
+        {/* Ano com escala em vários anos → chips */}
+        {isYear && years.length > 1 ? (
+          <View style={s.years}>
+            {years.map((y) => {
+              const on = y === year;
+              return (
+                <TouchableOpacity key={y} onPress={() => { select(); setYear(y); }} activeOpacity={0.85} style={[s.yChip, on && s.yChipOn]} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                  <Text style={[s.yTxt, on && s.yTxtOn]}>{y}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         ) : null}
 
-        {st.count === 0 ? (
-          <Animated.View style={[s.empty, seg(1)]}>
-            <Ionicons name="bar-chart-outline" size={28} color={C.sub} />
+        {empty ? (
+          <Animated.View style={[s.emptyWrap, seg(1)]}>
             <Text style={s.emptyTxt}>{isYear ? l('Sem escala registada em ' + year + '.', 'No roster recorded in ' + year + '.') : l('Sem escala neste mês.', 'No roster this month.')}</Text>
-            <Text style={s.emptySub}>{l('Importa ou regista duties para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
-            {/* O vazio DIZ o que fazer — e dá o botão para o fazer (antes era só texto). */}
-            <PrimaryButton onPress={() => { select(); navigation.navigate('Escala'); }} icon="arrow-forward" radius="lg"
-              label={l('Ir para a Escala', 'Go to roster')} style={{ marginTop: 10, alignSelf: 'stretch', marginHorizontal: 30 }} />
+            <Text style={s.emptySub}>{l('Importa ou regista serviços para veres as tuas estatísticas.', 'Import or add duties to see your stats.')}</Text>
+            <TouchableOpacity onPress={() => { select(); navigation.navigate('Escala'); }} activeOpacity={0.85} style={s.emptyBtn}>
+              <Text style={s.emptyBtnTxt}>{l('Ir para a Escala', 'Go to roster')}</Text>
+              <Icon name="chevron" size={14} color={PELE.paper} />
+            </TouchableOpacity>
           </Animated.View>
         ) : (
           <>
-            {/* HERO — horas de voo (ano: vs limite 1000 h · mês: só o número + contexto) */}
-            <Animated.View style={[s.hero, seg(1)]}>
-              <View style={s.heroTop}>
-                <View style={s.heroDot} />
-                <Text style={s.heroEyebrow}>{l('Horas de voo', 'Flight hours')}</Text>
-                {isYear ? <Text style={s.heroPct}>{Math.round(flightRatio * 100)}%</Text> : null}
-              </View>
-              <View style={s.heroNumRow}>
-                <CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.heroNum} delay={250} />
-                <Text style={s.heroUnit}>{l('h voadas', 'h flown')}</Text>
-              </View>
-              {isYear ? <GrowBar ratio={flightRatio} color={barColor(flightRatio, C)} track={s.heroBar} fill={s.heroBarFill} /> : null}
-              <Text style={s.heroSub}>{isYear ? `${l('de', 'of')} ${nf(ANNUAL_FLIGHT_LIMIT_H)} h · ` : ''}{st.flights} {l('voos', 'flights')} · {st.sectors} {l('setores', 'sectors')}</Text>
-            </Animated.View>
+            {/* Section eyebrow do dial */}
+            <View style={s.seybRow}>
+              {mode === 'safety' ? <View style={s.seybDot} /> : null}
+              <Text style={s.seyb}>{mode === 'money'
+                ? `${l('Os teus ganhos · estimados', 'Your earnings · estimated')} ${isYear ? l('no ano', 'this year') : `${l('em', 'in')} ${monthName.toLowerCase()}`}`
+                : l('A tua segurança · janelas FTL · agora', 'Your safety · FTL windows · now')}</Text>
+            </View>
 
-            {/* Tiles — serviço / dias / folgas / paragens nocturnas */}
-            <Animated.View style={[s.tiles, seg(2)]}>
-              {tiles.map((ti) => (
-                <View key={ti.label} style={s.tile}>
-                  <Ionicons name={ti.ic} size={16} color={C.red} />
-                  <Text style={s.tileVal} numberOfLines={1}>{ti.value}</Text>
-                  <Text style={s.tileLbl} numberOfLines={1}>{ti.label}</Text>
-                </View>
-              ))}
-            </Animated.View>
-
-            {/* Repouso & fadiga */}
-            <Animated.View style={[s.card, seg(3)]}>
-              <Text style={s.cardTitle}>{l('Repouso & fadiga', 'Rest & fatigue')}</Text>
-              <View style={s.aeRow}><Text style={s.aeK} numberOfLines={1}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text><Text style={s.aeV}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text></View>
-              {st.reducedRests ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Repousos < 11 h', 'Rests < 11 h')}</Text><Text style={[s.aeV, { color: C.warnText || C.text }]}>{st.reducedRests}</Text></View> : null}
-              <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK} numberOfLines={1}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text><Text style={s.aeV}>{st.longestStreak} {l('dias', 'days')}</Text></View>
-            </Animated.View>
-
-            {/* Gráfico — ano: 12 meses · mês: dias do mês */}
-            <Animated.View style={[s.card, seg(3)]}>
-              <Text style={s.cardTitle}>{isYear ? l('Voo por mês', 'Flight by month') : l('Voo por dia', 'Flight by day')}</Text>
-              <View style={s.chart}>
-                {chartData.map((m, i) => {
-                  const r = m.flightMin / maxBar;
-                  const isNow = isYear
-                    ? (+year === nowD.getFullYear() && i === nowD.getMonth())
-                    : (st.ym === nowYm && (i + 1) === nowD.getDate());
-                  const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
-                  return (
-                    <View key={i} style={s.chartCol}>
-                      <View style={s.chartBarWrap}>
-                        <MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? C.red : C.ink) : C.line} delay={300 + i * (isYear ? 35 : 14)} />
+            {/* ── DIAL adaptativo ── */}
+            <Animated.View style={[s.money, seg(2)]}>
+              <View style={s.disp}>
+                {mode === 'money' ? (
+                  <>
+                    <Text style={[s.dval, selMoney.k !== 'base' && s.dvalGreen]} numberOfLines={1} allowFontScaling={false}>{fmtEur0(selMoney.val)}</Text>
+                    {selMoney.k === 'total' ? (
+                      <View style={s.dsubBox}>
+                        <Text style={s.dsub}>{l('Base', 'Base')} · {isYear ? `${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : monthName} · <Text style={s.dsubB}>{fmtEur0(A.base || 0)}</Text></Text>
+                        <View style={s.gline}>
+                          <View style={s.gpill}><Text style={s.gpillTxt}>+{fmtEur0(Math.max(0, total - (A.base || 0)))}</Text></View>
+                          <Text style={s.dsub}>{l('ganho acima da base', 'earned above base')}</Text>
+                        </View>
                       </View>
-                      <Text style={[s.chartLbl, isNow && { color: C.red, fontFamily: FONT.heavy }]} numberOfLines={1}>{lbl}</Text>
-                    </View>
+                    ) : (
+                      <Text style={[s.dsub, s.dsubBox]}>{selMoney.sub}</Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Text style={s.dlab}>{selSafe ? `${selSafe.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(selSafe.w)}` : ''}</Text>
+                    <Text style={[s.dvalS, { color: barColor(selSafe ? selSafe.r : 0) }]} allowFontScaling={false}>{Math.round((selSafe ? selSafe.r : 0) * 100)}%</Text>
+                    <Text style={s.dsub}>{selSafe ? `${Math.round(selSafe.done)} / ${Math.round(selSafe.limit)} h · ` : ''}<Text style={s.dsubB}>{l('faltam', 'left')} {selSafe ? Math.max(0, Math.round(selSafe.limit - selSafe.done)) : 0} h</Text></Text>
+                  </>
+                )}
+              </View>
+
+              <View style={s.col}>
+                {mode === 'money' ? moneyOpts.map((o, i) => {
+                  const on = o.k === selKey;
+                  return (
+                    <TouchableOpacity key={o.k} onPress={() => pickDial(o.k)} activeOpacity={0.8} style={[s.opt, { transform: [{ translateX: arcX(i, moneyOpts.length) }] }]}>
+                      <Text style={[s.onm, on && s.onmOn]}>{o.nm}</Text>
+                      <View style={[s.cir, on && s.cirInk]}>
+                        {on ? <Text style={s.cirPc}>{fmtPc1(total ? o.val / total : 0)}</Text> : <Icon name={o.ic} size={17} color="#9E9C93" />}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }) : safetyVis.map((o, i) => {
+                  const on = o.k === selKey;
+                  const col = barColor(o.r);
+                  return (
+                    <TouchableOpacity key={o.k} onPress={() => pickDial(o.k)} activeOpacity={0.8} style={[s.opt, { transform: [{ translateX: arcX(i, safetyVis.length) }] }]}>
+                      <Text style={[s.onm, on && s.onmOn]}>{o.nm}</Text>
+                      <View style={[s.cirS, on && { backgroundColor: col }]}>
+                        <Text style={[s.cirPcS, { color: on ? PELE.paper : col }]}>{Math.round(o.r * 100)}%</Text>
+                      </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
             </Animated.View>
 
-            {/* Repartição por tipo de duty */}
-            {kindsPresent.length ? (
-              <Animated.View style={[s.card, seg(4)]}>
-                <Text style={s.cardTitle}>{l('Por tipo', 'By type')}</Text>
-                {kindsPresent.map((k, idx) => {
-                  const n = st.byKind[k];
-                  const r = svcTotal ? n / svcTotal : 0;   // fração dos SERVIÇOS (não dos dias — multi-serviço passava 100%)
-                  return (
-                    <View key={k} style={[s.kRow, idx > 0 && s.kRowBorder]}>
-                      <Text style={s.kLbl} numberOfLines={1}>{kindLabel(k)}</Text>
-                      <View style={s.kBarWrap}><GrowBar ratio={r} color={C.ink} track={s.kBar} fill={s.kBarFill} delay={300 + idx * 60} /></View>
-                      <Text style={s.kNum}>{n}</Text>
-                    </View>
-                  );
-                })}
-              </Animated.View>
+            {/* Notas AE (estimativa · IPC · acordo) — só no modo Ganhos */}
+            {mode === 'money' ? (
+              <View style={s.aeNotes}>
+                {A.missing ? <Text style={s.note}>{A.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
+                {A.estimated ? <Text style={s.note}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
+                {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.note}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
+              </View>
             ) : null}
 
-            {/* AE — ganhos estimados (ano: YTD · mês: do mês). As linhas SOMAM ao total
-                (auditável): base + abono p/ falhas (cabine) + per diem + pernoitas +
-                extras da escala (OFC4·ADTY·papéis·DDO/WFLY) + extras do mês (eventos). */}
-            {aeBlock ? (
-              <Animated.View style={[s.card, seg(5)]}>
-                <View style={s.aeHead}><View style={s.aeDot} /><Text style={s.cardTitle}>{isYear ? l('AE · ganhos no ano (est.)', 'AE · earnings this year (est.)') : l('AE · ganhos do mês (est.)', 'AE · earnings this month (est.)')}</Text></View>
-                <View style={s.aeRow}><Text style={s.aeK}>{l('Base', 'Base')}{isYear ? ` (${st.aeYtd.monthsElapsed} ${l('meses', 'months')})` : ''}</Text><Text style={s.aeV}>{fmtEur0(aeBlock.base)}</Text></View>
-                {aeBlock.cash ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Abono p/ falhas', 'Cash handling')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.cash)}</Text></View> : null}
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Per diem', 'Per diem')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.perDiem)}</Text></View>
-                {aeBlock.nightStops ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Pernoitas', 'Night stops')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.nightStops)}</Text></View> : null}
-                {aeBlock.extras ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Extras da escala', 'Roster extras')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.extras)}</Text></View> : null}
-                {aeBlock.events ? <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{isYear ? l('Extras (eventos)', 'Extras (events)') : l('Extras do mês', 'Month extras')}</Text><Text style={[s.aeV, { color: C.red }]}>+{fmtEur0(aeBlock.events)}</Text></View> : null}
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Total estimado', 'Estimated total')}</Text><CountUp value={aeBlock.total} format={fmtEur0} style={s.aeVtot} delay={300} /></View>
-                {aeBlock.missing ? <Text style={s.aeMiss}>{aeBlock.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
-                {aeBlock.estimated ? <Text style={s.aeMiss}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
-                {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.aeMiss}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
-              </Animated.View>
-            ) : null}
+            {/* ── Bento (cards → folhas) ── */}
+            <View style={s.div} />
+            <Text style={s.mais}>{l('Mais', 'More')}</Text>
+            <Animated.View style={[s.bento, seg(3)]}>
+              {mode === 'money' ? (
+                <TouchableOpacity style={[s.btile, s.btileWide]} activeOpacity={0.85} onPress={() => openSheet('seg')}>
+                  <View style={[s.btIc, s.btIcAlarm]}><Icon name="gauge" size={20} color={PELE.red} /></View>
+                  <View style={s.btWt}>
+                    <View style={s.btNameWideRow}><Text style={s.btIdx}>{idx.seg}</Text><Text style={s.btNameWide}>{l('Segurança', 'Safety')}</Text></View>
+                    <View style={s.btCapRow}><View style={s.btDot} /><Text style={s.btCap}>{fullest ? `${fullest.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(fullest.w)} · ${l('mais cheia', 'fullest')}` : l('sem janelas', 'no windows')}</Text></View>
+                  </View>
+                  <Text style={[s.btKeyWide, { color: barColor(fullest ? fullest.r : 0) }]}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
+                </TouchableOpacity>
+              ) : null}
 
-            {/* Férias — saldo ANUAL (direito Art. 238.º CT), HONESTO: voo em dia de férias não conta
-                (volta ao "por marcar"). Só na vista Ano e p/ perfis com férias no AE. */}
+              <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('voo')}>
+                <View style={s.btTop}><View style={s.btIc}><Icon name="plane" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.voo}</Text></View>
+                <Text style={s.btName}>{l('Voo', 'Flight')}</Text>
+                <Text style={s.btKey}>{fmtH(st.flightHours)}</Text>
+                <Text style={s.btCap}>{isYear ? `${Math.round(flightRatio * 100)}% ${l('do teto', 'of cap')}` : `${l('em', 'in')} ${monthName.toLowerCase()}`}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('corpo')}>
+                <View style={s.btTop}><View style={s.btIc}><Icon name="bed" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.corpo}</Text></View>
+                <Text style={s.btName}>{l('Corpo', 'Body')}</Text>
+                <Text style={s.btKey}>{st.minRestH != null ? fmtH(st.minRestH) : '—'}</Text>
+                <Text style={s.btCap}>{l('repouso mín', 'min rest')} · {st.reducedRests || 0} {l('curtos', 'short')}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Cards extra — Férias (Ano) + Partilhar (o que o mockup não cobre) */}
             {isYear && hasVac ? (
-              <Animated.View style={[s.card, seg(5)]}>
-                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: C.green }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
-                <View style={s.aeRow}><Text style={s.aeK}>{l('Gozados', 'Taken')}</Text><Text style={s.aeV}>{vacTaken}</Text></View>
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeK}>{l('Por marcar', 'To mark')}</Text><Text style={s.aeV}>{vacLeft}</Text></View>
-                <View style={[s.aeRow, s.kRowBorder]}><Text style={s.aeKtot}>{l('Direito no ano', 'Annual entitlement')}</Text><Text style={s.aeVtot}>{vacQuota}</Text></View>
-                {vacTaken > vacQuota ? <Text style={s.aeMiss}>{l('Acima do plafond — podes ter dias reportados (Art. 240.º).', 'Over quota — you may have carried days over (Art. 240).')}</Text> : null}
-              </Animated.View>
-            ) : null}
-
-            {/* Destinos mais voados */}
-            {st.topDest.length ? (
-              <Animated.View style={[s.card, seg(6)]}>
-                <Text style={s.cardTitle}>{l('Destinos mais voados', 'Most flown')}</Text>
-                <View style={s.dests}>
-                  {st.topDest.map((d) => (
-                    <View key={d.code} style={s.destChip}><Text style={s.destCode}>{d.code}</Text><Text style={s.destN}>×{d.n}</Text></View>
-                  ))}
+              <View style={s.card}>
+                <View style={s.aeHead}><View style={[s.aeDot, { backgroundColor: PELE.ok }]} /><Text style={s.cardTitle}>{l('Férias', 'Leave')} {year}</Text></View>
+                <View style={s.body3}>
+                  <View style={s.bcell}><Text style={s.bnum}>{vacTaken}</Text><Text style={s.blab}>{l('Gozados', 'Taken')}</Text></View>
+                  <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{vacLeft}</Text><Text style={s.blab}>{l('Por marcar', 'To mark')}</Text></View>
+                  <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{vacQuota}</Text><Text style={s.blab}>{l('Direito no ano', 'Annual right')}</Text></View>
                 </View>
-              </Animated.View>
+                {vacTaken > vacQuota ? <Text style={[s.note, { marginTop: 10 }]}>{l('Acima do plafond — podes ter dias reportados (Art. 240.º).', 'Over quota — you may have carried days over (Art. 240).')}</Text> : null}
+              </View>
             ) : null}
 
-            {/* "Ano de voo" partilhável (só na vista Ano e com voo registado) — o cartão nasce
-                no telemóvel (view-shot) e sai pela folha do sistema; nada vai para servidor. */}
             {isYear && st.flightMin > 0 ? (
               <TouchableOpacity onPress={() => { select(); setShareOpen(true); }} activeOpacity={0.85} style={s.shareBtn}
                 accessibilityRole="button" accessibilityLabel={l('Partilhar o meu ano de voo', 'Share my year in the air')}>
-                <Ionicons name="share-outline" size={16} color={C.text} />
+                <Icon name="share" size={16} color={PELE.ink} />
                 <Text style={s.shareTxt}>{l('Partilhar o meu ano de voo', 'Share my year in the air')}</Text>
               </TouchableOpacity>
             ) : null}
 
-            <Text style={s.foot}>{l('Estimativa a partir da tua escala registada. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos).', 'Estimated from your recorded roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only).')}</Text>
+            <Text style={s.foot}>{l('Estimativa a partir da tua escala. Fim de serviço = sign-off; sem ele, on-block + débrief do perfil (só voos). Toca num tema para o detalhe.', 'Estimated from your roster. Duty end = sign-off; without it, on-block + your profile debrief (flights only). Tap a theme for detail.')}</Text>
           </>
         )}
       </ScrollView>
+
+      {/* ── Folha 01 · Segurança (só no modo Ganhos) ── */}
+      <PeleSheet visible={sheet === 'seg'} onClose={() => setSheet(null)}>
+        <View style={s.shead}>
+          <View style={[s.shIc, s.shIcAlarm]}><Icon name="gauge" size={19} color={PELE.red} /></View>
+          <View style={s.shTt}>
+            <Text style={s.shName}><Text style={s.shNameX}>{idx.seg} </Text>· {l('Segurança', 'Safety')}</Text>
+            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: barColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text></Text>
+          </View>
+          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
+        </View>
+        {['voo', 'serv'].map((g) => {
+          const rows = safetyRows.filter((o) => o.w.grp === g);
+          if (!rows.length) return null;
+          return (
+            <View key={g}>
+              <View style={s.grp}><Icon name={g === 'voo' ? 'plane' : 'clock'} size={12} color={PELE.grey} /><Text style={s.grpTxt}>{g === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')}</Text></View>
+              {rows.map((o, i) => (
+                <View key={o.k} style={s.win}>
+                  <View style={s.winHead}>
+                    <Text style={s.winName}>{limLabel(o.w)}</Text>
+                    <Text style={s.winVal}><Text style={s.winValB}>{Math.round(o.done)}</Text> / {Math.round(o.limit)} h</Text>
+                  </View>
+                  <GrowBar ratio={o.r} color={barColor(o.r)} track={s.track} fill={s.fill} delay={100 + i * 40} />
+                  <View style={s.winFoot}>
+                    <Text style={[s.pct, { color: barColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
+                    <Text style={s.lft}>{l('faltam', 'left')} {Math.max(0, Math.round(o.limit - o.done))} h</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })}
+        <Text style={s.bnote}>{l('As janelas contam para trás a partir de hoje — independentes do ano civil. ', 'Windows count back from today — independent of the calendar year. ')}<Text style={{ color: PELE.red, fontFamily: PELE_FONT.bodyBold }}>{l('≥ 90 %', '≥ 90%')}</Text>{l(' assinala atenção regulatória.', ' flags regulatory attention.')}</Text>
+      </PeleSheet>
+
+      {/* ── Folha · Voo ── */}
+      <PeleSheet visible={sheet === 'voo'} onClose={() => setSheet(null)}>
+        <View style={s.shead}>
+          <View style={s.shIc}><Icon name="plane" size={19} color={PELE.ink} /></View>
+          <View style={s.shTt}>
+            <Text style={s.shName}><Text style={s.shNameX}>{idx.voo} </Text>· {l('Voo', 'Flight')}</Text>
+            <Text style={s.shSub}>{l('horas de voo', 'flight hours')} · {isYear ? l('ano civil', 'calendar year') : monthName.toLowerCase()}</Text>
+          </View>
+          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
+        </View>
+        <View style={s.vhero}>
+          <Text style={s.vbig}><CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.vbig} delay={120} /><Text style={s.vbigU}> h</Text></Text>
+          {isYear ? <View style={s.vpct}><Text style={s.vpctN}>{Math.round(flightRatio * 100)}%</Text><Text style={s.vpctL}>{l('do teto', 'of cap')}</Text></View> : null}
+        </View>
+        {isYear ? <GrowBar ratio={flightRatio} color={PELE.ink} track={s.vbar} fill={s.vbarFill} /> : null}
+        <View style={s.vmeta}>
+          <Text style={s.lft}>{isYear ? `${l('faltam', 'left')} ${Math.max(0, Math.round(ANNUAL_FLIGHT_LIMIT_H - st.flightHours))} h` : `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}`}</Text>
+          {isYear ? <Text style={s.lft}>{l('teto', 'cap')} {nf(ANNUAL_FLIGHT_LIMIT_H)} h · ORO.FTL.210 b</Text> : null}
+        </View>
+
+        <View style={s.secH}><Icon name="stats" size={13} color={PELE.grey} /><Text style={s.secHTxt}>{isYear ? l('Voo por mês', 'Flight by month') : l('Voo por dia', 'Flight by day')}</Text></View>
+        <View style={s.chart}>
+          {chartData.map((m, i) => {
+            const r = m.flightMin / maxBar;
+            const isNow = isYear ? (+year === nowD.getFullYear() && i === nowD.getMonth()) : (st.ym === nowYm && (i + 1) === nowD.getDate());
+            const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
+            return (
+              <View key={i} style={s.chartCol}>
+                <View style={s.chartWrap}><MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? PELE.yellow : PELE.ink) : PELE.line} delay={120 + i * (isYear ? 30 : 12)} /></View>
+                <Text style={[s.chartLbl, isNow && { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy }]} numberOfLines={1}>{lbl}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={s.two}>
+          {kindsPresent.length ? (
+            <View style={s.mini}>
+              <Text style={s.miniH}>{l('Por tipo', 'By type')}</Text>
+              {kindsPresent.slice(0, 4).map((k) => (
+                <View key={k} style={s.mrow2}><Text style={s.mrow2K} numberOfLines={1}>{kindLabel(k)}</Text><Text style={s.mrow2V}>{st.byKind[k]}</Text></View>
+              ))}
+            </View>
+          ) : null}
+          {st.topDest.length ? (
+            <View style={s.mini}>
+              <Text style={s.miniH}>{l('Destinos', 'Destinations')}</Text>
+              {st.topDest.slice(0, 4).map((d) => (
+                <View key={d.code} style={s.mrow2}><View style={s.mrow2KRow}><Icon name="pin" size={12} color={PELE.grey} /><Text style={s.mrow2K}>{d.code}</Text></View><Text style={s.mrow2V}>×{d.n}</Text></View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+        <Text style={s.bnote}><Text style={s.bnoteB}>{st.flights}</Text> {l('voos', 'flights')} · <Text style={s.bnoteB}>{st.sectors}</Text> {l('setores', 'sectors')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.</Text>
+      </PeleSheet>
+
+      {/* ── Folha · Corpo ── */}
+      <PeleSheet visible={sheet === 'corpo'} onClose={() => setSheet(null)}>
+        <View style={s.shead}>
+          <View style={s.shIc}><Icon name="bed" size={19} color={PELE.ink} /></View>
+          <View style={s.shTt}>
+            <Text style={s.shName}><Text style={s.shNameX}>{idx.corpo} </Text>· {l('Corpo', 'Body')}</Text>
+            <Text style={s.shSub}>{l('repouso & fadiga', 'rest & fatigue')} · {isYear ? l('o teu ano', 'your year') : l('o teu mês', 'your month')}</Text>
+          </View>
+          <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
+        </View>
+        <View style={s.body3}>
+          <View style={s.bcell}><Text style={s.bnum}>{st.minRestH != null ? st.minRestH.toLocaleString(locale, { maximumFractionDigits: 1 }) : '—'}<Text style={s.bnumU}>{st.minRestH != null ? 'h' : ''}</Text></Text><Text style={s.blab}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text></View>
+          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.reducedRests || 0}</Text><Text style={s.blab}>{l('Repousos abaixo de 11 h', 'Rests below 11 h')}</Text></View>
+          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.longestStreak}<Text style={s.bnumU}>d</Text></Text><Text style={s.blab}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text></View>
+        </View>
+        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Repousos entre 10 h e 11 h são legais fora de base (ORO.FTL.235) — sem quebra do mínimo.', ' Rests between 10 h and 11 h are legal away from base (ORO.FTL.235) — no breach of the minimum.') : ''}</Text>
+      </PeleSheet>
+
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
     </SafeAreaView>
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
-  scroll: { padding: SPACE.lg },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PELE.paper },
+  scroll: { paddingHorizontal: GUTTER },
 
-  // Toggle Mês ⇄ Ano (segmentado)
-  scope: { flexDirection: 'row', alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: RADIUS.pill, padding: 4, marginBottom: SPACE.md },
-  scopeChip: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: RADIUS.pill },
-  scopeChipOn: { backgroundColor: C.ink },
-  scopeTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
-  scopeTxtOn: { color: '#fff' },
-
-  // Navegador de mês ‹ Junho 2026 ›
-  mnav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 6, marginBottom: SPACE.md },
-  mnavBtn: { width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  // Nav de mês — vai no `wordTrailing` do PeleHeader (o resto do cabeçalho é do PeleHeader)
+  mnav: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  mnavBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   mnavBtnOff: { opacity: 0.4 },
-  mnavTxt: { fontSize: 15, fontFamily: FONT.semibold, color: C.text, fontVariant: ['tabular-nums'] },
 
-  // Limites FTL · atuais (card que veio do Início)
-  limCard: { borderColor: '#F2D9D3' },
-  limHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 13 },
-  limDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.red },
-  limTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub },
-  limWin: { paddingVertical: 9 },
-  limWinB: { borderTopWidth: 1, borderTopColor: C.line },
-  limTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 7 },
-  limNm: { fontSize: 11.5, fontFamily: FONT.semibold, color: C.text },
-  limVl: { fontSize: 11.5, fontFamily: FONT.semibold, color: C.sub, fontVariant: ['tabular-nums'] },
-  limVlb: { color: C.text, fontFamily: FONT.bold },
-  limTrack: { height: 7, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  limFill: { height: '100%', borderRadius: RADIUS.pill },
+  // Segmento Mês/Ano
+  scoperow: { marginBottom: 14 },
+  segWrap: { flexDirection: 'row', alignSelf: 'flex-start', backgroundColor: PELE.soft, borderRadius: RADIUS.pill, padding: 3, gap: 2 },
+  segb: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: RADIUS.pill },
+  segbOn: { backgroundColor: PELE.ink },
+  segTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey },
+  segTxtOn: { color: PELE.paper },
 
-  years: { flexDirection: 'row', gap: 8, marginBottom: SPACE.md },
-  yChip: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.card },
-  yChipOn: { backgroundColor: C.ink, borderColor: C.ink },
-  yTxt: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub, fontVariant: ['tabular-nums'] },
-  yTxtOn: { color: '#fff' },
+  years: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  yChip: { borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.pill, paddingHorizontal: 15, paddingVertical: 7, backgroundColor: PELE.paper },
+  yChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
+  yTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  yTxtOn: { color: PELE.paper },
 
-  empty: { alignItems: 'center', gap: 8, paddingVertical: 70 },
-  emptyTxt: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.text, textAlign: 'center' },
-  emptySub: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center', paddingHorizontal: 20, lineHeight: 18 },
+  // Empty
+  emptyWrap: { alignItems: 'center', gap: 8, paddingVertical: 64 },
+  emptyTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textAlign: 'center' },
+  emptySub: { fontSize: 12.5, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 },
+  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.ink, borderRadius: RADIUS.pill, paddingHorizontal: 18, paddingVertical: 11, marginTop: 8 },
+  emptyBtnTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.paper },
 
-  // HERO
-  hero: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
-    shadowColor: '#14161A', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 12 }, elevation: 3 },
-  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.red },
-  heroEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: C.sub },
-  heroPct: { marginLeft: 'auto', fontSize: 12, fontFamily: FONT.bold, color: C.sub, fontVariant: ['tabular-nums'] },
-  heroNumRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 10, marginBottom: 12 },
-  heroNum: { fontSize: 48, fontFamily: FONT.displayBold, letterSpacing: -1.2, color: C.text, lineHeight: 50, fontVariant: ['tabular-nums'] },
-  heroUnit: { fontSize: 13, fontFamily: FONT.semibold, color: C.sub },
-  heroBar: { height: 8, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  heroBarFill: { height: '100%', borderRadius: RADIUS.pill },
-  heroSub: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
+  // Section eyebrow (dial)
+  seybRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  seybDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.red },
+  seyb: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
 
-  // Tiles 2×2
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: SPACE.md },
-  tile: { width: '47%', flexGrow: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15, gap: 7 },
-  tileVal: { fontSize: 22, fontFamily: FONT.displayBold, color: C.text, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
-  tileLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
+  // Dial
+  money: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 228 },
+  disp: { flex: 1, minWidth: 0 },
+  dval: { fontFamily: PELE_FONT.display, fontSize: 40, lineHeight: 40, color: PELE.ink },
+  dvalGreen: { color: PELE.ok },
+  dvalS: { fontFamily: PELE_FONT.display, fontSize: 54, lineHeight: 50, marginTop: 4 },
+  dlab: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
+  dsubBox: { marginTop: 10 },
+  dsub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18 },
+  dsubB: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
+  gline: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 7, flexWrap: 'wrap' },
+  gpill: { backgroundColor: PELE.okSoft, borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3 },
+  gpillTxt: { color: PELE.ok, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy },
 
-  // Cartões genéricos
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 16, marginBottom: SPACE.md },
-  cardTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, marginBottom: 12 },
+  col: { alignItems: 'flex-end', gap: 9 },
+  opt: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  onm: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  onmOn: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
+  cir: { minWidth: 40, height: 40, borderRadius: 20, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  cirInk: { backgroundColor: PELE.ink, paddingHorizontal: 11, shadowColor: '#141412', shadowOpacity: 0.26, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  cirPc: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
+  cirS: { minWidth: 44, height: 33, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  cirPcS: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy },
 
-  // Gráfico mensal
-  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 96, gap: 4 },
-  chartCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 6 },
-  chartBarWrap: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
-  chartLbl: { fontSize: 9, fontFamily: FONT.bold, color: C.sub, textTransform: 'uppercase' },
+  aeNotes: { marginTop: 12, gap: 4 },
+  note: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 15 },
 
-  // Repartição por tipo
-  kRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
-  kRowBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  kLbl: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.text, width: 96 },
-  kBarWrap: { flex: 1 },
-  kBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  kBarFill: { height: '100%', borderRadius: RADIUS.pill },
-  kNum: { fontSize: 13, fontFamily: FONT.bold, color: C.text, minWidth: 22, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  div: { height: 1, backgroundColor: PELE.line, marginTop: 22, marginBottom: 16 },
+  mais: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: PELE.grey, marginBottom: 12 },
 
-  // AE
-  aeHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
-  aeDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.red, marginBottom: 12 },
-  aeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, paddingVertical: 9 },
-  aeK: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub },
-  aeV: { fontSize: 14, fontFamily: FONT.semibold, color: C.text, fontVariant: ['tabular-nums'] },
-  aeKtot: { fontSize: 12.5, fontFamily: FONT.heavy, color: C.text },
-  aeVtot: { fontSize: 18, fontFamily: FONT.heavy, color: C.text, fontVariant: ['tabular-nums'] },
-  aeMiss: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 6, lineHeight: 15 },
+  // Bento
+  bento: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  btile: { width: '47%', flexGrow: 1, minHeight: 118, padding: 14, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16 },
+  btileWide: { width: '100%', flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 0, padding: 15 },
+  btWt: { flex: 1, minWidth: 0 },
+  btTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
+  btIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  btIcAlarm: { backgroundColor: PELE.redSoft },
+  btIdx: { fontFamily: PELE_FONT.displaySemi, fontSize: 15, letterSpacing: 1, color: PELE.yellow },
+  btName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginBottom: 5 },
+  btNameWideRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
+  btNameWide: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  btKey: { fontFamily: PELE_FONT.display, fontSize: 29, lineHeight: 29, color: PELE.ink },
+  btKeyWide: { fontFamily: PELE_FONT.display, fontSize: 33, lineHeight: 33 },
+  btCap: { marginTop: 6, fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
+  btCapRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  btDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PELE.red },
 
-  // Destinos
-  dests: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  destChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  destCode: { fontSize: 13, fontFamily: FONT.heavy, color: C.text, letterSpacing: 0.5 },
-  destN: { fontSize: 11, fontFamily: FONT.bold, color: C.sub },
+  // Cards extra
+  card: { backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.lg, padding: 16, marginTop: 12 },
+  aeHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
+  aeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: PELE.red },
+  cardTitle: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
 
-  // Botão "Partilhar o meu ano de voo" (tracejado, discreto — não compete com os dados)
-  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, marginBottom: SPACE.md },
-  shareTxt: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: PELE.line, borderStyle: 'dashed', borderRadius: RADIUS.lg, paddingVertical: 12, marginTop: 12 },
+  shareTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
 
-  foot: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, lineHeight: 16, marginTop: 4, paddingHorizontal: 2 },
+  foot: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 16, marginTop: 16, paddingHorizontal: 2, marginBottom: 6 },
+
+  // ── Folhas de detalhe ──
+  shead: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 15 },
+  shIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  shIcAlarm: { backgroundColor: PELE.redSoft },
+  shTt: { flex: 1, minWidth: 0 },
+  shName: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
+  shNameX: { fontFamily: PELE_FONT.displaySemi, color: PELE.yellow, fontSize: 13 },
+  shSub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginTop: 2 },
+  sClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+
+  grp: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, marginBottom: 9 },
+  grpTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.3, textTransform: 'uppercase', color: PELE.grey },
+  win: { marginBottom: 13 },
+  winHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
+  winName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.ink },
+  winVal: { fontFamily: PELE_FONT.displayMed, fontSize: 14, color: PELE.grey },
+  winValB: { color: PELE.ink, fontFamily: PELE_FONT.displaySemi },
+  track: { height: 7, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: RADIUS.pill },
+  winFoot: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 5 },
+  pct: { fontFamily: PELE_FONT.displaySemi, fontSize: 13 },
+  lft: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
+  bnote: { marginTop: 15, paddingTop: 12, borderTopWidth: 1, borderTopColor: PELE.line, fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 17 },
+  bnoteB: { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy },
+
+  vhero: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 10 },
+  vbig: { fontFamily: PELE_FONT.display, fontSize: 50, lineHeight: 44, color: PELE.ink },
+  vbigU: { fontSize: 20, color: PELE.grey, fontFamily: PELE_FONT.displayMed },
+  vpct: { alignItems: 'flex-end' },
+  vpctN: { fontFamily: PELE_FONT.display, fontSize: 24, lineHeight: 24, color: PELE.ink },
+  vpctL: { fontSize: 10.5, color: PELE.grey, fontFamily: PELE_FONT.bodyMed },
+  vbar: { height: 9, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, overflow: 'hidden' },
+  vbarFill: { height: '100%', borderRadius: RADIUS.pill },
+  vmeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7 },
+
+  secH: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, marginBottom: 11 },
+  secHTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1, textTransform: 'uppercase', color: PELE.grey },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 92, gap: 6 },
+  chartCol: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
+  chartWrap: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  chartLbl: { fontSize: 9, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, textTransform: 'uppercase' },
+
+  two: { flexDirection: 'row', gap: 11, marginTop: 16 },
+  mini: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, padding: 12 },
+  miniH: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.7, textTransform: 'uppercase', color: PELE.grey, marginBottom: 9 },
+  mrow2: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 },
+  mrow2KRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  mrow2K: { fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.ink },
+  mrow2V: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+
+  body3: { flexDirection: 'row' },
+  bcell: { flex: 1, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
+  bcellB: { borderLeftWidth: 1, borderLeftColor: PELE.line },
+  bnum: { fontFamily: PELE_FONT.display, fontSize: 32, lineHeight: 34, color: PELE.ink, textAlign: 'center' },
+  bnumU: { fontSize: 15, color: PELE.grey, fontFamily: PELE_FONT.displayMed },
+  blab: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, lineHeight: 14, marginTop: 7, textAlign: 'center' },
 });

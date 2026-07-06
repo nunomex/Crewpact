@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
+import PeleHeader from '../components/PeleHeader';
 import DutyFormSheet from '../components/DutyFormSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
@@ -169,12 +170,13 @@ export default function DutyDetailScreen({ route, navigation }) {
       <BackBtn />
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         {/* Herói — eyebrow + fantasma(FDP) + rota + kick + pílula de estado */}
-        <Text style={s.eyebrow} numberOfLines={1}>{(isFlight ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang))} · {fmtDate(date)}{date === todayISO ? ` · ${l('hoje', 'today')}` : ''}</Text>
-        <View style={s.hero}>
-          {heroGhost ? <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{heroGhost}</Text> : null}
-          <Text style={s.word} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} allowFontScaling={false}>{headMain}</Text>
-          {kickParts.length ? <Text style={s.kick} numberOfLines={1}>{kickParts.join(' · ')}</Text> : null}
-        </View>
+        <PeleHeader
+          size="detail" rule={false}
+          eyebrow={`${isFlight ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang)} · ${fmtDate(date)}${date === todayISO ? ` · ${l('hoje', 'today')}` : ''}`}
+          ghost={heroGhost || undefined}
+          word={headMain}
+          kick={kickParts.length ? kickParts.join(' · ') : undefined}
+        />
         <View style={s.stbar}>
           <View style={[s.pill, statusPill.tone === 'red' ? s.pillRed : statusPill.tone === 'ok' ? s.pillOk : s.pillNeutral]}>
             {statusPill.tone === 'ok' ? <Icon name="check" size={12} color={PELE.ok} /> : statusPill.tone === 'red' ? <Icon name="alert" size={12} color={PELE.red} /> : null}
@@ -336,12 +338,6 @@ const s = StyleSheet.create({
   bk: { width: 36, height: 36, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: GUTTER, paddingTop: 2 },
 
-  // Herói
-  eyebrow: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey, marginTop: 10 },
-  hero: { position: 'relative', minHeight: 108, marginTop: 2, justifyContent: 'flex-end', paddingBottom: 6 },
-  ghost: { position: 'absolute', right: 0, top: -14, fontFamily: PELE_FONT.display, fontSize: 104, lineHeight: 106, letterSpacing: -4, color: PELE.ghost },
-  word: { fontFamily: PELE_FONT.display, fontSize: 44, letterSpacing: -0.5, color: PELE.ink },
-  kick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
   stbar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
   pillOk: { backgroundColor: PELE.okSoft },

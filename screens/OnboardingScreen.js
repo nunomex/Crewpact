@@ -7,7 +7,7 @@ import { getLocales } from 'expo-localization';
 import Eyebrow from '../components/Eyebrow';
 import { countryName as countryNameOf, countryFlag } from '../data/countries';
 import { AppContext, useTheme } from '../data/appContext';
-import { updateProfile, register, verifySignupCode, resendSignup, validateName, validateEmail, validatePassword } from '../data/auth';
+import { updateProfile, register, verifySignupCode, resendSignup, validateEmail, validatePassword } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { t, tx } from '../data/i18n';
@@ -22,7 +22,7 @@ export default function OnboardingScreen({ signup = false }) {
   const C = useTheme();
   const styles = makeStyles(C);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ name: '', email: '', password: '', company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
+  const [draft, setDraft] = useState({ firstName: '', lastName: '', email: '', password: '', company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showPw, setShowPw] = useState(false);
@@ -168,7 +168,12 @@ export default function OnboardingScreen({ signup = false }) {
   const items = s.items;
   const field = s.field;
   const isLast = idx >= flow.length - 1;
-  const accountValid = !validateName(draft.name, lang) && !validateEmail(draft.email, lang) && !validatePassword(draft.password, true, lang);
+  // Nome em DOIS campos (primeiro + apelido) mas guardado num só `name` — a fonte de verdade
+  // (user_metadata.name do Auth) é um campo único; junta-se aqui, sem tocar na BD.
+  const firstOk = draft.firstName.trim().length > 0;
+  const lastOk = draft.lastName.trim().length > 0;
+  const fullName = `${draft.firstName.trim()} ${draft.lastName.trim()}`.trim();
+  const accountValid = firstOk && lastOk && !validateEmail(draft.email, lang) && !validatePassword(draft.password, true, lang);
   // Data válida e completa? Controla quem fica "preto/ativo": vazia → Saltar; cheia → Confirmar.
   const dateOk = s.input === 'date' && isRealDate(draft.serviceStart);
   const canNext = s.input === 'date' ? dateOk : s.input === 'account' ? accountValid : !!draft[field];
@@ -194,7 +199,7 @@ export default function OnboardingScreen({ signup = false }) {
       // do próprio signUp → ou é criada com tudo, ou não é criada de todo. NUNCA
       // fica meio-configurada.
       suppressAuth.current = true;
-      const reg = await register(draft.name, draft.email, draft.password, lang, payload);
+      const reg = await register(fullName, draft.email, draft.password, lang, payload);
       suppressAuth.current = false;
       if (!reg.ok) { setSaving(false); setSaveError(reg.error); setStep(0); return; }  // ex.: email já existe → volta ao 1.º passo
       if (reg.needsConfirm) {
@@ -243,7 +248,7 @@ export default function OnboardingScreen({ signup = false }) {
     finish();   // último passo → cria/grava
   };
 
-  if (created) return <AccountCreated name={draft.name} lang={lang} />;
+  if (created) return <AccountCreated name={fullName} lang={lang} />;
 
   // Ecrã de confirmação de email (só aparece com autoconfirm OFF na dashboard).
   if (confirming) return (
@@ -312,11 +317,22 @@ export default function OnboardingScreen({ signup = false }) {
                 AutoFill e devolvem a escrita a todo o formulário. */}
             {/* Erros só DEPOIS de sair do campo (blur) — a vermelho à 1.ª letra ("j" → "email
                 inválido") assusta sem ajudar; enquanto se escreve o campo fica neutro. */}
-            <TextInput value={draft.name} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, name: v }); }}
-              placeholder={lang === 'en' ? 'Full name' : 'Nome completo'} placeholderTextColor={C.sub}
-              onBlur={() => markBlur('name')}
-              autoCapitalize="words" autoCorrect={false} style={styles.acctInput} />
-            {acctBlur.name && (draft.name || acctTried) && validateName(draft.name, lang) ? <Text style={styles.acctErr}>{validateName(draft.name, lang)}</Text> : null}
+            <View style={styles.nameRow}>
+              <View style={styles.nameCol}>
+                <TextInput value={draft.firstName} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, firstName: v }); }}
+                  placeholder={lang === 'en' ? 'First name' : 'Primeiro nome'} placeholderTextColor={C.sub}
+                  onBlur={() => markBlur('firstName')}
+                  autoCapitalize="words" autoCorrect={false} textContentType="givenName" autoComplete="name-given" style={styles.acctInput} />
+                {acctBlur.firstName && (draft.firstName || acctTried) && !draft.firstName.trim() ? <Text style={styles.acctErr}>{lang === 'en' ? 'Enter your first name' : 'Indica o primeiro nome'}</Text> : null}
+              </View>
+              <View style={styles.nameCol}>
+                <TextInput value={draft.lastName} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, lastName: v }); }}
+                  placeholder={lang === 'en' ? 'Last name' : 'Apelido'} placeholderTextColor={C.sub}
+                  onBlur={() => markBlur('lastName')}
+                  autoCapitalize="words" autoCorrect={false} textContentType="familyName" autoComplete="name-family" style={styles.acctInput} />
+                {acctBlur.lastName && (draft.lastName || acctTried) && !draft.lastName.trim() ? <Text style={styles.acctErr}>{lang === 'en' ? 'Enter your last name' : 'Indica o apelido'}</Text> : null}
+              </View>
+            </View>
             <TextInput value={draft.email} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, email: v }); }}
               placeholder="email@exemplo.com" placeholderTextColor={C.sub} autoCapitalize="none" keyboardType="email-address" autoCorrect={false} style={styles.acctInput}
               onBlur={() => markBlur('email')} />
@@ -438,6 +454,8 @@ const makeStyles = (C) => StyleSheet.create({
   scroll: { flex: 1, paddingHorizontal: 24 },
   dateInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text, backgroundColor: C.card, letterSpacing: 1 },
   dateHint: { fontSize: 13, color: C.sub, marginTop: 10, lineHeight: 18 },
+  nameRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  nameCol: { flex: 1 },
   acctInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, fontSize: TYPE.body, fontFamily: FONT.medium, color: C.text, backgroundColor: C.card, marginBottom: 10 },
   acctErr: { fontSize: 12, color: C.red, marginTop: -6, marginBottom: 8, marginLeft: 4 },
   pwRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingHorizontal: 16, backgroundColor: C.card, marginBottom: 10 },

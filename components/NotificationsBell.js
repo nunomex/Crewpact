@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, FONT, PELE } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { t } from '../data/i18n';
 import { AppContext, useTheme } from '../data/appContext';
 import Eyebrow from './Eyebrow';
+import Icon from './Icon';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo Início, Escala e qualquer ecrã
@@ -39,8 +40,8 @@ export default function NotificationsBell() {
       {/* O leitor de ecrã DIZ quantas há por ler (o badge visual era mudo p/ VoiceOver/TalkBack). */}
       <TouchableOpacity style={s.hbtn} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityRole="button"
         accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
-        <Ionicons name="notifications-outline" size={18} color={C.text} />
-        {unread > 0 && <View style={s.headerBadge}><Text style={s.headerBadgeTxt}>{unread}</Text></View>}
+        <Icon name="bell" size={18} color={PELE.ink} />
+        {unread > 0 && <View style={s.dot} />}
       </TouchableOpacity>
 
       {/* pageSheet no iOS (superfície LEVE, com gesto de arrasto do sistema); fullScreen só Android. */}
@@ -105,9 +106,9 @@ export default function NotificationsBell() {
 }
 
 const makeStyles = (C) => StyleSheet.create({
-  hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
-  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
+  // Gatilho do sino — PELE (mockup): círculo soft 36 · sino ink · ponto vermelho 11px (sem número).
+  hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  dot: { position: 'absolute', top: -1, right: -1, width: 11, height: 11, borderRadius: RADIUS.pill, backgroundColor: PELE.red, borderWidth: 2, borderColor: PELE.paper },
 
   // Página inteira (igual às de duty/import)
   page: { flex: 1, backgroundColor: C.canvas },

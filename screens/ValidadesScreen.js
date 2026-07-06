@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
+import PeleHeader from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import { confirmDiscard } from '../data/confirmDiscard';
@@ -246,21 +247,17 @@ export default function ValidadesScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <PeleSide label={l('CARTEIRA', 'WALLET')} accent={`${sorted.length} ${l('DOCS', 'DOCS')}`} />
-      <View style={s.hdr}>
-        <TouchableOpacity style={s.bk} onPress={() => navigation.goBack()} hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.back', lang)}>
-          <Icon name="back" size={18} color={PELE.ink} />
-        </TouchableOpacity>
+      <View style={s.headWrap}>
+        <PeleHeader
+          onBack={() => navigation.goBack()}
+          eyebrow={l('Documentos', 'Documents')}
+          ghost={String(sorted.length).padStart(2, '0')}
+          word={l('Validades', 'Currency')}
+          kick={<Text style={s.kick} numberOfLines={1}>{sorted.length} {l(sorted.length === 1 ? 'documento' : 'documentos', sorted.length === 1 ? 'document' : 'documents')}{expiringCount ? <Text style={s.kickW}>{`  ·  ${expiringCount} ${l('a expirar', 'expiring')}`}</Text> : null}</Text>}
+        />
       </View>
 
       <View style={s.body}>
-        {/* Herói compacto */}
-        <Text style={s.greet}>{l('Documentos', 'Documents')}</Text>
-        <View style={s.hero}>
-          <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{String(sorted.length).padStart(2, '0')}</Text>
-          <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{l('Validades', 'Currency')}</Text>
-          <Text style={s.kick} numberOfLines={1}>{sorted.length} {l(sorted.length === 1 ? 'documento' : 'documentos', sorted.length === 1 ? 'document' : 'documents')}{expiringCount ? <Text style={s.kickW}>{`  ·  ${expiringCount} ${l('a expirar', 'expiring')}`}</Text> : null}</Text>
-        </View>
-        <View style={s.hr} />
 
         {/* Carteira · deck arrastável */}
         {sorted.length === 0 ? (
@@ -456,18 +453,12 @@ export default function ValidadesScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
-  hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8 },
-  bk: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  headWrap: { paddingHorizontal: GUTTER },
   body: { flex: 1, paddingHorizontal: GUTTER },
 
-  // Herói
-  greet: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 6 },
-  hero: { position: 'relative', minHeight: 120, marginTop: 2, justifyContent: 'flex-end', paddingBottom: 8 },
-  ghost: { position: 'absolute', right: 2, top: -16, fontFamily: PELE_FONT.display, fontSize: 130, lineHeight: 130, letterSpacing: -4, color: PELE.ghost },
-  word: { fontFamily: PELE_FONT.display, fontSize: 44, letterSpacing: -0.5, color: PELE.ink },
+  // Subtítulo do herói (kick) — passado ao PeleHeader; o segmento "a expirar" fica âmbar
   kick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
   kickW: { color: PELE.warn, fontFamily: PELE_FONT.bodyHeavy },
-  hr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 6 },
 
   emptyWrap: { flex: 1, justifyContent: 'center' },
   empty: { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.grey, lineHeight: 20, textAlign: 'center' },

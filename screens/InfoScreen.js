@@ -4,6 +4,7 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Dimensions, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Icon from '../components/Icon';
 import PeleHeader from '../components/PeleHeader';
 import PeleSheet from '../components/PeleSheet';
@@ -53,7 +54,9 @@ export default function InfoScreen() {
   const tabSpace = useTabBarSpace();
   // Crew-aware REAL: o perfil decide o que aparece. easyJet piloto/cabine → o AE respetivo
   // (catálogo em infoCatalog); sem AE (Ryanair, ou companhia AE ainda por modelar) → FTL-only.
-  const { crewType, company, ae } = useContext(AppContext);
+  const navigation = useNavigation();
+  const { crewType, company, ae, user } = useContext(AppContext);
+  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
   const isEzy = /easyjet|ezy/i.test([company && company.slug, company && company.name, company && company.engine_code].filter(Boolean).join(' '));
   const prof = (ae && isEzy) ? (crewType === 'cabin' ? 'cabin' : 'pilot') : 'ryan';
   const eyebrow = `Referência · ${(company && company.name) || '—'} · ${crewType === 'cabin' ? 'Cabine' : 'Piloto'}`;
@@ -90,7 +93,9 @@ export default function InfoScreen() {
       {/* Header FIXO no topo (fora do ScrollView) — não desliza com o conteúdo. Padrão de todas
           as páginas da pele: o header (eyebrow + § + hero + avatar/sino) fica preso; só o
           conteúdo por baixo faz scroll. O PeleSide (rótulo lateral) já era fixo, este agora também. */}
-      <PeleHeader eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} avatar="NS" />
+      <View style={s.headWrap}>
+        <PeleHeader eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} initials={initials} onAvatar={() => navigation.navigate('Perfil')} bell />
+      </View>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         <View style={s.searchWrap}>
@@ -175,6 +180,7 @@ export default function InfoScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: P.paper },
   scroll: { flex: 1 },
+  headWrap: { paddingHorizontal: 22 },
   searchWrap: { paddingHorizontal: 22 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: P.soft, borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 12 },
   searchInput: { flex: 1, fontFamily: F.body, fontSize: 12.5, color: P.ink, padding: 0 },
