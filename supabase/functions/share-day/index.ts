@@ -23,8 +23,9 @@
 //   (o --no-verify-jwt é OBRIGATÓRIO: o GET é público por design; o POST valida a
 //    sessão à mão cá dentro. Segredos já existentes: AIRLABS_KEY; usa também
 //    SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY, injetados.)
-//   Importa ./airports-coords.ts (catálogo IATA→coords, gerado por scripts/build-share-coords.js)
-//   — o bundler da CLI inclui-o; re-gerar se data/airports.json mudar.
+//   Importa ./airports-coords.ts (catálogo IATA→coords, gerado por scripts/build-share-coords.js,
+//   encadeado no build-airports.js) — o bundler da CLI inclui-o; por isso o deploy é POR CLI,
+//   nunca colar só o index no Dashboard.
 // ANTES: correr no SQL Editor: supabase/share-day.sql (tabela + RLS + purga),
 //   supabase/wx-cache.sql (cache do TEMPO, partilhada com flight-status) e
 //   supabase/flight-live.sql (cache curta do voo ao vivo, TTL 60 s — limita as

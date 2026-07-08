@@ -7,6 +7,9 @@
  * regular). Saída compacta: { "IATA": [lat, lon, "ICAO", "Nome", "Cidade", "CC"] }
  * (lat/lon a 4 casas; nome/cidade/país para a pesquisa por nome no formulário).
  * Fonte: https://ourairports.com/data/ (domínio público).
+ *
+ * No fim ENCADEIA scripts/build-share-coords.js (o catálogo IATA→coords da Edge
+ * share-day) — regenerar aeroportos regenera o catálogo, sem passo manual a lembrar.
  */
 const fs = require('fs');
 const path = require('path');
@@ -66,3 +69,6 @@ for (let r = 1; r < lines.length; r++) {
 
 fs.writeFileSync(OUT, JSON.stringify(out));
 console.log(`aeroportos: ${n} → ${OUT} (${(fs.statSync(OUT).size / 1024).toFixed(0)} KB)`);
+
+// Derivado da Edge: catálogo IATA→coords de share-day (lê o airports.json acabado de escrever).
+require('child_process').execFileSync(process.execPath, [path.resolve('scripts/build-share-coords.js')], { stdio: 'inherit' });

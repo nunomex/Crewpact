@@ -5,7 +5,8 @@
 // Por isso emitimos um catálogo MÍNIMO { IATA: [lat, lon] } (mesma fonte OurAirports que a
 // app), embebido como módulo TS (sem import-assert de JSON — mais portável no bundler Deno).
 //
-//   Correr:  node scripts/build-share-coords.js   (re-correr se data/airports.json mudar)
+//   Correr:  node scripts/build-share-coords.js
+//   (corre SOZINHO no fim do scripts/build-airports.js — regenerar aeroportos regenera isto)
 //
 // Só IATA: todas as legs (família e descartável) usam código IATA de 3 letras; o AirLabs
 // devolve `arr_iata`. Um código ICAO nunca chega aqui → catálogo IATA é suficiente e leve.
