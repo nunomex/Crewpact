@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — o indicador da aba ativa · 4 variantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Hanken+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:900px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:52px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:760px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .list{max-width:900px;margin:22px auto 0;display:flex;flex-direction:column;gap:26px}
+  .item{background:var(--paper);border:1px solid var(--line);border-radius:20px;overflow:hidden;
+    box-shadow:0 12px 34px rgba(20,22,26,.07)}
+  .fake{height:74px;background:var(--paper);position:relative}
+  .fake::after{content:'…conteúdo da página…';position:absolute;inset:auto 0 10px 0;text-align:center;
+    font-size:11px;color:#C9C7C0;font-weight:600}
+
+  /* a barra (49pt + inset simulado) */
+  .bar{display:flex;align-items:flex-start;border-top:1px solid rgba(20,20,20,0.13);
+    padding:0 8px 14px;background:var(--paper)}
+  .tab{flex:1;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative}
+  .tab svg{width:24px;height:24px;stroke:var(--grey);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .tab .lb{font-size:9.5px;font-weight:800;letter-spacing:.3px;color:var(--grey)}
+  .tab.on svg{stroke:var(--ink)}
+  .tab.on .lb{color:var(--ink)}
+  .plus{flex:0 0 74px;display:flex;align-items:center;justify-content:center;height:64px}
+  .plus i{width:46px;height:46px;border-radius:99px;background:var(--ink);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 5px 9px rgba(20,22,26,.22)}
+  .plus svg{width:22px;height:22px;stroke:var(--yellow);stroke-width:2.2;stroke-linecap:round;fill:none}
+
+  /* A — ponto (atual) */
+  .vA .tab .dot{width:4px;height:4px;border-radius:99px;background:var(--yellow);opacity:0;margin-bottom:2px}
+  .vA .tab.on .dot{opacity:1}
+  /* B — pill preenchida atrás do ícone (Material) */
+  .vB .tab .dot{display:none}
+  .vB .tab.on .icwrap{background:#FFF3D1;border-radius:14px;padding:4px 14px;margin:-4px -14px}
+  /* C — contorno à volta */
+  .vC .tab .dot{display:none}
+  .vC .tab.on .icwrap{outline:1.5px solid var(--yellow);border-radius:14px;padding:4px 14px;margin:-4px -14px}
+  /* D — Apple pura: só a cor (ícone+rótulo ink, mais nada) */
+  .vD .tab .dot{display:none}
+
+  .cap{padding:12px 18px 14px;border-top:1px solid var(--line)}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:19px}
+  .cap .d{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .chip{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+    padding:3px 8px;border-radius:99px;margin-top:8px;background:#EFEDE7;color:var(--grey)}
+  .chip.now{background:var(--ink);color:var(--yellow)}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>a aba ativa</h1>
+  <p>A MESMA barra (49pt, ícones 24, ＋ central), com a Escala ativa — 4 maneiras de a marcar.
+     Em todas o ícone e o rótulo já escurecem (cinza→ink); a pergunta é o que se soma a isso.</p>
+</div>
+
+<div class="list" id="list"></div>
+
+<script>
+const IC = {
+  home : '<svg viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7M6 10v9h12v-9"/></svg>',
+  cal  : '<svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v3M15.5 3.5v3"/></svg>',
+  stats: '<svg viewBox="0 0 24 24"><path d="M5 19V12M12 19V5M19 19v-9"/></svg>',
+  user : '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 19.5c1.2-3.4 4-5 7-5s5.8 1.6 7 5"/></svg>',
+  plus : '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+};
+const V = [
+  { cls:'vA', t:'A · Ponto amarelo (a atual)', d:'Um grão de marca sobre a ativa. Discreto, não adiciona superfícies — a pele continua plana. O amarelo assina.', now:true },
+  { cls:'vB', t:'B · Preenchida (pill suave atrás do ícone)', d:'A linguagem do Material/Android: legibilíssima, mas adiciona uma SUPERFÍCIE onde a pele só tem hairlines — pesa, e cheira a Google num corpo iOS.' },
+  { cls:'vC', t:'C · Contorno à volta', d:'Um anel traçado à volta da ativa. Raro nas grandes apps (nem Apple nem Google o usam em tab bars) — lê-se como "botão por acabar".' },
+  { cls:'vD', t:'D · Apple pura — só a cor', d:'Nada além do escurecer (cinza→ink). A contenção máxima; o risco é o nosso contraste ink-vs-cinza ser mais tímido que o azul-vs-cinza da Apple.' },
+];
+const bar = (cls) => `
+  <div class="item ${cls}">
+    <div class="fake"></div>
+    <div class="bar">
+      <div class="tab"><span class="dot"></span><span class="icwrap">${IC.home}</span><span class="lb">Início</span></div>
+      <div class="tab on"><span class="dot"></span><span class="icwrap">${IC.cal}</span><span class="lb">Escala</span></div>
+      <div class="plus"><i>${IC.plus}</i></div>
+      <div class="tab"><span class="dot"></span><span class="icwrap">${IC.stats}</span><span class="lb">Números</span></div>
+      <div class="tab"><span class="dot"></span><span class="icwrap">${IC.user}</span><span class="lb">Perfil</span></div>
+    </div>
+  </div>`;
+document.getElementById('list').innerHTML = V.map(v => `
+  ${bar(v.cls).replace('</div>\n  </div>', '</div>')}
+  `).join('');
+// injeta captions
+document.querySelectorAll('.item').forEach((el, i) => {
+  const v = V[i];
+  el.insertAdjacentHTML('beforeend', `<div class="cap"><div class="t">${v.t}</div><div class="d">${v.d}</div>${v.now ? '<span class="chip now">A atual</span>' : '<span class="chip">variante</span>'}</div>`);
+});
+</script>
+</body>
+</html>

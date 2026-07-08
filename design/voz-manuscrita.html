@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — o bilhete manuscrito · 6 caligrafias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;700;800&family=Caveat:wght@600&family=Shadows+Into+Light+Two&family=Patrick+Hand&family=Kalam:wght@400&family=Nanum+Pen+Script&family=Just+Another+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F;
+    --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1160px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:800px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:26px;max-width:1160px;margin:20px auto 0}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:24px 22px 20px;position:relative;overflow:hidden;
+    box-shadow:0 14px 40px rgba(20,22,26,.08)}
+  .halo{position:absolute;right:-110px;top:-90px;width:300px;height:300px;border-radius:99em;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,0) 70%)}
+
+  /* topo da folga (contexto real, condensado) */
+  .hero{position:relative;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end}
+  .gho{position:absolute;right:6px;top:-16px;font-family:var(--disp);font-weight:700;font-size:118px;line-height:1;letter-spacing:-2.5px;color:var(--ghost)}
+  .wx{position:absolute;right:8px;top:2px;text-align:right;font-size:10px;font-weight:700;color:var(--grey)}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+  .hr{height:1.5px;background:var(--ink);margin-top:7px}
+
+  /* o BILHETE — cada card com a sua caligrafia (tilt -1.9° = o de hoje) */
+  .note{margin:22px 6px 14px;transform:rotate(-1.9deg)}
+  .note .hl{color:var(--ink);background:var(--yellow);padding:0 4px}
+  .note span.tail{color:var(--grey)}
+
+  /* rodapé de contexto */
+  .agHead{font-size:9px;font-weight:800;letter-spacing:1.8px;color:var(--grey);text-transform:uppercase;text-align:right}
+  .agHead b{color:var(--yellow)}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:5px 0}
+  .agx{text-align:right}
+  .agA{font-size:11px;font-weight:800;color:var(--ink)}
+  .agB{font-size:9px;font-weight:500;color:var(--grey)}
+  .agTick{width:2.5px;height:22px;background:var(--ink);border-radius:2px}
+
+  .cap{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:19px}
+  .cap .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:3px}
+  .chip{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+    padding:3px 8px;border-radius:99px;margin-top:8px;background:#EFEDE7;color:var(--grey)}
+  .chip.now{background:var(--ink);color:var(--yellow)}
+
+  /* as 6 caligrafias (tamanhos equalizados ao olho — cada família tem o seu corpo) */
+  .f-caveat  .note{font-family:'Caveat',cursive;font-size:27px;line-height:1.3}
+  .f-shadows .note{font-family:'Shadows Into Light Two',cursive;font-size:22px;line-height:1.45}
+  .f-patrick .note{font-family:'Patrick Hand',cursive;font-size:22px;line-height:1.4}
+  .f-kalam   .note{font-family:'Kalam',cursive;font-size:20px;line-height:1.5}
+  .f-nanum   .note{font-family:'Nanum Pen Script',cursive;font-size:28px;line-height:1.25}
+  .f-justa   .note{font-family:'Just Another Hand',cursive;font-size:30px;line-height:1.15;letter-spacing:.5px}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>o bilhete manuscrito</h1>
+  <p>A MESMA folga, o MESMO bilhete com o marcador amarelo e a inclinação de hoje (-1.9°) — em <b>6 caligrafias</b>
+     do Google Fonts (todas com acentos PT, todas prontas p/ Expo Go). A 1.ª é a atual (Caveat). Escolhe com os olhos.</p>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const FONTS = [
+  { cls:'f-caveat',  name:'1 · Caveat',                pkg:'@expo-google-fonts/caveat',                sz:'a ATUAL — esferográfica rápida e viva, laços moderados', now:true },
+  { cls:'f-shadows', name:'2 · Shadows Into Light Two', pkg:'@expo-google-fonts/shadows-into-light-two', sz:'lápis fino e elegante — a mais "poética" que continua legível' },
+  { cls:'f-patrick', name:'3 · Patrick Hand',           pkg:'@expo-google-fonts/patrick-hand',           sz:'letra arrumada e redonda — a mais LEGÍVEL; menos "caligrafia", mais bilhete de amigo' },
+  { cls:'f-kalam',   name:'4 · Kalam',                  pkg:'@expo-google-fonts/kalam',                  sz:'caneta de feltro com peso — quente, um pouco mais séria' },
+  { cls:'f-nanum',   name:'5 · Nanum Pen Script',       pkg:'@expo-google-fonts/nanum-pen-script',       sz:'esferográfica finíssima e rápida — a mais "rabisco verdadeiro"' },
+  { cls:'f-justa',   name:'6 · Just Another Hand',      pkg:'@expo-google-fonts/just-another-hand',      sz:'alta e condensada, quase marcador — a que mais conversa com a Barlow do poster' },
+];
+const card = (f) => `
+  <div class="card ${f.cls}">
+    <div class="halo"></div>
+    <div class="hero">
+      <span class="gho">QUI</span>
+      <span class="wx">☀<br>18°–27°</span>
+      <span class="word">Folga</span>
+    </div>
+    <div class="hr"></div>
+    <div class="note"><span class="hl">O dia é teu.</span> <span class="tail">Sol e 27° — a escala hoje não manda.</span></div>
+    <div class="agHead">AMANHÃ · <b>EM 16 H</b></div>
+    <div class="ag"><span class="agx"><span class="agA">EJU7623 · LIS-LGW-LIS</span><br><span class="agB">SEX 10 · report 05:40 · 4 setores</span></span><span class="agTick"></span></div>
+    <div class="cap">
+      <div class="t">${f.name}</div>
+      <div class="d">${f.sz}</div>
+      ${f.now ? '<span class="chip now">A atual</span>' : '<span class="chip">candidata</span>'}
+    </div>
+  </div>`;
+document.getElementById('grid').innerHTML = FONTS.map(card).join('');
+</script>
+</body>
+</html>

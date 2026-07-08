@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { PELE, PELE_NIGHT, PELE_FONT } from '../data/constants';
 import Icon from '../components/Icon';
-import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
+import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
@@ -15,7 +15,7 @@ import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty, liveF
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext, toZulu } from '../data/appContext';
@@ -276,6 +276,8 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(id);
   }, []));
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: relê o calendário a pedido
+  const homeScrollRef = useRef(null);
+  useScrollToTop(homeScrollRef);   // re-tocar na aba Início → volta ao topo (convenção iOS)
 
   // ── Estado do voo AO VIVO (proxy AirLabs via Edge Function `flight-status`) ──
   // Só para o voo do card Serviços, e só DENTRO DA JANELA (~4 h antes da partida até ~1 h
@@ -506,7 +508,7 @@ export default function HomeScreen({ navigation }) {
   // não mudaram — tudo aqui é derivação de apresentação.
   const seg = useEnter();
   const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
-  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
+  // (avatar/sino saíram do topo 2026-07-09 — Perfil é aba, o sino vive lá)
   const hourNow = new Date().getHours();
 
   // ── O MOTOR da Living Interface (data/crewState.js — PURO, golden test:crewstate) ──
@@ -595,6 +597,14 @@ export default function HomeScreen({ navigation }) {
     () => stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm } }),
     [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm],
   );
+  // O bilhete POUSA na página com ângulo/posição LIVRES (user: "como num post-it de lado")
+  // — determinísticos pelo DIA (nada de Math.random): cada dia cai um bocadinho diferente,
+  // mas hoje cai sempre igual (re-renders não o fazem "dançar").
+  const noteSeed = todayISO.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  // Teto de contenção -3° (era -4.5°): manuscrita+marcador+ângulo são 3 sinais no mesmo
+  // elemento — o ângulo é o 1.º a ceder p/ não virar "scrapbook" (auditoria à Apple).
+  const noteTilt = -(1 + (noteSeed % 21) / 10);     // -1.0° … -3.0°
+  const noteShift = noteSeed % 11;                  // 0 … 10 px de desvio
   const haloTone = (() => {
     if (homeState !== 'folga' && homeState !== 'posvoo' && homeState !== 'ferias') return null;
     const ic = wxArr && wxArr.icon;
@@ -724,10 +734,11 @@ export default function HomeScreen({ navigation }) {
 
   // Rótulo lateral (PeleSide) por estado.
   const sideL = homeState === 'setup' ? [l('PRIMEIRA VEZ', 'FIRST TIME'), 'SETUP']
-    // FOLGA ancora em HOJE (decisão 2026-07-09): fantasma = dia de hoje, rótulo = dia da
-    // semana COMPLETO — SEMPRE, mesmo com serviço futuro (esse já fala no kick + agenda +
-    // chip; repeti-lo no fantasma era a 4.ª vez e o tempo-expoente é o de hoje).
-    : homeState === 'folga' ? [l('FOLGA', 'DAY OFF'), new Date().toLocaleDateString(locale, { weekday: 'long' }).toUpperCase()]
+    // FOLGA (decisão do user 2026-07-09, 2.ª iteração): fantasma = dia da semana CURTO
+    // ("QUI" — a língua dos rosters, 3 letras = tamanho gigante) e o rótulo dá a coordenada
+    // de calendário "9 JULHO" (o mês não aparecia em lado nenhum na folga). Dia de trabalho
+    // fala em números, dia teu fala em palavras.
+    : homeState === 'folga' ? [l('FOLGA', 'DAY OFF'), `${new Date().getDate()} ${new Date().toLocaleDateString(locale, { month: 'long' }).toUpperCase()}`]
     : homeState === 'vespera' ? [l('VÉSPERA', 'EVE'), `REPORT ${(flight && flight.report) || ''}`.trim()]
     : homeState === 'pernoita' ? [l('PERNOITA', 'NIGHT STOP'), l('FORA DA BASE', 'AWAY FROM BASE')]
     : homeState === 'posvoo' ? [String(closeFno || l('HOJE', 'TODAY')).toUpperCase(), l('HOJE ✓', 'TODAY ✓')]
@@ -833,14 +844,13 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'fecho') return {
       ghost: String(fechoDaysLeft != null ? fechoDaysLeft : '—'), word: l('Fecho do mês', 'Month close'), arrow: 'wallet',
       kick: [l('faltam extras? regista no ', 'missing extras? log via '), { y: '＋' }, l(' antes do fecho', ' before close')] };
-    // Folga: dia da semana POR EXTENSO no kick ("quinta", como o mockup — sem o "-feira");
-    // tempo da BASE no fim (min–máx de hoje, à referência "today 18°–27°").
-    const wdLong = flight ? new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long' }).replace('-feira', '') : '';
-    const wxTail = wxArr ? ` · ${(wxArr.min != null && wxArr.max != null) ? `${wxArr.min}°–${wxArr.max}°` : `${wxArr.c}°`}` : null;
-    // Fantasma = dia de HOJE sempre (o próximo serviço fala no kick/agenda/chip).
-    return { ghost: String(new Date().getDate()), word: l('Folga', 'Day off'), arrow: 'arrow-diag', arrowRot: 90,
-      kick: flight ? [l('próximo serviço ', 'next duty '), { y: `${wdLong} · ${isNonFlight ? kindLabel : routeShort} · ${flight.report || ''}`.trim() }, wxTail]
-        : [l('sem serviços marcados', 'no duties scheduled'), wxTail] };
+    // Folga (2026-07-09, 3.ª iteração do user): fantasma = dia da semana CURTO de HOJE
+    // ("QUI" — 3 letras, fica gigante; slice(0,3) porque o 'short' varia com o motor de
+    // Intl: device "qui." · Node "quinta"); número do dia + mês no rótulo lateral.
+    // SEM kick: o próximo serviço vive na agenda "A seguir" (régua abaixo) e o tempo vive
+    // no EXPOENTE do fantasma (ícone + min–máx, sem a palavra "hoje" — o fantasma É hoje).
+    return { ghost: new Date().toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 3).toUpperCase(), word: l('Folga', 'Day off'), arrow: 'arrow-diag', arrowRot: 90,
+      kick: null };
   })();
 
   // Meio adaptativo — HORAS (voo hoje/disrupção) · linha simples (não-voo) · AGENDA (folga) · SETUP.
@@ -903,12 +913,22 @@ export default function HomeScreen({ navigation }) {
       const wd = new Date(iso + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase();
       const fno = (Array.isArray(d.legs) && d.legs[0] && (d.legs[0].flightNo || d.legs[0].flight)) ? String(d.legs[0].flightNo || d.legs[0].flight).toUpperCase() : null;
       const moon = (d.night_stop || d.nightStop) ? ` 🌙 ${l('pernoita', 'night stop')}` : '';   // no título, como o mockup
+      // Linhas com a DATA explícita ("SEX 10" — o wd sozinho era ambíguo); o QUANDO relativo
+      // (amanhã/faltam X h) vive no TÍTULO vivo da agenda, não repetido linha a linha.
       out.push({ iso,
         a1: `${isF ? [fno, d.route].filter(Boolean).join(' · ') || l('Voo', 'Flight') : t('duties.kind.' + d.kind, lang)}${moon}`,
-        a2: `${wd} · report ${d.report_time}${d.sectors ? ` · ${d.sectors} ${l('setores', 'sectors')}` : ''}` });
+        a2: `${wd} ${Number(iso.slice(8, 10))} · report ${d.report_time}${d.sectors ? ` · ${d.sectors} ${l('setores', 'sectors')}` : ''}` });
       if (out.length >= 3) break;
     }
     return out;
+  })() : null;
+  // TÍTULO VIVO da agenda (pedido do user: nada de "A SEGUIR" morto) — diz o estado do
+  // próximo serviço: "EM 45 MIN" · "AMANHÃ · EM 16 H" · "EM 3 DIAS". O tempo vai a amarelo.
+  const agendaWhen = (homeState === 'folga' && flight && cdMin != null && cdMin > 0) ? (() => {
+    const diffD = Math.round((new Date(flight.dateISO + 'T00:00:00') - new Date(todayISO + 'T00:00:00')) / 86400000);
+    if (cdMin < 60) return { pre: null, hi: `${l('em', 'in')} ${cdMin} min` };
+    if (cdMin < 2880) return { pre: diffD === 1 ? `${l('amanhã', 'tomorrow')} · ` : null, hi: `${l('em', 'in')} ${Math.floor(cdMin / 60)} h` };
+    return { pre: null, hi: `${l('em', 'in')} ${Math.round(cdMin / 1440)} ${l('dias', 'days')}` };
   })() : null;
 
   // Micro-texto útil (título BC + frase) — o resumo das perguntas/estado; toca → folha "porquê".
@@ -1041,9 +1061,8 @@ export default function HomeScreen({ navigation }) {
     { ic: 'cal', lbl: l('Ligar calendário', 'Connect calendar'), hot: true, run: requestAccess },
     { ic: 'eye', lbl: l('Ver exemplo', 'See example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
   ] : homeState === 'folga' ? [
-    // "Evento" = o MESMO openExtra do mini-FAB (ExtraEventSheet) — um nome só em toda a app (decisão 2026-07-09).
-    ...(ae && openExtra ? [{ ic: 'plus', lbl: l('Evento', 'Event'), hot: true, run: () => { select(); openExtra(); } }] : []),
-    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: !(ae && openExtra), run: () => { select(); openSimulation(); } }] : []),
+    // SEM ações na folga (user 2026-07-09): o ＋ central da tab bar já carrega
+    // Serviço·Simulação·Evento — na folga a app baixa a voz (só o chip fica).
   ] : homeState === 'vespera' ? [
     ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: true, run: () => { select(); openSimulation(); } }] : []),
     ...(featuredTappable ? [{ ic: 'cal', lbl: l('Ver serviço', 'View duty'), run: () => openDayDetail(flight.dateISO) }] : []),
@@ -1112,7 +1131,8 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
       <PeleSide label={sideL[0]} accent={sideL[1]} color={night ? P.ink : undefined} />
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
+      {/* homeScrollRef + useScrollToTop: re-tocar na aba Início volta ao topo (convenção iOS) */}
+      <ScrollView ref={homeScrollRef} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
         refreshControl={<RefreshControl refreshing={refreshing} tintColor={P.grey} colors={[P.grey]}
           onRefresh={async () => {
             setRefreshing(true); const t0 = Date.now();
@@ -1122,9 +1142,13 @@ export default function HomeScreen({ navigation }) {
             setRefreshing(false);
           }} />}>
 
-        {/* Topo (avatar + sino, PeleHeader) + saudação */}
-        <PeleHeader initials={initials} onAvatar={() => navigation.navigate('Perfil')} bell night={night} />
-        <Animated.View style={seg(0)}><Text style={s.greet}>{greet}</Text></Animated.View>
+        {/* Topo LIMPO (2026-07-09): avatar → aba Perfil · sino fixo → header do Perfil.
+            Aqui só a saudação + a PÍLULA de novidades — que SÓ EXISTE quando há por ler
+            (o botão de notificações à Apple: informação quando há, mobília nunca). */}
+        <Animated.View style={[seg(0), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }]}>
+          <Text style={[s.greet, { marginTop: 0 }]}>{greet}</Text>
+          <NotificationsBell variant="pill" night={night} />
+        </Animated.View>
 
         {/* Banda de alerta — sítio fixo, uma de cada vez */}
         {band ? (
@@ -1148,16 +1172,37 @@ export default function HomeScreen({ navigation }) {
                 : /* SEM adjustsFontSizeToFit: no iOS um Text auto-encolhível pode ficar INVISÍVEL
                      num re-render de irmãos (ex.: a meteo a chegar) — tamanho por comprimento. */
                 <Text style={[s.ghost, ghostSize]} numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
-              {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde dormes). */}
+              {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde
+                  dormes). Na FOLGA o expoente é o carimbo completo do dia: ícone + min–máx
+                  por baixo (o kick morreu — sem "hoje" escrito, o fantasma É hoje). */}
               {(homeState === 'folga' || homeState === 'pernoita' || homeState === 'ferias') && wxArr && wxArr.icon ? (
-                <View style={{ position: 'absolute', right: TUNE.wxSup.right, top: TUNE.wxSup.top }}><Icon name={wxArr.icon} size={TUNE.wxSup.size} color={P.grey} /></View>
+                <View style={{ position: 'absolute', right: TUNE.wxSup.right, top: TUNE.wxSup.top, alignItems: 'flex-end' }}>
+                  <Icon name={wxArr.icon} size={TUNE.wxSup.size} color={P.grey} />
+                  {homeState === 'folga' ? (
+                    <Text style={s.wxSupTxt} allowFontScaling={false}>
+                      {(wxArr.min != null && wxArr.max != null) ? `${wxArr.min}°–${wxArr.max}°` : `${wxArr.c}°`}
+                    </Text>
+                  ) : null}
+                </View>
               ) : null}
               <Text style={[s.word, hero.warn ? s.wordWarn : null]} numberOfLines={1} allowFontScaling={false}>{hero.word}</Text>
-              {kickParts(hero.kick)}
+              {hero.kick ? kickParts(hero.kick) : null}
             </View>
             <View style={s.hr} />
           </Animated.View>
         )}
+
+        {/* A VOZ do estado — DECK de duas alturas sob a régua (4.ª iteração do user:
+            "diferente a nível visual, o marcador fica"): a parte que importa em BARLOW
+            CONDENSED grande (a família do poster) com o MARCADOR AMARELO por cima; a cauda
+            desce para um sussurro Hanken cinza. Marcador em constantes PELE (ink sobre
+            amarelo) — igual de dia e de noite, como um marcador real. */}
+        {voice ? (
+          <Animated.View style={[s.voiceWrap, seg(2), { transform: [{ rotate: `${noteTilt}deg` }], marginLeft: noteShift, marginRight: 10 - noteShift }]}>
+            {/* cap 1.2 no dynamic type: manuscrita inclinada a escalar 1.4 quebrava o bilhete */}
+            <Text style={s.voiceNote} numberOfLines={3} maxFontSizeMultiplier={1.2}><Text style={s.voiceHl}>{' '}{voice.bold}{' '}</Text> {voice.tail}</Text>
+          </Animated.View>
+        ) : null}
 
         {/* MEIO ADAPTATIVO — horas do voo · linha do serviço · agenda da folga · setup */}
         <Animated.View style={[s.mid, seg(2)]}>
@@ -1233,15 +1278,23 @@ export default function HomeScreen({ navigation }) {
               <View style={[s.tap, { width: 96 }]}><Text style={s.tapS} numberOfLines={1}>{c.k}</Text></View>
               <Text style={[s.tbig, { fontSize: 32, lineHeight: 34 }]} numberOfLines={1}>{c.v}</Text>
             </TouchableOpacity>
-          )) : agendaRows ? (agendaRows.length ? agendaRows.map((a) => (
-            <TouchableOpacity key={a.iso} style={s.ag} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)} accessibilityRole="button">
-              <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
-                <Text style={s.agA} numberOfLines={1}>{a.a1}</Text>
-                <Text style={s.agB} numberOfLines={1}>{a.a2}</Text>
-              </View>
-              <View style={s.agTick} />
-            </TouchableOpacity>
-          )) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
+          )) : agendaRows ? (agendaRows.length ? (
+            <>
+              {/* título VIVO: o estado do próximo serviço (amanhã / faltam X h), não etiqueta morta */}
+              <Text style={s.agHead}>
+                {agendaWhen ? (<>{agendaWhen.pre}<Text style={s.agHeadHi}>{agendaWhen.hi}</Text></>) : l('A seguir', 'Up next')}
+              </Text>
+              {agendaRows.map((a) => (
+                <TouchableOpacity key={a.iso} style={s.ag} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)} accessibilityRole="button">
+                  <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
+                    <Text style={s.agA} numberOfLines={1}>{a.a1}</Text>
+                    <Text style={s.agB} numberOfLines={1}>{a.a2}</Text>
+                  </View>
+                  <View style={s.agTick} />
+                </TouchableOpacity>
+              ))}
+            </>
+          ) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
             <>
               <TouchableOpacity style={s.stp} activeOpacity={0.8} onPress={requestAccess} accessibilityRole="button">
                 <Text style={s.stpN}>1</Text>
@@ -1258,13 +1311,6 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : null}
         </Animated.View>
-
-        {/* A VOZ do estado — frase calma a dois tons (negrito + cauda cinzenta) */}
-        {voice ? (
-          <Animated.View style={seg(3)}>
-            <Text style={s.voice}><Text style={s.voiceB}>{voice.bold}</Text> {voice.tail}</Text>
-          </Animated.View>
-        ) : null}
 
         {/* Micro-texto útil */}
         <Animated.View style={seg(3)}>
@@ -1360,6 +1406,8 @@ const makeSkin = (P, night) => StyleSheet.create({
   wordWarn: { color: P.warn },
   kick: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 6 },
   kickY: { color: P.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  // min–máx por baixo do ícone do tempo (expoente da folga) — o carimbo do dia
+  wxSupTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 2 },
   hr: { height: 1.5, backgroundColor: P.ink, marginTop: 8 },
 
   // Meio adaptativo (mockup .mid/.trow/.ag/.stp/.tip)
@@ -1379,6 +1427,9 @@ const makeSkin = (P, night) => StyleSheet.create({
   progTrack: { flex: 1, height: 3, backgroundColor: P.line, borderRadius: 2, overflow: 'hidden' },
   progFill: { height: 3, backgroundColor: P.yellow, borderRadius: 2 },
   progPct: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.grey, width: 38, textAlign: 'right' },
+  // título VIVO da agenda (folga) — alinhado à direita; o tempo que falta vai a amarelo
+  agHead: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2, textTransform: 'uppercase', color: P.grey, textAlign: 'right', marginTop: 2, marginBottom: 2 },
+  agHeadHi: { color: P.yellow },
   ag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 9, paddingVertical: 6 },
   agA: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   agB: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
@@ -1403,8 +1454,13 @@ const makeSkin = (P, night) => StyleSheet.create({
   utilP: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 18 },
   haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
   lampWrap: { position: 'absolute', alignSelf: 'center', top: -70, zIndex: 0 },
-  voice: { fontSize: 16, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 23, paddingVertical: 12 },
-  voiceB: { fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  // A voz sob a régua — deck de duas alturas: display marcado + cauda-sussurro.
+  // A voz sob a régua — BILHETE MANUSCRITO (Caveat, escolha final do user): uma caneta só,
+  // marcador amarelo no que importa (constantes PELE — igual de dia e de noite). O ângulo
+  // e o desvio são LIVRES e vêm inline (noteTilt/noteShift — determinísticos pelo dia).
+  voiceWrap: { paddingTop: 22, paddingBottom: 10 },   // respiro sob a régua (user: "estava muito perto")
+  voiceNote: { fontFamily: PELE_FONT.hand, fontSize: 25, lineHeight: 32, color: P.grey },
+  voiceHl: { color: PELE.ink, backgroundColor: PELE.yellow },
   docAlert: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.line },
   docAlertTxt: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: P.red, lineHeight: 16 },
   docAlertSub: { fontFamily: PELE_FONT.bodyMed, color: P.grey },

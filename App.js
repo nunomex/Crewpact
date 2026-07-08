@@ -10,7 +10,7 @@ TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -22,6 +22,7 @@ import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fon
 // Pele nova (2026): Barlow Condensed (display/números) + Hanken Grotesk (corpo). Ver PELE_FONT.
 import { BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold } from '@expo-google-fonts/barlow-condensed';
 import { HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk';
+import { Caveat_600SemiBold } from '@expo-google-fonts/caveat';   // a VOZ manuscrita (o bilhete pessoal do Início — escolha final do user)
 import { getLocales } from 'expo-localization';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { C, PALETTES, FONT, TYPE } from './data/constants';
@@ -136,31 +137,27 @@ function EscalaStack() {
   );
 }
 
-// FTL — calcular (Atividade + ferramentas) e consultar (artigos + PDF) fundidos
-// numa só aba (substitui as antigas Cálculos e AE/FTL).
-function FtlStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FtlHub"    component={InfoScreen} />{/* PORT: pele INFO (era FtlHubScreen) */}
-      <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
-    </Stack.Navigator>
-  );
-}
+// A antiga aba INFO/FTL virou o cartão "Biblioteca" DENTRO do Perfil (decisão do user
+// 2026-07-09): a referência (lei FTL + AE + fontes oficiais) é consulta, não operação —
+// mora no Perfil como as Validades. As rotas vivem na PerfilStack.
 
 // A navegação é a TAB BAR convencional polida (components/TabBar.js, padrão Flighty/
 // Airbnb/iOS) — o dock flutuante + FAB speed-dial morreram 2026-07-09 (e a linha de
 // palavras intermédia foi rejeitada no device). As funções do speed-dial realojadas:
 // Serviço → FAB "+" da Escala · Simulação/Evento → linha do polegar do Início (acts
 // por estado) · Pesquisa → a INFO tem procura própria (lei + AE) desde a fusão da
-// Biblioteca. SearchModal ficou órfão (mantido no repo até decisão de apagar).
+// Biblioteca. SearchModal (a antiga pesquisa global) foi APAGADO — órfão desde então.
 
-// Perfil — definições + sub-ecrãs próprios (ex.: Validades & Documentos, premium).
+// Perfil (ABA desde 2026-07-09) — definições + sub-ecrãs próprios: Validades, Hotéis,
+// e a BIBLIOTECA (a antiga aba INFO: lei FTL + AE explicados + fontes, com a procura).
 function PerfilStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
+      <Stack.Screen name="Biblioteca" component={InfoScreen} />
+      <Stack.Screen name="FtlDetail"  component={FtlDetailScreen} />
     </Stack.Navigator>
   );
 }
@@ -168,23 +165,21 @@ function PerfilStack() {
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <TabBar {...props} />}>
+      {/* Ordem do user (2026-07-09): Início · Escala · ＋ · Números · Perfil */}
       <Tab.Screen name="Início"       component={HomeStack} />
-      <Tab.Screen name="Estatísticas" component={StatsScreen} />
       <Tab.Screen name="Escala"       component={EscalaStack} />
-      <Tab.Screen name="FTL"    component={FtlStack} />
+      <Tab.Screen name="Estatísticas" component={StatsScreen} />
+      <Tab.Screen name="Perfil"       component={PerfilStack} />
     </Tab.Navigator>
   );
 }
 
-// Root: 4 abas operacionais + Perfil EMPURRADO por cima (já não é aba). O avatar do
-// cabeçalho (HeaderActions) navega para "Perfil"; o "‹ Voltar" do Perfil volta às abas.
+// Root: o Perfil voltou a ser ABA (decisão do user 2026-07-09) — os cabeçalhos das
+// páginas ficaram SEM avatar e SEM sino (o sino vive no header do Perfil).
 function RootNav() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Tabs"   component={MainTabs} />
-      {/* Perfil = MODAL que sobe (abre pelo avatar do cabeçalho); arrastar p/ baixo fecha. */}
-      <Stack.Screen name="Perfil" component={PerfilStack}
-        options={{ ...TransitionPresets.ModalSlideFromBottomIOS, gestureEnabled: true }} />
+      <Stack.Screen name="Tabs" component={MainTabs} />
     </Stack.Navigator>
   );
 }
@@ -212,7 +207,8 @@ export default function App() {
   // design usa; aplica-se por ecrã via FONT (fontFamily) à medida que se porta.
   const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold,
     BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold,
-    HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold });
+    HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold,
+    Caveat_600SemiBold });
   const fontsReady = fontsLoaded || !!fontError; // erro a carregar → arranca na mesma (fonte do sistema)
   const suppressAuth = useRef(false);
   const hydrated = useRef(false);

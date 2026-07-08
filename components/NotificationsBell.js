@@ -12,7 +12,10 @@ import Icon from './Icon';
 // estilo das páginas de duty/import). Partilhado pelo cabeçalho da pele (PeleHeader).
 // Lê tudo do contexto; marca lidas ao fechar. O aviso de ALTERAÇÕES DE ESCALA (Fase 4)
 // aparece no topo e é tocável → abre a revisão.
-export default function NotificationsBell() {
+// `variant`: 'bell' (ícone fixo — o ARQUIVO, header do Perfil) · 'pill' (Início: a pílula
+// "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
+// para dizer, à Apple/Living Interface). `night` = tema noturno do Início.
+export default function NotificationsBell({ variant = 'bell', night = false }) {
   const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -31,14 +34,27 @@ export default function NotificationsBell() {
   const close = () => { setOpen(false); setReadNotifIds(new Set(notifs.map(n => n.id))); };
   const openRoster = () => { close(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); };
 
+  // Pílula do Início: sem novidades, NÃO EXISTE (nada de mobília em repouso).
+  if (variant === 'pill' && unread === 0) return null;
+
   return (
     <>
       {/* O leitor de ecrã DIZ quantas há por ler (o ponto visual era mudo p/ VoiceOver/TalkBack). */}
+      {variant === 'pill' ? (
+        <TouchableOpacity style={[s.pill, night && s.pillNight]} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8}
+          accessibilityRole="button" accessibilityLabel={`${t('home.notifsAria', lang)} · ${unread} ${l('por ler', 'unread')}`}>
+          <View style={s.pillDot} />
+          <Text style={[s.pillTxt, night && s.pillTxtNight]} numberOfLines={1}>
+            {unread} {unread === 1 ? l('novidade', 'update') : l('novidades', 'updates')}
+          </Text>
+        </TouchableOpacity>
+      ) : (
       <TouchableOpacity style={s.hbtn} onPress={() => setOpen(true)} activeOpacity={0.8} hitSlop={8} accessibilityRole="button"
         accessibilityLabel={`${t('home.notifsAria', lang)}${unread > 0 ? ` · ${unread} ${l('por ler', 'unread')}` : ''}`}>
         <Icon name="bell" size={18} color={PELE.ink} />
         {unread > 0 && <View style={s.dot} />}
       </TouchableOpacity>
+      )}
 
       {/* pageSheet no iOS (superfície LEVE, com gesto de arrasto do sistema); fullScreen só Android. */}
       <Modal visible={open} animationType="slide" onRequestClose={close} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
@@ -105,6 +121,12 @@ const s = StyleSheet.create({
   // Gatilho do sino — PELE (mockup): círculo soft 36 · sino ink · ponto vermelho 11px (sem número).
   hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: -1, right: -1, width: 11, height: 11, borderRadius: RADIUS.pill, backgroundColor: PELE.red, borderWidth: 2, borderColor: PELE.paper },
+  // Pílula do Início — "● N novidades": só existe com por-ler; ponto amarelo = marca.
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.soft, borderRadius: RADIUS.pill, paddingVertical: 5, paddingHorizontal: 11 },
+  pillNight: { backgroundColor: 'rgba(244,242,237,0.10)' },
+  pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: PELE.yellow },
+  pillTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
+  pillTxtNight: { color: '#F4F2ED' },
 
   // Central de notificações — página inteira (igual às de duty/import)
   page: { flex: 1, backgroundColor: PELE.paper },

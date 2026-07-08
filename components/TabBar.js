@@ -24,9 +24,9 @@ import { t } from '../data/i18n';
 import { select, tap } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-const ICON = { 'Início': 'home', 'Estatísticas': 'stats', 'Escala': 'cal', 'FTL': 'info' };
-const CONTENT_H = 49;   // altura útil da barra (padrão iOS); o safe-area soma por baixo
-const PLUS = 46;        // diâmetro do ＋ central
+const ICON = { 'Início': 'home', 'Escala': 'cal', 'Estatísticas': 'stats', 'Perfil': 'user' };
+const CONTENT_H = 49;   // altura útil = iOS NATIVO (decisão do user; ícones 24 + rótulos cabem: pilha ≈48)
+const PLUS = 44;        // diâmetro do ＋ central = alvo mínimo Apple; 2.5pt de ar na pista de 49 (46 beijava a hairline)
 
 // Um item da barra — o ponto acende e o ícone dá um pop curto quando ganha o foco.
 function TabItem({ focused, lbl, ic, badge, P, onPress, reduce }) {
@@ -45,13 +45,15 @@ function TabItem({ focused, lbl, ic, badge, P, onPress, reduce }) {
   return (
     <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.65}
       accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}>
-      <Animated.View style={[s.adot, { opacity: dot, transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]} />
       <Animated.View style={{ transform: [{ scale: pop }] }}>
-        <Icon name={ic} size={21} color={focused ? P.ink : P.grey} />
+        <Icon name={ic} size={24} color={focused ? P.ink : P.grey} />
         {badge ? <View style={[s.badge, { borderColor: P.paper }]} /> : null}
       </Animated.View>
       <Text numberOfLines={1} maxFontSizeMultiplier={1.2}
         style={[s.lbl, { color: focused ? P.ink : P.grey }]}>{lbl}</Text>
+      {/* Ponto POR BAIXO (user 2026-07-09: em cima beijava a hairline; precedente Apple = a
+          Dock do macOS marca a app ativa com o ponto POR BAIXO). Espaço sempre reservado. */}
+      <Animated.View style={[s.adot, { opacity: dot, transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]} />
     </TouchableOpacity>
   );
 }
@@ -66,10 +68,9 @@ export default function TabBar({ state, navigation }) {
   const night = !!homeNight && state.routes[state.index]?.name === 'Início';
   const P = night ? PELE_NIGHT : PELE;
 
-  // Rótulos reais (a rota fica, o rótulo traduz): FTL mostra INFO, Estatísticas mostra Números.
-  const lblFor = (name) => name === 'FTL' ? 'INFO'
-    : name === 'Estatísticas' ? l('Números', 'Numbers')
-    : t(`tab.${name === 'Início' ? 'home' : 'schedule'}`, lang);
+  // Rótulos reais (a rota fica, o rótulo traduz): Estatísticas mostra Números.
+  const lblFor = (name) => name === 'Estatísticas' ? l('Números', 'Numbers')
+    : t(`tab.${name === 'Início' ? 'home' : name === 'Escala' ? 'schedule' : 'profile'}`, lang);
 
   const escPending = !!(rosterChanges && rosterChanges.counts && rosterChanges.counts.total);
 
@@ -127,7 +128,9 @@ export default function TabBar({ state, navigation }) {
 
   return (
     <>
-      <View style={[s.bar, { height: CONTENT_H + padBottom, paddingBottom: padBottom, backgroundColor: P.paper, borderTopColor: P.line }]}>
+      {/* Hairline REFORÇADA (só aqui): PELE.line era mais clara que o separador da Apple —
+          numa barra branca sobre páginas brancas, a costura é a única fronteira. */}
+      <View style={[s.bar, { height: CONTENT_H + padBottom, paddingBottom: padBottom, backgroundColor: P.paper, borderTopColor: night ? P.line : 'rgba(20,20,20,0.13)' }]}>
         {state.routes.slice(0, half).map((r, i) => renderItem(r, i))}
         <TouchableOpacity style={s.plusWrap} onPress={openDial} activeOpacity={1}
           onPressIn={() => !reduce && pressTo(0.92)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
@@ -174,7 +177,7 @@ export default function TabBar({ state, navigation }) {
 const s = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
   item: { flex: 1, height: CONTENT_H, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: PELE.yellow, marginBottom: 1 },
+  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: PELE.yellow },
   lbl: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3 },
   badge: { position: 'absolute', top: -2, right: -5, width: 7, height: 7, borderRadius: 99, backgroundColor: '#E86A10', borderWidth: 1.5 },
   // ＋ central — O botão de criar: ink, sombra leve (elevar é legítimo — é o herdeiro do FAB).

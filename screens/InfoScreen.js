@@ -1,9 +1,10 @@
-// INFO — aba de REFERÊNCIA (ex-FTL/AE) na pele nova. PORTE de `design/info-carteira.html`.
-// INCREMENTO 4: + PROCURA (barra por cima; filtra a lei e o AE) + FOLHA de detalhe ao toque
-// (valor · nome · artigo · fórmula · exemplo em €, arrastar p/ fechar). Falta: crew-aware real.
+// BIBLIOTECA (ex-aba INFO, 2026-07-09) — a REFERÊNCIA da app (lei FTL + AE explicados +
+// fontes oficiais + procura), agora EMPURRADA do Perfil (cartão "Biblioteca"). PORTE de
+// `design/info-carteira.html`; PROCURA filtra a lei e o AE; FOLHA de detalhe ao toque.
 import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Dimensions, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Icon from '../components/Icon';
 import PeleHeader from '../components/PeleHeader';
 import PeleSheet from '../components/PeleSheet';
@@ -71,7 +72,7 @@ export default function InfoScreen() {
   // Crew-aware REAL: o perfil decide o que aparece. easyJet piloto/cabine → o AE respetivo
   // (catálogo em infoCatalog); sem AE (Ryanair, ou companhia AE ainda por modelar) → FTL-only.
   const { crewType, company, ae, lang } = useContext(AppContext);
-  // (avatar/navigation saíram do cabeçalho 2026-07-09 — o Perfil vive só no Início)
+  const navigation = useNavigation();   // Biblioteca é EMPURRADA do Perfil → ‹ voltar
   const isEzy = /easyjet|ezy/i.test([company && company.slug, company && company.name, company && company.engine_code].filter(Boolean).join(' '));
   const prof = (ae && isEzy) ? (crewType === 'cabin' ? 'cabin' : 'pilot') : 'ryan';
   const eyebrow = `Referência · ${(company && company.name) || '—'} · ${crewType === 'cabin' ? 'Cabine' : 'Piloto'}`;
@@ -124,8 +125,8 @@ export default function InfoScreen() {
           as páginas da pele: o header (eyebrow + § + hero + avatar/sino) fica preso; só o
           conteúdo por baixo faz scroll. O PeleSide (rótulo lateral) já era fixo, este agora também. */}
       <View style={s.headWrap}>
-        {/* avatar saiu (2026-07-09): o Perfil vive só no Início — o cabeçalho fica com o sino */}
-        <PeleHeader eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} bell />
+        {/* BIBLIOTECA (2026-07-09): a antiga aba INFO empurrada do Perfil — ‹ voltar, sem sino */}
+        <PeleHeader size="detail" onBack={() => navigation.goBack()} eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} />
       </View>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 

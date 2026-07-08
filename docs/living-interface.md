@@ -187,8 +187,10 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 
 ### 1 · Folga
 - **Gatilho:** sem duty hoje; próximo report > 24 h.
-- **Hero:** ghost = dia do próximo (26) · "Folga" · kick "próximo quinta · LIS→FNC · 05:30".
-- **Meio:** agenda c/ tracinhos (2–3 próximos). **Util:** sincronizada ✓ · repouso em dia · férias X de Y.
+- **Hero (2026-07-09, 2.ª iteração do user):** ghost = **dia da semana CURTO de hoje** ("QUI" — 3 letras, gigante) · "Folga" · kick = SÓ o tempo de hoje ("hoje 18°–27°"). O rótulo lateral dá a coordenada: "FOLGA · 9 JULHO". O próximo serviço SAIU do kick (era redundante com a agenda).
+- **Voz (2026-07-09, 7.ª iteração — FINAL do user):** **BILHETE MANUSCRITO em Caveat 25** (`PELE_FONT.hand`, 3.ª família SÓ para a voz; o user testou Sacramento por imagens e voltou à Caveat), marcador amarelo no que importa (`PELE.yellow`+`PELE.ink` fixos — igual de dia e de noite), cauda na mesma caneta em cinza. **O bilhete POUSA LIVRE na página** (user: "como num post-it de lado"): ângulo **-1°…-3°** (teto de contenção — 3 sinais no mesmo elemento, o ângulo cede primeiro) + desvio 0-10px, **determinísticos pelo DIA** (`noteSeed` do todayISO — sem Math.random). Dynamic type capado a 1.2 no bilhete.
+- **Ações (2026-07-09):** a folga ficou **SEM ações** (Evento/Simular saíram — o ＋ central da tab bar já os carrega; só o chip fica). A app baixa a voz a sério.
+- **Meio:** **título VIVO** da agenda (não "A seguir" morto): o estado do próximo — "EM 45 MIN" · "AMANHÃ · **EM 16 H**" · "EM 3 DIAS" (o tempo a amarelo; fallback "A seguir" se não houver countdown) + agenda c/ tracinhos (2–3 próximos), linhas com **data explícita** "SEX 10 · report 05:40 · 4 setores". **Util:** sincronizada ✓ · repouso em dia · férias X de Y.
 - **Datarow:** mês € estimado + donut mês %. **Chip:** "2 DIAS · até ao report".
 - **Ações:** Extra (hot) · Simular. **Desaparece:** countdowns, PSV, avisos.
 - **Animação:** assenta uma vez; sem refresh. **Objetivo:** silêncio merecido.
@@ -381,6 +383,11 @@ Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports à
 ---
 
 ## 9 · Estado da implementação (v2 · 2026-07-08)
+
+> **✅ TESTADO NO DEVICE pelo founder (2026-07-09)** — a sessão de afinação ao vivo do
+> próprio dia (navbar nova + ＋ central, folga v2 QUI/rótulo/bilhete manuscrito, título
+> vivo da agenda, pílula de novidades, ponto da ativa por baixo) fez de guião: o que
+> não estava bem foi corrigido na hora. Re-testes futuros: frase-gatilho "testar os estados".
 
 O Início real (`screens/HomeScreen.js`) **já corre o motor adaptativo**: derivação
 `homeState` + anatomia fixa das zonas + banda de alerta com cadeia de prioridades

@@ -11,47 +11,49 @@
 const strHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 
 // Entradas: [negritoPT, caudaPT, negritoEN, caudaEN]
+// MAIÚSCULA inicial em negrito E cauda (user 2026-07-09: o bilhete escreve português
+// correto — a minúscula-depois-do-ponto era maneirismo, num bilhete real ninguém escreve assim).
 const POOLS = {
   'folga.sun': [
-    ['descansa — está tudo em dia.', 'aproveita o sol, {now}° lá fora.', 'rest — everything’s in order.', 'enjoy the sun, {now}° outside.'],
-    ['o dia é teu.', 'sol e {max}° — a escala hoje não manda.', 'the day is yours.', 'sun and {max}° — the roster’s off duty today.'],
-    ['sem relógio hoje.', 'céu limpo e {now}° — desfruta.', 'no clock today.', 'clear sky and {now}° — enjoy.'],
+    ['Descansa — está tudo em dia.', 'Aproveita o sol, {now}° lá fora.', 'Rest — everything’s in order.', 'Enjoy the sun, {now}° outside.'],
+    ['O dia é teu.', 'Sol e {max}° — a escala hoje não manda.', 'The day is yours.', 'Sun and {max}° — the roster’s off duty today.'],
+    ['Sem relógio hoje.', 'Céu limpo e {now}° — desfruta.', 'No clock today.', 'Clear sky and {now}° — enjoy.'],
   ],
   'folga.rain': [
-    ['dia de sofá.', 'chuva lá fora — a escala não manda hoje.', 'couch day.', 'rain outside — the roster’s off duty.'],
-    ['deixa chover.', '{now}° e molhado — dia para ficar por dentro.', 'let it rain.', '{now}° and wet — a day to stay in.'],
+    ['Dia de sofá.', 'Chuva lá fora — a escala não manda hoje.', 'Couch day.', 'Rain outside — the roster’s off duty.'],
+    ['Deixa chover.', '{now}° e molhado — dia para ficar por dentro.', 'Let it rain.', '{now}° and wet — a day to stay in.'],
   ],
   'folga.snow': [
-    ['dia de neve.', '{now}° lá fora — quentinho por dentro.', 'snow day.', '{now}° outside — stay warm inside.'],
+    ['Dia de neve.', '{now}° lá fora — quentinho por dentro.', 'Snow day.', '{now}° outside — stay warm inside.'],
   ],
   'folga.cloud': [
-    ['dia calmo.', '{now}° e nuvens — o dia é teu.', 'calm day.', '{now}° and clouds — the day is yours.'],
-    ['descansa — está tudo em dia.', 'céu coberto, {now}° — sem pressa.', 'rest — everything’s in order.', 'overcast, {now}° — no rush.'],
+    ['Dia calmo.', '{now}° e nuvens — o dia é teu.', 'Calm day.', '{now}° and clouds — the day is yours.'],
+    ['Descansa — está tudo em dia.', 'Céu coberto, {now}° — sem pressa.', 'Rest — everything’s in order.', 'Overcast, {now}° — no rush.'],
   ],
   'folga.night': [
-    ['noite tranquila.', 'está tudo em dia — dorme sem alarmes.', 'quiet night.', 'everything’s in order — sleep with no alarms.'],
+    ['Noite tranquila.', 'Está tudo em dia — dorme sem alarmes.', 'Quiet night.', 'Everything’s in order — sleep with no alarms.'],
   ],
   folga: [
-    ['descansa — está tudo em dia.', 'hoje o dia é teu.', 'rest — everything’s in order.', 'today is yours.'],
-    ['folga a sério.', 'nada pendente, nada a vigiar.', 'a proper day off.', 'nothing pending, nothing to watch.'],
+    ['Descansa — está tudo em dia.', 'Hoje o dia é teu.', 'Rest — everything’s in order.', 'Today is yours.'],
+    ['Folga a sério.', 'Nada pendente, nada a vigiar.', 'A proper day off.', 'Nothing pending, nothing to watch.'],
   ],
   // Estados futuros do LI — as pools já cá estão; ganham vida quando os estados nascerem.
   vespera: [
-    ['está tudo verificado — dorme.', 'report às {report}.', 'all checked — sleep.', 'report at {report}.'],
+    ['Está tudo verificado — dorme.', 'Report às {report}.', 'All checked — sleep.', 'Report at {report}.'],
   ],
   posvoo: [
-    ['dia fechado.', 'repouso até {restUntil} — amanhã já está preparado.', 'day closed.', 'rest until {restUntil} — tomorrow’s already set.'],
-    ['dia fechado.', 'bom trabalho — agora descansa.', 'day closed.', 'good work — now rest.'],
+    ['Dia fechado.', 'Repouso até {restUntil} — amanhã já está preparado.', 'Day closed.', 'Rest until {restUntil} — tomorrow’s already set.'],
+    ['Dia fechado.', 'Bom trabalho — agora descansa.', 'Day closed.', 'Good work — now rest.'],
   ],
   pernoita: [
-    ['boa noite em {station}.', 'está tudo tratado para amanhã.', 'good night in {station}.', 'tomorrow’s all set.'],
+    ['Boa noite em {station}.', 'Está tudo tratado para amanhã.', 'Good night in {station}.', 'Tomorrow’s all set.'],
   ],
   ferias: [
-    ['férias a sério.', 'a escala não manda — desfruta.', 'proper vacation.', 'the roster’s off duty — enjoy.'],
-    ['desliga.', 'a app fica de vigia — tu descansas.', 'switch off.', 'the app keeps watch — you rest.'],
+    ['Férias a sério.', 'A escala não manda — desfruta.', 'Proper vacation.', 'The roster’s off duty — enjoy.'],
+    ['Desliga.', 'A app fica de vigia — tu descansas.', 'Switch off.', 'The app keeps watch — you rest.'],
   ],
   doenca: [
-    ['cuida de ti.', 'a escala pode esperar — as melhoras.', 'take care of you.', 'the roster can wait — get well soon.'],
+    ['Cuida de ti.', 'A escala pode esperar — as melhoras.', 'Take care of you.', 'The roster can wait — get well soon.'],
   ],
 };
 

@@ -1,6 +1,7 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScrollToTop } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -10,6 +11,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
+import NotificationsBell from '../components/NotificationsBell';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -80,6 +82,8 @@ export default function SettingsScreen({ navigation }) {
   const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
+  const perfilScrollRef = useRef(null);
+  useScrollToTop(perfilScrollRef);   // re-tocar na aba Perfil → volta ao topo (convenção iOS)
   const seg = useEnter(); // entrada escalonada das secções
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [aeModal, setAeModal] = useState(false);       // Serviço & AE (pós-voo/férias/antiguidade/toggles + estimativa)
@@ -448,7 +452,8 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.headWrap}>
             <PeleHeader
               size="detail"
-              onBack={() => navigation.goBack()}
+              // Perfil é ABA (2026-07-09): sem ‹ voltar; o SINO (arquivo) vive aqui, à ESQUERDA.
+              left={<NotificationsBell />}
               // SEM eyebrow ("A tua conta" saiu): o rótulo lateral já diz PERFIL·companhia.
               // Fantasma = o GALÃO (sigla da categoria); sem categoria cai nas iniciais.
               ghost={crewCategory || inits}
@@ -459,7 +464,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         );
       })()}
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={perfilScrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
 
         {/* Meta do herói (Desde · Base · AE) — primeiro item do scroll, sob a régua fixa */}
         {user ? (
@@ -508,6 +513,8 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.grid}>
             <Tile icon="passport" label={l('Validades & Documentos', 'Currency & Documents')} value={l('médico · recorrentes · licença', 'medical · recurrents · licence')} wide hot onPress={() => navigation.navigate('Validades')} s={s} />
             <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
+            {/* Biblioteca = a antiga aba INFO (lei FTL + AE + fontes oficiais + procura) */}
+            <Tile icon="book" label={l('Biblioteca', 'Library')} value={l('lei FTL · AE · fontes oficiais', 'FTL law · CLA · official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
             {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => setAeModal(true)} s={s} /> : null}
           </View>
         </Animated.View>

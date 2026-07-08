@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useScrollToTop } from '@react-navigation/native';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import { RADIUS, GUTTER, TYPE, SPACE, SHADOW, PELE, PELE_FONT } from '../data/constants';
 import Icon from '../components/Icon';
@@ -85,6 +86,7 @@ export default function EscalaScreen({ navigation, route }) {
   const [syncing, setSyncing] = useState(false);        // botão Sincronizar (relê o calendário ligado)
   const [flashIso, setFlashIso] = useState(null);       // realce breve do card após guardar
   const scrollRef = useRef(null);        // ScrollView da lista (scroll até hoje ao entrar)
+  useScrollToTop(scrollRef);             // re-tocar na aba Escala → volta ao topo (convenção iOS)
   const didScrollToday = useRef(false);  // já posicionámos no dia de hoje neste mês?
   const prevYmRef = useRef(null);        // mês renderizado antes (p/ reativar o scroll ao mudar de mês)
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
@@ -357,16 +359,15 @@ export default function EscalaScreen({ navigation, route }) {
       <View style={s.body}>
         {/* Topo pele (mockup) — avatar↖ · sino↗. Ferramentas realojadas: importar→FAB "+" ·
             sync→pull-to-refresh · export→link no fundo da grelha. */}
-        {/* avatar saiu (2026-07-09): o Perfil vive só no Início — ficam sincronizar + sino */}
+        {/* Topo da Escala: sincronizar/importar à ESQUERDA (preferência do user 2026-07-09). */}
         <PeleHeader
-          actions={
+          left={
             /* Sincronizar/Importar — botão do header; PONTO âmbar se há alterações/dessincronia */
             <TouchableOpacity style={s.hdrBtn} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
               <Icon name={calendarId ? 'sync' : 'download'} size={19} color={PELE.ink} />
               {(rcCounts?.total || lsCount) ? <View style={s.hdrDot} /> : null}
             </TouchableOpacity>
           }
-          bell
         />
 
         {!anyDuty ? (

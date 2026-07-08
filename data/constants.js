@@ -168,4 +168,5 @@ export const PELE_FONT = {
   bodyMed:     'HankenGrotesk_500Medium',
   bodyBold:    'HankenGrotesk_700Bold',
   bodyHeavy:   'HankenGrotesk_800ExtraBold',     // eyebrows/rótulos densos (maiúsculas)
+  hand:        'Caveat_600SemiBold',             // MANUSCRITA — só a voz do Início (o bilhete pessoal)
 };

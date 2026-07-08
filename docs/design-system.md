@@ -27,7 +27,7 @@
 **Tokens** (`data/constants.js`):
 - `PELE` — paper `#FFFFFF` · ink `#141414` · ghost `#E2E1DC` · grey `#77776F` · line `#ECEAE4` · soft/soft2 · **yellow `#FFB800`** · ok/warn/red + `*Soft` (superfícies pintadas) · onInk* (placas pretas).
 - `PELE_NIGHT` — a MESMA gramática sobre azul-quase-preto (`#0D131C`); amarelo mantém-se; estados sobem de luminosidade para contraste.
-- `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso.
+- `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos) + **Caveat** (`hand` — manuscrita, USO ÚNICO: a voz do Início, o bilhete pessoal com marcador amarelo). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso.
 - Partilhados com o tema antigo: `RADIUS` (cartão de conteúdo = `lg` 16; folhas/diálogos xl/xxl) · `SPACE` · `SHADOW` (só folhas/diálogos/toasts elevam — **cartões são planos**, borda hairline) · `GUTTER` 16.
 
 **Gramática da pele:**
@@ -36,8 +36,10 @@
 - **PeleHeader** — **fonte única do cabeçalho** (o fantasma tinha divergido 74/92/130 entre ecrãs antes da consolidação). Régua 130/44/108; slots avatar/back · actions · sino · word/kick. Fora da régua por decisão deliberada: DutyDetail 104 · Perfil 150 · Início (sem fantasma de header).
 - **Amarelo** = marca/realce: numeração bento, kicks, seleção, pontinhos de atenção suave.
 - **Tema noturno** — conduzido pelo **ESTADO do dia** (véspera/pernoita), NÃO pelo dark-mode do sistema. Fábrica `makeSkin(P, night)` → `sDay`/`sNight`.
-- **Navegação = TAB BAR com ＋ central** (`components/TabBar.js`, 2026-07-09 — referência aprovada pelo user; substituiu dock flutuante, linha de palavras rejeitada no device e FAB): barra inteira em **papel + hairline no topo**, **em layout** (o conteúdo termina acima dela, nada fica tapado), simetria **2 abas + ＋ + 2 abas** (`Início · Números · ＋ · Escala · Info`), ativa = **ink + ponto amarelo** (espaço reservado, fade+scale 180ms, reduce-motion salta); tema noturno herdado do Início via `homeNight`; ponto âmbar em "Escala" (alterações por rever); háptico; `useTabBarSpace` = só folga (20).
-- **O ＋ central abre o speed-dial em pílulas rotuladas** (Modal + scrim + cascata; back do Android fecha): **Serviço** (→ Escala, novo serviço hoje) · **Simulação** · **Evento** (gate AE). O ＋ é só CRIAR — a Pesquisa não voltou (a INFO tem procura própria). Criar também continua na grelha da Escala (tocar num dia insere NESSE dia) e nos acts contextuais do Início.
+- **Navegação = TAB BAR com ＋ central** (`components/TabBar.js`, 2026-07-09 — referência aprovada pelo user): barra inteira em **papel + hairline no topo**, **em layout** (o conteúdo termina acima dela, nada fica tapado), simetria **`Início · Escala · ＋ · Números · Perfil`**, ativa = **ink + ponto amarelo** (espaço reservado, fade+scale 180ms + pop do ícone, reduce-motion salta); tema noturno herdado do Início via `homeNight`; ponto âmbar em "Escala" (alterações por rever); háptico; `useTabBarSpace` = só folga (20).
+- **O ＋ central abre o speed-dial em pílulas rotuladas** (Modal + scrim + cascata; back do Android fecha; × = clone pixel-perfect que roda): **Serviço** (→ Escala, novo serviço hoje) · **Simulação** · **Evento** (gate AE). O ＋ é só CRIAR — a Pesquisa vive na Biblioteca. Criar também continua na grelha da Escala (tocar num dia insere NESSE dia) e nos acts contextuais do Início.
+- **Topos LIMPOS (2026-07-09): sem avatar e sem sino em nenhuma página.** O **Perfil é ABA** (a 4.ª); o **sino-arquivo vive no header do Perfil**; a antiga aba INFO virou o cartão **"Biblioteca"** dentro do Perfil (empurrada com ‹, `size="detail"` — lei FTL + AE + fontes + procura, conteúdo intacto).
+- **Notificações à Apple: o botão só existe quando tem algo para dizer.** No Início, ao lado da saudação, a **pílula "● N novidades"** (`NotificationsBell variant="pill"`) aparece SÓ com por-ler e desaparece ao ler — zero mobília em repouso. O crítico continua em-contexto (banda do Início · ponto âmbar da Escala · push).
 - 4 abas (Início · Números · Escala · Info); **Perfil = avatar SÓ no Início** (identidade mora na base; os outros cabeçalhos ficam com o sino).
 
 ---

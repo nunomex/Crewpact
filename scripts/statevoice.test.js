@@ -56,7 +56,7 @@ check('sol: menciona sol/céu/°', /sol|céu|°/.test(vSun.bold + ' ' + vSun.tai
 
 // ── Noite (hora ≥21) ganha à variante do tempo ──
 const vNight = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 22 });
-eq('noite: frase noturna', vNight.bold, 'noite tranquila.');
+eq('noite: frase noturna', vNight.bold, 'Noite tranquila.');
 
 // ── Sem meteo → cai na pool base (sem temperatura na frase) ──
 const vNo = stateVoice({ state: 'folga', dateISO: '2026-07-09' });
@@ -70,7 +70,7 @@ check('EN: frase em inglês', /rest|day|sun|clock/.test(vEn.bold + ' ' + vEn.tai
 eq('disrupção não tem voz', stateVoice({ state: 'disrupcao', dateISO: '2026-07-09' }), null);
 eq('desconhecido → null', stateVoice({ state: 'xpto', dateISO: '2026-07-09' }), null);
 const vVes = stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30' } });
-eq('véspera com report', vVes, { bold: 'está tudo verificado — dorme.', tail: 'report às 05:30.' });
+eq('véspera com report', vVes, { bold: 'Está tudo verificado — dorme.', tail: 'Report às 05:30.' });
 eq('véspera SEM report → null (nunca se inventa)', stateVoice({ state: 'vespera', dateISO: '2026-07-09' }), null);
 const vPer = stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC' } });
 check('pernoita com estação', vPer && vPer.bold.includes('FNC'));

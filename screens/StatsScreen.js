@@ -9,6 +9,7 @@ import PeleHeader from '../components/PeleHeader';
 import CountUp from '../components/CountUp';
 import YearShareCard from '../components/YearShareCard';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import { useScrollToTop } from '@react-navigation/native';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
@@ -59,6 +60,8 @@ export default function StatsScreen({ navigation }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
+  const statsScrollRef = useRef(null);
+  useScrollToTop(statsScrollRef);   // re-tocar na aba Números → volta ao topo (convenção iOS)
   const seg = useEnter();
 
   const [scope, setScope] = useState('year');   // 'year' | 'month'
@@ -178,7 +181,7 @@ export default function StatsScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <PeleSide label={l('ESTATÍSTICAS', 'STATISTICS')} accent={String(isYear ? year : ym.slice(0, 4))} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={statsScrollRef} style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         <PeleHeader
           eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
           ghost={isYear ? l('ANO', 'YEAR') : l('MÊS', 'MONTH')}
@@ -193,7 +196,6 @@ export default function StatsScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           ) : null}
-          bell
         />
 
         {/* Segmento Mês ⇄ Ano */}

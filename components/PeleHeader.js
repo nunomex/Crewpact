@@ -18,6 +18,7 @@ export default function PeleHeader({
   eyebrow, ghost, word, wordTrailing, kick,
   initials = '?', onAvatar,
   onBack,                    // se dado → botão ‹voltar em vez do avatar (ecrãs empurrados, ex.: Validades)
+  left,                      // nó à ESQUERDA quando não há voltar/avatar (ex.: o sino do Perfil-aba)
   actions,                   // nó à direita, ANTES do sino (ex.: sincronizar/importar da Escala)
   bell = false,              // renderiza o sino real (NotificationsBell) — abre a central de notificações
   size = 'root',             // escala do herói: 'root' (130, abas/topo) · 'detail' (104, empurrados/pessoais)
@@ -26,16 +27,20 @@ export default function PeleHeader({
 }) {
   // Linha de topo (avatar/‹voltar + ações + sino) é OPCIONAL: só aparece se o ecrã pedir algo dela.
   // Assim a Escala pode usar só o herói (dentro do gesto de swipe do mês), com a linha de topo à parte.
-  const showTop = !!(onBack || onAvatar || bell || actions);
+  const showTop = !!(onBack || onAvatar || bell || actions || left);
   const Z = SIZES[size] || SIZES.root;
   const hasHero = ghost != null || word != null;   // herói aparece se houver fantasma OU palavra
   return (
     <View>
       {showTop ? (
       <View style={s.hdr}>
+        {/* Slot esquerdo: ‹voltar > avatar (SÓ com onAvatar — antes renderizava um disco
+            morto "?" quando ninguém o pedia) > nó `left` (ex.: sino do Perfil) > nada. */}
         {onBack
           ? <TouchableOpacity style={s.bk} onPress={onBack} hitSlop={6} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Voltar"><Icon name="back" size={18} color={P.ink} /></TouchableOpacity>
-          : <TouchableOpacity style={[s.av, night ? s.avNight : null]} onPress={onAvatar} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Perfil"><Text style={s.avTxt}>{initials}</Text></TouchableOpacity>}
+          : onAvatar
+            ? <TouchableOpacity style={[s.av, night ? s.avNight : null]} onPress={onAvatar} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Perfil"><Text style={s.avTxt}>{initials}</Text></TouchableOpacity>
+            : left || null}
         <View style={{ flex: 1 }} />
         {actions}
         {bell ? <NotificationsBell /> : null}
