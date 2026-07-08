@@ -46,6 +46,13 @@ const POOLS = {
   pernoita: [
     ['boa noite em {station}.', 'está tudo tratado para amanhã.', 'good night in {station}.', 'tomorrow’s all set.'],
   ],
+  ferias: [
+    ['férias a sério.', 'a escala não manda — desfruta.', 'proper vacation.', 'the roster’s off duty — enjoy.'],
+    ['desliga.', 'a app fica de vigia — tu descansas.', 'switch off.', 'the app keeps watch — you rest.'],
+  ],
+  doenca: [
+    ['cuida de ti.', 'a escala pode esperar — as melhoras.', 'take care of you.', 'the roster can wait — get well soon.'],
+  ],
 };
 
 const fill = (s, ctx) => s.replace(/\{(\w+)\}/g, (_, k) => String(ctx[k]));

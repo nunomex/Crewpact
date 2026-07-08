@@ -397,16 +397,16 @@ derivações** — a arquitetura não muda.
 | 2 | Véspera | ✅ construído (2026-07-09) | report ≤14h + noite (≥18h): countdown no fantasma, "Amanhã", repouso ✓ + acordar ~, horas neutras, chip H:MM; **estreia o TEMA NOTURNO** (PELE_NIGHT + glow de candeeiro; chip inverte) |
 | 3 | Pré-report | ✅ construído | countdown H:MM, avião ✓/aeroporto ✓ reais, horas + meteo, per-diem + donut PSV |
 | 3b | Disrupção | ✅ construído | banda-causa + "+N Atenção" + horas rasuradas + PSV projetado + chip nova-partida |
-| 4 | Em serviço/voo | 🟡 parcial | "Em voo" + setor ativo + termina~; falta progresso/ETA vivo, PSV a acumular, atalho família |
+| 4 | Em serviço/voo | ✅ construído (2026-07-09) | barra de PROGRESSO do setor ativo (instantes planeados, anda com o tick) + PSV a ACUMULAR no útil ("PSV 05:12 / máx 13:00") + Partilhar; ETA por instantes live fica como refinamento |
 | 5 | Pós-voo | ✅ construído (2026-07-09) | duty de hoje TERMINADA → "Fechado" + veredicto legal no kick, DUTY/BLOCK/SETORES (tap→detalhe), per-diem+donut PSV, ações Sign-off/Simular; dívida: "repouso até HH:MM" real (motor 235) por ligar — o útil usa a pergunta do repouso |
 | 6 | Pernoita fora | ✅ construído (2026-07-09) | dia fechado FORA da base (nightStopStation) → NOTURNO herdado; fantasma = estação (tempo no expoente), hotel no kick/meio (tap mapas · longo edita · convite sem hotel), útil 10h-235 + € da noite (ae.nightStop) + meteo, chip report amanhã |
 | 7 | Standby | ✅ essencial (2026-07-09) | linha "SE CHAMADO → PSV até HH:MM" (report+máx do motor) sob o serviço; útil ainda genérico (alojamento 225 d/e por expor) |
-| 8 | Formação | 🟡 parcial | cai no ramo não-voo genérico (tipo+horas); sem papel-pago |
-| 9 | Escala mudou | 🟡 parcial | vive no hub da Escala (ponto âmbar + Rever N); não toma o Início |
-| 10 | Documento crítico | 🟡 parcial | entra pela banda (perguntas/validades) quando crítico; sem takeover do herói |
-| 11 | Fecho do mês | ❌ por construir | |
-| 12 | Férias | ❌ por construir | eventos vacDays existem (gatilho pronto) |
-| 13 | Doença | ❌ por construir | eventos sickDays existem (gatilho pronto) |
+| 8 | Formação | ✅ construído (2026-07-09) | ramo não-voo do "hoje" (tipo+horas) + **papel pago** no útil (instrutor — conta no mês, AE) |
+| 9 | Escala mudou | ✅ construído (2026-07-09) | **banda prioritária** no Início ("A tua escala mudou — N por rever", toca→Escala) + hub/ponto âmbar; takeover do herói DESCARTADO (o dia operacional não se esconde; deteta→confirma respeitado) |
+| 10 | Documento crítico | ✅ conforme decisão do user (2026-07-09) | linha vermelha AO PÉ DO ESTADO (tocável→porquê); takeover descartado pelo próprio user ("pode ficar ao pé do estado") |
+| 11 | Fecho do mês | ✅ construído (2026-07-09) | últimos 3 dias + AE: fantasma=dias que faltam, total € amarelo no kick, PARCELAS que somam no meio (tap→Estatísticas), € do mês + donut, nudge dos extras, ações Extra/Números |
+| 12 | Férias | ✅ construído (2026-07-09) | vacDays hoje: fantasma=dias que RESTAM no ano, "ficam 9 de 22 · regressas sexta 18" no kick, halo+tempo, voz "férias a sério."; sem ações (afastamento máximo); véspera ganha no último dia c/ report cedo |
+| 13 | Doença | ✅ construído (2026-07-09) | sickDays hoje: dia N do EPISÓDIO (consecutivos, motor), "As melhoras", Art. 48 crew-aware no kick (1-3 pago piloto · cabine regista pagos), tudo operacional em pausa; doença CALA a véspera |
 
 **Ordem de construção (valor ÷ custo):** ① Véspera + Pós-voo (dados todos prontos —
 é 1 ramo cada) → ② Pernoita como estado → ③ Standby "se chamado" (o motor 225 já
@@ -414,9 +414,12 @@ calcula) → ④ Em-voo completo (progresso/ETA — o feed live já existe) → 
 mês · Férias · Doença → ⑥ Escala-mudou/Doc-crítico como takeover (hoje já têm voz
 pela banda/hub). Formação afina-se com o papel-pago do AE.
 
-**Dívida do motor:** o `homeState` vive inline no ecrã. Quando os estados passarem
-de ~6, extrair para **`data/crewState.js` puro + golden** (a promessa do §2) — a
-UI passa a vestir o resultado, e os gatilhos ficam auditáveis como os motores.
+**Motor extraído ✅ (2026-07-09):** a promessa do §2 está cumprida — os gatilhos e a
+precedência dos 8 estados vivem em **`data/crewState.js`** (puro: `crewState()` +
+`dutyEndMs` + `dayClosed`), com **golden `test:crewstate` (28 asserções)** a pinar
+cada regra: fecho multi-serviço, serviço que vira a noite, standby sem block_on
+nunca fecha o dia, pernoita fora vs base, pós-voo>véspera, disrupção>hoje. O Início
+só injeta o dia e veste o resultado. Estados novos entram no motor COM asserção.
 
 ---
 

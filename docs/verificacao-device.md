@@ -64,3 +64,103 @@ _Isto liga a cifra a sério. Testa com calma; se falhar, recua sem perda._
 ---
 
 **Prioridade se tiveres pouco tempo:** 1 (reset), 2 (apagar/reativar), 4 (toggle) — são os que mexem em fluxos novos. O 6 (cifra) é o mais delicado, faz devagar. O 3 (mudar-email) só depois dos passos do dashboard.
+
+---
+
+# Guião · TESTAR OS ESTADOS da Living Interface (2026-07-09)
+
+_Quando disseres **"testar os estados"**, percorremos isto juntos, um estado de cada vez._
+_Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'folga' | 'hoje' |
+'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' | null=real). O Fast Refresh aplica ao guardar.
+**No fim, voltar a `null`.** Para conteúdo realista, melhor combinar a alavanca com dados reais._
+
+## 0 · Setup (primeira vez)
+_Dados reais: conta sem calendário ligado. Ou `FORCE='setup'`._
+- [ ] "Bem-vindo, <nome>" + fantasma = AVIÃO + "Olá!" + kick amarelo do calendário.
+- [ ] Passo "1 Ligar o calendário" (toca → fluxo de ligar na Escala) + placa amarela da dica eCrew.
+- [ ] Donut 15% SETUP · chip "PASSO 1" · ações **Ligar calendário** (preta) / **Ver exemplo**.
+- [ ] "Ver exemplo" mostra um dia demo (desaparece ao trocar de app — é espreitadela).
+
+## 1 · Folga
+_Dados reais: hoje sem serviço. Com e sem serviço futuro marcado._
+- [ ] Fantasma = **dia de HOJE** (nunca o do próximo) + **símbolo do tempo** no expoente.
+- [ ] Rótulo `FOLGA · QUARTA-FEIRA` (dia por extenso, sem número).
+- [ ] **Halo** suave atrás do fantasma (âmbar sol · azulado chuva) — quase subliminar.
+- [ ] **Voz**: "descansa — está tudo em dia. …" (2 tons; muda com o tempo/dia).
+- [ ] Com próximo serviço: kick "próximo serviço quinta · LIS→FNC · 05:30 · 18°–27°" + agenda (3, tocáveis) + chip "N DIAS até ao report".
+- [ ] Sem nada: "sem serviços marcados" + "nada marcado — desfruta ✌️".
+- [ ] Com AE: € do mês (cêntimos!) + donut % do mês.
+
+## 2 · Véspera 🌙 (NOTURNO)
+_Dados reais: serviço amanhã com report cedo + serem ≥18h. Ou `FORCE='vespera'` (com o serviço criado)._
+- [ ] Ecrã ESCURO (azul-noite) + **glow de candeeiro** no topo · avatar visível · rótulo claro.
+- [ ] Fantasma = countdown H:MM · "Amanhã" · kick "report às 05:30 · Z · repouso mínimo ✓ · acordar ~04:15".
+- [ ] Horas de amanhã em neutro · útil "Amanhã" · **chip INVERTIDO** (placa clara, dígitos escuros).
+- [ ] SEM € do mês (noite calma) · voz "está tudo verificado — dorme."
+- [ ] Legibilidade geral no escuro (o teste das 22h no sofá).
+
+## 3 · Pré-report (hoje)
+_Dados reais: serviço HOJE ainda por começar._
+- [ ] Fantasma = countdown ao report · "Report" · kick "às HH:MM · Z" (+ "avião ✓ · aeroporto ✓" se live limpo).
+- [ ] Horas PARTIDA/CHEGADA grandes (verdes com live ok) + **tempo do destino** na célula da chegada (ícone desenhado).
+- [ ] Per-diem de hoje + donut PSV · chip report·Z · ações **Partilhar**/Hotel(se 🌙)/Simular.
+- [ ] Partilhar abre o cartão editorial + envia imagem+link.
+
+## 3b · Disrupção
+_Difícil de forçar com dados reais (precisa de atraso ao vivo) — `FORCE='disrupcao'` mostra o esqueleto; o teste verdadeiro é num dia de atraso a sério._
+- [ ] Banda laranja com a CAUSA · fantasma "+N" · "Atenção" laranja.
+- [ ] Horas com a planeada **rasurada** → ~nova · "derrapa/projeção" · chip "0̶6̶:̶4̶0̶ ~07:05".
+- [ ] NUNCA aparece "a tempo ✓" em lado nenhum.
+
+## 4 · Standby (hoje)
+_Dados reais: serviço standby/reserva HOJE._
+- [ ] Linha do serviço (tipo + janela) + linha **"SE CHAMADO → PSV até HH:MM"** com o máx por baixo.
+
+## 5 · Pós-voo
+_Dados reais: serviço de HOJE já terminado (report 06:00, fim 10:00). Na BASE (sem 🌙)._
+- [ ] Fantasma = duty total · "Fechado" · kick = veredicto legal (PSV real/máx · dentro ✓).
+- [ ] DUTY · BLOCK · SETORES (toque → detalhe do dia) · per-diem hoje + donut PSV.
+- [ ] Útil "Fecho": repouso + próximo serviço + nudge do sign-off · ações **Sign-off**/Simular.
+- [ ] Multi-serviço (2 serviços no dia): só fecha quando os DOIS acabam; fechado NÃO mostra números de 1 só.
+
+## 6 · Pernoita 🌙 (NOTURNO)
+_Dados reais: serviço de hoje terminado com 🌙 fora da base. Ou `FORCE='pernoita'`._
+- [ ] Escuro com candeeiro · fantasma = **ESTAÇÃO** (FNC) + tempo de lá no expoente.
+- [ ] Kick: hotel a amarelo + "amanhã report HH:MM" · meio = cartão do hotel (toque→mapas · longo→editar; sem hotel → convite).
+- [ ] Útil "Fora": repouso 10h (235) · pernoita +€ (cêntimos) · temperatura na estação.
+- [ ] Ações **Hotel**(preta)/**Partilhar**(o voo que aterrou — o link diz "Aterrou ✓")/Simular.
+
+## Transversais (em todos)
+- [ ] Rótulo lateral começa no MESMO ponto em todas as abas/ecrãs (Início·Números·Escala·INFO·Perfil·Validades·Detalhe).
+- [ ] Fantasma nunca pisa o rótulo · nunca desaparece após uns segundos (o bug do re-render morreu).
+- [ ] Banda de alerta só quando há motivo; aviso de documento crítico vive AO PÉ do Estado (vermelho).
+- [ ] Pull-to-refresh funciona · trocar de aba e voltar não parte nada.
+- **Afinações prováveis (diz o número):** posição do expoente do tempo · força do halo · `top` do rótulo (344) · tamanhos do fantasma (190/160/140).
+
+## 4b · Em voo (upgrade)
+_Dados reais: serviço HOJE com o report ja passado (setor a decorrer)._
+- [ ] Barra de PROGRESSO do setor (amarela, anda com o relogio; com live 1-setor usa partida real→ETA).
+- [ ] Util: "PSV 05:12 / max 13:00" a ACUMULAR ao vivo.
+- [ ] Standby aeroporto: util diz com/sem alojamento.
+- [ ] Formacao com papel instrutor: util diz "papel: instrutor — conta no mes (AE)".
+
+## 7b · Ferias
+_Dados reais: evento de ferias HOJE (mini-+ → Extra → Ferias, bloco com hoje dentro). Ou FORCE='ferias'._
+- [ ] Fantasma = dias que RESTAM no ano + tempo no expoente; "Ferias"; kick "ficam 9 de 22 · regressas sexta 18".
+- [ ] Halo + voz "ferias a serio." · SEM acoes · chip = dias restantes.
+
+## 7c · Doenca
+_Dados reais: evento de doenca HOJE. Ou FORCE='doenca'._
+- [ ] Fantasma = dia N do episodio; "As melhoras" (coracao amarelo); kick Art. 48 (piloto: 1-3 pago).
+- [ ] Tom baixo: sem halo, sem numeros a gritar; acao unica Extra (estender); voz "cuida de ti."
+
+## 7d · Fecho do mes
+_Dados reais: ultimos 3 dias do mes com AE. Ou FORCE='fecho'._
+- [ ] Fantasma = dias p/ fechar; "Fecho do mes"; kick "estimado ate agora **N NNN,NN €**" (amarelo, centimos).
+- [ ] Meio = PARCELAS (BASE·PER-DIEM·PERNOITAS·EXTRAS — somam; toque → Estatisticas).
+- [ ] Datarow = total € + donut do mes · util nudge "faltam extras? regista no +".
+- [ ] Acoes Extra (preta) / Numeros.
+
+## 8b · Repouso-ate + escala-mudou
+- [ ] Pos-voo/pernoita: util e chip dizem "repouso ate HH:MM (+1 se vira o dia) (235)" — confere com o motor.
+- [ ] Com alteracoes de escala por rever: banda "A tua escala mudou — N por rever" (toca → Escala).
