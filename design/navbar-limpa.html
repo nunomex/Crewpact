@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Navbar limpa · 5 direções</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F;
+    --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7; --yellow:#FFB800; --ok:#118A55;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+
+  .hd{max-width:1200px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;letter-spacing:.4px;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:760px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .row{display:flex;gap:34px;align-items:flex-start;overflow-x:auto;padding:26px 4px 20px;max-width:1980px;margin:0 auto}
+
+  .mock{flex:0 0 auto;width:330px}
+  .phone{width:330px;height:690px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;
+    box-shadow:0 24px 60px rgba(20,22,26,.14)}
+  .cap{padding:16px 6px 0}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.3px}
+  .cap .t em{font-style:normal;color:var(--grey);font-weight:600}
+  .cap .d{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.55;margin-top:5px}
+  .chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    padding:4px 9px;border-radius:99px;margin-top:9px}
+  .chip.rec{background:var(--ink);color:var(--yellow)}
+  .chip.var{background:var(--soft2);color:var(--grey)}
+  .chip.no{background:#F6E9E6;color:#C6362B}
+
+  /* ── página Início (folga) dentro do frame ─────────────────────────── */
+  .page{position:absolute;inset:0;padding:22px 20px 130px;overflow:hidden}
+  .page.scroll{overflow-y:auto}
+  .brandrow{display:flex;justify-content:space-between;align-items:center}
+  .brand{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:2.6px}
+  .hact{display:flex;gap:10px;align-items:center}
+  .bell{width:34px;height:34px;border-radius:99px;background:var(--soft);display:flex;align-items:center;justify-content:center}
+  .avh{width:34px;height:34px;border-radius:99px;background:var(--ink);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.5px}
+  .kick{margin-top:26px;font-size:10.5px;font-weight:800;letter-spacing:2.2px;color:var(--grey);text-transform:uppercase}
+  .kick b{color:var(--yellow)}
+  .hero{position:relative;height:190px;margin-top:2px}
+  .ghost{position:absolute;top:-32px;left:-6px;font-family:var(--disp);font-weight:800;font-size:196px;line-height:1;color:var(--ghost)}
+  .word{position:absolute;left:2px;bottom:6px;font-family:var(--disp);font-weight:700;font-size:58px;line-height:.95;letter-spacing:.5px}
+  .voice{font-size:13px;font-weight:500;color:var(--grey);margin-top:8px}
+  .hr{height:1px;background:var(--line);margin:20px 0 14px}
+  .eb{font-size:10px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-bottom:8px}
+  .li{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;font-size:13.5px;font-weight:600}
+  .li .r{color:var(--grey);font-weight:500;font-size:12.5px}
+  .li .okk{color:var(--ok)}
+  .side{position:absolute;top:96px;right:8px;width:300px;text-align:left;
+    transform:rotate(90deg);transform-origin:right top;
+    font-size:10px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .side b{color:var(--ink)}
+
+  /* ── docks ─────────────────────────────────────────────────────────── */
+  .dock{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;
+    background:var(--ink);border-radius:99px;display:flex;align-items:center;gap:2px;
+    padding:7px 9px;box-shadow:0 14px 34px rgba(20,22,26,.32);z-index:30;
+    transition:transform .28s cubic-bezier(.2,.7,.3,1),opacity .28s}
+  .dock.hidden{transform:translate(-50%,110px);opacity:0}
+  .tab{display:flex;align-items:center;gap:0;border:0;background:transparent;border-radius:99px;
+    padding:9px 12px;cursor:pointer;transition:background .22s}
+  .tab svg{width:20px;height:20px;stroke:rgba(255,255,255,.55);fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;transition:stroke .22s;flex:0 0 auto}
+  .tab .lb{max-width:0;overflow:hidden;white-space:nowrap;font-size:10.5px;font-weight:800;
+    letter-spacing:1.6px;color:var(--paper);text-transform:uppercase;
+    transition:max-width .24s cubic-bezier(.2,.7,.3,1),margin .24s;margin-left:0}
+  .tab.on{background:rgba(255,255,255,.10)}
+  .tab.on svg{stroke:var(--yellow)}
+  .tab.on .lb{max-width:96px;margin-left:8px}
+
+  /* C — rótulos em todas */
+  .dockC .tab{flex-direction:column;gap:4px;padding:8px 13px}
+  .dockC .tab .lb{max-width:none;margin:0;font-size:8.5px;letter-spacing:1.3px;color:rgba(255,255,255,.55)}
+  .dockC .tab.on .lb{color:var(--paper)}
+  .dockC .tab.on{background:transparent}
+
+  /* B — avatar na ponta */
+  .dsep{width:1px;height:24px;background:rgba(255,255,255,.16);margin:0 6px}
+  .avd{width:32px;height:32px;border-radius:99px;background:var(--soft);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+
+  /* FAB */
+  .fab{position:absolute;right:16px;bottom:19px;width:46px;height:46px;border-radius:99px;
+    background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:30;
+    box-shadow:0 12px 28px rgba(20,22,26,.30);cursor:pointer;
+    transition:transform .28s cubic-bezier(.2,.7,.3,1),opacity .28s}
+  .fab.hidden{transform:translateY(110px);opacity:0}
+  .fab svg{width:20px;height:20px;stroke:var(--yellow);stroke-width:2.2;stroke-linecap:round;fill:none}
+
+  /* E — leque */
+  .scrim{position:absolute;inset:0;background:rgba(13,19,28,.58);opacity:0;pointer-events:none;transition:opacity .26s;z-index:40}
+  .fanwrap.on .scrim{opacity:1;pointer-events:auto}
+  .fitem{position:absolute;display:flex;align-items:center;gap:12px;z-index:50;
+    opacity:0;transform:translate(16px,18px) scale(.55);pointer-events:none;
+    transition:opacity .26s cubic-bezier(.2,.7,.3,1),transform .30s cubic-bezier(.2,.7,.3,1)}
+  .fanwrap.on .fitem{opacity:1;transform:translate(0,0) scale(1);pointer-events:auto}
+  .fitem .flb{font-size:10.5px;font-weight:800;letter-spacing:2.6px;color:#fff;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .fitem .fc{width:52px;height:52px;border-radius:99px;background:var(--paper);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 26px rgba(20,22,26,.28)}
+  .fitem .fc svg{width:21px;height:21px;stroke:var(--ink);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .fitem.on .fc{box-shadow:0 0 0 2.5px var(--yellow),0 10px 26px rgba(20,22,26,.28)}
+  .fi1{right:20px;bottom:96px}  .fanwrap.on .fi1{transition-delay:.02s}
+  .fi2{right:40px;bottom:168px} .fanwrap.on .fi2{transition-delay:.06s}
+  .fi3{right:74px;bottom:238px} .fanwrap.on .fi3{transition-delay:.10s}
+  .fi4{right:120px;bottom:304px}.fanwrap.on .fi4{transition-delay:.14s}
+  .ftrig{position:absolute;right:16px;bottom:19px;width:50px;height:50px;border-radius:99px;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;z-index:60;cursor:pointer;
+    box-shadow:0 12px 28px rgba(20,22,26,.32);transition:transform .3s cubic-bezier(.2,.7,.3,1)}
+  .fanwrap.on .ftrig{transform:rotate(90deg)}
+  .ftrig svg{width:20px;height:20px;fill:var(--yellow)}
+
+  .hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:35;
+    font-size:9.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    background:var(--yellow);color:var(--ink);border-radius:99px;padding:5px 11px;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>navbar limpa</h1>
+  <p>5 direções para "ver as páginas sem aquela navbar enorme". Todas sobre o Início em folga, pele fiel.
+     <b>Estão em demonstração automática</b>: vê o rótulo a viajar entre abas (A·B·C), o scroll a esconder e devolver
+     a pílula (D) e o leque a abrir no arco do polegar (E). Os tempos são os reais do motion system.
+     <b>Tocar num telefone pára a demo dele</b> — para explorares à mão. O FAB de criação convive ao lado em A–D.</p>
+</div>
+
+<div class="row" id="row">
+
+  <!-- A -->
+  <div class="mock" data-dock="A">
+    <div class="phone">
+      <div class="page"></div>
+      <div class="dock dockAB"></div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    </div>
+    <div class="cap">
+      <div class="t">A · Pílula mínima <em>— avatar no header</em></div>
+      <div class="d">Dock ink flutuante, 4 ícones, rótulo só na aba ativa (viaja com a seleção), acento amarelo. O Perfil continua no avatar do cabeçalho — navegação é para destinos diários.</div>
+      <span class="chip rec">Recomendada</span>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="mock" data-dock="B">
+    <div class="phone">
+      <div class="page"></div>
+      <div class="dock dockAB"></div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    </div>
+    <div class="cap">
+      <div class="t">B · Avatar na ponta da pílula</div>
+      <div class="d">A mesma pílula A + hairline + avatar como âncora de identidade (o padrão da tua imagem 2). O header fica só com o sino. Custo: pílula mais larga, identidade misturada com navegação.</div>
+      <span class="chip var">Variante a julgar</span>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="mock" data-dock="C">
+    <div class="phone">
+      <div class="page"></div>
+      <div class="dock dockC"></div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    </div>
+    <div class="cap">
+      <div class="t">C · Pílula com rótulos em todas</div>
+      <div class="d">Fidelidade total à decisão da auditoria (rótulos sempre visíveis), em formato pílula. Mais alta e mais larga que A — o preço da legibilidade permanente.</div>
+      <span class="chip var">Conservadora</span>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="mock" data-dock="D">
+    <div class="phone">
+      <div class="hint">↕ auto-scroll · toca para controlar</div>
+      <div class="page scroll"></div>
+      <div class="dock dockAB"></div>
+      <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    </div>
+    <div class="cap">
+      <div class="t">D · A pílula A + auto-esconder</div>
+      <div class="d">Em leitura (scroll ↓) a pílula e o FAB deslizam para fora — página 100% limpa. Um gesto para cima devolve-os. É o comportamento que eu recomendo por cima da variante que escolheres.</div>
+      <span class="chip rec">Recomendada (comportamento)</span>
+    </div>
+  </div>
+
+  <!-- E -->
+  <div class="mock" data-dock="E">
+    <div class="phone">
+      <div class="page"></div>
+      <div class="fanwrap" id="fan">
+        <div class="scrim"></div>
+        <div class="fitem fi1 on"><span class="flb">Início</span><span class="fc"><svg viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7M6 10v9h12v-9"/></svg></span></div>
+        <div class="fitem fi2"><span class="flb">Estatísticas</span><span class="fc"><svg viewBox="0 0 24 24"><path d="M5 19V12M12 19V5M19 19v-9"/></svg></span></div>
+        <div class="fitem fi3"><span class="flb">Escala</span><span class="fc"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v3M15.5 3.5v3"/></svg></span></div>
+        <div class="fitem fi4"><span class="flb">FTL</span><span class="fc"><svg viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg></span></div>
+        <div class="ftrig"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="2.1"/><circle cx="16" cy="8" r="2.1"/><circle cx="8" cy="16" r="2.1"/><circle cx="16" cy="16" r="2.1"/></svg></div>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="t">E · Sem navbar — leque a pedido</div>
+      <div class="d">Zero cromo: um botão discreto abre as 4 abas em leque (o arco do polegar; anel amarelo = onde estás). O extremo mais limpo — mas cada navegação custa 2 toques, perde-se o "onde estou", e o gatilho compete com o FAB de criação.</div>
+      <span class="chip no">Mostrada para comparar — desaconselho como nav principal</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── ícones ── */
+const IC = {
+  home:  '<svg viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7M6 10v9h12v-9"/></svg>',
+  stats: '<svg viewBox="0 0 24 24"><path d="M5 19V12M12 19V5M19 19v-9"/></svg>',
+  cal:   '<svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v3M15.5 3.5v3"/></svg>',
+  gauge: '<svg viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg>',
+  bell:  '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#141414;fill:none;stroke-width:1.9;stroke-linecap:round"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10ZM10.5 18.5a1.7 1.7 0 0 0 3 0"/></svg>'
+};
+const TABS = [ ['home','Início'], ['stats','Estatísticas'], ['cal','Escala'], ['gauge','FTL'] ];
+
+/* ── página Início (folga) ── */
+function pageHTML(long){
+  let agenda = `
+    <div class="li"><span>SEX 10 · EJU7623 LIS → LGW</span><span class="r">report 05:40</span></div>
+    <div class="li"><span>SÁB 11 · EJU7841 LIS → FNC → LIS</span><span class="r">report 09:10</span></div>
+    <div class="li"><span>DOM 12 · Folga</span><span class="r">—</span></div>`;
+  if (long) agenda += `
+    <div class="li"><span>SEG 13 · EJU7702 LIS → ORY</span><span class="r">report 06:05</span></div>
+    <div class="li"><span>TER 14 · Standby AM</span><span class="r">06:00–14:00</span></div>
+    <div class="li"><span>QUA 15 · EJU7635 LIS → GVA</span><span class="r">report 11:20</span></div>
+    <div class="li"><span>QUI 16 · Folga</span><span class="r">—</span></div>
+    <div class="li"><span>SEX 17 · EJU7623 LIS → LGW</span><span class="r">report 05:40</span></div>
+    <div class="li"><span>SÁB 18 · EJU7841 LIS → FNC → LIS</span><span class="r">report 09:10</span></div>
+    <div class="li"><span>DOM 19 · Folga</span><span class="r">—</span></div>`;
+  return `
+    <div class="brandrow">
+      <span class="brand">CREWPACT</span>
+      <div class="hact"><span class="bell">${IC.bell}</span><span class="avh">MC</span></div>
+    </div>
+    <div class="side"><b>FOLGA</b> · QUINTA-FEIRA</div>
+    <div class="kick">QUINTA-FEIRA · <b>9 JULHO</b></div>
+    <div class="hero"><span class="ghost">9</span><span class="word">folga</span></div>
+    <div class="voice">Dia teu. Céu limpo em Lisboa, 24°.</div>
+    <div class="hr"></div>
+    <div class="eb">Estado</div>
+    <div class="li"><span>Sem serviço hoje</span><span class="r okk">repouso completo ✓</span></div>
+    <div class="li"><span>Férias</span><span class="r">ficam 9 de 22</span></div>
+    <div class="hr"></div>
+    <div class="eb">A seguir</div>
+    ${agenda}`;
+}
+
+/* ── monta frames ── */
+document.querySelectorAll('.mock').forEach(mock=>{
+  const kind = mock.dataset.dock;
+  const page = mock.querySelector('.page');
+  page.innerHTML = pageHTML(kind==='D');
+
+  const dock = mock.querySelector('.dock');
+  if (dock){
+    dock.innerHTML = TABS.map(([ic,lb],i)=>
+      `<button class="tab${i===0?' on':''}">${IC[ic]}<span class="lb">${lb}</span></button>`).join('');
+    if (kind==='B'){
+      dock.insertAdjacentHTML('beforeend','<span class="dsep"></span><span class="avd">MC</span>');
+    }
+    dock.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+      dock.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+    }));
+  }
+
+  /* D — auto-esconder no scroll */
+  if (kind==='D'){
+    const fab = mock.querySelector('.fab');
+    let last = 0;
+    page.addEventListener('scroll',()=>{
+      const y = page.scrollTop, down = y > last + 4, up = y < last - 4;
+      if (down && y > 30){ dock.classList.add('hidden'); fab.classList.add('hidden'); }
+      else if (up || y <= 6){ dock.classList.remove('hidden'); fab.classList.remove('hidden'); }
+      last = y;
+    });
+  }
+});
+
+/* E — leque */
+const fan = document.getElementById('fan');
+fan.querySelector('.ftrig').addEventListener('click',()=>fan.classList.toggle('on'));
+fan.querySelector('.scrim').addEventListener('click',()=>fan.classList.remove('on'));
+fan.querySelectorAll('.fitem').forEach(it=>it.addEventListener('click',()=>{
+  fan.querySelectorAll('.fitem').forEach(x=>x.classList.remove('on'));
+  it.classList.add('on');
+  setTimeout(()=>fan.classList.remove('on'),260);
+}));
+
+/* ── DEMO AUTOMÁTICA ─────────────────────────────────────────────────────
+   Cada frame demonstra-se em loop; tocar no telefone pára SÓ a demo dele. */
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function armStop(mock){
+  mock._stop = false;
+  mock.querySelector('.phone').addEventListener('pointerdown',()=>{ mock._stop = true; },{passive:true});
+}
+
+/* tween de scroll com easing out(cubic) — mesmo feeling do motion system */
+function tweenScroll(el, to, dur){
+  return new Promise(res=>{
+    const from = el.scrollTop, t0 = performance.now();
+    (function step(t){
+      const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+      el.scrollTop = from + (to-from)*e;
+      p < 1 ? requestAnimationFrame(step) : res();
+    })(t0);
+  });
+}
+
+document.querySelectorAll('.mock').forEach(async (mock, mi)=>{
+  const kind = mock.dataset.dock;
+  armStop(mock);
+  await sleep(700 + mi*450);            // arranques desfasados entre frames
+
+  if (kind==='A' || kind==='B' || kind==='C'){
+    const tabs = mock.querySelectorAll('.tab');
+    let i = 0;
+    while (!mock._stop){
+      i = (i+1) % tabs.length;
+      tabs[i].click();
+      await sleep(1600);
+    }
+  }
+
+  if (kind==='D'){
+    const page = mock.querySelector('.page');
+    const max  = page.scrollHeight - page.clientHeight;
+    while (!mock._stop){
+      await tweenScroll(page, max, 1100);   // a ler → pílula sai
+      await sleep(1500);
+      if (mock._stop) break;
+      await tweenScroll(page, 0, 900);      // gesto para cima → pílula volta
+      await sleep(1900);
+    }
+  }
+
+  if (kind==='E'){
+    const items = fan.querySelectorAll('.fitem');
+    let i = 0;
+    while (!mock._stop){
+      fan.classList.add('on');              // abre o leque
+      await sleep(1400);
+      if (mock._stop) break;
+      i = (i+1) % items.length;
+      items[i].click();                     // escolhe → anel move → fecha
+      await sleep(1800);
+    }
+  }
+});
+</script>
+</body>
+</html>

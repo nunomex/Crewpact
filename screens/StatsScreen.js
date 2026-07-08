@@ -67,7 +67,7 @@ export default function StatsScreen({ navigation }) {
   const [sheet, setSheet] = useState(null);            // folha de detalhe aberta: 'seg' | 'voo' | 'corpo'
   const [shareOpen, setShareOpen] = useState(false);   // cartão "Ano de voo" partilhável
 
-  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
+  // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
 
   // Seletor de ANO (anos com escala + o corrente)
   const years = useMemo(() => {
@@ -193,8 +193,6 @@ export default function StatsScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           ) : null}
-          initials={initials}
-          onAvatar={() => navigation.navigate('Perfil')}
           bell
         />
 

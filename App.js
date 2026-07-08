@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, useWindowDimensions, BackHandler, Appearance, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, Appearance, Alert } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.4× — chega para melhorar a leitura sem partir os layouts de
@@ -11,7 +11,7 @@ TextInput.defaultProps.maxFontSizeMultiplier = 1.4;
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,8 +24,7 @@ import { BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed
 import { HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk';
 import { getLocales } from 'expo-localization';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { C, RADIUS, PALETTES, FONT, SHADOW, TYPE, PELE, PELE_FONT } from './data/constants';
-import Icon from './components/Icon';   // PORT pele: ícones da tab bar
+import { C, PALETTES, FONT, TYPE } from './data/constants';
 import { AppContext, isoDay, useTheme } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
@@ -76,8 +75,7 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
-import SearchModal        from './components/SearchModal';
-import { LinearGradient }  from 'expo-linear-gradient';
+import TabBar             from './components/TabBar';   // a navegação: barra convencional polida (padrão "melhores apps")
 import OfflineBanner      from './components/OfflineBanner';
 import Toast              from './components/Toast';
 import DutyFormSheet      from './components/DutyFormSheet';
@@ -149,130 +147,12 @@ function FtlStack() {
   );
 }
 
-// Tab bar flutuante (mockup): dock escuro só-ícones (ponto vermelho na ativa) à
-// esquerda + FAB vermelho "+" à direita. O "+" é um speed-dial: ao tocar, roda
-// para "×" e expande em 3 mini-FABs — Pesquisa (search FTL), Serviço (nova duty
-// na Escala) e Sair (logout). Igual em todas as abas (substitui os antigos FABs
-// contextuais). Toca fora (scrim) ou no "×" para recolher.
-function FloatingTabBar({ state, navigation }) {
-  const insets = useSafeAreaInsets();
-  const { height: winH } = useWindowDimensions();
-  const { lang, openSimulation, openExtra, ae } = useContext(AppContext);
-  const C = useTheme();
-  const l = (pt, en) => (lang === 'en' ? en : pt);
-  const ICON = { 'Início': 'home', 'Estatísticas': 'stats', 'Escala': 'cal', 'FTL': 'info', 'Perfil': 'user' };
-  const active = state.routes[state.index];
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [open, setOpen] = useState(false);            // speed-dial expandido?
-  const anim = useRef(new Animated.Value(0)).current; // 0=fechado · 1=aberto
-
-  const animateTo = (to) => Animated.spring(anim, { toValue: to, useNativeDriver: true, friction: 8, tension: 90 }).start();
-  const closeMenu = () => { if (open) { setOpen(false); animateTo(0); } };
-  const toggleMenu = () => { const next = !open; setOpen(next); animateTo(next ? 1 : 0); };
-  const fire = (fn) => { closeMenu(); fn(); };
-
-  // Android: o botão/gesto RETROCEDER fecha o speed-dial aberto (superfície temporária) —
-  // antes mudava de aba ou saía da app com o scrim/menu ainda no ecrã (Material back).
-  useEffect(() => {
-    if (!open) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => { closeMenu(); return true; });
-    return () => sub.remove();
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const go = (route, focused) => {
-    closeMenu();
-    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-    if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
-  };
-
-  // Ações do speed-dial, na ordem baixo→cima a partir do FAB (Pesquisa mais perto).
-  // Simulação fica ACIMA do Serviço (decisão do user).
-  const ACTIONS = [
-    { key: 'search', icon: 'search',   label: l('Pesquisa', 'Search'),     run: () => setSearchOpen(true) },
-    { key: 'duty',   icon: 'plus',     label: l('Serviço', 'Duty'),        run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
-    { key: 'sim',    icon: 'gauge',    label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
-    // Extra do mês (evento datado — DDO/férias/doença/SNC…): só p/ perfis com AE modelado.
-    ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Evento', 'Event'), run: () => openExtra && openExtra() }] : []),
-    // Importar SAIU do FAB → botão de sincronizar/importar no header da Escala (hub). O "+" fica só p/ CRIAR.
-  ];
-
-  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
-  // Cascata: o item mais perto do FAB (i=0) entra primeiro; o de cima (i=2) por último.
-  const itemAnim = (i) => ({
-    opacity: anim.interpolate({ inputRange: [0, 0.12 + i * 0.12, 0.5 + i * 0.12], outputRange: [0, 0, 1], extrapolate: 'clamp' }),
-    transform: [
-      { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
-      { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
-    ],
-  });
-
-  const fabBottom = Math.max(insets.bottom, 16) + 4;
-
-  return (
-    <>
-      <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
-      {/* Esbatimento de fundo (canvas) — SUAVE, à maneira das melhores apps: transparente
-          em cima (a última linha da lista descansa AQUI, nítida, graças ao inset maior do
-          useTabBarSpace), veludo leve a entrar, e só sólido mesmo ATRÁS do dock. Antes era
-          um bloco sólido de ~140px que tapava o fim da lista; agora só suaviza o conteúdo
-          EM TRÂNSITO junto à barra — o que está parado no fim fica sempre legível. */}
-      <LinearGradient pointerEvents="none"
-        colors={[C.canvas + '00', C.canvas + '00', C.canvas + '40', C.canvas + 'B3', C.canvas]}
-        locations={[0, 0.35, 0.62, 0.85, 1]}
-        start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={tbar.fade} />
-      {/* Scrim — fecha o menu ao tocar fora. Cobre o ecrã todo (ancorado ao fundo).
-          Usa C.scrim (o mesmo overlay dos modais) p/ ser consistente com a app. */}
-      <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[tbar.scrim, { height: winH + 240, backgroundColor: C.scrim, opacity: anim }]}>
-        <TouchableOpacity style={tbar.scrimFill} activeOpacity={1} onPress={closeMenu} />
-      </Animated.View>
-      <View style={[tbar.wrap, { bottom: fabBottom }]} pointerEvents="box-none">
-        <View style={[tbar.dock, tbar.dockShadow]}>
-          {state.routes.map(route => {
-            const focused = active.key === route.key;
-            const ic = ICON[route.name];
-            // A aba "FTL" passou a INFO (aba de REFERÊNCIA: lei FTL + AE explicados; os cálculos
-            // vivem nas Estatísticas). Só o RÓTULO muda — o nome da rota fica 'FTL' (navegação intacta).
-            const lbl = route.name === 'FTL' ? 'INFO'
-              : route.name === 'Estatísticas' ? l('Números', 'Numbers')
-              : t(`tab.${route.name === 'Início' ? 'home' : route.name === 'Escala' ? 'schedule' : 'profile'}`, lang);
-            return (
-              <TouchableOpacity key={route.key} onPress={() => go(route, focused)} activeOpacity={0.8}
-                accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}
-                style={tbar.tb}>
-                {focused && <View style={tbar.tbHi} />}
-                <Icon name={ic} size={19} color={focused ? PELE.yellow : PELE.grey} />
-                {/* Rótulo SEMPRE visível (labels on all destinations). */}
-                <Text numberOfLines={1} style={[tbar.tbLbl, { color: focused ? PELE.onInk : PELE.grey }]}>{lbl}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-      {/* FAB + speed-dial: coluna alta ancorada em baixo-direita (FAB em baixo, mini-FABs
-          por cima) para os mini-FABs ficarem DENTRO da caixa → toque fiável no Android. */}
-      <View style={[tbar.fabAnchor, { bottom: fabBottom }]} pointerEvents="box-none">
-        {ACTIONS.map((a, i) => ({ ...a, i })).reverse().map((a) => (
-          <Animated.View key={a.key} pointerEvents={open ? 'auto' : 'none'} style={[tbar.miniRow, itemAnim(a.i)]}>
-            <View style={[tbar.miniLabel, SHADOW.sm, { backgroundColor: PELE.paper, borderColor: PELE.line }]}>
-              <Text numberOfLines={1} style={[tbar.miniLabelTxt, { color: PELE.ink }]}>{a.label}</Text>
-            </View>
-            <TouchableOpacity style={[tbar.mini, SHADOW.md, { backgroundColor: PELE.ink }]}
-              activeOpacity={0.85} onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
-              <Icon name={a.icon} size={20} color={PELE.yellow} />
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
-        <TouchableOpacity style={[tbar.fab, tbar.fabShadow, { backgroundColor: PELE.ink }]} activeOpacity={0.9}
-          onPress={toggleMenu} accessibilityRole="button" accessibilityState={{ expanded: open }}
-          accessibilityLabel={open ? l('Fechar menu', 'Close menu') : l('Abrir ações', 'Open actions')}>
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <Icon name="plus" size={28} color={PELE.yellow} />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-}
+// A navegação é a TAB BAR convencional polida (components/TabBar.js, padrão Flighty/
+// Airbnb/iOS) — o dock flutuante + FAB speed-dial morreram 2026-07-09 (e a linha de
+// palavras intermédia foi rejeitada no device). As funções do speed-dial realojadas:
+// Serviço → FAB "+" da Escala · Simulação/Evento → linha do polegar do Início (acts
+// por estado) · Pesquisa → a INFO tem procura própria (lei + AE) desde a fusão da
+// Biblioteca. SearchModal ficou órfão (mantido no repo até decisão de apagar).
 
 // Perfil — definições + sub-ecrãs próprios (ex.: Validades & Documentos, premium).
 function PerfilStack() {
@@ -287,7 +167,7 @@ function PerfilStack() {
 
 function MainTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <FloatingTabBar {...props} />}>
+    <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={props => <TabBar {...props} />}>
       <Tab.Screen name="Início"       component={HomeStack} />
       <Tab.Screen name="Estatísticas" component={StatsScreen} />
       <Tab.Screen name="Escala"       component={EscalaStack} />
@@ -323,38 +203,6 @@ function SimulationFlow({ visible, onClose }) {
     </>
   );
 }
-
-const tbar = StyleSheet.create({
-  // Esbatimento SUAVE atrás da barra (largura toda): transparente em cima → sólido só
-  // mesmo atrás do dock (~últimos 15%). O inset (useTabBarSpace) garante que a última
-  // linha descansa ACIMA disto, legível. (Antes: 220px com bloco sólido que tapava o fim.)
-  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
-  // Scrim que escurece o ecrã quando o speed-dial está aberto (toca p/ fechar).
-  // A cor (C.scrim) é aplicada inline (vem do tema, não cabe no StyleSheet estático).
-  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  scrimFill: { flex: 1 },
-  // Dock (esquerda) estica até encostar-se ao FAB (direita, em fabAnchor). O `right`
-  // = FAB (right 20 + largura 64) + folga 16 (GUTTER) → o dock acaba 16px antes do FAB,
-  // em qualquer largura de ecrã (responsivo, em vez do antigo buraco de ~46px).
-  wrap: { position: 'absolute', left: 20, right: 100, flexDirection: 'row', alignItems: 'center' },
-  // Dock escuro — 4 ícones, ponto vermelho na ativa. flex:1 → preenche o `wrap`.
-  dock: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 64, borderRadius: 30, paddingHorizontal: 8, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line },
-  dockShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.14, shadowRadius: 24, elevation: 8 },
-  tb: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
-  tbHi: { position: 'absolute', width: 54, height: 50, borderRadius: 16, backgroundColor: PELE.ink },
-  tbLbl: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.2, marginTop: 2, maxWidth: '100%' },
-  // Coluna do FAB + mini-FABs, ancorada em baixo-direita (FAB é o último → fica em baixo).
-  fabAnchor: { position: 'absolute', right: 20, alignItems: 'flex-end' },
-  // FAB vermelho (direita) — maior, quadrado-arredondado a condizer com a dock (raio 26, não círculo)
-  fab: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  fabShadow: { shadowColor: '#14161A', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.28, shadowRadius: 20, elevation: 12 },
-  // Mini-FAB do speed-dial (pele): chip de rótulo BRANCO (paper+hairline+ink) +
-  // círculo INK com ícone AMARELO (a condizer com o FAB), alinhado ao centro do FAB.
-  miniRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  miniLabel: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 13, paddingVertical: 8, marginRight: 12 },
-  miniLabelTxt: { fontFamily: PELE_FONT.bodyBold, fontSize: TYPE.label },
-  mini: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
-});
 
 export default function App() {
   // Auth state — null = not logged in
@@ -459,7 +307,10 @@ export default function App() {
 
   // Toast global de feedback de sync (duties → Supabase). { kind: 'sync'|'warn', ts }.
   const [toast, setToast] = useState(null);
-  const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação (speed-dial) aberto?
+  const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação aberto?
+  // Tema NOTURNO do Início (véspera/pernoita) — o HomeScreen publica-o aqui para a
+  // WordLine (navegação) herdar o tema quando o Início é a aba ativa.
+  const [homeNight, setHomeNight] = useState(false);
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
   const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
 
@@ -1164,6 +1015,7 @@ export default function App() {
     notify,
     rosterChanges, checkRosterChanges,
     liveSync, markLiveSync, dismissLiveSync,
+    homeNight, setHomeNight,
     openSimulation: () => setSimulateOpen(true),
     calendarId, setCalendarId,
     calendarName, setCalendarName,

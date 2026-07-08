@@ -71,7 +71,7 @@ export default function EscalaScreen({ navigation, route }) {
   const [gridW, setGridW] = useState(0);          // largura medida da grelha → célula = (W − gaps)/7
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // seletor de mês (pele "Julho ▾")
   const [pickYear, setPickYear] = useState(null);
-  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
+  // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
   const lastNewDuty = useRef(null);
 
   // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
@@ -357,9 +357,8 @@ export default function EscalaScreen({ navigation, route }) {
       <View style={s.body}>
         {/* Topo pele (mockup) — avatar↖ · sino↗. Ferramentas realojadas: importar→FAB "+" ·
             sync→pull-to-refresh · export→link no fundo da grelha. */}
+        {/* avatar saiu (2026-07-09): o Perfil vive só no Início — ficam sincronizar + sino */}
         <PeleHeader
-          initials={initials}
-          onAvatar={() => navigation.navigate('Perfil')}
           actions={
             /* Sincronizar/Importar — botão do header; PONTO âmbar se há alterações/dessincronia */
             <TouchableOpacity style={s.hdrBtn} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
@@ -472,6 +471,9 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
+      {/* SEM FAB flutuante (2026-07-09): criar serviço = tocar num DIA da grelha (insere
+          nesse dia) OU o ＋ central da tab bar → "Serviço" (chega cá via route.params.newDuty)
+          · importar/PDF = hub do header · no arranque, os CTAs grandes. */}
       <DutyFormSheet visible={!!dutyDate} onClose={() => { setDutyDate(null); setDutyAppend(false); setDutyEditExtra(null); }} date={dutyDate} append={dutyAppend} editExtra={dutyEditExtra}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}

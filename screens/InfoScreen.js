@@ -4,7 +4,6 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Dimensions, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import Icon from '../components/Icon';
 import PeleHeader from '../components/PeleHeader';
 import PeleSheet from '../components/PeleSheet';
@@ -71,9 +70,8 @@ export default function InfoScreen() {
   const tabSpace = useTabBarSpace();
   // Crew-aware REAL: o perfil decide o que aparece. easyJet piloto/cabine → o AE respetivo
   // (catálogo em infoCatalog); sem AE (Ryanair, ou companhia AE ainda por modelar) → FTL-only.
-  const navigation = useNavigation();
-  const { crewType, company, ae, user, lang } = useContext(AppContext);
-  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
+  const { crewType, company, ae, lang } = useContext(AppContext);
+  // (avatar/navigation saíram do cabeçalho 2026-07-09 — o Perfil vive só no Início)
   const isEzy = /easyjet|ezy/i.test([company && company.slug, company && company.name, company && company.engine_code].filter(Boolean).join(' '));
   const prof = (ae && isEzy) ? (crewType === 'cabin' ? 'cabin' : 'pilot') : 'ryan';
   const eyebrow = `Referência · ${(company && company.name) || '—'} · ${crewType === 'cabin' ? 'Cabine' : 'Piloto'}`;
@@ -126,7 +124,8 @@ export default function InfoScreen() {
           as páginas da pele: o header (eyebrow + § + hero + avatar/sino) fica preso; só o
           conteúdo por baixo faz scroll. O PeleSide (rótulo lateral) já era fixo, este agora também. */}
       <View style={s.headWrap}>
-        <PeleHeader eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} initials={initials} onAvatar={() => navigation.navigate('Perfil')} bell />
+        {/* avatar saiu (2026-07-09): o Perfil vive só no Início — o cabeçalho fica com o sino */}
+        <PeleHeader eyebrow={eyebrow} ghost="§" word={searching ? 'Procura' : (dom.word || 'A lei')} bell />
       </View>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 

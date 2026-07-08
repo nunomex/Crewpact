@@ -167,7 +167,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra } = useContext(AppContext);
+  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight } = useContext(AppContext);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -530,6 +530,9 @@ export default function HomeScreen({ navigation }) {
   const night = homeState === 'vespera' || homeState === 'pernoita';
   const P = night ? PELE_NIGHT : PELE;
   const s = night ? sNight : sDay;
+  // Publica o noturno ao contexto → a WordLine (navegação) herda o tema quando o
+  // Início é a aba ativa (a linha faz parte da Living Interface, não flutua fora dela).
+  useEffect(() => { setHomeNight && setHomeNight(night); }, [night, setHomeNight]);
   // Saudação: primeira-vez = "Bem-vindo" (mockup estado 0); resto pela hora do dia.
   const greet = homeState === 'setup'
     ? `${l('Bem-vindo', 'Welcome')}${firstName ? `, ${firstName}` : ''}`
@@ -1038,7 +1041,8 @@ export default function HomeScreen({ navigation }) {
     { ic: 'cal', lbl: l('Ligar calendário', 'Connect calendar'), hot: true, run: requestAccess },
     { ic: 'eye', lbl: l('Ver exemplo', 'See example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
   ] : homeState === 'folga' ? [
-    ...(ae && openExtra ? [{ ic: 'plus', lbl: 'Extra', hot: true, run: () => { select(); openExtra(); } }] : []),
+    // "Evento" = o MESMO openExtra do mini-FAB (ExtraEventSheet) — um nome só em toda a app (decisão 2026-07-09).
+    ...(ae && openExtra ? [{ ic: 'plus', lbl: l('Evento', 'Event'), hot: true, run: () => { select(); openExtra(); } }] : []),
     ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: !(ae && openExtra), run: () => { select(); openSimulation(); } }] : []),
   ] : homeState === 'vespera' ? [
     ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: true, run: () => { select(); openSimulation(); } }] : []),
@@ -1046,9 +1050,9 @@ export default function HomeScreen({ navigation }) {
   ] : homeState === 'ferias' ? [
     // afastamento máximo — sem ações (o chip diz o essencial)
   ] : homeState === 'doenca' ? [
-    ...(openExtra ? [{ ic: 'plus', lbl: 'Extra', run: () => { select(); openExtra(); } }] : []),   // estender a baixa
+    ...(openExtra ? [{ ic: 'plus', lbl: l('Evento', 'Event'), run: () => { select(); openExtra(); } }] : []),   // estender a baixa
   ] : homeState === 'fecho' ? [
-    ...(openExtra ? [{ ic: 'plus', lbl: 'Extra', hot: true, run: () => { select(); openExtra(); } }] : []),
+    ...(openExtra ? [{ ic: 'plus', lbl: l('Evento', 'Event'), hot: true, run: () => { select(); openExtra(); } }] : []),
     { ic: 'stats', lbl: l('Números', 'Numbers'), run: () => { select(); navigation.navigate('Estatísticas'); } },
   ] : homeState === 'pernoita' ? [
     { ic: 'bed', lbl: 'Hotel', hot: true, run: () => { select(); if (closeHotel) Linking.openURL(hotelMapsUrl(closeHotel.name, closeNsStation, Platform.OS)).catch(() => {}); else setHotelOpen(true); }, longRun: () => { select(); setHotelOpen(true); } },

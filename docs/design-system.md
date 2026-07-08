@@ -36,8 +36,9 @@
 - **PeleHeader** — **fonte única do cabeçalho** (o fantasma tinha divergido 74/92/130 entre ecrãs antes da consolidação). Régua 130/44/108; slots avatar/back · actions · sino · word/kick. Fora da régua por decisão deliberada: DutyDetail 104 · Perfil 150 · Início (sem fantasma de header).
 - **Amarelo** = marca/realce: numeração bento, kicks, seleção, pontinhos de atenção suave.
 - **Tema noturno** — conduzido pelo **ESTADO do dia** (véspera/pernoita), NÃO pelo dark-mode do sistema. Fábrica `makeSkin(P, night)` → `sDay`/`sNight`.
-- **Dock** — navy sólido + esbatimento suave por cima + inset generoso (`useTabBarSpace` +32). O INSET resolve a leitura da última linha, não o efeito.
-- 4 abas (Início · Estatísticas · Escala · FTL); Perfil = avatar no cabeçalho (`HeaderActions`).
+- **Navegação = TAB BAR com ＋ central** (`components/TabBar.js`, 2026-07-09 — referência aprovada pelo user; substituiu dock flutuante, linha de palavras rejeitada no device e FAB): barra inteira em **papel + hairline no topo**, **em layout** (o conteúdo termina acima dela, nada fica tapado), simetria **2 abas + ＋ + 2 abas** (`Início · Números · ＋ · Escala · Info`), ativa = **ink + ponto amarelo** (espaço reservado, fade+scale 180ms, reduce-motion salta); tema noturno herdado do Início via `homeNight`; ponto âmbar em "Escala" (alterações por rever); háptico; `useTabBarSpace` = só folga (20).
+- **O ＋ central abre o speed-dial em pílulas rotuladas** (Modal + scrim + cascata; back do Android fecha): **Serviço** (→ Escala, novo serviço hoje) · **Simulação** · **Evento** (gate AE). O ＋ é só CRIAR — a Pesquisa não voltou (a INFO tem procura própria). Criar também continua na grelha da Escala (tocar num dia insere NESSE dia) e nos acts contextuais do Início.
+- 4 abas (Início · Números · Escala · Info); **Perfil = avatar SÓ no Início** (identidade mora na base; os outros cabeçalhos ficam com o sino).
 
 ---
 

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — navbar de 1 toque · palavras e lombada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F;
+    --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --red:#C6362B;
+    --okSoft:#E7F3EC; --onInkFaint:#DDDBD3;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+
+  .hd{max-width:1100px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:820px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .row{display:flex;gap:40px;align-items:flex-start;overflow-x:auto;padding:26px 4px 20px;max-width:1100px;margin:0 auto}
+  .mock{flex:0 0 auto;width:340px}
+  .phone{width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:40px;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(20,22,26,.14)}
+  .cap{padding:16px 6px 0}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:21px}
+  .cap .d{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.55;margin-top:5px}
+  .cap .d b{color:var(--ink)}
+  .chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    padding:4px 9px;border-radius:99px;margin-top:9px}
+  .chip.rec{background:var(--ink);color:var(--yellow)}
+  .chip.var{background:#EFEDE7;color:var(--grey)}
+
+  /* ═══ base pele (Início + Escala reais — como nos mockups anteriores) ═══ */
+  .halo{position:absolute;right:-127px;top:-85px;width:365px;height:365px;border-radius:99em;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,.055) 55%, rgba(255,214,120,0) 100%);
+    pointer-events:none;z-index:0}
+  .pside{position:absolute;top:291px;right:8px;width:272px;z-index:5;
+    transform:rotate(90deg);transform-origin:right top;pointer-events:none;
+    font-size:9px;font-weight:800;letter-spacing:2.6px;color:var(--ink);text-transform:uppercase;text-align:left}
+  .pside .y{color:var(--yellow)}
+  .page{position:absolute;inset:0;padding:0 19px 38px;overflow:hidden;z-index:1;display:flex;flex-direction:column}
+  .hdr{display:flex;align-items:center;gap:8px;padding-top:14px}
+  .av{width:31px;height:31px;border-radius:99px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .av span{color:var(--yellow);font-weight:800;font-size:12px}
+  .hsp{flex:1}
+  .hbtn{width:29px;height:29px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative}
+  .hdot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:99px;background:#E86A10}
+  .greet{font-size:10.5px;font-weight:500;color:var(--grey);margin-top:9px}
+  .hero{position:relative;min-height:170px;margin-top:7px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:3px}
+  .arrowy{position:absolute;left:2px;top:5px}
+  .gho{position:absolute;left:0;right:10px;top:-12px;font-family:var(--disp);font-weight:700;
+    font-size:160px;line-height:1.01;letter-spacing:-3.4px;color:var(--ghost);text-align:right}
+  .wxsup{position:absolute;right:10px;top:2px}
+  .word{font-family:var(--disp);font-weight:700;font-size:48px;line-height:1.02;letter-spacing:-0.4px;color:var(--ink)}
+  .kick{font-size:11px;font-weight:700;color:var(--grey);margin-top:5px}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:7px}
+  .mid{padding:7px 0;border-bottom:1px solid var(--line)}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:5px 0}
+  .agx{text-align:right;min-width:0}
+  .agA{font-size:11px;font-weight:800;color:var(--ink)}
+  .agB{font-size:9px;font-weight:500;color:var(--grey);margin-top:1px}
+  .agTick{width:2.5px;height:23px;background:var(--ink);border-radius:2px;flex:0 0 auto}
+  .voice{font-size:13.5px;font-weight:500;color:var(--grey);line-height:1.45;padding:10px 0}
+  .voice b{font-weight:800;color:var(--ink)}
+  .util{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .utilTtl{width:60px;font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);flex:0 0 auto}
+  .utilP{flex:1;font-size:10px;font-weight:500;color:var(--grey);line-height:1.6}
+  .datarow{display:flex;align-items:center;gap:16px;padding:10px 0 5px}
+  .bigy{font-family:var(--disp);font-weight:700;font-size:46px;line-height:1.03;color:var(--yellow);letter-spacing:.8px}
+  .bigyU{font-size:8.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);margin-top:3px;text-transform:uppercase}
+  .donut{margin-left:auto;flex:0 0 auto;width:52px;height:52px;position:relative}
+  .donut svg{transform:rotate(-90deg)}
+  .donut .dl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut .dl b{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--ink)}
+  .donut .dl span{font-size:6.5px;font-weight:800;letter-spacing:1px;color:var(--grey)}
+  .thumb{display:flex;align-items:center;gap:9px;padding:12px 0 4px;margin-top:auto}
+  .tchip{background:var(--ink);border-radius:10px;padding:6px 11px}
+  .tchipV{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1;color:var(--yellow);letter-spacing:.5px}
+  .tchipS{font-size:6.5px;font-weight:800;letter-spacing:1.3px;color:var(--onInkFaint);margin-top:3px;text-transform:uppercase}
+  .acts{margin-left:auto;display:flex;gap:8px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:3px;max-width:66px}
+  .actC{width:35px;height:35px;border-radius:10px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;background:var(--paper)}
+  .actC.hot{background:var(--ink);border-color:var(--ink)}
+  .actL{font-size:7.5px;font-weight:700;color:var(--grey)}
+  .actL.hot{color:var(--ink)}
+  svg.i{fill:none;stroke:var(--ink);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Escala (spoke/peer) */
+  .spoke{position:absolute;inset:0;background:var(--paper);z-index:30;
+    transform:translateX(103%);transition:transform .3s cubic-bezier(.2,.7,.3,1);
+    box-shadow:-18px 0 40px rgba(20,22,26,.14)}
+  .spoke.in{transform:none}
+  .eyb{font-size:9.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin-top:10px}
+  .ehero{position:relative;min-height:92px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:7px;margin-top:2px}
+  .egho{position:absolute;right:12px;top:-13px;font-family:var(--disp);font-weight:700;
+    font-size:110px;line-height:1.01;letter-spacing:-3.4px;color:var(--ghost)}
+  .emrow{display:flex;align-items:flex-end;gap:8px}
+  .eword{font-family:var(--disp);font-weight:700;font-size:37px;line-height:1;letter-spacing:-0.4px;color:var(--ink)}
+  .nowbar{height:3px;background:var(--yellow);border-radius:2px;margin-top:3px}
+  .ehr{height:1.5px;background:var(--ink);margin-top:5px;margin-bottom:12px}
+  .summ{display:flex;gap:18px;margin-top:2px;margin-bottom:10px}
+  .siVal{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1;color:var(--ink)}
+  .siVal.eur{color:var(--ok)}
+  .siLbl{font-size:7.5px;font-weight:800;letter-spacing:1px;color:var(--grey);text-transform:uppercase;margin-top:2px}
+  .wkhead{display:flex;gap:3px;margin-bottom:3px}
+  .wkh{flex:1;text-align:center;font-size:7.5px;font-weight:800;letter-spacing:1px;color:var(--grey)}
+  .wkh.we{opacity:.45}
+  .cal{display:flex;flex-wrap:wrap;gap:3px}
+  .gc{width:calc((100% - 18px)/7);height:44px;border-radius:8px;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:relative;border:1px solid transparent}
+  .gc.duty{background:var(--soft)}
+  .gc.vac{background:var(--okSoft)}
+  .gc.today{border:1.5px solid var(--red)}
+  .gc.out{opacity:.35}
+  .gn{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--ink)}
+  .gcode{font-size:6px;font-weight:800;letter-spacing:.4px;color:var(--grey);text-transform:uppercase}
+  .gbar{position:absolute;left:7px;right:7px;bottom:4px;height:3px;border-radius:2px}
+  .gmoon{position:absolute;top:3px;right:4px;font-size:6px}
+
+  /* ═══ P1 · A LINHA DE PALAVRAS — a navbar que pesa uma linha de texto ═══ */
+  .wline{position:absolute;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-between;
+    padding:16px 22px 13px;
+    background:linear-gradient(to top, rgba(255,255,255,.96) 55%, rgba(255,255,255,0));}
+  .wl{font-size:8.5px;font-weight:800;letter-spacing:2px;color:#B3B1AA;text-transform:uppercase;
+    cursor:pointer;padding:6px 2px;transition:color .24s;position:relative}
+  .wl:active{color:var(--grey)}
+  .wl.on{color:var(--ink)}
+  /* o sublinhado é UM só — e DESLIZA entre palavras (craft: nada salta, tudo viaja) */
+  .wbar{position:absolute;bottom:14px;height:2.5px;border-radius:2px;background:var(--yellow);
+    transition:left .28s cubic-bezier(.2,.7,.3,1), width .28s cubic-bezier(.2,.7,.3,1)}
+  /* sinal VIVO mas disciplinado: só o que já existe hoje (mudanças na Escala por rever) */
+  .wdot{position:absolute;top:1px;right:-5px;width:5px;height:5px;border-radius:99px;background:#E86A10;
+    transition:opacity .3s}
+  .wdot.off{opacity:0}
+
+  /* ═══ P2 · A LOMBADA — a margem direita vira índice do livro ═══ */
+  .spine{position:absolute;top:291px;right:8px;width:272px;z-index:6;
+    transform:rotate(90deg);transform-origin:right top;
+    font-size:9px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;text-align:left;white-space:nowrap}
+  .spine .cur{color:var(--ink)}
+  .spine .cur .y{color:var(--yellow)}
+  .spine .go{color:#C9C7C0;cursor:pointer;padding:6px 0;transition:color .2s}
+  .spine .go:hover{color:var(--grey)}
+  .spine .sep{color:#DDDBD3;margin:0 7px}
+
+  /* FAB — SÓ na Escala (a página de criação: + serviço · importar); o Início fica limpo */
+  .efab{position:absolute;right:16px;bottom:46px;width:46px;height:46px;border-radius:99px;
+    background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:45;
+    box-shadow:0 12px 26px rgba(20,22,26,.3)}
+
+  .navflash{position:absolute;inset:0;background:var(--ink);z-index:80;display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .22s}
+  .navflash.on{opacity:1}
+  .navflash span{font-family:var(--disp);font-weight:700;font-size:54px;color:var(--yellow);text-transform:lowercase}
+
+  .rip{position:absolute;width:14px;height:14px;border-radius:99px;z-index:90;pointer-events:none;
+    border:2.5px solid var(--yellow);opacity:0;transform:scale(.4)}
+  .rip.go{animation:rip .55s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes rip{0%{opacity:.95;transform:scale(.4)}100%{opacity:0;transform:scale(2.6)}}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>1 toque, sem mobília</h1>
+  <p>Duas navbars <b>únicas e diferentes</b> que devolvem o 1-toque sem trazer a barra de volta.
+     <b>P1</b>: a navbar vira <b>uma linha de palavras</b> — tipografia pura, a atual sublinhada a amarelo (~30px de altura
+     contra ~90 do dock antigo). <b>P2</b>: a margem direita — onde o rótulo lateral já vive — vira a <b>lombada do livro</b>:
+     as outras páginas ficam lá, esbatidas, tocáveis. Demo automática; tocar num telefone pára a dele.</p>
+</div>
+
+<div class="row">
+
+  <!-- P1 · linha de palavras -->
+  <div class="mock" data-k="P1">
+    <div class="phone">
+      <div class="halo"></div>
+      <div class="pside psHub"><span>FOLGA</span><span class="y"> · QUINTA-FEIRA</span></div>
+      <div class="page hub"></div>
+      <div class="spoke"><div class="pside"><span>ESCALA</span><span class="y"> · JULHO</span></div><div class="page esc"></div><span class="efab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></div>
+      <div class="wline">
+        <!-- rótulos REAIS da app: a aba Estatísticas mostra "Números", a FTL mostra "INFO" -->
+        <span class="wl on" data-go="inicio">Início</span>
+        <span class="wl" data-go="stats">Números</span>
+        <span class="wl" data-go="escala">Escala<span class="wdot"></span></span>
+        <span class="wl" data-go="ftl">Info</span>
+      </div>
+      <div class="navflash"><span></span></div>
+    </div>
+    <div class="cap">
+      <div class="t">P1 · A linha de palavras</div>
+      <div class="d">A navbar reduzida à essência da pele: <b>4 palavras</b>, o sublinhado amarelo <b>desliza</b> com a seleção, sobre um véu branco mínimo. 1 toque de qualquer página para qualquer página; as palavras SÃO os rótulos. E o FAB? <b>Só na Escala</b> — a página de criação (+ serviço · importar); no Início as ações já vivem na linha do polegar (Evento · Simular), por isso fica limpo. Toca em "Escala"/"Início" — as páginas reais trocam.</div>
+      <span class="chip rec">Recomendada — única, leve, 1 toque</span>
+    </div>
+  </div>
+
+  <!-- P2 · lombada -->
+  <div class="mock" data-k="P2">
+    <div class="phone">
+      <div class="halo"></div>
+      <div class="page hub"></div>
+      <div class="spine">
+        <span class="cur">FOLGA<span class="y"> · QUINTA-FEIRA</span></span><span class="sep">—</span><span class="go" data-w="estatísticas">ESTATÍSTICAS</span><span class="sep">·</span><span class="go" data-w="escala">ESCALA</span><span class="sep">·</span><span class="go" data-w="ftl">FTL</span>
+      </div>
+      <div class="navflash"><span></span></div>
+    </div>
+    <div class="cap">
+      <div class="t">P2 · A lombada</div>
+      <div class="d">O rótulo lateral que <b>já existe</b> em todos os ecrãs cresce: a seguir ao estado de hoje, as outras páginas ficam na margem, <b>esbatidas e tocáveis</b> — como o índice na lombada de um livro. Zero cromo novo; ninguém tem isto. Custos honestos: texto rodado lê-se pior, os alvos na borda direita <b>colidem com o gesto de voltar do Android</b> (borda = back), e o dedo tapa o que toca.</div>
+      <span class="chip var">A mais distintiva — e a mais arriscada</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const I = {
+  bell : '<svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10ZM10.5 18.5a1.7 1.7 0 0 0 3 0"/></svg>',
+  sync : '<svg class="i" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-3M4 13a8 8 0 0 0 14.9 3M5 4v4h4M19 20v-4h-4"/></svg>',
+  chevD: '<svg class="i" width="13" height="13" viewBox="0 0 24 24" style="stroke:#77776F"><path d="M7 10l5 5 5-5"/></svg>',
+  sun  : '<svg class="i" width="19" height="19" viewBox="0 0 24 24" style="stroke:#77776F"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg>',
+  diag : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M17 17V7H7"/></svg>',
+  plus : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  gauge: '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg>'
+};
+
+const hubHTML = `
+  <div class="hdr">
+    <span class="av"><span>MC</span></span>
+    <span class="hsp"></span>
+    <span class="hbtn">${I.bell}</span>
+  </div>
+  <div class="greet">Boa tarde, Miguel</div>
+  <div class="hero">
+    <span class="arrowy">${I.diag}</span>
+    <span class="gho">9</span>
+    <span class="wxsup">${I.sun}</span>
+    <span class="word">Folga</span>
+    <span class="kick">próximo serviço <span class="y">sexta · LIS→LGW · 05:40</span> · 18°–27°</span>
+  </div>
+  <div class="hr"></div>
+  <div class="mid">
+    <div class="ag"><span class="agx"><span class="agA">EJU7623 · LIS-LGW-LIS</span><br><span class="agB">SEX · report 05:40 · 4 setores</span></span><span class="agTick"></span></div>
+    <div class="ag"><span class="agx"><span class="agA">EJU7841 · LIS-FNC 🌙 pernoita</span><br><span class="agB">SÁB · report 09:10 · 2 setores</span></span><span class="agTick"></span></div>
+  </div>
+  <div class="voice"><b>Dia teu.</b> o sol ficou de serviço por ti — aproveita a luz.</div>
+  <div class="util">
+    <span class="utilTtl">Estado</span>
+    <span class="utilP">repouso em dia ✓ · escala sincronizada · validades ok · férias: ficam 9 de 22</span>
+  </div>
+  <div class="datarow">
+    <span>
+      <span class="bigy">2 431,70</span><br>
+      <span class="bigyU">EUROS · JULHO ESTIMADO</span>
+    </span>
+    <span class="donut">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#ECEAE4" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#FFB800" stroke-width="5" stroke-dasharray="38.3 93.7" stroke-linecap="round"/>
+      </svg>
+      <span class="dl"><b>29%</b><span>MÊS</span></span>
+    </span>
+  </div>
+  <div class="thumb">
+    <span class="tchip"><span class="tchipV">3 DIAS</span><br><span class="tchipS">até ao report</span></span>
+    <span class="acts">
+      <span class="act"><span class="actC hot">${I.plus}</span><span class="actL hot">Evento</span></span>
+      <span class="act"><span class="actC">${I.gauge}</span><span class="actL">Simular</span></span>
+    </span>
+  </div>`;
+
+function escalaHTML(){
+  const D = {
+    1:['7702','f'],2:['OFF','o'],3:['7623','f'],4:['7841','f',1],5:['OFF','o'],
+    6:['SBY','s'],7:['7635','f'],8:['OFF','o'],9:['OFF','o',0,1],10:['7623','f'],
+    11:['7841','f',1],12:['OFF','o'],13:['7702','f'],14:['SBY','s'],15:['7635','f'],
+    16:['OFF','o'],17:['7623','f'],18:['7841','f'],19:['OFF','o'],20:['FÉR','v'],
+    21:['FÉR','v'],22:['FÉR','v'],23:['FÉR','v'],24:['FÉR','v'],25:['OFF','o'],
+    26:['7623','f'],27:['7702','f'],28:['OFF','o'],29:['SBY','s'],30:['7635','f'],31:['OFF','o'],
+  };
+  let cells = '<div class="gc out"><span class="gn">29</span></div><div class="gc out"><span class="gn">30</span></div>';
+  for (let d=1; d<=31; d++){
+    const [code, tp, moon, today] = D[d];
+    const cls = ['gc', tp==='f'||tp==='s' ? 'duty':'', tp==='v'?'vac':'', today?'today':''].join(' ');
+    const bar = tp==='f' ? '<span class="gbar" style="background:#141414"></span>'
+              : tp==='s' ? '<span class="gbar" style="background:#CFCCC2"></span>' : '';
+    cells += `<div class="${cls}"><span class="gn">${d}</span><span class="gcode">${code}</span>${bar}${moon?'<span class="gmoon">🌙</span>':''}</div>`;
+  }
+  cells += '<div class="gc out"><span class="gn">1</span></div><div class="gc out"><span class="gn">2</span></div>';
+  return `
+  <div class="hdr">
+    <span class="hsp"></span>
+    <span class="hbtn">${I.sync}<span class="hdot"></span></span>
+    <span class="hbtn">${I.bell}</span>
+  </div>
+  <div class="eyb">A tua escala · eCrew</div>
+  <div class="ehero">
+    <span class="egho">2026</span>
+    <span class="emrow"><span><span class="eword">Julho</span><span class="nowbar"></span></span>${I.chevD}</span>
+  </div>
+  <div class="ehr"></div>
+  <div class="summ">
+    <span><span class="siVal">16</span><br><span class="siLbl">Serviços</span></span>
+    <span><span class="siVal">10</span><br><span class="siLbl">Folgas</span></span>
+    <span><span class="siVal">2</span><br><span class="siLbl">Pernoitas</span></span>
+    <span><span class="siVal eur">742,50 €</span><br><span class="siLbl">Per-diem</span></span>
+  </div>
+  <div class="wkhead"><span class="wkh">S</span><span class="wkh">T</span><span class="wkh">Q</span><span class="wkh">Q</span><span class="wkh">S</span><span class="wkh we">S</span><span class="wkh we">D</span></div>
+  <div class="cal">${cells}</div>`;
+}
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function ripple(phone, x, y){
+  const r = document.createElement('div');
+  r.className = 'rip go';
+  r.style.left = (x-7)+'px'; r.style.top = (y-7)+'px';
+  phone.appendChild(r);
+  setTimeout(()=>r.remove(), 650);
+}
+const center = (phone, el, dy=0) => {
+  const r = el.getBoundingClientRect(), p = phone.getBoundingClientRect();
+  return [r.left - p.left + r.width/2, r.top - p.top + r.height/2 + dy];
+};
+
+/* ── P1 — linha de palavras: troca REAL entre Início e Escala ── */
+{
+  const mock  = document.querySelector('[data-k="P1"]');
+  const phone = mock.querySelector('.phone');
+  mock.querySelector('.hub').innerHTML = hubHTML;
+  const spoke = mock.querySelector('.spoke');
+  spoke.querySelector('.esc').innerHTML = escalaHTML();
+  const flash = mock.querySelector('.navflash');
+  const wls   = mock.querySelectorAll('.wl');
+
+  /* sublinhado ÚNICO que desliza entre palavras (craft: nada salta, tudo viaja) */
+  const line = mock.querySelector('.wline');
+  const wbar = document.createElement('span'); wbar.className = 'wbar'; line.appendChild(wbar);
+  const placeBar = ()=>{
+    const on = mock.querySelector('.wl.on'); if (!on) return;
+    wbar.style.left  = (on.offsetLeft + 2) + 'px';
+    wbar.style.width = (on.offsetWidth - 4) + 'px';
+  };
+  window.addEventListener('load', placeBar);
+  setTimeout(placeBar, 350);   // reposiciona depois de as fontes assentarem
+
+  /* sublinhado ELÁSTICO: em viagem estica a cobrir origem→destino, depois assenta */
+  const setW = (go)=>{
+    const prev = mock.querySelector('.wl.on');
+    wls.forEach(w=>w.classList.toggle('on', w.dataset.go===go));
+    const next = mock.querySelector('.wl.on');
+    if (prev && next && prev !== next){
+      const l = Math.min(prev.offsetLeft, next.offsetLeft) + 2;
+      const r = Math.max(prev.offsetLeft + prev.offsetWidth, next.offsetLeft + next.offsetWidth) - 2;
+      wbar.style.left = l + 'px'; wbar.style.width = (r - l) + 'px';
+      setTimeout(placeBar, 150);
+    } else placeBar();
+    if (go==='escala'){ const d = mock.querySelector('.wdot'); if (d) d.classList.add('off'); }  // sinal consumido
+  };
+  const goTo = async (go)=>{
+    setW(go);
+    if (go==='escala') spoke.classList.add('in');
+    else if (go==='inicio') spoke.classList.remove('in');
+    else {  // stats/ftl: pisca o destino (não replicado aqui)
+      flash.querySelector('span').textContent = go==='stats' ? 'números' : 'info';
+      flash.classList.add('on'); await sleep(650); flash.classList.remove('on');
+      setW(spoke.classList.contains('in') ? 'escala' : 'inicio');
+    }
+  };
+  wls.forEach(w=>w.addEventListener('click', ()=>goTo(w.dataset.go)));
+
+  mock._stop = false;
+  phone.addEventListener('pointerdown', ()=>{ mock._stop = true; }, {passive:true});
+  (async ()=>{
+    /* 1.ª execução: o sublinhado faz um VARRIMENTO pelas 4 palavras e assenta — ensina
+       "isto é a navegação" uma vez, sem tutorial (proposta de melhoria) */
+    await sleep(1100);
+    for (const g of ['stats','escala','ftl','inicio']){
+      if (mock._stop) return;
+      wls.forEach(w=>w.classList.toggle('on', w.dataset.go===g)); placeBar();
+      await sleep(210);
+    }
+    mock.querySelector('.wdot')?.classList.remove('off');   // o varrimento não consome o sinal
+    await sleep(1400);
+    const seq = ['escala','inicio','stats','escala','ftl','inicio'];
+    let i = 0;
+    while (!mock._stop){
+      const go = seq[i % seq.length];
+      const el = mock.querySelector(`.wl[data-go="${go}"]`);
+      ripple(phone, ...center(phone, el, -4));
+      await sleep(360); if (mock._stop) break;
+      await goTo(go);
+      i++;
+      await sleep(2300);
+    }
+  })();
+}
+
+/* ── P2 — lombada: pisca o destino ── */
+{
+  const mock  = document.querySelector('[data-k="P2"]');
+  const phone = mock.querySelector('.phone');
+  mock.querySelector('.hub').innerHTML = hubHTML;
+  const flash = mock.querySelector('.navflash');
+  const gos   = mock.querySelectorAll('.spine .go');
+
+  const go = async (word)=>{
+    flash.querySelector('span').textContent = word;
+    flash.classList.add('on'); await sleep(650); flash.classList.remove('on');
+  };
+  gos.forEach(g=>g.addEventListener('click', ()=>go(g.dataset.w)));
+
+  mock._stop = false;
+  phone.addEventListener('pointerdown', ()=>{ mock._stop = true; }, {passive:true});
+  (async ()=>{
+    await sleep(2000);
+    let i = 0;
+    while (!mock._stop){
+      const g = gos[i % gos.length];
+      ripple(phone, ...center(phone, g));
+      await sleep(360); if (mock._stop) break;
+      await go(g.dataset.w);
+      i++;
+      await sleep(2600);
+    }
+  })();
+}
+</script>
+</body>
+</html>

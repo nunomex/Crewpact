@@ -75,6 +75,7 @@ Regra: o háptico acompanha a **AÇÃO do utilizador ou o desfecho** — nunca o
 
 Onde o movimento existe hoje — atualizar quando se adiciona/remove:
 
+- `components/TabBar.js` — navegação: ícone da ativa dá POP (spring f6/t280, só em mudança — não no arranque) + ponto amarelo fade+scale 180ms · ＋ central com press-scale 0.92 e sombra leve · speed-dial (spring f8/t90, cascata escalonada, fecho 150ms, clone × roda 0→45° em sincronia) · háptico tap/select · reduce-aware em TUDO
 - `hooks/useEnter.js` — entrada de ecrã (opacity+translate, 820, reduce-aware)
 - `hooks/useCountUp.js` + `components/CountUp.js` — números a contar (reduce-aware)
 - `components/PeleSheet.js` — folha: fade 180 + spring; saída 200/240; teclado 220/200; arrasto PanResponder

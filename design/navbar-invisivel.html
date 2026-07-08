@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Início real, sem navbar · menu tipográfico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F;
+    --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55;
+    --onInkFaint:#DDDBD3;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+
+  .hd{max-width:1100px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:800px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .row{display:flex;gap:40px;align-items:flex-start;overflow-x:auto;padding:26px 4px 20px;max-width:1100px;margin:0 auto}
+  .mock{flex:0 0 auto;width:340px}
+  .phone{width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:40px;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(20,22,26,.14)}
+  .cap{padding:16px 6px 0}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:21px}
+  .cap .d{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.55;margin-top:5px}
+  .cap .d b{color:var(--ink)}
+  .chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    padding:4px 9px;border-radius:99px;margin-top:9px}
+  .chip.rec{background:var(--ink);color:var(--yellow)}
+  .chip.var{background:#EFEDE7;color:var(--grey)}
+
+  /* ═══ INÍCIO REAL (folga · dia · com AE) — réplica do screens/HomeScreen.js ═══ */
+  .halo{position:absolute;right:-127px;top:-85px;width:365px;height:365px;border-radius:99em;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,.055) 55%, rgba(255,214,120,0) 100%);
+    pointer-events:none;z-index:0}
+  /* PeleSide: wrap largura fixa, rotate 90 origem right-top, início invariante */
+  .pside{position:absolute;top:291px;right:8px;width:272px;z-index:5;
+    transform:rotate(90deg);transform-origin:right top;pointer-events:none;
+    font-size:9px;font-weight:800;letter-spacing:2.6px;color:var(--ink);text-transform:uppercase;text-align:left}
+  .pside .y{color:var(--yellow)}
+  .pside.tap{pointer-events:auto;cursor:pointer}
+  .pside .sdot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--yellow);
+    margin-right:7px;vertical-align:1px}
+
+  .page{position:absolute;inset:0;padding:0 19px;overflow:hidden;z-index:1}
+  /* PeleHeader: avatar ↖ + [actions] + sino ↗ */
+  .hdr{display:flex;align-items:center;padding-top:14px}
+  .av{width:31px;height:31px;border-radius:99px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .av span{color:var(--yellow);font-weight:800;font-size:12px}
+  .hsp{flex:1}
+  .hbtn{width:29px;height:29px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .greet{font-size:10.5px;font-weight:500;color:var(--grey);margin-top:9px}
+
+  .hero{position:relative;min-height:170px;margin-top:7px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:3px}
+  .arrowy{position:absolute;left:2px;top:5px}
+  .gho{position:absolute;left:0;right:10px;top:-12px;font-family:var(--disp);font-weight:700;
+    font-size:160px;line-height:1.01;letter-spacing:-3.4px;color:var(--ghost);text-align:right}
+  .wxsup{position:absolute;right:10px;top:2px}
+  .word{font-family:var(--disp);font-weight:700;font-size:48px;line-height:1.02;letter-spacing:-0.4px;color:var(--ink)}
+  .kick{font-size:11px;font-weight:700;color:var(--grey);margin-top:5px}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:7px}
+
+  .mid{padding:7px 0;border-bottom:1px solid var(--line)}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:5px 0}
+  .agx{text-align:right;min-width:0}
+  .agA{font-size:11px;font-weight:800;color:var(--ink)}
+  .agB{font-size:9px;font-weight:500;color:var(--grey);margin-top:1px}
+  .agTick{width:2.5px;height:23px;background:var(--ink);border-radius:2px;flex:0 0 auto}
+
+  .voice{font-size:13.5px;font-weight:500;color:var(--grey);line-height:1.45;padding:10px 0}
+  .voice b{font-weight:800;color:var(--ink)}
+
+  .util{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .utilTtl{width:60px;font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);flex:0 0 auto}
+  .utilP{flex:1;font-size:10px;font-weight:500;color:var(--grey);line-height:1.6}
+
+  .datarow{display:flex;align-items:center;gap:16px;padding:10px 0 5px}
+  .bigy{font-family:var(--disp);font-weight:700;font-size:46px;line-height:1.03;color:var(--yellow);letter-spacing:.8px}
+  .bigyU{font-size:8.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);margin-top:3px;text-transform:uppercase}
+  .donut{margin-left:auto;flex:0 0 auto;width:52px;height:52px;position:relative}
+  .donut svg{transform:rotate(-90deg)}
+  .donut .dl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut .dl b{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--ink)}
+  .donut .dl span{font-size:6.5px;font-weight:800;letter-spacing:1px;color:var(--grey)}
+
+  .thumb{display:flex;align-items:center;gap:9px;padding:12px 0 14px}
+  .tchip{background:var(--ink);border-radius:10px;padding:6px 11px}
+  .tchipV{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1;color:var(--yellow);letter-spacing:.5px}
+  .tchipS{font-size:6.5px;font-weight:800;letter-spacing:1.3px;color:var(--onInkFaint);margin-top:3px;text-transform:uppercase}
+  .acts{margin-left:auto;display:flex;gap:8px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:3px;max-width:66px}
+  .actC{width:35px;height:35px;border-radius:10px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center}
+  .actC.hot{background:var(--ink);border-color:var(--ink)}
+  .actL{font-size:7.5px;font-weight:700;color:var(--grey)}
+  .actL.hot{color:var(--ink)}
+
+  svg.i{fill:none;stroke:var(--ink);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ═══ menu tipográfico (H) ═══ */
+  .menu{position:absolute;inset:0;background:var(--ink);z-index:70;display:flex;flex-direction:column;
+    justify-content:center;padding:0 34px;opacity:0;pointer-events:none;transition:opacity .28s}
+  .menu.on{opacity:1;pointer-events:auto}
+  .menu .mx{position:absolute;top:24px;right:26px;font-size:9.5px;font-weight:800;letter-spacing:2px;
+    color:rgba(255,255,255,.45);text-transform:uppercase;cursor:pointer}
+  .mi{display:flex;align-items:baseline;gap:16px;padding:13px 0;cursor:pointer;
+    opacity:0;transform:translateY(20px);
+    transition:opacity .3s,transform .36s cubic-bezier(.2,.7,.3,1)}
+  .menu.on .mi{opacity:1;transform:none}
+  .menu.on .mi:nth-child(2){transition-delay:.03s}
+  .menu.on .mi:nth-child(3){transition-delay:.08s}
+  .menu.on .mi:nth-child(4){transition-delay:.13s}
+  .menu.on .mi:nth-child(5){transition-delay:.18s}
+  .mi .n{font-size:10.5px;font-weight:800;letter-spacing:2px;color:var(--yellow)}
+  .mi .w{font-family:var(--disp);font-weight:700;font-size:50px;line-height:1;
+    color:rgba(255,255,255,.34);text-transform:lowercase;transition:color .22s}
+  .mi.on .w{color:var(--yellow)}
+  .mi:hover .w{color:var(--paper)}
+
+  /* ripple do toque (demo) */
+  .rip{position:absolute;width:14px;height:14px;border-radius:99px;z-index:90;pointer-events:none;
+    border:2.5px solid var(--yellow);opacity:0;transform:scale(.4)}
+  .rip.go{animation:rip .55s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes rip{0%{opacity:.95;transform:scale(.4)}100%{opacity:0;transform:scale(2.6)}}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>início real, sem navbar</h1>
+  <p>A página é a <b>réplica do teu Início de hoje</b> (folga, com AE): halo do tempo, rótulo lateral, seta amarela,
+     fantasma <b>9</b> com o tempo em expoente, kick do próximo serviço, agenda com ticks, voz, Estado,
+     € do mês + donut, chip do polegar + ações. <b>Zero navbar.</b> Por cima, o menu tipográfico com 2 gatilhos
+     possíveis — nenhum no fundo. Demo automática; tocar num telefone pára a dele.</p>
+</div>
+
+<div class="row">
+
+  <!-- H1 · glifo no topo (slot actions do PeleHeader) -->
+  <div class="mock" data-k="TOP">
+    <div class="phone">
+      <div class="halo"></div>
+      <div class="pside"><span class="lb">FOLGA</span><span class="y"> · QUINTA-FEIRA</span></div>
+      <div class="page"></div>
+      <div class="menu">
+        <span class="mx">fechar ×</span>
+        <div class="mi on"><span class="n">01</span><span class="w">início</span></div>
+        <div class="mi"><span class="n">02</span><span class="w">estatísticas</span></div>
+        <div class="mi"><span class="n">03</span><span class="w">escala</span></div>
+        <div class="mi"><span class="n">04</span><span class="w">ftl</span></div>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="t">H1 · Glifo no topo</div>
+      <div class="d">O gatilho vive na linha real do cabeçalho — o <b>slot `actions` do PeleHeader</b>, entre o avatar e o sino (anatomia que já existe; não inventa nada). Quatro pontos amarelos = "as 4 secções". Toque → a navegação abre como página da pele: tipografia gigante, a atual a amarelo.</div>
+      <span class="chip rec">Recomendada</span>
+    </div>
+  </div>
+
+  <!-- H2 · rótulo lateral tocável -->
+  <div class="mock" data-k="SIDE">
+    <div class="phone">
+      <div class="halo"></div>
+      <div class="pside tap"><span class="sdot"></span><span class="lb">FOLGA</span><span class="y"> · QUINTA-FEIRA</span></div>
+      <div class="page"></div>
+      <div class="menu">
+        <span class="mx">fechar ×</span>
+        <div class="mi on"><span class="n">01</span><span class="w">início</span></div>
+        <div class="mi"><span class="n">02</span><span class="w">estatísticas</span></div>
+        <div class="mi"><span class="n">03</span><span class="w">escala</span></div>
+        <div class="mi"><span class="n">04</span><span class="w">ftl</span></div>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="t">H2 · Rótulo lateral tocável</div>
+      <div class="d">O <b>PeleSide</b> — que já diz ONDE ESTÁS em todos os ecrãs — passa a ser o botão para mudar de sítio (ponto amarelo = affordance). Semanticamente perfeito: tocas no nome da página para trocar de página. Custo: é preciso aprender que o rótulo é botão; fica a meio da margem direita.</div>
+      <span class="chip var">Alternativa elegante</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── ícones (pictogramas simples, stroke ink) ── */
+const I = {
+  bell : '<svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10ZM10.5 18.5a1.7 1.7 0 0 0 3 0"/></svg>',
+  grid : '<svg width="15" height="15" viewBox="0 0 24 24" fill="#FFB800"><circle cx="8" cy="8" r="2.3"/><circle cx="16" cy="8" r="2.3"/><circle cx="8" cy="16" r="2.3"/><circle cx="16" cy="16" r="2.3"/></svg>',
+  sun  : '<svg class="i" width="19" height="19" viewBox="0 0 24 24" style="stroke:#77776F"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg>',
+  diag : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M17 17V7H7"/></svg>',
+  plus : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  gauge: '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg>'
+};
+
+/* ── a página Início REAL (folga · dia · com AE) ── */
+const pageHTML = `
+  <div class="hdr">
+    <span class="av"><span>MC</span></span>
+    <span class="hsp"></span>
+    <span class="hbtn navtrig" style="display:none">${I.grid}</span>
+    <span class="hbtn">${I.bell}</span>
+  </div>
+  <div class="greet">Boa tarde, Miguel</div>
+  <div class="hero">
+    <span class="arrowy">${I.diag}</span>
+    <span class="gho">9</span>
+    <span class="wxsup">${I.sun}</span>
+    <span class="word">Folga</span>
+    <span class="kick">próximo serviço <span class="y">sexta · LIS→LGW · 05:40</span> · 18°–27°</span>
+  </div>
+  <div class="hr"></div>
+  <div class="mid">
+    <div class="ag"><span class="agx"><span class="agA">EJU7623 · LIS-LGW-LIS</span><br><span class="agB">SEX · report 05:40 · 4 setores</span></span><span class="agTick"></span></div>
+    <div class="ag"><span class="agx"><span class="agA">EJU7841 · LIS-FNC 🌙 pernoita</span><br><span class="agB">SÁB · report 09:10 · 2 setores</span></span><span class="agTick"></span></div>
+    <div class="ag"><span class="agx"><span class="agA">Standby</span><br><span class="agB">TER · report 06:00</span></span><span class="agTick"></span></div>
+  </div>
+  <div class="voice"><b>Dia teu.</b> o sol ficou de serviço por ti — aproveita a luz.</div>
+  <div class="util">
+    <span class="utilTtl">Estado</span>
+    <span class="utilP">repouso em dia ✓ · escala sincronizada · validades ok · férias: ficam 9 de 22</span>
+  </div>
+  <div class="datarow">
+    <span>
+      <span class="bigy">2 431,70</span><br>
+      <span class="bigyU">EUROS · JULHO ESTIMADO</span>
+    </span>
+    <span class="donut">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#ECEAE4" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#FFB800" stroke-width="5"
+          stroke-dasharray="38.3 93.7" stroke-linecap="round"/>
+      </svg>
+      <span class="dl"><b>29%</b><span>MÊS</span></span>
+    </span>
+  </div>
+  <div class="thumb">
+    <span class="tchip"><span class="tchipV">3 DIAS</span><br><span class="tchipS">até ao report</span></span>
+    <span class="acts">
+      <span class="act"><span class="actC hot">${I.plus}</span><span class="actL hot">Evento</span></span>
+      <span class="act"><span class="actC">${I.gauge}</span><span class="actL">Simular</span></span>
+    </span>
+  </div>`;
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function ripple(phone, x, y){
+  const r = document.createElement('div');
+  r.className = 'rip go';
+  r.style.left = (x-7)+'px'; r.style.top = (y-7)+'px';
+  phone.appendChild(r);
+  setTimeout(()=>r.remove(), 650);
+}
+
+document.querySelectorAll('.mock').forEach(async (mock, mi)=>{
+  const kind  = mock.dataset.k;
+  const phone = mock.querySelector('.phone');
+  const page  = mock.querySelector('.page');
+  const menu  = mock.querySelector('.menu');
+  const side  = mock.querySelector('.pside');
+  page.innerHTML = pageHTML;
+
+  /* gatilhos */
+  const trig = page.querySelector('.navtrig');
+  if (kind==='TOP') trig.style.display = 'flex';
+  const open  = ()=>menu.classList.add('on');
+  const close = ()=>menu.classList.remove('on');
+
+  mock._stop = false;
+  phone.addEventListener('pointerdown', ()=>{ mock._stop = true; }, {passive:true});
+  if (kind==='TOP') trig.addEventListener('click', open);
+  if (kind==='SIDE') side.addEventListener('click', open);
+  menu.querySelector('.mx').addEventListener('click', close);
+  menu.querySelectorAll('.mi').forEach(it=>it.addEventListener('click', ()=>{
+    menu.querySelectorAll('.mi').forEach(x=>x.classList.remove('on'));
+    it.classList.add('on');
+    setTimeout(close, 300);
+  }));
+
+  /* demo automática */
+  await sleep(800 + mi*600);
+  const items = menu.querySelectorAll('.mi');
+  let i = 0;
+  while (!mock._stop){
+    if (kind==='TOP') ripple(phone, 268, 30);   // glifo no topo (antes do sino)
+    else              ripple(phone, 325, 130);  // rótulo lateral
+    await sleep(340); if (mock._stop) break;
+    open();
+    await sleep(1700); if (mock._stop) break;
+    i = (i+1) % items.length;
+    items[i].click();                            // escolhe → amarelo salta → fecha
+    await sleep(2300);
+  }
+});
+</script>
+</body>
+</html>

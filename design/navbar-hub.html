@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Hub &amp; Spoke · Início manda, o resto volta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F;
+    --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --red:#C6362B;
+    --okSoft:#E7F3EC; --onInkFaint:#DDDBD3;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+
+  .hd{max-width:1100px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:820px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .row{display:flex;gap:40px;align-items:flex-start;overflow-x:auto;padding:26px 4px 20px;max-width:1100px;margin:0 auto}
+  .mock{flex:0 0 auto;width:340px}
+  .phone{width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:40px;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(20,22,26,.14)}
+  .cap{padding:16px 6px 0}
+  .cap .t{font-family:var(--disp);font-weight:700;font-size:21px}
+  .cap .d{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.55;margin-top:5px}
+  .cap .d b{color:var(--ink)}
+  .chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    padding:4px 9px;border-radius:99px;margin-top:9px}
+  .chip.rec{background:var(--ink);color:var(--yellow)}
+
+  /* ═══ base pele ═══ */
+  .halo{position:absolute;right:-127px;top:-85px;width:365px;height:365px;border-radius:99em;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,.055) 55%, rgba(255,214,120,0) 100%);
+    pointer-events:none;z-index:0}
+  .pside{position:absolute;top:291px;right:8px;width:272px;z-index:5;
+    transform:rotate(90deg);transform-origin:right top;pointer-events:none;
+    font-size:9px;font-weight:800;letter-spacing:2.6px;color:var(--ink);text-transform:uppercase;text-align:left}
+  .pside .y{color:var(--yellow)}
+  .page{position:absolute;inset:0;padding:0 19px;overflow:hidden;z-index:1;display:flex;flex-direction:column}
+  .hdr{display:flex;align-items:center;gap:8px;padding-top:14px}
+  .av{width:31px;height:31px;border-radius:99px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .av span{color:var(--yellow);font-weight:800;font-size:12px}
+  .bk{width:30px;height:30px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .hsp{flex:1}
+  .hbtn{width:29px;height:29px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative}
+  .hdot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:99px;background:#E86A10}
+  .greet{font-size:10.5px;font-weight:500;color:var(--grey);margin-top:9px}
+  .hero{position:relative;min-height:170px;margin-top:7px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:3px}
+  .arrowy{position:absolute;left:2px;top:5px}
+  .gho{position:absolute;left:0;right:10px;top:-12px;font-family:var(--disp);font-weight:700;
+    font-size:160px;line-height:1.01;letter-spacing:-3.4px;color:var(--ghost);text-align:right}
+  .wxsup{position:absolute;right:10px;top:2px}
+  .word{font-family:var(--disp);font-weight:700;font-size:48px;line-height:1.02;letter-spacing:-0.4px;color:var(--ink)}
+  .kick{font-size:11px;font-weight:700;color:var(--grey);margin-top:5px}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:7px}
+  .mid{padding:7px 0;border-bottom:1px solid var(--line)}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:5px 0}
+  .agx{text-align:right;min-width:0}
+  .agA{font-size:11px;font-weight:800;color:var(--ink)}
+  .agB{font-size:9px;font-weight:500;color:var(--grey);margin-top:1px}
+  .agTick{width:2.5px;height:23px;background:var(--ink);border-radius:2px;flex:0 0 auto}
+  .voice{font-size:13.5px;font-weight:500;color:var(--grey);line-height:1.45;padding:10px 0}
+  .voice b{font-weight:800;color:var(--ink)}
+  .util{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .utilTtl{width:60px;font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);flex:0 0 auto}
+  .utilP{flex:1;font-size:10px;font-weight:500;color:var(--grey);line-height:1.6}
+  .datarow{display:flex;align-items:center;gap:16px;padding:10px 0 5px}
+  .bigy{font-family:var(--disp);font-weight:700;font-size:46px;line-height:1.03;color:var(--yellow);letter-spacing:.8px}
+  .bigyU{font-size:8.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);margin-top:3px;text-transform:uppercase}
+  .donut{margin-left:auto;flex:0 0 auto;width:52px;height:52px;position:relative}
+  .donut svg{transform:rotate(-90deg)}
+  .donut .dl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut .dl b{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--ink)}
+  .donut .dl span{font-size:6.5px;font-weight:800;letter-spacing:1px;color:var(--grey)}
+  .thumb{display:flex;align-items:center;gap:9px;padding:12px 0 6px;margin-top:auto}
+  .tchip{background:var(--ink);border-radius:10px;padding:6px 11px}
+  .tchipV{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1;color:var(--yellow);letter-spacing:.5px}
+  .tchipS{font-size:6.5px;font-weight:800;letter-spacing:1.3px;color:var(--onInkFaint);margin-top:3px;text-transform:uppercase}
+  .acts{margin-left:auto;display:flex;gap:8px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:3px;max-width:66px;cursor:pointer}
+  .actC{width:35px;height:35px;border-radius:10px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;background:var(--paper)}
+  .actC.hot{background:var(--ink);border-color:var(--ink)}
+  .actL{font-size:7.5px;font-weight:700;color:var(--grey)}
+  .actL.hot{color:var(--ink)}
+  .navrow{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 0 14px}
+  .navrow .lbl{font-size:7.5px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase;margin-right:4px}
+  svg.i{fill:none;stroke:var(--ink);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ═══ spoke (Escala) — desliza por cima como stack push ═══ */
+  .spoke{position:absolute;inset:0;background:var(--paper);z-index:40;
+    transform:translateX(103%);transition:transform .3s cubic-bezier(.2,.7,.3,1);
+    box-shadow:-18px 0 40px rgba(20,22,26,.14)}
+  .spoke.in{transform:none}
+  .eyb{font-size:9.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--grey);margin-top:10px}
+  .ehero{position:relative;min-height:92px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:7px;margin-top:2px}
+  .egho{position:absolute;right:12px;top:-13px;font-family:var(--disp);font-weight:700;
+    font-size:110px;line-height:1.01;letter-spacing:-3.4px;color:var(--ghost)}
+  .emrow{display:flex;align-items:flex-end;gap:8px}
+  .eword{font-family:var(--disp);font-weight:700;font-size:37px;line-height:1;letter-spacing:-0.4px;color:var(--ink)}
+  .nowbar{height:3px;background:var(--yellow);border-radius:2px;margin-top:3px}
+  .ehr{height:1.5px;background:var(--ink);margin-top:5px;margin-bottom:12px}
+  .summ{display:flex;gap:18px;margin-top:2px;margin-bottom:10px}
+  .siVal{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1;color:var(--ink)}
+  .siVal.eur{color:var(--ok)}
+  .siLbl{font-size:7.5px;font-weight:800;letter-spacing:1px;color:var(--grey);text-transform:uppercase;margin-top:2px}
+  .wkhead{display:flex;gap:3px;margin-bottom:3px}
+  .wkh{flex:1;text-align:center;font-size:7.5px;font-weight:800;letter-spacing:1px;color:var(--grey)}
+  .wkh.we{opacity:.45}
+  .cal{display:flex;flex-wrap:wrap;gap:3px}
+  .gc{width:calc((100% - 18px)/7);height:46px;border-radius:8px;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:relative;border:1px solid transparent}
+  .gc.duty{background:var(--soft)}
+  .gc.vac{background:var(--okSoft)}
+  .gc.today{border:1.5px solid var(--red)}
+  .gc.out{opacity:.35}
+  .gn{font-family:var(--disp);font-weight:600;font-size:12.5px;color:var(--ink)}
+  .gcode{font-size:6px;font-weight:800;letter-spacing:.4px;color:var(--grey);text-transform:uppercase}
+  .gbar{position:absolute;left:7px;right:7px;bottom:4px;height:3px;border-radius:2px}
+  .gmoon{position:absolute;top:3px;right:4px;font-size:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
+  .legIt{display:flex;align-items:center;gap:4px}
+  .legSw{width:9px;height:9px;border-radius:3px}
+  .legSw.off{border:1px solid var(--line);background:var(--paper)}
+  .legTxt{font-size:7.5px;font-weight:700;color:var(--grey)}
+
+  .rip{position:absolute;width:14px;height:14px;border-radius:99px;z-index:90;pointer-events:none;
+    border:2.5px solid var(--yellow);opacity:0;transform:scale(.4)}
+  .rip.go{animation:rip .55s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes rip{0%{opacity:.95;transform:scale(.4)}100%{opacity:0;transform:scale(2.6)}}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>início manda, o resto volta</h1>
+  <p>O teu modelo: <b>a navegação só existe no Início</b> (no canto, gramática Extra/Simular — "IR PARA") e as outras
+     páginas <b>perdem o avatar</b> no topo-esquerdo e ganham a <b>seta ‹</b> que volta ao Início — a MESMA anatomia
+     que as Validades e o Perfil já usam hoje. O 1.º telefone mostra o fluxo completo em demo automática
+     (Início → Escala → voltar); o 2.º deixa-te inspecionar a Escala-spoke parada. Páginas fiéis ao código atual.</p>
+</div>
+
+<div class="row">
+
+  <!-- FLOW · a viagem completa -->
+  <div class="mock" data-k="FLOW">
+    <div class="phone">
+      <div class="halo"></div>
+      <div class="pside"><span>FOLGA</span><span class="y"> · QUINTA-FEIRA</span></div>
+      <div class="page hub"></div>
+      <div class="spoke"><div class="pside"><span>ESCALA</span><span class="y"> · JULHO</span></div><div class="page esc"></div></div>
+    </div>
+    <div class="cap">
+      <div class="t">O fluxo · Início ⇄ Escala</div>
+      <div class="d">Toque em "Escala" no <b>IR PARA</b> → a página <b>desliza por cima</b> (stack). Lá dentro, topo-esquerdo = <b>‹</b> (o avatar ficou no Início). Toque no ‹ → o Início reaparece intacto. Bónus real: virando stack, o <b>gesto de arrastar da borda esquerda</b> para voltar funciona de série no iOS.</div>
+      <span class="chip rec">O modelo completo</span>
+    </div>
+  </div>
+
+  <!-- SPOKE · a Escala parada para inspeção -->
+  <div class="mock" data-k="STATIC">
+    <div class="phone">
+      <div class="pside"><span>ESCALA</span><span class="y"> · JULHO</span></div>
+      <div class="page esc"></div>
+    </div>
+    <div class="cap">
+      <div class="t">O spoke em detalhe · Escala</div>
+      <div class="d">A Escala real (ano-fantasma <b>2026</b>, "Julho ▾" com a barra amarela do mês atual, resumo, grelha, legenda) com a única mudança do modelo: <b>‹ em vez do avatar</b>. O sino e o botão de sincronizar (com o ponto âmbar) ficam onde estão. O Perfil passa a viver só no Início — identidade mora na base.</div>
+      <span class="chip rec">Anatomia que já existe (Validades)</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const I = {
+  bell : '<svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10ZM10.5 18.5a1.7 1.7 0 0 0 3 0"/></svg>',
+  sync : '<svg class="i" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-3M4 13a8 8 0 0 0 14.9 3M5 4v4h4M19 20v-4h-4"/></svg>',
+  back : '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>',
+  chevD: '<svg class="i" width="13" height="13" viewBox="0 0 24 24" style="stroke:#77776F"><path d="M7 10l5 5 5-5"/></svg>',
+  sun  : '<svg class="i" width="19" height="19" viewBox="0 0 24 24" style="stroke:#77776F"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg>',
+  diag : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M17 17V7H7"/></svg>',
+  plus : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB800" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  gauge: '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg>',
+  stats: '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><path d="M5 19V12M12 19V5M19 19v-9"/></svg>',
+  cal  : '<svg class="i" width="15" height="15" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v3M15.5 3.5v3"/></svg>'
+};
+
+/* ── Início (hub) com IR PARA ── */
+const hubHTML = `
+  <div class="hdr">
+    <span class="av"><span>MC</span></span>
+    <span class="hsp"></span>
+    <span class="hbtn">${I.bell}</span>
+  </div>
+  <div class="greet">Boa tarde, Miguel</div>
+  <div class="hero">
+    <span class="arrowy">${I.diag}</span>
+    <span class="gho">9</span>
+    <span class="wxsup">${I.sun}</span>
+    <span class="word">Folga</span>
+    <span class="kick">próximo serviço <span class="y">sexta · LIS→LGW · 05:40</span> · 18°–27°</span>
+  </div>
+  <div class="hr"></div>
+  <div class="mid">
+    <div class="ag"><span class="agx"><span class="agA">EJU7623 · LIS-LGW-LIS</span><br><span class="agB">SEX · report 05:40 · 4 setores</span></span><span class="agTick"></span></div>
+    <div class="ag"><span class="agx"><span class="agA">EJU7841 · LIS-FNC 🌙 pernoita</span><br><span class="agB">SÁB · report 09:10 · 2 setores</span></span><span class="agTick"></span></div>
+    <div class="ag"><span class="agx"><span class="agA">Standby</span><br><span class="agB">TER · report 06:00</span></span><span class="agTick"></span></div>
+  </div>
+  <div class="voice"><b>Dia teu.</b> o sol ficou de serviço por ti — aproveita a luz.</div>
+  <div class="util">
+    <span class="utilTtl">Estado</span>
+    <span class="utilP">repouso em dia ✓ · escala sincronizada · validades ok · férias: ficam 9 de 22</span>
+  </div>
+  <div class="datarow">
+    <span>
+      <span class="bigy">2 431,70</span><br>
+      <span class="bigyU">EUROS · JULHO ESTIMADO</span>
+    </span>
+    <span class="donut">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#ECEAE4" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#FFB800" stroke-width="5" stroke-dasharray="38.3 93.7" stroke-linecap="round"/>
+      </svg>
+      <span class="dl"><b>29%</b><span>MÊS</span></span>
+    </span>
+  </div>
+  <div class="thumb">
+    <span class="tchip"><span class="tchipV">3 DIAS</span><br><span class="tchipS">até ao report</span></span>
+    <span class="acts">
+      <span class="act"><span class="actC hot">${I.plus}</span><span class="actL hot">Evento</span></span>
+      <span class="act"><span class="actC">${I.gauge}</span><span class="actL">Simular</span></span>
+    </span>
+  </div>
+  <div class="navrow">
+    <span class="lbl">IR PARA</span>
+    <span class="act navgo" data-go="stats"><span class="actC">${I.stats}</span><span class="actL">Estatísticas</span></span>
+    <span class="act navgo" data-go="escala"><span class="actC">${I.cal}</span><span class="actL">Escala</span></span>
+    <span class="act navgo" data-go="ftl"><span class="actC">${I.gauge}</span><span class="actL">FTL</span></span>
+  </div>`;
+
+/* ── Escala (spoke): julho 2026, seg-primeiro (1 jul = quarta → 2 células fora) ── */
+function escalaHTML(){
+  const D = {  // dia → [code, tipo]  (voo=ink · standby=cinza · férias=okSoft · pernoita 🌙)
+    1:['7702','f'],2:['OFF','o'],3:['7623','f'],4:['7841','f',1],5:['OFF','o'],
+    6:['SBY','s'],7:['7635','f'],8:['OFF','o'],9:['OFF','o',0,1],10:['7623','f'],
+    11:['7841','f',1],12:['OFF','o'],13:['7702','f'],14:['SBY','s'],15:['7635','f'],
+    16:['OFF','o'],17:['7623','f'],18:['7841','f'],19:['OFF','o'],20:['FÉR','v'],
+    21:['FÉR','v'],22:['FÉR','v'],23:['FÉR','v'],24:['FÉR','v'],25:['OFF','o'],
+    26:['7623','f'],27:['7702','f'],28:['OFF','o'],29:['SBY','s'],30:['7635','f'],31:['OFF','o'],
+  };
+  let cells = '<div class="gc out"><span class="gn">29</span></div><div class="gc out"><span class="gn">30</span></div>';
+  for (let d=1; d<=31; d++){
+    const [code, tp, moon, today] = D[d];
+    const cls = ['gc', tp==='f'||tp==='s' ? 'duty':'', tp==='v'?'vac':'', today?'today':''].join(' ');
+    const bar = tp==='f' ? '<span class="gbar" style="background:#141414"></span>'
+              : tp==='s' ? '<span class="gbar" style="background:#CFCCC2"></span>' : '';
+    cells += `<div class="${cls}"><span class="gn">${d}</span><span class="gcode">${code}</span>${bar}${moon?'<span class="gmoon">🌙</span>':''}</div>`;
+  }
+  cells += '<div class="gc out"><span class="gn">1</span></div><div class="gc out"><span class="gn">2</span></div>';
+  return `
+  <div class="hdr">
+    <span class="bk bkbtn">${I.back}</span>
+    <span class="hsp"></span>
+    <span class="hbtn">${I.sync}<span class="hdot"></span></span>
+    <span class="hbtn">${I.bell}</span>
+  </div>
+  <div class="eyb">A tua escala · eCrew</div>
+  <div class="ehero">
+    <span class="egho">2026</span>
+    <span class="emrow"><span><span class="eword">Julho</span><span class="nowbar"></span></span>${I.chevD}</span>
+  </div>
+  <div class="ehr"></div>
+  <div class="summ">
+    <span><span class="siVal">16</span><br><span class="siLbl">Serviços</span></span>
+    <span><span class="siVal">10</span><br><span class="siLbl">Folgas</span></span>
+    <span><span class="siVal">2</span><br><span class="siLbl">Pernoitas</span></span>
+    <span><span class="siVal eur">742,50 €</span><br><span class="siLbl">Per-diem</span></span>
+  </div>
+  <div class="wkhead"><span class="wkh">S</span><span class="wkh">T</span><span class="wkh">Q</span><span class="wkh">Q</span><span class="wkh">S</span><span class="wkh we">S</span><span class="wkh we">D</span></div>
+  <div class="cal">${cells}</div>
+  <div class="legend">
+    <span class="legIt"><span class="legSw" style="background:#141414"></span><span class="legTxt">Voo</span></span>
+    <span class="legIt"><span class="legSw" style="background:#E4E1D8"></span><span class="legTxt">Standby</span></span>
+    <span class="legIt"><span class="legSw off"></span><span class="legTxt">Folga</span></span>
+    <span class="legIt"><span class="legSw" style="background:#E7F3EC"></span><span class="legTxt">Férias</span></span>
+    <span class="legIt"><span style="font-size:8px">🌙</span><span class="legTxt">Pernoita</span></span>
+  </div>`;
+}
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function ripple(phone, x, y){
+  const r = document.createElement('div');
+  r.className = 'rip go';
+  r.style.left = (x-7)+'px'; r.style.top = (y-7)+'px';
+  phone.appendChild(r);
+  setTimeout(()=>r.remove(), 650);
+}
+const center = (phone, el, dy=0) => {
+  const r = el.getBoundingClientRect(), p = phone.getBoundingClientRect();
+  return [r.left - p.left + r.width/2, r.top - p.top + r.height/2 + dy];
+};
+
+/* FLOW */
+{
+  const mock  = document.querySelector('[data-k="FLOW"]');
+  const phone = mock.querySelector('.phone');
+  mock.querySelector('.hub').innerHTML = hubHTML;
+  const spoke = mock.querySelector('.spoke');
+  spoke.querySelector('.esc').innerHTML = escalaHTML();
+
+  const goEsc = ()=>spoke.classList.add('in');
+  const back  = ()=>spoke.classList.remove('in');
+  mock.querySelector('[data-go="escala"]').addEventListener('click', goEsc);
+  spoke.querySelector('.bkbtn').addEventListener('click', back);
+
+  mock._stop = false;
+  phone.addEventListener('pointerdown', ()=>{ mock._stop = true; }, {passive:true});
+
+  (async ()=>{
+    await sleep(1200);
+    const btnEsc = mock.querySelector('[data-go="escala"]');
+    const btnBk  = spoke.querySelector('.bkbtn');
+    while (!mock._stop){
+      ripple(phone, ...center(phone, btnEsc, -6));
+      await sleep(360); if (mock._stop) break;
+      goEsc();
+      await sleep(2400); if (mock._stop) break;
+      ripple(phone, ...center(phone, btnBk));
+      await sleep(360); if (mock._stop) break;
+      back();
+      await sleep(2400);
+    }
+  })();
+}
+
+/* STATIC */
+{
+  const mock = document.querySelector('[data-k="STATIC"]');
+  mock.querySelector('.esc').innerHTML = escalaHTML();
+}
+</script>
+</body>
+</html>
