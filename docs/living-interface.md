@@ -408,6 +408,16 @@ derivações** — a arquitetura não muda.
 | 12 | Férias | ✅ construído (2026-07-09) | vacDays hoje: fantasma=dias que RESTAM no ano, "ficam 9 de 22 · regressas sexta 18" no kick, halo+tempo, voz "férias a sério."; sem ações (afastamento máximo); véspera ganha no último dia c/ report cedo |
 | 13 | Doença | ✅ construído (2026-07-09) | sickDays hoje: dia N do EPISÓDIO (consecutivos, motor), "As melhoras", Art. 48 crew-aware no kick (1-3 pago piloto · cabine regista pagos), tudo operacional em pausa; doença CALA a véspera |
 
+**Auditoria "vida do utilizador" (2026-07-09, pedida pelo user antes do teste):** cada
+estado foi revisto pela situação vivida ("o que está na cabeça dele NESTE momento?").
+6 correções: véspera e pernoita ganharam o **tempo de amanhã cedo** ("que visto às 4h?" —
+`tomorrowMin/Sym` do wxDigest); a doença perdeu o **eco triplo** do dia-N (rótulo → EM PAUSA;
+chip → próximo serviço, "quando tenho de estar bom?"); o fecho perdeu o **eco do total**
+(kick=nudge; o € vive só na datarow, a manchete da casa; útil audita: voos sem rota/índice
+estimado); o standby mostra o **fim da janela** no fantasma quando ela está ativa ("até
+quando podem chamar-me?"); a disrupção trocou o per-diem pelo **PSV** na datarow (no stress,
+a manchete é segurança, não dinheiro).
+
 **Ordem de construção (valor ÷ custo):** ① Véspera + Pós-voo (dados todos prontos —
 é 1 ramo cada) → ② Pernoita como estado → ③ Standby "se chamado" (o motor 225 já
 calcula) → ④ Em-voo completo (progresso/ETA — o feed live já existe) → ⑤ Fecho do

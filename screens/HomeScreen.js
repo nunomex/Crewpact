@@ -23,7 +23,7 @@ import { airportZulu, legZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { monthStats } from '../data/stats';
-import { fetchStationWx, wxDigest, wxIcon } from '../data/weather';
+import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
 import { stateVoice } from '../data/stateVoice';
 import { crewState } from '../data/crewState';
 import { yearCount } from '../data/aeEvents';
@@ -150,6 +150,15 @@ const SHOW_DEMO_FLIGHT = false;
 // 'vespera' | 'posvoo' | 'pernoita' | 'ferias' | 'doenca' | 'fecho' — ou null = estado REAL.
 // Voltar a null depois de ver!
 const FORCE_HOME_STATE = null;
+// ── AFINAÇÕES visuais (sessão "testar os estados") — mexer AQUI, são números do olho.
+// (Fora deste ficheiro: rótulo lateral = components/PeleSide.js `top = 344`/width 320;
+//  fantasma dos outros ecrãs = components/PeleHeader.js `ghost right: 14`.)
+const TUNE = {
+  ghost: { s3: 190, s4: 160, s5: 140 },                    // fantasma por nº de caracteres (1-3 · 4 · ≥5)
+  wxSup: { right: 12, top: 2, size: 22 },                  // expoente do tempo no fantasma
+  halo: { size: 430, right: -150, top: -100, op: 0.16 },   // brilho ambiente (folga/pós-voo/férias)
+  lamp: { w: 360, h: 320, top: -70, op: 0.16 },            // candeeiro noturno (véspera/pernoita)
+};
 const DEMO_FLIGHT = (() => {
   const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
   const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
@@ -542,7 +551,7 @@ export default function HomeScreen({ navigation }) {
   const wxStation = (isToday && flight && !isNonFlight)
     ? String((sectorLegs.length ? sectorLegs[sectorLegs.length - 1].arr : flight.arrAirport) || '').toUpperCase()
     : (homeState === 'pernoita' && closeNsStation) ? String(closeNsStation).toUpperCase()
-    : ((homeState === 'folga' || homeState === 'ferias') && base ? String(base).toUpperCase() : null);
+    : ((homeState === 'folga' || homeState === 'ferias' || homeState === 'vespera') && base ? String(base).toUpperCase() : null);
   useEffect(() => {
     let alive = true;
     setWxArr(null);
@@ -551,7 +560,8 @@ export default function HomeScreen({ navigation }) {
       const raw = await fetchStationWx(wxStation);
       if (!alive || !raw) return;
       const dig = wxDigest(raw.series);
-      if (dig && dig.nowC != null) setWxArr({ c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), min: dig.todayMin, max: dig.todayMax });
+      if (dig && dig.nowC != null) setWxArr({ c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), min: dig.todayMin, max: dig.todayMax,
+        tmwMin: dig.tomorrowMin, tmwSym: dig.tomorrowSym });   // amanhã cedo — a pergunta da véspera/pernoita ("que visto às 4h?")
     })();
     return () => { alive = false; };
   }, [wxStation]);
@@ -624,6 +634,14 @@ export default function HomeScreen({ navigation }) {
   // ── PERNOITA: hotel da estação (catálogo local) + abono da noite (ae.nightStop, Art. 39) ──
   const closeHotel = closeNsStation ? (hotels || {})[closeNsStation] : null;
   const nsPay = (homeState === 'pernoita' && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  // Saldo de férias LEVE p/ o útil da folga (mockup "férias: ficam 9 de 22") — só com AE
+  // que regista vacDays (senão "22 de 22" mentiria: os dias gozados vivem nos eventos).
+  const folgaVac = (homeState === 'folga' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays')) ? (() => {
+    const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
+    const taken = yearCount(aeEvents || [], todayISO.slice(0, 4), 'vacDays', duties);
+    return { quota, left: Math.max(0, quota - taken) };
+  })() : null;
+
   // ── FÉRIAS: saldo do ano (Art. 238.º CT) + dia de regresso (fim do bloco consecutivo) ──
   const vacInfo = (homeState === 'ferias') ? (() => {
     const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
@@ -711,7 +729,7 @@ export default function HomeScreen({ navigation }) {
     : homeState === 'pernoita' ? [l('PERNOITA', 'NIGHT STOP'), l('FORA DA BASE', 'AWAY FROM BASE')]
     : homeState === 'posvoo' ? [String(closeFno || l('HOJE', 'TODAY')).toUpperCase(), l('HOJE ✓', 'TODAY ✓')]
     : homeState === 'ferias' ? [l('FÉRIAS', 'VACATION'), monthName.toUpperCase()]
-    : homeState === 'doenca' ? [l('DOENÇA', 'SICK LEAVE'), `${l('DIA', 'DAY')} ${sickDay}`]
+    : homeState === 'doenca' ? [l('DOENÇA', 'SICK LEAVE'), l('EM PAUSA', 'ON HOLD')]
     : homeState === 'fecho' ? [l('FECHO', 'CLOSING'), monthName.toUpperCase()]
     : [String(flightNo || kindLabel || l('HOJE', 'TODAY')).toUpperCase(), ndSectors ? `${ndSectors} ${l('SETORES', 'SECTORS')}` : (sectorLegs.length ? `${sectorLegs.length} ${l('SETORES', 'SECTORS')}` : l('HOJE', 'TODAY'))];
 
@@ -761,8 +779,13 @@ export default function HomeScreen({ navigation }) {
         : fsDev ? [l('o voo segue ', 'the flight is running '), { y: `+${delayMin} min` }]
         : [l('a partida pode derrapar ', 'departure may slip '), { y: `~${delayMin} min` }] };
     if (homeState === 'hoje') {
-      if (isNonFlight) return { ghost: flight.report || '—', word: kindLabel || l('Serviço', 'Duty'), arrow: 'arrow-u',
-        kick: [l('início ', 'starts '), { y: flight.report || '—' }, (flight.arrTime && flight.arrTime !== flight.report) ? ` · ${l('fim', 'ends')} ${flight.arrTime}` : null] };
+      if (isNonFlight) {
+        // Standby com a janela ATIVA: o fantasma responde "até quando podem chamar-me?"
+        // → mostra o FIM da janela (o início já passou); antes de abrir, mostra o início.
+        const sbActive = isStandbyToday && cdMin != null && cdMin <= 0 && flight.arrTime;
+        return { ghost: (sbActive ? flight.arrTime : flight.report) || '—', word: kindLabel || l('Serviço', 'Duty'), arrow: 'arrow-u',
+          kick: [l('início ', 'starts '), { y: flight.report || '—' }, (flight.arrTime && flight.arrTime !== flight.report) ? ` · ${l('fim', 'ends')} ${flight.arrTime}` : null] };
+      }
       if (inDuty) return { ghost: (activeSector && activeSector.leg.on) || flight.arrTime || '—', word: l('Em voo', 'Airborne'), arrow: 'arrow-u',
         kick: activeSector ? [`${l('setor', 'sector')} ${activeSector.idx + 1}/${activeSector.total} · `, { y: `${activeSector.leg.dep || '?'}→${activeSector.leg.arr || '?'}` }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`]
           : [{ y: routeShort }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`] };
@@ -802,10 +825,11 @@ export default function HomeScreen({ navigation }) {
       ghost: String(sickDay), word: l('As melhoras', 'Get well'), arrow: 'heart',
       kick: [l('episódio: dia ', 'episode: day '), { y: String(sickDay) },
         sickFirst3 ? (sickDay <= 3 ? ` · ${l('pago (Art. 48)', 'paid (Art. 48)')}` : ` · ${l('do 4.º em diante — Segurança Social', 'from day 4 — social security')}`) : null] };
-    // FECHO DO MÊS: o total estimado a amarelo — o mês fecha-se a saber o que se recebe.
+    // FECHO DO MÊS: o TOTAL vive só na datarow (a manchete de € da casa — sem eco);
+    // o kick é o NUDGE dos extras.
     if (homeState === 'fecho') return {
       ghost: String(fechoDaysLeft != null ? fechoDaysLeft : '—'), word: l('Fecho do mês', 'Month close'), arrow: 'wallet',
-      kick: monthAe ? [l('estimado até agora ', 'estimated so far '), { y: `${eurBare(monthAe.total)} €` }] : [l('regista os extras antes do fecho', 'log your extras before close')] };
+      kick: [l('faltam extras? regista no ', 'missing extras? log via '), { y: '＋' }, l(' antes do fecho', ' before close')] };
     // Folga: dia da semana POR EXTENSO no kick ("quinta", como o mockup — sem o "-feira");
     // tempo da BASE no fim (min–máx de hoje, à referência "today 18°–27°").
     const wdLong = flight ? new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long' }).replace('-feira', '') : '';
@@ -890,6 +914,7 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'setup') return l('Sem calendário ligado, a app não sabe nada de ti. Os teus dados ficam no teu telemóvel — e podes espreitar já um dia de exemplo.', 'Without a calendar connected the app knows nothing about you. Your data stays on your phone — and you can peek at an example day right away.');
     if (homeState === 'vespera') return [
       wakeAt ? `${l('acordar', 'wake')} ~${wakeAt}` : null,
+      (wxArr && wxArr.tmwMin != null) ? `${l('amanhã cedo', 'early tomorrow')} ${wxArr.tmwMin}°${wxArr.tmwSym ? ` ${wxSymbol(wxArr.tmwSym, lang).label}` : ''}` : null,
       ndSectors ? `${ndSectors} ${l('setores', 'sectors')}` : null,
       ndPsvMax ? `PSV ${l('máx', 'max')} ${ndPsvMax}` : null,
       (flight && flight.nightStop) ? `🌙 ${l('pernoita amanhã', 'night stop tomorrow')}` : null,
@@ -901,13 +926,13 @@ export default function HomeScreen({ navigation }) {
     ].filter(Boolean).join(' · ');
     if (homeState === 'doenca') return l('tudo o operacional está em pausa — recupera ao teu ritmo.', 'everything operational is paused — recover at your pace.');
     if (homeState === 'fecho') return [
-      l('faltam extras? regista no ＋ antes do fecho', 'missing extras? log them via ＋ before close'),
+      (monthAe && monthAe.missing) ? `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without route — per-diem incomplete')}` : null,
       (monthAe && monthAe.estimated) ? l('índice do ano estimado', 'year index estimated') : null,
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' · ') || l('as parcelas em baixo somam o total', 'the parts below add up to the total');
     if (homeState === 'pernoita') return [
       restUntil ? `${l('repouso até', 'rest until')} ${restUntil.hm}${restUntil.nextDay ? ' ⁺¹' : ''} (235)` : l('repouso fora-base mín. 10h (235)', 'away-base rest min. 10h (235)'),
       nsPay != null ? `${l('pernoita', 'night stop')} +${eurBare(nsPay)} €` : null,
-      wxArr ? `${wxArr.c}° ${l('em', 'in')} ${closeNsStation}` : null,
+      (wxArr && wxArr.tmwMin != null) ? `${l('amanhã cedo', 'early tomorrow')} ${wxArr.tmwMin}°${wxArr.tmwSym ? ` ${wxSymbol(wxArr.tmwSym, lang).label}` : ''}` : (wxArr ? `${wxArr.c}° ${l('em', 'in')} ${closeNsStation}` : null),
     ].filter(Boolean).join(' · ');
     if (homeState === 'posvoo') return [
       restUntil ? `${l('repouso até', 'rest until')} ${restUntil.hm}${restUntil.nextDay ? ' ⁺¹' : ''} (235)` : (restItem && restItem.short ? `${l('repouso', 'rest')}: ${restItem.short}` : null),
@@ -929,6 +954,7 @@ export default function HomeScreen({ navigation }) {
       (isStandbyToday && flight.kind === 'standby_airport') ? (ndReg && ndReg.accommodation ? l('com alojamento', 'with accommodation') : l('sem alojamento — conta por inteiro', 'no accommodation — counts in full')) : null,
     ].filter(Boolean).join(' · ') || l('sem mais nada a assinalar', 'nothing else to flag');
     const bits = qChips.slice(0, 3).map((it) => it.short).filter(Boolean);
+    if (folgaVac) bits.push(`${l('férias: ficam', 'vacation: left')} ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`);
     return bits.length ? bits.join(' · ') : l('tudo em dia ✓', 'all in order ✓');
   })();
   const utilTap = (homeState === 'folga' || homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo' || homeState === 'ferias' || homeState === 'fecho') && questionItems.length ? questionItems[0] : null;
@@ -946,8 +972,9 @@ export default function HomeScreen({ navigation }) {
     }
     if (homeState === 'disrupcao' && liveVerdict) { const p = psvPct != null ? psvPct : 0; return { v: liveVerdict.realStr, u: `${l('PSV PROJETADO · MÁX', 'PROJECTED FDP · MAX')} ${liveVerdict.maxStr}`, p, lab: `PSV ${p}%`, color: liveVerdict.verdict === 'over' ? PELE.red : PELE.warn }; }
     if (homeState === 'hoje' || homeState === 'disrupcao') {
-      if (ae && dayPerDiem != null) return { v: eurBare(dayPerDiem), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
-      if (ndPsvMax) return { v: ndPsvMax, u: l('PSV MÁXIMO DE HOJE', 'TODAY’S MAX FDP'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
+      // Na DISRUPÇÃO o dinheiro não é manchete — a pergunta é de segurança (PSV).
+      if (homeState !== 'disrupcao' && ae && dayPerDiem != null) return { v: eurBare(dayPerDiem), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
+      if (ndPsvMax) return { v: ndPsvMax, u: l('PSV MÁXIMO DE HOJE', 'TODAY’S MAX FDP'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: homeState === 'disrupcao' ? PELE.warn : PELE.yellow };
       return null;
     }
     if (ae && monthMoney != null) return { v: eurBare(monthMoney), u: `EUROS · ${monthName.toUpperCase()} ${l('ESTIMADO', 'ESTIMATED')}`, p: monthPct, lab: `${l('MÊS', 'MONTH')} ${monthPct}%`, color: PELE.yellow };
@@ -963,7 +990,10 @@ export default function HomeScreen({ navigation }) {
       ? { v: flight.report, s: l('report amanhã', 'report tomorrow') }
       : { v: closeNsStation || '—', s: l('boa noite', 'good night') };
     if (homeState === 'ferias') return { v: String(vacInfo ? vacInfo.left : '—'), s: l('dias restantes no ano', 'days left this year') };
-    if (homeState === 'doenca') return { v: `${l('DIA', 'DAY')} ${sickDay}`, s: l('do episódio', 'of the episode') };
+    // Doença: o chip dá o HORIZONTE (próximo serviço) — "quando tenho de estar bom?"
+    if (homeState === 'doenca') return flight
+      ? { v: `${String(ndDayWd || '').toUpperCase()} ${flight.report || ''}`.trim(), s: l('próximo serviço — se continuares doente, avisa', 'next duty — still sick? let crewing know') }
+      : { v: '—', s: l('sem serviço marcado', 'no duty scheduled') };
     if (homeState === 'fecho') return { v: fechoDaysLeft === 0 ? l('HOJE', 'TODAY') : `${fechoDaysLeft} ${fechoDaysLeft === 1 ? l('DIA', 'DAY') : l('DIAS', 'DAYS')}`, s: l('para fechar o mês', 'to month close') };
     if (homeState === 'posvoo') return restUntil
       ? { v: restUntil.hm, s: `${l('repouso até', 'rest until')}${restUntil.nextDay ? ' ⁺¹' : ''}` }
@@ -1036,9 +1066,9 @@ export default function HomeScreen({ navigation }) {
   // Tamanho do fantasma DETERMINÍSTICO pelo comprimento (Barlow Condensed ~0.47em/char;
   // largura útil ~346): 1–3 chars a 190 · 4 a 160 · ≥5 a 140. Nada de auto-encolher (bug iOS).
   const ghostLen = hero.ghost ? String(hero.ghost).length : 0;
-  const ghostSize = ghostLen >= 5 ? { fontSize: 140, lineHeight: 142, top: -8 }
-    : ghostLen === 4 ? { fontSize: 160, lineHeight: 162, top: -11 }
-    : null;   // null = os 190/192/-14 do estilo base
+  const ghostSize = ghostLen >= 5 ? { fontSize: TUNE.ghost.s5, lineHeight: TUNE.ghost.s5 + 2, top: -8 }
+    : ghostLen === 4 ? { fontSize: TUNE.ghost.s4, lineHeight: TUNE.ghost.s4 + 2, top: -11 }
+    : null;   // null = o TUNE.ghost.s3 do estilo base
 
   // Kick com partes coloridas ({y:...} = amarelo).
   const kickParts = (parts) => (
@@ -1051,29 +1081,29 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['top']}>
       {/* Atmosfera — noite: glow de candeeiro (véspera) · dia: HALO da cor do tempo */}
       {night ? (
-        <View pointerEvents="none" style={s.lampWrap}>
-          <Svg width={360} height={320}>
+        <View pointerEvents="none" style={[s.lampWrap, { top: TUNE.lamp.top }]}>
+          <Svg width={TUNE.lamp.w} height={TUNE.lamp.h}>
             <Defs>
               <RadialGradient id="lamp" cx="50%" cy="42%" r="55%">
-                <Stop offset="0%" stopColor="#FFD678" stopOpacity="0.16" />
-                <Stop offset="60%" stopColor="#FFD678" stopOpacity="0.04" />
+                <Stop offset="0%" stopColor="#FFD678" stopOpacity={String(TUNE.lamp.op)} />
+                <Stop offset="60%" stopColor="#FFD678" stopOpacity={String(TUNE.lamp.op / 4)} />
                 <Stop offset="100%" stopColor="#FFD678" stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Circle cx={180} cy={134} r={170} fill="url(#lamp)" />
+            <Circle cx={TUNE.lamp.w / 2} cy={TUNE.lamp.h * 0.42} r={TUNE.lamp.w * 0.47} fill="url(#lamp)" />
           </Svg>
         </View>
       ) : haloTone ? (
-        <View pointerEvents="none" style={s.haloWrap}>
-          <Svg width={430} height={430}>
+        <View pointerEvents="none" style={[s.haloWrap, { right: TUNE.halo.right, top: TUNE.halo.top }]}>
+          <Svg width={TUNE.halo.size} height={TUNE.halo.size}>
             <Defs>
               <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor={haloTone} stopOpacity="0.16" />
-                <Stop offset="55%" stopColor={haloTone} stopOpacity="0.05" />
+                <Stop offset="0%" stopColor={haloTone} stopOpacity={String(TUNE.halo.op)} />
+                <Stop offset="55%" stopColor={haloTone} stopOpacity={String(TUNE.halo.op / 3)} />
                 <Stop offset="100%" stopColor={haloTone} stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Circle cx={215} cy={215} r={215} fill="url(#halo)" />
+            <Circle cx={TUNE.halo.size / 2} cy={TUNE.halo.size / 2} r={TUNE.halo.size / 2} fill="url(#halo)" />
           </Svg>
         </View>
       ) : null}
@@ -1116,7 +1146,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={[s.ghost, ghostSize]} numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
               {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde dormes). */}
               {(homeState === 'folga' || homeState === 'pernoita' || homeState === 'ferias') && wxArr && wxArr.icon ? (
-                <View style={s.wxSup}><Icon name={wxArr.icon} size={22} color={P.grey} /></View>
+                <View style={{ position: 'absolute', right: TUNE.wxSup.right, top: TUNE.wxSup.top }}><Icon name={wxArr.icon} size={TUNE.wxSup.size} color={P.grey} /></View>
               ) : null}
               <Text style={[s.word, hero.warn ? s.wordWarn : null]} numberOfLines={1} allowFontScaling={false}>{hero.word}</Text>
               {kickParts(hero.kick)}
@@ -1320,9 +1350,8 @@ const makeSkin = (P, night) => StyleSheet.create({
   // left:0 + right + textAlign right = largura LIMITADA — obrigatório: adjustsFontSizeToFit
   // num Text absoluto só-ancorado-à-direita não renderiza no iOS (padrão provado no FlightShareCard).
   // right 12 (era -2): o fantasma recua à esquerda p/ não pisar o rótulo rodado da margem.
-  ghost: { position: 'absolute', left: 0, right: 12, top: -14, fontFamily: PELE_FONT.display, fontSize: 190, lineHeight: 192, letterSpacing: -4, color: P.ghost, textAlign: 'right' },
+  ghost: { position: 'absolute', left: 0, right: 12, top: -14, fontFamily: PELE_FONT.display, fontSize: TUNE.ghost.s3, lineHeight: TUNE.ghost.s3 + 2, letterSpacing: -4, color: P.ghost, textAlign: 'right' },
   ghostIcon: { position: 'absolute', right: 18, top: 10 },
-  wxSup: { position: 'absolute', right: 12, top: 2 },   // expoente cola à borda recuada do fantasma
   word: { fontFamily: PELE_FONT.display, fontSize: 56, lineHeight: 58, letterSpacing: -0.5, color: P.ink },
   wordWarn: { color: P.warn },
   kick: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 6 },

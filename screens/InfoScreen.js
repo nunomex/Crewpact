@@ -13,6 +13,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../data/appContext';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { domainsFor } from '../data/infoCatalog';
+import { libraryFor, openLibraryLink } from '../data/library';
 
 const CARD_W = Math.min(Math.round(Dimensions.get('window').width * 0.8), 320);
 const SNAP = CARD_W + 12;
@@ -37,6 +38,22 @@ function Row({ it, accent, onPress, border }) {
   );
 }
 
+// Linha de FONTE oficial (da Biblioteca) — toca e ABRE no navegador (openLibraryLink).
+function SourceRow({ src, border }) {
+  return (
+    <TouchableOpacity style={[s.src, border && s.srcB]} activeOpacity={0.75}
+      onPress={() => openLibraryLink(src.url)}
+      accessibilityRole="link" accessibilityLabel={src.label}>
+      <View style={s.srcIc}><Icon name="book" size={15} color={P.yellow} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.srcNm}>{src.label}</Text>
+        <Text style={s.srcSub} numberOfLines={2}>{src.sub}</Text>
+      </View>
+      <Icon name="arrow-diag" size={14} color={P.grey} />
+    </TouchableOpacity>
+  );
+}
+
 function SheetBody({ it }) {
   if (!it) return null;
   return (
@@ -55,17 +72,30 @@ export default function InfoScreen() {
   // Crew-aware REAL: o perfil decide o que aparece. easyJet piloto/cabine → o AE respetivo
   // (catálogo em infoCatalog); sem AE (Ryanair, ou companhia AE ainda por modelar) → FTL-only.
   const navigation = useNavigation();
-  const { crewType, company, ae, user } = useContext(AppContext);
+  const { crewType, company, ae, user, lang } = useContext(AppContext);
   const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
   const isEzy = /easyjet|ezy/i.test([company && company.slug, company && company.name, company && company.engine_code].filter(Boolean).join(' '));
   const prof = (ae && isEzy) ? (crewType === 'cabin' ? 'cabin' : 'pilot') : 'ryan';
   const eyebrow = `Referência · ${(company && company.name) || '—'} · ${crewType === 'cabin' ? 'Cabine' : 'Piloto'}`;
-  const domains = useMemo(() => domainsFor(prof, P), [prof]);
+  // FONTES = a Biblioteca REAL (data/library.js): secções crew-aware (FTL universal · AE da
+  // companhia+tipo com deep-link verificado), URLs que ABREM — fusão 2026-07-09 (o mosaico
+  // "Biblioteca" saiu do Perfil; a INFO é a casa única da referência).
+  const library = useMemo(
+    () => libraryFor({ companySlug: company && company.slug, companyName: company && company.name, isPilot: crewType !== 'cabin', lang }),
+    [company, crewType, lang],
+  );
+  const libCount = useMemo(() => library.reduce((n, sec) => n + sec.items.length, 0), [library]);
+  const domains = useMemo(
+    () => domainsFor(prof, P).map((d) => (d.lib ? { ...d, stat: String(libCount) } : d)),
+    [prof, libCount],
+  );
   const flat = useMemo(() => {
     const out = [];
     domains.forEach((d) => { if (d.data) d.data.groups.forEach((g) => g.items.forEach((it) => out.push({ it, accent: d.accent }))); });
+    // As fontes também se PROCURAM (nome + descrição) — abrem o link em vez da folha.
+    library.forEach((sec) => sec.items.forEach((item) => out.push({ src: item })));
     return out;
-  }, [domains]);
+  }, [domains, library]);
 
   const [cur, setCur] = useState(0);
   const [gi, setGi] = useState(0);
@@ -76,7 +106,9 @@ export default function InfoScreen() {
   const results = useMemo(() => {
     if (!searching) return [];
     const v = norm(q.trim());
-    return flat.filter(({ it }) => norm((it.long || it.name) + ' ' + it.name + ' ' + it.art + ' ' + it.f + ' ' + it.v).indexOf(v) >= 0);
+    return flat.filter((e) => e.src
+      ? norm(e.src.label + ' ' + e.src.sub).indexOf(v) >= 0
+      : norm((e.it.long || e.it.name) + ' ' + e.it.name + ' ' + e.it.art + ' ' + e.it.f + ' ' + e.it.v).indexOf(v) >= 0);
   }, [q, flat, searching]);
 
   const onDeckScroll = (e) => {
@@ -112,8 +144,12 @@ export default function InfoScreen() {
               <Text style={s.empty}>Nada encontrado.</Text>
             ) : (
               <>
-                <Text style={s.rlabel}>{results.length} resultado(s) · a lei e o teu AE</Text>
-                {results.map(({ it, accent }, i) => <Row key={it.name} it={it} accent={accent} border={i > 0} onPress={() => openSheet(it)} />)}
+                <Text style={s.rlabel}>{results.length} resultado(s) · a lei, o teu AE e as fontes</Text>
+                {results.map((e, i) => e.src ? (
+                  <SourceRow key={e.src.key || e.src.label} src={e.src} border={i > 0} />
+                ) : (
+                  <Row key={e.it.name} it={e.it} accent={e.accent} border={i > 0} onPress={() => openSheet(e.it)} />
+                ))}
               </>
             )}
           </View>
@@ -139,18 +175,20 @@ export default function InfoScreen() {
 
             <View style={s.dots}>{domains.map((_, i) => <View key={i} style={[s.dot, i === cur && s.dotOn]} />)}</View>
 
-            {dom.list ? (
+            {dom.lib ? (
               <View style={s.body}>
-                {dom.list.map((src, i) => (
-                  <View key={src.nm} style={[s.src, i > 0 && s.srcB]}>
-                    <View style={s.srcIc}><Icon name={src.ic} size={15} color={P.yellow} /></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.srcNm}>{src.nm}</Text>
-                      <Text style={s.srcSub}>{src.sub}</Text>
+                {library.map((sec) => (
+                  <View key={sec.key}>
+                    {/* Secção da Biblioteca: título + etiqueta (Universal / companhia·tipo) + nota */}
+                    <View style={s.libHead}>
+                      <Text style={s.libTitle} numberOfLines={1}>{sec.title}</Text>
+                      {sec.tag ? <View style={s.libTag}><Text style={s.libTagT} numberOfLines={1}>{sec.tag}</Text></View> : null}
                     </View>
-                    <Icon name="share" size={15} color={P.grey} />
+                    {sec.note ? <Text style={s.libNote}>{sec.note}</Text> : null}
+                    {sec.items.map((src, i) => <SourceRow key={src.key || src.label} src={src} border={i > 0} />)}
                   </View>
                 ))}
+                <Text style={s.libFoot}>{lang === 'en' ? 'Official sources only (EUR-Lex · EASA · BTE/DRE) — where the app’s numbers come from.' : 'Só fontes oficiais (EUR-Lex · EASA · BTE/DRE) — é daqui que saem os números da app.'}</Text>
               </View>
             ) : (
               <>
@@ -219,6 +257,12 @@ const s = StyleSheet.create({
   rvU: { fontFamily: F.display, fontSize: 13, color: P.grey },
   rvTxt: { fontFamily: F.bodyHeavy, fontSize: 14, color: P.grey, textTransform: 'uppercase', letterSpacing: 0.3 },
 
+  libHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
+  libTitle: { flex: 1, fontFamily: F.display, fontSize: 16, color: P.ink, letterSpacing: 0.2 },
+  libTag: { backgroundColor: P.soft2, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, maxWidth: 170 },
+  libTagT: { fontFamily: F.bodyHeavy, fontSize: 9, letterSpacing: 0.5, color: P.grey, textTransform: 'uppercase' },
+  libNote: { fontFamily: F.bodyMed, fontSize: 10.5, color: P.grey, lineHeight: 15, marginTop: 5, marginBottom: 2 },
+  libFoot: { fontFamily: F.bodyMed, fontSize: 10, color: P.grey, lineHeight: 15, marginTop: 16, marginBottom: 6 },
   src: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   srcB: { borderTopWidth: 1, borderTopColor: P.line },
   srcIc: { width: 32, height: 32, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },

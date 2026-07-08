@@ -508,7 +508,6 @@ export default function SettingsScreen({ navigation }) {
           <View style={s.grid}>
             <Tile icon="passport" label={l('Validades & Documentos', 'Currency & Documents')} value={l('médico · recorrentes · licença', 'medical · recurrents · licence')} wide hot onPress={() => navigation.navigate('Validades')} s={s} />
             <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
-            <Tile icon="library-outline" label={l('Biblioteca', 'Library')} value={l('fontes oficiais', 'official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
             {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => setAeModal(true)} s={s} /> : null}
           </View>
         </Animated.View>

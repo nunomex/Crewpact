@@ -91,22 +91,15 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
   ] },
 ] };
 
-const SRC_FTL = [
-  { ic: 'globe', nm: 'Regulamento (UE) 83/2014', sub: 'FTL · EUR-Lex' },
-  { ic: 'shield', nm: 'EASA CS-FTL.1', sub: 'regras de execução (Issue 1, Am. 1)' },
-];
-export const FONTES = {
-  pilot: SRC_FTL.concat([{ ic: 'book', nm: 'AE easyJet · Pilotos (SPAC)', sub: 'DRE / BTE 40/2023' }]),
-  cabin: SRC_FTL.concat([{ ic: 'book', nm: 'AE easyJet · Cabine (SNPVAC)', sub: 'DRE / BTE 8/2024' }]),
-  ryan: SRC_FTL,
-};
-
 // Cartões de domínio para um perfil. `prof` = 'pilot' | 'cabin' | 'ryan'.
-// Devolve [{ k, ic, name, sub, stat, u, ks, word, accent, data | list }].
+// Devolve [{ k, ic, name, sub, stat, u, ks, word, accent, data | lib }].
+// O cartão FONTES é alimentado pela BIBLIOTECA REAL (data/library.js — URLs verificados,
+// crew-aware, golden test:library); marca-se `lib: true` e o InfoScreen injeta as secções
+// (fusão 2026-07-09 — a lista decorativa sem links que aqui vivia morreu).
 export function domainsFor(prof, P) {
   const ftl = { k: 'ftl', ic: 'shield', name: 'FTL', sub: 'A LEI · EASA', stat: '900', u: 'h', ks: 'voo / ano civil · 8 limites', word: 'A lei', accent: P.red, data: FTL };
-  const fontes = (fp, ks) => ({ k: 'fontes', ic: 'book', name: 'Fontes', sub: 'OFICIAIS', stat: String(FONTES[fp].length), u: '', ks, word: 'Fontes', accent: P.onInkFaint, list: FONTES[fp] });
-  if (prof === 'cabin') return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SNPVAC', stat: '32,50', u: '€', ks: 'setor nominal · 20 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_CABIN }, fontes('cabin', 'EUR-Lex · EASA · DRE')];
-  if (prof === 'ryan') return [ftl, fontes('ryan', 'EUR-Lex · EASA')];
-  return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SPAC', stat: '38,76', u: '€', ks: 'setor nominal · 21 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_PILOT }, fontes('pilot', 'EUR-Lex · EASA · DRE')];
+  const fontes = (ks) => ({ k: 'fontes', ic: 'book', name: 'Fontes', sub: 'OFICIAIS', stat: '', u: '', ks, word: 'Fontes', accent: P.onInkFaint, lib: true });
+  if (prof === 'cabin') return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SNPVAC', stat: '32,50', u: '€', ks: 'setor nominal · 20 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_CABIN }, fontes('EUR-Lex · EASA · DRE')];
+  if (prof === 'ryan') return [ftl, fontes('EUR-Lex · EASA')];
+  return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SPAC', stat: '38,76', u: '€', ks: 'setor nominal · 21 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_PILOT }, fontes('EUR-Lex · EASA · DRE')];
 }

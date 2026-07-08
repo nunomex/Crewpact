@@ -76,7 +76,6 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
-import BibliotecaScreen   from './screens/BibliotecaScreen';
 import SearchModal        from './components/SearchModal';
 import { LinearGradient }  from 'expo-linear-gradient';
 import OfflineBanner      from './components/OfflineBanner';
@@ -146,7 +145,6 @@ function FtlStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="FtlHub"    component={InfoScreen} />{/* PORT: pele INFO (era FtlHubScreen) */}
       <Stack.Screen name="FtlDetail" component={FtlDetailScreen} />
-      <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
 }
@@ -283,7 +281,6 @@ function PerfilStack() {
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
-      <Stack.Screen name="Biblioteca" component={BibliotecaScreen} />
     </Stack.Navigator>
   );
 }

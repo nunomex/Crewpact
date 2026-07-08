@@ -135,7 +135,17 @@ Uma mudança só está **"feita"** quando:
 
 ---
 
-## §11 · Como medimos  *(v0.1 — a afinar)*
+## §11 · Carta de Design  *(adicionada 2026-07-09)*
+
+- A interface serve a UMA coisa (§1): **responder de relance**. Premium = **calma + consistência**, nunca ornamento. A interface desaparece; o dia do tripulante é o protagonista (Living Interface).
+- **Fontes de verdade, por ordem:** mockups `design/*.html` (**à letra**) → [design-system.md](design-system.md) + [motion-design-system.md](motion-design-system.md) (a gramática do que o mockup não cobre) → **os olhos no device** (afinações são números vistos). Código que diverge do canon: um dos dois está errado — reconciliar.
+- **Movimento só com propósito** (feedback · continuidade · orientação · foco), com `reduce-motion` respeitado. Stack: `Animated` core; Reanimated é decisão estrutural, não conveniência.
+- **Review de design** no fecho de qualquer mudança visual — 4 perguntas: é consistente com o canon? remove ou justifica o que adiciona (§2.3)? o utilizador percebe de imediato? há elemento/movimento sem propósito?
+- **Proatividade domada:** o parceiro AI aponta oportunidades de UI/UX/motion quando as vê — mas **propor ≠ implementar**; WIP=1 (§9) mantém-se; o mockup e a palavra do founder prevalecem sempre.
+
+---
+
+## §12 · Como medimos  *(v0.1 — a afinar)*
 
 - **Métrica-norte candidata:** % de escalas importadas e **confirmadas sem correção manual** (proxy direto de *"a app acerta"*).
 - **Guard-rails:** golden 100% verde · crash-free · taxa de `Needs Validation` por resolver **a descer**.
