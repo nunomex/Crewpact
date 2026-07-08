@@ -29,7 +29,8 @@
     "test:calendar": "node scripts/calendar.test.js",
     "test:validities": "node scripts/validities.test.js",
     "test:wx": "node scripts/weather.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar && npm run test:validities && npm run test:wx"
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar && npm run test:validities && npm run test:wx && npm run test:voice",
+    "test:voice": "node scripts/statevoice.test.js"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",

@@ -29,6 +29,23 @@ const SYMBOLS = {
   snow:                ['❄️', 'neve', 'snow'],
   snowshowers:         ['🌨', 'aguaceiros de neve', 'snow showers'],
 };
+// símbolo met.no → nome do ÍCONE DA PELE (components/Icon.js: sun/moon/cloud/cloud-sun/
+// rain/snow/thunder/fog — set próprio, sem emoji nos slots). null = desconhecido (a UI
+// mostra só a temperatura; nunca se inventa tempo). Trovoada ganha sempre, como no wxSymbol.
+export const wxIcon = (code) => {
+  const raw = String(code || '');
+  const base = raw.replace(/_(day|night|polartwilight)$/, '');
+  if (!base) return null;
+  if (base.includes('thunder')) return 'thunder';
+  if (base.includes('snow') || base.includes('sleet')) return 'snow';
+  if (base.includes('rain')) return 'rain';
+  if (base === 'fog') return 'fog';
+  if (base === 'cloudy') return 'cloud';
+  if (base === 'fair' || base === 'partlycloudy') return /_(night|polartwilight)$/.test(raw) ? 'cloud' : 'cloud-sun';
+  if (base === 'clearsky') return /_(night|polartwilight)$/.test(raw) ? 'moon' : 'sun';
+  return null;
+};
+
 export const wxSymbol = (code, lang = 'pt') => {
   const base = String(code || '').replace(/_(day|night|polartwilight)$/, '');
   // Trovoada ganha SEMPRE (os códigos compostos tipo rainandthunder não podem perdê-la).

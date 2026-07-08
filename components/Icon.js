@@ -27,6 +27,13 @@ const ICONS = {
   doc:     '<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2l-4.2-4.2zM7.4 12h9.2v1.9H7.4V12zm0 4h7v1.9h-7V16z"/>',
   moon:    '<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
   sun:     '<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+  // Meteo (set próprio, sólido — mapeado dos códigos met.no por wxIcon em data/weather.js)
+  cloud:       '<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+  'cloud-sun': '<circle cx="7" cy="7" r="2.6"/><path d="M6.4 1.6h1.2v2.5H6.4zM1.6 6.4h2.5v1.2H1.6zM2.8 3.7l.9-.9 1.7 1.7-.9.9zM10.3 2.8l.9.9-1.7 1.7-.9-.9zM2.8 10.3l1.7-1.7.9.9-1.7 1.7z"/><g transform="translate(3.2 3.4) scale(0.85)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g>',
+  rain:        '<g transform="translate(0 -2.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M8.2 17.3l1.6.6-1.1 3-1.6-.6zM12.2 17.3l1.6.6-1.1 3-1.6-.6zM16.2 17.3l1.6.6-1.1 3-1.6-.6z"/>',
+  snow:        '<g transform="translate(0 -2.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><circle cx="8.9" cy="18.8" r="1.2"/><circle cx="12.7" cy="20.7" r="1.2"/><circle cx="16.5" cy="18.8" r="1.2"/>',
+  thunder:     '<g transform="translate(0 -3)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M13.7 14.8l-4.3 5.3h2.4l-1.3 3.7 4.6-5.6h-2.4z"/>',
+  fog:         '<g transform="translate(0 -3.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M5.4 17.8h13.2v1.5H5.4zM7.3 20.5h9.4v1.5H7.3z"/>',
   alert:   '<path d="M12 2 1.4 21h21.2L12 2zm-1.1 8.6h2.2v4.6h-2.2v-4.6zm0 6h2.2v2.2h-2.2v-2.2z"/>',
   home:    '<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
   gauge:   '<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',

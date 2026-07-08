@@ -145,6 +145,17 @@ export const PELE = {
   // sobre placa PRETA (cartões escuros da carteira · dock · FAB)
   onInk: '#FFFFFF', onInkSub: '#8F8F88', onInkFaint: '#DDDBD3',
 };
+// Tema NOTURNO da Living Interface (véspera/pernoita — "a app sabe que é noite").
+// A MESMA gramática da pele sobre azul-quase-preto: tipografia manda, amarelo-marca
+// mantém-se, estados (ok/warn/red) sobem de luminosidade p/ contraste no escuro.
+export const PELE_NIGHT = {
+  paper: '#0D131C', ink: '#F4F2ED', ghost: 'rgba(255,255,255,0.07)', grey: 'rgba(244,242,237,0.55)',
+  line: 'rgba(244,242,237,0.14)', soft: 'rgba(244,242,237,0.08)', soft2: 'rgba(244,242,237,0.12)',
+  yellow: '#FFB800',
+  ok: '#46C98A', warn: '#F08A3C', red: '#E57368', info: 'rgba(234,242,247,0.12)',
+  okSoft: 'rgba(70,201,138,0.14)', warnSoft: 'rgba(240,138,60,0.14)', redSoft: 'rgba(229,115,104,0.14)', yellowSoft: 'rgba(255,184,0,0.12)',
+  onInk: '#0D131C', onInkSub: '#8F8F88', onInkFaint: '#3A4250',
+};
 // Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
 // Hanken Grotesk (corpo/rótulos). Estáticas: a FAMÍLIA carrega o peso (não o fontWeight).
 // Carregadas no App.js via @expo-google-fonts.

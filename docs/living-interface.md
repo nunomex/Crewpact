@@ -1,10 +1,16 @@
-# Living Interface — Design System v1
+# Living Interface — Design System v2
 
 > **O coração da app.** O Início não mostra funcionalidades — acompanha o dia operacional
 > do tripulante. Um motor determinístico calcula o estado; a interface veste-o.
 > Este documento é a LEI: os estados, a pele, a navegação e as regras.
-> Mockup canónico: `design/pele-tipografica-final.html` (+ `navbar-variantes.html` telefone B).
+> Mockup canónico: `design/pele-tipografica-final.html` (+ `design/living-interface.html`,
+> as 8 fichas demonstradas ao vivo).
 > Decidido com o utilizador em 2026-07-03, peça a peça. Nada aqui é sugestão.
+>
+> **v2 (2026-07-08):** alinhado com a realidade construída — a pele foi PORTADA a RN
+> (todas as abas) e o **Início real já corre o motor adaptativo** (§9, estado da
+> implementação). Duas decisões posteriores ao v1 substituem o que ele dizia:
+> **o FAB voltou** (princípio 7) e a **navegação ficou estática** (§4).
 
 ---
 
@@ -22,10 +28,14 @@
    (`crewState()`), golden-testável como os motores FTL/AE. Cada cartão sabe
    responder "porque estou a ver isto?".
 6. **Sem mascotes, sem fotos.** O carácter vem da tipografia e da cor.
-7. **Criação é contextual.** Toda a ação de criação tem casa contextual visível
-   (Serviço → tocar num dia da Escala · Extra → estados certos + Cálculos ·
-   Simulação → estados + FtlHub). Se um estado deixar uma ação sem porta a um
-   toque, é bug de design — não pretexto para um botão global. **Não há FAB.**
+7. **Criação é contextual — e o FAB é o atalho, não a casa.** Toda a ação de
+   criação tem casa contextual visível (Serviço → tocar num dia da Escala ·
+   Extra → estados certos + Estatísticas · Simulação → estados + INFO). Se um
+   estado deixar uma ação sem porta a um toque, é bug de design.
+   *(v2 — decisão revista 2026-07-04: o FAB **existe** como lançador de acesso
+   rápido em qualquer aba — mini-FABs Pesquisar·Serviço·Simulação·Extra — porque
+   a Pesquisa não tinha casa contextual e o acesso-em-qualquer-aba provou valor;
+   as casas contextuais FICAM, o FAB é o caminho rápido, nunca o único.)*
 
 ---
 
@@ -102,42 +112,58 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 
 ### Anatomia do Início (as zonas, de cima para baixo — FIXAS)
 
-1. **Greet** (12px grey) + **rótulo rodado** na margem direita (identidade do
-   momento: "EJU7625 · 2 SETORES").
+0. **Topo canónico** (`PeleHeader`): avatar↖ + sino↗ — igual em todos os
+   ecrãs-aba. *(v2: decidido em perfil-acesso/perfil-sino, já construído.)*
+1. **Greet** (12px grey) + **rótulo rodado** (`PeleSide`) na margem direita
+   (identidade do momento: "EJU7625 · 2 SETORES").
 2. **Faixa de alerta** — slot FIXO; só existe quando há alarme; laranja; nunca
    noutro sítio.
-3. **Hero** — número **fantasma** 190px à direita + **palavra condensada** 56px
+3. **Hero** — número **fantasma** gigante à direita (mockup 190px; no RN real
+   170, `adjustsFontSizeToFit` — afinar no device) + **palavra condensada** 56px
    sobreposta + **kick** (o porquê, com acentos amarelos) + seta amarela.
-   Na disrupção a palavra fica laranja.
+   Na disrupção a palavra fica laranja. *(O Início fala mais alto que a régua
+   130 dos outros ecrãs — exceção deliberada, como o Perfil 150.)*
 4. **hr** (1.5px ink).
 5. **Zona do meio — ADAPTATIVA** (mesmo slot, conteúdos diferentes):
    - dias de voo → **horas gigantes coloridas pelo estado** (verde a tempo /
      laranja derrapou **com a antiga rasurada ao lado**) — sistema Flighty;
    - folga → **agenda com tracinhos** alinhada à direita (próximos serviços);
    - onboarding → o passo único + dica.
+5b. **Voz do estado** *(v2.1, 2026-07-09 — "fundos vivos" camada 1)* — frase calma a
+   dois tons (negrito ink + cauda cinzenta) nos estados CALMOS: "**descansa — está
+   tudo em dia.** aproveita o sol, 27° lá fora." Catálogo CURADO determinístico
+   (`data/stateVoice.js`, golden `test:voice`) — sem AI; variante pelo tempo/hora;
+   a mesma frase o dia todo, roda no dia seguinte. Disrupção NÃO tem voz (quando
+   aperta, só operacional). Acompanha um **HALO** — brilho radial suave e fixo
+   atrás do fantasma (SVG RadialGradient), tom pelo tempo (âmbar-sol · azul-chuva ·
+   azul-noite) — só nos estados calmos. Camadas 2 (noturno véspera/pernoita) e 3
+   (full-bleed) exploradas em `design/fundos-vivos.html`; o full-bleed contradiz o
+   princípio 6 e ficou de fora salvo decisão contrária.
 6. **Util** — micro-texto utilitário ("Hoje · G-UZHB já em LIS · PSV máx 13:00").
 7. **Datarow** — dígitos amarelos 54px (per-diem/mês/PSV proj) + **donut** 52px
    (PSV % / mês % — laranja quando crítico).
 8. **Barra do polegar** — **chip das horas** (preto, dígitos amarelos — a hora
    que manda: report/countdown/nova hora, com rasura) + **ações COM RÓTULO**
    (máx. 3, a primária em preto-cheio, mudam por estado).
-9. **Pílula de navegação** (ver §4).
+9. **Pílula de navegação + FAB** (ver §4).
 
 ---
 
-## 4 · Navegação
+## 4 · Navegação *(v2 — como está construída)*
 
-- **Pílula flutuante** (não barra de largura total): 4 abas — Início ·
-  Estatísticas · Escala · FTL/AE (rótulo "FTL/AE" só em companhias com AE).
-  Fundo branco translúcido, borda hairline, sombra suave, ativa em pastilha
-  preta com ponto amarelo.
-- **Encolhe no scroll para baixo** até à aba ativa ("● Início"); **expande** no
-  scroll para cima, no topo, ou ao toque. Nunca desaparece — há sempre um alvo.
-  (Padrão nativo iOS 26 `tabBarMinimizeBehavior`; no RN, mimetizar.)
-- **Sem FAB** (ver princípio 7). O lugar iOS 26 do botão destacado fica
-  reservado caso o uso real prove falta.
-- Estados calmos (folga/férias) podem nascer com a pílula minimizada — afinar
-  no port com uso real.
+- **Pílula flutuante** (não barra de largura total): 4 abas — **Início ·
+  Números · Escala · INFO** (rótulos finais do port; rotas internas intactas).
+  Fundo branco (paper) + hairline + sombra suave; aba ativa em **pastilha ink
+  com ícone amarelo** e rótulo branco.
+- **ESTÁTICA — sem efeitos de scroll.** *(v2: o minimizar-no-scroll do v1 foi
+  construído no port e REMOVIDO a pedido do utilizador — "deixa a nav bar e o
+  botão normais, sem efeitos". A pílula e o FAB não encolhem nem desaparecem.)*
+- **FAB "+" ink com amarelo** ao lado da pílula (ver princípio 7): speed-dial
+  com mini-FABs rotulados (Pesquisar · Serviço · Simulação · Extra). A rotação
+  +→× ao abrir mantém-se (é o speed-dial, não efeito de scroll).
+- Cabeçalho canónico dos ecrãs-aba: **avatar↖ (iniciais, toca=Perfil) + sino↗
+  (círculo soft, badge só com novidade)** — `PeleHeader`; ecrãs empurrados
+  trocam o avatar por ‹voltar.
 
 ---
 
@@ -278,7 +304,7 @@ nenhuma, não existe.
 | `stagger` | +50 ms/item | — | atraso entre zonas na entrada do ecrã |
 | `settle` | 500 ms | ease-out | `CountUp` de um valor grande (uma vez) |
 | `donut` | 700 ms | ease-out | anel a encher à entrada (uma vez) |
-| `navbar` | 280 ms | ease-out | pílula a encolher/expandir (nativo iOS 26) |
+| ~~`navbar`~~ | — | — | *(v2: obsoleto — a navegação é estática, ver §4)* |
 | `screen` | nativo | React Navigation | push/slide entre ecrãs |
 
 Nunca molas *bouncy* no conteúdo; ease-out sempre. (Uma mola gentil só no *release* de
@@ -303,8 +329,6 @@ um botão, se sequer.)
   `haptic success`. Erro/inválido: shake curtíssimo (2 px, 1×) + `haptic warning`.
 - **Faixa de alerta** (disrupção): nasce no sítio fixo com fade+slide (`standard`) — nunca
   "salta"; some com fade quando a condição passa.
-- **Navbar** (`navbar`): pílula encolhe para a aba ativa no scroll-baixo, expande no
-  scroll-cima/toque. Nativo no iOS 26 (Liquid Glass do chrome — ver §4/decisão LG).
 - **Ecrãs** (`screen`): transições nativas do React Navigation; não reinventar.
 
 ### O que NÃO anima (proibições)
@@ -327,13 +351,17 @@ Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports à
 
 ## 7 · Fora do Início
 
-- **Escala / Estatísticas / FTL = referência estável.** Acentos permitidos:
-  hoje na grelha, pontinho azul de mudanças, realce dos limites de hoje. Nada mais.
+- **Escala / Números / INFO = referência estável.** Acentos permitidos:
+  hoje na grelha, ponto âmbar de mudanças no hub, realce dos limites de hoje. Nada mais.
 - **Superfícies irmãs do Living Interface:** a página da família
-  (voo.crewpact.app — já se comporta assim) e a futura Dynamic Island (dev build).
-- **Próximas páginas a vestir** (referências do utilizador + esta pele como lei):
-  login, splash (ou não), Perfil, detalhe. — *processo: referência dele →
-  adaptação DENTRO desta pele, não pele nova.*
+  (voo.crewpact.app — anel de countdown + avião, dia/noite pela hora, DEPLOYED)
+  e a futura Dynamic Island (dev build).
+- **Pele portada (v2):** Início · Números · Escala (grelha+hub+detalhe) · INFO ·
+  Perfil (bento) · Validades (carteira) · tab bar/FAB/mini-FABs — tudo em RN.
+  **Por vestir:** login/splash/criar-conta (mockups fechados, port por fazer) +
+  folhas antigas (DutyFormSheet, HotelSheet, RosterImportSheet, CalendarPicker,
+  diálogos do Perfil). — *processo: referência dele → adaptação DENTRO desta
+  pele, não pele nova.*
 
 ## 8 · Apêndice — fonte de cada dado (honestidade)
 
@@ -352,5 +380,47 @@ Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports à
 
 ---
 
+## 9 · Estado da implementação (v2 · 2026-07-08)
+
+O Início real (`screens/HomeScreen.js`) **já corre o motor adaptativo**: derivação
+`homeState` + anatomia fixa das zonas + banda de alerta com cadeia de prioridades
+(materializa a tabela do §2: segurança ILEGAL > limites acima > erro de leitura >
+cancelado/desviado > atraso c/ liveVerdict > inbound > registo-atrasado > aeroporto).
+A meteo do destino ganhou a UI (célula da chegada); o Partilhar usa o cartão
+editorial da família (`FlightShareCard`). Acrescentar um estado é **um ramo nas
+derivações** — a arquitetura não muda.
+
+| # | Estado | Situação | Nota |
+|---|---|---|---|
+| 0 | Onboarding | ✅ construído | passo único calendário + dica eCrew + Ver exemplo (efémero — o re-sync limpa o demo) |
+| 1 | Folga | ✅ construído | agenda 3 próximos + € do mês (`monthStats`) + donut do mês |
+| 2 | Véspera | ✅ construído (2026-07-09) | report ≤14h + noite (≥18h): countdown no fantasma, "Amanhã", repouso ✓ + acordar ~, horas neutras, chip H:MM; **estreia o TEMA NOTURNO** (PELE_NIGHT + glow de candeeiro; chip inverte) |
+| 3 | Pré-report | ✅ construído | countdown H:MM, avião ✓/aeroporto ✓ reais, horas + meteo, per-diem + donut PSV |
+| 3b | Disrupção | ✅ construído | banda-causa + "+N Atenção" + horas rasuradas + PSV projetado + chip nova-partida |
+| 4 | Em serviço/voo | 🟡 parcial | "Em voo" + setor ativo + termina~; falta progresso/ETA vivo, PSV a acumular, atalho família |
+| 5 | Pós-voo | ✅ construído (2026-07-09) | duty de hoje TERMINADA → "Fechado" + veredicto legal no kick, DUTY/BLOCK/SETORES (tap→detalhe), per-diem+donut PSV, ações Sign-off/Simular; dívida: "repouso até HH:MM" real (motor 235) por ligar — o útil usa a pergunta do repouso |
+| 6 | Pernoita fora | ✅ construído (2026-07-09) | dia fechado FORA da base (nightStopStation) → NOTURNO herdado; fantasma = estação (tempo no expoente), hotel no kick/meio (tap mapas · longo edita · convite sem hotel), útil 10h-235 + € da noite (ae.nightStop) + meteo, chip report amanhã |
+| 7 | Standby | ✅ essencial (2026-07-09) | linha "SE CHAMADO → PSV até HH:MM" (report+máx do motor) sob o serviço; útil ainda genérico (alojamento 225 d/e por expor) |
+| 8 | Formação | 🟡 parcial | cai no ramo não-voo genérico (tipo+horas); sem papel-pago |
+| 9 | Escala mudou | 🟡 parcial | vive no hub da Escala (ponto âmbar + Rever N); não toma o Início |
+| 10 | Documento crítico | 🟡 parcial | entra pela banda (perguntas/validades) quando crítico; sem takeover do herói |
+| 11 | Fecho do mês | ❌ por construir | |
+| 12 | Férias | ❌ por construir | eventos vacDays existem (gatilho pronto) |
+| 13 | Doença | ❌ por construir | eventos sickDays existem (gatilho pronto) |
+
+**Ordem de construção (valor ÷ custo):** ① Véspera + Pós-voo (dados todos prontos —
+é 1 ramo cada) → ② Pernoita como estado → ③ Standby "se chamado" (o motor 225 já
+calcula) → ④ Em-voo completo (progresso/ETA — o feed live já existe) → ⑤ Fecho do
+mês · Férias · Doença → ⑥ Escala-mudou/Doc-crítico como takeover (hoje já têm voz
+pela banda/hub). Formação afina-se com o papel-pago do AE.
+
+**Dívida do motor:** o `homeState` vive inline no ecrã. Quando os estados passarem
+de ~6, extrair para **`data/crewState.js` puro + golden** (a promessa do §2) — a
+UI passa a vestir o resultado, e os gatilhos ficam auditáveis como os motores.
+
+---
+
 *v1 · 2026-07-03 · decidido peça a peça com o utilizador. Mockups: pele-tipografica-final.html
-(4 estados demonstrados) · navbar-variantes.html (pílula B) · restantes peles arquivadas em design/.*
+(4 estados demonstrados) · living-interface.html (8 fichas ao vivo) · restantes peles arquivadas em design/.*
+*v2 · 2026-07-08 · alinhado com a construção real: FAB reposto (princípio 7), navegação
+estática (§4), anatomia com PeleHeader/PeleSide (§3), estado da implementação (§9).*

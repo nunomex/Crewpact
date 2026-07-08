@@ -22,6 +22,7 @@ export default function PeleHeader({
   bell = false,              // renderiza o sino real (NotificationsBell) — abre a central de notificações
   size = 'root',             // escala do herói: 'root' (130, abas/topo) · 'detail' (104, empurrados/pessoais)
   rule = true,               // desenha a régua (hr) sob o herói (off quando há algo ENTRE o herói e a régua)
+  night = false,             // tema NOTURNO da Living Interface: o disco ink do avatar sumia no papel escuro
 }) {
   // Linha de topo (avatar/‹voltar + ações + sino) é OPCIONAL: só aparece se o ecrã pedir algo dela.
   // Assim a Escala pode usar só o herói (dentro do gesto de swipe do mês), com a linha de topo à parte.
@@ -34,7 +35,7 @@ export default function PeleHeader({
       <View style={s.hdr}>
         {onBack
           ? <TouchableOpacity style={s.bk} onPress={onBack} hitSlop={6} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Voltar"><Icon name="back" size={18} color={P.ink} /></TouchableOpacity>
-          : <TouchableOpacity style={s.av} onPress={onAvatar} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Perfil"><Text style={s.avTxt}>{initials}</Text></TouchableOpacity>}
+          : <TouchableOpacity style={[s.av, night ? s.avNight : null]} onPress={onAvatar} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Perfil"><Text style={s.avTxt}>{initials}</Text></TouchableOpacity>}
         <View style={{ flex: 1 }} />
         {actions}
         {bell ? <NotificationsBell /> : null}
@@ -70,11 +71,13 @@ const SIZES = {
 const s = StyleSheet.create({
   hdr: { flexDirection: 'row', alignItems: 'center', paddingTop: 12 },
   av: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
+  avNight: { backgroundColor: 'rgba(244,242,237,0.14)' },   // disco claro-translúcido sobre o papel noturno; iniciais amarelas ficam
   avTxt: { color: P.yellow, fontFamily: F.bodyHeavy, fontSize: 14 },
   bk: { width: 34, height: 34, borderRadius: 11, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
   eyb: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: P.grey, marginTop: 8 },
   hero: { position: 'relative', minHeight: 108, marginTop: 2, justifyContent: 'flex-end', paddingBottom: 8 },
-  ghost: { position: 'absolute', right: 2, top: -16, fontFamily: F.display, fontSize: 130, lineHeight: 132, letterSpacing: -4, color: P.ghost },
+  // right 14 (era 2): o fantasma recua à esquerda p/ dar espaço ao rótulo rodado da margem.
+  ghost: { position: 'absolute', right: 14, top: -16, fontFamily: F.display, fontSize: 130, lineHeight: 132, letterSpacing: -4, color: P.ghost },
   mrow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   word: peleWord,
   kick: { fontFamily: F.bodyBold, fontSize: 12.5, color: P.grey, marginTop: 6 },

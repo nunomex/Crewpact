@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Fundos vivos — 3 doses de atmosfera (tempo + estado)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* PERGUNTA: "fundos que mudam consoante o tempo e o estado" (refs do user: nuvens ao
+     pôr-do-sol, vidro com chuva, candeeiro no azul-escuro, café). CONFLITO honesto: o
+     princípio 6 do LI diz "sem fotos — o carácter vem da tipografia e da cor" e o poster
+     branco VENCEU o julgamento. Este mockup compara 3 DOSES da mesma ideia:
+       ① HALO — papel branco intacto + brilho radial suave atrás do fantasma, tom pelo
+         tempo/estado (a dose homeopática; precedente: radial da página da família).
+       ② NOTURNO — os estados de NOITE (véspera/pernoita) viram tema escuro com glow
+         de candeeiro; o dia fica papel. "O fundo muda com o estado" via dia/noite.
+       ③ FULL-BLEED — fiel às referências (céu/chuva/noite a ecrã inteiro, texto branco).
+         Mostrado a sério para se ver o custo: o ink/amarelo cirúrgico deixam de existir. */
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --warnSoft:#FBEAD9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#101318;color:#e8ebf0;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:30px 18px 80px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .lead{max-width:900px;text-align:center}
+  .lead h1{font-size:19px;font-weight:800;color:#fff}
+  .lead .t{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1.4px;color:#000;background:var(--yellow);border-radius:999px;padding:4px 12px;text-transform:uppercase}
+  .lead p{margin-top:8px;font-size:12.5px;color:#96a0ad;line-height:1.55}.lead b{color:#fff}
+  .switch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .sw{cursor:pointer;border:1px solid #2a313b;background:#171c23;color:#96a0ad;font-family:inherit;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px}
+  .sw.on{background:var(--yellow);color:#000;border-color:var(--yellow)}
+  .row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:360px}
+  .cap{font-size:12px;font-weight:800;color:#fff;letter-spacing:.4px}
+  .cap small{display:block;font-weight:600;color:#96a0ad;margin-top:3px;font-size:11px;line-height:1.5;text-align:center}
+  .verd{font-size:10.5px;line-height:1.55;color:#96a0ad;text-align:center}
+  .verd b{color:#7ed6a2}.verd s{color:#e08a8a;text-decoration:none}
+
+  .ph{width:340px;height:700px;border-radius:40px;border:8px solid #04060a;overflow:hidden;position:relative;box-shadow:0 34px 80px -28px rgba(0,0,0,.9);background:var(--paper);color:var(--ink)}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;padding:22px 20px 18px;transition:background .5s ease}
+
+  /* camadas de fundo */
+  .bg{position:absolute;inset:0;pointer-events:none;transition:opacity .5s ease}
+  .halo{position:absolute;width:420px;height:420px;right:-140px;top:-120px;border-radius:50%;filter:blur(6px);pointer-events:none;transition:background .5s ease}
+
+  /* anatomia do Início (comum) */
+  .greet{font-size:11px;font-weight:600;color:var(--grey);position:relative;z-index:2}
+  .side{position:absolute;right:9px;top:150px;transform:rotate(90deg);transform-origin:right top;font-size:9px;font-weight:800;letter-spacing:3px;white-space:nowrap;z-index:3;color:var(--ink)}
+  .side .y{color:var(--yellow)}
+  .band{margin:8px -20px 0;padding:7px 20px;background:var(--warnSoft);border-top:1px solid #F2CBA5;border-bottom:1px solid #F2CBA5;font-size:10px;font-weight:800;color:var(--warn);position:relative;z-index:2}
+  .hero{position:relative;margin-top:6px;height:196px;z-index:2}
+  .ghostnum{position:absolute;right:2px;top:-12px;font-family:'Barlow Condensed';font-weight:700;font-size:158px;line-height:1;color:var(--ghost);letter-spacing:-4px;font-variant-numeric:tabular-nums;transition:color .5s ease}
+  .wxsup{position:absolute;right:4px;top:-2px}
+  .wxsup svg{width:20px;height:20px;fill:var(--grey)}
+  .word{position:absolute;left:0;bottom:40px;font-family:'Barlow Condensed';font-weight:700;font-size:48px;line-height:.95;letter-spacing:-.5px;color:var(--ink)}
+  .word.warn{color:var(--warn)}
+  .kick{position:absolute;left:2px;bottom:14px;font-size:11.5px;font-weight:700;color:var(--grey)}
+  .kick .y{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:2px;position:relative;z-index:2;transition:background .5s ease}
+  .mid{padding:9px 2px 6px;border-bottom:1px solid var(--line);position:relative;z-index:2;font-size:11px;color:var(--grey);font-weight:600;line-height:1.7}
+  .mid b{color:var(--ink);font-weight:800}
+  .util{display:flex;gap:14px;padding:10px 2px;border-bottom:1px solid var(--line);position:relative;z-index:2}
+  .util .ttl{font-family:'Barlow Condensed';font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.5px;flex:0 0 58px;color:var(--ink)}
+  .util p{font-size:10px;font-weight:600;color:var(--grey);line-height:1.6;flex:1}
+  .thumb{margin-top:auto;display:flex;align-items:center;gap:10px;padding:8px 0 6px;position:relative;z-index:2}
+  .chip{background:var(--ink);border-radius:11px;padding:6px 11px}
+  .chip .cv{font-family:'Barlow Condensed';font-weight:700;font-size:18px;color:var(--yellow);letter-spacing:.5px;line-height:1}
+  .chip small{display:block;font-size:6.5px;font-weight:800;letter-spacing:1.4px;color:#B9B8B2;margin-top:2px;text-transform:uppercase}
+
+  /* ② NOTURNO — variáveis viram escuras quando .night */
+  .ph.night-on .scr.is-night{
+    --paper:#0D131C; --ink:#F4F2ED; --ghost:rgba(255,255,255,.07); --grey:rgba(255,255,255,.55);
+    --line:rgba(255,255,255,.13); --warnSoft:rgba(232,106,16,.16);
+    background:#0D131C;
+  }
+  .lampglow{position:absolute;width:340px;height:300px;left:50%;top:-80px;transform:translateX(-50%);border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,214,120,.20), rgba(255,214,120,.05) 55%, transparent 72%);pointer-events:none;opacity:0;transition:opacity .5s ease}
+  .scr.is-night .lampglow{opacity:1}
+  .scr.is-night .chip{background:#F4F2ED}
+  .scr.is-night .chip .cv{color:#0D131C}
+  .scr.is-night .chip small{color:#77776F}
+
+  /* ③ FULL-BLEED — céus em CSS (sem fotos externas), texto branco + véu */
+  .ph.bleed .scr{--ink:#fff;--ghost:rgba(255,255,255,.16);--grey:rgba(255,255,255,.72);--line:rgba(255,255,255,.22);--warnSoft:rgba(0,0,0,.3)}
+  .ph.bleed .band{border-color:rgba(255,255,255,.25);color:#FFD9B8}
+  .ph.bleed .hr{background:rgba(255,255,255,.85)}
+  .ph.bleed .chip{background:rgba(0,0,0,.55)}
+  .ph.bleed .scrim{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.05) 34%, rgba(0,0,0,.45) 78%, rgba(0,0,0,.6));pointer-events:none}
+  .sky-sun{background:
+    radial-gradient(120% 60% at 78% 8%, #f7c873 0%, #e8944a 26%, #b85a2b 48%, #58281a 74%, #241111 100%)}
+  .sky-sun::after{content:'';position:absolute;inset:0;background:
+    radial-gradient(38% 20% at 24% 34%, rgba(255,220,170,.5), transparent 70%),
+    radial-gradient(50% 24% at 70% 52%, rgba(120,50,25,.55), transparent 72%),
+    radial-gradient(46% 22% at 40% 70%, rgba(60,25,15,.6), transparent 75%);filter:blur(2px)}
+  .sky-rain{background:linear-gradient(180deg,#1a2430 0%, #0f1822 52%, #0a1119 100%)}
+  .sky-rain::after{content:'';position:absolute;inset:0;background:
+    radial-gradient(9% 5% at 30% 42%, rgba(255,196,110,.55), transparent 70%),
+    radial-gradient(7% 4% at 55% 55%, rgba(255,220,160,.35), transparent 70%),
+    radial-gradient(5% 3% at 70% 38%, rgba(180,200,230,.3), transparent 70%),
+    radial-gradient(4% 2.4% at 22% 62%, rgba(160,190,220,.28), transparent 70%),
+    radial-gradient(3% 2% at 62% 30%, rgba(255,255,255,.22), transparent 70%),
+    radial-gradient(2.6% 1.6% at 44% 24%, rgba(255,255,255,.2), transparent 70%);filter:blur(1px)}
+  .sky-night{background:linear-gradient(200deg,#16233a 0%, #0d1830 45%, #091022 100%)}
+  .sky-night::after{content:'';position:absolute;inset:0;background:
+    radial-gradient(30% 22% at 62% 16%, rgba(255,222,140,.30), transparent 70%),
+    radial-gradient(1.2% .7% at 20% 22%, rgba(255,255,255,.8), transparent),
+    radial-gradient(1% .6% at 82% 40%, rgba(255,255,255,.6), transparent),
+    radial-gradient(.9% .5% at 34% 12%, rgba(255,255,255,.5), transparent)}
+  .sky-warn{background:radial-gradient(130% 70% at 76% 10%, #6b3a12 0%, #4a2410 34%, #2a1410 62%, #150b0b 100%)}
+  .sky-warn::after{content:'';position:absolute;inset:0;background:
+    radial-gradient(44% 22% at 30% 40%, rgba(200,90,30,.4), transparent 72%),
+    radial-gradient(40% 20% at 66% 62%, rgba(90,35,20,.6), transparent 74%);filter:blur(2px)}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Fundos vivos — a mesma ideia em 3 doses</h1>
+    <div class="t">tempo + estado a pintar o Início</div>
+    <p><b>① Halo</b> — papel intacto, um brilho suave atrás do fantasma muda de tom ·
+       <b>② Noturno</b> — véspera/pernoita viram tema escuro com glow (o dia fica papel) ·
+       <b>③ Full-bleed</b> — fiel às tuas referências, para se ver o preço (o ink e o amarelo cirúrgico saem de cena).
+       Troca os estados e compara a MESMA situação nas três.</p>
+  </div>
+  <div class="switch" id="switch">
+    <button class="sw on" data-s="folga-sol">Folga · sol 27°</button>
+    <button class="sw" data-s="folga-chuva">Folga · chuva 14°</button>
+    <button class="sw" data-s="vespera">Véspera · report 05:30</button>
+    <button class="sw" data-s="pernoita">Pernoita · FNC</button>
+    <button class="sw" data-s="disrupcao">Disrupção · +25</button>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="cap">① HALO no papel<small>a dose homeopática — pele intacta, o tom respira</small></div>
+      <div class="ph" id="ph1"><div class="scr" id="scr1"></div></div>
+      <div class="verd"><b>ganha:</b> vida subtil, zero custo de leitura, dentro da lei da pele<br><s>perde:</s> é discreto — não é "wow" de loja</div>
+    </div>
+    <div class="col">
+      <div class="cap">② NOTURNO por estado<small>véspera/pernoita escurecem com glow; o dia fica papel</small></div>
+      <div class="ph night-on" id="ph2"><div class="scr" id="scr2"></div></div>
+      <div class="verd"><b>ganha:</b> "a app sabe que é noite" — drama certo no momento certo, legível às 04:00<br><s>perde:</s> é um 2.º tema para manter (custo real no port)</div>
+    </div>
+    <div class="col">
+      <div class="cap">③ FULL-BLEED (as tuas refs)<small>céu/chuva/noite a ecrã inteiro, texto branco</small></div>
+      <div class="ph bleed" id="ph3"><div class="scr" id="scr3"></div></div>
+      <div class="verd"><b>ganha:</b> impacto imediato, mood total<br><s>perde:</s> o ink/amarelo/fantasma esbatido morrem; contraste variável; contradiz o princípio 6 ("sem fotos") que trancámos</div>
+    </div>
+  </div>
+
+<script src="icons.js"></script>
+<script>
+(function(){
+  const IC=(n,s)=>CPIcons.icon(n,{size:s||18});
+  const STATES={
+    'folga-sol':{ greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">QUARTA-FEIRA</span>',
+      ghost:'9', wx:'sun', word:'Folga', kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span> · 18°–27°',
+      mid:'<b>EJU7625 · LIS→FNC</b> — QUI · report 05:30 · 2 setores<br><b>FNC→LIS</b> 🌙 pernoita — SEX · report 06:15',
+      util:['Estado','escala sincronizada ✓ · repouso em dia · validades em dia ✓'],
+      chip:['2 DIAS','até ao report'], tone:'sun', night:false, band:null },
+    'folga-chuva':{ greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">QUARTA-FEIRA</span>',
+      ghost:'9', wx:'rain', word:'Folga', kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span> · 11°–14°',
+      mid:'<b>EJU7625 · LIS→FNC</b> — QUI · report 05:30 · 2 setores<br><b>FNC→LIS</b> 🌙 pernoita — SEX · report 06:15',
+      util:['Estado','escala sincronizada ✓ · repouso em dia · chuva nas próximas 6 h ☂'],
+      chip:['2 DIAS','até ao report'], tone:'rain', night:false, band:null },
+    'vespera':{ greet:'Boa noite, Nuno', side:'VÉSPERA · <span class="y">REPORT 05:30</span>',
+      ghost:'8:25', wx:'moon', word:'Amanhã', kick:'report <span class="y">05:30 · 04:30Z</span> · repouso mínimo ✓ · acordar ~04:15',
+      mid:'<b>LIS→FNC</b> 06:40 · <b>FNC→LIS</b> 09:40 — 2 setores · PSV máx 13:00',
+      util:['Noite','está tudo verificado — dorme. 12° lá fora às 04:15.'],
+      chip:['8H 25M','até ao report'], tone:'night', night:true, band:null },
+    'pernoita':{ greet:'Boa noite, Nuno', side:'PERNOITA · <span class="y">FNC</span>',
+      ghost:'FNC', wx:'cloud', word:'Pernoita', kick:'<span class="y">Pestana Casino</span> · pickup 05:40 · report 06:15',
+      mid:'repouso fora-base <b>10h ✓</b> (235) · per-diem da noite <b>+38,00 €</b>',
+      util:['Fora','pequeno-almoço 05:15 · 18° no Funchal · amanhã FNC→LIS 07:20'],
+      chip:['06:15','report amanhã'], tone:'night', night:true, band:null },
+    'disrupcao':{ greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
+      ghost:'+25', wx:null, word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>',
+      mid:'LIS partida <b style="color:var(--warn)">~07:05</b> <s style="opacity:.5">06:40</s> · FNC chegada <b style="color:var(--warn)">~09:30</b> <s style="opacity:.5">09:05</s>',
+      util:['PSV','projetado 12:40 / máx 13:00 · margem 0:20 · discrição 205(f) pronta'],
+      chip:['~07:05','nova partida'], tone:'warn', night:false, band:'⚠ o teu avião ainda vem a caminho — inbound ~05:10Z · LIS 54% atrasos' },
+  };
+  const HALO={ sun:'radial-gradient(closest-side, rgba(255,184,0,.18), rgba(255,184,0,.05) 55%, transparent 72%)',
+    rain:'radial-gradient(closest-side, rgba(90,120,150,.16), rgba(90,120,150,.05) 55%, transparent 72%)',
+    night:'radial-gradient(closest-side, rgba(40,70,110,.14), rgba(40,70,110,.04) 55%, transparent 72%)',
+    warn:'radial-gradient(closest-side, rgba(232,106,16,.16), rgba(232,106,16,.05) 55%, transparent 72%)' };
+  const SKY={ sun:'sky-sun', rain:'sky-rain', night:'sky-night', warn:'sky-warn' };
+
+  function inner(st, mode){
+    return (mode==='bleed' ? '<div class="bg '+SKY[st.tone]+'"></div><div class="scrim"></div>' : '')
+      +(mode==='halo' ? '<div class="halo" style="background:'+HALO[st.tone]+'"></div>' : '')
+      +(mode==='night' ? '<div class="lampglow"></div>' : '')
+      +'<div class="greet">'+st.greet+'</div>'
+      +'<div class="side">'+st.side+'</div>'
+      +(st.band?'<div class="band">'+st.band+'</div>':'')
+      +'<div class="hero">'
+        +'<div class="ghostnum">'+st.ghost+'</div>'
+        +(st.wx?'<div class="wxsup">'+IC(st.wx,20)+'</div>':'')
+        +'<div class="word'+(st.warn?' warn':'')+'">'+st.word+'</div>'
+        +'<div class="kick">'+st.kick+'</div>'
+      +'</div><div class="hr"></div>'
+      +'<div class="mid">'+st.mid+'</div>'
+      +'<div class="util"><div class="ttl">'+st.util[0]+'</div><p>'+st.util[1]+'</p></div>'
+      +'<div class="thumb"><div class="chip"><div class="cv">'+st.chip[0]+'</div><small>'+st.chip[1]+'</small></div></div>';
+  }
+  function render(id){
+    const st=STATES[id];
+    document.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b.dataset.s===id));
+    const s1=document.getElementById('scr1'); s1.className='scr'; s1.innerHTML=inner(st,'halo');
+    const s2=document.getElementById('scr2'); s2.className='scr'+(st.night?' is-night':''); s2.innerHTML=inner(st,st.night?'night':'none');
+    const s3=document.getElementById('scr3'); s3.className='scr'; s3.innerHTML=inner(st,'bleed');
+  }
+  document.getElementById('switch').addEventListener('click',(e)=>{
+    const b=e.target.closest('.sw'); if(!b) return; render(b.dataset.s);
+  });
+  render('folga-sol');
+})();
+</script>
+</body>
+</html>

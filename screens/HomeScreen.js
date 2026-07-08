@@ -1,105 +1,69 @@
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing, AppState, RefreshControl, Linking, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, AppState, RefreshControl, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, SPACE, TYPE, FONT } from '../data/constants';
-import HeaderActions from '../components/HeaderActions';
-import Banner from '../components/Banner';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import { PELE, PELE_NIGHT, PELE_FONT } from '../data/constants';
+import Icon from '../components/Icon';
+import PeleHeader from '../components/PeleHeader';
+import PeleSide from '../components/PeleSide';
+import FlightShareCard from '../components/FlightShareCard';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
-import { monthlyAe, aeMonthTotal, routeDistancesNM } from '../data/perdiem';
-import { sectorDistanceNM } from '../data/airports';
+import { routeDistancesNM } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
-import PageHeader from '../components/PageHeader';
-import Eyebrow from '../components/Eyebrow';
 import { computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty, liveFdpVerdict } from '../ftl';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
-import useReduceMotion from '../hooks/useReduceMotion';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext, useTheme, toZulu } from '../data/appContext';
+import { AppContext, toZulu } from '../data/appContext';
 import { airportZulu, legZulu } from '../data/zulu';
-import { UpcomingDutiesCard } from '../components/HomeDutyCards';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
+import { monthStats } from '../data/stats';
+import { fetchStationWx, wxDigest, wxIcon } from '../data/weather';
+import { stateVoice } from '../data/stateVoice';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
-import CountUp from '../components/CountUp';
 
-// Cor da barra por nível de consumo: verde < 70 %, âmbar 70–90 %, vermelho ≥ 90 %.
-const barColor = (ratio, C) => (ratio >= 0.9 ? C.red : ratio >= 0.7 ? C.warn : C.green);
+// Mapa old-theme → PELE: a LÓGICA (fatiga/estado/limites) usa C.x há muito — em vez de
+// reescrever o motor do ecrã, o C passa a apontar para os tokens da pele (re-skin, não reescrita).
+const C = {
+  canvas: PELE.paper, card: PELE.paper, ink: PELE.ink, text: PELE.ink, sub: PELE.grey,
+  line: PELE.line, soft: PELE.soft, soft2: PELE.soft2, brand: PELE.ink, onDarkSub: PELE.grey,
+  green: PELE.ok, greenSoft: PELE.okSoft, greenText: PELE.ok,
+  warn: PELE.warn, warnSoft: PELE.warnSoft, warnText: PELE.warn,
+  red: PELE.red, redSoft: PELE.redSoft, redText: PELE.red, infoSoft: PELE.info,
+};
 
 // Anel a pulsar (escala 1→1.7 + desvanece, em loop) — atrás do ponto de estado e
 // do badge do report, como o mockup (@keyframes ring).
-function PulseRing({ size, color, border = false, duration = 2400, radius }) {
-  const v = useRef(new Animated.Value(0)).current;
-  const reduce = useReduceMotion();
-  useEffect(() => {
-    if (reduce) return;
-    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration, easing: Easing.out(Easing.ease), useNativeDriver: true }));
-    loop.start();
-    return () => loop.stop();
-  }, [v, duration, reduce]);
-  // Reduz-movimento: anel ESTÁTICO (o sinal de perigo mantém-se pela cor/borda, sem pulsar).
-  if (reduce) {
-    return (
-      <View pointerEvents="none" style={{
-        position: 'absolute', width: size, height: size, borderRadius: radius != null ? radius : size / 2,
-        ...(border ? { borderWidth: 2, borderColor: color } : { backgroundColor: color }), opacity: 0.35,
-      }} />
-    );
-  }
+// Donut da pele (mockup .donut, conic-gradient → SVG): anel 52 c/ furo, enche `p`%.
+function Donut({ p = 0, color = PELE.yellow, label }) {
+  const R = 19.5, CIRC = 2 * Math.PI * R;
+  const pct = Math.max(0, Math.min(100, p));
   return (
-    <Animated.View pointerEvents="none" style={{
-      position: 'absolute', width: size, height: size, borderRadius: size / 2,
-      ...(border ? { borderWidth: 2, borderColor: color } : { backgroundColor: color }),
-      opacity: v.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.5, 0, 0] }),
-      transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] }) }],
-    }} />
-  );
-}
-
-// Mini-barra que enche de 0 → valor ao montar (mockup .wbar i com transição).
-// `mark` (0–1) = marca fina no limite → dupla-codificação: a proximidade do limite
-// lê-se SEM depender da cor (p/ daltónicos). Respeita reduz-movimento (salta ao valor).
-function MiniBar({ ratio, color, track, fill, mark }) {
-  const C = useTheme();
-  const reduce = useReduceMotion();
-  const target = Math.max(0, Math.min(1, ratio || 0));
-  const w = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (reduce) { w.setValue(target); return; }
-    Animated.timing(w, { toValue: target, duration: 800, delay: 300, useNativeDriver: false }).start();
-  }, [target, w, reduce]);
-  return (
-    <View style={track}>
-      <Animated.View style={[fill, { backgroundColor: color, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
-      {mark != null ? (
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: `${Math.round(mark * 100)}%`, width: 2, marginLeft: -1, backgroundColor: C.ink, opacity: 0.4 }} />
-      ) : null}
+    <View style={{ alignItems: 'center' }}>
+      <Svg width={52} height={52} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={26} cy={26} r={R} fill="none" stroke={PELE.line} strokeWidth={13} />
+        <Circle cx={26} cy={26} r={R} fill="none" stroke={color} strokeWidth={13}
+          strokeDasharray={`${(pct / 100) * CIRC} ${CIRC}`} />
+      </Svg>
+      {label ? <Text style={{ fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.5, color: PELE.grey, marginTop: 6 }} numberOfLines={1}>{label}</Text> : null}
     </View>
   );
 }
 
-// Skeleton do próximo voo — mesma FORMA do badge real (círculo + linhas + 2 tags),
-// mostrado durante o 1º carregamento do calendário para evitar spinner + salto.
-function NextFlightSkeleton({ s }) {
+// Skeleton do herói (1º carregamento do calendário) — mesma FORMA (fantasma + palavra + kick).
+function HeroSkeleton() {
   return (
-    <View style={s.nd}>
-      <View style={s.ndCircWrap}><Skeleton circle h={78} /></View>
-      <View style={s.ndX}>
-        <Skeleton w={88} h={11} r={4} style={{ marginBottom: 9 }} />
-        <Skeleton w={150} h={18} r={5} style={{ marginBottom: 9 }} />
-        <Skeleton w={120} h={12} r={4} style={{ marginBottom: 13 }} />
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          <Skeleton w={104} h={20} r={99} />
-          <Skeleton w={76} h={20} r={99} />
-        </View>
-      </View>
+    <View style={{ minHeight: 190, justifyContent: 'flex-end', paddingBottom: 10 }}>
+      <View style={{ position: 'absolute', right: 0, top: 0 }}><Skeleton w={150} h={120} r={12} /></View>
+      <Skeleton w={170} h={44} r={8} style={{ marginBottom: 10 }} />
+      <Skeleton w={230} h={13} r={5} />
     </View>
   );
 }
@@ -176,35 +140,13 @@ function mergeNextFlight(calFlight, duties, now) {
   return best; // mesmo dia → o GUARDADO ganha (offline-first; já inclui o calendário auto-gravado + os teus edits)
 }
 
-// Cartão de limites compacto (mockup .uc) — título + janelas, cada uma com
-// mini-barra colorida por severidade. Usado na grelha 2-col do Início.
-function LimitCard({ title, question, windows, limLabel, s, C }) {
-  return (
-    <View style={s.uc}>
-      {question ? <Text style={s.ucQ} numberOfLines={1}>{question}</Text> : null}
-      <View style={s.ucHead}>
-        <View style={s.ucDot} />
-        <Text style={s.ucTitle} numberOfLines={1}>{title}</Text>
-      </View>
-      {windows.map((w) => {
-        const r = w.limit ? w.done / w.limit : 0;
-        return (
-          <View key={w.id} style={s.ucWin}>
-            <View style={s.ucWl}>
-              <Text style={s.ucA} numberOfLines={1}>{limLabel(w)}</Text>
-              <Text style={s.ucB} numberOfLines={1}>{Math.round(r * 100)}% · <Text style={s.ucBnum}>{Math.round(w.done)}</Text>/{Math.round(w.limit)}h</Text>
-            </View>
-            <MiniBar ratio={r} color={barColor(r, C)} track={s.ucBar} fill={s.ucBarFill} mark={0.9} />
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 // ── DEMO: voo de exemplo no cartão "Próximo voo", para comparar com o mockup.
 // TEMPORÁRIO — quando ligares o calendário real do telemóvel, põe SHOW_DEMO_FLIGHT = false.
 const SHOW_DEMO_FLIGHT = false;
+// ── DEV: forçar um estado do Início p/ PRÉ-VISUALIZAR no device sem esperar pelo gatilho
+// real (ex.: a véspera só dispara ≥18h). Valores: 'setup' | 'folga' | 'hoje' | 'disrupcao' |
+// 'vespera' | 'posvoo' | 'pernoita' — ou null = estado REAL. Voltar a null depois de ver!
+const FORCE_HOME_STATE = null;
 const DEMO_FLIGHT = (() => {
   const dep = new Date(); dep.setDate(dep.getDate() + 1); dep.setHours(6, 40, 0, 0); // partida amanhã 06:40 (report 05:40)
   const iso = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
@@ -213,9 +155,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, readNotifIds, setReadNotifIds, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
+  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, openSimulation, openExtra } = useContext(AppContext);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -546,152 +486,492 @@ export default function HomeScreen({ navigation }) {
   })() : null;
   const nsHotel = nsHotelStation ? (hotels || {})[nsHotelStation] : null;
 
-  const nextDutyEl = flight ? (
-    <View>
-      <Eyebrow style={{ marginBottom: 12 }}>{l('Serviços', 'Duties')}</Eyebrow>
-      <View style={s.svc}>
-        <TouchableOpacity activeOpacity={0.75} disabled={!featuredTappable} onPress={openFeatured}
-          accessibilityRole={featuredTappable ? 'button' : undefined}
-          accessibilityHint={featuredTappable ? l('Abre o detalhe do serviço', 'Opens the duty detail') : undefined}
-          style={s.svcNd}>
-          <View style={s.svcBadgeWrap}>
-            {(stateLevel === 'over' || stateLevel === 'warn') ? (
-              <PulseRing size={68} radius={RADIUS.lg} color={C.red} border={stateLevel === 'warn'} duration={2600} />
-            ) : null}
-            <View style={[s.svcBadge, { backgroundColor: badgeColor, shadowColor: badgeColor, shadowOpacity: stateLevel === 'over' ? 0.42 : 0.18 }]}>
-              <Text style={s.svcBadgeDay}>{ndDayNum}</Text>
-              <Text style={s.svcBadgeWd}>{ndDayWd}</Text>
-            </View>
-          </View>
-          <View style={s.svcNdx}>
-            <Eyebrow style={{ flex: 1 }} numberOfLines={1}>{isNonFlight ? t('duties.kind.' + flight.kind, lang) : `${l('Voo', 'Flight')}${activeSector ? ` · ${l('Setor', 'Sector')} ${activeSector.idx + 1}/${activeSector.total}` : ''}`}</Eyebrow>
-            {/* Texto grande — VOO: o SETOR ATIVO (dep → arr), não a rota inteira. Encolhe, nunca quebra. */}
-            {/* minimumFontScale 0.75 (era 0.5): a info primária do relance nunca encolhe p/ metade. */}
-            <Text style={s.svcMain} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{isNonFlight
-              ? (flight.arrTime && flight.arrTime !== flight.report ? `${flight.report} – ${flight.arrTime}` : flight.report)
-              : (activeSector ? `${activeSector.leg.dep || '?'} → ${activeSector.leg.arr || '?'}`
-                : (flight.stations && flight.stations.length > 1 ? flight.stations.join(' → ') : `${flight.depAirport} → ${flight.arrAirport}`))}</Text>
-            {/* Partida → chegada (horas) + Zulu — só voo, à frente da rota. */}
-            {ndShowTimes ? (
-              <Text style={s.svcTimes} numberOfLines={1}>{ndDep || '—'} → {ndArr || '—'}
-                {(ndDepZ || ndArrZ) ? <Text style={s.svcTimesZ}>  {ndDepZ || '—'}–{ndArrZ || '—'}Z</Text> : null}</Text>
-            ) : null}
-            {/* Sub-linha "quando": dia relativo (sub) + contagem */}
-            {countdownStr ? (
-              <Text style={s.svcCd} numberOfLines={1}>{ndWhen ? <Text style={s.svcCdDay}>{ndWhen} · </Text> : null}{countdownStr}</Text>
-            ) : null}
-            {/* Confirmação POSITIVA ao vivo — SÓ quando a API confirma SEM desvio (senão não afirmamos
-                "a horas" sem saber; o desvio tem o seu próprio card em cima). Subtil, no contexto do serviço. */}
-            {/* Não afirmamos "a horas" quando o AVIÃO (inbound) já vem atrasado — o card âmbar em cima conta a história. */}
-            {flightStatus && !hasDeviation(flightStatus) && !inboundLate ? (
-              <Text style={s.svcOntime} numberOfLines={1}>✓ {l('A horas', 'On time')}{flightStatus.dep && flightStatus.dep.gate ? ` · ${l('porta', 'gate')} ${flightStatus.dep.gate}` : ''}</Text>
-            ) : null}
-            {flight.nightStop ? <Text style={s.svcNight}>🌙 {l('Paragem nocturna', 'Night stop')}</Text> : null}
-          </View>
-        </TouchableOpacity>
-        {/* Hotel da pernoita — registado: toque abre os MAPAS, toque longo edita; sem
-            registo: convite discreto. Só existe em dias com 🌙 (ruído zero no resto). */}
-        {flight.nightStop ? (
-          nsHotel ? (
-            <TouchableOpacity style={s.svcHotel} activeOpacity={0.85}
-              onPress={() => { select(); Linking.openURL(hotelMapsUrl(nsHotel.name, nsHotelStation, Platform.OS)).catch(() => {}); }}
-              onLongPress={() => { select(); setHotelOpen(true); }}
-              accessibilityRole="button" accessibilityLabel={`${l('Hotel', 'Hotel')} ${nsHotel.name}`}
-              accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
-              <Text style={{ fontSize: 15 }}>🏨</Text>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={s.svcHotelName} numberOfLines={1}>{nsHotel.name}</Text>
-                {nsHotel.note ? <Text style={s.svcHotelNote} numberOfLines={1}>{nsHotel.note}</Text> : null}
-              </View>
-              <Text style={s.svcHotelGo}>🗺 {l('Mapas', 'Maps')}</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={s.svcHotelAdd} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }}
-              accessibilityRole="button">
-              <Text style={s.svcHotelAddTxt}>＋ {l('adicionar hotel desta pernoita', 'add this night stop’s hotel')}</Text>
-            </TouchableOpacity>
-          )
-        ) : null}
-        <View style={s.svcDiv} />
-        {/* Grelha 3 colunas com a info do serviço */}
-        <View style={s.svcGrid}>
-          {ndCells.map((c, i) => (
-            <View key={i} style={s.svcCell}>
-              <Text style={s.svcCellL} numberOfLines={1}>{c.l}</Text>
-              <Text style={[s.svcCellV, c.red ? { color: C.redText } : c.green ? { color: C.greenText } : null]} numberOfLines={1}>{c.v}{c.sub ? <Text style={s.svcCellSub}> {c.sub}</Text> : null}</Text>
-              {c.zsub ? <Text style={s.svcCellZ} numberOfLines={1}>{c.zsub}Z</Text> : null}
-            </View>
-          ))}
-          {ndFat ? (
-            <View style={s.svcCell}>
-              <Text style={s.svcCellL} numberOfLines={1}>{l('Fadiga', 'Fatigue')}</Text>
-              <View style={[s.svcFat, { backgroundColor: fatBg(ndFat.band) }]}>
-                <View style={[s.svcFatDot, { backgroundColor: fatColor(ndFat.band) }]} />
-                <Text style={[s.svcFatTxt, { color: fatTextColor(ndFat.band) }]}>{fatLabel(ndFat.band)}</Text>
-              </View>
-            </View>
-          ) : null}
-        </View>
-        {/* Nota honesta: a Zulu manual assume hora LOCAL do aeroporto (não há instante absoluto). */}
-        {ndZuluEst ? <Text style={s.svcZuluNote}>{l('Zulu estimada da hora local do aeroporto.', 'Zulu estimated from airport local time.')}</Text> : null}
-        {/* Próximas atividades — FUNDIDAS no card Serviços, por baixo do próximo serviço */}
-        <UpcomingDutiesCard duties={duties} lang={lang} bare limit={4} featuredISO={flight.dateISO} activeIdx={activeSector ? activeSector.idx : null} onPressItem={openDayDetail} />
-      </View>
-    </View>
-  ) : loadingFlight ? (
-    <NextFlightSkeleton s={s} />
-  ) : (
-    <View style={s.flightCard}>
-      <View style={s.flightTop}>
-        <Text style={s.flightEyebrow}>{t('home.nextDuty', lang)}</Text>
-        {/* O "refresh" É um botão (antes parecia tocável e não fazia nada). */}
-        <TouchableOpacity onPress={() => { select(); syncFlight(); }} disabled={syncing} style={[s.flightBadge, { backgroundColor: C.soft }]}
-          accessibilityRole="button" accessibilityLabel={l('Atualizar do calendário', 'Refresh from calendar')} hitSlop={6}>
-          {syncing ? <ActivityIndicator size="small" color={C.sub} /> : <Ionicons name="refresh" size={14} color={C.sub} />}
-        </TouchableOpacity>
-      </View>
-      {calErr ? (
-        /* Falha de LEITURA ≠ "sem voos": diz o que aconteceu e o que fazer (Nielsen #9). */
-        <View style={s.flightEmpty}>
-          <Ionicons name="alert-circle-outline" size={18} color={C.warnText} />
-          <Text style={[s.flightEmptyTxt, { color: C.warnText }]}>{l('Não consegui ler o calendário — puxa para atualizar ou verifica a permissão nas Definições.', 'Couldn’t read the calendar — pull to refresh or check the permission in Settings.')}</Text>
-        </View>
-      ) : !calOk ? (
-        <View style={s.flightEmpty}>
-          <Ionicons name="calendar-outline" size={18} color={C.sub} />
-          <View style={{ flex: 1 }}>
-            <Text style={s.flightEmptyTxt}>{t('cal.permission', lang)}</Text>
-            <TouchableOpacity onPress={requestAccess} activeOpacity={0.85} style={s.grantBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-              <Ionicons name="calendar-outline" size={15} color="#fff" />
-              <Text style={s.grantBtnTxt}>{t('cal.grant', lang)}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <View style={s.flightEmpty}>
-          <Ionicons name="calendar-outline" size={18} color={C.sub} />
-          <Text style={s.flightEmptyTxt}>{syncDone ? t('home.flightNone', lang) : t('home.flightConnect', lang)}</Text>
-        </View>
-      )}
-    </View>
-  );
-
-  // (Removidos do Início: cartões AE-compacto, Estatísticas-mini e FTL·limites — o
-  //  salário vive nos Cálculos/FTL, as Estatísticas têm aba própria, e os limites
-  //  cumulativos passaram para a aba Estatísticas. Ver StatsScreen.)
-
-  // ── Cabeçalho premium + tira de 5 dias ──
-  const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
-  const crewWord = isPilot ? (lang === 'en' ? 'Pilot' : 'Piloto') : (lang === 'en' ? 'Cabin' : 'Cabine');
-  const opEyebrow = [company?.name, ae ? 'AE' : 'FTL', crewWord].filter(Boolean).join(' · ').toUpperCase();
-
-  // Entrada escalonada das secções (hook partilhado, re-toca no foco) — mockup .rise.
+  // ══ PELE · Início ADAPTATIVO (mockup design/pele-tipografica-final.html — "a líder + 3 adições") ══
+  // 4 estados — setup (primeira vez) · folga · hoje (pré-report/em serviço) · disrupção — com a
+  // MESMA anatomia: saudação · rótulo lateral · banda de alerta (sítio fixo) · herói (fantasma +
+  // palavra + kick) · meio ADAPTATIVO (horas ↔ agenda ↔ setup) · micro-texto útil · dígitos
+  // amarelos + donut · barra do polegar (chip + ações com rótulo). Re-skin: os cálculos acima
+  // não mudaram — tudo aqui é derivação de apresentação.
   const seg = useEnter();
+  const firstName = ((user?.name || user?.email?.split('@')[0] || '').split(' ')[0]) || '';
+  const initials = (() => { const w = String(user?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/).filter(Boolean); return !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); })();
+  const hourNow = new Date().getHours();
+
+  // Estado do ecrã. Disrupção = desvio no NOSSO voo ou inbound atrasado (a janela do fetch do
+  // live já limita ao serviço iminente). Setup = sem calendário ligado E nada para mostrar.
+  // PÓS-VOO = o serviço de HOJE já terminou (o dia fecha em modo balanço, até à meia-noite).
+  // VÉSPERA = report amanhã a ≤14 h, já pela noite (≥18h) — a app prepara o deitar.
+  const isToday = !!(flight && flight.dateISO === todayISO);
+  const fsDev = !!(flightStatus && hasDeviation(flightStatus));
+  const disrupted = !!(flight && (fsDev || inboundLate));
+  const setupNeeded = !flight && (!calendarId || !calOk);
+  const todayEnded = (() => {
+    const d = duties[todayISO];
+    if (!d || d.deleted || !d.report_time) return null;
+    // Multi-serviço (a lei conta períodos, não dias): o dia só FECHA quando TODOS os
+    // serviços (primário + extra) terminaram — senão "Fechado ✓" seria uma mentira de segurança.
+    const services = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
+    const ends = services.map((sv) => { const mf = dutyToFlight(todayISO, sv); return (mf && mf.endDate) ? mf.endDate.getTime() : null; });
+    return (ends.length && ends.every((e) => e != null && e < now)) ? d : null;
+  })();
+  // Dia multi-serviço fechado: os totais de UM serviço mentiriam (o FDP combinado é outro
+  // motor) → o pós-voo mostra o fecho SEM números detalhados; o detalhe do dia tem tudo.
+  const closeMulti = !!(todayEnded && Array.isArray(todayEnded.extra) && todayEnded.extra.length);
+  // PERNOITA = o pós-voo FORA DA BASE (dia fechado + nightStop + estação ≠ base) — o estado
+  // noturno do quarto de hotel; mais específico que o pós-voo, por isso decide primeiro.
+  const closeNsStation = todayEnded ? (nightStopStation(todayEnded, base) || null) : null;
+  const isVespera = !!(flight && !isToday && cdMin != null && cdMin > 0 && cdMin <= 14 * 60 && new Date().getHours() >= 18);
+  const homeState = FORCE_HOME_STATE || (setupNeeded ? 'setup'
+    : disrupted ? 'disrupcao'
+    : (flight && isToday) ? 'hoje'
+    : (todayEnded && closeNsStation) ? 'pernoita'
+    : todayEnded ? 'posvoo'
+    : isVespera ? 'vespera'
+    : 'folga');
+  // Tema NOTURNO (Living Interface camada 2): véspera e pernoita vivem no escuro.
+  const night = homeState === 'vespera' || homeState === 'pernoita';
+  const P = night ? PELE_NIGHT : PELE;
+  const s = night ? sNight : sDay;
+  // Saudação: primeira-vez = "Bem-vindo" (mockup estado 0); resto pela hora do dia.
+  const greet = homeState === 'setup'
+    ? `${l('Bem-vindo', 'Welcome')}${firstName ? `, ${firstName}` : ''}`
+    : `${hourNow < 12 ? l('Bom dia', 'Good morning') : hourNow < 20 ? l('Boa tarde', 'Good afternoon') : l('Boa noite', 'Good evening')}${firstName ? `, ${firstName}` : ''}`;
+  const inDuty = isToday && cdMin != null && cdMin <= 0;
+  const kindLabel = flight && flight.kind ? t('duties.kind.' + flight.kind, lang) : '';
+  const hm = (x) => (x ? String(x).slice(11, 16) : null);
+  const wDelay = fsDev ? worstDelay(flightStatus) : null;
+  const delayMin = fsDev ? ((wDelay && wDelay.min) || 0) : ((inboundInfo && inboundInfo.projDelayMin) || 0);
+  const fsStatus = String((flightStatus && flightStatus.status) || '').toLowerCase();
+  const fsCancelled = fsStatus === 'cancelled' || fsStatus === 'canceled';
+  const fsDiverted = fsStatus === 'diverted';
+  const longHaul = isLongHaulCompany(company, crewFleet);
+
+  // Tempo AGORA — no destino final do dia (célula da CHEGADA) em dia de voo; na FOLGA,
+  // na BASE (símbolo como expoente do fantasma + min–máx no kick, à referência). Ícones
+  // da pele (wxIcon, sem emoji). MET Norway via Edge (cache 45 min).
+  const [wxArr, setWxArr] = useState(null);
+  const wxStation = (isToday && flight && !isNonFlight)
+    ? String((sectorLegs.length ? sectorLegs[sectorLegs.length - 1].arr : flight.arrAirport) || '').toUpperCase()
+    : (homeState === 'pernoita' && closeNsStation) ? String(closeNsStation).toUpperCase()
+    : (homeState === 'folga' && base ? String(base).toUpperCase() : null);
+  useEffect(() => {
+    let alive = true;
+    setWxArr(null);
+    if (!wxStation) return () => { alive = false; };
+    (async () => {
+      const raw = await fetchStationWx(wxStation);
+      if (!alive || !raw) return;
+      const dig = wxDigest(raw.series);
+      if (dig && dig.nowC != null) setWxArr({ c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), min: dig.todayMin, max: dig.todayMax });
+    })();
+    return () => { alive = false; };
+  }, [wxStation]);
+
+  // ── Atmosfera tipográfica (camada 1 do "fundos vivos", decisão 2026-07-09) ──
+  // VOZ do estado: frase curada determinística (data/stateVoice.js, golden) — folga por agora;
+  // véspera/pós-voo/pernoita herdam quando nascerem. HALO: brilho radial suave atrás do
+  // fantasma, tom pelo tempo/hora — a dose que não custa leitura (mockup design/fundos-vivos.html ①).
+  const voice = useMemo(
+    () => stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation } }),
+    [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation],
+  );
+  const haloTone = (() => {
+    if (homeState !== 'folga' && homeState !== 'posvoo') return null;
+    const ic = wxArr && wxArr.icon;
+    if (ic === 'rain' || ic === 'thunder') return '#5A7896';
+    if (ic === 'snow' || ic === 'fog' || ic === 'cloud') return '#7E8CA0';
+    if (hourNow >= 20 || hourNow < 7 || ic === 'moon') return '#2E4E78';
+    return PELE.yellow;
+  })();
+
+  // "HH:MM" → minutos (declarado ANTES dos blocos pós-voo/véspera que o usam — TDZ).
+  const hmToMin = (x) => { const m = /^(\d{1,3}):(\d{2})$/.exec(String(x || '')); return m ? +m[1] * 60 + +m[2] : null; };
+
+  // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
+  const closeD = (todayEnded && !closeMulti) ? (() => {
+    try {
+      const sp = todayEnded.special || {};
+      return computeDuty({ state: 'acc', report: todayEnded.report_time, end: todayEnded.block_on, sectors: todayEnded.sectors || 0, isPilot, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null });
+    } catch { return null; }
+  })() : null;
+  const closeBlock = (todayEnded && !closeMulti && todayEnded.flight_minutes)
+    ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
+  const closePct = (() => {
+    if (!closeD || !closeD.fdp) return null;
+    const a = hmToMin(closeD.fdp.actualFdpStr), m = hmToMin(closeD.fdp.maxFdpStr);
+    return (a != null && m) ? Math.min(100, Math.round((a / m) * 100)) : null;
+  })();
+  let pdToday = null;
+  if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
+    const dists = routeDistancesNM(todayEnded.route);
+    if (dists.length && !dists.some((x) => x == null)) pdToday = ae.perDiem(crewCategory, dists, 1, crewFleet);
+  }
+  // Acordar sugerido (véspera): report − 1h15 (estimativa "~" — vestir + deslocação).
+  const wakeAt = (() => {
+    if (homeState !== 'vespera' || !flight || !flight.report) return null;
+    const m = hmToMin(flight.report); if (m == null) return null;
+    const w = (m - 75 + 1440) % 1440;
+    return `${String(Math.floor(w / 60)).padStart(2, '0')}:${String(w % 60).padStart(2, '0')}`;
+  })();
+  const restItem = questionItems.find((it) => it.id === 'rest') || null;
+  const closeFno = todayEnded ? ((Array.isArray(todayEnded.legs) && todayEnded.legs[0] && (todayEnded.legs[0].flightNo || todayEnded.legs[0].flight))
+    ? String(todayEnded.legs[0].flightNo || todayEnded.legs[0].flight).toUpperCase()
+    : (todayEnded.kind && todayEnded.kind !== 'flight' ? t('duties.kind.' + todayEnded.kind, lang) : l('Voo', 'Flight'))) : null;
+  // ── PERNOITA: hotel da estação (catálogo local) + abono da noite (ae.nightStop, Art. 39) ──
+  const closeHotel = closeNsStation ? (hotels || {})[closeNsStation] : null;
+  const nsPay = (homeState === 'pernoita' && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  // ── STANDBY hoje: "se chamado agora → PSV até HH:MM" (o motor 225 já dá o máx; report+máx = relógio) ──
+  const isStandbyToday = !!(flight && isToday && isNonFlight && /standby|reserve/.test(String(flight.kind || '')));
+  const psvUntil = (() => {
+    if (!isStandbyToday || !flight.report || !ndPsvMax) return null;
+    const r = hmToMin(flight.report), m = hmToMin(ndPsvMax);
+    if (r == null || m == null) return null;
+    const e = (r + m) % 1440;
+    return `${String(Math.floor(e / 60)).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`;
+  })();
+
+  // € do MÊS estimado (folga, com AE) — o MESMO monthStats das Estatísticas (nunca um nº novo).
+  const monthMoney = useMemo(() => {
+    if (!ae || !crewCategory) return null;
+    try {
+      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents });
+      return st0 && st0.aeMonth ? st0.aeMonth.total : null;
+    } catch { return null; }
+  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
+  const monthPct = Math.round((new Date().getDate() / new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()) * 100);
+  const monthName = new Date().toLocaleDateString(locale, { month: 'long' });
+  // € sem símbolo (o rótulo por baixo já diz EUR) — SEMPRE com cêntimos (regra da casa).
+  const eurBare = (n) => { const [i, d] = Number(n).toFixed(2).split('.'); return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ')}${lang === 'en' ? '.' : ','}${d}`; };
+  const psvPct = (() => {
+    const mx = hmToMin(ndPsvMax); if (!mx) return null;
+    const real = hmToMin(liveVerdict ? liveVerdict.realStr : ndPsvActual);
+    return real != null ? Math.min(100, Math.round((real / mx) * 100)) : null;
+  })();
+  const f28 = flightLimits.find((w) => w.days === 28) || null;
+
+  // Rótulo lateral (PeleSide) por estado.
+  const sideL = homeState === 'setup' ? [l('PRIMEIRA VEZ', 'FIRST TIME'), 'SETUP']
+    // FOLGA ancora em HOJE (decisão 2026-07-09): fantasma = dia de hoje, rótulo = dia da
+    // semana COMPLETO — SEMPRE, mesmo com serviço futuro (esse já fala no kick + agenda +
+    // chip; repeti-lo no fantasma era a 4.ª vez e o tempo-expoente é o de hoje).
+    : homeState === 'folga' ? [l('FOLGA', 'DAY OFF'), new Date().toLocaleDateString(locale, { weekday: 'long' }).toUpperCase()]
+    : homeState === 'vespera' ? [l('VÉSPERA', 'EVE'), `REPORT ${(flight && flight.report) || ''}`.trim()]
+    : homeState === 'pernoita' ? [l('PERNOITA', 'NIGHT STOP'), l('FORA DA BASE', 'AWAY FROM BASE')]
+    : homeState === 'posvoo' ? [String(closeFno || l('HOJE', 'TODAY')).toUpperCase(), l('HOJE ✓', 'TODAY ✓')]
+    : [String(flightNo || kindLabel || l('HOJE', 'TODAY')).toUpperCase(), ndSectors ? `${ndSectors} ${l('SETORES', 'SECTORS')}` : (sectorLegs.length ? `${sectorLegs.length} ${l('SETORES', 'SECTORS')}` : l('HOJE', 'TODAY'))];
+
+  // Documento crítico (validade expirada/bad) NÃO vai à banda — vive AO PÉ DO ESTADO (útil),
+  // em vermelho, tocável (decisão do user 2026-07-09). A banda fica p/ o FTL/operacional.
+  const docAlert = qAlerts.find((it) => it.id === 'validades') || null;
+  const bandAlerts = qAlerts.filter((it) => it.id !== 'validades');
+
+  // Banda de alerta (sítio FIXO, uma de cada vez, por prioridade): segurança FTL (ILEGAL) >
+  // limites acima > erro de leitura > desvio/cancelado > inbound > registo atrasado > aeroporto.
+  const band = (() => {
+    if (bandAlerts.length) return { tone: 'red', t: bandAlerts[0].q, s: bandAlerts[0].answer, onPress: () => { select(); setDetailItem(bandAlerts[0]); } };
+    if (stateLevel === 'over') return { tone: 'red', t: l('Limites FTL acima do teto', 'FTL limits over the cap'), s: stateReason || '', onPress: () => { select(); navigation.navigate('Estatísticas'); } };
+    if (calErr) return { tone: 'warn', t: l('Não consegui ler o calendário', 'Couldn’t read the calendar'), s: l('Puxa para atualizar ou verifica a permissão nas Definições.', 'Pull to refresh or check the permission in Settings.') };
+    if (fsDev && (fsCancelled || fsDiverted)) return { tone: 'red', t: fsCancelled ? l('Voo cancelado', 'Flight cancelled') : l('Voo desviado', 'Flight diverted'), s: String(flightStatus.flightIata || flightNo || '') };
+    if (fsDev) {
+      const leg = (wDelay && wDelay.which === 'arr') ? flightStatus.arr : flightStatus.dep;
+      return { tone: 'warn',
+        t: `${flightStatus.flightIata || flightNo || ''} · ${(wDelay && wDelay.which === 'arr') ? l('chega', 'arrives') : l('sai', 'departs')} ${hm(leg && (leg.estimated || leg.actual)) || '—'} · ${l('estava', 'was')} ${hm(leg && leg.scheduled) || '—'}`,
+        s: liveVerdict ? `${liveVerdict.projected ? l('Projeção', 'Projected') : l('Com o atraso', 'With the delay')}: PSV ${liveVerdict.realStr} / ${l('máx', 'max')} ${liveVerdict.maxStr}` : l('Confirma o impacto no PSV/descanso.', 'Check the FDP/rest impact.') };
+    }
+    if (inboundLate) return { tone: 'warn', t: l('O teu avião ainda vem a caminho', 'Your aircraft is still inbound'), s: `${(inbound && inbound.flightIata) || ''} ${l('chega', 'arrives')} ~${inboundInfo.etaZ}Z · ${l('rotação mín. ~35 min', 'min turnaround ~35 min')}${airportDis ? ` · ${airportDis.delayedPct}% ${l('atrasos', 'delays')}` : ''}` };
+    if (syncBehind) return { tone: 'warn', t: l('O registo ainda tem o planeado', 'Your record still shows the plan'), s: l('Sincroniza a escala eCrew pelo calendário para o PSV/limites acertarem.', 'Sync your eCrew roster via the calendar so FDP/limits are right.') };
+    if (airportDis) return { tone: airportDis.tone === 'bad' ? 'red' : 'warn', t: `${(flightStatus && flightStatus.dep && flightStatus.dep.iata) || ''} · ${airportDis.tone === 'bad' ? l('disrupção no aeroporto', 'airport disruption') : l('atrasos generalizados', 'widespread delays')}`, s: `${airportDis.delayedPct}% ${airportDis.side === 'dep' ? l('das partidas atrasadas', 'departures delayed') : l('das chegadas atrasadas', 'arrivals delayed')}${airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}` };
+    return null;
+  })();
+
+  // Herói por estado: fantasma (o DADO gigante) + palavra + kick (partes; {y:...} = amarelo).
+  const cdGhost = cdMin != null && cdMin > 0 ? `${Math.floor(cdMin / 60)}:${String(cdMin % 60).padStart(2, '0')}` : null;
+  const routeShort = flight ? (flight.stations && flight.stations.length > 1
+    ? `${flight.stations[0]}→${flight.stations[flight.stations.length - 1]}`
+    : `${flight.depAirport || ''}→${flight.arrAirport || ''}`) : '';
+  const planeOk = !!(flightStatus && !fsDev && !inboundLate);
+  const aptOk = !!(depAirport && !airportDis);
+  const hero = (() => {
+    if (homeState === 'setup') return { icon: 'plane', word: l('Olá!', 'Hello!'), arrow: 'arrow-diag', arrowRot: 90,
+      kick: [l('liga o ', 'connect your '), { y: l('calendário do telemóvel', 'phone calendar') }, l(' e o Início ganha vida', ' and Home comes alive')] };
+    if (homeState === 'disrupcao') return {
+      ghost: (fsCancelled || fsDiverted) ? '!' : `+${delayMin}`, word: l('Atenção', 'Heads-up'), warn: true, arrow: 'alert',
+      kick: fsCancelled ? [l('voo cancelado — confirma com o crewing', 'flight cancelled — check with crewing')]
+        : fsDiverted ? [l('voo desviado — confirma o destino', 'flight diverted — check destination')]
+        : fsDev ? [l('o voo segue ', 'the flight is running '), { y: `+${delayMin} min` }]
+        : [l('a partida pode derrapar ', 'departure may slip '), { y: `~${delayMin} min` }] };
+    if (homeState === 'hoje') {
+      if (isNonFlight) return { ghost: flight.report || '—', word: kindLabel || l('Serviço', 'Duty'), arrow: 'arrow-u',
+        kick: [l('início ', 'starts '), { y: flight.report || '—' }, (flight.arrTime && flight.arrTime !== flight.report) ? ` · ${l('fim', 'ends')} ${flight.arrTime}` : null] };
+      if (inDuty) return { ghost: (activeSector && activeSector.leg.on) || flight.arrTime || '—', word: l('Em voo', 'Airborne'), arrow: 'arrow-u',
+        kick: activeSector ? [`${l('setor', 'sector')} ${activeSector.idx + 1}/${activeSector.total} · `, { y: `${activeSector.leg.dep || '?'}→${activeSector.leg.arr || '?'}` }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`]
+          : [{ y: routeShort }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`] };
+      return { ghost: cdGhost || flight.report || '—', word: 'Report', arrow: 'arrow-u',
+        kick: [l('às ', 'at '), { y: `${flight.report || '—'}${ndReportZ ? ` · ${ndReportZ}Z` : ''}` },
+          planeOk ? ` · ${l('avião', 'aircraft')} ✓` : null, aptOk ? ` · ${l('aeroporto', 'airport')} ✓` : null,
+          (!flightStatus && ndSectors) ? ` · ${ndSectors} ${l('setores', 'sectors')}` : null] };
+    }
+    // VÉSPERA (noturno): fantasma = countdown ao report, palavra "Amanhã", kick com o
+    // repouso verificado + acordar sugerido — "está tudo verificado, dorme".
+    if (homeState === 'vespera') return {
+      ghost: cdGhost || (flight && flight.report) || '—', word: l('Amanhã', 'Tomorrow'), arrow: 'moon',
+      kick: [l('report às ', 'report at '), { y: `${(flight && flight.report) || '—'}${ndReportZ ? ` · ${ndReportZ}Z` : ''}` },
+        restItem && restItem.status === 'ok' ? ` · ${l('repouso mínimo ✓', 'min rest ✓')}` : null,
+        wakeAt ? ` · ${l('acordar', 'wake')} ~${wakeAt}` : null] };
+    // PERNOITA (noturno): fantasma = a ESTAÇÃO onde dormes, hotel no kick — o estado do
+    // quarto de hotel: tudo o que precisas numa cidade que não é a tua, a um toque.
+    if (homeState === 'pernoita') return {
+      ghost: closeNsStation || '—', word: l('Pernoita', 'Night stop'), arrow: 'moon',
+      kick: closeHotel
+        ? [{ y: closeHotel.name }, (flight && flight.report) ? ` · ${l('amanhã report', 'tomorrow report')} ${flight.report}` : null]
+        : [l('sem hotel guardado — usa a ação Hotel', 'no hotel saved — use the Hotel action'), (flight && flight.report) ? ` · ${l('amanhã', 'tomorrow')} ${flight.report}` : null] };
+    // PÓS-VOO: fantasma = duty total, palavra "Fechado", kick = o veredicto legal do dia.
+    if (homeState === 'posvoo') return {
+      ghost: (closeD && closeD.fdp && closeD.fdp.actualFdpStr) || (todayEnded && todayEnded.report_time) || '—',
+      word: l('Fechado', 'Closed'), arrow: 'check',
+      kick: (closeD && closeD.fdp) ? [
+        { y: `PSV ${closeD.fdp.actualFdpStr || '—'}` }, ` / ${l('máx', 'max')} ${closeD.fdp.maxFdpStr || '—'}`,
+        closeD.fdp.over ? ` · ${l('ACIMA do limite', 'OVER the limit')}` : ` · ${l('dentro dos limites ✓', 'within limits ✓')}`,
+      ] : [l('serviço de hoje terminado ✓', 'today’s duty is done ✓')] };
+    // Folga: dia da semana POR EXTENSO no kick ("quinta", como o mockup — sem o "-feira");
+    // tempo da BASE no fim (min–máx de hoje, à referência "today 18°–27°").
+    const wdLong = flight ? new Date(flight.dateISO + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long' }).replace('-feira', '') : '';
+    const wxTail = wxArr ? ` · ${(wxArr.min != null && wxArr.max != null) ? `${wxArr.min}°–${wxArr.max}°` : `${wxArr.c}°`}` : null;
+    // Fantasma = dia de HOJE sempre (o próximo serviço fala no kick/agenda/chip).
+    return { ghost: String(new Date().getDate()), word: l('Folga', 'Day off'), arrow: 'arrow-diag', arrowRot: 90,
+      kick: flight ? [l('próximo serviço ', 'next duty '), { y: `${wdLong} · ${isNonFlight ? kindLabel : routeShort} · ${flight.report || ''}`.trim() }, wxTail]
+        : [l('sem serviços marcados', 'no duties scheduled'), wxTail] };
+  })();
+
+  // Meio adaptativo — HORAS (voo hoje/disrupção) · linha simples (não-voo) · AGENDA (folga) · SETUP.
+  const midTimes = ((homeState === 'hoje' || homeState === 'disrupcao' || homeState === 'vespera') && flight && !isNonFlight) ? (() => {
+    const sLeg = activeSector ? activeSector.leg : null;
+    const depAp = String((sLeg && sLeg.dep) || flight.depAirport || '—').toUpperCase();
+    const arrAp = String((sLeg && sLeg.arr) || flight.arrAirport || '—').toUpperCase();
+    const dep = flightStatus && flightStatus.dep, arr = flightStatus && flightStatus.arr;
+    const depSched = hm(dep && dep.scheduled) || ndDep || '—';
+    const depLive = hm(dep && (dep.actual || dep.estimated));
+    const arrSched = hm(arr && arr.scheduled) || ndArr || '—';
+    const arrLive = hm(arr && (arr.actual || arr.estimated));
+    const depLate = !!(depLive && ((dep && dep.delayMin) || 0) >= 15);
+    const arrLate = !!(arrLive && arrDelayMin(flightStatus || {}) >= 15);
+    // Disrupção por ROTAÇÃO (inbound atrasado, o NOSSO voo ainda "limpo" no feed): as horas
+    // mostram a PROJEÇÃO — planeada rasurada → ~nova (sched + derrapagem) — como o mockup.
+    // Lei do LI: NUNCA se afirma "a tempo ✓" quando a rotação já o desmente.
+    const projMin = (homeState === 'disrupcao' && !depLate && !arrLate && inboundLate && inboundInfo) ? (inboundInfo.projDelayMin || 0) : 0;
+    if (projMin > 0) {
+      const addMin = (hm0, m) => { const t0 = hmToMin(hm0); return t0 == null ? null : `${String(Math.floor(((t0 + m) % 1440) / 60)).padStart(2, '0')}:${String((t0 + m) % 60).padStart(2, '0')}`; };
+      const dp = addMin(depSched, projMin), ar = addMin(arrSched, projMin);
+      return [
+        { ap: depAp, aps: l('PARTIDA', 'DEPARTURE'), big: dp ? `~${dp}` : depSched, cls: 'warn', old: dp ? depSched : null, st: l('derrapa', 'slipping'), stTone: 'warn', sts: l('projeção', 'projected') },
+        { ap: arrAp, aps: l('CHEGADA', 'ARRIVAL'), big: ar ? `~${ar}` : arrSched, cls: 'warn', old: ar ? arrSched : null, st: l('projeção', 'projected'), stTone: 'warn', sts: l('rotação ~35 min', 'turnaround ~35 min') },
+      ];
+    }
+    return [
+      { ap: depAp, aps: l('PARTIDA', 'DEPARTURE'), big: depLate ? `~${depLive}` : (depLive || depSched), cls: depLate ? 'warn' : (flightStatus ? 'ok' : ''), old: depLate ? depSched : null,
+        st: depLate ? l('derrapa', 'slipping') : (dep && dep.actual) ? l('partiu ✓', 'departed ✓') : flightStatus ? l('a tempo ✓', 'on time ✓') : l('planeado', 'planned'), stTone: depLate ? 'warn' : (flightStatus ? 'ok' : null),
+        sts: (dep && dep.gate) ? `${l('porta', 'gate')} ${dep.gate}` : (ndDepZ ? `${ndDepZ}Z` : '') },
+      { ap: arrAp, aps: l('CHEGADA', 'ARRIVAL'), big: arrLate ? `~${arrLive}` : (arrLive || arrSched), cls: arrLate ? 'warn' : (flightStatus ? 'ok' : ''), old: arrLate ? arrSched : null,
+        st: arrLate ? l('projeção', 'projected') : flightStatus ? l('no plano', 'on plan') : l('planeado', 'planned'), stTone: arrLate ? 'warn' : (flightStatus ? 'ok' : null),
+        sts: wxArr ? `${wxArr.c}°` : (ndArrZ ? `${ndArrZ}Z` : ''), stsIcon: wxArr ? wxArr.icon : null },
+    ];
+  })() : null;
+  const midPlain = (homeState === 'hoje' && flight && isNonFlight)
+    ? { t: kindLabel, s: `${flight.report || ''}${(flight.arrTime && flight.arrTime !== flight.report) ? ` – ${flight.arrTime}` : ''}` } : null;
+  // Pernoita: o HOTEL é o meio (toque → mapas · toque longo → editar; sem hotel → convite).
+  const midHotel = homeState === 'pernoita' ? { hotel: closeHotel, station: closeNsStation } : null;
+  // Pós-voo: os TOTAIS do dia fechado (toque → detalhe do serviço).
+  const midClose = (homeState === 'posvoo' && todayEnded && !closeMulti) ? [
+    (closeD && closeD.fdp && closeD.fdp.actualFdpStr) ? { k: 'DUTY', v: closeD.fdp.actualFdpStr } : null,
+    closeBlock ? { k: 'BLOCK', v: closeBlock } : null,
+    todayEnded.sectors ? { k: l('SETORES', 'SECTORS'), v: String(todayEnded.sectors) } : null,
+  ].filter(Boolean) : null;
+  const agendaRows = (homeState === 'folga') ? (() => {
+    const out = [];
+    for (const iso of Object.keys(duties).filter((k) => k >= todayISO).sort()) {
+      const d = duties[iso]; if (!d || d.deleted || !d.report_time) continue;
+      // Já TERMINOU (ex.: aterrou 15h, são 21h) → não é "próximo" — mesma regra do mergeNextFlight.
+      const mf = dutyToFlight(iso, d); if (!mf || (mf.endDate && mf.endDate.getTime() < Date.now())) continue;
+      const isF = !d.kind || d.kind === 'flight';
+      const wd = new Date(iso + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase();
+      const fno = (Array.isArray(d.legs) && d.legs[0] && (d.legs[0].flightNo || d.legs[0].flight)) ? String(d.legs[0].flightNo || d.legs[0].flight).toUpperCase() : null;
+      const moon = (d.night_stop || d.nightStop) ? ` 🌙 ${l('pernoita', 'night stop')}` : '';   // no título, como o mockup
+      out.push({ iso,
+        a1: `${isF ? [fno, d.route].filter(Boolean).join(' · ') || l('Voo', 'Flight') : t('duties.kind.' + d.kind, lang)}${moon}`,
+        a2: `${wd} · report ${d.report_time}${d.sectors ? ` · ${d.sectors} ${l('setores', 'sectors')}` : ''}` });
+      if (out.length >= 3) break;
+    }
+    return out;
+  })() : null;
+
+  // Micro-texto útil (título BC + frase) — o resumo das perguntas/estado; toca → folha "porquê".
+  const utilTtl = homeState === 'setup' ? l('Porquê', 'Why') : homeState === 'folga' ? l('Estado', 'Status') : homeState === 'vespera' ? l('Amanhã', 'Tomorrow') : homeState === 'pernoita' ? l('Fora', 'Away') : homeState === 'posvoo' ? l('Fecho', 'Wrap-up') : homeState === 'disrupcao' ? 'PSV' : l('Hoje', 'Today');
+  const utilTxt = (() => {
+    if (homeState === 'setup') return l('Sem calendário ligado, a app não sabe nada de ti. Os teus dados ficam no teu telemóvel — e podes espreitar já um dia de exemplo.', 'Without a calendar connected the app knows nothing about you. Your data stays on your phone — and you can peek at an example day right away.');
+    if (homeState === 'vespera') return [
+      wakeAt ? `${l('acordar', 'wake')} ~${wakeAt}` : null,
+      ndSectors ? `${ndSectors} ${l('setores', 'sectors')}` : null,
+      ndPsvMax ? `PSV ${l('máx', 'max')} ${ndPsvMax}` : null,
+      (flight && flight.nightStop) ? `🌙 ${l('pernoita amanhã', 'night stop tomorrow')}` : null,
+    ].filter(Boolean).join(' · ') || l('está tudo verificado', 'all checked');
+    if (homeState === 'pernoita') return [
+      l('repouso fora-base mín. 10h (235)', 'away-base rest min. 10h (235)'),
+      nsPay != null ? `${l('pernoita', 'night stop')} +${eurBare(nsPay)} €` : null,
+      wxArr ? `${wxArr.c}° ${l('em', 'in')} ${closeNsStation}` : null,
+    ].filter(Boolean).join(' · ');
+    if (homeState === 'posvoo') return [
+      restItem && restItem.short ? `${l('repouso', 'rest')}: ${restItem.short}` : null,
+      flight ? `${l('próximo', 'next')} ${(ndDayWd || '').toLowerCase()} · report ${flight.report || '—'}` : l('sem próximo serviço marcado', 'no next duty yet'),
+      (todayEnded && !todayEnded.signOff && postFlightMin) ? l('sign-off do perfil usado — ajusta no serviço se saíste a outra hora', 'profile sign-off used — adjust in the duty if you left later') : null,
+    ].filter(Boolean).join(' · ');
+    if (homeState === 'disrupcao') return liveVerdict
+      ? `PSV ${l('projetado', 'projected')} ${liveVerdict.realStr} / ${l('máx', 'max')} ${liveVerdict.maxStr} · ${liveVerdict.verdict === 'over' ? l('ACIMA da lei', 'OVER the limit') : liveVerdict.verdict === 'discretion' ? l('discrição 205(f) pronta', 'commander’s discretion (205f) ready') : l('dentro do limite', 'within the limit')}`
+      : l('Confirma o impacto no PSV e no descanso.', 'Check the impact on your FDP and rest.');
+    if (homeState === 'hoje') return [
+      flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg ? `${l('avião', 'aircraft')} ${flightStatus.aircraft.reg}` : null,
+      ndPsvMax ? `PSV ${l('máx', 'max')} ${ndPsvMax}` : null,
+      ndSectors ? `${l('aclimatizado', 'acclimatised')}, ${ndSectors} ${l('setores', 'sectors')}` : null,
+      ndFat && (ndFat.band === 'high' || ndFat.band === 'elevated') ? `${l('fadiga', 'fatigue')} ${fatLabel(ndFat.band).toLowerCase()}` : null,
+      flight && flight.nightStop ? `🌙 ${l('pernoita', 'night stop')}` : null,
+    ].filter(Boolean).join(' · ') || l('sem mais nada a assinalar', 'nothing else to flag');
+    const bits = qChips.slice(0, 3).map((it) => it.short).filter(Boolean);
+    return bits.length ? bits.join(' · ') : l('tudo em dia ✓', 'all in order ✓');
+  })();
+  const utilTap = (homeState === 'folga' || homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo') && questionItems.length ? questionItems[0] : null;
+
+  // Dígitos amarelos + donut por estado (o "número do dia").
+  const datarow = (() => {
+    if (homeState === 'setup') return { v: '~1 min', u: l('É O QUE O SETUP DEMORA', 'THAT’S ALL SETUP TAKES'), p: 15, lab: 'SETUP', color: PELE.yellow };
+    if (homeState === 'vespera' || homeState === 'pernoita') return null;   // noites calmas — sem manchete de números (o € da pernoita vive no útil)
+    if (homeState === 'posvoo') {
+      if (ae && pdToday != null) return { v: eurBare(pdToday), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: closePct != null ? closePct : 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: (closeD && closeD.fdp && closeD.fdp.over) ? PELE.red : PELE.yellow };
+      if (closeD && closeD.fdp && closeD.fdp.actualFdpStr) return { v: closeD.fdp.actualFdpStr, u: `${l('PSV DE HOJE · MÁX', 'TODAY’S FDP · MAX')} ${closeD.fdp.maxFdpStr || '—'}`, p: closePct || 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: closeD.fdp.over ? PELE.red : PELE.yellow };
+      return null;
+    }
+    if (homeState === 'disrupcao' && liveVerdict) { const p = psvPct != null ? psvPct : 0; return { v: liveVerdict.realStr, u: `${l('PSV PROJETADO · MÁX', 'PROJECTED FDP · MAX')} ${liveVerdict.maxStr}`, p, lab: `PSV ${p}%`, color: liveVerdict.verdict === 'over' ? PELE.red : PELE.warn }; }
+    if (homeState === 'hoje' || homeState === 'disrupcao') {
+      if (ae && dayPerDiem != null) return { v: eurBare(dayPerDiem), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
+      if (ndPsvMax) return { v: ndPsvMax, u: l('PSV MÁXIMO DE HOJE', 'TODAY’S MAX FDP'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
+      return null;
+    }
+    if (ae && monthMoney != null) return { v: eurBare(monthMoney), u: `EUROS · ${monthName.toUpperCase()} ${l('ESTIMADO', 'ESTIMATED')}`, p: monthPct, lab: `${l('MÊS', 'MONTH')} ${monthPct}%`, color: PELE.yellow };
+    if (f28 && f28.limit) { const p = Math.min(100, Math.round((f28.done / f28.limit) * 100)); return { v: `${Math.round(f28.done)}h`, u: l('VOO · ÚLTIMOS 28 DIAS', 'FLIGHT · LAST 28 DAYS'), p, lab: `28D ${p}%`, color: p >= 90 ? PELE.red : p >= 70 ? PELE.warn : PELE.yellow }; }
+    return null;
+  })();
+
+  // Chip do polegar (preto, dígitos amarelos) + ações COM RÓTULO (a primária destacada).
+  const chip = (() => {
+    if (homeState === 'setup') return { v: l('PASSO 1', 'STEP 1'), s: l('ligar o calendário', 'connect the calendar') };
+    if (homeState === 'vespera') return { v: cdGhost || '—', s: l('até ao report', 'to report') };
+    if (homeState === 'pernoita') return (flight && flight.report)
+      ? { v: flight.report, s: l('report amanhã', 'report tomorrow') }
+      : { v: closeNsStation || '—', s: l('boa noite', 'good night') };
+    if (homeState === 'posvoo') return (closeD && closeD.fdp && closeD.fdp.actualFdpStr)
+      ? { v: closeD.fdp.actualFdpStr, s: `PSV · ${l('máx', 'max')} ${closeD.fdp.maxFdpStr || '—'}` }
+      : { v: '✓', s: l('dia fechado', 'day closed') };
+    if (homeState === 'disrupcao') { const sch = hm(flightStatus && flightStatus.dep && flightStatus.dep.scheduled); const est = hm(flightStatus && flightStatus.dep && (flightStatus.dep.estimated || flightStatus.dep.actual)); return { old: sch, v: est ? `~${est}` : (sch || '—'), s: l('nova partida', 'new departure') }; }
+    if (homeState === 'hoje') return inDuty ? { v: flight.arrTime || ndArr || '—', s: l('termina ~', 'ends ~') } : { v: flight.report || '—', s: `report${ndReportZ ? ` · ${ndReportZ}Z` : ''}` };
+    if (!flight || cdMin == null) return { v: '—', s: l('sem próximo serviço', 'no next duty') };
+    const v = cdMin >= 2880 ? `${Math.round(cdMin / 1440)} ${l('DIAS', 'DAYS')}` : cdMin >= 60 ? `${Math.floor(cdMin / 60)} H` : `${cdMin} MIN`;
+    return { v, s: reportMs != null ? l('até ao report', 'to report') : l('até à partida', 'to departure') };
+  })();
+
+  // Partilhar UM voo (cartão + link ao vivo, sem pessoa — folha do sistema). O mesmo
+  // construtor serve o voo de HOJE (pré/em voo) e o já ATERRADO da pernoita — a página
+  // da família mostra "Aterrou ✓" o dia todo (memória na Edge), partilhar depois é válido.
+  const [sendCard, setSendCard] = useState(null);
+  const openShareLeg = (lg, date) => {
+    if (!lg || !date) return;
+    select();
+    const dep = String(lg.dep || '').toUpperCase(), arr = String(lg.arr || '').toUpperCase();
+    const fno = String(lg.flightNo || lg.flight || '').toUpperCase().replace(/\s+/g, '');
+    const toMin2 = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
+    const om = toMin2(legZulu(date, lg, 'off')), nm = toMin2(legZulu(date, lg, 'on'));
+    const blockMin = (om != null && nm != null) ? ((nm - om + 1440) % 1440) : null;
+    setSendCard({ dep, arr, depTime: lg.off || '', arrTime: lg.on || '', flightNo: fno, date, sectors: 1,
+      dateLabel: new Date(`${date}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
+      duration: blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '',
+      legs: [{ flight: fno, dep, arr }] });
+  };
+  const openShareToday = () => {
+    if (!flight) return;
+    const legsL = sectorLegs.filter((lg) => lg && (lg.flightNo || lg.flight));
+    openShareLeg(legsL.length ? legsL[legsL.length - 1] : (flightNo ? { flightNo, dep: flight.depAirport, arr: flight.arrAirport, off: flight.depTime, on: flight.arrTime } : null), flight.dateISO);
+  };
+  // Pernoita: partilha o voo de HOJE que aterrou fora (a última perna do dia fechado).
+  const closeLegs = (todayEnded && Array.isArray(todayEnded.legs)) ? todayEnded.legs.filter((lg) => lg && (lg.flightNo || lg.flight)) : [];
+  const openShareClose = () => openShareLeg(closeLegs.length ? closeLegs[closeLegs.length - 1] : null, todayISO);
+  const shareable = isToday && !isNonFlight && !(flight && flight.demo) && (sectorLegs.some((lg) => lg && (lg.flightNo || lg.flight)) || !!flightNo);
+  const shareableClose = homeState === 'pernoita' && closeLegs.length > 0;
+  const acts = homeState === 'setup' ? [
+    { ic: 'cal', lbl: l('Ligar calendário', 'Connect calendar'), hot: true, run: requestAccess },
+    { ic: 'eye', lbl: l('Ver exemplo', 'See example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
+  ] : homeState === 'folga' ? [
+    ...(ae && openExtra ? [{ ic: 'plus', lbl: 'Extra', hot: true, run: () => { select(); openExtra(); } }] : []),
+    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: !(ae && openExtra), run: () => { select(); openSimulation(); } }] : []),
+  ] : homeState === 'vespera' ? [
+    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: true, run: () => { select(); openSimulation(); } }] : []),
+    ...(featuredTappable ? [{ ic: 'cal', lbl: l('Ver serviço', 'View duty'), run: () => openDayDetail(flight.dateISO) }] : []),
+  ] : homeState === 'pernoita' ? [
+    { ic: 'bed', lbl: 'Hotel', hot: true, run: () => { select(); if (closeHotel) Linking.openURL(hotelMapsUrl(closeHotel.name, closeNsStation, Platform.OS)).catch(() => {}); else setHotelOpen(true); }, longRun: () => { select(); setHotelOpen(true); } },
+    ...(shareableClose ? [{ ic: 'share', lbl: l('Partilhar', 'Share'), run: openShareClose }] : []),
+    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), run: () => { select(); openSimulation(); } }] : []),
+  ] : homeState === 'posvoo' ? [
+    { ic: 'edit', lbl: 'Sign-off', hot: true, run: () => openDayDetail(todayISO) },
+    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), run: () => { select(); openSimulation(); } }] : []),
+  ] : [
+    ...(shareable ? [{ ic: 'share', lbl: l('Partilhar', 'Share'), hot: true, run: openShareToday }] : []),
+    ...((flight && flight.nightStop) ? [{ ic: 'bed', lbl: 'Hotel', run: () => { select(); if (nsHotel) Linking.openURL(hotelMapsUrl(nsHotel.name, nsHotelStation, Platform.OS)).catch(() => {}); else setHotelOpen(true); }, longRun: () => { select(); setHotelOpen(true); } }] : []),
+    ...(openSimulation ? [{ ic: 'gauge', lbl: l('Simular', 'Simulate'), hot: !shareable, run: () => { select(); openSimulation(); } }] : []),
+  ];
+
+  // Tamanho do fantasma DETERMINÍSTICO pelo comprimento (Barlow Condensed ~0.47em/char;
+  // largura útil ~346): 1–3 chars a 190 · 4 a 160 · ≥5 a 140. Nada de auto-encolher (bug iOS).
+  const ghostLen = hero.ghost ? String(hero.ghost).length : 0;
+  const ghostSize = ghostLen >= 5 ? { fontSize: 140, lineHeight: 142, top: -8 }
+    : ghostLen === 4 ? { fontSize: 160, lineHeight: 162, top: -11 }
+    : null;   // null = os 190/192/-14 do estilo base
+
+  // Kick com partes coloridas ({y:...} = amarelo).
+  const kickParts = (parts) => (
+    <Text style={s.kick} numberOfLines={2}>
+      {parts.map((p, i) => p == null ? null : typeof p === 'string' ? <Text key={i}>{p}</Text> : <Text key={i} style={s.kickY}>{p.y}</Text>)}
+    </Text>
+  );
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      {/* Atmosfera — noite: glow de candeeiro (véspera) · dia: HALO da cor do tempo */}
+      {night ? (
+        <View pointerEvents="none" style={s.lampWrap}>
+          <Svg width={360} height={320}>
+            <Defs>
+              <RadialGradient id="lamp" cx="50%" cy="42%" r="55%">
+                <Stop offset="0%" stopColor="#FFD678" stopOpacity="0.16" />
+                <Stop offset="60%" stopColor="#FFD678" stopOpacity="0.04" />
+                <Stop offset="100%" stopColor="#FFD678" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Circle cx={180} cy={134} r={170} fill="url(#lamp)" />
+          </Svg>
+        </View>
+      ) : haloTone ? (
+        <View pointerEvents="none" style={s.haloWrap}>
+          <Svg width={430} height={430}>
+            <Defs>
+              <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor={haloTone} stopOpacity="0.16" />
+                <Stop offset="55%" stopColor={haloTone} stopOpacity="0.05" />
+                <Stop offset="100%" stopColor={haloTone} stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Circle cx={215} cy={215} r={215} fill="url(#halo)" />
+          </Svg>
+        </View>
+      ) : null}
+      <PeleSide label={sideL[0]} accent={sideL[1]} color={night ? P.ink : undefined} />
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
-        refreshControl={<RefreshControl refreshing={refreshing} tintColor={C.sub} colors={[C.sub]}
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={P.grey} colors={[P.grey]}
           onRefresh={async () => {
             setRefreshing(true); const t0 = Date.now();
             try { await syncFlight(); } catch { /* ignora */ }
@@ -700,331 +980,295 @@ export default function HomeScreen({ navigation }) {
             setRefreshing(false);
           }} />}>
 
-        {/* Cabeçalho claro (PageHeader) — eyebrow do operador + sino + saudação */}
-        <PageHeader
-          eyebrow={opEyebrow}
-          title={`${t('home.hello', lang)}${firstName ? `, ${firstName}` : ''}`}
-          right={<HeaderActions />}
-        />
+        {/* Topo (avatar + sino, PeleHeader) + saudação */}
+        <PeleHeader initials={initials} onAvatar={() => navigation.navigate('Perfil')} bell night={night} />
+        <Animated.View style={seg(0)}><Text style={s.greet}>{greet}</Text></Animated.View>
 
-        {/* Aviso de VOO ao vivo — SÓ quando há desvio (atraso/cancelado/desviado). Estado do
-            voo do card Serviços via Edge Function (AirLabs). Estipulado vs real + porta. */}
-        {flightStatus && hasDeviation(flightStatus) ? (() => {
-          const st = String(flightStatus.status || '').toLowerCase();
-          const cancelled = st === 'cancelled' || st === 'canceled';
-          const diverted = st === 'diverted';
-          const bad = cancelled || diverted;
-          const w = worstDelay(flightStatus);            // { min, which:'dep'|'arr' } — o PIOR conta
-          const isArr = w.which === 'arr';
-          const tone = bad ? C.red : C.warn, soft = bad ? C.redSoft : C.warnSoft, txt = bad ? C.redText : C.warnText;
-          const hm = (x) => (x ? String(x).slice(11, 16) : '—');
-          const dep = flightStatus.dep || {}, arr = flightStatus.arr || {};
-          const leg = isArr ? arr : dep;                 // o lado relevante (partida vs chegada)
-          const head = cancelled ? l('Voo cancelado', 'Flight cancelled')
-            : diverted ? l('Voo desviado', 'Flight diverted')
-            : isArr ? l(`Chega +${w.min} min`, `Arrives +${w.min} min`)
-            : l(`Atrasado +${w.min} min`, `Delayed +${w.min} min`);
-          // Veredicto legal do PSV com o atraso REAL (105/205) — supera a nota genérica.
-          const vColor = liveVerdict ? (liveVerdict.verdict === 'over' ? C.redText : liveVerdict.verdict === 'discretion' ? C.warnText : C.greenText) : null;
-          const vText = liveVerdict ? (() => {
-            const pre = liveVerdict.projected ? l('Projeção', 'Projected') : l('Com o atraso', 'With the delay');
-            const psv = l(`PSV ${liveVerdict.realStr} (máx ${liveVerdict.maxStr})`, `FDP ${liveVerdict.realStr} (max ${liveVerdict.maxStr})`);
-            if (liveVerdict.verdict === 'legal') return `${pre}: ${psv} — ${l('dentro do limite', 'within the limit')}.`;
-            if (liveVerdict.verdict === 'discretion') return `${pre}: ${psv} — ${l(`+${liveVerdict.overMaxStr} na discrição do comandante (205 f)`, `+${liveVerdict.overMaxStr} into commander's discretion (205 f)`)}.`;
-            return `${pre}: ${psv} — ${l(`ACIMA da lei: +${liveVerdict.overDiscStr} além da discrição (205 f)`, `OVER the legal limit: +${liveVerdict.overDiscStr} beyond discretion (205 f)`)}.`;
-          })() : null;
-          return (
-            <Animated.View style={[s.fdelay, { backgroundColor: soft, borderColor: tone + '55' }, seg(1)]}>
-              <Ionicons name={cancelled ? 'close-circle' : diverted ? 'git-branch-outline' : 'time'} size={18} color={tone} style={{ marginTop: 1 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo}{dep.iata ? ` · ${dep.iata}→${arr.iata || '—'}` : ''}</Text>
-                <Text style={[s.fdelayH, { color: txt }]} numberOfLines={1}>{head}</Text>
-                {!bad ? <Text style={s.fdelayS} numberOfLines={2}>{isArr ? l('Chega', 'Arrives') : l('Sai', 'Departs')} {hm(leg.estimated || leg.actual)} · {l('estava', 'was')} {hm(leg.scheduled)}{!isArr && dep.gate ? ` · ${l('porta', 'gate')} ${dep.gate}` : ''}</Text> : null}
-                {!bad && vText ? (
-                  <Text style={[s.fdelayNote, { color: vColor, fontFamily: FONT.bold }]} numberOfLines={2}>{vText}</Text>
-                ) : (!bad && w.min >= 30 ? (
-                  <Text style={s.fdelayNote} numberOfLines={2}>{l('Atraso significativo — confirma o impacto no PSV/descanso.', 'Significant delay — check the impact on your FDP/rest.')}</Text>
-                ) : null)}
-                {!bad && syncBehind ? (
-                  <Text style={[s.fdelayNote, { color: C.text, fontFamily: FONT.bold }]} numberOfLines={2}>↻ {l('O teu registo ainda tem o planeado — sincroniza a escala eCrew pelo calendário para o PSV/limites acertarem.', 'Your record still shows the plan — sync your eCrew roster via the calendar so your FDP/limits are correct.')}</Text>
+        {/* Banda de alerta — sítio fixo, uma de cada vez */}
+        {band ? (
+          <Animated.View style={seg(1)}>
+            <TouchableOpacity activeOpacity={band.onPress ? 0.85 : 1} onPress={band.onPress} disabled={!band.onPress}
+              style={[s.band, band.tone === 'red' ? s.bandRed : null]}
+              accessibilityRole={band.onPress ? 'button' : undefined}>
+              <Text style={[s.bandT, band.tone === 'red' ? s.bandTRed : null]} numberOfLines={2}>{band.t}</Text>
+              {band.s ? <Text style={s.bandS} numberOfLines={2}>{band.s}</Text> : null}
+            </TouchableOpacity>
+          </Animated.View>
+        ) : null}
+
+        {/* HERÓI — fantasma + palavra + kick */}
+        {loadingFlight ? <HeroSkeleton /> : (
+          <Animated.View style={seg(1)}>
+            <View style={s.hero}>
+              <View style={s.arrowy}><Icon name={hero.arrow} size={24} color={PELE.yellow} rot={hero.arrowRot} /></View>
+              {hero.icon
+                ? <View style={s.ghostIcon}><Icon name={hero.icon} size={150} color={PELE.ghost} /></View>
+                : /* SEM adjustsFontSizeToFit: no iOS um Text auto-encolhível pode ficar INVISÍVEL
+                     num re-render de irmãos (ex.: a meteo a chegar) — tamanho por comprimento. */
+                <Text style={[s.ghost, ghostSize]} numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
+              {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde dormes). */}
+              {(homeState === 'folga' || homeState === 'pernoita') && wxArr && wxArr.icon ? (
+                <View style={s.wxSup}><Icon name={wxArr.icon} size={22} color={P.grey} /></View>
+              ) : null}
+              <Text style={[s.word, hero.warn ? s.wordWarn : null]} numberOfLines={1} allowFontScaling={false}>{hero.word}</Text>
+              {kickParts(hero.kick)}
+            </View>
+            <View style={s.hr} />
+          </Animated.View>
+        )}
+
+        {/* MEIO ADAPTATIVO — horas do voo · linha do serviço · agenda da folga · setup */}
+        <Animated.View style={[s.mid, seg(2)]}>
+          {midTimes ? midTimes.map((r, i) => (
+            <TouchableOpacity key={i} activeOpacity={featuredTappable ? 0.75 : 1} onPress={openFeatured} disabled={!featuredTappable} style={s.trow}
+              accessibilityRole={featuredTappable ? 'button' : undefined}>
+              <View style={s.tap}><Text style={s.tapT} numberOfLines={1}>{r.ap}</Text><Text style={s.tapS} numberOfLines={1}>{r.aps}</Text></View>
+              <Text style={[s.tbig, r.cls === 'ok' ? s.tbigOk : r.cls === 'warn' ? s.tbigWarn : null]} numberOfLines={1}>{r.big}</Text>
+              {r.old ? <Text style={s.told} numberOfLines={1}>{r.old}</Text> : null}
+              <View style={s.tst}>
+                <Text style={[s.tstT, r.stTone === 'ok' ? { color: P.ok } : r.stTone === 'warn' ? { color: P.warn } : null]} numberOfLines={1}>{r.st}</Text>
+                {r.sts ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                    {r.stsIcon ? <Icon name={r.stsIcon} size={12} color={P.grey} /> : null}
+                    <Text style={[s.tstS, { marginTop: 0 }]} numberOfLines={1}>{r.sts}</Text>
+                  </View>
                 ) : null}
               </View>
-            </Animated.View>
-          );
-        })() : null}
+            </TouchableOpacity>
+          )) : midPlain ? (
+            <>
+              <TouchableOpacity activeOpacity={featuredTappable ? 0.75 : 1} onPress={openFeatured} disabled={!featuredTappable} style={s.trow}>
+                <View style={s.tap}><Text style={s.tapT} numberOfLines={1}>{midPlain.t}</Text><Text style={s.tapS}>{l('HOJE', 'TODAY')}</Text></View>
+                <Text style={[s.tbig, midPlain.s.length > 11 ? { fontSize: 36, lineHeight: 38 } : null]} numberOfLines={1}>{midPlain.s}</Text>
+              </TouchableOpacity>
+              {/* Standby: a única pergunta que importa — "se me chamarem agora, até onde me podem levar?" (225) */}
+              {psvUntil ? (
+                <View style={s.trow}>
+                  <View style={s.tap}><Text style={s.tapS} numberOfLines={1}>{l('SE CHAMADO', 'IF CALLED')}</Text></View>
+                  <Text style={s.tbig} numberOfLines={1}>{psvUntil}</Text>
+                  <View style={s.tst}>
+                    <Text style={s.tstT} numberOfLines={1}>{l('PSV até', 'FDP until')}</Text>
+                    <Text style={s.tstS} numberOfLines={1}>{l('máx', 'max')} {ndPsvMax}</Text>
+                  </View>
+                </View>
+              ) : null}
+            </>
+          ) : midHotel ? (
+            midHotel.hotel ? (
+              <TouchableOpacity style={s.hotelRow} activeOpacity={0.85}
+                onPress={() => { select(); Linking.openURL(hotelMapsUrl(midHotel.hotel.name, midHotel.station, Platform.OS)).catch(() => {}); }}
+                onLongPress={() => { select(); setHotelOpen(true); }}
+                accessibilityRole="button" accessibilityLabel={midHotel.hotel.name}
+                accessibilityHint={l('Toque abre os mapas · toque longo edita', 'Tap opens maps · long press edits')}>
+                <Icon name="bed" size={18} color={P.ink} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.hotelName} numberOfLines={1}>{midHotel.hotel.name}</Text>
+                  {midHotel.hotel.note ? <Text style={s.hotelNote} numberOfLines={1}>{midHotel.hotel.note}</Text> : null}
+                </View>
+                <Text style={s.hotelGo}>{l('Mapas', 'Maps')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={s.hotelAdd} activeOpacity={0.8} onPress={() => { select(); setHotelOpen(true); }} accessibilityRole="button">
+                <Icon name="plus" size={14} color={P.grey} />
+                <Text style={s.hotelAddTxt}>{l('adicionar o hotel desta pernoita', 'add this night stop’s hotel')}</Text>
+              </TouchableOpacity>
+            )
+          ) : midClose ? midClose.map((c) => (
+            <TouchableOpacity key={c.k} style={s.trow} activeOpacity={0.75} onPress={() => openDayDetail(todayISO)} accessibilityRole="button">
+              <View style={s.tap}><Text style={s.tapS} numberOfLines={1}>{c.k}</Text></View>
+              <Text style={s.tbig} numberOfLines={1}>{c.v}</Text>
+            </TouchableOpacity>
+          )) : agendaRows ? (agendaRows.length ? agendaRows.map((a) => (
+            <TouchableOpacity key={a.iso} style={s.ag} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)} accessibilityRole="button">
+              <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
+                <Text style={s.agA} numberOfLines={1}>{a.a1}</Text>
+                <Text style={s.agB} numberOfLines={1}>{a.a2}</Text>
+              </View>
+              <View style={s.agTick} />
+            </TouchableOpacity>
+          )) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
+            <>
+              <TouchableOpacity style={s.stp} activeOpacity={0.8} onPress={requestAccess} accessibilityRole="button">
+                <Text style={s.stpN}>1</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.stpT}>{l('Ligar o calendário do telemóvel', 'Connect your phone calendar')}</Text>
+                  <Text style={s.stpS}>{l('é daí que a app lê a tua escala — nunca mais escreves um voo à mão', 'that’s where the app reads your roster — never type a flight again')}</Text>
+                </View>
+                <Icon name="chevron" size={14} color={PELE.ink} />
+              </TouchableOpacity>
+              <View style={s.tip}>
+                <Icon name="sync" size={14} color={PELE.ink} />
+                <Text style={s.tipTxt}>{l('No eCrew, ativa o sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In eCrew, enable sync to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')}</Text>
+              </View>
+            </>
+          ) : null}
+        </Animated.View>
 
-        {/* INBOUND atrasado — o desvio ainda não está no NOSSO voo, mas o avião que nos vem
-            buscar chega tarde: aviso âmbar com a projeção (chegada + rotação mín. 35 min).
-            Só antes da partida e quando o nosso voo ainda parece limpo (senão o card de cima manda). */}
-        {flightStatus && !hasDeviation(flightStatus) && inboundLate ? (
-          <Animated.View style={[s.fdelay, { backgroundColor: C.warnSoft, borderColor: C.warn + '55' }, seg(1)]}>
-            <Ionicons name="airplane-outline" size={18} color={C.warn} style={{ marginTop: 1 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.fdelayQ} numberOfLines={1}>{flightStatus.flightIata || flightNo} · {l('o teu avião ainda vem a caminho', 'your aircraft is still inbound')}</Text>
-              <Text style={[s.fdelayH, { color: C.warnText }]} numberOfLines={1}>{l(`Partida pode derrapar ~${inboundInfo.projDelayMin} min`, `Departure may slip ~${inboundInfo.projDelayMin} min`)}</Text>
-              <Text style={s.fdelayS} numberOfLines={2}>{(inbound.flightIata || '—')} {inbound.dep && inbound.dep.iata ? `${inbound.dep.iata}→${inbound.arr.iata || '—'}` : ''} · {l('chega', 'arrives')} ~{inboundInfo.etaZ}Z · {l('rotação mín. ~35 min', 'min turnaround ~35 min')}</Text>
-              <Text style={s.fdelayNote} numberOfLines={2}>{l('Projeção pela rotação do avião — o teu voo ainda não está marcado como atrasado.', 'Projected from the aircraft rotation — your flight is not flagged as delayed yet.')}</Text>
-            </View>
+        {/* A VOZ do estado — frase calma a dois tons (negrito + cauda cinzenta) */}
+        {voice ? (
+          <Animated.View style={seg(3)}>
+            <Text style={s.voice}><Text style={s.voiceB}>{voice.bold}</Text> {voice.tail}</Text>
           </Animated.View>
         ) : null}
 
-        {/* AEROPORTO "doente" (Airport Intelligence) — atrasos/cancelamentos generalizados
-            no aeroporto de PARTIDA: o report/PSV vai sentir isto antes de a companhia o dizer.
-            Complementa o inbound (o TEU avião) com o sistémico (o aeroporto inteiro). */}
-        {airportDis ? (() => {
-          const bad = airportDis.tone === 'bad';
-          return (
-            <Animated.View style={[s.fdelay, { backgroundColor: bad ? C.redSoft : C.warnSoft, borderColor: (bad ? C.red : C.warn) + '55' }, seg(1)]}>
-              <Ionicons name="pulse-outline" size={18} color={bad ? C.red : C.warn} style={{ marginTop: 1 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.fdelayQ} numberOfLines={1}>{(flightStatus.dep && flightStatus.dep.iata) || ''} · {l('estado do aeroporto', 'airport status')}</Text>
-                <Text style={[s.fdelayH, { color: bad ? C.redText : C.warnText }]} numberOfLines={1}>
-                  {bad ? l('Disrupção no aeroporto', 'Airport disruption') : l('Atrasos generalizados', 'Widespread delays')}
-                </Text>
-                <Text style={s.fdelayS} numberOfLines={2}>
-                  {airportDis.delayedPct}% {airportDis.side === 'dep' ? l('das partidas atrasadas', 'of departures delayed') : l('das chegadas atrasadas', 'of arrivals delayed')}
-                  {airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}
-                  {airportDis.cancelPct >= 10 ? ` · ${airportDis.cancelPct}% ${l('cancelados', 'cancelled')}` : ''}
-                </Text>
-                <Text style={s.fdelayNote} numberOfLines={2}>{l('Fotografia de hoje no aeroporto — conta com o report/embarque a esticar.', 'Today’s snapshot at the airport — expect report/boarding to stretch.')}</Text>
-              </View>
-            </Animated.View>
-          );
-        })() : null}
+        {/* Micro-texto útil */}
+        <Animated.View style={seg(3)}>
+          <TouchableOpacity style={s.util} activeOpacity={utilTap ? 0.75 : 1} onPress={utilTap ? () => { select(); setDetailItem(utilTap); } : undefined} disabled={!utilTap}
+            accessibilityRole={utilTap ? 'button' : undefined}>
+            <Text style={s.utilTtl} numberOfLines={1}>{utilTtl}</Text>
+            <Text style={s.utilP} numberOfLines={3}>{utilTxt}</Text>
+          </TouchableOpacity>
+          {/* Documento crítico — ao pé do Estado (não na banda): vermelho, toca → porquê. */}
+          {docAlert ? (
+            <TouchableOpacity style={s.docAlert} activeOpacity={0.8} onPress={() => { select(); setDetailItem(docAlert); }}
+              accessibilityRole="button" accessibilityLabel={docAlert.q}>
+              <Icon name="alert" size={14} color={P.red} />
+              <Text style={s.docAlertTxt} numberOfLines={2}>{docAlert.answer}{docAlert.suggestion ? <Text style={s.docAlertSub}>  ·  {docAlert.suggestion}</Text> : null}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {longHaul ? <Text style={s.lhNote} numberOfLines={2}>{l('FTL automático assume aclimatizado e na base — em longo-curso confirma na calculadora.', 'Auto FTL assumes acclimatised and in-base — for long-haul check the calculator.')}</Text> : null}
+        </Animated.View>
 
-        {/* FTL automático assume aclimatizado/na-base — aviso p/ longo curso (Hi Fly · TAP WB). */}
-        {isLongHaulCompany(company, crewFleet) ? (
-          <Banner tone="warn" icon="information-circle" style={{ marginBottom: SPACE.md }}
-            title={l('Cálculo FTL automático', 'Automatic FTL calculation')}
-            sub={l('Assume aclimatizado e na base. Em longo-curso, fusos ≥ 4 h ou fora-base, confirma na calculadora.', 'Assumes acclimatised and in-base. For long-haul, ≥4 h time zones or away-base, check the calculator.')}
-            onPress={() => { select(); navigation.navigate('FTL'); }} />
+        {/* Dígitos amarelos + donut */}
+        {datarow ? (
+          <Animated.View style={[s.datarow, seg(4)]}>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+              <Text style={[s.bigy, String(datarow.v).length > 9 ? { fontSize: 44, lineHeight: 46 } : null]} numberOfLines={1} allowFontScaling={false}>{datarow.v}</Text>
+              <Text style={s.bigyU} numberOfLines={1}>{datarow.u}</Text>
+            </View>
+            <Donut p={datarow.p} color={datarow.color} label={datarow.lab} />
+          </Animated.View>
         ) : null}
 
-        {/* Card SERVIÇOS (principal) — próximo serviço + próximas atividades FUNDIDOS */}
-        <Animated.View style={seg(2)}>{nextDutyEl}</Animated.View>
-        {/* Sem próximo voo (estado vazio): mostra as próximas atividades à parte, p/ não se perderem */}
-        {!flight ? <Animated.View style={seg(3)}><UpcomingDutiesCard duties={duties} lang={lang} onPressItem={openDayDetail} /></Animated.View> : null}
-
-        {/* PERGUNTAS — A+chips. CRÍTICO (ILEGAL/expirado) → alerta vermelho com o conselho à vista
-            (segurança FTL grita). O resto → chips coloridos (relance); "escala" toca → Escala. */}
-        {(qAlerts.length || qChips.length) ? (
-          <Animated.View style={[s.qWrap, seg(4)]}>
-            {qAlerts.map((it) => (
-              <TouchableOpacity key={it.id} style={s.qAlert} activeOpacity={0.85} onPress={() => { select(); setDetailItem(it); }}>
-                <View style={s.qAlertIc}><Ionicons name="alert" size={18} color="#fff" /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.qAlertQ}>{it.q}</Text>
-                  <Text style={s.qAlertA} numberOfLines={2}>{it.answer}</Text>
-                  {it.suggestion ? <Text style={s.qAlertS} numberOfLines={2}>{it.suggestion}</Text> : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={C.redText} style={{ alignSelf: 'center' }} />
+        {/* Barra do polegar — chip + ações com rótulo */}
+        <Animated.View style={[s.thumb, seg(5)]}>
+          <View style={s.chip}>
+            <Text style={s.chipV} numberOfLines={1}>{chip.old ? <Text style={s.chipOld}>{chip.old} </Text> : null}{chip.v}</Text>
+            <Text style={s.chipS} numberOfLines={1}>{chip.s}</Text>
+          </View>
+          <View style={s.acts}>
+            {acts.map((a) => (
+              <TouchableOpacity key={a.lbl} style={s.act} activeOpacity={0.8} onPress={a.run} onLongPress={a.longRun}
+                accessibilityRole="button" accessibilityLabel={a.lbl}>
+                <View style={[s.actC, a.hot ? s.actHot : null]}><Icon name={a.ic} size={16} color={a.hot ? (night ? PELE_NIGHT.paper : PELE.yellow) : P.ink} /></View>
+                <Text style={[s.actL, a.hot ? { color: P.ink } : null]} numberOfLines={1}>{a.lbl}</Text>
               </TouchableOpacity>
             ))}
-            {qChips.length ? (
-              <>
-                <Text style={s.qSec}>{l('Perguntas', 'Questions')}</Text>
-                <View style={s.qList}>
-                  {qChips.map((it, i) => (
-                    <TouchableOpacity key={it.id} activeOpacity={0.85} onPress={() => { select(); setDetailItem(it); }} style={[s.qRow, i > 0 && s.qRowBorder]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.qRowQ} numberOfLines={1}>{it.q}</Text>
-                        {it.suggestion ? <Text style={s.qRowS} numberOfLines={2}>{it.suggestion}</Text> : null}
-                      </View>
-                      <View style={[s.qPill, it.status === 'warn' ? s.qPillWarn : it.status === 'info' ? s.qPillInfo : it.status === 'ok' ? s.qPillOk : null]}>
-                        <Text style={[s.qPillT, it.status === 'warn' ? { color: C.warnText } : it.status === 'info' ? { color: C.brand } : it.status === 'ok' ? { color: C.greenText } : null]} numberOfLines={1}>{it.short}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color={C.sub} style={{ marginLeft: 2 }} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            ) : null}
-          </Animated.View>
-        ) : null}
+          </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Hotel da pernoita — registar/editar (estação derivada da escala). */}
-      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={nsHotelStation} />
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={closeNsStation || nsHotelStation} />
 
-      {/* Folha "porquê" — abre ao tocar numa pergunta (alerta ou linha). */}
+      {/* Folha "porquê" — abre da banda (alerta) ou do micro-texto útil. */}
       <QuestionDetailSheet item={detailItem} lang={lang}
         onClose={() => setDetailItem(null)}
         onNav={(dest) => {
           setDetailItem(null);
-          // Destino: { root, screen? } — aba, opcionalmente com ecrã aninhado (ex. Perfil → Validades).
           if (dest && dest.root) navigation.navigate(dest.root, dest.screen ? { screen: dest.screen } : undefined);
         }} />
+
+      {/* Partilhar o voo de hoje — o MESMO cartão editorial da família (sem pessoa). */}
+      <FlightShareCard visible={!!sendCard} onClose={() => setSendCard(null)}
+        dep={sendCard ? sendCard.dep : undefined} arr={sendCard ? sendCard.arr : undefined}
+        depTime={sendCard ? sendCard.depTime : undefined} arrTime={sendCard ? sendCard.arrTime : undefined}
+        flightNo={sendCard ? sendCard.flightNo : undefined} dateLabel={sendCard ? sendCard.dateLabel : undefined}
+        sectors={sendCard ? sendCard.sectors : undefined} duration={sendCard ? sendCard.duration : undefined}
+        date={sendCard ? sendCard.date : undefined} legs={sendCard ? sendCard.legs : undefined} />
     </SafeAreaView>
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
-  scroll: { padding: SPACE.lg },
+// ── Estilos da pele — FÁBRICA dia/noite (P = PELE ou PELE_NIGHT; medidas do mockup) ──
+const makeSkin = (P, night) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: P.paper },
+  scroll: { paddingHorizontal: 22, flexGrow: 1 },
+  greet: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 10 },
 
-  // Sino do cabeçalho (slot direito do PageHeader)
-  hbtn: { position: 'relative', width: 36, height: 36, borderRadius: RADIUS.pill, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: RADIUS.pill, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: C.canvas },
-  headerBadgeTxt: { color: '#fff', fontSize: TYPE.eyebrow, fontFamily: FONT.bold },
+  // Banda de alerta (mockup .alertband): sangra até às margens, borda fina acima/abaixo.
+  band: { marginTop: 9, marginHorizontal: -22, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: P.warnSoft, borderTopWidth: 1, borderBottomWidth: 1, borderColor: night ? 'rgba(240,138,60,0.35)' : '#F2CBA5' },
+  bandRed: { backgroundColor: P.redSoft, borderColor: night ? 'rgba(229,115,104,0.35)' : '#E7C0BA' },
+  bandT: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.warn },
+  bandTRed: { color: P.red },
+  bandS: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: night ? '#E8B27E' : '#B07840', marginTop: 1 },
 
-  // Tira de 5 dias
+  // Herói (mockup .hero/.ghostnum/.word/.kick — o Início fala mais alto: 170/56)
+  hero: { position: 'relative', minHeight: 200, marginTop: 8, justifyContent: 'flex-end', paddingBottom: 4 },
+  arrowy: { position: 'absolute', left: 2, top: 6 },
+  // left:0 + right + textAlign right = largura LIMITADA — obrigatório: adjustsFontSizeToFit
+  // num Text absoluto só-ancorado-à-direita não renderiza no iOS (padrão provado no FlightShareCard).
+  // right 12 (era -2): o fantasma recua à esquerda p/ não pisar o rótulo rodado da margem.
+  ghost: { position: 'absolute', left: 0, right: 12, top: -14, fontFamily: PELE_FONT.display, fontSize: 190, lineHeight: 192, letterSpacing: -4, color: P.ghost, textAlign: 'right' },
+  ghostIcon: { position: 'absolute', right: 18, top: 10 },
+  wxSup: { position: 'absolute', right: 12, top: 2 },   // expoente cola à borda recuada do fantasma
+  word: { fontFamily: PELE_FONT.display, fontSize: 56, lineHeight: 58, letterSpacing: -0.5, color: P.ink },
+  wordWarn: { color: P.warn },
+  kick: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 6 },
+  kickY: { color: P.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  hr: { height: 1.5, backgroundColor: P.ink, marginTop: 8 },
 
-  // Estado FTL — linha de estado (ponto semáforo + contexto à direita)
-  statline: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: SPACE.md },
-  statDotWrap: { width: 9, height: 9, alignItems: 'center', justifyContent: 'center' },
-  statDot: { width: 9, height: 9, borderRadius: RADIUS.pill },
-  statLabel: { fontSize: TYPE.label, fontFamily: FONT.heavy, color: C.text },
-  statCtx: { marginLeft: 'auto', fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.4, color: C.sub, textTransform: 'uppercase' },
+  // Meio adaptativo (mockup .mid/.trow/.ag/.stp/.tip)
+  mid: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.line },
+  trow: { flexDirection: 'row', alignItems: 'baseline', gap: 12, paddingVertical: 6 },
+  tap: { width: 74 },
+  tapT: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  tapS: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, letterSpacing: 1.5, color: P.grey, marginTop: 1 },
+  tbig: { fontFamily: PELE_FONT.display, fontSize: 46, lineHeight: 48, color: P.ink },
+  tbigOk: { color: P.ok },
+  tbigWarn: { color: P.warn },
+  told: { fontFamily: PELE_FONT.display, fontSize: 22, color: '#B9B8B2', textDecorationLine: 'line-through' },
+  tst: { marginLeft: 'auto', alignItems: 'flex-end' },
+  tstT: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  tstS: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
+  ag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 9, paddingVertical: 6 },
+  agA: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  agB: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
+  agTick: { width: 2.5, height: 26, backgroundColor: P.ink, borderRadius: 2 },
+  agEmpty: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: P.grey, textAlign: 'right', paddingVertical: 10 },
+  hotelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  hotelName: { fontSize: 14, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  hotelNote: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
+  hotelGo: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  hotelAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderWidth: 1.5, borderColor: P.line, borderStyle: 'dashed', borderRadius: 12, marginVertical: 4 },
+  hotelAddTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: P.grey },
+  stp: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 7 },
+  stpN: { width: 40, fontFamily: PELE_FONT.display, fontSize: 34, color: P.yellow, lineHeight: 36 },
+  stpT: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  stpS: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
+  tip: { marginTop: 8, backgroundColor: '#FFF6DC', borderWidth: 1, borderColor: '#F2E2AC', borderRadius: 12, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  tipTxt: { flex: 1, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: '#5C5232', lineHeight: 17 },
 
-  // Próximo voo — badge circular do report + texto
-  nd: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, marginBottom: SPACE.md },
-  ndCircWrap: { width: 78, height: 78, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  ndCirc: { width: 78, height: 78, borderRadius: 39, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    shadowColor: C.ink, shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
-  ndCircDay: { fontSize: 32, fontFamily: FONT.display, color: '#fff', lineHeight: 34, letterSpacing: -0.5, textAlign: 'center' },
-  ndCircLbl: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.85, textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', marginTop: 1, textAlign: 'center', includeFontPadding: false },
-  ndX: { flex: 1, minWidth: 0, paddingTop: 2 },
-  ndXTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  ndXEyebrow: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 1.6, textTransform: 'uppercase', color: C.sub },
-  ndCountdown: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.red },
-  ndRoute: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 5, marginBottom: 4 },
-  ndMeta: { fontSize: TYPE.micro, fontFamily: FONT.bold, color: C.sub },
-  ndMetaEm: { color: C.red, fontFamily: FONT.bold },
-  ndTags: { marginTop: 9, gap: 7 },
-  ndTagRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
-  ndSrc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
-  ndSrcTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.sub },
-  ndTimes: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
-  ndSrcEm: { color: C.text, fontFamily: FONT.heavy },
-  ndFat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.pill },
-  ndFatDot: { width: 7, height: 7, borderRadius: 99 },
-  ndFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
+  // Micro-texto útil (mockup .util)
+  util: { flexDirection: 'row', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: P.line },
+  utilTtl: { width: 70, fontFamily: PELE_FONT.display, fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5, color: P.ink },
+  utilP: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 18 },
+  haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
+  lampWrap: { position: 'absolute', alignSelf: 'center', top: -70, zIndex: 0 },
+  voice: { fontSize: 16, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 23, paddingVertical: 12 },
+  voiceB: { fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
+  docAlert: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.line },
+  docAlertTxt: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: P.red, lineHeight: 16 },
+  docAlertSub: { fontFamily: PELE_FONT.bodyMed, color: P.grey },
+  lhNote: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 6 },
 
-  // Serviço — cartão herói do próximo serviço (badge + linha principal largura-toda + grelha)  // Card COM fundo (preenchimento soft2) + borda + sombra subtil — o "fundo" que o user quer
-  svc: { backgroundColor: C.soft2, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 18, marginBottom: SPACE.md,
-    shadowColor: '#14161A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 3 },
-  svcNd: { flexDirection: 'row', alignItems: 'center', gap: 16 },   // dia (círculo) à esquerda · coluna direita, centrados
-  svcNdx: { flex: 1, minWidth: 0 },
-  svcTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },  // tipo (esq) + tempo que falta (dir)
-  svcBadgeWrap: { width: 68, height: 68, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  svcBadge: { width: 68, height: 68, borderRadius: RADIUS.lg, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', flexShrink: 0,   // quadrado-arredondado (= cartões) p/ combinar com a app
-    shadowColor: C.ink, shadowOpacity: 0.20, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 7 },
-  // número justo e centrado (includeFontPadding:false + lineHeight≈fontSize ⇒ não fica torto)
-  svcBadgeDay: { fontSize: 36, fontFamily: FONT.display, color: '#fff', lineHeight: 36, letterSpacing: -0.5, textAlign: 'center', includeFontPadding: false },
-  svcBadgeWd: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.82)', marginTop: 2, includeFontPadding: false },  svcCd: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, marginTop: 6 },   // sub-linha "quando"
-  svcCdDay: { color: C.sub, fontFamily: FONT.bold },
-  // Rota grande — numberOfLines=1 + adjustsFontSizeToFit ⇒ encolhe p/ caber ao lado do badge, nunca quebra
-  svcMain: { fontSize: 26, fontFamily: FONT.display, color: C.text, letterSpacing: -0.4, marginTop: 9, lineHeight: 30 },
-  svcTimes: { fontSize: 13, fontFamily: FONT.bold, color: C.text, marginTop: 5, fontVariant: ['tabular-nums'] },
-  svcTimesZ: { fontFamily: FONT.bold, color: C.brand },
-  svcNight: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, marginTop: 5 },
-  svcOntime: { fontSize: 11.5, fontFamily: FONT.bold, color: C.greenText, marginTop: 6 },   // confirmação "a horas" ao vivo (subtil)
-  // risca full-bleed + grelha 3 colunas (Report·Zulu·PSV / Setores·Per-diem·Fadiga)
-  svcDiv: { height: 1, backgroundColor: C.line, marginTop: 16, marginHorizontal: -18 },
-  svcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 15, marginTop: 16 },
-  svcCell: { width: '33.33%', paddingRight: 8 },
-  svcCellL: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub, marginBottom: 4 },
-  svcCellV: { fontSize: 16, fontFamily: FONT.display, color: C.text, fontVariant: ['tabular-nums'] },
-  svcCellSub: { fontSize: 11, fontFamily: FONT.semibold, color: C.sub },
-  svcCellZ: { fontSize: 11, fontFamily: FONT.bold, color: C.brand, fontVariant: ['tabular-nums'], marginTop: 2, letterSpacing: 0.2 },
-  svcZuluNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 10 },
-  // Hotel da pernoita (dias com 🌙): registado = cartão tocável (mapas); vazio = convite tracejado
-  svcHotel: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 11, paddingVertical: 9, marginTop: 12 },
-  svcHotelName: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text },
-  svcHotelNote: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
-  svcHotelGo: { fontSize: 11, fontFamily: FONT.heavy, color: C.brand },
-  svcHotelAdd: { borderWidth: 1.5, borderColor: C.brand, borderStyle: 'dashed', borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
-  svcHotelAddTxt: { fontSize: 12, fontFamily: FONT.bold, color: C.brand },
-  svcFat: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 3, marginTop: 1 },
-  svcFatDot: { width: 7, height: 7, borderRadius: 99 },
-  svcFatTxt: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase' },
+  // Dígitos amarelos + donut (mockup .datarow/.bigy/.donut)
+  datarow: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 12, paddingBottom: 6 },
+  bigy: { fontFamily: PELE_FONT.display, fontSize: 54, lineHeight: 56, color: P.yellow, letterSpacing: 1 },
+  bigyU: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2, color: P.grey, marginTop: 4 },
 
-  // Grelha 2-col (mockup .grid2/.uc/.win/.wbar)
-  grid2: { flexDirection: 'row', gap: 11, marginBottom: SPACE.md },
-
-  // "Situação de hoje" — tira de segurança (legal/descanso/validade) no topo do Início
-  sit: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 16, marginBottom: SPACE.md },
-  sitRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  sitRowBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  sitDot: { width: 9, height: 9, borderRadius: 4, flexShrink: 0 },
-  sitQ: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub },
-  sitA: { fontSize: 13.5, fontFamily: FONT.semibold, color: C.text, marginTop: 1 },
-  sitS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 3, lineHeight: 15 },
-  // Eyebrow com a pergunta nos cartões que já respondem (destaque, sem duplicar)
-  ucQ: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.6, textTransform: 'uppercase', color: C.sub, marginBottom: 7 },
-  qLead: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, marginBottom: 8, marginLeft: 2 },
-  // Secção "Perguntas" (por baixo do card Serviços) — reutiliza os cartões `sit*`
-  qSec: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.9, textTransform: 'uppercase', color: C.sub, marginTop: 2, marginBottom: 9, marginLeft: 2 },
-
-  // Perguntas — A+chips
-  qWrap: { marginBottom: SPACE.md },
-  // Alerta crítico (ILEGAL / expirado) — vermelho, com o conselho à vista
-  qAlert: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: C.redSoft, borderWidth: 1, borderColor: C.red, borderRadius: RADIUS.lg, padding: 14, marginBottom: 12 },
-  qAlertIc: { width: 34, height: 34, borderRadius: 11, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  qAlertQ: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.redText },
-  qAlertA: { fontSize: 16, fontFamily: FONT.display, color: C.redText, letterSpacing: -0.2, marginTop: 2 },
-  qAlertS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.redText, opacity: 0.85, marginTop: 5, lineHeight: 16 },
-  // Lista de perguntas (versão A) — cartão; cada linha: pergunta (+conselho) + estado em PILL à direita
-  qList: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 16 },
-  qRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 13 },
-  qRowBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  qRowQ: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
-  qRowS: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 3, lineHeight: 15 },
-  qPill: { borderRadius: RADIUS.pill, paddingHorizontal: 11, paddingVertical: 5, backgroundColor: C.soft, flexShrink: 0 },
-  qPillOk: { backgroundColor: C.greenSoft || C.soft },
-  qPillWarn: { backgroundColor: C.warnSoft || C.soft },
-  qPillInfo: { backgroundColor: C.infoSoft || C.soft },
-  qPillT: { fontSize: 12, fontFamily: FONT.heavy, color: C.sub, fontVariant: ['tabular-nums'] },
-  // Aviso de voo ao vivo (atraso/cancelado/desviado) — topo do Início
-  fdelay: { flexDirection: 'row', gap: 11, alignItems: 'flex-start', borderWidth: 1, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACE.md },
-  fdelayQ: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 0.5, textTransform: 'uppercase', color: C.sub },
-  fdelayH: { fontSize: 15, fontFamily: FONT.heavy, marginTop: 2 },
-  fdelayS: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.text, marginTop: 3 },
-  fdelayNote: { fontSize: 11.5, fontFamily: FONT.medium, color: C.sub, marginTop: 4, lineHeight: 15 },
-  gridHint: { fontSize: TYPE.micro, color: C.sub, marginTop: -8, marginBottom: SPACE.md, paddingHorizontal: 2, lineHeight: 16 },
-  uc: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 15 },
-  ucHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
-  ucDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: C.ink },
-  ucTitle: { fontSize: 11, fontFamily: FONT.heavy, letterSpacing: 0.8, textTransform: 'uppercase', color: C.sub, flexShrink: 1 },
-  ucWin: { marginTop: 10 },
-  ucWl: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, marginBottom: 5 },
-  ucA: { fontSize: 11, fontFamily: FONT.bold, color: C.sub, flexShrink: 1 },
-  ucB: { fontSize: 11, color: C.sub, fontVariant: ['tabular-nums'] },
-  ucBnum: { color: C.text, fontFamily: FONT.bold },
-  ucBar: { height: 5, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden' },
-  ucBarFill: { height: '100%', borderRadius: RADIUS.pill },
-  // AE compacto (cartão direito da grelha, mockup .uc.ae)
-  ucDotAe: { backgroundColor: C.green },
-  aeMRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6, paddingVertical: 7, borderTopWidth: 1, borderTopColor: C.line },
-  aeMRow0: { borderTopWidth: 0 },
-  aeMK: { fontFamily: FONT.bold, fontSize: 11, color: C.sub, flexShrink: 1 },
-  aeMV: { fontFamily: FONT.semibold, fontSize: 13, color: C.text, fontVariant: ['tabular-nums'] },
-  aeMKtot: { fontFamily: FONT.heavy, fontSize: 11, color: C.text },
-  aeMVtot: { fontFamily: FONT.display, fontSize: 16, color: C.text, fontVariant: ['tabular-nums'] },
-  aeMBar: { height: 6, borderRadius: RADIUS.pill, backgroundColor: C.soft, overflow: 'hidden', marginTop: 11 },
-  aeMBarFill: { height: '100%', borderRadius: RADIUS.pill, backgroundColor: C.green },
-  aeMNote: { fontFamily: FONT.regular, fontSize: 10, color: C.sub, marginTop: 9, lineHeight: 13 },
-
-  // Próximo duty — estado vazio / sem permissão (cartão claro)
-  flightCard: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: SPACE.md + 2, marginBottom: SPACE.md, backgroundColor: C.card },
-  flightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md },
-  flightEyebrow: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.bold },
-  flightBadge: { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, minHeight: 24, justifyContent: 'center' },
-  flightEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: SPACE.sm },
-  flightEmptyTxt: { flex: 1, fontSize: TYPE.sub, color: C.sub, lineHeight: 18 },
-  grantBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: SPACE.sm, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingHorizontal: 14, paddingVertical: 9 },
-  grantBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.semibold },
-
-  // Alterações de escala (Fase 4) — banner de aviso
-
-  // Notificações
-  notifItem: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xl - 4, paddingVertical: SPACE.md + 5 },
-  notifDot: { width: 8, height: 8, borderRadius: RADIUS.pill, flexShrink: 0 },
-  notifMeta: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.xs },
-  tagBadge: { backgroundColor: C.soft, borderRadius: RADIUS.sm - 6, paddingHorizontal: 6, paddingVertical: 2 },
-  tagTxt: { fontSize: 11, fontFamily: FONT.semibold, color: C.text, letterSpacing: 0.5 },
-  notifTime: { fontSize: TYPE.eyebrow, color: C.sub },
-  notifItemTitle: { fontSize: 13, fontFamily: FONT.medium, color: C.text },
-  notifItemBody: { fontSize: TYPE.label, color: C.sub, marginTop: 2, lineHeight: 17 },
-  noMore: { textAlign: 'center', fontSize: 11, color: C.sub, padding: SPACE.lg },
+  // Barra do polegar (mockup .thumb/.chip/.acts)
+  thumb: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, paddingBottom: 10, marginTop: 'auto' },
+  chip: { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 7, paddingHorizontal: 12 },
+  chipV: { fontFamily: PELE_FONT.display, fontSize: 21, lineHeight: 22, color: night ? P.paper : P.yellow, letterSpacing: 0.5 },
+  chipOld: { color: P.onInkSub, textDecorationLine: 'line-through' },
+  chipS: { fontSize: 7.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.5, color: P.onInkFaint, marginTop: 3, textTransform: 'uppercase' },
+  acts: { marginLeft: 'auto', flexDirection: 'row', gap: 8 },
+  act: { alignItems: 'center', gap: 3, maxWidth: 78 },
+  actC: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderColor: P.line, alignItems: 'center', justifyContent: 'center' },
+  actHot: { backgroundColor: P.ink, borderColor: P.ink },
+  actL: { fontSize: 8.5, fontFamily: PELE_FONT.bodyBold, color: P.grey, textAlign: 'center' },
 });
+
+const sDay = makeSkin(PELE, false);
+const sNight = makeSkin(PELE_NIGHT, true);

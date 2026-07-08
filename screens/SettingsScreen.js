@@ -434,40 +434,41 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <PeleSide label={String(company?.name || l('CONTA', 'ACCOUNT')).toUpperCase()} accent={String(t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang) || '').toUpperCase()} />
-      {/* Topo (mockup): ‹ voltar (fecha o Perfil empurrado) + ⋯ */}
-      <View style={s.hdr}>
-        <TouchableOpacity style={s.bk} onPress={() => navigation.goBack()} hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
-          <Icon name="back" size={18} color={PELE.ink} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }} />
-        <Icon name="ellipsis" size={19} color={PELE.grey} />
-      </View>
+      {/* Rótulo = QUE PÁGINA é + contexto (padrão da casa: INFO·REFERÊNCIA, ESCALA·JULHO…);
+          o galão vive no FANTASMA (decisão 2026-07-09). */}
+      <PeleSide label={l('PERFIL', 'PROFILE')} accent={String(company?.name || '').toUpperCase() || undefined} />
+      {/* Header CANÓNICO dos empurrados (igual Validades/Detalhe): PeleHeader FIXO fora do
+          scroll, ‹ voltar na linha de topo do próprio componente (o hdr improvisado saiu). */}
+      {(() => {
+        const displayName = user ? (user.name || user.email?.split('@')[0] || '—') : '—';
+        const w = String(displayName).trim().split(/\s+/).filter(Boolean);
+        const inits = !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
+        const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : (crewCategory || null);
+        return (
+          <View style={s.headWrap}>
+            <PeleHeader
+              size="detail"
+              onBack={() => navigation.goBack()}
+              // SEM eyebrow ("A tua conta" saiu): o rótulo lateral já diz PERFIL·companhia.
+              // Fantasma = o GALÃO (sigla da categoria); sem categoria cai nas iniciais.
+              ghost={crewCategory || inits}
+              word={displayName}
+              // Kick = função (cinza) + categoria (amarela) — a companhia vive no rótulo lateral.
+              kick={<Text style={s.pkick} numberOfLines={1}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>}
+            />
+          </View>
+        );
+      })()}
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
 
-        {/* Herói (mockup) — greet + FANTASMA=iniciais + nome + kick (categoria a amarelo) + régua + meta */}
-        {user ? (() => {
-          const displayName = user.name || user.email?.split('@')[0] || '—';
-          const w = String(displayName).trim().split(/\s+/).filter(Boolean);
-          const inits = !w.length ? '?' : (w.length >= 2 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
-          const catLbl = crewCategory && ae && ae.categoryLabel ? ae.categoryLabel(crewCategory, lang) : (crewCategory || null);
-          return (
-            <Animated.View style={seg(0)}>
-              <PeleHeader
-                size="detail"
-                eyebrow={t('profile.eyebrow', lang)}
-                ghost={inits}
-                word={displayName}
-                kick={<Text style={s.pkick} numberOfLines={1}>{[company?.name, t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)].filter(Boolean).join(' · ')}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>}
-              />
-              <View style={s.pmeta}>
-                {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
-                {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
-                {companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ok : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
-              </View>
-            </Animated.View>
-          );
-        })() : null}
+        {/* Meta do herói (Desde · Base · AE) — primeiro item do scroll, sob a régua fixa */}
+        {user ? (
+          <Animated.View style={[s.pmeta, seg(0)]}>
+            {serviceStart ? <Text style={s.pmetaTxt}>{l('Desde', 'Since')} <Text style={s.pmetaB}>{serviceStart.slice(0, 4)}</Text></Text> : null}
+            {base ? <Text style={s.pmetaTxt}>{l('Base', 'Base')} <Text style={s.pmetaB}>{base}</Text></Text> : null}
+            {companyHasAe ? <Text style={s.pmetaTxt}>AE <Text style={[s.pmetaB, { color: aeCovered !== false ? PELE.ok : PELE.grey }]}>{aeCovered !== false ? l('abrangido', 'covered') : l('FTL-only', 'FTL-only')}</Text></Text> : null}
+          </Animated.View>
+        ) : null}
 
         {/* Família — tira de cartões ao vivo (mockup perfil-final), logo sob o herói */}
         <View>
@@ -883,8 +884,7 @@ export default function SettingsScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
-  hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
-  bk: { width: 34, height: 34, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  headWrap: { paddingHorizontal: 20 },   // header canónico fixo (PeleHeader c/ onBack), gutter do ecrã
   // Herói do perfil — fantasma/nome/eyebrow/régua vêm do PeleHeader (size 'detail'); só o kick fica (categoria a amarelo)
   pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.grey, marginTop: 8 },
   pkickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
