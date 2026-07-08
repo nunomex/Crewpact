@@ -109,15 +109,15 @@ ${inner}
 }
 
 // Extrai as legs de voo de UMA duty (roster_meta) — primária + cada serviço `extra`
-// (multi-serviço), SÓ kind voo. Guarda o `on` (hora de chegada de parede) da última leg,
-// usado para reconhecer um red-eye. [] se a duty não tiver voos.
+// (multi-serviço), SÓ kind voo. Guarda o `off`/`on` (horas de parede de partida/chegada)
+// da leg, usados para reconhecer um red-eye. [] se a duty não tiver voos.
 // deno-lint-ignore no-explicit-any
-function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; on: string }[] {
+function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; off: string; on: string }[] {
   if (!duty) return [];
   // deno-lint-ignore no-explicit-any
   let meta: Record<string, any> = {};
   try { meta = JSON.parse(duty.roster_meta || '{}') || {}; } catch { /* legado sem meta */ }
-  const out: { flight: string; dep: string; arr: string; on: string }[] = [];
+  const out: { flight: string; dep: string; arr: string; off: string; on: string }[] = [];
   const push = (legs: unknown) => {
     if (!Array.isArray(legs)) return;
     for (const lg of legs) {
@@ -125,7 +125,7 @@ function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; on
       const l = lg as Record<string, any>;
       const flight = String(l?.flightNo || l?.flight || '').toUpperCase().replace(/\s+/g, '');
       if (!flight) continue;
-      out.push({ flight, dep: String(l?.dep || '').toUpperCase().slice(0, 3), arr: String(l?.arr || '').toUpperCase().slice(0, 3), on: String(l?.on || '') });
+      out.push({ flight, dep: String(l?.dep || '').toUpperCase().slice(0, 3), arr: String(l?.arr || '').toUpperCase().slice(0, 3), off: String(l?.off || ''), on: String(l?.on || '') });
     }
   };
   if ((duty.kind || 'flight') === 'flight') push(meta.legs);
@@ -135,11 +135,17 @@ function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; on
   return out;
 }
 
+// "HH:MM" → minutos (null se inválido/vazio) — para comparar horas de parede das legs.
+const hmMin = (hm: string) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hm || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
+
 // Legs da chegada a mostrar num link de FAMÍLIA + o DIA a que pertencem. Normalmente é HOJE
-// (UTC). EXCEÇÃO red-eye: um voo que parte no dia D e aterra depois da MEIA-NOITE UTC (dia D+1)
-// deixaria de aparecer ("sem chegada hoje") com o avião ainda no ar, porque a duty está datada
-// em D. Então: se hoje não tem voo, ainda estamos nas pequenas horas UTC (<06h) e ONTEM teve um
-// voo a chegar nas pequenas horas (`on` da última leg <06h → red-eye), mostra a chegada de ONTEM.
+// (UTC). EXCEÇÃO red-eye: um voo que parte no dia D e aterra depois da meia-noite deixaria de
+// aparecer ("sem chegada hoje") com o avião ainda no ar, porque a duty está datada em D. Então:
+// se hoje não tem voo e a última perna de ONTEM CRUZOU a meia-noite — chegada de parede ANTES da
+// partida de parede (on<off, ex. off 22:00 → on 01:30) — essa chegada pertence de facto a HOJE e
+// mostra-se o dia todo. Um voo matinal contido em ontem (off 04:40 → on 05:55) NÃO passa, e o
+// teste é por hora de parede: vale para red-eyes que aterram depois das 06h UTC (oeste) também.
+// Exige off E on presentes (evidência positiva; quick-adds manuais sem horas não disparam).
 // O `day` volta como o dia REAL do voo → a chave VOO|DIA da memória do aterrou casa dos dois
 // lados da meia-noite (às 23h de D e às 00h15 de D+1 é a mesma chave). [] = sem chegada hoje.
 async function familyLegsFor(uid: string): Promise<{ legs: { flight: string; dep: string; arr: string }[]; day: string }> {
@@ -150,14 +156,14 @@ async function familyLegsFor(uid: string): Promise<{ legs: { flight: string; dep
 
   let legs = legsFromDuty(await readDuty(today));
   let day = today;
-  if (!legs.length && now.getUTCHours() < 6) {
+  if (!legs.length) {
     const yest = new Date(now.getTime() - 24 * 3600e3).toISOString().slice(0, 10);
     const yLegs = legsFromDuty(await readDuty(yest));
-    const lastOn = yLegs.length ? yLegs[yLegs.length - 1].on : '';
-    const h = /^(\d{1,2}):/.exec(lastOn);
-    if (h && Number(h[1]) < 6) { legs = yLegs; day = yest; }   // chegada de ontem nas pequenas horas → red-eye
+    const lastLeg = yLegs.length ? yLegs[yLegs.length - 1] : null;
+    const om = lastLeg ? hmMin(lastLeg.off) : null, nm = lastLeg ? hmMin(lastLeg.on) : null;
+    if (om != null && nm != null && nm < om) { legs = yLegs; day = yest; }   // cruzou a meia-noite → red-eye
   }
-  return { legs: legs.map(({ flight, dep, arr }) => ({ flight, dep, arr })), day };   // não expõe o `on`
+  return { legs: legs.map(({ flight, dep, arr }) => ({ flight, dep, arr })), day };   // não expõe off/on
 }
 
 // deno-lint-ignore no-explicit-any
