@@ -68,7 +68,7 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 
 ## §5 · Tema antigo (legado em extinção)
 
-`useTheme()`/`makeStyles(C)`, Inter + Space Grotesk, escala `TYPE`. Ainda vivo em: **Onboarding · Login · Lock · BiometricOffer · Reactivate · Hoteis · FtlDetail**. Regras:
+`useTheme()`/`makeStyles(C)`, Inter + Space Grotesk, escala `TYPE`. Ainda vivo em: **Onboarding · Hoteis · FtlDetail** *(o CORREDOR DE ENTRADA inteiro — Login, Lock, BiometricOffer, Reactivate — foi portado à pele 2026-07-09, mockups `login-3.html`/`login-fluxo.html` à letra, lógica auditada intacta)*. Regras:
 - Ecrã novo **nasce na pele**.
 - Ecrã legado não se "melhora" à peça — porta-se de uma vez, à letra do mockup correspondente, **re-skin não reescrita** (cálculos intactos).
 

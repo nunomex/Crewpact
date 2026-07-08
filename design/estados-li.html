@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Living Interface · todos os estados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B;
+    --warnSoft:#FBEAD2; --onInkFaint:#DDDBD3;
+    --npaper:#0D131C; --nink:#F4F2ED; --nghost:rgba(255,255,255,0.07); --ngrey:rgba(244,242,237,0.55);
+    --nline:rgba(244,242,237,0.14); --nsoft:rgba(244,242,237,0.08);
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif; --hand:'Caveat',cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:860px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .spec em{font-style:normal;color:var(--warn);font-weight:700}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .phone.n{background:var(--npaper);border-color:#20283A}
+
+  .halo{position:absolute;right:-127px;top:-85px;width:360px;height:360px;border-radius:99em;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,0) 70%)}
+  .lamp{position:absolute;left:50%;top:-70px;transform:translateX(-50%);width:340px;height:300px;border-radius:99em;pointer-events:none;
+    background:radial-gradient(circle at 50% 42%, rgba(255,214,120,.15) 0%, rgba(255,214,120,0) 62%)}
+
+  .pside{position:absolute;top:275px;right:8px;width:260px;z-index:5;transform:rotate(90deg);transform-origin:right top;
+    pointer-events:none;font-size:9px;font-weight:800;letter-spacing:2.4px;color:var(--ink);text-transform:uppercase;text-align:left}
+  .n .pside{color:var(--nink)}
+  .pside b{color:var(--yellow);font-weight:800}
+
+  .page{position:absolute;inset:0;padding:14px 19px 60px;display:flex;flex-direction:column;overflow:hidden;z-index:1}
+  .greet{font-size:10px;font-weight:500;color:var(--grey);margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+  .n .greet{color:var(--ngrey)}
+  .npill{display:inline-flex;align-items:center;gap:5px;background:var(--soft);border-radius:99px;padding:4px 9px;font-size:9px;font-weight:800;color:var(--ink)}
+  .npill i{width:5px;height:5px;border-radius:99px;background:var(--yellow)}
+
+  .band{margin:8px -19px 0;padding:6px 19px;background:var(--warnSoft);border-top:1px solid #F2CBA5;border-bottom:1px solid #F2CBA5}
+  .band .bt{font-size:9.5px;font-weight:800;color:var(--warn)}
+  .band .bs{font-size:8.5px;font-weight:500;color:#B07840}
+
+  .hero{position:relative;min-height:150px;margin-top:4px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0}
+  .arrowy{position:absolute;left:0;top:2px;color:var(--yellow);font-size:16px;font-weight:800}
+  .gho{position:absolute;right:8px;top:-14px;font-family:var(--disp);font-weight:700;line-height:1;letter-spacing:-2.5px;color:var(--ghost);text-align:right}
+  .n .gho{color:var(--nghost)}
+  .gho.s3{font-size:132px} .gho.s4{font-size:112px} .gho.s5{font-size:98px}
+  .wx{position:absolute;right:9px;top:0;text-align:right;font-size:9px;font-weight:700;color:var(--grey)}
+  .n .wx{color:var(--ngrey)}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+  .n .word{color:var(--nink)}
+  .word.warn{color:var(--warn)}
+  .kick{font-size:10px;font-weight:700;color:var(--grey);margin-top:4px}
+  .n .kick{color:var(--ngrey)}
+  .kick b{color:var(--yellow);font-weight:800}
+  .hr{height:1.5px;background:var(--ink);margin-top:6px;flex-shrink:0}
+  .n .hr{background:var(--nink)}
+
+  .note{margin:12px 4px 2px;transform:rotate(-2.7deg);font-family:var(--hand);font-size:19px;line-height:1.3;color:var(--grey)}
+  .n .note{color:var(--ngrey)}
+  .note b{font-weight:600;color:var(--ink);background:var(--yellow);padding:0 4px}
+
+  .mid{padding:6px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+  .n .mid{border-color:var(--nline)}
+  .trow{display:flex;align-items:baseline;gap:9px;padding:4px 0}
+  .tap{width:56px;flex-shrink:0}
+  .tapT{font-size:10px;font-weight:800;color:var(--ink)} .n .tapT{color:var(--nink)}
+  .tapS{font-size:7.5px;font-weight:700;letter-spacing:1.2px;color:var(--grey)} .n .tapS{color:var(--ngrey)}
+  .tbig{font-family:var(--disp);font-weight:700;font-size:34px;line-height:1;color:var(--ink)}
+  .n .tbig{color:var(--nink)}
+  .tbig.ok{color:var(--ok)} .tbig.warn{color:var(--warn)}
+  .told{font-family:var(--disp);font-weight:700;font-size:16px;color:#B9B8B2;text-decoration:line-through}
+  .tst{margin-left:auto;text-align:right}
+  .tstT{font-size:8.5px;font-weight:800;color:var(--ink)} .n .tstT{color:var(--nink)}
+  .tstT.ok{color:var(--ok)} .tstT.warn{color:var(--warn)}
+  .tstS{font-size:7.5px;font-weight:500;color:var(--grey)} .n .tstS{color:var(--ngrey)}
+  .prog{display:flex;align-items:center;gap:8px;padding:4px 0}
+  .prog .bar{flex:1;height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+  .prog .bar i{display:block;height:3px;background:var(--yellow);border-radius:2px}
+  .prog span{font-size:8px;font-weight:800;color:var(--grey)}
+
+  .agchip{display:flex;justify-content:flex-end;padding:2px 0 6px}
+  .chipk{background:var(--ink);border-radius:9px;padding:5px 10px;text-align:left}
+  .n .chipk{background:var(--nink)}
+  .chipk .v{font-family:var(--disp);font-weight:700;font-size:16px;line-height:1;color:var(--yellow)}
+  .n .chipk .v{color:var(--npaper)}
+  .chipk .v s{color:#8F8F88;margin-right:3px}
+  .chipk .s{font-size:6px;font-weight:800;letter-spacing:1.1px;color:var(--onInkFaint);margin-top:2px;text-transform:uppercase}
+  .n .chipk .s{color:#3A4250}
+  .ag{display:flex;align-items:center;justify-content:flex-end;gap:7px;padding:4px 0}
+  .agx{text-align:right}
+  .agA{font-size:10px;font-weight:800;color:var(--ink)}
+  .agB{font-size:8px;font-weight:500;color:var(--grey)}
+  .agTick{width:2.5px;height:20px;background:var(--ink);border-radius:2px}
+
+  .hotel{display:flex;align-items:center;gap:8px;padding:7px 0}
+  .hotel .hn{font-size:11px;font-weight:800;color:var(--nink)}
+  .hotel .hs{font-size:8.5px;font-weight:500;color:var(--ngrey)}
+  .hotel .go{margin-left:auto;font-size:9px;font-weight:800;color:var(--nink)}
+
+  .stp{display:flex;gap:10px;align-items:center;padding:5px 0}
+  .stp .n1{font-family:var(--disp);font-weight:700;font-size:26px;color:var(--yellow);width:26px}
+  .stp .st{font-size:10px;font-weight:800;color:var(--ink)}
+  .stp .ss{font-size:8.5px;font-weight:500;color:var(--grey)}
+  .tip{margin-top:6px;background:#FFF6DC;border:1px solid #F2E2AC;border-radius:10px;padding:8px 10px;font-size:8.5px;font-weight:500;color:#5C5232;line-height:1.5}
+  .sbtn{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--ink);border-radius:11px;padding:9px;margin-top:8px;font-size:10.5px;font-weight:800;color:var(--paper)}
+  .sbtn i{color:var(--yellow);font-style:normal}
+  .sghost{display:flex;align-items:center;justify-content:center;gap:5px;border:1.5px solid var(--line);border-radius:11px;padding:8px;margin-top:6px;font-size:10px;font-weight:700;color:var(--ink)}
+  .sman{font-size:9px;font-weight:500;color:var(--grey);text-align:center;margin-top:7px;text-decoration:underline}
+
+  /* chips de estado da FOLGA (paridade com a app: cada verificação é um alvo próprio) */
+  .uchips{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+  .uchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:8px;font-weight:700;color:var(--ink)}
+  .uchip i{width:4.5px;height:4.5px;border-radius:99px;background:var(--ok)}
+  .uchip.neu i{background:var(--grey)}
+
+  /* interruptor de PERFIL (crew-aware): piloto ⇄ cabine */
+  .profbar{max-width:1560px;margin:14px auto 0;display:flex;gap:10px;align-items:center}
+  .profbtn{border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:8px 16px;
+    font-family:var(--body);font-size:12px;font-weight:800;color:var(--grey);cursor:pointer}
+  .profbtn.on{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+  .profnote{font-size:11px;font-weight:600;color:var(--grey)}
+
+  .util{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+  .n .util{border-color:var(--nline)}
+  .utilT{width:52px;font-family:var(--disp);font-weight:700;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);flex-shrink:0}
+  .n .utilT{color:var(--nink)}
+  .utilP{flex:1;font-size:8.5px;font-weight:500;color:var(--grey);line-height:1.55}
+  .n .utilP{color:var(--ngrey)}
+  .docal{display:flex;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);font-size:8.5px;font-weight:800;color:var(--red);align-items:center}
+
+  .datarow{display:flex;align-items:center;gap:12px;padding:8px 0 4px;flex-shrink:0}
+  .bigy{font-family:var(--disp);font-weight:700;font-size:36px;line-height:1;color:var(--yellow)}
+  .bigy.red{color:var(--red)} .bigy.warn{color:var(--warn)}
+  .bigyU{font-size:7px;font-weight:800;letter-spacing:1.5px;color:var(--grey);margin-top:2px;text-transform:uppercase}
+  .donut{margin-left:auto;width:44px;height:44px;position:relative;flex-shrink:0}
+  .donut svg{transform:rotate(-90deg)}
+  .donut .dl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut .dl b{font-family:var(--disp);font-weight:700;font-size:10.5px;color:var(--ink)}
+  .n .donut .dl b{color:var(--nink)}
+  .donut .dl span{font-size:5.5px;font-weight:800;letter-spacing:.8px;color:var(--grey)}
+
+  .thumb{display:flex;align-items:center;gap:8px;margin-top:auto;padding:8px 0 2px;flex-shrink:0}
+  .acts{margin-left:auto;display:flex;gap:7px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .actC{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;background:transparent}
+  .n .actC{border-color:var(--nline)}
+  .actC.hot{background:var(--ink);border-color:var(--ink)}
+  .n .actC.hot{background:var(--nink);border-color:var(--nink)}
+  .actL{font-size:7px;font-weight:700;color:var(--grey)}
+  .n .actL{color:var(--ngrey)}
+  .actC svg{width:13px;height:13px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .n .actC svg{stroke:var(--nink)}
+  .actC.hot svg{stroke:var(--yellow)}
+  .n .actC.hot svg{stroke:var(--npaper)}
+
+  /* tab bar nova (49pt + inset), Início ativa com o ponto POR BAIXO */
+  .tbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-start;background:var(--paper);
+    border-top:1px solid rgba(20,20,20,0.13);padding:5px 6px 10px;z-index:10}
+  .n .tbar{background:var(--npaper);border-top-color:var(--nline)}
+  .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tb svg{width:18px;height:18px;stroke:var(--grey);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .n .tb svg{stroke:var(--ngrey)}
+  .tb.on svg{stroke:var(--ink)} .n .tb.on svg{stroke:var(--nink)}
+  .tb .lb{font-size:7px;font-weight:800;letter-spacing:.3px;color:var(--grey)}
+  .tb.on .lb{color:var(--ink)} .n .tb.on .lb{color:var(--nink)}
+  .tb .dot{width:3.5px;height:3.5px;border-radius:99px;background:var(--yellow);opacity:0}
+  .tb.on .dot{opacity:1}
+  .tplus{flex:0 0 52px;display:flex;align-items:center;justify-content:center}
+  .tplus i{width:34px;height:34px;border-radius:99px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .n .tplus i{border:1px solid rgba(244,242,237,0.18)}
+  .tplus svg{width:16px;height:16px;stroke:var(--yellow);stroke-width:2.2;stroke-linecap:round;fill:none}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="eyebrow">CrewPact · design · 2026-07-09</div>
+  <h1>a living interface, inteira</h1>
+  <p>Os <b>12 estados do Início</b> como o código os desenha HOJE (dados de exemplo; easyJet piloto, base LIS,
+     julho 2026). Véspera e pernoita em <b>tema noturno</b>. Tudo com a navegação nova (＋ central, ponto por baixo)
+     e a folga com o cartão preto na agenda (Estado em CHIPS tocáveis). <b>Crew-aware:</b> troca o perfil
+     em baixo — os € e os conteúdos do AE mudam com o tipo, categoria e contrato. Valores = EXEMPLO.</p>
+</div>
+
+<div class="profbar">
+  <button class="profbtn on" id="bP" onclick="setProf('P')">✈ Piloto · Comandante (CPT) · 12/12</button>
+  <button class="profbtn" id="bC" onclick="setProf('C')">◆ Tripulante de cabine · Cabin Manager · 12/12</button>
+  <span class="profnote">easyJet · base LIS · AE respetivo (SPAC / SNPVAC) — valores de exemplo com o FORMATO real (cêntimos sempre)</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="foot">
+  <div class="t">Onde aparecem os AVISOS — a arquitetura de alerta (transversal a todos os estados)</div>
+  <p><b>1 · A BANDA</b> (topo, logo sob a saudação) — o alerta OPERACIONAL. Sítio fixo, <b>UMA de cada vez</b>, por prioridade:
+     FTL ilegal → limites acima do teto → erro a ler o calendário → voo cancelado/desviado → atraso (com o PSV recalculado ao vivo) →
+     avião inbound atrasado → registo atrasado face ao real ("sincroniza o eCrew") → escala mudou (X alterações por rever) → aeroporto em disrupção.
+     Vermelho = perigo/lei · âmbar = atenção. Tocável quando há destino (folha "porquê" · Números · Escala).</p>
+  <p><b>2 · DOCUMENTO CRÍTICO</b> (validade expirada/a expirar) — <b>nunca na banda</b>: linha vermelha tocável junto ao ESTADO
+     (decisão de 2026-07-09: os documentos vivem ao pé do estado; a banda é do operacional).</p>
+  <p><b>3 · PÍLULA "● N novidades"</b> — junto à saudação, SÓ quando há por-ler; lê → desaparece. O arquivo vive no sino do Perfil.</p>
+  <p><b>4 · PONTO ÂMBAR</b> na aba Escala (tab bar) e no botão sincronizar do header da Escala — alterações por rever; apaga quando as resolves, não ao visitar.</p>
+  <p><b>5 · PUSH do sistema</b> — lembretes e o urgente fora da app (por-dia, alterações, live).</p>
+  <p><b>Regra-mãe:</b> um sinal por assunto, <b>no sítio do assunto</b> — nunca empilhar avisos. O mesmo problema nunca grita em dois lugares ao mesmo tempo.</p>
+</div>
+
+<script>
+const I = {
+  home:'<svg viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7M6 10v9h12v-9"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v3M15.5 3.5v3"/></svg>',
+  stats:'<svg viewBox="0 0 24 24"><path d="M5 19V12M12 19V5M19 19v-9"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 19.5c1.2-3.4 4-5 7-5s5.8 1.6 7 5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  share:'<svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5"/></svg>',
+  gauge:'<svg viewBox="0 0 24 24"><path d="M4.5 15.5a8 8 0 1 1 15 0M12 13.5 15.5 9"/></svg>',
+  bed:'<svg viewBox="0 0 24 24"><path d="M3 18v-8m0 5h18v3m0-3v-2a3 3 0 0 0-3-3h-8v5"/><circle cx="6.5" cy="11.5" r="1.5"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4"/></svg>',
+  eye:'<svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+};
+const tbar = `
+  <div class="tbar">
+    <div class="tb on"><span></span>${I.home}<span class="lb">Início</span><span class="dot"></span></div>
+    <div class="tb"><span></span>${I.cal}<span class="lb">Escala</span><span class="dot"></span></div>
+    <div class="tplus"><i>${I.plus}</i></div>
+    <div class="tb"><span></span>${I.stats}<span class="lb">Números</span><span class="dot"></span></div>
+    <div class="tb"><span></span>${I.user}<span class="lb">Perfil</span><span class="dot"></span></div>
+  </div>`;
+const donut = (p, col) => `
+  <span class="donut"><svg width="44" height="44" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="17" fill="none" stroke="${'#ECEAE4'}" stroke-width="4.5"/>
+    <circle cx="22" cy="22" r="17" fill="none" stroke="${col}" stroke-width="4.5" stroke-dasharray="${(p*1.068).toFixed(1)} 106.8" stroke-linecap="round"/>
+  </svg><span class="dl"><b>${p}%</b><span>PSV</span></span></span>`;
+const donutL = (p, col, lab) => donut(p, col).replace('<span>PSV</span>', `<span>${lab}</span>`);
+const act = (ic, lbl, hot) => `<span class="act"><span class="actC${hot?' hot':''}">${I[ic]}</span><span class="actL">${lbl}</span></span>`;
+const chipk = (v, s, old) => `<span class="chipk"><span class="v">${old?`<s>${old}</s>`:''}${v}</span><br><span class="s">${s}</span></span>`;
+
+// PERFIS crew-aware (valores de EXEMPLO, formato real): o AE muda com tipo·categoria·contrato.
+const PROFILES = {
+  P: { nome:'Miguel', pd:'80,60', mes:'2 431,70', ns:'38,00',
+       parc:[['BASE','1 890,00'],['PER-DIEM','402,50'],['PERNOITAS','76,00'],['EXTRAS','63,20']] },
+  C: { nome:'Marta', pd:'52,40', mes:'1 831,20', ns:'46,00',
+       parc:[['BASE','1 210,00'],['PER-DIEM','318,40'],['PERNOITAS','92,00'],['EXTRAS','210,80']] },
+};
+const S = (PR) => [
+{ name:'0 · Setup (primeira vez)', d:'Sem calendário: a app apresenta-se e pede a fonte.', side:'PRIMEIRA VEZ · <b>SETUP</b>', greet:`Bem-vindo, ${PR.nome}`,
+  hero:{gho:'✈',cls:'s3',word:'Olá!',kick:'liga o <b>calendário</b> e o Início ganha vida'},
+  mid:`<div class="stp"><span class="n1">1</span><span><span class="st">Ligar o calendário do telemóvel</span><br><span class="ss">é daí que a app lê a tua escala — nunca mais escreves um voo à mão</span></span></div>
+       <div class="sbtn"><i>▦</i> Ligar ao calendário</div>
+       <div class="sghost">⎘ Importar PDF da escala</div>
+       <div class="sman">ou adiciona um serviço à mão</div>
+       <div class="tip">💡 No eCrew, ativa o sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre atualizada.</div>`,
+  util:['Porquê','Sem calendário ligado, a app não sabe nada de ti. Os teus dados ficam no teu telemóvel — e podes espreitar já um dia de exemplo.'],
+  chip:['~1 MIN','é o que o setup demora'], acts:[['eye','Ver exemplo',1]] },
+
+{ name:'1 · Folga', d:'O poster do descanso — bilhete, cartão preto na agenda, fundo vazio.', side:'<b>FOLGA</b> · 9 JULHO', greet:`Boa tarde, ${PR.nome}`, halo:1,
+  hero:{gho:'QUI',cls:'s3',word:'Folga',wx:'☀<br>18°–27°',kick:null},
+  note:'<b>O dia é teu.</b> Sol e 27° — a escala hoje não manda.',
+  mid:`<div class="agchip">${chipk('3 DIAS','até ao report')}</div>
+       <div class="ag"><span class="agx"><span class="agA">EJU7623 · LIS-LGW-LIS</span><br><span class="agB">SEX 10 · report 05:40 · 4 setores</span></span><span class="agTick"></span></div>
+       <div class="ag"><span class="agx"><span class="agA">EJU7841 · LIS-FNC 🌙 pernoita</span><br><span class="agB">SÁB 11 · report 09:10</span></span><span class="agTick"></span></div>`,
+  util:['Estado',''], chips:[['repouso em dia ✓','ok'],['escala sincronizada','ok'],['validades ok','ok'],['férias · 9 de 22','neu']],
+  data:{v:PR.mes,u:'EUROS · JULHO ESTIMADO',p:29,col:'#FFB800',lab:'MÊS'}, noThumb:1 },
+
+{ name:'2 · Véspera (noturno)', d:'Report atravessa a noite: a app escurece e prepara o sono.', side:'<b>VÉSPERA</b> · REPORT 05:40', greet:`Boa noite, ${PR.nome}`, night:1, lamp:1,
+  hero:{gho:'9:12',cls:'s4',word:'Amanhã',kick:'report às <b>05:40 · 04:40Z</b> · repouso mínimo ✓ · acordar ~04:10'},
+  mid:`<div class="trow"><span class="tap"><span class="tapT">LIS</span><br><span class="tapS">PARTIDA</span></span><span class="tbig">06:40</span><span class="tst"><span class="tstT">planeado</span><br><span class="tstS">05:40Z</span></span></div>
+       <div class="trow"><span class="tap"><span class="tapT">LGW</span><br><span class="tapS">CHEGADA</span></span><span class="tbig">09:05</span><span class="tst"><span class="tstT">planeado</span><br><span class="tstS">☾ 14°</span></span></div>`,
+  util:['Amanhã','acordar ~04:10 · amanhã cedo 14° céu limpo · 4 setores · PSV máx 13:00'],
+  chip:['9:12','até ao report'], acts:[['gauge','Simular',1],['cal','Ver serviço',0]] },
+
+{ name:'3 · Hoje · pré-report', d:'O countdown é o herói; horas e verificações à vista.', side:'<b>EJU7623</b> · 4 SETORES', greet:`Bom dia, ${PR.nome}`,
+  hero:{gho:'2:10',cls:'s4',word:'Report',kick:'às <b>05:40 · 04:40Z</b> · avião ✓ · aeroporto ✓'},
+  mid:`<div class="trow"><span class="tap"><span class="tapT">LIS</span><br><span class="tapS">PARTIDA</span></span><span class="tbig ok">06:40</span><span class="tst"><span class="tstT ok">a tempo ✓</span><br><span class="tstS">porta 12</span></span></div>
+       <div class="trow"><span class="tap"><span class="tapT">LGW</span><br><span class="tapS">CHEGADA</span></span><span class="tbig">09:05</span><span class="tst"><span class="tstT">no plano</span><br><span class="tstS">☀ 19°</span></span></div>`,
+  util:['Hoje','avião G-UZHA · PSV máx 13:00 · aclimatizado, 4 setores'],
+  data:{v:PR.pd,u:'EUR · PER-DIEM DE HOJE',p:62,col:'#FFB800',lab:'PSV'},
+  chip:['05:40','report · 04:40Z'], acts:[['share','Partilhar',1],['gauge','Simular',0]] },
+
+{ name:'3b · Hoje · em voo', d:'Setor ativo com progresso; o fim do dia é o dado gigante.', side:'<b>EJU7623</b> · 4 SETORES', greet:`Boa tarde, ${PR.nome}`,
+  hero:{gho:'15:30',cls:'s4',word:'Em voo',kick:'setor 2/4 · <b>LGW→LIS</b> · termina ~15:30'},
+  mid:`<div class="prog"><span class="tapS">PROG</span><span class="bar"><i style="width:64%"></i></span><span>64%</span></div>
+       <div class="trow"><span class="tap"><span class="tapT">LGW</span><br><span class="tapS">PARTIDA</span></span><span class="tbig ok">13:05</span><span class="tst"><span class="tstT ok">partiu ✓</span></span></div>
+       <div class="trow"><span class="tap"><span class="tapT">LIS</span><br><span class="tapS">CHEGADA</span></span><span class="tbig">~15:30</span><span class="tst"><span class="tstT">no plano</span><br><span class="tstS">☀ 27°</span></span></div>`,
+  util:['Hoje','avião G-UZHA · PSV 08:12 / máx 13:00 · aclimatizado, 4 setores'],
+  data:{v:PR.pd,u:'EUR · PER-DIEM DE HOJE',p:63,col:'#FFB800',lab:'PSV'},
+  chip:['15:30','termina ~'], acts:[['share','Partilhar',1],['gauge','Simular',0]] },
+
+{ name:'4 · Hoje · standby', d:'A janela é o dado; "se chamado, até onde?" responde à 225.', side:'<b>STANDBY</b> · HOJE', greet:`Bom dia, ${PR.nome}`,
+  hero:{gho:'14:00',cls:'s4',word:'Standby',kick:'início <b>06:00</b> · fim 14:00'},
+  mid:`<div class="trow"><span class="tap"><span class="tapT">Standby</span><br><span class="tapS">HOJE</span></span><span class="tbig">06:00–14:00</span></div>
+       <div class="trow"><span class="tap"><span class="tapS">SE CHAMADO</span></span><span class="tbig">20:00</span><span class="tst"><span class="tstT">PSV até</span><br><span class="tstS">máx 14:00</span></span></div>`,
+  util:['Hoje','sem alojamento — conta por inteiro · PSV máx 14:00'],
+  data:{v:'14:00',u:'PSV MÁXIMO DE HOJE',p:0,col:'#FFB800',lab:'PSV'},
+  chip:['14:00','fim da janela'], acts:[['gauge','Simular',1]] },
+
+{ name:'5 · Disrupção', d:'Atraso real: banda, horas rasuradas → novas, PSV projetado.', side:'<b>EJU7623</b> · 4 SETORES', greet:`Bom dia, ${PR.nome}`,
+  band:['EJU7623 · sai 07:25 · estava 06:40','Com o atraso: PSV 13:45 / máx 14:00'],
+  hero:{gho:'+45',cls:'s3',word:'Atenção',warn:1,kick:'o voo segue <b>+45 min</b>'},
+  mid:`<div class="trow"><span class="tap"><span class="tapT">LIS</span><br><span class="tapS">PARTIDA</span></span><span class="tbig warn">~07:25</span><span class="told">06:40</span><span class="tst"><span class="tstT warn">derrapa</span></span></div>
+       <div class="trow"><span class="tap"><span class="tapT">LGW</span><br><span class="tapS">CHEGADA</span></span><span class="tbig warn">~09:50</span><span class="told">09:05</span><span class="tst"><span class="tstT warn">projeção</span></span></div>`,
+  util:['PSV','PSV projetado 13:45 / máx 14:00 · dentro do limite'],
+  data:{v:'13:45',u:'PSV PROJETADO · MÁX 14:00',p:96,col:'#E86A10',lab:'PSV',vc:'warn'},
+  chip:['~07:25','nova partida','06:40'], acts:[['share','Partilhar',1],['gauge','Simular',0]] },
+
+{ name:'6 · Pós-voo', d:'Dia fechado: veredicto legal, totais, repouso — SEM bilhete (é relatório, não descanso).', side:'<b>EJU7623</b> · HOJE ✓', greet:`Boa noite, ${PR.nome}`, halo:1,
+  hero:{gho:'11:32',cls:'s5',word:'Fechado',kick:'<b>PSV 11:32</b> / máx 13:00 · dentro dos limites ✓'},
+  mid:`<div class="trow"><span class="tap"><span class="tapS">DUTY</span></span><span class="tbig">11:32</span></div>
+       <div class="trow"><span class="tap"><span class="tapS">BLOCK</span></span><span class="tbig">08:45</span></div>
+       <div class="trow"><span class="tap"><span class="tapS">SETORES</span></span><span class="tbig">4</span></div>`,
+  util:['Fecho','repouso até 23:45 ⁺¹ (235) · próximo sex · report 05:40'],
+  data:{v:PR.pd,u:'EUR · PER-DIEM DE HOJE',p:89,col:'#FFB800',lab:'PSV'},
+  chip:['23:45','repouso até ⁺¹'], acts:[['edit','Sign-off',1],['gauge','Simular',0]] },
+
+{ name:'7 · Pernoita (noturno)', d:'Fora da base: a estação é o dado, o hotel é o meio.', side:'<b>PERNOITA</b> · FORA DA BASE', greet:`Boa noite, ${PR.nome}`, night:1, lamp:1,
+  hero:{gho:'FNC',cls:'s3',word:'Pernoita',wx:'☾<br>18°',kick:'<b>Hotel Girassol</b> · amanhã report 09:10'},
+  mid:`<div class="hotel">🛏 <span><span class="hn">Hotel Girassol</span><br><span class="hs">shuttle 08:30 · pequeno-almoço 06:30</span></span><span class="go">Mapas</span></div>`,
+  util:['Fora',`repouso até 20:40 ⁺¹ (235) · pernoita +${PR.ns} € · amanhã cedo 18°`],
+  chip:['09:10','report amanhã'], acts:[['bed','Hotel',1],['share','Partilhar',0],['gauge','Simular',0]] },
+
+{ name:'8 · Férias', d:'Afastamento máximo: só o essencial, a app fica de vigia.', side:'<b>FÉRIAS</b> · JULHO', greet:`Boa tarde, ${PR.nome}`, halo:1,
+  hero:{gho:'9',cls:'s3',word:'Férias',wx:'☀<br>24°',kick:'ficam <b>9 de 22</b> · regressas sexta 18'},
+  note:'<b>Férias a sério.</b> A escala não manda — desfruta.',
+  util:['Ano','gozados 13 de 22 · 24° hoje · a app fica de vigia'],
+  chip:['9','dias restantes no ano'], acts:[] },
+
+{ name:'9 · Doença', d:'Tom humano: o BILHETE DE MELHORAS (o momento mais pessoal da app) + a lei + o horizonte.', side:'<b>DOENÇA</b> · EM PAUSA', greet:`As melhoras, ${PR.nome}`,
+  hero:{gho:'2',cls:'s3',word:'As melhoras',kick:'episódio: dia <b>2</b> · pago (Art. 48)'},
+  note:'<b>Cuida de ti.</b> A escala pode esperar — as melhoras.',
+  util:['Agora','tudo o operacional está em pausa — recupera ao teu ritmo.'],
+  chip:['SEX 05:40','próximo serviço — se continuares doente, avisa'], acts:[['plus','Evento',0]] },
+
+{ name:'10 · Fecho do mês', d:'Os últimos 3 dias: as parcelas que SOMAM, o nudge dos extras.', side:'<b>FECHO</b> · JULHO', greet:`Boa tarde, ${PR.nome}`,
+  hero:{gho:'3',cls:'s3',word:'Fecho do mês',kick:'faltam extras? regista no <b>＋</b> antes do fecho'},
+  mid: PR.parc.map(([k,v])=>`<div class="trow"><span class="tap"><span class="tapS">${k}</span></span><span class="tbig" style="font-size:26px">${v}</span></div>`).join(''),
+  util:['Mês','as parcelas em baixo somam o total'],
+  data:{v:PR.mes,u:'EUROS · JULHO ESTIMADO',p:90,col:'#FFB800',lab:'MÊS'},
+  chip:['3 DIAS','para fechar o mês'], acts:[['plus','Evento',1],['stats','Números',0]] },
+];
+
+// A ESPECIFICAÇÃO de conteúdo por estado (fiel ao código): o que TEM de aparecer, zona a zona.
+const SPECS = [
+`<b>Rótulo</b> PRIMEIRA VEZ·SETUP · <b>Fantasma</b> ✈ (ícone) · <b>Palavra</b> Olá! · <b>Kick</b> convite curto (liga o calendário)
+ · <b>Meio: as TRÊS PORTAS</b> — passo 1 (explica) + <b>botão-herói "Ligar ao calendário"</b> + ghost "Importar PDF" (→ Escala, importação direta) + micro-linha "ou adiciona à mão" (→ novo serviço) + dica CREW-AWARE (eCrew só easyJet)
+ · <b>Útil</b> Porquê: privacidade + exemplo · <b>SEM datarow</b> (donut falso morreu) · <b>Chip</b> ~1 MIN · <b>Ações</b> só Ver exemplo (o Ligar duplicado morreu)`,
+`<b>Rótulo</b> FOLGA · dia+mês · <b>Fantasma</b> dia-semana CURTO (QUI) + carimbo do tempo (ícone+min–máx) · <b>Palavra</b> Folga · <b>SEM kick</b>
+ · <b>Bilhete manuscrito</b> (marcador amarelo, pousa livre pelo dia) · <b>Meio</b> CARTÃO PRETO countdown + agenda ≤3 (datas "SEX 10" · report · setores · 🌙)
+ · <b>Útil</b> Estado em CHIPS tocáveis: repouso · escala · validades · férias-saldo (AE c/ vacDays) — cada um abre o SEU porquê; doc crítico = linha VERMELHA à parte
+ · <b>Datarow</b> € do mês estimado (AE) + donut MÊS% · <b>SEM linha do polegar</b> (＋ central carrega as ações)`,
+`<b>Rótulo</b> VÉSPERA · REPORT hh:mm · <b>Fantasma</b> countdown · <b>Palavra</b> Amanhã · <b>Kick</b> report+Z · repouso mínimo ✓ (235) · acordar ~
+ · <b>Meio</b> horas planeadas NEUTRAS · <b>Útil</b> Amanhã: acordar · tempo de amanhã cedo · setores · PSV máx · 🌙 se pernoita
+ · <b>SEM datarow nem bilhete</b> (noite calma) · <b>Chip</b> countdown · <b>Ações</b> Simular (hot) · Ver serviço · <em>candeeiro + tema noturno</em>`,
+`<b>Rótulo</b> Nº DO VOO · setores · <b>Fantasma</b> countdown (→ report) · <b>Palavra</b> Report · <b>Kick</b> às hh:mm·Z + avião ✓ + aeroporto ✓
+ · <b>Meio</b> PARTIDA/CHEGADA (live: a tempo ✓ · porta · temp. do destino) · <b>Útil</b> Hoje: matrícula · PSV máx · aclimatizado/fadiga · papéis/alojamento quando contam
+ · <b>Datarow</b> per-diem € (AE) ou PSV máx + donut PSV% · <b>Chip</b> report+Z · <b>Ações</b> Partilhar (hot) · Hotel (🌙) · Simular`,
+`Igual ao pré-report, mas: <b>Fantasma</b> fim (~chegada do setor ativo) · <b>Palavra</b> Em voo · <b>Kick</b> setor i/N + rota + termina ~
+ · <b>Meio</b> ganha a BARRA DE PROGRESSO do setor · <b>Útil</b> ganha PSV corrido/máx · <b>Chip</b> termina ~`,
+`<b>Fantasma</b> FIM da janela (ativa; antes: início) · <b>Palavra</b> tipo do serviço · <b>Kick</b> início · fim
+ · <b>Meio</b> janela + linha "SE CHAMADO → PSV até" (225) · <b>Útil</b> alojamento (conta/inteiro) · PSV máx · <b>Datarow</b> PSV máx + donut
+ · <b>Chip</b> fim da janela`,
+`<b>BANDA</b> warn/red: voo · sai ~ · estava + PSV projetado · <b>Fantasma</b> +min (ou "!" cancelado/desviado) · <b>Palavra</b> Atenção (laranja)
+ · <b>Meio</b> horas RASURADAS → ~novas (projeção por rotação qd é o inbound) · <b>Útil</b> PSV: projetado/máx + veredicto (dentro · discrição 205(f) · ACIMA)
+ · <b>Datarow</b> PSV projetado (warn/red) + donut · <b>Chip</b> nova partida c/ antiga rasurada · <em>o dinheiro NÃO é manchete aqui</em>`,
+`<b>Rótulo</b> VOO · HOJE ✓ · <b>Fantasma</b> duty real · <b>Palavra</b> Fechado · <b>Kick</b> PSV/máx + veredicto ✓/ACIMA · <b>SEM bilhete</b> (é relatório)
+ · <b>Meio</b> DUTY · BLOCK · SETORES (multi-serviço esconde totais) · <b>Útil</b> Fecho: repouso até ⁺¹ (235) · próximo + report · aviso sign-off do perfil
+ · <b>Datarow</b> per-diem de hoje + donut PSV% (vermelho se ACIMA) · <b>Chip</b> repouso-até · <b>Ações</b> Sign-off (hot) · Simular`,
+`<b>Rótulo</b> PERNOITA · FORA DA BASE · <b>Fantasma</b> ESTAÇÃO + tempo de lá · <b>Palavra</b> Pernoita · <b>Kick</b> hotel (ou convite) + amanhã report
+ · <b>Meio</b> cartão do HOTEL (tap→mapas · longo→editar · sem hotel→adicionar) · <b>Útil</b> Fora: repouso até ⁺¹ (235) · pernoita +€ (AE) · amanhã cedo X°
+ · <b>SEM datarow</b> · <b>Chip</b> report amanhã / boa noite · <b>Ações</b> Hotel (hot) · Partilhar (o voo que aterrou) · Simular · <em>tema noturno</em>`,
+`<b>Rótulo</b> FÉRIAS · mês · <b>Fantasma</b> dias que RESTAM · <b>Palavra</b> Férias · <b>Kick</b> ficam X de Y · regressas (dia)
+ · <b>Bilhete</b> · halo · <b>SEM meio</b> · <b>Útil</b> Ano: gozados X de Y · tempo hoje · "a app fica de vigia" · <b>SEM datarow</b>
+ · <b>Chip</b> dias restantes · <b>SEM ações</b> (afastamento máximo)`,
+`<b>Rótulo</b> DOENÇA · EM PAUSA · <b>Fantasma</b> dia do episódio · <b>Palavra</b> As melhoras · <b>Kick</b> episódio dia N · pago (Art. 48) / SS do 4.º dia
+ · <b>Bilhete de melhoras</b> · <b>SEM meio nem datarow</b> · <b>Útil</b> Agora: tudo em pausa · <b>Chip</b> próximo serviço + "se continuares doente, avisa"
+ · <b>Ações</b> Evento (estender a baixa)`,
+`<b>Rótulo</b> FECHO · mês · <b>Fantasma</b> dias p/ fechar · <b>Palavra</b> Fecho do mês · <b>Kick</b> nudge dos extras (＋)
+ · <b>Meio</b> PARCELAS QUE SOMAM (base · per-diem · pernoitas · extras; tap→Números) · <b>Útil</b> Mês: avisos (voos sem rota · índice estimado) ou "as parcelas somam"
+ · <b>Datarow</b> TOTAL € do mês + donut · <b>Chip</b> dias p/ fechar · <b>Ações</b> Evento (hot) · Números`,
+];
+
+const frame = (s, i) => `
+  <div class="mock">
+    <div class="phone${s.night?' n':''}">
+      ${s.halo?'<div class="halo"></div>':''}${s.lamp?'<div class="lamp"></div>':''}
+      <div class="pside">${s.side}</div>
+      <div class="page">
+        <div class="greet"><span>${s.greet}</span>${s.name.startsWith('1')?'<span class="npill"><i></i>2 novidades</span>':''}</div>
+        ${s.band?`<div class="band"><div class="bt">${s.band[0]}</div><div class="bs">${s.band[1]}</div></div>`:''}
+        <div class="hero">
+          <span class="arrowy">↗</span>
+          <span class="gho ${s.hero.cls}">${s.hero.gho}</span>
+          ${s.hero.wx?`<span class="wx">${s.hero.wx}</span>`:''}
+          <span class="word${s.hero.warn?' warn':''}">${s.hero.word}</span>
+          ${s.hero.kick?`<span class="kick">${s.hero.kick}</span>`:''}
+        </div>
+        <div class="hr"></div>
+        ${s.note?`<div class="note">${s.note}</div>`:''}
+        ${s.mid?`<div class="mid">${s.mid}</div>`:''}
+        <div class="util"><span class="utilT">${s.util[0]}</span>${s.chips
+          ? `<span class="uchips">${s.chips.map(c=>`<span class="uchip${c[1]==='neu'?' neu':''}"><i></i>${c[0]}</span>`).join('')}</span>`
+          : `<span class="utilP">${s.util[1]}</span>`}</div>
+        ${s.data?`<div class="datarow"><span><span class="bigy ${s.data.vc||''}">${s.data.v}</span><br><span class="bigyU">${s.data.u}</span></span>${donutL(s.data.p,s.data.col,s.data.lab)}</div>`:''}
+        ${s.noThumb?'' : (s.chip?`<div class="thumb">${chipk(s.chip[0],s.chip[1],s.chip[2])}<span class="acts">${(s.acts||[]).map(a=>act(a[0],a[1],a[2])).join('')}</span></div>`:'')}
+      </div>
+      ${tbar}
+    </div>
+    <div class="t">${s.name}</div>
+    <div class="d">${s.d}</div>
+    <div class="spec">${SPECS[i] || ''}</div>
+  </div>`;
+function setProf(p){
+  document.getElementById('bP').classList.toggle('on', p === 'P');
+  document.getElementById('bC').classList.toggle('on', p === 'C');
+  document.getElementById('grid').innerHTML = S(PROFILES[p]).map(frame).join('');
+}
+setProf('P');
+</script>
+</body>
+</html>

@@ -118,6 +118,11 @@ export default function EscalaScreen({ navigation, route }) {
     if (route.params?.hub) setHubOpen(true);
   }, [route.params?.hub]);
 
+  // Botão "Importar PDF" do Início-setup (2026-07-09) → abre a importação por PDF DIRETA.
+  useEffect(() => {
+    if (route.params?.pdf) { setImportSource('paste'); setImportOpen(true); }
+  }, [route.params?.pdf]);
+
   // Vindo do "Dar acesso ao calendário" do Início → dispara já o fluxo de ligar
   // (prompt + escolher calendário), em vez de deixar o utilizador à procura do botão.
   // Consome-e-LIMPA o param: ele persiste no estado de navegação e um ref não sobrevive

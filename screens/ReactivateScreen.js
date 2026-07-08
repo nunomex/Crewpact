@@ -1,17 +1,17 @@
+// PERÍODO DE GRAÇA — PORT À PELE (2026-07-09): disco redSoft com o relógio a vermelho,
+// título Hanken pesado, botão ink (raio 16, família do login/lock) e a saída discreta.
+// RE-SKIN, NÃO REESCRITA: gate do soft-delete intacto — a conta foi agendada para
+// eliminação e o utilizador entrou dentro dos 7 dias; oferece REATIVAR (cancela o
+// apagamento) ou continuar a eliminação (sair). Prazo terminado → só sair (o servidor recusa).
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, FONT } from '../data/constants';
-import { useTheme } from '../data/appContext';
+import { PELE, PELE_FONT } from '../data/constants';
 import { reactivateAccount } from '../data/auth';
 import { success, warning } from '../data/haptics';
 
-// Gate do PERÍODO DE GRAÇA: a conta foi agendada para eliminação (soft-delete) e o utilizador
-// entrou dentro dos 7 dias. Oferece REATIVAR (cancela o apagamento) ou continuar a eliminação (sair).
 export default function ReactivateScreen({ deletionAt, onReactivated, onDismiss, lang }) {
-  const C = useTheme();
-  const s = makeS(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -31,7 +31,7 @@ export default function ReactivateScreen({ deletionAt, onReactivated, onDismiss,
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.wrap}>
-        <View style={s.icon}><Ionicons name="time-outline" size={30} color={C.red} /></View>
+        <View style={s.icon}><Ionicons name="time-outline" size={30} color={PELE.red} /></View>
         <Text style={s.title}>{l('Conta agendada para eliminação', 'Account scheduled for deletion')}</Text>
         <Text style={s.sub}>
           {days > 0
@@ -46,8 +46,9 @@ export default function ReactivateScreen({ deletionAt, onReactivated, onDismiss,
                  'If you changed your mind or this wasn’t you, reactivate now — your roster and data stay as they were.')}
             </Text>
             {err ? <Text style={s.err}>{err}</Text> : null}
-            <TouchableOpacity style={s.primary} onPress={reactivate} disabled={busy} activeOpacity={0.85}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryTxt}>{l('Reativar a minha conta', 'Reactivate my account')}</Text>}
+            <TouchableOpacity style={[s.primary, busy && { opacity: 0.55 }]} onPress={reactivate} disabled={busy} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel={l('Reativar a minha conta', 'Reactivate my account')}>
+              {busy ? <ActivityIndicator color={PELE.yellow} /> : <Text style={s.primaryTxt}>{l('Reativar a minha conta', 'Reactivate my account')}</Text>}
             </TouchableOpacity>
           </>
         ) : (
@@ -65,16 +66,16 @@ export default function ReactivateScreen({ deletionAt, onReactivated, onDismiss,
   );
 }
 
-const makeS = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
-  icon: { width: 64, height: 64, borderRadius: 99, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  title: { fontSize: 22, fontFamily: FONT.semibold, color: C.text, textAlign: 'center', marginBottom: 10 },
-  sub: { fontSize: TYPE.body, fontFamily: FONT.semibold, color: C.red, textAlign: 'center', marginBottom: 14, lineHeight: 22 },
-  body: { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  err: { color: C.red, fontSize: TYPE.label, marginBottom: 12, textAlign: 'center' },
-  primary: { alignSelf: 'stretch', backgroundColor: C.brand, borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginBottom: 14 },
-  primaryTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: FONT.bold },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PELE.paper },
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  icon: { width: 64, height: 64, borderRadius: 99, backgroundColor: PELE.redSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  title: { fontSize: 20, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, textAlign: 'center', marginBottom: 10, letterSpacing: -0.3 },
+  sub: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.red, textAlign: 'center', marginBottom: 14, lineHeight: 21 },
+  body: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 20, marginBottom: 24, maxWidth: 300 },
+  err: { color: PELE.red, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, marginBottom: 12, textAlign: 'center' },
+  primary: { alignSelf: 'stretch', backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginBottom: 14 },
+  primaryTxt: { color: PELE.paper, fontSize: 15, fontFamily: PELE_FONT.bodyHeavy },
   ghost: { paddingVertical: 10 },
-  ghostTxt: { color: C.sub, fontSize: TYPE.sub, fontFamily: FONT.medium },
+  ghostTxt: { color: PELE.grey, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed },
 });

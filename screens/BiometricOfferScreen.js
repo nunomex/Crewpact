@@ -1,19 +1,17 @@
+// OFERTA DE BIOMETRIA — PORT À PELE (2026-07-09): disco ink com o ícone do sensor a
+// AMARELO, título Hanken pesado, botão ink (raio 16, mockup .facebtn) e "Agora não"
+// discreto. RE-SKIN, NÃO REESCRITA: opt-in explícito pós-1.º login (padrão Apple/bancos),
+// só aparece com biometria configurada; ativar VALIDA o sensor uma vez antes de ligar.
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
-import PrimaryButton from '../components/PrimaryButton';
-import { useTheme } from '../data/appContext';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
-import { TYPE, RADIUS, FONT } from '../data/constants';
+import { PELE, PELE_FONT } from '../data/constants';
 
-// Oferta pós-1.º login (padrão Apple/bancos): "Usar Face ID para entrar?" — opt-in explícito,
-// só aparece se o device tiver biometria configurada. Ativar valida o sensor uma vez antes de ligar.
 export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
-  const C = useTheme();
-  const s = makeS(C);
   const [sensor, setSensor] = useState({ name: null, icon: 'finger-print' });
   const [busy, setBusy] = useState(false);
 
@@ -46,10 +44,14 @@ export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.wrap}>
-        <View style={s.icon}><Ionicons name={sensor.icon} size={32} color={C.text} /></View>
+        <View style={s.icon}><Ionicons name={sensor.icon} size={30} color={PELE.yellow} /></View>
         <Text style={s.title}>{t('lock.offerTitle', lang)}</Text>
         <Text style={s.sub}>{t('lock.offerSub', lang).replace('{name}', name)}</Text>
-        <PrimaryButton onPress={enable} loading={busy} label={t('lock.offerEnable', lang).replace('{name}', name)} style={{ alignSelf: 'stretch', marginTop: 8 }} />
+        <TouchableOpacity style={[s.btn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={enable} disabled={busy}
+          accessibilityRole="button" accessibilityLabel={t('lock.offerEnable', lang).replace('{name}', name)}>
+          {busy ? <ActivityIndicator size="small" color={PELE.yellow} /> : <Ionicons name={sensor.icon} size={22} color={PELE.yellow} />}
+          <Text style={s.btnTxt}>{t('lock.offerEnable', lang).replace('{name}', name)}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={onSkip} disabled={busy} hitSlop={8} style={s.ghost}>
           <Text style={s.ghostTxt}>{t('lock.offerLater', lang)}</Text>
         </TouchableOpacity>
@@ -58,12 +60,14 @@ export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
   );
 }
 
-const makeS = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
-  icon: { width: 68, height: 68, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  title: { fontSize: 22, fontFamily: FONT.semibold, color: C.text, textAlign: 'center', marginBottom: 10 },
-  sub: { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 21, marginBottom: 26 },
-  ghost: { paddingVertical: 12, marginTop: 6 },
-  ghostTxt: { color: C.sub, fontSize: TYPE.sub, fontFamily: FONT.medium },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PELE.paper },
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  icon: { width: 68, height: 68, borderRadius: 99, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+  title: { fontSize: 20, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, textAlign: 'center', marginBottom: 10, letterSpacing: -0.3 },
+  sub: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 20, marginBottom: 26, maxWidth: 280 },
+  btn: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, marginTop: 6 },
+  btnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
+  ghost: { paddingVertical: 12, marginTop: 8 },
+  ghostTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
 });

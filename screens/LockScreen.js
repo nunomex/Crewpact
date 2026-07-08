@@ -1,24 +1,23 @@
+// BLOQUEIO — PORT À PELE (2026-07-09, mockup `design/login-fluxo.html` § Face ID à letra):
+// wordmark da pele + saudação + botão ink (raio 16) com o ícone do sensor a AMARELO +
+// escape "entrar com palavra-passe" com o sublinhado amarelo. RE-SKIN, NÃO REESCRITA:
+// a lógica auditada está intacta — fechadura LOCAL sobre a sessão (não faz login no
+// servidor): 1) auto-pede biometria ao abrir; 2) retry com o NOME/ícone certos do sensor
+// (Face ID/Touch ID); 3) fallback nativo p/ o código do telemóvel; 4) escape por
+// palavra-passe (re-auth Supabase → desbloqueia a MESMA sessão, sem logout).
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../components/PrimaryButton';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 import { reauthenticate } from '../data/auth';
 import { t } from '../data/i18n';
-import { TYPE, RADIUS, FONT } from '../data/constants';
+import { PELE, PELE_FONT } from '../data/constants';
 import { success, warning } from '../data/haptics';
 
-// Ecrã de bloqueio (fechadura LOCAL sobre a sessão já guardada — não faz login no servidor):
-//  1) auto-pede biometria ao abrir; 2) botão de retry com o NOME/ícone certos do sensor
-//     (Face ID / Touch ID); 3) fallback nativo p/ o código do telemóvel (disableDeviceFallback:false);
-//  4) ESCAPE "entrar com palavra-passe" (re-auth Supabase → desbloqueia a MESMA sessão, sem logout).
-// Padrão Apple/bancos — nunca prender o utilizador atrás só da biometria.
 export default function LockScreen() {
   const { setLocked, logout, lang, user } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState(false);
   // Sensor real do device → nome/ícone certos (Face ID vs Touch ID; genérico no Android).
@@ -75,30 +74,41 @@ export default function LockScreen() {
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={s.center}>
-        <View style={s.iconWrap}>
-          <Ionicons name="lock-closed" size={30} color={C.onDark} />
-          <View style={s.iconDot} />
-        </View>
-        <Text style={s.title}>CrewPact</Text>
+        {/* Wordmark da pele (o mesmo do login) */}
+        <Text style={s.wmEye}>FTL · AE · CREW</Text>
+        <View style={s.wmRule} />
+        <Text style={s.wmName} allowFontScaling={false}>
+          <Text style={s.wmNameLight}>CREW</Text><Text style={s.wmNameBold}>PACT</Text>
+        </Text>
         <Text style={s.sub}>{t('lock.sub', lang)}</Text>
 
         {!showPw ? (
           <>
             {err ? <Text style={s.err}>{t('lock.failed', lang)}</Text> : null}
-            <PrimaryButton onPress={authenticate} disabled={busy} icon={sensor.icon} label={unlockLabel}
-              style={{ marginTop: 28, paddingHorizontal: 28, alignSelf: 'center' }} />
+            <TouchableOpacity style={[s.faceBtn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={authenticate} disabled={busy}
+              accessibilityRole="button" accessibilityLabel={unlockLabel}>
+              <Ionicons name={sensor.icon} size={24} color={PELE.yellow} />
+              <Text style={s.faceBtnTxt}>{unlockLabel}</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => { setShowPw(true); setErr(false); }} hitSlop={8} style={s.altBtn}>
               <Text style={s.altLink}>{t('lock.usePassword', lang)}</Text>
             </TouchableOpacity>
           </>
         ) : (
           <View style={s.pwBox}>
-            <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry
-              placeholder={t('profile.pwCur', lang)} placeholderTextColor={C.sub} style={s.pwInput} autoFocus
-              textContentType="password" autoComplete="current-password"
-              autoCapitalize="none" autoCorrect={false} editable={!pwBusy} onSubmitEditing={submitPw} returnKeyType="go" />
+            <View style={s.pwPill}>
+              <Ionicons name="lock-closed-outline" size={17} color={PELE.grey} style={{ marginRight: 11 }} />
+              <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry
+                placeholder={t('profile.pwCur', lang)} placeholderTextColor="#B4B0A8" style={s.pwInput} autoFocus
+                textContentType="password" autoComplete="current-password"
+                autoCapitalize="none" autoCorrect={false} editable={!pwBusy} onSubmitEditing={submitPw} returnKeyType="go" />
+            </View>
             {pwErr ? <Text style={s.err}>{pwErr}</Text> : null}
-            <PrimaryButton onPress={submitPw} loading={pwBusy} disabled={!pw} label={t('lock.unlock', lang)} style={{ marginTop: 12, alignSelf: 'stretch' }} />
+            <TouchableOpacity style={[s.faceBtn, { marginTop: 12, alignSelf: 'stretch' }, (!pw || pwBusy) && { opacity: 0.55 }]}
+              activeOpacity={0.85} onPress={submitPw} disabled={!pw || pwBusy} accessibilityRole="button">
+              {pwBusy ? <ActivityIndicator size="small" color={PELE.yellow} /> : null}
+              <Text style={s.faceBtnTxt}>{t('lock.unlock', lang)}</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => { setShowPw(false); setPw(''); setPwErr(''); }} hitSlop={8} style={s.altBtn}>
               <Text style={s.altLink}>{sensor.name ? `${t('lock.unlockWith', lang)} ${sensor.name}` : t('lock.unlock', lang)}</Text>
             </TouchableOpacity>
@@ -113,18 +123,24 @@ export default function LockScreen() {
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PELE.paper },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  iconWrap: { width: 72, height: 72, borderRadius: RADIUS.pill, backgroundColor: C.ink, borderWidth: 2.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  iconDot: { position: 'absolute', top: 9, right: 9, width: 8, height: 8, borderRadius: RADIUS.pill, backgroundColor: C.red },
-  title: { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
-  sub: { fontSize: 14, color: C.sub, marginTop: 6, textAlign: 'center' },
-  err: { fontSize: 13, color: C.red, marginTop: 14, textAlign: 'center' },
+  wmEye: { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
+  wmRule: { height: 3.5, width: 130, backgroundColor: PELE.yellow, marginTop: 9, marginBottom: 12 },
+  wmName: { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
+  wmNameLight: { fontFamily: PELE_FONT.displayMed },
+  wmNameBold: { fontFamily: PELE_FONT.displayHeavy },
+  sub: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 10, textAlign: 'center' },
+  err: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.red, marginTop: 14, textAlign: 'center' },
+  // Botão do sensor (mockup .facebtn): ink, raio 16, ícone AMARELO, texto claro.
+  faceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 28, marginTop: 26, alignSelf: 'center' },
+  faceBtnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
   altBtn: { marginTop: 18, paddingVertical: 6 },
-  altLink: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.semibold, textAlign: 'center' },
-  pwBox: { alignSelf: 'stretch', marginTop: 28 },
-  pwInput: { borderWidth: 1.5, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 13, fontSize: TYPE.body, color: C.text, backgroundColor: C.card },
+  altLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1, textAlign: 'center' },
+  pwBox: { alignSelf: 'stretch', marginTop: 26, alignItems: 'center' },
+  pwPill: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 20, height: 54 },
+  pwInput: { flex: 1, fontSize: 14.5, fontFamily: PELE_FONT.body, color: PELE.ink },
   logout: { alignItems: 'center', paddingVertical: 20 },
-  logoutTxt: { fontSize: TYPE.label, color: C.sub, fontFamily: FONT.semibold },
+  logoutTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
 });

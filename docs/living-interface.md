@@ -174,23 +174,28 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 > Conteúdo sempre crew-aware: os motores FTL/AE enchem os cartões com os valores
 > do perfil (piloto/cabine, companhia, categoria).
 
-### 0 · Onboarding
+### 0 · Onboarding *(revisto 2026-07-09 — passe estado-a-estado com o founder)*
 - **Gatilho:** conta criada, calendário ainda não ligado.
-- **Hero:** ghost ✈ · "Olá!" · kick "liga o calendário do telemóvel e o Início ganha vida".
-- **Meio:** UM passo — "1 · Ligar o calendário do telemóvel — é daí que a app lê
-  a tua escala; essencial" + **dica em placa amarela suave**: "No eCrew, ativa o
-  sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre
-  atualizada — e a app trabalha sem erros."
-- **Chip:** "PASSO 1 · ligar o calendário". **Ações:** Ligar calendário (hot) · Ver exemplo (demo).
+- **Hero:** ghost ✈ · "Olá!" · kick CURTO "liga o **calendário** e o Início ganha vida"
+  (o "do telemóvel" vive no passo 1 — menos eco da mesma ordem).
+- **Meio — as TRÊS PORTAS (2.ª revisão 2026-07-09, pedido do user):** passo 1 (explica)
+  + **botão-herói "Ligar ao calendário"** (ink, ícone amarelo) + ghost **"Importar PDF
+  da escala"** (→ Escala com `params.pdf` = importação direta) + micro-linha sublinhada
+  **"ou adiciona um serviço à mão"** (→ Escala `newDuty`) + **dica CREW-AWARE**: "No
+  eCrew…" só easyJet; outras leem "No portal da tua companhia, ativa a exportação…".
+- **SEM datarow:** o donut a 15% era progresso FALSO (não media nada) — morreu; a
+  promessa honesta mudou-se para o chip.
+- **Chip:** "~1 MIN · é o que o setup demora". **Ações:** Ligar calendário (hot) · Ver exemplo (demo).
 - **Desaparece:** TUDO o resto. Identidade NÃO se mostra nem se pergunta — veio do registo.
 - **Objetivo:** uma única missão. O vazio nunca pede desculpa: mostra o caminho e prova o valor (dia de exemplo).
 
 ### 1 · Folga
 - **Gatilho:** sem duty hoje; próximo report > 24 h.
 - **Hero (2026-07-09, 2.ª iteração do user):** ghost = **dia da semana CURTO de hoje** ("QUI" — 3 letras, gigante) · "Folga" · kick = SÓ o tempo de hoje ("hoje 18°–27°"). O rótulo lateral dá a coordenada: "FOLGA · 9 JULHO". O próximo serviço SAIU do kick (era redundante com a agenda).
+- **Voz — REGRA DE ÂMBITO (2026-07-09, do user "não faz sentido em todo o sistema"):** o bilhete SÓ existe quando a app não pede nada — **folga · férias · doença** (o bilhete de melhoras). Estados operacionais (hoje/véspera/pernoita/pós-voo/disrupção/fecho) falam em interface, não em bilhetes — gate no HomeScreen, pools ficam no motor.
 - **Voz (2026-07-09, 7.ª iteração — FINAL do user):** **BILHETE MANUSCRITO em Caveat 25** (`PELE_FONT.hand`, 3.ª família SÓ para a voz; o user testou Sacramento por imagens e voltou à Caveat), marcador amarelo no que importa (`PELE.yellow`+`PELE.ink` fixos — igual de dia e de noite), cauda na mesma caneta em cinza. **O bilhete POUSA LIVRE na página** (user: "como num post-it de lado"): ângulo **-1°…-3°** (teto de contenção — 3 sinais no mesmo elemento, o ângulo cede primeiro) + desvio 0-10px, **determinísticos pelo DIA** (`noteSeed` do todayISO — sem Math.random). Dynamic type capado a 1.2 no bilhete.
 - **Ações (2026-07-09):** a folga ficou **SEM ações** (Evento/Simular saíram — o ＋ central da tab bar já os carrega; só o chip fica). A app baixa a voz a sério.
-- **Meio:** **título VIVO** da agenda (não "A seguir" morto): o estado do próximo — "EM 45 MIN" · "AMANHÃ · **EM 16 H**" · "EM 3 DIAS" (o tempo a amarelo; fallback "A seguir" se não houver countdown) + agenda c/ tracinhos (2–3 próximos), linhas com **data explícita** "SEX 10 · report 05:40 · 4 setores". **Util:** sincronizada ✓ · repouso em dia · férias X de Y.
+- **Meio (2026-07-09 final):** o **CARTÃO PRETO do countdown encabeça a agenda** (ink + dígitos amarelos "16 H / até ao report", alinhado à direita — subiu da linha do polegar: era duplo-badge com o título vivo, que morreu; um dado, uma casa) + agenda c/ tracinhos (2–3 próximos), linhas com **data explícita** "SEX 10 · report 05:40 · 4 setores". **A linha do polegar NÃO existe na folga** (chip subiu, ações no ＋ central — o fundo é poster puro). **Util:** sincronizada ✓ · repouso em dia · férias X de Y.
 - **Datarow:** mês € estimado + donut mês %. **Chip:** "2 DIAS · até ao report".
 - **Ações:** Extra (hot) · Simular. **Desaparece:** countdowns, PSV, avisos.
 - **Animação:** assenta uma vez; sem refresh. **Objetivo:** silêncio merecido.

@@ -1,15 +1,21 @@
+// LOGIN — PORT À PELE (2026-07-09, mockups `design/login-3.html` + `login-fluxo.html` à letra):
+// wordmark (eyebrow FTL·AE·CREW + régua amarela + CREWPACT em Barlow) · campos-PÍLULA planos
+// (soft + hairline; foco = borda ink) · botão ink em pílula com a seta AMARELA · links com
+// sublinhado amarelo · rodapé "FTL · AE". RE-SKIN, NÃO REESCRITA: a lógica auditada
+// (2026-07-01 — handlers, cooldown do reenviar, anti-duplo-submit, autofill, shake,
+// transições entre vistas, teclado-compacta-topo) está INTACTA.
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform,
-  Animated, Keyboard,
+  Animated, Keyboard, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';   // o do RN foi deprecado (RN 0.81)
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../components/PrimaryButton';
 import StrengthBar from '../components/StrengthBar';
 import OTPInput from '../components/OTPInput';
-import { RADIUS, SPACE, TYPE, PALETTE_DARK, FONT, SHADOW } from '../data/constants';
+import Icon from '../components/Icon';
+import { PELE, PELE_FONT, SPACE } from '../data/constants';
 import {
   login,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -17,26 +23,24 @@ import {
 } from '../data/auth';
 import { t } from '../data/i18n';
 import { success, warning, select } from '../data/haptics';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 
-/* ─── Field ──────────────────────────────────────────────────────────────── */
+/* ─── Field (pílula da pele: soft + hairline; foco = ink; erro = vermelho) ─── */
 function Field({ value, onChangeText, placeholder, error, secure,
   autoCapitalize = 'none', keyboardType = 'default',
   returnKeyType = 'next', onSubmitEditing, inputRef, icon, autoFocus, ...inputProps }) {
-  const C = useTheme();
-  const f = makeF(C);
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   return (
     <View style={f.wrap}>
       <View style={[f.box, focused && f.boxFocused, error && f.boxErr]}>
-        {icon && <Ionicons name={icon} size={18} color={focused ? C.text : C.sub} style={f.icon} />}
+        {icon && <Ionicons name={icon} size={17} color={focused ? PELE.ink : PELE.grey} style={f.icon} />}
         <TextInput
           ref={inputRef}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={C.sub}
+          placeholderTextColor="#B4B0A8"
           secureTextEntry={secure && !show}
           autoCapitalize={autoCapitalize}
           keyboardType={keyboardType}
@@ -51,7 +55,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
         />
         {secure && (
           <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn} hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}>
-            <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={19} color={C.sub} />
+            <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={19} color={PELE.grey} />
           </TouchableOpacity>
         )}
       </View>
@@ -59,22 +63,46 @@ function Field({ value, onChangeText, placeholder, error, secure,
     </View>
   );
 }
-const makeF = (C) => StyleSheet.create({
+const f = StyleSheet.create({
   wrap:       { marginBottom: SPACE.md },
-  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, height: 54, borderWidth: 1.5, borderColor: 'transparent' },
-  boxFocused: { backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.text },
-  boxErr:     { backgroundColor: C.redSoft, borderColor: C.red },
-  icon:       { marginRight: 10 },
-  input:      { flex: 1, fontSize: TYPE.value, color: C.text, backgroundColor: 'transparent' },
+  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 20, height: 54, borderWidth: 1.5, borderColor: PELE.line },
+  boxFocused: { backgroundColor: PELE.paper, borderColor: PELE.ink },
+  boxErr:     { backgroundColor: PELE.redSoft, borderColor: PELE.red },
+  icon:       { marginRight: 11 },
+  input:      { flex: 1, fontSize: 14.5, fontFamily: PELE_FONT.body, color: PELE.ink, backgroundColor: 'transparent' },
   eyeBtn:     { padding: SPACE.xs },
-  err:        { fontSize: TYPE.micro, color: C.red, marginTop: SPACE.xs, marginLeft: 2 },
+  err:        { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.red, marginTop: SPACE.xs, marginLeft: 12 },
 });
+
+/* ─── Botão-pílula da pele (ink + seta amarela; loading = spinner no lugar da seta) ─── */
+function PillButton({ label, onPress, loading, disabled }) {
+  return (
+    <TouchableOpacity style={[s.btn, (disabled || loading) && { opacity: 0.55 }]} activeOpacity={0.85}
+      onPress={onPress} disabled={disabled || loading} accessibilityRole="button" accessibilityLabel={label}>
+      <Text style={s.btnTxt}>{label}</Text>
+      {loading
+        ? <ActivityIndicator size="small" color={PELE.yellow} />
+        : <Icon name="chevron" size={16} color={PELE.yellow} />}
+    </TouchableOpacity>
+  );
+}
+
+/* ─── Wordmark da pele: eyebrow + régua amarela + CREWPACT (Barlow) ─── */
+function Wordmark({ compact, left }) {
+  return (
+    <View style={[s.wm, left && { alignItems: 'flex-start' }, compact && { marginBottom: 18 }]}>
+      <Text style={s.wmEye}>FTL · AE · CREW</Text>
+      <View style={s.wmRule} />
+      <Text style={s.wmName} allowFontScaling={false}>
+        <Text style={s.wmNameLight}>CREW</Text><Text style={s.wmNameBold}>PACT</Text>
+      </Text>
+    </View>
+  );
+}
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
   const { setUser, setSignupMode, lang } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeS(C);
   // views: 'login' | 'forgot' | 'code' | 'reset'
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -218,24 +246,24 @@ export default function LoginScreen() {
     } finally { inFlight.current = false; setLoading(false); }
   };
 
+  // Vistas de RECUPERAÇÃO alinham à esquerda (mockup login-fluxo); login é centrado.
+  const leftView = view === 'forgot' || view === 'reset';
+
   return (
     <SafeAreaView style={s.safe}>
       {/* Idioma segue o telemóvel (PT→PT, resto→EN); a troca manual vive no Perfil. */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={[s.scroll, { flexGrow: 1 }, keyboardOpen && { paddingTop: 40 }]}
+          contentContainerStyle={[s.scroll, { flexGrow: 1 }, keyboardOpen && { paddingTop: 34 }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}>
 
-          {/* Brand */}
-          <View style={[s.brand, keyboardOpen && { marginBottom: 20 }]}>
-            <View style={s.ring}>
-              <Ionicons name="airplane" size={24} color="#fff" style={{ transform: [{ rotate: '-45deg' }] }} />
-            </View>
-            <Text style={s.logoName}>CrewPact</Text>
-            {!keyboardOpen && <Text style={s.logoSub}>{t('login.tagline', lang)}</Text>}
-          </View>
+          {/* Wordmark da pele (compacta com o teclado aberto) */}
+          <Wordmark compact={keyboardOpen} left={leftView} />
+          {view === 'login' && !keyboardOpen ? (
+            <Text style={s.tagline}>{t('login.tagline', lang)}</Text>
+          ) : null}
 
           {/* Conteúdo com animação de transição.
               Mantemos sempre os mesmos valores Animated (transX/transOp) para não
@@ -247,7 +275,7 @@ export default function LoginScreen() {
 
             {globalErr ? (
               <View style={s.errBanner}>
-                <Ionicons name="alert-circle" size={16} color={C.red} />
+                <Ionicons name="alert-circle" size={16} color={PELE.red} />
                 <Text style={s.errBannerTxt}>{globalErr}</Text>
               </View>
             ) : null}
@@ -275,9 +303,9 @@ export default function LoginScreen() {
                   textContentType="password" autoComplete="current-password"
                   returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
                 <TouchableOpacity style={s.forgotBtn} hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
-                  <Text style={s.forgotTxt}>{t('login.forgot', lang)}</Text>
+                  <Text style={s.linkYellow}>{t('login.forgot', lang)}</Text>
                 </TouchableOpacity>
-                <PrimaryButton onPress={handleLogin} loading={loading} label={t('login.btnLogin', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
+                <PillButton onPress={handleLogin} loading={loading} label={t('login.btnLogin', lang)} />
                 <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => setSignupMode(true)}>
                   <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
                   <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
@@ -290,7 +318,6 @@ export default function LoginScreen() {
             {view === 'forgot' && (
               <>
                 <View style={s.stepHeader}>
-                  <Text style={s.stepEyebrow}>{t('login.recoverEyebrow', lang)}</Text>
                   <Text style={s.stepTitle}>{t('login.forgotTitle', lang)}</Text>
                   <Text style={s.stepSub}>{t('login.forgotSub', lang)}</Text>
                 </View>
@@ -298,9 +325,9 @@ export default function LoginScreen() {
                   placeholder={t('login.email', lang)} error={fErr}
                   icon="mail-outline" keyboardType="email-address" autoFocus returnKeyType="done"
                   onSubmitEditing={handleRequestReset} />
-                <PrimaryButton onPress={handleRequestReset} loading={loading} label={t('login.btnSendCode', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
+                <PillButton onPress={handleRequestReset} loading={loading} label={t('login.btnSendCode', lang)} />
                 <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => navigateTo('login', false)}>
-                  <Ionicons name="arrow-back" size={14} color={C.sub} />
+                  <Ionicons name="arrow-back" size={14} color={PELE.grey} />
                   <Text style={s.linkTxt}>{t('login.backToLogin', lang)}</Text>
                 </TouchableOpacity>
               </>
@@ -309,35 +336,31 @@ export default function LoginScreen() {
             {/* ── INSERIR CÓDIGO ── */}
             {view === 'code' && (
               <>
-                <View style={s.stepHeader}>
-                  <View style={s.stepIconWrap}>
-                    <Ionicons name="mail-open-outline" size={28} color={C.text} />
-                  </View>
-                  <Text style={s.stepEyebrow}>{t('login.verifyEyebrow', lang)}</Text>
-                  <Text style={s.stepTitle}>{t('login.verifyTitle', lang)}</Text>
-                  <Text style={s.stepSub}>{t('login.verifySub', lang)}{'\n'}<Text style={{ color: C.text, fontFamily: FONT.semibold }}>{resetEmail}</Text></Text>
+                <View style={[s.stepHeader, { alignItems: 'center' }]}>
+                  <Text style={[s.stepTitle, { textAlign: 'center' }]}>{t('login.verifyTitle', lang)}</Text>
+                  <Text style={[s.stepSub, { textAlign: 'center' }]}>{t('login.verifySub', lang)}{'\n'}<Text style={s.stepSubStrong}>{resetEmail}</Text></Text>
                 </View>
                 <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); }} />
                 {codeErr ? (
                   <View style={[s.errBanner, { marginTop: -12 }]}>
-                    <Ionicons name="alert-circle" size={16} color={C.red} />
+                    <Ionicons name="alert-circle" size={16} color={PELE.red} />
                     <Text style={s.errBannerTxt}>{codeErr}</Text>
                   </View>
                 ) : resentOk ? (
                   <View style={[s.okBanner, { marginTop: -12 }]}>
-                    <Ionicons name="checkmark-circle" size={16} color={C.green} />
+                    <Ionicons name="checkmark-circle" size={16} color={PELE.ok} />
                     <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
                   </View>
                 ) : null}
-                <PrimaryButton onPress={handleVerifyCode} disabled={code.length < 6} loading={loading} label={t('login.btnVerify', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
+                <PillButton onPress={handleVerifyCode} disabled={code.length < 6} loading={loading} label={t('login.btnVerify', lang)} />
                 <View style={s.codeLinks}>
                   <TouchableOpacity onPress={handleResendCode} disabled={resendLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
-                    <Text style={[s.linkStrong, resendLeft > 0 && s.linkMuted]}>
+                    <Text style={[s.linkYellow, resendLeft > 0 && s.linkMuted]}>
                       {resendLeft > 0 ? t('login.resendIn', lang).replace('{s}', resendLeft) : t('login.resend', lang)}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setCode(''); setCodeErr(''); setResentOk(false); navigateTo('forgot', false); }}>
-                    <Ionicons name="arrow-back" size={13} color={C.sub} />
+                    <Ionicons name="arrow-back" size={13} color={PELE.grey} />
                     <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
                   </TouchableOpacity>
                 </View>
@@ -348,10 +371,6 @@ export default function LoginScreen() {
             {view === 'reset' && (
               <>
                 <View style={s.stepHeader}>
-                  <View style={s.stepIconWrap}>
-                    <Ionicons name="lock-open-outline" size={28} color={C.text} />
-                  </View>
-                  <Text style={s.stepEyebrow}>{t('login.newPwEyebrow', lang)}</Text>
                   <Text style={s.stepTitle}>{t('login.newPwTitle', lang)}</Text>
                   <Text style={s.stepSub}>{t('login.newPwSub', lang)}</Text>
                 </View>
@@ -364,11 +383,14 @@ export default function LoginScreen() {
                   placeholder={t('login.confirmPw', lang)} error={newPw2Err} secure
                   icon="lock-closed-outline" returnKeyType="done"
                   onSubmitEditing={handleResetPassword} inputRef={newPw2Ref} />
-                <PrimaryButton onPress={handleResetPassword} loading={loading} label={t('login.btnCreatePw', lang)} style={{ height: 54, marginTop: SPACE.xs }} />
+                <PillButton onPress={handleResetPassword} loading={loading} label={t('login.btnCreatePw', lang)} />
               </>
             )}
 
           </Animated.View>
+
+          {/* Rodapé da pele (some com o teclado) */}
+          {!keyboardOpen ? <Text style={s.foot}>FTL · AE</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -376,32 +398,47 @@ export default function LoginScreen() {
   );
 }
 
-const makeS = (C) => StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: C.canvas },
-  scroll:       { padding: 26, paddingBottom: 52, paddingTop: 104 },
-  brand:        { alignItems: 'center', marginBottom: 44 },
-  ring:         { width: 64, height: 64, borderRadius: RADIUS.xl - 4, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', marginBottom: 18, ...SHADOW.sm },
-  logoName:     { fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: C.text },
-  logoSub:      { fontSize: TYPE.sub, color: C.sub, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 },
-  switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 },
+const s = StyleSheet.create({
+  safe:         { flex: 1, backgroundColor: PELE.paper },
+  scroll:       { padding: 30, paddingBottom: 40, paddingTop: 84 },
+
+  // Wordmark: eyebrow · régua amarela · CREWPACT (Crew leve + Pact pesado, Barlow tracked)
+  wm:           { alignItems: 'center', marginBottom: 14 },
+  wmEye:        { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
+  wmRule:       { height: 3.5, width: 130, backgroundColor: PELE.yellow, marginTop: 9, marginBottom: 12 },
+  wmName:       { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
+  wmNameLight:  { fontFamily: PELE_FONT.displayMed },
+  wmNameBold:   { fontFamily: PELE_FONT.displayHeavy },
+  tagline:      { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.grey, textAlign: 'center', lineHeight: 19, marginBottom: 30, alignSelf: 'center', maxWidth: 230 },
+
+  // Botão-pílula ink + seta amarela
+  btn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: PELE.ink, borderRadius: 999, height: 56, marginTop: SPACE.xs },
+  btnTxt:       { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },
+
+  // Links: sublinhado AMARELO no forte; cinza no neutro
+  linkYellow:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
+  linkTxt:      { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
+  linkMuted:    { color: PELE.grey, borderBottomColor: PELE.line },
+  switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
+  switchLink:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
   errSignupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4, marginBottom: 16 },
-  switchLink:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
-  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.redSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.redSoft },
-  errBannerTxt: { flex: 1, fontSize: TYPE.sub, color: C.red, fontFamily: FONT.medium },
-  forgotBtn:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
-  forgotTxt:    { fontSize: TYPE.sub, color: C.sub },
-  // Forgot/code/reset shared
-  stepHeader:   { alignItems: 'center', marginBottom: SPACE.xl },
-  stepIconWrap: { width: 60, height: 60, borderRadius: RADIUS.lg, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  stepEyebrow:  { fontSize: TYPE.eyebrow, letterSpacing: 2, color: C.sub, fontFamily: FONT.semibold, marginBottom: 6 },
-  stepTitle:    { fontSize: 22, fontFamily: FONT.bold, letterSpacing: -0.3, color: C.text, marginBottom: SPACE.sm, textAlign: 'center' },
-  stepSub:      { fontSize: TYPE.sub, color: C.sub, textAlign: 'center', lineHeight: 19 },
+  forgotBtn:    { alignSelf: 'flex-end', marginTop: -2, marginBottom: 22, marginRight: 4 },
+
+  // Banners de erro/ok (tons suaves da pele)
+  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#E7C0BA' },
+  errBannerTxt: { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.red },
+  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.okSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#BFE0CD' },
+  okBannerTxt:  { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.ok },
+
+  // Cabeçalho dos passos (forgot/reset à esquerda; code centra inline) — H2 Barlow do mockup
+  stepHeader:   { alignItems: 'flex-start', marginBottom: 18 },
+  stepTitle:    { fontFamily: PELE_FONT.display, fontSize: 26, letterSpacing: 0.5, textTransform: 'uppercase', color: PELE.ink, marginBottom: 6 },
+  stepSub:      { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 19 },
+  stepSubStrong:{ color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
+
   linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
-  linkTxt:      { fontSize: TYPE.sub, color: C.sub },
-  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, backgroundColor: C.greenSoft, borderRadius: RADIUS.sm + 2, padding: SPACE.md, marginBottom: 14, borderWidth: 1, borderColor: C.greenSoft },
-  okBannerTxt:  { flex: 1, fontSize: TYPE.sub, color: C.greenText, fontFamily: FONT.medium },
   codeLinks:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 20 },
-  linkStrong:   { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.red },
-  linkMuted:    { color: C.sub },
   backInline:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+
+  foot:         { marginTop: 'auto', paddingTop: 26, textAlign: 'center', fontSize: 9, fontFamily: PELE_FONT.bodyBold, letterSpacing: 2, color: '#C9C6BE', textTransform: 'uppercase' },
 });

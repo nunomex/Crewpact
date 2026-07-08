@@ -593,10 +593,14 @@ export default function HomeScreen({ navigation }) {
   // VOZ do estado: frase curada determinística (data/stateVoice.js, golden) — folga por agora;
   // véspera/pós-voo/pernoita herdam quando nascerem. HALO: brilho radial suave atrás do
   // fantasma, tom pelo tempo/hora — a dose que não custa leitura (mockup design/fundos-vivos.html ①).
-  const voice = useMemo(
-    () => stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm } }),
-    [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm],
-  );
+  const voice = useMemo(() => {
+    // O BILHETE MANUSCRITO só existe quando a app NÃO te pede nada (decisão do user
+    // 2026-07-09): folga · férias · doença (o bilhete de melhoras). Estados operacionais
+    // — hoje, véspera, pernoita, pós-voo, disrupção, fecho — falam em interface, não em
+    // bilhetes. (As pools deles ficam no motor; o gate é aqui.)
+    if (homeState !== 'folga' && homeState !== 'ferias' && homeState !== 'doenca') return null;
+    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm } });
+  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm]);
   // O bilhete POUSA na página com ângulo/posição LIVRES (user: "como num post-it de lado")
   // — determinísticos pelo DIA (nada de Math.random): cada dia cai um bocadinho diferente,
   // mas hoje cai sempre igual (re-renders não o fazem "dançar").
@@ -785,7 +789,8 @@ export default function HomeScreen({ navigation }) {
   const aptOk = !!(depAirport && !airportDis);
   const hero = (() => {
     if (homeState === 'setup') return { icon: 'plane', word: l('Olá!', 'Hello!'), arrow: 'arrow-diag', arrowRot: 90,
-      kick: [l('liga o ', 'connect your '), { y: l('calendário do telemóvel', 'phone calendar') }, l(' e o Início ganha vida', ' and Home comes alive')] };
+      // kick = convite curto ("do telemóvel" já vive no passo 1 — menos eco da mesma ordem)
+      kick: [l('liga o ', 'connect your '), { y: l('calendário', 'calendar') }, l(' e o Início ganha vida', ' and Home comes alive')] };
     if (homeState === 'disrupcao') return {
       ghost: (fsCancelled || fsDiverted) ? '!' : `+${delayMin}`, word: l('Atenção', 'Heads-up'), warn: true, arrow: 'alert',
       kick: fsCancelled ? [l('voo cancelado — confirma com o crewing', 'flight cancelled — check with crewing')]
@@ -922,14 +927,8 @@ export default function HomeScreen({ navigation }) {
     }
     return out;
   })() : null;
-  // TÍTULO VIVO da agenda (pedido do user: nada de "A SEGUIR" morto) — diz o estado do
-  // próximo serviço: "EM 45 MIN" · "AMANHÃ · EM 16 H" · "EM 3 DIAS". O tempo vai a amarelo.
-  const agendaWhen = (homeState === 'folga' && flight && cdMin != null && cdMin > 0) ? (() => {
-    const diffD = Math.round((new Date(flight.dateISO + 'T00:00:00') - new Date(todayISO + 'T00:00:00')) / 86400000);
-    if (cdMin < 60) return { pre: null, hi: `${l('em', 'in')} ${cdMin} min` };
-    if (cdMin < 2880) return { pre: diffD === 1 ? `${l('amanhã', 'tomorrow')} · ` : null, hi: `${l('em', 'in')} ${Math.floor(cdMin / 60)} h` };
-    return { pre: null, hi: `${l('em', 'in')} ${Math.round(cdMin / 1440)} ${l('dias', 'days')}` };
-  })() : null;
+  // (o título vivo da agenda morreu 2026-07-09: o CARTÃO PRETO do countdown subiu para
+  //  encabeçar o "A seguir" — um dado, uma casa; ver o render da agenda.)
 
   // Micro-texto útil (título BC + frase) — o resumo das perguntas/estado; toca → folha "porquê".
   const utilTtl = homeState === 'setup' ? l('Porquê', 'Why') : homeState === 'folga' ? l('Estado', 'Status') : homeState === 'vespera' ? l('Amanhã', 'Tomorrow') : homeState === 'pernoita' ? l('Fora', 'Away') : homeState === 'posvoo' ? l('Fecho', 'Wrap-up') : homeState === 'ferias' ? l('Ano', 'Year') : homeState === 'doenca' ? l('Agora', 'Now') : homeState === 'fecho' ? l('Mês', 'Month') : homeState === 'disrupcao' ? 'PSV' : l('Hoje', 'Today');
@@ -980,11 +979,22 @@ export default function HomeScreen({ navigation }) {
     if (folgaVac) bits.push(`${l('férias: ficam', 'vacation: left')} ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`);
     return bits.length ? bits.join(' · ') : l('tudo em dia ✓', 'all in order ✓');
   })();
-  const utilTap = (homeState === 'folga' || homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo' || homeState === 'ferias' || homeState === 'fecho') && questionItems.length ? questionItems[0] : null;
+  // FOLGA (2026-07-09, user "mais organizado"): o Estado deixa de ser prosa-em-linha e
+  // vira CHIPS DE ESTADO tocáveis — cada verificação com o ponto da cor certa e o toque
+  // a abrir o SEU porquê (a linha antiga abria só o do primeiro). O saldo de férias entra
+  // como chip neutro. Os outros estados mantêm a prosa (lá o útil é narrativa, não checklist).
+  const estadoChips = homeState === 'folga' ? [
+    ...qChips.slice(0, 4).filter((it) => it.short).map((it) => ({ key: it.id, label: it.short, tone: it.status, item: it })),
+    ...(folgaVac ? [{ key: 'vac', label: `${l('férias', 'vacation')} · ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`, tone: 'neutral' }] : []),
+  ] : null;
+  // O toque-no-bloco só vive onde o útil é prosa — na folga os chips têm alvos próprios.
+  const utilTap = (homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo' || homeState === 'ferias' || homeState === 'fecho') && questionItems.length ? questionItems[0] : null;
 
   // Dígitos amarelos + donut por estado (o "número do dia").
   const datarow = (() => {
-    if (homeState === 'setup') return { v: '~1 min', u: l('É O QUE O SETUP DEMORA', 'THAT’S ALL SETUP TAKES'), p: 15, lab: 'SETUP', color: PELE.yellow };
+    // Setup SEM datarow (2026-07-09): o donut a 15% era PROGRESSO FALSO — não media nada,
+    // e numa app auditável um número inventado no 1.º ecrã é pecado. O "~1 min" mudou-se p/ o chip.
+    if (homeState === 'setup') return null;
     if (homeState === 'vespera' || homeState === 'pernoita') return null;   // noites calmas — sem manchete de números (o € da pernoita vive no útil)
     if (homeState === 'ferias' || homeState === 'doenca') return null;      // afastamento/silêncio — nada de números a gritar
     // 'fecho' cai de propósito no ramo do € do mês (a manchete É o total + donut do mês)
@@ -1007,7 +1017,8 @@ export default function HomeScreen({ navigation }) {
 
   // Chip do polegar (preto, dígitos amarelos) + ações COM RÓTULO (a primária destacada).
   const chip = (() => {
-    if (homeState === 'setup') return { v: l('PASSO 1', 'STEP 1'), s: l('ligar o calendário', 'connect the calendar') };
+    // O chip diz a PROMESSA honesta (era "PASSO 1" — eco da ordem que já grita 3×).
+    if (homeState === 'setup') return { v: '~1 MIN', s: l('é o que o setup demora', 'that’s all setup takes') };
     if (homeState === 'vespera') return { v: cdGhost || '—', s: l('até ao report', 'to report') };
     if (homeState === 'pernoita') return (flight && flight.report)
       ? { v: flight.report, s: l('report amanhã', 'report tomorrow') }
@@ -1058,8 +1069,8 @@ export default function HomeScreen({ navigation }) {
   const shareable = isToday && !isNonFlight && !(flight && flight.demo) && (sectorLegs.some((lg) => lg && (lg.flightNo || lg.flight)) || !!flightNo);
   const shareableClose = homeState === 'pernoita' && closeLegs.length > 0;
   const acts = homeState === 'setup' ? [
-    { ic: 'cal', lbl: l('Ligar calendário', 'Connect calendar'), hot: true, run: requestAccess },
-    { ic: 'eye', lbl: l('Ver exemplo', 'See example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
+    // Só o EXEMPLO (o "Ligar" ganhou botão-herói no meio — a ação duplicada morreu)
+    { ic: 'eye', lbl: l('Ver exemplo', 'See example'), hot: true, run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
   ] : homeState === 'folga' ? [
     // SEM ações na folga (user 2026-07-09): o ＋ central da tab bar já carrega
     // Serviço·Simulação·Evento — na folga a app baixa a voz (só o chip fica).
@@ -1280,10 +1291,15 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           )) : agendaRows ? (agendaRows.length ? (
             <>
-              {/* título VIVO: o estado do próximo serviço (amanhã / faltam X h), não etiqueta morta */}
-              <Text style={s.agHead}>
-                {agendaWhen ? (<>{agendaWhen.pre}<Text style={s.agHeadHi}>{agendaWhen.hi}</Text></>) : l('A seguir', 'Up next')}
-              </Text>
+              {/* O CARTÃO PRETO do countdown encabeça a agenda (decisão do user 2026-07-09:
+                  era duplo-badge com o chip do polegar — o elemento forte subiu para o
+                  contexto e a linha do polegar da folga esvaziou-se de vez). */}
+              <View style={s.agChipRow}>
+                <View style={s.chip}>
+                  <Text style={s.chipV} numberOfLines={1}>{chip.v}</Text>
+                  <Text style={s.chipS} numberOfLines={1}>{chip.s}</Text>
+                </View>
+              </View>
               {agendaRows.map((a) => (
                 <TouchableOpacity key={a.iso} style={s.ag} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)} accessibilityRole="button">
                   <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
@@ -1296,17 +1312,38 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
             <>
-              <TouchableOpacity style={s.stp} activeOpacity={0.8} onPress={requestAccess} accessibilityRole="button">
+              {/* As TRÊS PORTAS de entrada da escala (pedido do user 2026-07-09): botão a sério
+                  para o calendário (o herói), PDF como alternativa, manual como último recurso. */}
+              <View style={s.stp}>
                 <Text style={s.stpN}>1</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={s.stpT}>{l('Ligar o calendário do telemóvel', 'Connect your phone calendar')}</Text>
                   <Text style={s.stpS}>{l('é daí que a app lê a tua escala — nunca mais escreves um voo à mão', 'that’s where the app reads your roster — never type a flight again')}</Text>
                 </View>
-                <Icon name="chevron" size={14} color={PELE.ink} />
+              </View>
+              <TouchableOpacity style={s.setupBtn} activeOpacity={0.85} onPress={requestAccess}
+                accessibilityRole="button" accessibilityLabel={l('Ligar ao calendário', 'Connect calendar')}>
+                <Icon name="cal" size={16} color={PELE.yellow} />
+                <Text style={s.setupBtnTxt}>{l('Ligar ao calendário', 'Connect calendar')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.setupGhost} activeOpacity={0.8}
+                onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { pdf: Date.now() } }); }}
+                accessibilityRole="button" accessibilityLabel={l('Importar PDF da escala', 'Import roster PDF')}>
+                <Icon name="doc" size={15} color={P.ink} />
+                <Text style={s.setupGhostTxt}>{l('Importar PDF da escala', 'Import roster PDF')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7} hitSlop={6}
+                onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }); }}
+                accessibilityRole="button" accessibilityLabel={l('Adicionar serviço à mão', 'Add a duty by hand')}>
+                <Text style={s.setupManual}>{l('ou adiciona um serviço à mão', 'or add a duty by hand')}</Text>
               </TouchableOpacity>
               <View style={s.tip}>
                 <Icon name="sync" size={14} color={PELE.ink} />
-                <Text style={s.tipTxt}>{l('No eCrew, ativa o sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In eCrew, enable sync to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')}</Text>
+                {/* Dica CREW-AWARE (2026-07-09): "eCrew" só para easyJet — um user TAP/Ryanair
+                    lia o nome do portal errado; sem easyJet fala do "portal da companhia". */}
+                <Text style={s.tipTxt}>{/easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
+                  ? l('No eCrew, ativa o sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In eCrew, enable sync to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')
+                  : l('No portal da tua companhia, ativa a exportação da escala para o calendário do telemóvel. Com ela ligada, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In your airline’s crew portal, enable roster export to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')}</Text>
               </View>
             </>
           ) : null}
@@ -1317,7 +1354,21 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity style={s.util} activeOpacity={utilTap ? 0.75 : 1} onPress={utilTap ? () => { select(); setDetailItem(utilTap); } : undefined} disabled={!utilTap}
             accessibilityRole={utilTap ? 'button' : undefined}>
             <Text style={s.utilTtl} numberOfLines={1}>{utilTtl}</Text>
+            {estadoChips && estadoChips.length ? (
+              /* FOLGA: chips de estado — cada verificação é um alvo próprio (abre o SEU porquê) */
+              <View style={s.utilChips}>
+                {estadoChips.map((c) => (
+                  <TouchableOpacity key={c.key} disabled={!c.item} hitSlop={4} activeOpacity={0.7}
+                    onPress={c.item ? () => { select(); setDetailItem(c.item); } : undefined}
+                    style={s.uChip} accessibilityRole={c.item ? 'button' : undefined} accessibilityLabel={c.label}>
+                    <View style={[s.uChipDot, { backgroundColor: c.tone === 'ok' ? P.ok : c.tone === 'warn' ? P.warn : P.grey }]} />
+                    <Text style={s.uChipTxt} numberOfLines={1}>{c.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
             <Text style={s.utilP} numberOfLines={3}>{utilTxt}</Text>
+            )}
           </TouchableOpacity>
           {/* Documento crítico — ao pé do Estado (não na banda): vermelho, toca → porquê. */}
           {docAlert ? (
@@ -1341,7 +1392,9 @@ export default function HomeScreen({ navigation }) {
           </Animated.View>
         ) : null}
 
-        {/* Barra do polegar — chip + ações com rótulo */}
+        {/* Barra do polegar — chip + ações com rótulo. Na FOLGA não existe: o chip subiu
+            para encabeçar a agenda e as ações vivem no ＋ central (o fundo fica poster puro). */}
+        {homeState === 'folga' ? null : (
         <Animated.View style={[s.thumb, seg(5)]}>
           <View style={s.chip}>
             <Text style={s.chipV} numberOfLines={1}>{chip.old ? <Text style={s.chipOld}>{chip.old} </Text> : null}{chip.v}</Text>
@@ -1357,6 +1410,7 @@ export default function HomeScreen({ navigation }) {
             ))}
           </View>
         </Animated.View>
+        )}
       </ScrollView>
 
       {/* Hotel da pernoita — registar/editar (estação derivada da escala). */}
@@ -1427,9 +1481,8 @@ const makeSkin = (P, night) => StyleSheet.create({
   progTrack: { flex: 1, height: 3, backgroundColor: P.line, borderRadius: 2, overflow: 'hidden' },
   progFill: { height: 3, backgroundColor: P.yellow, borderRadius: 2 },
   progPct: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.grey, width: 38, textAlign: 'right' },
-  // título VIVO da agenda (folga) — alinhado à direita; o tempo que falta vai a amarelo
-  agHead: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2, textTransform: 'uppercase', color: P.grey, textAlign: 'right', marginTop: 2, marginBottom: 2 },
-  agHeadHi: { color: P.yellow },
+  // o cartão preto do countdown encabeça a agenda (alinhado à direita, como as linhas)
+  agChipRow: { alignItems: 'flex-end', paddingTop: 2, paddingBottom: 8 },
   ag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 9, paddingVertical: 6 },
   agA: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   agB: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
@@ -1442,6 +1495,12 @@ const makeSkin = (P, night) => StyleSheet.create({
   hotelAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderWidth: 1.5, borderColor: P.line, borderStyle: 'dashed', borderRadius: 12, marginVertical: 4 },
   hotelAddTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: P.grey },
   stp: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 7 },
+  // As três portas do setup: botão-herói ink · ghost do PDF · micro-linha do manual.
+  setupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.ink, borderRadius: 14, paddingVertical: 13, marginTop: 10 },
+  setupBtnTxt: { fontSize: 13.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
+  setupGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: P.line, borderRadius: 14, paddingVertical: 11, marginTop: 8 },
+  setupGhostTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: P.ink },
+  setupManual: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, textAlign: 'center', marginTop: 10, textDecorationLine: 'underline' },
   stpN: { width: 40, fontFamily: PELE_FONT.display, fontSize: 34, color: P.yellow, lineHeight: 36 },
   stpT: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   stpS: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
@@ -1452,6 +1511,11 @@ const makeSkin = (P, night) => StyleSheet.create({
   util: { flexDirection: 'row', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: P.line },
   utilTtl: { width: 70, fontFamily: PELE_FONT.display, fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5, color: P.ink },
   utilP: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 18 },
+  // Chips de estado da FOLGA — hairline + ponto de cor; cada chip abre o seu porquê.
+  utilChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  uChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: P.line, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 9 },
+  uChipDot: { width: 5, height: 5, borderRadius: 99 },
+  uChipTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: P.ink },
   haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
   lampWrap: { position: 'absolute', alignSelf: 'center', top: -70, zIndex: 0 },
   // A voz sob a régua — deck de duas alturas: display marcado + cauda-sussurro.
