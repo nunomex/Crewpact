@@ -5,8 +5,9 @@
 -- para saber a hora de chegada REAL. Sem cache, cada abertura/refresh — e cada
 -- pessoa a ver o MESMO voo — dispara uma chamada AirLabs (gasta quota, e um link
 -- reencaminhado/atacado podia martelar a API). Esta tabela absorve isso: uma linha
--- por VOO+DIA, TTL 60 s na Edge (o voo muda depressa; 60 s alinha com o refresh de
--- 60 s da página → ~1 chamada/voo/minuto, seja quanta gente esteja a ver).
+-- por VOO+DIA, TTL ADAPTATIVO na Edge (modelo Flighty, 2026-07-10): 90 s nas janelas
+-- QUENTES (partida-10m→+15m · ETA-25m→aterrar) · 300 s no cruzeiro/resto → ~35
+-- chamadas/voo em vez de ~120, seja quanta gente esteja a ver.
 -- MEMÓRIA do "aterrou": o /flight larga o voo do feed pouco depois de aterrar; ao ver
 -- `arr_actual` uma vez, a Edge fixa esse estado e devolve-o o resto do dia (sem re-chamar)
 -- para o link não regredir a "sem estimativa". Guarda a resposta CRUA do AirLabs (jsonb)

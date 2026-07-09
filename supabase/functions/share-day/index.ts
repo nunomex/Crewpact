@@ -45,7 +45,14 @@ import COORDS from './airports-coords.ts';   // { IATA: [lat, lon] } — gerado 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
 const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
 const STATS_TTL_MIN = 12;
-const LIVE_TTL_SEC = 60;   // cache do voo ao vivo: 60 s alinha com o refresh da página → ~1 chamada/voo/min
+// Cache do voo ao vivo — CADÊNCIA ADAPTATIVA (modelo Flighty, 2026-07-10): um voo só
+// muda depressa perto da PARTIDA e da CHEGADA — é quando a família está agarrada à
+// página. No cruzeiro, 5 min de idade é honesto (a própria Flighty promete ~5 min).
+//   · janela QUENTE (partida-10m → partida+15m · ETA-25m → aterrar) = 90 s
+//   · resto (pré-voo/cruzeiro/voo desconhecido) = 300 s
+// Aterrado continua 0 chamadas (memória do aterrou). ~120 → ~35 chamadas AirLabs/voo.
+const LIVE_TTL_HOT_SEC = 90;
+const LIVE_TTL_COLD_SEC = 300;
 const TTL_HOURS = 24;
 // Meteo do destino (MET Norway) — para a célula "Tempo" da página. GÉMEO de
 // flight-status/index.ts: mesma função e MESMA cache `wx_cache` (chave por iata),
@@ -180,8 +187,9 @@ async function liveFor(key: string, flight: string): Promise<Record<string, any>
 }
 
 // liveFor + CACHE (`flight_live`) com DUAS funções:
-//  (1) Cache curta (TTL 60 s) — o GET é PÚBLICO e um link de família é permanente; sem cache,
-//      cada refresh/pessoa/ataque martelava o AirLabs. Disciplina de wx_cache/airport_stats.
+//  (1) Cache curta ADAPTATIVA (90 s nas janelas quentes · 300 s no resto — ver liveTtlSec) —
+//      o GET é PÚBLICO e um link de família é permanente; sem cache, cada refresh/pessoa/
+//      ataque martelava o AirLabs. Disciplina de wx_cache/airport_stats.
 //  (2) MEMÓRIA do "aterrou" — o /flight do AirLabs LARGA o voo do feed pouco depois de aterrar;
 //      sem memória, quem abrisse o link mais tarde perdia o "Aterrou" (regredia p/ "sem estimativa").
 //      Ao ver `arr_actual` OU status 'landed' uma vez, guardamos e devolvemos SEMPRE esse estado o
@@ -195,6 +203,20 @@ async function liveFor(key: string, flight: string): Promise<Record<string, any>
 // deno-lint-ignore no-explicit-any
 const isLanded = (d: any) => !!(d && (d.arr_actual || String(d.status || '').toLowerCase() === 'landed'));
 
+// TTL adaptativo pela FASE do voo (lida do próprio cache): quente na partida e na
+// aproximação (o "aterrou" tem de aparecer depressa — depois a memória corta para 0);
+// frio no resto. Sem dados (voo desconhecido) = frio — não se martela o AirLabs.
+// deno-lint-ignore no-explicit-any
+const liveTtlSec = (d: any): number => {
+  if (!d) return LIVE_TTL_COLD_SEC;
+  const now = Math.floor(Date.now() / 1000);
+  const eta = num(d.arr_estimated_ts) ?? num(d.arr_time_ts);
+  const dep = num(d.dep_actual_ts) ?? num(d.dep_estimated_ts) ?? num(d.dep_time_ts);
+  if (eta != null && now >= eta - 25 * 60) return LIVE_TTL_HOT_SEC;                     // aproximação → até à memória do aterrou
+  if (dep != null && now >= dep - 10 * 60 && now <= dep + 15 * 60) return LIVE_TTL_HOT_SEC;  // janela da partida
+  return LIVE_TTL_COLD_SEC;
+};
+
 // deno-lint-ignore no-explicit-any
 async function liveCached(key: string, flight: string, day: string): Promise<Record<string, any> | null> {
   const clean = String(flight || '').toUpperCase().replace(/\s+/g, '');
@@ -203,7 +225,7 @@ async function liveCached(key: string, flight: string, day: string): Promise<Rec
   try {
     const { data: c } = await admin().from('flight_live').select('data, computed_at').eq('flight', rowKey).maybeSingle();
     if (c && isLanded(c.data)) return c.data;   // já aterrou → memória: fica aterrado o dia todo (nunca re-busca → nunca é apagado com null)
-    if (c && Date.now() - new Date(c.computed_at).getTime() < LIVE_TTL_SEC * 1000) return c.data ?? null;   // cache 60 s
+    if (c && Date.now() - new Date(c.computed_at).getTime() < liveTtlSec(c.data) * 1000) return c.data ?? null;   // cache adaptativo 90/300 s
   } catch { /* tabela ainda não criada → segue sem cache */ }
   const f = await liveFor(key, clean);
   try { await admin().from('flight_live').upsert({ flight: rowKey, computed_at: new Date().toISOString(), data: f }); } catch { /* sem cache */ }
