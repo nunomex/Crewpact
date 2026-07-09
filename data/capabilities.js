@@ -89,7 +89,12 @@ export const lawVacationDays = (serviceStart, ref = new Date()) => {
 export const resolveVacationDays = (userDays, { ae, contract, serviceYears, serviceStart, ref = new Date() } = {}) => {
   if (userDays != null) return { days: userDays, source: 'user' };
   const my = /^(\d{4})/.exec(String(serviceStart || ''));
-  if (my && +my[1] === ref.getFullYear()) return { days: lawVacationDays(serviceStart, ref), source: 'law-first' };
+  if (my && +my[1] === ref.getFullYear()) {
+    // 1.º ano: se o AE tiver regra PRÓPRIA (TAP cabine: 3 dias/mês máx. 26, Cl. 22.ª/2),
+    // ela manda; senão a lei geral (Art. 239.º CT — 2 dias/mês máx. 20).
+    if (ae && typeof ae.firstYearVacationDays === 'function') return { days: ae.firstYearVacationDays(serviceStart, ref), source: 'ae' };
+    return { days: lawVacationDays(serviceStart, ref), source: 'law-first' };
+  }
   if (ae && typeof ae.vacationDays === 'function') return { days: ae.vacationDays({ contract, serviceYears, ref }), source: 'ae' };
   return { days: 22, source: 'law' };
 };

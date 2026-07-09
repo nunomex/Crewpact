@@ -145,6 +145,12 @@ export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym) => {
 // WB/NB) + hotel pago pela empresa. Modelamos a pernoita = Per diem B (CTE 180 / OP 135).
 export const nightStop = (cat, _index = 1, ym) => rowOf(cat, tableAt(ym)).B;
 
+// Férias/ano (RUPT Cl. 45.ª, BTE 29/2023): 42 dias de CALENDÁRIO por ano civil
+// (unidade ≠ easyJet, que conta dias úteis). Piso de 38 por perda com faltas (Cl. 33.ª).
+// Ano de admissão: "regime previsto na lei geral" (Cl. 22.ª/2) → camada da lei no resolver.
+export const VAC_UNIT = 'calendario';
+export const vacationDays = () => 42;
+
 export const comando = (ym) => tableAt(ym).COMANDO_EUR;
 export const vs = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * vbOf(cat, index, T)); };   // senioridade — €/mês
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.

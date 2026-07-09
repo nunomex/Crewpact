@@ -97,6 +97,18 @@ export const perDiem = (cat, distancesNM = [], _index = 1, _fleet, ym) =>
 // Pernoita = AC2 "Estadia" (cl. 7.ª), POR DIA, 80 € (2026) + hotel pago pela empresa.
 export const nightStop = (cat, _index = 1, ym) => tableAt(ym).AC2_DAY;
 
+// Férias/ano (Cl. 23.ª, BTE 7/2024): 42 dias de CALENDÁRIO por ano civil — já INCLUEM
+// 12 dias de compensação de feriados (unidade ≠ easyJet, que conta dias úteis).
+// ANO DE ADMISSÃO com regra PRÓPRIA (Cl. 22.ª/2, mais generosa que o CT): 3 dias de
+// férias por cada mês de duração do contrato, até ao máximo de 26 (gozo após 6 meses).
+export const VAC_UNIT = 'calendario';
+export const vacationDays = () => 42;
+export const firstYearVacationDays = (serviceStart, _ref = new Date()) => {
+  const m = /^(\d{4})-(\d{2})/.exec(String(serviceStart || ''));
+  if (!m) return 26;
+  return Math.min(26, 3 * (12 - (+m[2]) + 1));
+};
+
 // Vencimentos por função/hora.
 export const vh = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VH_PCT * vbOf(cat, index, T)); };               // €/hora acima do plafond
 export const vs = (cat, years = 0, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * Math.max(0, years) * vbOf(cat, index, T)); };  // senioridade — €/mês

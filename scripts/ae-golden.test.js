@@ -646,6 +646,19 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
   const noAe = resolveVacationDays(null, { ae: null, contract: '12/12', serviceStart: '2020-01-01', ref });
   eq('resolver: sem AE → lei 22 (dias)', noAe.days, 22);
   eq('resolver: sem AE → fonte lei', noAe.source, 'law');
+
+  // TAP (BTE lido na fonte, 2026-07-11): 42 dias de CALENDÁRIO nos dois acordos.
+  eq('férias TAP piloto = 42 calendário (RUPT Cl. 45.ª)', tapPilot.vacationDays(), 42);
+  eq('férias TAP cabine = 42 calendário (Cl. 23.ª, inclui 12 de feriados)', tapCabin.vacationDays(), 42);
+  eq('TAP unidade = calendário', tapCabin.VAC_UNIT, 'calendario');
+  // 1.º ano TAP cabine: regra PRÓPRIA (Cl. 22.ª/2) — 3 dias/mês, máx. 26.
+  eq('TAP cabine 1.º ano (set) = 12 (3×4 meses)', tapCabin.firstYearVacationDays('2026-09-01'), 12);
+  eq('TAP cabine 1.º ano (jan) = 26 (cap)', tapCabin.firstYearVacationDays('2026-01-01'), 26);
+  const tapFirst = resolveVacationDays(null, { ae: tapCabin, contract: '12/12', serviceStart: '2026-09-01', ref });
+  eq('resolver: 1.º ano TAP cabine usa a regra do AE', tapFirst.days, 12);
+  eq('resolver: 1.º ano TAP cabine → fonte ae', tapFirst.source, 'ae');
+  // 1.º ano TAP piloto: sem regra própria → lei geral (Cl. 22.ª/2 remete p/ a lei).
+  eq('resolver: 1.º ano TAP piloto → lei', resolveVacationDays(null, { ae: tapPilot, contract: '12/12', serviceStart: '2026-09-01', ref }).source, 'law-first');
 }
 
 // ═══ LINHA DO TEMPO DAS TABELAS (effective-dating, 2026-07-10) ═══
