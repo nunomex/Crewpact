@@ -510,15 +510,18 @@ export default function SettingsScreen({ navigation }) {
         <Animated.View style={seg(1)}>
           <Text style={s.seclbl}>{l('Serviço & Acordo', 'Duty & Agreement')}</Text>
           <View style={s.gbox}>
-            {/* 3 estados honestos (2026-07-11): OM da companhia (verde) · assumido (âmbar,
-                "confirma no teu OM") · definido por ti. Tocar no seletor grava → vira teu. */}
+            {/* 3 estados honestos (2026-07-11): OM da companhia = FACTO com fonte → mostra-se,
+                NÃO se edita (decisão do founder — o seletor convidava a "corrigir" o OM);
+                assumido (âmbar) e definido-por-ti mantêm o seletor. Tocar grava → vira teu. */}
             <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
               sub={postFlightSource === 'assumed'
                 ? <Text><Text style={{ color: PELE.warn }}>● </Text>{l('assumido — confirma no teu OM · só voos', 'assumed — check your OM · flights only')}</Text>
                 : postFlightSource === 'om'
                   ? l('do OM da companhia · só serviços de voo', 'from the company OM · flight duties only')
                   : l('definido por ti · só serviços de voo', 'set by you · flight duties only')} s={s}
-              right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
+              right={postFlightSource === 'om'
+                ? <Text style={s.rv}>{`${postFlightMin} min`}</Text>
+                : <Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
             {hasVacExtra ? (
               <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
                 right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))} onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2} accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />

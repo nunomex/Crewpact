@@ -1,9 +1,11 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform } from 'react-native';
+import React, { useContext, useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RADIUS, SPACE, TYPE, PELE, PELE_FONT } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
+import { aeMonthTotal } from '../data/perdiem';
+import { eventCounts } from '../data/aeEvents';
 import { t } from '../data/i18n';
 import { AppContext } from '../data/appContext';
 import Icon from './Icon';
@@ -16,12 +18,43 @@ import Icon from './Icon';
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
 // para dizer, à Apple/Living Interface). `night` = tema noturno do Início.
 export default function NotificationsBell({ variant = 'bell', night = false }) {
-  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, crewAt, crewFleet, aeEvents } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+
+  // Resumo do MÊS ANTERIOR (evento "mês fechado") — só com atividade de voo; a categoria
+  // e o contrato são os EM VIGOR nesse mês (crewAt). Memoizado: só recalcula quando os
+  // dados do mês mudam. € pelo caminho único (aeMonthTotal), com cêntimos.
+  const monthSummary = useMemo(() => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    let flightMin = 0;
+    for (const date in (duties || {})) {
+      if (!date.startsWith(ym)) continue;
+      const day = duties[date];
+      if (!day || day.deleted) continue;
+      for (const svc of [day, ...(Array.isArray(day.extra) ? day.extra : [])]) flightMin += (svc && svc.flight_minutes) || 0;
+    }
+    if (!flightMin) return null;   // mês sem voo (ex.: conta nova) → sem resumo
+    const flightHm = `${Math.floor(flightMin / 60)}:${String(flightMin % 60).padStart(2, '0')}`;
+    let totalEur = null;
+    if (ae && crewAt) {
+      const at = crewAt(ym);
+      const index = ae.indexFactor ? ae.indexFactor(+ym.slice(0, 4)) : 1;
+      const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), fleet: crewFleet }) : null;
+      if (tot != null) totalEur = `${tot.toFixed(2).replace('.', ',')} €`;
+    }
+    const label = (() => { const m = new Date(`${ym}-15T12:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
+    return { ym, label, flightHm, totalEur };
+  }, [duties, ae, crewAt, crewFleet, aeEvents, locale]);
+
+  // Linha do tempo das tabelas do AE → evento "acordo atualizado" (só se recente).
+  const aeInfo = (ae && Array.isArray(ae.TABLE_VERSIONS) && ae.TABLE_VERSIONS.length)
+    ? { aeId: ae.AE_ID, lastFrom: ae.TABLE_VERSIONS[ae.TABLE_VERSIONS.length - 1].from }
+    : null;
   // Detalhe por-dia do aviso de escala: data curta + rota/tipo + etiqueta de estado.
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); };
   const descOf = (it) => it.route || t('duties.kind.' + (it.kind || 'flight'), lang);
@@ -29,10 +62,19 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     : status === 'removed' ? { txt: l('Cancelada', 'Cancelled'), box: s.dchipCx, fg: { color: PELE.red } }
     : { txt: l('Alterada', 'Changed'), box: s.dchipCh, fg: { color: PELE.warn } };
 
-  const notifs = buildNotifications(profile, lang, { rosterChanges });
+  const notifs = buildNotifications(profile, lang, { rosterChanges, validities, isPilot, dayLog, monthSummary, aeInfo });
   const unread = notifs.filter(n => !readNotifIds.has(n.id)).length;
   const close = () => { setOpen(false); setReadNotifIds(new Set(notifs.map(n => n.id))); };
   const openRoster = () => { close(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); };
+  // Ação por notificação (doutrina: acionável — toca → o sítio onde se resolve/vê).
+  const actionFor = (n) => {
+    if (n.action === 'roster') return openRoster;
+    if (n.action === 'validades') return () => { close(); navigation.navigate('Perfil', { screen: 'Validades' }); };
+    if (n.action === 'stats') return () => { close(); navigation.navigate('Estatísticas'); };
+    if (n.action === 'library') return () => { close(); navigation.navigate('Perfil', { screen: 'Biblioteca' }); };
+    if (n.action === 'legal') return () => { Linking.openURL('https://crewpact.app/termos').catch(() => {}); };
+    return null;
+  };
 
   // Pílula do Início: sem novidades, NÃO EXISTE (nada de mobília em repouso).
   if (variant === 'pill' && unread === 0) return null;
@@ -102,11 +144,12 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
                       <Text style={s.notifItemBody}>{n.body}</Text>
                     )}
                   </View>
-                  {n.action === 'roster' ? <Icon name="chevron" size={16} color={PELE.grey} /> : null}
+                  {actionFor(n) ? <Icon name="chevron" size={16} color={PELE.grey} /> : null}
                 </>
               );
-              return n.action === 'roster'
-                ? <TouchableOpacity key={n.id} style={st} activeOpacity={0.7} onPress={openRoster}>{inner}</TouchableOpacity>
+              const act = actionFor(n);
+              return act
+                ? <TouchableOpacity key={n.id} style={st} activeOpacity={0.7} onPress={act}>{inner}</TouchableOpacity>
                 : <View key={n.id} style={st}>{inner}</View>;
             })}
             <Text style={s.noMore}>{t('home.noMore', lang)}</Text>
