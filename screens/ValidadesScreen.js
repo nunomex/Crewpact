@@ -7,6 +7,7 @@ import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext } from '../data/appContext';
 import {
@@ -43,6 +44,7 @@ export default function ValidadesScreen({ navigation }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();   // carteira: reordenação salta p/ o lugar (o arrasto fica — é gesto)
   const catalog = validityCatalog(isPilot, { instructorRated });
 
   const [editing, setEditing] = useState(null);
@@ -204,7 +206,7 @@ export default function ValidadesScreen({ navigation }) {
     setOrder(ord);
     applyOrder(ord, sorted, false);
   }, [sortedKey]);   // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const d = nextDurRef.current; nextDurRef.current = null; applyOrder(order, sorted, true, d || 420); }, [order]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const d = nextDurRef.current; nextDurRef.current = null; applyOrder(order, sorted, !reduceMotion, d || 420); }, [order]);   // eslint-disable-line react-hooks/exhaustive-deps
   const cycle = (dir) => setOrder((o) => o.length < 2 ? o : (dir > 0 ? o.slice(1).concat(o[0]) : [o[o.length - 1]].concat(o.slice(0, -1))));
   const bringToFront = (i) => setOrder((o) => { const idx = o.indexOf(i); return idx <= 0 ? o : o.slice(idx).concat(o.slice(0, idx)); });
   const pan = useRef(PanResponder.create({

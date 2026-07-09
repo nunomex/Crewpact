@@ -1,10 +1,16 @@
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as QueryParams from 'expo-auth-session/build/QueryParams';
 
 // ─── Map Supabase user to app user shape ──────────────────────────────────────
 export const mapUser = (u) => ({
   id:        u.id,
   email:     u.email,
-  name:      u.user_metadata?.name || u.email?.split('@')[0] || '',
+  // `full_name` = o que o Google/Apple põem nos claims; `name` = o nosso registo por email.
+  name:      u.user_metadata?.name || u.user_metadata?.full_name || u.email?.split('@')[0] || '',
   company:   u.user_metadata?.company  || null,
   crewType:     u.user_metadata?.crewType     || null,
   crewCategory: u.user_metadata?.crewCategory || null,
@@ -130,6 +136,71 @@ export const login = async (email, password, lang = 'pt') => {
     return { ok: false, error: mapError(error, lang) };
   }
   return { ok: true, user: mapUser(data.user) };
+};
+
+// ─── Login social (Apple · Google) ───────────────────────────────────────────
+// Entram pelo MESMO funil do email: a sessão nasce aqui, o caller faz setUser(user)
+// e o gate `onboarded` (tem company?) decide se vai ao funil das 6 perguntas.
+// Cancelar não é erro: devolve { ok:false, canceled:true } → a UI não mostra nada.
+
+// APPLE — nativo (expo-apple-authentication, incluído no Expo Go em iOS): a folha do
+// sistema dá um identityToken que o Supabase valida (signInWithIdToken). O nome completo
+// só vem na PRIMEIRA autorização — guarda-se nos metadados nesse instante ou perde-se.
+// Dashboard: Auth → Providers → Apple → Client IDs tem de incluir o bundle que pede o
+// token (Expo Go = `host.exp.Exponent`; dev build = o bundle ID da app).
+// O botão Apple só se mostra onde o sistema o suporta (iOS 13+; false no Android/web).
+export const appleAvailable = () =>
+  (Platform.OS === 'ios' ? AppleAuthentication.isAvailableAsync().catch(() => false) : Promise.resolve(false));
+
+export const loginWithApple = async (lang = 'pt') => {
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+    if (!credential.identityToken) return { ok: false, error: m('generic', lang) };
+    const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+    if (error) return { ok: false, error: mapError(error, lang) };
+    let u = data.user;
+    const full = `${credential.fullName?.givenName || ''} ${credential.fullName?.familyName || ''}`.trim();
+    if (full && !u?.user_metadata?.name) {
+      const { data: upd } = await supabase.auth.updateUser({ data: { name: full } }).catch(() => ({ data: null }));
+      if (upd?.user) u = upd.user;
+    }
+    return { ok: true, user: mapUser(u) };
+  } catch (e) {
+    if (e?.code === 'ERR_REQUEST_CANCELED') return { ok: false, canceled: true };
+    return { ok: false, error: isNetworkError(e) ? m('network', lang) : m('generic', lang) };
+  }
+};
+
+// GOOGLE — OAuth web (browser in-app → Google → callback do Supabase → deep link de
+// volta): funciona em Expo Go sem módulo nativo. Os tokens voltam no fragmento do URL;
+// setSession fecha o ciclo. Dashboard: Auth → Providers → Google (client ID/secret do
+// Google Cloud) e o redirect da app na lista Auth → URL Configuration → Redirect URLs
+// (Expo Go = exp://... do Metro; dev build = crewpact://**).
+export const loginWithGoogle = async (lang = 'pt') => {
+  try {
+    const redirectTo = makeRedirectUri();   // Expo Go: exp://<host-do-metro> · dev build: crewpact://
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error || !data?.url) return { ok: false, error: error ? mapError(error, lang) : m('generic', lang) };
+    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (res.type !== 'success' || !res.url) return { ok: false, canceled: true };
+    const { params, errorCode } = QueryParams.getQueryParams(res.url);
+    if (errorCode || !params.access_token || !params.refresh_token) return { ok: false, error: m('generic', lang) };
+    const { data: sess, error: sErr } = await supabase.auth.setSession({
+      access_token: params.access_token, refresh_token: params.refresh_token,
+    });
+    if (sErr || !sess?.user) return { ok: false, error: sErr ? mapError(sErr, lang) : m('generic', lang) };
+    return { ok: true, user: mapUser(sess.user) };
+  } catch (e) {
+    return { ok: false, error: isNetworkError(e) ? m('network', lang) : m('generic', lang) };
+  }
 };
 
 export const register = async (name, email, password, lang = 'pt', extra = {}) => {

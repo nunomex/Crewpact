@@ -6,12 +6,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Modal, View, TouchableWithoutFeedback, Animated, PanResponder, StyleSheet, Dimensions, Keyboard, Platform } from 'react-native';
 import { PELE as P } from '../data/constants';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 const OUT = Dimensions.get('window').height;
 
 export default function PeleSheet({ visible, onClose, children }) {
+  const reduce = useReduceMotion();                       // RM: fade sem deslocação (o arrasto mantém-se — é gesto)
   const ty = useRef(new Animated.Value(OUT)).current;   // translateY: OUT = fora do ecrã (baixo)
-  const op = useRef(new Animated.Value(0)).current;      // opacidade do scrim
+  const op = useRef(new Animated.Value(0)).current;      // opacidade do scrim (e da folha em reduce-motion)
   const kb = useRef(new Animated.Value(0)).current;      // levanta a folha acima do teclado (forms)
   const [shown, setShown] = useState(visible);
   const [kbOpen, setKbOpen] = useState(false);           // teclado aberto? (scrim fecha o teclado, não a folha)
@@ -19,15 +21,15 @@ export default function PeleSheet({ visible, onClose, children }) {
   useEffect(() => {
     if (visible) {
       setShown(true);
-      ty.setValue(OUT); op.setValue(0);
+      ty.setValue(reduce ? 0 : OUT); op.setValue(0);
       Animated.parallel([
         Animated.timing(op, { toValue: 1, duration: 180, useNativeDriver: false }),
-        Animated.spring(ty, { toValue: 0, speed: 16, bounciness: 3, useNativeDriver: false }),
+        ...(reduce ? [] : [Animated.spring(ty, { toValue: 0, speed: 16, bounciness: 3, useNativeDriver: false })]),
       ]).start();
     } else if (shown) {
       Animated.parallel([
         Animated.timing(op, { toValue: 0, duration: 200, useNativeDriver: false }),
-        Animated.timing(ty, { toValue: OUT, duration: 240, useNativeDriver: false }),
+        ...(reduce ? [] : [Animated.timing(ty, { toValue: OUT, duration: 240, useNativeDriver: false })]),
       ]).start(() => setShown(false));
     }
   }, [visible]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -64,7 +66,7 @@ export default function PeleSheet({ visible, onClose, children }) {
       <TouchableWithoutFeedback onPress={() => { if (kbOpen) { Keyboard.dismiss(); } else if (onClose) { onClose(); } }}>
         <Animated.View style={[s.scrim, { opacity: op }]} />
       </TouchableWithoutFeedback>
-      <Animated.View style={[s.sheet, { transform: [{ translateY: Animated.add(ty, kb) }] }]}>
+      <Animated.View style={[s.sheet, { transform: [{ translateY: Animated.add(ty, kb) }] }, reduce && { opacity: op }]}>
         <View style={s.grabArea} {...pan.panHandlers}><View style={s.grab} /></View>
         {children}
       </Animated.View>

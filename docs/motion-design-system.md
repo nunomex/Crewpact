@@ -31,7 +31,7 @@ Formalizados do que a app já pratica (exemplos vivos citados). Animação nova 
 | Papel | Duração | Curva | Exemplo vivo |
 |---|---|---|---|
 | Micro-feedback (shake, kick de swipe) | 40–110 ms | linear / out | Login shake 55/55/45/40 · Escala swipe-mês 110 |
-| Fade / transição de superfície | 180–260 ms | `Easing.out(cubic)` | PeleSheet in 180 · SearchModal 240/200 · Toast out 260 |
+| Fade / transição de superfície | 180–260 ms | `Easing.out(cubic)` | PeleSheet in 180 · Login/Onboarding painel 130 out/200 in · Toast out 260 |
 | Reordenação / cartas | 260–280 ms | out(cubic) | carteira das Validades |
 | Entrada de conteúdo de ecrã | 820 ms | out(cubic) | `useEnter` |
 | Dados a crescer (barras, count-up) | 700–800 ms (+delay escalonado) | out(cubic) / linear | GrowBar 800 · MonthBar 700 |
@@ -52,7 +52,7 @@ Só para **chegada física** de superfícies (folha, toast): sem overshoot exage
 
 ## §5 · Reduce-motion = contrato
 
-`hooks/useReduceMotion.js` (lê `AccessibilityInfo`). **Toda** a animação de entrada, loop ou contagem salta para o valor final quando ativo. Já cumprem: `useEnter`, `useCountUp`, `Toast`, barras do Stats. **Animação nova sem este ramo = bug**, não detalhe.
+`hooks/useReduceMotion.js` (lê `AccessibilityInfo`). **Toda** a animação de entrada, loop ou contagem salta para o valor final quando ativo; superfícies (folhas) degradam para **fade sem deslocação**. **Auditoria 2026-07-10: a app inteira cumpre** — useEnter · useCountUp · Toast · barras do Stats · TabBar · PeleSheet · Skeleton · DutyFormSheet · carteira das Validades · Login · Onboarding · AccountCreated · Lock. Exceção deliberada: **gesto direto persiste** (arrasto da folha/carteira, swipe-kick da Escala, shake de erro) — é manipulação/feedback, não animação decorativa. **Animação nova sem este ramo = bug**, não detalhe.
 
 ---
 
@@ -78,15 +78,18 @@ Onde o movimento existe hoje — atualizar quando se adiciona/remove:
 - `components/TabBar.js` — navegação: ícone da ativa dá POP (spring f6/t280, só em mudança — não no arranque) + ponto amarelo fade+scale 180ms · ＋ central com press-scale 0.92 e sombra leve · speed-dial (spring f8/t90, cascata escalonada, fecho 150ms, clone × roda 0→45° em sincronia) · háptico tap/select · reduce-aware em TUDO
 - `hooks/useEnter.js` — entrada de ecrã (opacity+translate, 820, reduce-aware)
 - `hooks/useCountUp.js` + `components/CountUp.js` — números a contar (reduce-aware)
-- `components/PeleSheet.js` — folha: fade 180 + spring; saída 200/240; teclado 220/200; arrasto PanResponder
+- `components/PeleSheet.js` — folha: fade 180 + spring; saída 200/240; teclado 220/200; arrasto PanResponder (reduce = fade sem deslocação)
 - `components/Toast.js` — spring in / timing out 260 (reduce-aware)
-- `components/SearchModal.js` — 240 in / 200 out
-- `components/Skeleton.js` — shimmer loop 750/750
-- `components/AccountCreated.js` — celebração (spring + tick back(2) + texto 320 + pulse 650)
-- `screens/LoginScreen.js` — shake de erro + troca de painel 130/200
-- `screens/EscalaScreen.js` — swipe de mês: kick 110 + spring-back
-- `screens/ValidadesScreen.js` — carteira de cartões (PanResponder + shuffle 260–280)
+- `components/Skeleton.js` — shimmer loop 750/750 (reduce = estático a meia-opacidade)
+- `components/AccountCreated.js` — celebração pele (anel ink spring + tick amarelo back(2) + texto 320 + pulse 650; reduce = estado final)
+- `components/DutyFormSheet.js` — cascata de secções 820 (constantes do useEnter; reduce-aware)
+- `screens/LoginScreen.js` — shake de erro + troca de painel 130 in(cubic) / 200 out(cubic) (reduce = corte)
+- `screens/OnboardingScreen.js` — slide direcional entre perguntas (o gesto do Login: 130/200, topo e botão fixos; reduce = corte)
+- `screens/LockScreen.js` — entrada 240 + fade 150 no DESBLOQUEIO (sem corte seco p/ a app) + shake no falhanço (reduce-aware)
+- `screens/EscalaScreen.js` — swipe de mês: kick 110 + spring-back (gesto — persiste em reduce)
+- `screens/ValidadesScreen.js` — carteira de cartões (PanResponder + shuffle 260–280; reduce = assenta sem viagem)
 - `screens/StatsScreen.js` — GrowBar 800 / MonthBar 700 (reduce-aware)
+- (2026-07-09: `SearchModal` apagado — saiu do inventário)
 
 ---
 

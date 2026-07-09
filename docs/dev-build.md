@@ -60,23 +60,20 @@
    cifrado); a sessão (v1.1) vai atrás dela. Validar SecureStore no device na mesma
    passagem.
 
-6. **Login social (Apple + Google)** — pedido do user (2026-07-03); desenho pronto
-   nos 2 botões de `design/login-2.html`.
-   - **PORQUÊ é dev build (não escolha, é técnico):** `expo-apple-authentication`
-     é módulo NATIVO (não corre em Expo Go). E o **App Store OBRIGA** "Sign in with
-     Apple" se ofereceres qualquer outro login social → no iOS, Apple é obrigatório →
-     dev build obrigatório. Google-sozinho não é shippable no iOS.
-   - **Código (criar `data/authSocial.js` quando o login for portado à pele):**
-     - Apple: `AppleAuthentication.signInAsync({requestedScopes:[FULL_NAME,EMAIL]})`
-       → `supabase.auth.signInWithIdToken({provider:'apple', token: credential.identityToken})`.
-     - Google: `supabase.auth.signInWithOAuth({provider:'google', options:{redirectTo:<deep-link>}})`
-       + `expo-web-browser` para abrir/fechar o fluxo (ou nativo `@react-native-google-signin`).
-     - Guardar em Expo Go como os lembretes (gate `storeClient` → botão inerte + aviso honesto).
-   - **Config (dashboard do user):** Supabase → Auth → Providers → Apple (Services ID +
-     chave .p8 do Apple Developer) e Google (Client ID/Secret do Google Cloud Console)
-     + redirect URLs; Apple Developer: capability "Sign in with Apple" + Services ID;
-     `app.json`: `scheme` (deep-link) + config plugin do `expo-apple-authentication`.
-   - **UI:** os 2 botões sociais já desenhados — wire quando o login for portado a RN.
+6. **Login social (Apple + Google)** — **CÓDIGO + UI FEITOS (2026-07-10), DESATIVADO
+   à espera do build**: círculos G/ nas vistas login+signup (esbatidos, "brevemente");
+   `data/auth.js` tem `loginWithApple` (nativo, `signInWithIdToken`, nome guardado na
+   1.ª autorização) + `loginWithGoogle` (OAuth web → `WebBrowser` → `setSession`) +
+   `appleAvailable()`; pacotes instalados (expo-apple-authentication/auth-session/web-browser).
+   Social entra pelo gate `onboarded` → funil de 6 perguntas.
+   - **Regra App Store:** oferecendo Google, o "Sign in with Apple" é OBRIGATÓRIO no
+     iOS — já respeitada (os dois vêm juntos).
+   - **Para LIGAR (no dia do build):** 1) `SOCIAL_ENABLED = true` no LoginScreen;
+     2) Supabase → Providers → Apple (Client IDs = bundle ID; p/ testar em Expo Go
+     seria `host.exp.Exponent`) e Google (Client ID/Secret do Google Cloud, redirect
+     `https://<ref>.supabase.co/auth/v1/callback`); 3) URL Configuration → Redirect
+     URLs += `crewpact://**`; 4) Apple Developer: capability "Sign in with Apple";
+     `app.json` já tem `scheme: crewpact`.
 
 > Ideias Flighty→crew que NÃO precisavam de dev build (partilha com a família ·
 > "Ano de voo" partilhável · inbound do avião) saíram desta lista — feitas já

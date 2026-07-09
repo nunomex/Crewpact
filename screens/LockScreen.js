@@ -5,8 +5,8 @@
 // servidor): 1) auto-pede biometria ao abrir; 2) retry com o NOME/ícone certos do sensor
 // (Face ID/Touch ID); 3) fallback nativo p/ o código do telemóvel; 4) escape por
 // palavra-passe (re-auth Supabase → desbloqueia a MESMA sessão, sem logout).
-import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, ActivityIndicator, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -15,11 +15,36 @@ import { reauthenticate } from '../data/auth';
 import { t } from '../data/i18n';
 import { PELE, PELE_FONT } from '../data/constants';
 import { success, warning } from '../data/haptics';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 export default function LockScreen() {
   const { setLocked, logout, lang, user } = useContext(AppContext);
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState(false);
+  // Movimento (reduce-aware): fade de entrada · fade curto no DESBLOQUEIO (em vez de
+  // corte seco para a app) · shake no falhanço (o mesmo gesto do Login/macOS).
+  const reduce = useReduceMotion();
+  const veil  = useRef(new Animated.Value(0)).current;
+  const shake = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) { veil.setValue(1); return; }
+    Animated.timing(veil, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const doShake = () => {
+    warning();
+    if (reduce) return;
+    Animated.sequence([
+      Animated.timing(shake, { toValue: 8,  duration: 55, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: -8, duration: 55, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: 5,  duration: 45, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: 0,  duration: 40, useNativeDriver: true }),
+    ]).start();
+  };
+  const unlock = () => {
+    success();
+    if (reduce) { setLocked(false); return; }
+    Animated.timing(veil, { toValue: 0, duration: 150, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => setLocked(false));
+  };
   // Sensor real do device → nome/ícone certos (Face ID vs Touch ID; genérico no Android).
   const [sensor, setSensor] = useState({ name: null, icon: 'finger-print' });
   // Escape por palavra-passe (quando a biometria falha) — não força logout.
@@ -50,10 +75,10 @@ export default function LockScreen() {
         cancelLabel: t('common.cancel', lang),
         disableDeviceFallback: false, // permite o código do telemóvel como alternativa (Secure Enclave)
       });
-      if (res.success) { success(); setLocked(false); return; }
-      setErr(true);
-    } catch { setErr(true); } finally { setBusy(false); }
-  }, [busy, lang, setLocked]);
+      if (res.success) { unlock(); return; }
+      setErr(true); doShake();
+    } catch { setErr(true); doShake(); } finally { setBusy(false); }
+  }, [busy, lang, setLocked, reduce]);
 
   // Tenta autenticar logo ao abrir o ecrã (uma vez).
   useEffect(() => { authenticate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -64,8 +89,8 @@ export default function LockScreen() {
     setPwBusy(true); setPwErr('');
     const res = await reauthenticate(user?.email, pw, lang);
     setPwBusy(false);
-    if (!res.ok) { setPwErr(res.error); warning(); return; }
-    success(); setLocked(false);
+    if (!res.ok) { setPwErr(res.error); doShake(); return; }
+    unlock();
   };
 
   const unlockLabel = sensor.name ? `${t('lock.unlockWith', lang)} ${sensor.name}` : t('lock.unlock', lang);
@@ -73,6 +98,7 @@ export default function LockScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <Animated.View style={{ flex: 1, opacity: veil, transform: [{ translateX: shake }] }}>
       <View style={s.center}>
         {/* Wordmark da pele (o mesmo do login) */}
         <Text style={s.wmEye}>FTL · AE · CREW</Text>
@@ -118,6 +144,7 @@ export default function LockScreen() {
       <TouchableOpacity onPress={logout} style={s.logout} hitSlop={8}>
         <Text style={s.logoutTxt}>{t('profile.logout', lang)}</Text>
       </TouchableOpacity>
+      </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

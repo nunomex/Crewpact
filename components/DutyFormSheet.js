@@ -18,6 +18,7 @@ import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext, isoDay } from '../data/appContext';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -276,11 +277,14 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const removeLeg = (idx) => { applyLegs((form.legs || []).filter((_, i) => i !== idx)); select(); };
 
   // Revelação em cascata das secções (uma Animated.Value 0→1 mapeada por índice).
+  // Reduce-motion: salta para o estado final (contrato do motion doc §5).
+  const reduceMotion = useReduceMotion();
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) { enter.setValue(0); return; }
+    if (reduceMotion) { enter.setValue(1); return; }
     Animated.timing(enter, { toValue: 1, duration: 820, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible, reduceMotion]); // eslint-disable-line react-hooks/exhaustive-deps
   // Mesmas constantes do `useEnter` da app (stagger 0.11, faixa +0.42, translateY 16).
   const secStyle = (i) => {
     const start = Math.min(0.55, i * 0.11);

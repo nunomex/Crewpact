@@ -9,11 +9,12 @@
 //    (dia 01 por convenção — o prémio de permanência salta por anos, o dia é irrelevante).
 //  · O just-in-time dos Números foi DESCARTADO (funil completo → nada fica por perguntar).
 // A gravação (updateProfile + upsertProfile) é a MESMA do modo reconfiguração de sempre.
-import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useContext, useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getLocales } from 'expo-localization';
 import Icon from '../components/Icon';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { countryName as countryNameOf, countryFlag } from '../data/countries';
 import { AppContext } from '../data/appContext';
 import { updateProfile } from '../data/auth';
@@ -30,6 +31,25 @@ export default function OnboardingScreen() {
   const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  // Transição direcional entre perguntas (o MESMO gesto do Login: avançar desliza p/ a
+  // esquerda, voltar p/ a direita; sai 130 easeIn · entra 200 easeOut). O topo (dots/Sair)
+  // e o botão ficam fixos — só a pergunta+opções viajam. Reduce-motion = corte direto.
+  const reduce = useReduceMotion();
+  const trans = useRef(new Animated.Value(0)).current;
+  const moving = useRef(false);
+  const transX = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] });
+  const transOp = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
+  const goStep = (next, forward = true) => {
+    if (moving.current) return;
+    if (reduce) { setStep(next); return; }
+    moving.current = true;
+    Animated.timing(trans, { toValue: forward ? -1 : 1, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+      setStep(next);
+      trans.setValue(forward ? 1 : -1);
+      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => { moving.current = false; });
+    });
+  };
 
   // AE da companhia escolhida + tipo de tripulação (pilotos e cabine têm AEs diferentes).
   const selAirline = airlines.find((a) => a.id === draft.company || a.slug === draft.company) || null;
@@ -125,9 +145,9 @@ export default function OnboardingScreen() {
   };
 
   const handleNext = () => {
-    if (!canNext) return;
+    if (!canNext || moving.current) return;
     select();
-    if (!isLast) { setSaveError(null); setStep(step + 1); return; }
+    if (!isLast) { setSaveError(null); goStep(step + 1); return; }
     finish();
   };
 
@@ -152,7 +172,7 @@ export default function OnboardingScreen() {
       {/* Topo: ‹ voltar (passo > 0) · pontinhos (ativo alonga a amarelo) · Sair (logout) */}
       <View style={o.top}>
         {idx > 0 ? (
-          <TouchableOpacity style={o.back} onPress={() => { select(); setSaveError(null); setStep(step - 1); }} hitSlop={6}
+          <TouchableOpacity style={o.back} onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} hitSlop={6}
             accessibilityRole="button" accessibilityLabel={l('Voltar', 'Back')}>
             <Icon name="back" size={16} color={PELE.ink} />
           </TouchableOpacity>
@@ -165,6 +185,7 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
       </View>
 
+      <Animated.View style={{ flex: 1, transform: [{ translateX: transX }], opacity: transOp }}>
       <View style={o.head}>
         <Text style={o.eyebrow}>{l('Configuração', 'Setup')} · {idx + 1} {l('de', 'of')} {flow.length}</Text>
         <Text style={o.q} allowFontScaling={false}>{s.q}</Text>
@@ -218,6 +239,7 @@ export default function OnboardingScreen() {
           )}
         </View>
       </ScrollView>
+      </Animated.View>
 
       {saveError ? <Text style={o.err}>{saveError}</Text> : null}
       <View style={o.footer}>

@@ -1,14 +1,14 @@
 // LOGIN — PORT À PELE (2026-07-09, mockups `design/login-3.html` + `login-fluxo.html` à letra):
 // wordmark (eyebrow FTL·AE·CREW + régua amarela + CREWPACT em Barlow) · campos-PÍLULA planos
-// (soft + hairline; foco = borda ink) · botão ink em pílula com a seta AMARELA · links com
-// sublinhado amarelo · rodapé "FTL · AE". RE-SKIN, NÃO REESCRITA: a lógica auditada
+// (soft + hairline; foco = borda ink) · botão ink em pílula · links com
+// sublinhado amarelo. RE-SKIN, NÃO REESCRITA: a lógica auditada
 // (2026-07-01 — handlers, cooldown do reenviar, anti-duplo-submit, autofill, shake,
 // transições entre vistas, teclado-compacta-topo) está INTACTA.
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform,
-  Animated, Keyboard, ActivityIndicator, Linking,
+  Animated, Easing, Keyboard, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';   // o do RN foi deprecado (RN 0.81)
 import { Ionicons } from '@expo/vector-icons';
@@ -21,10 +21,12 @@ import {
   login, register, verifySignupCode, resendSignup,
   requestPasswordReset, verifyResetCode, resetPassword,
   validateEmail, validatePassword,
+  loginWithApple, loginWithGoogle, appleAvailable,
 } from '../data/auth';
 import { t } from '../data/i18n';
 import { success, warning, select } from '../data/haptics';
 import { AppContext } from '../data/appContext';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 /* ─── Field (pílula da pele: soft + hairline; foco = ink; erro = vermelho) ─── */
 function Field({ value, onChangeText, placeholder, error, secure,
@@ -81,9 +83,7 @@ function PillButton({ label, onPress, loading, disabled }) {
     <TouchableOpacity style={[s.btn, (disabled || loading) && { opacity: 0.55 }]} activeOpacity={0.85}
       onPress={onPress} disabled={disabled || loading} accessibilityRole="button" accessibilityLabel={label}>
       <Text style={s.btnTxt}>{label}</Text>
-      {loading
-        ? <ActivityIndicator size="small" color={PELE.yellow} />
-        : <Icon name="chevron" size={16} color={PELE.yellow} />}
+      {loading ? <ActivityIndicator size="small" color={PELE.yellow} /> : null}
     </TouchableOpacity>
   );
 }
@@ -110,6 +110,11 @@ export default function LoginScreen() {
   const [view, setView] = useState('login');
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
+
+  // Login social: Apple só onde o sistema o dá (iOS 13+); Google em todo o lado.
+  const [appleOk, setAppleOk] = useState(false);
+  const [socialBusy, setSocialBusy] = useState(null);   // 'apple' | 'google' | null
+  useEffect(() => { appleAvailable().then(setAppleOk); }, []);
 
   // Teclado aberto → compactar o topo (marca/padding) para o botão de ação caber
   // sempre acima do teclado, qualquer que seja o campo em foco.
@@ -186,19 +191,23 @@ export default function LoginScreen() {
     ]).start();
   };
 
-  // Page transition — forward: slide left; back: slide right
+  // Page transition — forward: slide left; back: slide right.
+  // Curvas do canon (motion §3): sai em easeIn (arranca decidido), entra em easeOut
+  // (chega a desacelerar — a regra Apple). Reduce-motion = corte direto.
+  const reduce = useReduceMotion();
   const trans = useRef(new Animated.Value(0)).current;
   const transX = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] });
   const transOp = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
 
   const navigateTo = (nextView, forward = true) => {
     setGlobalErr('');
+    if (reduce) { setView(nextView); return; }
     const exitVal  = forward ? -1 : 1;
     const enterVal = forward ? 1 : -1;
-    Animated.timing(trans, { toValue: exitVal, duration: 130, useNativeDriver: true }).start(() => {
+    Animated.timing(trans, { toValue: exitVal, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
       setView(nextView);
       trans.setValue(enterVal);
-      Animated.timing(trans, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     });
   };
 
@@ -216,6 +225,20 @@ export default function LoginScreen() {
       if (!res.ok) { setGlobalErr(res.error); doShake(); return; }
       setUser(res.user);
     } finally { inFlight.current = false; setLoading(false); }
+  };
+
+  // Social: mesmo desfecho do login por email — setUser e o gate decide (funil se for novo).
+  // Cancelar a folha/browser não é erro: volta em silêncio.
+  const handleSocial = async (provider) => {
+    if (inFlight.current || socialBusy) return;
+    setGlobalErr('');
+    inFlight.current = true; setSocialBusy(provider);
+    try {
+      const res = provider === 'apple' ? await loginWithApple(lang) : await loginWithGoogle(lang);
+      if (!res.ok) { if (!res.canceled) { setGlobalErr(res.error); doShake(); } return; }
+      success();
+      setUser(res.user);
+    } finally { inFlight.current = false; setSocialBusy(null); }
   };
 
   const handleRequestReset = async () => {
@@ -327,6 +350,35 @@ export default function LoginScreen() {
     } finally { inFlight.current = false; setLoading(false); }
   };
 
+  // Bloco social (divisória "ou continuar com" + CÍRCULOS G/, referência da foto do founder):
+  // o social cria a conta E entra num passo (sem OTP — o email já vem verificado pelo fornecedor);
+  // o gate `onboarded` manda os novos para o funil das 6 perguntas, como sempre.
+  // DESATIVADO até à dev build (decisão do founder 2026-07-10): os círculos ficam esbatidos
+  // com "brevemente" — ligar = SOCIAL_ENABLED true + config do dashboard (providers/redirects).
+  const SOCIAL_ENABLED = false;
+  const renderSocial = () => (
+    <>
+      <View style={s.orRow}>
+        <View style={s.orLine} /><Text style={s.orTxt}>{t('login.or', lang)}</Text><View style={s.orLine} />
+      </View>
+      <View style={s.socialRow}>
+        <TouchableOpacity style={[s.socialCircle, !SOCIAL_ENABLED && s.socialOff]} activeOpacity={0.85}
+          disabled={!SOCIAL_ENABLED || !!socialBusy} onPress={() => handleSocial('google')}
+          accessibilityRole="button" accessibilityLabel={t('login.withGoogle', lang)} accessibilityState={{ disabled: !SOCIAL_ENABLED }}>
+          {socialBusy === 'google' ? <ActivityIndicator size="small" color={PELE.ink} /> : <Ionicons name="logo-google" size={20} color={PELE.ink} />}
+        </TouchableOpacity>
+        {(!SOCIAL_ENABLED || appleOk) ? (
+          <TouchableOpacity style={[s.socialCircle, !SOCIAL_ENABLED && s.socialOff]} activeOpacity={0.85}
+            disabled={!SOCIAL_ENABLED || !!socialBusy} onPress={() => handleSocial('apple')}
+            accessibilityRole="button" accessibilityLabel={t('login.withApple', lang)} accessibilityState={{ disabled: !SOCIAL_ENABLED }}>
+            {socialBusy === 'apple' ? <ActivityIndicator size="small" color={PELE.ink} /> : <Ionicons name="logo-apple" size={22} color={PELE.ink} style={{ marginTop: -2 }} />}
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      {!SOCIAL_ENABLED ? <Text style={s.socialSoon}>{lang === 'en' ? 'coming soon' : 'brevemente'}</Text> : null}
+    </>
+  );
+
   // Vistas de RECUPERAÇÃO alinham à esquerda (mockup login-fluxo); login/signup centrados.
   const leftView = view === 'forgot' || view === 'reset';
 
@@ -394,6 +446,7 @@ export default function LoginScreen() {
                   <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
                   <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
                 </TouchableOpacity>
+                {renderSocial()}
               </Animated.View>
             )}
 
@@ -417,7 +470,7 @@ export default function LoginScreen() {
                   textContentType="newPassword" autoComplete="new-password" returnKeyType="done" onSubmitEditing={handleSignup} />
                 <StrengthBar password={suPw} lang={lang} />
                 <PillButton onPress={handleSignup} loading={loading} label={t('login.createLink', lang)} />
-                {/* TERMOS no ponto legalmente relevante: aceites AO CRIAR (clickwrap-lite; links abrem o site). */}
+                {/* TERMOS no ponto legalmente relevante: aceites AO CRIAR (clickwrap-lite; links abrem o site) — cobre email E social. */}
                 <Text style={s.legal}>
                   {lang === 'en' ? 'By creating an account you accept the ' : 'Ao criar conta aceitas os '}
                   <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{lang === 'en' ? 'Terms' : 'Termos'}</Text>
@@ -428,6 +481,7 @@ export default function LoginScreen() {
                   <Text style={s.linkTxt}>{lang === 'en' ? 'Already have an account?' : 'Já tens conta?'}</Text>
                   <Text style={s.switchLink}>{t('login.btnLogin', lang)}</Text>
                 </TouchableOpacity>
+                {renderSocial()}
               </Animated.View>
             )}
 
@@ -541,8 +595,6 @@ export default function LoginScreen() {
 
           </Animated.View>
 
-          {/* Rodapé da pele (some com o teclado) */}
-          {!keyboardOpen ? <Text style={s.foot}>FTL · AE</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -592,7 +644,17 @@ const s = StyleSheet.create({
   codeLinks:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 20 },
   backInline:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
-  foot:         { marginTop: 'auto', paddingTop: 26, textAlign: 'center', fontSize: 9, fontFamily: PELE_FONT.bodyBold, letterSpacing: 2, color: '#C9C6BE', textTransform: 'uppercase' },
   legal:        { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 16, marginTop: 12, paddingHorizontal: 8 },
   legalLink:    { color: PELE.ink, fontFamily: PELE_FONT.bodyBold, textDecorationLine: 'underline' },
+  // Social (referência da foto): divisória "ou continuar com" + círculos G/ lado a lado,
+  // papel + hairline (≥44pt de alvo). `socialOff` = desativado até à dev build.
+  // Respiração à Apple: a zona alternativa vive CLARAMENTE abaixo da zona principal
+  // (36 até à divisória · 22 até aos círculos · 14 até ao "brevemente").
+  orRow:        { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 36, marginBottom: 22 },
+  orLine:       { flex: 1, height: 1, backgroundColor: PELE.line },
+  orTxt:        { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.5, textTransform: 'uppercase' },
+  socialRow:    { flexDirection: 'row', justifyContent: 'center', gap: 18 },
+  socialCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
+  socialOff:    { opacity: 0.35 },
+  socialSoon:   { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.8, textTransform: 'uppercase', textAlign: 'center', marginTop: 14 },
 });
