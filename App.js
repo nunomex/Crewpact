@@ -32,7 +32,7 @@ import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
-import { capabilitiesFor } from './data/capabilities';
+import { capabilitiesFor, resolvePostFlight } from './data/capabilities';
 import { migrateCrew, resolveCrew } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
@@ -378,7 +378,7 @@ export default function App() {
     };
     const effExtra = ('extra' in fields) ? fields.extra : (dutiesRef.current?.[date]?.extra || null);
     const entry = dayFtlFromDuties([primary, ...((effExtra && effExtra.length) ? effExtra : [])],
-      { postFlightMin: profile?.postFlightMin || 0, isPilot, base });   // + base p/ 12h/10h (235) por localização real
+      { postFlightMin, isPilot, base });   // pós-voo EFETIVO (user>OM>assumido) + base p/ 12h/10h (235)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -404,7 +404,7 @@ export default function App() {
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
   // Recalcula o FTL do dia (primária + extra) e grava no dayLog.
   const recomputeDay = (date, cur, extra) => {
-    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin: profile?.postFlightMin || 0, isPilot, base });
+    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base });
     setDayLog(prev => (entry ? { ...prev, [date]: entry } : prev));
   };
   // Adicionar um SERVIÇO ao dia (2.º+ período) — a EASA conta por SERVIÇO, não por dia (210).
@@ -711,8 +711,9 @@ export default function App() {
           // Frota do piloto (WB/NB) — só os AE com `FLEETS` (TAP) a usam, p/ a coluna de per-diem.
           const crewFleet = resolved.crewFleet || localProfile?.crewFleet || user.crewFleet || null;
           // Serviço pós-voo / débrief (min) — definido pelo OM do operador (ORO.FTL.235c). Entra nas
-          // Duty hours/210/repouso como fallback do sign-off real. Default 0 até o user o definir.
-          const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? 0;
+          // Duty hours/210/repouso. NULL = "por definir" → a resolução efetiva (resolvePostFlight)
+          // aplica o OM da companhia ou o assumido 30 (o default 0 antigo subcontava o serviço).
+          const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? null;
           // Plafond ANUAL de férias (dias) — CT Art. 238.º: mínimo 22 dias úteis/ano; o AE/
           // contrato pode dar mais (ou menos, proporcional no ano de entrada). Alimenta o saldo.
           const vacationDaysYear = resolved.vacationDaysYear ?? localProfile?.vacationDaysYear ?? user.vacationDaysYear ?? 22;
@@ -836,8 +837,10 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin: profile?.postFlightMin || 0, isPilot, base }));
-  }, [duties, loadedUserId, profile?.postFlightMin]); // isPilot lido por closure (fora das deps p/ evitar TDZ; estável)
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base }));
+    // deps em profile.* (não na const postFlightMin, declarada ABAIXO — a dep array avalia
+    // no render = TDZ); company muda a resolução OM/assumido → também é dep.
+  }, [duties, loadedUserId, profile?.postFlightMin, profile?.company]); // isPilot/postFlightMin lidos por closure
 
   // Sincronizar pendentes: a cada alteração com pendentes e ao voltar ao foreground.
   useEffect(() => {
@@ -872,7 +875,11 @@ export default function App() {
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
   const crewFleet = profile?.crewFleet || null;        // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
-  const postFlightMin = profile?.postFlightMin || 0;   // débrief/serviço pós-voo (min, do OM) → Duty hours/210/repouso
+  // Débrief/pós-voo EFETIVO (3 estados honestos, 2026-07-11): teu valor > OM da companhia
+  // (easyJet 30) > 30 ASSUMIDO (conservador). O Perfil mostra o estado (postFlightSource).
+  const pfResolved = resolvePostFlight(profile?.postFlightMin, company);
+  const postFlightMin = pfResolved.min;
+  const postFlightSource = pfResolved.source;   // 'user' | 'om' | 'assumed'
   const vacationDaysYear = profile?.vacationDaysYear ?? 22;   // plafond anual de férias (dias; CT Art. 238.º mín. 22 úteis) → saldo
   // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
@@ -994,7 +1001,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

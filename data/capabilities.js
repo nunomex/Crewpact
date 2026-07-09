@@ -54,3 +54,22 @@ export const capabilitiesFor = ({ company = null, crewType = 'cabin', contract =
     longHaul: isLongHaulCompany(company),
   };
 };
+
+// ── Serviço pós-voo / débrief (min) — 3 ESTADOS HONESTOS (2026-07-11) ─────────
+// O valor NÃO está na lei: a EASA manda o operador defini-lo no OM (ORO.FTL.105 —
+// o período de serviço só acaba "livre de todas as funções"; o débrief segue-se ao
+// serviço de VOO). Catálogo por companhia com fonte; sem valor conhecido → ASSUMIDO
+// 30 (o conservador: o default 0 antigo SUBCONTAVA o serviço e inflava a margem
+// legal). Resolução: teu valor ('user') > OM da companhia ('om') > 30 ('assumed').
+export const ASSUMED_POST_FLIGHT_MIN = 30;
+export const postFlightDefaultFor = (company) => {
+  const s = [company && company.slug, company && company.name].filter(Boolean).join(' ').toLowerCase();
+  if (/easyjet|ezy/.test(s)) return 30;   // OM easyJet (confirmado pelo founder, 2026-07-11)
+  return null;                            // outras: acrescentar AQUI quando houver fonte (OM)
+};
+export const resolvePostFlight = (userMin, company) => {
+  if (userMin != null) return { min: userMin, source: 'user' };
+  const om = postFlightDefaultFor(company);
+  if (om != null) return { min: om, source: 'om' };
+  return { min: ASSUMED_POST_FLIGHT_MIN, source: 'assumed' };
+};

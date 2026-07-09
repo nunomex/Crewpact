@@ -79,7 +79,7 @@ function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot,
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -510,7 +510,14 @@ export default function SettingsScreen({ navigation }) {
         <Animated.View style={seg(1)}>
           <Text style={s.seclbl}>{l('Serviço & Acordo', 'Duty & Agreement')}</Text>
           <View style={s.gbox}>
-            <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} sub={l('Débrief após o último calço (do teu OM)', 'Debrief after last on-block (from your OM)')} s={s}
+            {/* 3 estados honestos (2026-07-11): OM da companhia (verde) · assumido (âmbar,
+                "confirma no teu OM") · definido por ti. Tocar no seletor grava → vira teu. */}
+            <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')}
+              sub={postFlightSource === 'assumed'
+                ? <Text><Text style={{ color: PELE.warn }}>● </Text>{l('assumido — confirma no teu OM · só voos', 'assumed — check your OM · flights only')}</Text>
+                : postFlightSource === 'om'
+                  ? l('do OM da companhia · só serviços de voo', 'from the company OM · flight duties only')
+                  : l('definido por ti · só serviços de voo', 'set by you · flight duties only')} s={s}
               right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
             {hasVacExtra ? (
               <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
