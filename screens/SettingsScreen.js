@@ -86,7 +86,7 @@ export default function SettingsScreen({ navigation }) {
   useScrollToTop(perfilScrollRef);   // re-tocar na aba Perfil → volta ao topo (convenção iOS)
   const seg = useEnter(); // entrada escalonada das secções
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [aeModal, setAeModal] = useState(false);       // Serviço & AE (pós-voo/férias/antiguidade/toggles + estimativa)
+  // (aeModal morreu no v2 2026-07-11 — as definições vivem inline no grupo "Serviço & Acordo")
   const [prefModal, setPrefModal] = useState(false);   // Idioma & tema
   const [secModal, setSecModal] = useState(false);     // Segurança (bloqueio/password/apagar)
   // Família (modelo B) — pessoas (hook) + partilhar UM voo por pessoa (link 24h + imagem, 1 envio) + registo local.
@@ -152,13 +152,11 @@ export default function SettingsScreen({ navigation }) {
   // Estimativa AE do mês (cartão da secção Companhia) — total interligado do motor.
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthName = (() => { const m = now.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
   const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
   const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex, fleet: crewFleet }) : null;
   // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
   const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index: aeIndex, ym }) : null;
   const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
-  const aeExtrasShown = aeMonth ? +(aeMonth.extras + (aeXt ? aeXt.total : 0)).toFixed(2) : 0;
   const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
   const fmtEur0 = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
 
@@ -491,7 +489,9 @@ export default function SettingsScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* Perfil — mosaicos (categoria/contrato/base → diálogos existentes; serviço/férias → Serviço&AE) */}
+        {/* Perfil — mosaicos de IDENTIDADE de voo (v2 2026-07-11, mockup perfil-v2: UMA
+            morada por definição — férias/pós-voo desceram para o grupo inline abaixo;
+            "Data de início" ganhou morada fixa para toda a gente). */}
         {ae ? (
           <Animated.View style={seg(1)}>
             <Text style={s.seclbl}>{l('Perfil', 'Profile')}</Text>
@@ -499,13 +499,48 @@ export default function SettingsScreen({ navigation }) {
               <Tile icon="ribbon-outline" label={l('Categoria', 'Rank')} value={crewCategory || l('Por definir', 'Not set')} valueStrong onPress={() => { setChangeFrom(currentYm); setCatModal(true); }} s={s} />
               <Tile icon="briefcase-outline" label={l('Contrato', 'Contract')} value={crewContract ? (ae.contractLabel ? ae.contractLabel(crewContract, lang) : crewContract) : '12/12'} valueStrong onPress={() => { setChangeFrom(currentYm); setContractModal(true); }} s={s} />
               <Tile icon="location-outline" label={l('Base', 'Base')} value={baseObj ? baseObj.code : (base || l('—', '—'))} valueStrong onPress={() => setBModal(true)} s={s} />
-              {hasVacExtra
-                ? <Tile icon="sunny-outline" label={l('Férias / ano', 'Leave / yr')} value={`${vacationDaysYear ?? 22} ${l('dias', 'days')}`} valueStrong onPress={() => setAeModal(true)} s={s} />
-                : <Tile icon="calendar-outline" label={l('Data de início', 'Start date')} value={serviceStart || l('—', '—')} valueStrong onPress={openStartDate} s={s} />}
-              <Tile icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} value={l(`${postFlightMin || 0} min · débrief do OM`, `${postFlightMin || 0} min · OM debrief`)} wide onPress={() => setAeModal(true)} s={s} />
+              <Tile icon="calendar-outline" label={l('Data de início', 'Start date')} value={serviceStart || l('—', '—')} valueStrong onPress={openStartDate} s={s} />
             </View>
           </Animated.View>
         ) : null}
+
+        {/* Serviço & Acordo — as definições INLINE (v2: o diálogo-saco "Serviço & AE"
+            morreu; cada linha com o controlo NA página, à Settings do iOS; handlers
+            de gravação intactos; condicionais como sempre). */}
+        <Animated.View style={seg(1)}>
+          <Text style={s.seclbl}>{l('Serviço & Acordo', 'Duty & Agreement')}</Text>
+          <View style={s.gbox}>
+            <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} sub={l('Débrief após o último calço (do teu OM)', 'Debrief after last on-block (from your OM)')} s={s}
+              right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
+            {hasVacExtra ? (
+              <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
+                right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))} onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2} accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
+            ) : null}
+            {showLifestyle ? (
+              <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')} sub={l('Sazonal recebe retenção · lazer não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')} s={s}
+                right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
+            ) : null}
+            {showInstructor ? (
+              <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')} sub={l('Destrava o papel de instrutor (Art. 42)', 'Unlocks the instructor role (Art. 42)')} s={s}
+                right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
+            ) : null}
+            {showFleet ? (
+              <Row icon="airplane-outline" label={l('Frota', 'Fleet')} sub={l('Wide-body cobra sempre a tarifa WB (AE TAP)', 'Wide-body always charges the WB rate (TAP)')} s={s}
+                right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
+            ) : null}
+            {companyHasAe ? (
+              <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')} sub={l('Decide se o AE te abrange (pagamento).', 'Decides if the agreement covers you (pay).')} last={(employment || 'employee') !== 'employee'} s={s}
+                right={<Seg options={[{ id: 'employee', label: l('Empresa', 'Employee') }, { id: 'agency', label: l('Agência', 'Agency') }, { id: 'independent', label: l('Indep.', 'Indep.') }]} value={employment || 'employee'} setValue={saveEmployment} />} />
+            ) : null}
+            {companyHasAe && (employment || 'employee') === 'employee' ? (
+              <Row icon="shield-checkmark-outline" label={l('Abrangido pelo AE', 'Covered by agreement')} sub={l('Filiação/adesão (art. 496º/497º). Não → FTL-only.', 'Membership (art. 496/497). No → FTL-only.')} last s={s}
+                right={<Seg options={[{ id: 'yes', label: l('Sim', 'Yes') }, { id: 'no', label: l('Não', 'No') }]} value={aeCovered === false ? 'no' : 'yes'} setValue={(v) => saveAeCovered(v === 'yes')} />} />
+            ) : null}
+            {!companyHasAe && !hasVacExtra && !showLifestyle && !showInstructor && !showFleet ? (
+              <Row icon="information-circle-outline" label={l('Sem acordo modelado', 'No modelled agreement')} sub={l('Só o pós-voo se aplica — o FTL é igual para todos (lei EASA).', 'Only post-flight applies — FTL is the same for everyone (EASA law).')} last s={s} />
+            ) : null}
+          </View>
+        </Animated.View>
 
         {/* Ferramentas */}
         <Animated.View style={seg(2)}>
@@ -515,7 +550,8 @@ export default function SettingsScreen({ navigation }) {
             <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
             {/* Biblioteca = a antiga aba INFO (lei FTL + AE + fontes oficiais + procura) */}
             <Tile icon="book" label={l('Biblioteca', 'Library')} value={l('lei FTL · AE · fontes oficiais', 'FTL law · CLA · official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
-            {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => setAeModal(true)} s={s} /> : null}
+            {/* O € do mês NAVEGA para os Números (v2: toque num número de dinheiro → o sítio do dinheiro, não um formulário). */}
+            {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => navigation.navigate('Estatísticas')} s={s} /> : null}
           </View>
         </Animated.View>
 
@@ -816,53 +852,6 @@ export default function SettingsScreen({ navigation }) {
         </CenterDialog>
       ) : null}
 
-      {/* Serviço & AE — pós-voo, férias, antiguidade + toggles avançados + estimativa do mês */}
-      <CenterDialog visible={aeModal} onClose={() => setAeModal(false)} title={l('Serviço & AE', 'Service & CLA')} closeLabel={t('common.close', lang)}>
-        <ScrollView style={{ maxHeight: 500 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-          <View style={s.gbox}>
-            <Row icon="time-outline" label={l('Serviço pós-voo', 'Post-flight duty')} sub={l('Débrief após o último calço (do teu OM)', 'Debrief after last on-block (from your OM)')} s={s}
-              right={<Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
-            {hasVacExtra ? (
-              <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
-                right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))} onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2} accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
-            ) : null}
-            <Row icon="calendar-outline" label={l('Data de início', 'Start date')} sub={serviceYears != null ? l(`${serviceYears} anos de serviço`, `${serviceYears} years of service`) : l('Para o prémio de permanência', 'For the loyalty bonus')} value={serviceStart || l('Por definir', 'Not set')} onPress={() => { setAeModal(false); setTimeout(openStartDate, 300); }} s={s} />
-            {showLifestyle ? (
-              <Row icon="sunny-outline" label={l('Tipo de PPY', 'PPY type')} sub={l('Sazonal recebe retenção · lazer não (Art. 66.9)', 'Seasonal gets retention · lifestyle doesn’t (Art. 66.9)')} s={s}
-                right={<Seg options={[{ id: 'season', label: l('Sazonal', 'Seasonal') }, { id: 'life', label: l('Lazer', 'Lifestyle') }]} value={lifestyle ? 'life' : 'season'} setValue={(v) => saveLifestyle(v === 'life')} />} />
-            ) : null}
-            {showInstructor ? (
-              <Row icon="school-outline" label={l('Qualificação de instrutor', 'Instructor rating')} sub={l('Destrava o papel de instrutor (Art. 42)', 'Unlocks the instructor role (Art. 42)')} s={s}
-                right={<Seg options={[{ id: 'no', label: l('Não', 'No') }, { id: 'yes', label: l('Sim', 'Yes') }]} value={instructorRated ? 'yes' : 'no'} setValue={(v) => saveInstructor(v === 'yes')} />} />
-            ) : null}
-            {showFleet ? (
-              <Row icon="airplane-outline" label={l('Frota', 'Fleet')} sub={l('Wide-body cobra sempre a tarifa WB (AE TAP)', 'Wide-body always charges the WB rate (TAP)')} s={s}
-                right={<Seg options={ae.FLEETS.map((id) => ({ id, label: id }))} value={crewFleet || 'NB'} setValue={saveFleet} />} />
-            ) : null}
-            {companyHasAe ? (
-              <Row icon="briefcase-outline" label={l('Vínculo', 'Employment')} sub={l('Decide se o AE te abrange (pagamento).', 'Decides if the agreement covers you (pay).')} last={(employment || 'employee') !== 'employee'} s={s}
-                right={<Seg options={[{ id: 'employee', label: l('Empresa', 'Employee') }, { id: 'agency', label: l('Agência', 'Agency') }, { id: 'independent', label: l('Indep.', 'Indep.') }]} value={employment || 'employee'} setValue={saveEmployment} />} />
-            ) : null}
-            {companyHasAe && (employment || 'employee') === 'employee' ? (
-              <Row icon="shield-checkmark-outline" label={l('Abrangido pelo AE', 'Covered by agreement')} sub={l('Filiação/adesão (art. 496º/497º). Não → FTL-only.', 'Membership (art. 496/497). No → FTL-only.')} last s={s}
-                right={<Seg options={[{ id: 'yes', label: l('Sim', 'Yes') }, { id: 'no', label: l('Não', 'No') }]} value={aeCovered === false ? 'no' : 'yes'} setValue={(v) => saveAeCovered(v === 'yes')} />} />
-            ) : null}
-          </View>
-          {aeMonth ? (
-            <View style={s.aeCard}>
-              <View style={s.aeCardHead}>
-                <Text style={s.aeCardK} numberOfLines={1}>{l('Estimativa do mês', 'This month')} · {monthName}</Text>
-                <Text style={s.aeCardV}>{fmtEur(aeTotal)}</Text>
-              </View>
-              <Text style={s.aeCardSub}>
-                {l('Base', 'Base')} {fmtEur0(aeMonth.base)} · {l('Per-diem', 'Per diem')} {fmtEur0(aeMonth.perDiem)}
-                {aeExtrasShown ? ` · ${l('Extras', 'Extras')} ${fmtEur0(aeExtrasShown)}` : ''}
-                {aeMonth.nightStops ? ` · ${l('Paragens', 'Night stops')} ${fmtEur0(aeMonth.nightStops)}` : ''}
-              </Text>
-            </View>
-          ) : null}
-        </ScrollView>
-      </CenterDialog>
 
       {/* Idioma & tema — preferências */}
       <CenterDialog visible={prefModal} onClose={() => setPrefModal(false)} title={l('Idioma & tema', 'Language & theme')} closeLabel={t('common.close', lang)}>
@@ -906,11 +895,6 @@ const s = StyleSheet.create({
   // Secções (.gt) + grupos (.gbox) + linhas (.gr) com ícone (.gi)
   gt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 17, marginLeft: 2, marginBottom: 9 },
   gbox: { backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, overflow: 'hidden', marginBottom: 13 },
-  aeCard: { backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 13 },
-  aeCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  aeCardK: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: PELE.onInkSub, flex: 1, marginRight: 10 },
-  aeCardV: { fontFamily: PELE_FONT.display, fontSize: 26, color: PELE.onInk, fontVariant: ['tabular-nums'] },
-  aeCardSub: { fontFamily: PELE_FONT.body, fontSize: 11, color: PELE.onInkSub, marginTop: 8 },
   gr: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 12 },
   grBorder: { borderBottomWidth: 1, borderBottomColor: PELE.line },
   vacIn: { minWidth: 56, textAlign: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, color: PELE.ink, fontSize: 15, fontFamily: PELE_FONT.bodyBold, fontVariant: ['tabular-nums'] },

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Perfil v2 (uma morada por definição)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+
+  .phone{width:100%;max-width:340px;height:860px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:18px 19px 20px;overflow:hidden}
+  .ghost{position:absolute;right:2px;top:-8px;font-family:var(--disp);font-weight:700;font-size:64px;letter-spacing:-1px;color:var(--ghost)}
+  .bell{width:26px;height:26px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px}
+  .word{font-family:var(--disp);font-weight:700;font-size:34px;margin-top:8px}
+  .idcard{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:10px}
+  .idN{font-size:14.5px;font-weight:800}
+  .idS{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:2px}
+  .idS b{color:var(--ok);font-weight:800}
+
+  .secT{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin:16px 0 7px}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tile{border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .tile.wide{grid-column:1/-1}
+  .tK{font-size:8.5px;font-weight:800;letter-spacing:1.2px;color:var(--grey);text-transform:uppercase}
+  .tV{font-size:13px;font-weight:800;margin-top:3px}
+  .tV small{font-weight:600;color:var(--grey)}
+
+  .rows{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .rL{flex:1;min-width:0}
+  .rT{font-size:12px;font-weight:800}
+  .rS{font-size:9px;font-weight:600;color:var(--grey);margin-top:1px}
+  .seg{display:flex;background:var(--soft);border-radius:99px;padding:2px;gap:2px}
+  .seg span{font-size:9px;font-weight:800;padding:4px 8px;border-radius:99px;color:var(--grey)}
+  .seg .on{background:var(--ink);color:var(--paper)}
+  .vin{width:44px;text-align:center;background:var(--soft);border-radius:10px;padding:6px 0;font-size:12px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Perfil v2</div>
+  <h1>uma morada por definição</h1>
+  <p>O diagnóstico: 3 cards diferentes ("Férias/ano" · "Serviço pós-voo" · "Companhia · AE") abriam o MESMO saco
+  "Serviço & AE" com 8 definições + estimativa — e pós-voo/férias existiam em DOIS sítios. A forma Apple (Settings):
+  <b>linhas inline agrupadas por tema, sem sacos intermédios</b>. O diálogo morre; cada definição fica com uma morada.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="ghost">PERFIL</div>
+      <div class="bell">🔔</div>
+      <div class="word">Perfil</div>
+      <div class="idcard">
+        <div class="idN">Miguel Santos</div>
+        <div class="idS">easyJet · Piloto · AE <b>abrangido</b></div>
+      </div>
+
+      <div class="secT">Perfil de voo</div>
+      <div class="tiles">
+        <div class="tile"><div class="tK">Categoria</div><div class="tV">CPT</div></div>
+        <div class="tile"><div class="tK">Contrato</div><div class="tV">12/12</div></div>
+        <div class="tile"><div class="tK">Base</div><div class="tV">LIS</div></div>
+        <div class="tile"><div class="tK">Data de início</div><div class="tV">2018-03</div></div>
+      </div>
+
+      <div class="secT">Serviço & Acordo</div>
+      <div class="rows">
+        <div class="row"><div class="rL"><div class="rT">Serviço pós-voo</div><div class="rS">débrief do OM</div></div><div class="seg"><span>0</span><span>15</span><span class="on">30</span><span>45</span></div></div>
+        <div class="row"><div class="rL"><div class="rT">Férias por ano</div><div class="rS">mín. legal 22 (Art. 238.º CT)</div></div><div class="vin">22</div></div>
+        <div class="row"><div class="rL"><div class="rT">Tipo de PPY</div><div class="rS">sazonal recebe retenção (Art. 66.9)</div></div><div class="seg"><span class="on">Sazonal</span><span>Lazer</span></div></div>
+        <div class="row"><div class="rL"><div class="rT">Instrutor</div><div class="rS">destrava o papel (Art. 42)</div></div><div class="seg"><span class="on">Não</span><span>Sim</span></div></div>
+        <div class="row"><div class="rL"><div class="rT">Vínculo</div><div class="rS">decide se o AE te abrange</div></div><div class="seg"><span class="on">Empresa</span><span>Agência</span><span>Indep.</span></div></div>
+        <div class="row"><div class="rL"><div class="rT">Abrangido pelo AE</div><div class="rS">filiação/adesão (art. 496.º)</div></div><div class="seg"><span class="on">Sim</span><span>Não</span></div></div>
+      </div>
+
+      <div class="secT">A app</div>
+      <div class="tiles">
+        <div class="tile wide"><div class="tK">Validades & Documentos</div><div class="tV">médico · recorrentes · licença</div></div>
+        <div class="tile"><div class="tK">Hotéis</div><div class="tV"><small>por estação</small></div></div>
+        <div class="tile"><div class="tK">Biblioteca</div><div class="tV"><small>lei · fontes</small></div></div>
+        <div class="tile wide"><div class="tK">Companhia · AE → Números</div><div class="tV">este mês 3 456,78 €</div></div>
+      </div>
+
+      <div class="secT">Conta</div>
+      <div class="tiles">
+        <div class="tile"><div class="tK">Segurança</div><div class="tV"><small>bloqueio ligado</small></div></div>
+        <div class="tile"><div class="tK">Idioma & tema</div><div class="tV"><small>claro</small></div></div>
+      </div>
+    </div></div>
+    <div class="t">Perfil v2 — grupos inline, zero sacos</div>
+    <div class="d">O grupo "Serviço & Acordo" traz as 8 definições para a página, com os controlos inline que já existem. Grelha de cima fica só com identidade de voo — e "Data de início" ganha morada fixa para toda a gente.</div>
+    <div class="spec">
+      <b>Morre:</b> o diálogo "Serviço & AE" inteiro · os cards duplicados "Férias/ano" e "Serviço pós-voo" · a "Estimativa do mês" dentro do saco (já vive nos Números/Cálculos).<br>
+      <b>Muda de destino:</b> o card "Companhia · AE (este mês €)" passa a NAVEGAR para os Números (o toque num número de dinheiro leva ao sítio do dinheiro, não a um formulário).<br>
+      <b>Condicionais como hoje:</b> Férias/PPY/Instrutor/Frota/Vínculo/Abrangido só aparecem quando o AE/perfil os pede (frota = só TAP; PPY = só contratos sazonais; abrangido = só empregado de companhia com AE).<br>
+      <b>Fica igual:</b> handlers de gravação (nenhuma lógica nova) · "Data de início" abre o mesmo editor · secções Conta/legal/Terminar sessão · € sempre com cêntimos.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
