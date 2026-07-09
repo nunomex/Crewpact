@@ -32,7 +32,7 @@ import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
-import { capabilitiesFor, resolvePostFlight } from './data/capabilities';
+import { capabilitiesFor, resolvePostFlight, resolveVacationDays } from './data/capabilities';
 import { migrateCrew, resolveCrew } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
@@ -716,7 +716,8 @@ export default function App() {
           const postFlightMin = resolved.postFlightMin ?? localProfile?.postFlightMin ?? user.postFlightMin ?? null;
           // Plafond ANUAL de férias (dias) — CT Art. 238.º: mínimo 22 dias úteis/ano; o AE/
           // contrato pode dar mais (ou menos, proporcional no ano de entrada). Alimenta o saldo.
-          const vacationDaysYear = resolved.vacationDaysYear ?? localProfile?.vacationDaysYear ?? user.vacationDaysYear ?? 22;
+          // NULL = "por derivar" → o resolver aplica AE (fonte BTE) ou a lei (Art. 238.º/239.º CT).
+          const vacationDaysYear = resolved.vacationDaysYear ?? localProfile?.vacationDaysYear ?? user.vacationDaysYear ?? null;
           // Vínculo + cobertura do AE (lei: art. 496º CT). `employment` (por conta de outrem/agência/
           // independente) é o eixo legal; `aeCovered` é o override (raro: empregado não filiado).
           // Default: empregado + coberto → ZERO disrupção para quem já existe.
@@ -880,7 +881,7 @@ export default function App() {
   const pfResolved = resolvePostFlight(profile?.postFlightMin, company);
   const postFlightMin = pfResolved.min;
   const postFlightSource = pfResolved.source;   // 'user' | 'om' | 'assumed'
-  const vacationDaysYear = profile?.vacationDaysYear ?? 22;   // plafond anual de férias (dias; CT Art. 238.º mín. 22 úteis) → saldo
+  // (vacationDaysYear resolve-se ABAIXO, depois do `ae`/antiguidade — 3 camadas: teu > AE > lei.)
   // Categoria/contrato EFFECTIVE-DATED: a linha do tempo + um resolver por-mês. crewCategory/
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
   // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
@@ -921,6 +922,13 @@ export default function App() {
   // Estado do AE (honesto): modeled (motor AE) / uncovered (companhia tem AE mas TU não estás
   // abrangido → FTL-only p/ pay) / pending (AE publicado por modelar) / none (sem AE). Ver ae/index.js.
   const aeStatus = aeStatusFor({ ae: companyAe, company, crewType, covered });
+
+  // Férias/ano EFETIVO (3 camadas, 2026-07-11, BTE lido na fonte): teu valor > AE
+  // (easyJet: pilotos Art. 68.º = 25 proporcional · cabine Cl. 72.ª = 25/26+contratos)
+  // > lei (ano de admissão proporcional Art. 239.º · senão 22, Art. 238.º CT).
+  const vacResolved = resolveVacationDays(profile?.vacationDaysYear, { ae, contract: crewContract || '12/12', serviceYears, serviceStart });
+  const vacationDaysYear = vacResolved.days;
+  const vacationSource = vacResolved.source;   // 'user' | 'ae' | 'law-first' | 'law'
 
   // Fase 4 — deteção de alterações de escala (calendário vs guardado). Best-effort:
   // lê o próximo ~mês do calendário, compara com as duties e expõe o diff. Sem
@@ -1001,7 +1009,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

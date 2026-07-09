@@ -617,6 +617,37 @@ eq('TAP cabine categoria CAB0 pt', tapCabin.categoryLabel('CAB0', 'pt'), 'Tripul
 eq('TAP cabine categoria SC1 en', tapCabin.categoryLabel('SC1', 'en'), 'Supervisor (S/C 1)');
 eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
 
+// ═══ FÉRIAS/ANO (2026-07-11 — BTE lido na fonte) ═══
+// Pilotos (Art. 68.º, BTE 40/2023): 12/12 = 25; restantes PROPORCIONAIS, arredondadas
+// ao inteiro (nº 6-a). Cabine (Cl. 72.ª, BTE 8/2024): 25; 26 com ≥5 anos a partir de
+// abr-2025; contratos parciais com valores da própria convenção (= round(25×fração)).
+{
+  eq('férias piloto 12/12', ae.vacationDays({ contract: '12/12' }), 25);
+  eq('férias piloto PPY 9/12 (proporcional)', ae.vacationDays({ contract: 'PPY 9/12' }), 19);
+  eq('férias piloto PPY 8/12', ae.vacationDays({ contract: 'PPY 8/12' }), 17);
+  eq('férias piloto 5/4 (92%)', ae.vacationDays({ contract: '5/4' }), 23);
+  eq('férias cabine 12/12', cabin.vacationDays({ contract: '12/12' }), 25);
+  eq('férias cabine 5453 (tempo completo)', cabin.vacationDays({ contract: '5453' }), 25);
+  eq('férias cabine 12/12 + 5 anos (após abr-2025) = 26', cabin.vacationDays({ contract: '12/12', serviceYears: 5, ref: new Date('2025-05-01T00:00:00') }), 26);
+  eq('férias cabine 5 anos ANTES de abr-2025 = 25', cabin.vacationDays({ contract: '12/12', serviceYears: 5, ref: new Date('2025-03-01T00:00:00') }), 25);
+  eq('férias cabine 10/12 (Cl. 10/12 nº5)', cabin.vacationDays({ contract: '10/12' }), 21);
+  eq('férias cabine 9/3 (9 meses, nº12)', cabin.vacationDays({ contract: '9/3' }), 19);
+  eq('férias cabine 8/12 (8 meses, nº11)', cabin.vacationDays({ contract: '8/12' }), 17);
+  eq('férias cabine sazonal-50 (proporcional 8/12)', cabin.vacationDays({ contract: 'sazonal-50' }), 17);
+  // Camada da LEI + resolução (capabilities): teu > 1.º ano > AE > 22.
+  const { lawVacationDays, resolveVacationDays } = require(path.resolve('data/capabilities.js'));
+  const ref = new Date('2026-07-15T12:00:00');
+  eq('lei: 2.º ano+ = 22 (Art. 238.º)', lawVacationDays('2020-05-01', ref), 22);
+  eq('lei: admitido em MARÇO do próprio ano = 20 (cap do Art. 239.º)', lawVacationDays('2026-03-01', ref), 20);
+  eq('lei: admitido em SETEMBRO = 8 (2×4 meses)', lawVacationDays('2026-09-01', ref), 8);
+  eq('resolver: user ganha a tudo', resolveVacationDays(24, { ae: cabin, contract: '12/12', serviceStart: '2026-03-01', ref }).source, 'user');
+  eq('resolver: 1.º ano ganha ao AE', resolveVacationDays(null, { ae: cabin, contract: '12/12', serviceStart: '2026-03-01', ref }).days, 20);
+  eq('resolver: AE quando há módulo', resolveVacationDays(null, { ae: cabin, contract: '10/12', serviceStart: '2020-01-01', ref }).days, 21);
+  const noAe = resolveVacationDays(null, { ae: null, contract: '12/12', serviceStart: '2020-01-01', ref });
+  eq('resolver: sem AE → lei 22 (dias)', noAe.days, 22);
+  eq('resolver: sem AE → fonte lei', noAe.source, 'law');
+}
+
 // ═══ LINHA DO TEMPO DAS TABELAS (effective-dating, 2026-07-10) ═══
 // O resolvedor (ae/tables.js) + a identidade: com UMA versão por módulo, calcular
 // com/sem `ym` tem de dar EXATAMENTE o mesmo € — prova de que a estrutura não

@@ -121,6 +121,12 @@ export const loyaltyPct = (cat, years = 0) => {
   return 0;
 };
 
+// Férias/ano (Art. 68.º, BTE 40/2023): 12/12 = 25 dias; restantes modalidades
+// PROPORCIONAIS (nº 1), arredondadas ao inteiro mais próximo (regra do nº 6-a).
+// O ano de admissão é proporcional nos termos da lei (nº 2) — camada da lei no resolver.
+export const VAC_FULL_DAYS = 25;
+export const vacationDays = ({ contract = '12/12' } = {}) => Math.round(VAC_FULL_DAYS * contractFactor(contract));
+
 // Art. 46 — bónus de performance anual (discricionário, pago em dezembro): % da base
 // anual por categoria. ALVO ("on target") / MÁXIMO: CPT 10/20 · SFO 10/20 · FO 7,5/15
 // · SO 5/10 (%). Estimamos pelo ALVO; proporcional ao contrato (como a base anual).

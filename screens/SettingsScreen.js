@@ -23,8 +23,6 @@ import appJson from '../app.json';
 import { changePassword, validatePassword, updateProfile, deleteAccount, reauthenticate, requestEmailChange, verifyEmailChange } from '../data/auth';
 import { Seg } from '../components/Stepper';
 import { AppContext, isoDay } from '../data/appContext';
-import { monthlyAe } from '../data/perdiem';
-import { eventCounts } from '../data/aeEvents';
 import { dataExportJson } from '../data/dataExport';
 import useFamilyLinks from '../hooks/useFamilyLinks';
 import { getFamilyShares, addFamilyShare, removeFamilyShare, removeFamilySharesForPerson } from '../data/familyShares';
@@ -79,7 +77,7 @@ function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot,
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -149,16 +147,8 @@ export default function SettingsScreen({ navigation }) {
     setFamAddOpen(false); setFamLabel('');
   };
 
-  // Estimativa AE do mês (cartão da secção Companhia) — total interligado do motor.
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
-  const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex, fleet: crewFleet }) : null;
-  // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
-  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index: aeIndex, ym }) : null;
-  const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
-  const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
-  const fmtEur0 = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
+  // (A estimativa AE do mês saiu do Perfil com o card "Companhia · AE" — 2026-07-11:
+  //  o € do mês vive nos Números/fecho/sino; o Perfil não recalcula o motor a cada render.)
 
   const [pwModal, setPwModal] = useState(false);
   const [curPw, setCurPw]   = useState('');
@@ -523,7 +513,14 @@ export default function SettingsScreen({ navigation }) {
                 ? <Text style={s.rv}>{`${postFlightMin} min`}</Text>
                 : <Seg options={[{ id: '0', label: '0' }, { id: '15', label: '15' }, { id: '30', label: '30' }, { id: '45', label: '45' }]} value={String(postFlightMin || 0)} setValue={(v) => savePostFlight(+v)} />} />
             {hasVacExtra ? (
-              <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')} sub={l('Mínimo legal 22 dias úteis (Art. 238.º CT)', 'Legal minimum 22 working days (Art. 238 CT)')} s={s}
+              /* Fonte do plafond (2026-07-11, BTE lido): AE (Cl. 72.ª cabine / Art. 68.º pilotos) >
+                 lei (ano de admissão Art. 239.º · 22 Art. 238.º CT). Editável SEMPRE — o contrato
+                 individual é pessoal (a última palavra é do utilizador). */
+              <Row icon="sunny-outline" label={l('Férias por ano', 'Leave per year')}
+                sub={vacationSource === 'ae' ? l('do AE da companhia (fonte BTE)', 'from the company agreement (BTE)')
+                  : vacationSource === 'law-first' ? l('ano de admissão — proporcional (Art. 239.º CT)', 'first year — pro-rated (Art. 239 CT)')
+                  : vacationSource === 'user' ? l('definido por ti', 'set by you')
+                  : l('mínimo legal (Art. 238.º CT)', 'legal minimum (Art. 238 CT)')} s={s}
                 right={<TextInput style={s.vacIn} value={vacIn} onChangeText={(v) => setVacIn(v.replace(/\D/g, '').slice(0, 2))} onEndEditing={commitVacDays} onBlur={commitVacDays} keyboardType="number-pad" maxLength={2} accessibilityLabel={l('Dias de férias por ano', 'Leave days per year')} />} />
             ) : null}
             {showLifestyle ? (
@@ -556,12 +553,14 @@ export default function SettingsScreen({ navigation }) {
         <Animated.View style={seg(2)}>
           <Text style={s.seclbl}>{l('Ferramentas', 'Tools')}</Text>
           <View style={s.grid}>
-            <Tile icon="passport" label={l('Validades & Documentos', 'Currency & Documents')} value={l('médico · recorrentes · licença', 'medical · recurrents · licence')} wide hot onPress={() => navigation.navigate('Validades')} s={s} />
+            {/* "Validades" a seco (2026-07-11): "Documentos" prometia cofre de ficheiros
+                (que NÃO temos — RGPD); validades é o jargão da tripulação e o objeto real. */}
+            <Tile icon="passport" label={l('Validades', 'Currency')} value={l('médico · recorrentes · licença', 'medical · recurrents · licence')} wide hot onPress={() => navigation.navigate('Validades')} s={s} />
             <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
             {/* Biblioteca = a antiga aba INFO (lei FTL + AE + fontes oficiais + procura) */}
             <Tile icon="book" label={l('Biblioteca', 'Library')} value={l('lei FTL · AE · fontes oficiais', 'FTL law · CLA · official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
-            {/* O € do mês NAVEGA para os Números (v2: toque num número de dinheiro → o sítio do dinheiro, não um formulário). */}
-            {aeMonth ? <Tile icon="briefcase-outline" label={l('Companhia · AE', 'Airline · CLA')} value={`${l('este mês', 'this month')} ${fmtEur(aeTotal)}`} wide onPress={() => navigation.navigate('Estatísticas')} s={s} /> : null}
+            {/* (O card "Companhia · AE" morreu 2026-07-11 — um dado, uma casa: o € do mês
+                vive nos Números (aba), no fecho do Início e no sino "Mês fechado".) */}
           </View>
         </Animated.View>
 

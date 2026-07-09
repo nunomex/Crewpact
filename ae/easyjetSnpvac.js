@@ -114,6 +114,21 @@ export const contractFactor = (c) => CONTRACT_FACTOR[c] != null ? CONTRACT_FACTO
 export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
 
+// Férias/ano (Cl. 72.ª, BTE 8/2024 — revisão global): tempo completo = 25 dias;
+// 26 a partir de ABRIL-2025 com ≥5 anos de antiguidade contínua (nº 2). Contratos
+// parciais: os valores da PRÓPRIA convenção (10/12 = 21 · 9 meses = 19 · 8 meses = 17
+// — que são round(25 × fração)); os restantes proporcionais (nº 3), mesmo arredondamento.
+// Ano de admissão: 2 dias/mês, máx. 20 (nº 4 = Art. 239.º CT) — camada da lei no resolver.
+export const VAC_FULL_DAYS = 25;
+export const VAC_BY_CONTRACT = { '10/12': 21, '9/3': 19, '8/12': 17 };
+export const vacationDays = ({ contract = '12/12', serviceYears = 0, ref = new Date() } = {}) => {
+  if (contract === '12/12' || contract === '5453') {
+    return (serviceYears >= 5 && +ref >= +new Date('2025-04-01T00:00:00')) ? 26 : VAC_FULL_DAYS;
+  }
+  if (VAC_BY_CONTRACT[contract] != null) return VAC_BY_CONTRACT[contract];
+  return Math.round(VAC_FULL_DAYS * contractFactor(contract));
+};
+
 // Base anual de uma categoria (FA1 = SMN × 14). `T` = tabela em vigor (tableAt).
 const annualBase = (cat, T = tableAt()) => cat === 'FA1' ? T.NMW_MONTHLY * SALARY_INSTALMENTS : (T.BASE_ANNUAL[cat] || 0);
 

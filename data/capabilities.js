@@ -73,3 +73,23 @@ export const resolvePostFlight = (userMin, company) => {
   if (om != null) return { min: om, source: 'om' };
   return { min: ASSUMED_POST_FLIGHT_MIN, source: 'assumed' };
 };
+
+// ── Férias/ano — 3 camadas (2026-07-11, BTE lido na fonte): teu valor > AE > lei ──
+// LEI: 22 dias úteis (Art. 238.º CT); ANO DE ADMISSÃO = 2 dias por mês ou fração do
+// contrato nesse ano, máx. 20 (Art. 239.º CT — o próprio AE easyJet repete a regra,
+// Cl. 72.ª/4). AE: os módulos ae/* expõem `vacationDays` COM FONTE (easyJet pilotos
+// Art. 68.º BTE 40/2023 = 25 a tempo completo, proporcional nas restantes; cabine
+// Cl. 72.ª BTE 8/2024 = 25, 26 com ≥5 anos a partir de abr-2025, 21/19/17 por contrato).
+// TAP/otros sem cláusula lida → caem na lei (não se inventa).
+export const lawVacationDays = (serviceStart, ref = new Date()) => {
+  const m = /^(\d{4})-(\d{2})/.exec(String(serviceStart || ''));
+  if (m && +m[1] === ref.getFullYear()) return Math.min(20, 2 * (12 - (+m[2]) + 1));
+  return 22;
+};
+export const resolveVacationDays = (userDays, { ae, contract, serviceYears, serviceStart, ref = new Date() } = {}) => {
+  if (userDays != null) return { days: userDays, source: 'user' };
+  const my = /^(\d{4})/.exec(String(serviceStart || ''));
+  if (my && +my[1] === ref.getFullYear()) return { days: lawVacationDays(serviceStart, ref), source: 'law-first' };
+  if (ae && typeof ae.vacationDays === 'function') return { days: ae.vacationDays({ contract, serviceYears, ref }), source: 'ae' };
+  return { days: 22, source: 'law' };
+};
