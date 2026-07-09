@@ -51,6 +51,9 @@ eq('SICK → off (ausência, não é duty)', classify('SICK', codes), 'off');
 // GDO/PT (calendário REAL do founder, 2026-07-11): folga protegida + dia de part-time.
 eq('GDO (golden day off) → off', classify('GDO', codes), 'off');
 eq('P/T (dia de part-time) → off', classify('P/T', codes), 'off');
+eq('CBTB (e-learning, variante do CBT) → training', classify('CBTB', codes), 'training');
+eq('WD/O (variante de folga) → off', classify('WD/O LGW', codes), 'off');
+eq('LVE (férias) → off', classify('LVE', codes), 'off');
 // A guarda do MÊS: "SEP" colado a dígitos é data, não treino (o training testa antes do voo).
 eq('"01 SEP" (data) NÃO é treino', classify('CHECK-IN 01 SEP', codes) !== 'training', true);
 eq('"SEP 26" (data) NÃO é treino', classify('ROSTER SEP 26', codes) !== 'training', true);

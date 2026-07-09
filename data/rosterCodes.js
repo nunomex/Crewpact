@@ -16,7 +16,7 @@ export const ROSTER_CODES = {
     // (checks de pilotos). ⚠️ "SEP" também é MÊS — e o training testa ANTES do voo no
     // classify → guardas de contexto: não conta colado a dígitos ("01 SEP", "SEP 26",
     // "01/SEP"); o "01Sep" compacto do eCrew nem casa \b (dígito→letra não é fronteira).
-    training:       /\b(SIM|TRG|RECURRENT|CBT|GS|CEET|CRM|DG|AVSEC|RTW|LPC|OPC)\b|(?<![\d/][\s/]?)\bSEP\b(?!\s?\d)/i,
+    training:       /\b(SIM|TRG|RECURRENT|CBTB?|GS|CEET|CRM|DG|AVSEC|RTW|LPC|OPC)\b|(?<![\d/][\s/]?)\bSEP\b(?!\s?\d)/i,   // CBTB? = CBT e a variante CBTB (calendário real do founder)
     office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN|MTG)\b/i,       // terra/escritório/reunião
     // DOWE (folga de fim de semana) é o crítico: sem ele, uma folga era proposta como
     // serviço no import. SICK/MAT/UPL = ausências. GDO (golden day off — folga protegida)
