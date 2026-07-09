@@ -104,10 +104,13 @@
   visível na UI + User-Agent identificado, ambos tratados). **Canalização FEITA**:
   Edge flight-status modo `{wx, lat, lon}` (coords do airports.js; série trimada 48 h;
   cache `wx_cache` TTL 45 min — supabase/wx-cache.sql) + `data/weather.js` (digest PURO
-  `wxDigest` + `wxSymbol`, golden `test:wx` 17). **UI de propósito AINDA NÃO** — a meteo
-  entra pelos estados do Living Interface (pernoita/destino/véspera) quando o redesign
-  assentar. NÃO metar/taf (duplica o briefing). Ground stops mantêm-se FORA (US-only
-  grátis; ATFM europeu inacessível — o Airport Intelligence mostra o sintoma).
+  `wxDigest` + `wxSymbol`, golden `test:wx` 17). **UI FEITA (2026-07-10)**: selo no
+  fantasma (folga/pernoita/férias) + chips úteis (véspera/pernoita "amanhã cedo X°") +
+  **a meteo na VOZ** (bilhete manuscrito: frases de decisão casaco/trânsito quando amanhã
+  há serviço, vento/calor/chuva de hoje — mockup `design/meteo-voz.html`, golden test:voice 22;
+  cenografia dinâmica RECUSADA — ilustração decorativa viola a pele). NÃO metar/taf
+  (duplica o briefing). Ground stops mantêm-se FORA (US-only grátis; ATFM europeu
+  inacessível — o Airport Intelligence mostra o sintoma).
 - **Notificações à família ("aterrou ✓")** — NÃO é dev build (a família não tem app;
   seria sempre servidor): web push é grátis mas no iPhone exige adicionar a página ao
   ecrã inicial (fricção); WhatsApp automático = API paga; a variante realista é EMAIL

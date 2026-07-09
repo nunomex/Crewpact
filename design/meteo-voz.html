@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — a meteo na voz (bilhete manuscrito)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif; --hand:'Caveat',cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:900px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* topo de telemóvel (só a metade que interessa: herói + bilhete) — fiel ao HomeScreen */
+  .phone{width:100%;max-width:340px;height:430px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .halo{position:absolute;right:-127px;top:-85px;width:360px;height:360px;border-radius:99em;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,0) 70%)}
+  .page{position:absolute;inset:0;padding:14px 19px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:1}
+  .greet{font-size:10px;font-weight:500;color:var(--grey);margin-top:12px}
+  .hero{position:relative;min-height:150px;margin-top:4px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0}
+  .gho{position:absolute;right:8px;top:-14px;font-family:var(--disp);font-weight:700;line-height:1;letter-spacing:-2.5px;color:var(--ghost);text-align:right;font-size:132px}
+  .wx{position:absolute;right:9px;top:0;text-align:right;font-size:9px;font-weight:700;color:var(--grey)}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+  .hr{height:1px;background:var(--line);margin:10px 0 0}
+  .note{margin:22px 4px 2px;font-family:var(--hand);font-size:19px;line-height:1.3;color:var(--grey)}
+  .note b{font-weight:600;color:var(--ink);background:var(--yellow);padding:0 4px}
+  .r1{transform:rotate(-1.2deg)} .r2{transform:rotate(-2.7deg)} .r3{transform:rotate(-1.8deg)}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Living Interface · voz</div>
+  <h1>a meteo na voz</h1>
+  <p>O clima entra na app <b>pelo bilhete manuscrito</b>, não por cenografia (pingas/nuvens = ilustração decorativa,
+  proibida pela pele). Regra: quando o tempo é <b>NOTÁVEL</b> e muda uma decisão do dia, a frase do dia é a do tempo —
+  com o <b>número real do digest</b> (MET Norway, cache 45 min) interpolado. Senão, pool normal. Âmbito: <b>folga e férias</b>
+  (a doença fica limpa — o bilhete de melhoras não fala do tempo). Determinístico como a voz já é (seed do dia, sem random).</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☀<br>8°–14°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r2"><b>Leva o casaco.</b> 5° amanhã às 05:30.</div>
+    </div></div>
+    <div class="t">① Frio no report de amanhã</div>
+    <div class="d">Folga HOJE, serviço AMANHÃ cedo e mínima gelada — a frase muda uma decisão real (o casaco no saco).</div>
+    <div class="spec"><b>Gatilho:</b> amanhã tem serviço · tomorrowMin ≤ 6° <b>· EN:</b> "Take the coat. 5° tomorrow at 05:30." <b>· Número:</b> tomorrowMin + report reais.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☂<br>12°–16°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r1"><b>Chove amanhã cedo.</b> Conta com trânsito para o report.</div>
+    </div></div>
+    <div class="t">② Chuva a caminho do report</div>
+    <div class="d">A pergunta que o tripulante faria à janela — respondida na véspera da véspera.</div>
+    <div class="spec"><b>Gatilho:</b> amanhã tem serviço · tomorrowSym = chuva/aguaceiros <b>· EN:</b> "Rain early tomorrow. Allow extra time for the drive."</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Bom dia, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☀<br>19°–27°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r3"><b>27° e sol.</b> A folga pede rua.</div>
+    </div></div>
+    <div class="t">③ Dia bom na base</div>
+    <div class="d">Sem serviço amanhã de manhã: o tempo bom vira convite — o tom leve que a voz da folga já tem.</div>
+    <div class="spec"><b>Gatilho:</b> todayMax ≥ 26° · símbolo de sol · sem serviço amanhã-cedo <b>· EN:</b> "27° and sunny. This day off wants you outside."</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Bom dia, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☂<br>11°–15°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r2"><b>Lá fora chove.</b> Sofá com dignidade.</div>
+    </div></div>
+    <div class="t">④ Chuva na folga</div>
+    <div class="d">O humor seco da casa — dá licença para não fazer nada, que é o luxo da folga.</div>
+    <div class="spec"><b>Gatilho:</b> rainNext6h OU símbolo de chuva agora · sem serviço amanhã-cedo <b>· EN:</b> "It's raining out there. Sofa, with dignity."</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">≋<br>14°–18°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r1"><b>30 nós lá fora.</b> Segura o chapéu.</div>
+    </div></div>
+    <div class="t">⑤ Vento forte hoje</div>
+    <div class="d">O windKt do digest é de AGORA — por isso a frase fala de hoje, nunca promete o vento de amanhã.</div>
+    <div class="spec"><b>Gatilho:</b> windKt ≥ 25 <b>· EN:</b> "30 knots out there. Hold on to your hat." <b>· Número:</b> windKt real.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Bom dia, Miguel</div>
+      <div class="hero">
+        <div class="gho">9</div>
+        <span class="wx">☀<br>24°</span>
+        <div class="word">Férias</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r3"><b>24° e zero responsabilidades.</b> Aproveita.</div>
+    </div></div>
+    <div class="t">⑥ Férias com sol</div>
+    <div class="d">Nas férias o tempo entra só quando é bom ou notável — nunca vira boletim.</div>
+    <div class="spec"><b>Gatilho:</b> ferias · todayMax ≥ 22° e sol <b>· EN:</b> "24° and zero responsibilities. Enjoy."</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">as regras (deterministas, sem AI — como toda a voz)</div>
+  <p><b>Prioridade:</b> tempo notável → a frase do dia é a do tempo (1 por dia, escolhida pela MESMA seed determinística
+  do bilhete — sem <code>Math.random</code>); tempo banal → pool normal de sempre. <b>Notável</b> = chuva/neve amanhã-cedo com
+  serviço · mínima ≤ 6° com serviço · máxima ≥ 26° com sol · chuva agora · vento ≥ 25 kt. <b>Fonte:</b> <code>wxDigest</code>
+  (MET Norway CC-BY, cache 45 min, estação = base na folga/férias); <b>sem meteo → pool normal</b>, nunca bloqueia nem mostra erro.
+  <b>Números sempre reais</b> do digest (nunca inventados — contrato §6); temperatura/vento interpolados na frase.
+  <b>Âmbito:</b> folga + férias apenas (gate da voz mantém-se: operacionais falam em interface; a doença fica limpa).
+  <b>Golden:</b> <code>test:voice</code> ganha fixtures de meteo (frio/chuva/sol/vento + sem-dados) — as frases ficam trancadas como as pools.
+  <b>Maiúscula inicial + bold com marcador + cauda</b> — a gramática do bilhete não muda.</p>
+</div>
+</body>
+</html>

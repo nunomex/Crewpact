@@ -22,6 +22,25 @@ const POOLS = {
   'folga.rain': [
     ['Dia de sofá.', 'Chuva lá fora — a escala não manda hoje.', 'Couch day.', 'Rain outside — the roster’s off duty.'],
     ['Deixa chover.', '{now}° e molhado — dia para ficar por dentro.', 'Let it rain.', '{now}° and wet — a day to stay in.'],
+    ['Lá fora chove.', 'Sofá com dignidade.', 'It’s raining out there.', 'Sofa, with dignity.'],
+  ],
+  // ── METEO NA VOZ (mockup design/meteo-voz.html, aprovado 2026-07-10) ──
+  // Frases de DECISÃO (amanhã tem serviço — só até às 18h; depois o estado é véspera):
+  'folga.rainReport': [
+    ['Chove amanhã cedo.', 'Conta com trânsito para o report.', 'Rain early tomorrow.', 'Allow extra time for the drive.'],
+  ],
+  'folga.coldReport': [
+    ['Leva o casaco.', '{tmwMin}° amanhã às {tmwReport}.', 'Take the coat.', '{tmwMin}° tomorrow at {tmwReport}.'],
+  ],
+  // Conforto de hoje (notável): vento é o de AGORA (windKt) — nunca promete o de amanhã.
+  'folga.wind': [
+    ['{wind} nós lá fora.', 'Segura o chapéu.', '{wind} knots out there.', 'Hold on to your hat.'],
+  ],
+  'folga.hot': [
+    ['{max}° e sol.', 'A folga pede rua.', '{max}° and sunny.', 'This day off wants you outside.'],
+  ],
+  'ferias.sun': [
+    ['{max}° e zero responsabilidades.', 'Aproveita.', '{max}° and zero responsibilities.', 'Enjoy.'],
   ],
   'folga.snow': [
     ['Dia de neve.', '{now}° lá fora — quentinho por dentro.', 'Snow day.', '{now}° outside — stay warm inside.'],
@@ -60,18 +79,31 @@ const POOLS = {
 const fill = (s, ctx) => s.replace(/\{(\w+)\}/g, (_, k) => String(ctx[k]));
 const eligible = (s, ctx) => ![...s.matchAll(/\{(\w+)\}/g)].some((m) => ctx[m[1]] == null || ctx[m[1]] === '');
 
-// stateVoice({ state, lang, dateISO, wx: {c,min,max,icon}, hour, ctx }) → { bold, tail } | null
+// stateVoice({ state, lang, dateISO, wx: {c,min,max,icon,wind,tmwMin,tmwRain}, hour,
+//              ctx: {report,station,restUntil,tmwReport} }) → { bold, tail } | null
+// Ordem dos gatilhos (contrato do mockup meteo-voz): noite > decisão de amanhã
+// (chuva > frio, SÓ com serviço amanhã) > calor > chuva agora > neve > vento > sol > nuvens.
 export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour = 12, ctx = {} } = {}) {
   let key = state;
   if (state === 'folga') {
     const ic = wx && wx.icon;
+    const hasTmwDuty = ctx.tmwReport != null && ctx.tmwReport !== '';
     if (hour >= 21 || hour < 7) key = 'folga.night';
+    else if (hasTmwDuty && wx && wx.tmwRain) key = 'folga.rainReport';
+    else if (hasTmwDuty && wx && wx.tmwMin != null && wx.tmwMin <= 6) key = 'folga.coldReport';
+    else if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 26) key = 'folga.hot';
     else if (ic === 'rain' || ic === 'thunder') key = 'folga.rain';
     else if (ic === 'snow') key = 'folga.snow';
+    else if (wx && wx.wind != null && wx.wind >= 25) key = 'folga.wind';
     else if (ic === 'sun' || ic === 'cloud-sun') key = 'folga.sun';
     else if (ic === 'cloud' || ic === 'fog') key = 'folga.cloud';
   }
-  const full = { ...ctx, now: wx ? wx.c : null, min: wx ? wx.min : null, max: wx ? wx.max : null };
+  if (state === 'ferias') {
+    const ic = wx && wx.icon;
+    if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 22) key = 'ferias.sun';
+  }
+  const full = { ...ctx, now: wx ? wx.c : null, min: wx ? wx.min : null, max: wx ? wx.max : null,
+    wind: wx ? wx.wind : null, tmwMin: wx ? wx.tmwMin : null };
   const fit = (arr) => (arr || []).filter((e) => eligible(e[0], full) && eligible(e[1], full));
   // Variante do tempo primeiro; sem elegíveis (ex.: sem temperatura) cai na pool base do estado.
   const use = fit(POOLS[key]).length ? fit(POOLS[key]) : fit(POOLS[state]);

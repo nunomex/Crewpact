@@ -565,8 +565,14 @@ export default function HomeScreen({ navigation }) {
       const raw = await fetchStationWx(wxStation);
       if (!alive || !raw) return;
       const dig = wxDigest(raw.series);
-      if (dig && dig.nowC != null) setWxArr({ c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), min: dig.todayMin, max: dig.todayMax,
-        tmwMin: dig.tomorrowMin, tmwSym: dig.tomorrowSym });   // amanhã cedo — a pergunta da véspera/pernoita ("que visto às 4h?")
+      if (dig && dig.nowC != null) {
+        const tmwIcon = wxIcon(dig.tomorrowSym);
+        setWxArr({ c: Math.round(dig.nowC), icon: wxIcon(dig.nowSym), min: dig.todayMin, max: dig.todayMax,
+          tmwMin: dig.tomorrowMin, tmwSym: dig.tomorrowSym,
+          // Para a VOZ (mockup meteo-voz): vento de AGORA (kt) + "chove amanhã cedo?".
+          wind: dig.windKt != null ? Math.round(dig.windKt) : null,
+          tmwRain: tmwIcon === 'rain' || tmwIcon === 'thunder' });
+      }   // tmwMin/tmwSym: amanhã cedo — a pergunta da véspera/pernoita ("que visto às 4h?")
     })();
     return () => { alive = false; };
   }, [wxStation]);
@@ -599,8 +605,12 @@ export default function HomeScreen({ navigation }) {
     // — hoje, véspera, pernoita, pós-voo, disrupção, fecho — falam em interface, não em
     // bilhetes. (As pools deles ficam no motor; o gate é aqui.)
     if (homeState !== 'folga' && homeState !== 'ferias' && homeState !== 'doenca') return null;
-    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm } });
-  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm]);
+    // `tmwReport` = report de AMANHÃ (se houver serviço) → destrava as frases de DECISÃO
+    // da meteo (casaco/trânsito, mockup meteo-voz). Só o dia civil seguinte, nada de "próximo".
+    const tmwISO = (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+    const tmwDuty = duties && duties[tmwISO] && !duties[tmwISO].deleted ? duties[tmwISO] : null;
+    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null } });
+  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties]);
   // O bilhete POUSA na página com ângulo/posição LIVRES (user: "como num post-it de lado")
   // — determinísticos pelo DIA (nada de Math.random): cada dia cai um bocadinho diferente,
   // mas hoje cai sempre igual (re-renders não o fazem "dançar").

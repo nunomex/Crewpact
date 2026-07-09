@@ -75,5 +75,44 @@ eq('véspera SEM report → null (nunca se inventa)', stateVoice({ state: 'vespe
 const vPer = stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC' } });
 check('pernoita com estação', vPer && vPer.bold.includes('FNC'));
 
+// ═══ METEO NA VOZ (mockup design/meteo-voz.html, aprovado 2026-07-10) ═══
+// Frases de DECISÃO (amanhã tem serviço) > conforto de hoje; noite ganha a tudo;
+// números sempre reais do digest; sem serviço amanhã as de decisão nunca disparam.
+const COLD_TMW = { c: 8, min: 4, max: 14, icon: 'sun', tmwMin: 5, tmwRain: false };
+
+// Frio no report de amanhã (folga de dia + serviço amanhã + mínima ≤6°)
+const vCold = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 15, ctx: { tmwReport: '05:30' } });
+eq('frio amanhã: casaco com números reais', vCold, { bold: 'Leva o casaco.', tail: '5° amanhã às 05:30.' });
+eq('frio amanhã (EN)', stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 15, ctx: { tmwReport: '05:30' }, lang: 'en' }),
+  { bold: 'Take the coat.', tail: '5° tomorrow at 05:30.' });
+
+// Chuva amanhã cedo com serviço
+const vRainTmw = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: { c: 27, min: 18, max: 28, icon: 'sun', tmwRain: true }, hour: 15, ctx: { tmwReport: '06:10' } });
+eq('chuva amanhã: trânsito', vRainTmw.bold, 'Chove amanhã cedo.');
+
+// Prioridade do rodapé do mockup: chuva-amanhã > frio-amanhã
+const vBoth = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: { c: 8, min: 4, max: 12, icon: 'sun', tmwMin: 3, tmwRain: true }, hour: 15, ctx: { tmwReport: '06:10' } });
+eq('prioridade: chuva-amanhã > frio', vBoth.bold, 'Chove amanhã cedo.');
+
+// Sem serviço amanhã → frases de decisão NUNCA disparam (nem com frio no digest)
+const vNoDuty = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 15 });
+check('sem serviço amanhã: nada de casaco', vNoDuty && vNoDuty.bold !== 'Leva o casaco.');
+
+// Vento ≥25 kt (hoje — o windKt é de agora, nunca promete amanhã)
+const vWind = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: { c: 16, min: 14, max: 18, icon: 'cloud', wind: 30 }, hour: 15 });
+eq('vento ≥25kt: chapéu', vWind, { bold: '30 nós lá fora.', tail: 'Segura o chapéu.' });
+
+// Calor ≥26° com sol → pede rua (abaixo disso fica a pool de sol normal)
+const vHot = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: { c: 27, min: 19, max: 27, icon: 'sun' }, hour: 11 });
+eq('calor ≥26 e sol: pede rua', vHot, { bold: '27° e sol.', tail: 'A folga pede rua.' });
+
+// Férias com sol ≥22°
+const vFer = stateVoice({ state: 'ferias', dateISO: '2026-07-09', wx: { c: 24, min: 18, max: 24, icon: 'sun' } });
+eq('férias com sol: zero responsabilidades', vFer, { bold: '24° e zero responsabilidades.', tail: 'Aproveita.' });
+
+// Noite continua a ganhar a TUDO (às 22h com serviço amanhã o estado real já é véspera — sem bilhete)
+const vNightCold = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22, ctx: { tmwReport: '05:30' } });
+eq('noite ganha às frases de decisão', vNightCold.bold, 'Noite tranquila.');
+
 console.log(`\nvoz do estado — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);
