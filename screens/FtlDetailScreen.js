@@ -1,10 +1,13 @@
+// DETALHE DE ARTIGO FTL — PORT À PELE (2026-07-09): anatomia de empurrado (PeleHeader ‹,
+// fantasma = o CÓDIGO do artigo em Barlow), tabelas com barra ink + zebra soft + hairlines,
+// valores em Barlow. RE-SKIN, NÃO REESCRITA: os dados (FTL_ARTICLES/limites/tabelas PSV/
+// definições — golden-tested em data/ftl) e a estrutura das secções estão intactos.
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { TYPE, GUTTER, TRACK_DISPLAY, FONT, RADIUS } from '../data/constants';
-import DetailTopBar from '../components/DetailTopBar';
-import Eyebrow from '../components/Eyebrow';
+import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import PeleHeader from '../components/PeleHeader';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import {
   FTL_ARTICLES, ftlSectionTitle,
@@ -12,23 +15,20 @@ import {
   FTL_LIMITS, FTL_DEFINITIONS, FTL_TABLE1,
 } from '../data/ftl';
 import { t, tx } from '../data/i18n';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 
 // Cabeçalho de tabela com dica de scroll horizontal.
 function TableTitle({ children }) {
-  const tb = makeTb(useTheme());
   return (
     <View style={tb.titleBar}>
       <Text style={tb.blockTitle}>{children}</Text>
-      <Ionicons name="swap-horizontal" size={14} color="rgba(255,255,255,0.7)" />
+      <Ionicons name="swap-horizontal" size={14} color={PELE.onInkSub} />
     </View>
   );
 }
 
 // ─── Quadro 1 · estado de aclimatação ────────────────────────────────────────
 function Table1({ lang }) {
-  const C = useTheme();
-  const tb = makeTb(C);
   return (
     <View style={tb.block}>
       <TableTitle>{t('ftl.table1', lang)}</TableTitle>
@@ -41,7 +41,7 @@ function Table1({ lang }) {
           {FTL_TABLE1.rows.map((r, ri) => (
             <View key={r.diff} style={[tb.row, ri % 2 === 1 && tb.zebra]}>
               <Text style={[tb.cell, tb.startCell]}>{r.diff}</Text>
-              {r.v.map((v, vi) => <Text key={vi} style={[tb.cell, tb.wideCell, { fontFamily: FONT.bold, color: C.text }]}>{v}</Text>)}
+              {r.v.map((v, vi) => <Text key={vi} style={[tb.cell, tb.wideCell, tb.strongCell]}>{v}</Text>)}
             </View>
           ))}
         </View>
@@ -57,7 +57,6 @@ function Table1({ lang }) {
 
 // ─── Tabela PSV (aclimatados) — scroll horizontal ────────────────────────────
 function PsvTable({ lang }) {
-  const tb = makeTb(useTheme());
   return (
     <View style={tb.block}>
       <TableTitle>{t('ftl.table2', lang)}</TableTitle>
@@ -81,7 +80,6 @@ function PsvTable({ lang }) {
 }
 
 function PsvUnknownTable({ title, values, lang }) {
-  const tb = makeTb(useTheme());
   return (
     <View style={tb.block}>
       <TableTitle>{title}</TableTitle>
@@ -103,8 +101,6 @@ function PsvUnknownTable({ title, values, lang }) {
 
 export default function FtlDetailScreen({ route, navigation }) {
   const { lang } = useContext(AppContext);
-  const C = useTheme();
-  const d = makeD(C);
   const code = route.params?.code;
   const a = FTL_ARTICLES.find(x => x.code === code);
   const tabSpace = useTabBarSpace();
@@ -114,11 +110,13 @@ export default function FtlDetailScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={d.safe} edges={['top']}>
-      <DetailTopBar onBack={() => navigation.goBack()} backLabel={t('common.back', lang)} />
+      <View style={d.head}>
+        {/* Fantasma = o CÓDIGO do artigo (o dado do ecrã); eyebrow = a secção da lei. */}
+        <PeleHeader size="detail" onBack={() => navigation.goBack()}
+          eyebrow={ftlSectionTitle(a.section, lang)} ghost={String(a.code)} />
+      </View>
 
-      <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]}>
-        <Eyebrow style={{ marginBottom: 4 }}>{ftlSectionTitle(a.section, lang)}</Eyebrow>
-        <Text style={d.code}>{a.code}</Text>
+      <ScrollView contentContainerStyle={[d.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
         <Text style={d.title}>{tx(a.title, lang)}</Text>
 
         {body.map((p, i) => (
@@ -142,7 +140,7 @@ export default function FtlDetailScreen({ route, navigation }) {
                   <Text style={d.boxTag}>{l.tag}</Text>
                   <Text style={d.boxLbl}>{tx(l.period, lang)}</Text>
                 </View>
-                <Text style={d.boxVal}>{l.value}</Text>
+                <Text style={d.boxVal} allowFontScaling={false}>{l.value}</Text>
               </View>
             ))}
           </View>
@@ -177,40 +175,41 @@ export default function FtlDetailScreen({ route, navigation }) {
   );
 }
 
-const makeTb = (C) => StyleSheet.create({
-  block: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden' },
-  titleBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.ink, paddingHorizontal: 10, paddingVertical: 10 },
-  blockTitle: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.8)', fontFamily: FONT.semibold },
+const tb = StyleSheet.create({
+  block: { marginTop: 18, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, overflow: 'hidden' },
+  titleBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: PELE.ink, paddingHorizontal: 10, paddingVertical: 10 },
+  blockTitle: { fontSize: 10.5, letterSpacing: 1.5, color: PELE.onInkFaint, fontFamily: PELE_FONT.bodyBold, textTransform: 'uppercase' },
   row: { flexDirection: 'row' },
-  headRow: { backgroundColor: C.soft },
-  zebra: { backgroundColor: C.soft },
-  cell: { width: 52, fontSize: 11, fontFamily: FONT.medium, color: C.text, textAlign: 'center', paddingVertical: 8, paddingHorizontal: 2 },
+  headRow: { backgroundColor: PELE.soft },
+  zebra: { backgroundColor: PELE.soft },
+  cell: { width: 52, fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, textAlign: 'center', paddingVertical: 8, paddingHorizontal: 2 },
   wideCell: { width: 78 },
-  startCell: { width: 92, textAlign: 'left', paddingLeft: 10, color: C.sub },
-  headCell: { color: C.sub, fontFamily: FONT.bold },
-  note: { fontSize: 11, color: C.sub, padding: 10, borderTopWidth: 1, borderTopColor: C.line },
-  legend: { padding: 10, borderTopWidth: 1, borderTopColor: C.line },
-  legendHead: { fontSize: 11, color: C.text, fontFamily: FONT.semibold, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
-  legendTxt: { fontSize: 11, color: C.sub, lineHeight: 17 },
-  legendAxis: { fontSize: 11, color: C.sub, lineHeight: 17, marginTop: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 8 },
+  startCell: { width: 92, textAlign: 'left', paddingLeft: 10, color: PELE.grey },
+  headCell: { color: PELE.grey, fontFamily: PELE_FONT.bodyBold },
+  strongCell: { fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  note: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, padding: 10, borderTopWidth: 1, borderTopColor: PELE.line },
+  legend: { padding: 10, borderTopWidth: 1, borderTopColor: PELE.line },
+  legendHead: { fontSize: 10.5, color: PELE.ink, fontFamily: PELE_FONT.bodyBold, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' },
+  legendTxt: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 17 },
+  legendAxis: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 17, marginTop: 8, borderTopWidth: 1, borderTopColor: PELE.line, paddingTop: 8 },
 });
 
-const makeD = (C) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.canvas },
+const d = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: PELE.paper },
+  head: { paddingHorizontal: GUTTER },
   scroll: { paddingHorizontal: GUTTER },
-  code: { fontSize: 26, letterSpacing: TRACK_DISPLAY, color: C.text, fontFamily: FONT.display },
-  title: { fontSize: 22, fontFamily: FONT.semibold, letterSpacing: -0.3, color: C.text, marginTop: 4, marginBottom: 18 },
-  paraTxt: { fontSize: TYPE.body, lineHeight: 22, color: C.text, marginBottom: 12 },
-  box: { marginTop: 18, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, overflow: 'hidden' },
-  boxTitle: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.8)', fontFamily: FONT.semibold, backgroundColor: C.ink, padding: 10 },
+  title: { fontSize: 17, fontFamily: PELE_FONT.bodyBold, letterSpacing: -0.2, color: PELE.ink, marginTop: 2, marginBottom: 16, lineHeight: 24 },
+  paraTxt: { fontSize: 13.5, fontFamily: PELE_FONT.bodyMed, lineHeight: 22, color: PELE.ink, marginBottom: 12 },
+  box: { marginTop: 18, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, overflow: 'hidden' },
+  boxTitle: { fontSize: 10.5, letterSpacing: 2, color: PELE.onInkFaint, fontFamily: PELE_FONT.bodyBold, backgroundColor: PELE.ink, padding: 10, textTransform: 'uppercase' },
   boxRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11 },
   boxRowCol: { paddingHorizontal: 12, paddingVertical: 11 },
-  boxDiv: { borderTopWidth: 1, borderTopColor: C.line },
-  boxTag: { fontSize: 11, letterSpacing: 1.5, color: C.red, fontFamily: FONT.bold },
-  boxLbl: { fontSize: 13, color: C.text, marginTop: 1 },
-  boxVal: { fontSize: 16, fontFamily: FONT.bold, color: C.text },
-  boxValSm: { fontSize: TYPE.label, fontFamily: FONT.medium, color: C.sub, marginTop: 3 },
-  defRow: { borderTopWidth: 1, borderTopColor: C.line, paddingVertical: 12 },
-  defTerm: { fontSize: 13, fontFamily: FONT.bold, color: C.text, marginBottom: 3 },
-  defTxt: { fontSize: 13, lineHeight: 19, color: C.sub },
+  boxDiv: { borderTopWidth: 1, borderTopColor: PELE.line },
+  boxTag: { fontSize: 10, letterSpacing: 1.5, color: PELE.grey, fontFamily: PELE_FONT.bodyHeavy, textTransform: 'uppercase' },
+  boxLbl: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, marginTop: 1 },
+  boxVal: { fontFamily: PELE_FONT.display, fontSize: 22, color: PELE.ink },
+  boxValSm: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
+  defRow: { borderTopWidth: 1, borderTopColor: PELE.line, paddingVertical: 12 },
+  defTerm: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginBottom: 3 },
+  defTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, lineHeight: 19, color: PELE.grey },
 });

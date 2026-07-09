@@ -68,7 +68,7 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 
 ## §5 · Tema antigo (legado em extinção)
 
-`useTheme()`/`makeStyles(C)`, Inter + Space Grotesk, escala `TYPE`. Ainda vivo em: **Onboarding · Hoteis · FtlDetail** *(o CORREDOR DE ENTRADA inteiro — Login, Lock, BiometricOffer, Reactivate — foi portado à pele 2026-07-09, mockups `login-3.html`/`login-fluxo.html` à letra, lógica auditada intacta)*. Regras:
+**✅ EXTINTO A NÍVEL DE ECRÃS (2026-07-09):** todos os screens da app estão na pele — o corredor de entrada (Login+signup, Lock, BiometricOffer, Reactivate), o Onboarding (reestruturado: conta primeiro no Login → funil de 6 perguntas pós-login, tudo obrigatório), Hotéis e FtlDetail fecharam a lista; `DetailTopBar`/`PageHeader`/`Eyebrow` (headers do tema antigo) apagados como órfãos. **Resíduo de componentes: ELIMINADO na raiz (2026-07-09)** — `PrimaryButton`/`GhostButton`/`Banner` foram PELE-FICADOS por dentro (tokens PELE, Hanken, spinner amarelo no primário; API intacta) → os 9 consumidores rendem pele sem tocar em call-sites; passam a ser componentes CANÓNICOS da pele. Regras:
 - Ecrã novo **nasce na pele**.
 - Ecrã legado não se "melhora" à peça — porta-se de uma vez, à letra do mockup correspondente, **re-skin não reescrita** (cálculos intactos).
 

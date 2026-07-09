@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!-- RASCUNHO gerado a 2026-07-09 a partir da arquitetura real da app.
+     NÃO é aconselhamento jurídico — rever por advogado antes de publicar.
+     Preencher os campos marcados com 【…】 e VERIFICAR as regiões dos subcontratantes. -->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Política de Privacidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#141414;--grey:#77776F;--line:#ECEAE4;--yellow:#FFB800;--soft:#F4F2ED}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink);background:#fff;line-height:1.65}
+  .wrap{max-width:760px;margin:0 auto;padding:56px 24px 90px}
+  .eye{font-size:11px;font-weight:800;letter-spacing:3px;color:var(--grey);text-transform:uppercase}
+  .rule{height:4px;width:120px;background:var(--yellow);margin:10px 0 14px}
+  h1{font-family:'Barlow Condensed';font-weight:800;font-size:44px;line-height:1;text-transform:uppercase;letter-spacing:.5px}
+  .meta{font-size:13px;color:var(--grey);margin-top:10px}
+  h2{font-family:'Barlow Condensed';font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.4px;margin:38px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:15px;font-weight:800;margin:16px 0 6px}
+  p,li,td,th{font-size:15px;color:#33322E;margin-bottom:10px}
+  ul{padding-left:22px;margin-bottom:10px}
+  b{color:var(--ink)}
+  .box{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+  .todo{background:#FFF6DC;border:1px solid #F2E2AC;border-radius:10px;padding:10px 14px;font-size:13px;color:#5C5232;margin:12px 0}
+  a{color:var(--ink);font-weight:700;text-decoration:underline;text-decoration-color:var(--yellow);text-decoration-thickness:2px}
+  .tblwrap{overflow-x:auto;margin:12px 0}
+  table{border-collapse:collapse;width:100%;min-width:560px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;margin:0}
+  th{background:var(--soft);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eye">FTL · AE · CREW</div>
+  <div class="rule"></div>
+  <h1>Política de Privacidade</h1>
+  <p class="meta">Última atualização: 【DATA DE PUBLICAÇÃO】 · Versão 1.0</p>
+
+  <div class="todo">【RASCUNHO】 Preparado a partir do funcionamento real da aplicação. Antes de publicar: preencher 【…】, <b>verificar a região de alojamento do Supabase e do Resend</b> (secções 6 e 9) e submeter a revisão por advogado.</div>
+
+  <h2>1 · Responsável pelo tratamento</h2>
+  <p>【NOME/ENTIDADE RESPONSÁVEL】, contactável em <a href="mailto:privacidade@crewpact.app">privacidade@crewpact.app</a> 【confirmar/criar este endereço; pode ser o mesmo suporte@】.</p>
+
+  <h2>2 · A nossa abordagem</h2>
+  <div class="box">
+    <p><b>Os cálculos acontecem no teu telemóvel.</b> Os limites FTL e as estimativas salariais são calculados no dispositivo — não existe um servidor a "analisar" a tua vida operacional.</p>
+    <p><b>Não vendemos dados, não fazemos publicidade, não criamos perfis para terceiros.</b> Tratamos o mínimo necessário para o serviço funcionar e sincronizar entre sessões.</p>
+  </div>
+
+  <h2>3 · Que dados tratamos</h2>
+  <div class="tblwrap">
+  <table>
+    <tr><th>Categoria</th><th>Exemplos</th><th>Onde vive</th><th>Finalidade</th></tr>
+    <tr><td><b>Conta</b></td><td>Nome, email, palavra-passe (armazenada de forma cifrada/hash pelo fornecedor de autenticação)</td><td>Servidor (Supabase)</td><td>Criar e proteger a tua conta; comunicações de serviço</td></tr>
+    <tr><td><b>Perfil profissional</b></td><td>Companhia, tipo de tripulação, categoria, contrato, frota, base, data de início na companhia</td><td>Servidor (metadados da conta)</td><td>Aplicar a lei FTL e o AE corretos ao teu caso</td></tr>
+    <tr><td><b>Escala / serviços</b></td><td>Datas, horas de report/voo, rotas, números de voo, tipo de serviço, pernoitas</td><td>Dispositivo + cópia sincronizada no servidor</td><td>Mostrar a tua escala em qualquer sessão; alimentar os cálculos no dispositivo</td></tr>
+    <tr><td><b>Validades de documentos</b></td><td>Apenas campos-chave introduzidos por ti (tipo, datas, referência)</td><td>Dispositivo</td><td>Avisar de expirações. <b>Não guardamos ficheiros nem fotografias de documentos.</b></td></tr>
+    <tr><td><b>Eventos de remuneração</b></td><td>Datas de férias, ausências, extras (ex.: dias de folga trabalhados)</td><td>Dispositivo</td><td>Estimativa salarial segundo o AE</td></tr>
+    <tr><td><b>Hotéis de pernoita</b></td><td>Nome/nota/telefone do hotel por estação</td><td>Dispositivo</td><td>Conveniência nas pernoitas</td></tr>
+    <tr><td><b>Partilha com família</b></td><td>Dados do voo partilhado (rota, horas, nº de voo) e a etiqueta que escolheres para a pessoa</td><td>Servidor (página pública temporária)</td><td>Ligação de acompanhamento que expira em 24 horas</td></tr>
+  </table>
+  </div>
+  <h3>O que deliberadamente NÃO tratamos</h3>
+  <ul>
+    <li><b>Dados de saúde:</b> não guardamos atestados, exames ou detalhes clínicos. Uma ausência por doença é registada apenas como datas, para efeito de cálculo salarial previsto no AE/lei laboral.</li>
+    <li><b>Dados de colegas:</b> ao importar a escala (calendário ou PDF), extraímos apenas os teus serviços — nomes de outros tripulantes nunca são extraídos nem guardados; cópias de PDF importadas são apagadas após a leitura.</li>
+    <li><b>Localização GPS:</b> não pedimos acesso à tua localização.</li>
+    <li><b>Biometria:</b> o Face ID/Touch ID é processado pelo sistema operativo do teu telemóvel; nunca recebemos dados biométricos.</li>
+  </ul>
+
+  <h2>4 · Permissões do dispositivo</h2>
+  <ul>
+    <li><b>Calendário (só leitura):</b> pedida quando ligas a escala; lemos apenas o calendário que escolheres e nunca escrevemos nele. Eventos pessoais sem estrutura de escala são ignorados.</li>
+    <li><b>Notificações:</b> para lembretes de serviço, alterações de escala e validades — configuráveis na app.</li>
+  </ul>
+
+  <h2>5 · Fundamentos jurídicos (RGPD art. 6.º)</h2>
+  <ul>
+    <li><b>Execução do contrato</b> — conta, sincronização da escala, funcionamento do serviço.</li>
+    <li><b>Consentimento</b> — acesso ao calendário, notificações, partilha com familiares (atos teus, revogáveis).</li>
+    <li><b>Interesse legítimo</b> — segurança do serviço, prevenção de abuso, correção de erros de cálculo com aviso aos afetados.</li>
+  </ul>
+
+  <h2>6 · Subcontratantes e destinatários</h2>
+  <div class="tblwrap">
+  <table>
+    <tr><th>Fornecedor</th><th>Serviço</th><th>O que recebe</th></tr>
+    <tr><td>Supabase</td><td>Autenticação e base de dados</td><td>Conta, perfil, escala sincronizada. Região de alojamento: 【VERIFICAR no dashboard — indicar p. ex. "UE (Frankfurt)"】</td></tr>
+    <tr><td>Resend</td><td>Envio de emails transacionais (códigos de verificação)</td><td>O teu email e o conteúdo desses emails</td></tr>
+    <tr><td>AirLabs</td><td>Estado de voos em tempo real</td><td>Número de voo e data — nunca a tua identidade</td></tr>
+    <tr><td>MET Norway</td><td>Meteorologia</td><td>Coordenadas de aeroportos (dados não pessoais)</td></tr>
+    <tr><td>Apple / Google</td><td>Distribuição da app e, futuramente, subscrições</td><td>Conforme as políticas das lojas</td></tr>
+  </table>
+  </div>
+  <p>Não vendemos nem cedemos dados a terceiros para marketing. Podemos divulgar dados se a lei o exigir.</p>
+
+  <h2>7 · Conservação e eliminação</h2>
+  <ul>
+    <li>Mantemos os dados enquanto a conta existir.</li>
+    <li><b>Apagar conta</b> (na app: Perfil → Segurança): a eliminação é agendada com um <b>período de graça de 7 dias</b> (podes reativar entrando de novo); findo o prazo, a conta e os dados no servidor são eliminados. Os dados locais no dispositivo são removidos no próprio ato.</li>
+    <li>Ligações de partilha com família expiram automaticamente em 24 horas.</li>
+    <li>Cópias de segurança técnicas são eliminadas nos ciclos normais do fornecedor.</li>
+  </ul>
+
+  <h2>8 · Os teus direitos (RGPD arts. 15.º–22.º)</h2>
+  <ul>
+    <li><b>Acesso e portabilidade</b> — botão "Exportar dados" na app (ficheiro com os teus dados).</li>
+    <li><b>Retificação</b> — editável diretamente no Perfil e na Escala.</li>
+    <li><b>Apagamento</b> — botão "Apagar conta" na app (art. 17.º).</li>
+    <li><b>Oposição e limitação</b> — contacta-nos.</li>
+    <li><b>Reclamação</b> — tens o direito de apresentar queixa à CNPD (<a href="https://www.cnpd.pt">cnpd.pt</a>).</li>
+  </ul>
+
+  <h2>9 · Segurança</h2>
+  <p>Usamos ligações cifradas (TLS), regras de acesso por utilizador na base de dados (cada conta só acede aos próprios dados), verificação de email no registo e re-autenticação para ações sensíveis (mudar email, apagar conta). Nenhum sistema é 100% seguro; em caso de violação de dados com risco para os utilizadores, notificaremos nos termos do RGPD.</p>
+
+  <h2>10 · Transferências internacionais</h2>
+  <p>Procuramos manter os dados na União Europeia. Quando um fornecedor processe dados fora do EEE, tal ocorre ao abrigo de garantias adequadas (cláusulas contratuais-tipo da UE). 【Confirmar as regiões do Supabase e do Resend e ajustar esta secção.】</p>
+
+  <h2>11 · Menores</h2>
+  <p>O serviço destina-se a profissionais de aviação e não é dirigido a menores de 16 anos.</p>
+
+  <h2>12 · Alterações</h2>
+  <p>Podemos atualizar esta política; alterações relevantes serão comunicadas na aplicação ou por email. A data no topo indica a versão em vigor.</p>
+
+  <h2>13 · Contacto</h2>
+  <p><a href="mailto:privacidade@crewpact.app">privacidade@crewpact.app</a></p>
+</div>
+</body>
+</html>

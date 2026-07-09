@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -538,6 +538,12 @@ export default function SettingsScreen({ navigation }) {
             <View style={{ flex: 1 }} />
             <Icon name="chevron" size={14} color={PELE.red} />
           </TouchableOpacity>
+          {/* Legal — acesso PERMANENTE aos termos/privacidade (a aceitação vive no criar conta). */}
+          <View style={s.legalRow}>
+            <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
+            <Text style={s.legalDot}>·</Text>
+            <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Privacidade', 'Privacy')}</Text>
+          </View>
           <Text style={s.foot}>CrewPact · v{appJson.expo.version}</Text>
         </Animated.View>
       </ScrollView>
@@ -986,4 +992,7 @@ const s = StyleSheet.create({
   logout: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 14, paddingVertical: 13, paddingHorizontal: 13, borderWidth: 1, borderColor: '#F0DDD9', backgroundColor: PELE.redSoft, borderRadius: 13 },
   logoutTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 12.5, color: PELE.red },
   foot: { textAlign: 'center', fontFamily: PELE_FONT.body, fontSize: 9.5, color: PELE.grey, marginTop: 16 },
+  legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
+  legalLink: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, textDecorationLine: 'underline', paddingVertical: 4 },
+  legalDot: { color: PELE.ghost, fontSize: 11 },
 });

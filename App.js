@@ -233,7 +233,7 @@ export default function App() {
   const [calendarName, setCalendarName] = useState(null);    // nome do calendário escolhido — só para o selo "Calendário · <nome>"
   const [splashHidden, setSplashHidden] = useState(false);   // splash nativo já escondido (controla a StatusBar)
   const [onboarded, setOnboarded] = useState(false);
-  const [signupMode, setSignupMode] = useState(false); // wizard de criação de conta (pré-auth → conta criada no fim)
+  // (signupMode MORREU 2026-07-09: o criar-conta é uma vista do LoginScreen — conta primeiro.)
 
   const [lang, setLang]                 = useState(() => { const c = getLocales?.()[0]?.languageCode?.toLowerCase(); return c === 'pt' ? 'pt' : 'en'; });   // device: PT→PT, resto→EN
   // Tema: por defeito segue o SISTEMA (como o idioma); uma escolha guardada no Perfil
@@ -1016,7 +1016,6 @@ export default function App() {
     calendarId, setCalendarId,
     calendarName, setCalendarName,
     onboarded, setOnboarded,
-    signupMode, setSignupMode,
     online,
   };
 
@@ -1027,7 +1026,9 @@ export default function App() {
         <ActivityIndicator color={palette.text} />
       </View>
     );
-    if (!user)       return signupMode ? <OnboardingScreen signup /> : <LoginScreen />;
+    // O criar-conta vive DENTRO do LoginScreen desde 2026-07-09 (conta primeiro → código →
+    // sessão); o OnboardingScreen é só o perfil PÓS-login (gate `onboarded` abaixo).
+    if (!user)       return <LoginScreen />;
     // Bloqueio biometria/PIN (opt-in): com sessão restaurada/timeout, exige
     // desbloqueio antes de mostrar qualquer dado. Camada por cima — não toca no
     // onboarding nem no fluxo de perfil.
