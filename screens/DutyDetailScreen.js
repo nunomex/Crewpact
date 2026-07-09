@@ -98,6 +98,27 @@ export default function DutyDetailScreen({ route, navigation }) {
     if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, ctxAll.crewFleet, date);
   }
   const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, date) : null;
+  // € do dia NÃO-VOO (auditoria 2026-07-11) — as MESMAS regras do motor mensal: treino
+  // presencial piloto = 3 NS (e-learning/cabine = 0) · terra OFC4/OFC8 (cabine rate único) ·
+  // ADTY pela matriz do Anexo I.5. AE sem o item → nada (não se inventa prestação).
+  const svcEur = (() => {
+    if (!ae || !catD || isFlight) return null;
+    if (kind === 'training') return (!duty.eLearning && ae.adhoc) ? { lbl: l('Formação (Art. 43)', 'Training (Art. 43)'), eur: ae.adhoc(catD, 1, date) } : null;
+    if (kind === 'office') {
+      if (duty.officeType === 'ofc8' && ae.office8) return { lbl: l('Dia de escritório (OFC8)', 'Office day (OFC8)'), eur: ae.office8(catD, 1, date) };
+      if (ae.office4) return { lbl: l('Dia de escritório (OFC4)', 'Office day (OFC4)'), eur: ae.office4(catD, 1, date) };
+      return ae.office ? { lbl: l('Trabalho em terra (Art. 70)', 'Ground duty (Art. 70)'), eur: ae.office(catD, date) } : null;
+    }
+    if (kind === 'standby_airport' && ae.airportStandby) {
+      const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(x || ''); return mm ? +mm[1] * 60 + +mm[2] : null; };
+      const r = m(duty.report_time), e = m(duty.block_on);
+      const dm = (r != null && e != null) ? (e >= r ? e - r : e + 1440 - r) : null;
+      const called = [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])].some((x) => x && (x.kind || 'flight') === 'flight');
+      const eur = ae.airportStandby(catD, { called, over4h: dm == null ? true : dm >= 240, ym: date });
+      return eur > 0 ? { lbl: 'ADTY (Anexo I.5)', eur } : null;
+    }
+    return null;
+  })();
 
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const fmtDate = (iso) => {
@@ -276,6 +297,7 @@ export default function DutyDetailScreen({ route, navigation }) {
         <Sec icon="wallet">{l('Pagamento · detalhes', 'Pay · details')}</Sec>
         <Panel rows={[
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: PELE.ok },
+          (svcEur != null) && { k: svcEur.lbl, v: `+${fmtEur0(svcEur.eur)}`, color: PELE.ok },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
           duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? PELE.ok : null },
           (() => {

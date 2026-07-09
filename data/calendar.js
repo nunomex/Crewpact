@@ -5,7 +5,7 @@
 // Heurísticas pensadas para escalas easyJet e TAP — ver ./calendarParse.
 import * as Calendar from 'expo-calendar';
 import { codesFor } from './rosterCodes';
-import { classify, mapFlight, mapNonFlight, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES } from './calendarParse';
+import { classify, mapFlight, mapNonFlight, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent } from './calendarParse';
 
 // Verifica a permissão SEM pedir (não dispara o prompt do sistema). As leituras de fundo
 // usam isto → nunca interrompem o utilizador. O prompt só acontece no botão "Ligar".
@@ -81,11 +81,15 @@ export async function getDutiesInRange(start, end, company, calendarId = null) {
 }
 
 // Duties SEM-VOO (standby/posicionamento/terra/formação) no intervalo [start, end].
+// `vacations` = dias LVE/ANL/VAC no calendário (únicos, ordenados) — o Confirmar-import
+// SUGERE-os como eventos de férias (o € do AE e o saldo 22 nascem de REGISTO deliberado;
+// aqui só se deteta, gravar é decisão do utilizador na folha).
 export async function getNonFlightInRange(start, end, company, calendarId = null) {
   const { ok, events } = await fetchEvents(start, end, calendarId);
-  if (!ok) return { ok: false, items: [] };
+  if (!ok) return { ok: false, items: [], vacations: [] };
   const codes = codesFor(company);
-  return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean) };
+  const vacations = [...new Set(events.flatMap((ev) => vacationDatesFromEvent(ev, codes)))].sort();
+  return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean), vacations };
 }
 
 // Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica. Para o utilizador

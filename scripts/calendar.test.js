@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { classify, mapFlight, mapNonFlight, isAllDayNoTime } = require(path.resolve('data/calendarParse.js'));
+const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent } = require(path.resolve('data/calendarParse.js'));
 const { codesFor } = require(path.resolve('data/rosterCodes.js'));
 const codes = codesFor('easyjet');
 
@@ -54,6 +54,21 @@ eq('P/T (dia de part-time) → off', classify('P/T', codes), 'off');
 eq('CBTB (e-learning, variante do CBT) → training', classify('CBTB', codes), 'training');
 eq('WD/O (variante de folga) → off', classify('WD/O LGW', codes), 'off');
 eq('LVE (férias) → off', classify('LVE', codes), 'off');
+
+// ── Sinais de €€ do AE lidos do texto (auditoria 2026-07-11) ──
+// CBT/CBTB = e-learning → Art. 43 paga 0 (sem a flag o piloto levava 3 NS a mais).
+eq('CBTB → eLearning true', mapNonFlight(ev('CBTB'), codes).eLearning, true);
+eq('SEP presencial → SEM eLearning', mapNonFlight(ev('SEP TRAINING LGW'), codes).eLearning, undefined);
+// OFC8 = dia inteiro de escritório → 3 NS (sem a flag pagava OFC4 = 1,5).
+eq('OFC8 → officeType ofc8', mapNonFlight(ev('OFC8 LGW'), codes).officeType, 'ofc8');
+eq('OFC simples → sem officeType', mapNonFlight(ev('OFC LGW'), codes).officeType, undefined);
+
+// ── LVE → dias de férias sugeridos (all-day multi-dia expande [início, fim)) ──
+eq('LVE all-day 3 dias → expande certo',
+  vacationDatesFromEvent(ev('LVE', { allDay: true, start: '2026-08-04T00:00:00', end: '2026-08-07T00:00:00' }), codes),
+  ['2026-08-04', '2026-08-05', '2026-08-06']);
+eq('LVE com horas (1 dia) → só o dia', vacationDatesFromEvent(ev('LVE'), codes), ['2026-07-01']);
+eq('voo NÃO gera férias', vacationDatesFromEvent(ev('EJU7625 LIS-FNC 06:40-08:15'), codes), []);
 // A guarda do MÊS: "SEP" colado a dígitos é data, não treino (o training testa antes do voo).
 eq('"01 SEP" (data) NÃO é treino', classify('CHECK-IN 01 SEP', codes) !== 'training', true);
 eq('"SEP 26" (data) NÃO é treino', classify('ROSTER SEP 26', codes) !== 'training', true);

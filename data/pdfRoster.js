@@ -97,7 +97,11 @@ export function parseEasyjetRoster(text, company) {
     } else if (kind === 'off') {
       diag.push({ iso: b.iso, kind: 'off', label: blob.match(codes.dayOff)?.[0] || 'off', route: null, report: null, sectors: 0 });
     } else if (kind !== 'other') {
-      nonflights.push({ dateISO: b.iso, kind, start: report, end: null });
+      // Sinais de €€ do AE (2026-07-11): CBT/CBTB = e-learning (Art. 43 paga 0 — sem a
+      // flag o piloto levava 3 NS a mais) · OFC8 = dia inteiro de escritório (3 NS).
+      const eLearning = kind === 'training' && /\bCBTB?\b/i.test(blob);
+      const ofc8 = kind === 'office' && /\bOFC\s?8\b/i.test(blob);
+      nonflights.push({ dateISO: b.iso, kind, start: report, end: null, ...(eLearning ? { eLearning: true } : {}), ...(ofc8 ? { officeType: 'ofc8' } : {}) });
       diag.push({ iso: b.iso, kind, label: kind, route: null, report, sectors: 0 });
     } else {
       diag.push({ iso: b.iso, kind: 'other', label: blob.slice(0, 24), route: null, report, sectors: 0, warn: 'não reconhecido' });

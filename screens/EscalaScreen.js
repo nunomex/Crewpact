@@ -596,6 +596,29 @@ export default function EscalaScreen({ navigation, route }) {
             let perDiem = null;
             if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet, dayIso); }
             const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, dayIso) : null;
+            // € do dia NÃO-VOO (auditoria 2026-07-11 — paridade de relance com o per-diem):
+            // as MESMAS regras do motor mensal: treino presencial piloto = 3 NS (Art. 43;
+            // e-learning = 0; cabine = 0 — Cl. 70 não cobre) · terra = OFC4/OFC8 piloto ou
+            // rate único cabine (Art. 70) · ADTY pela matriz do Anexo I.5 (chamado = há voo
+            // no dia; ±4h pela duração real). AE sem o item → nada (não se inventa prestação).
+            const svcEur = (() => {
+              if (!ae || !catD || isFlight) return null;
+              if (kind === 'training') return (!d.eLearning && ae.adhoc) ? { lbl: l('formação', 'training'), eur: ae.adhoc(catD, 1, dayIso) } : null;
+              if (kind === 'office') {
+                if (d.officeType === 'ofc8' && ae.office8) return { lbl: 'OFC8', eur: ae.office8(catD, 1, dayIso) };
+                if (ae.office4) return { lbl: 'OFC4', eur: ae.office4(catD, 1, dayIso) };
+                return ae.office ? { lbl: l('terra', 'ground'), eur: ae.office(catD, dayIso) } : null;
+              }
+              if (kind === 'standby_airport' && ae.airportStandby) {
+                const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(x || ''); return mm ? +mm[1] * 60 + +mm[2] : null; };
+                const r = m(d.report_time), e = m(d.block_on);
+                const dm = (r != null && e != null) ? (e >= r ? e - r : e + 1440 - r) : null;
+                const called = services.some((x) => x && (x.kind || 'flight') === 'flight');
+                const eur = ae.airportStandby(catD, { called, over4h: dm == null ? true : dm >= 240, ym: dayIso });
+                return eur > 0 ? { lbl: 'ADTY', eur } : null;
+              }
+              return null;
+            })();
             const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
             const end = so != null ? so : (onM != null ? onM + (isFlight ? pf : 0) : null);   // débrief só em voo (235c)
             const endsNext = end != null && rm != null && (end % 1440) < rm;   // serviço acaba no dia seguinte
@@ -636,16 +659,17 @@ export default function EscalaScreen({ navigation, route }) {
                   {d.flight_minutes ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Block hours</Text><Text style={s.dsMiVal}>{minToHhmm(d.flight_minutes)}</Text></View> : null}
                   {dutyMin != null ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Duty hours</Text><Text style={s.dsMiVal}>{minToHhmm(dutyMin)}{endsNext ? ' ⁺¹' : ''}</Text></View> : null}
                 </View>
-                {(perDiem != null || nsEur != null) ? (
+                {(perDiem != null || nsEur != null || svcEur != null) ? (
                   <View style={s.dsPay}>
                     <View style={{ flex: 1 }}>
                       <Text style={s.dsPayLbl}>{multi ? l('Ganhos do serviço', 'Service earnings') : l('Ganhos do dia', 'Day earnings')}</Text>
                       <Text style={s.dsPayBreak}>{[
                         perDiem != null ? `${l('per-diem', 'per diem')} +${fmtEur(perDiem)}` : null,
+                        svcEur != null ? `${svcEur.lbl} +${fmtEur(svcEur.eur)}` : null,
                         nsEur != null ? `🌙 +${fmtEur(nsEur)}` : null,
                       ].filter(Boolean).join('  ·  ')}</Text>
                     </View>
-                    <Text style={s.dsPayTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0))}</Text>
+                    <Text style={s.dsPayTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0) + (svcEur ? svcEur.eur : 0))}</Text>
                   </View>
                 ) : null}
                 {/* Serviço EXTRA (idx>0): editar/apagar individual (a primária trata-se nos botões de baixo). */}

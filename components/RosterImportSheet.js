@@ -38,7 +38,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base, aeEvents, addAeEvents } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -53,6 +53,11 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const [diag, setDiag] = useState(null);   // diagnóstico: o que o calendário (eCrew) tem
   const [pasteDiag, setPasteDiag] = useState(null);  // resumo por dia do PDF lido
   const [correcting, setCorrecting] = useState(null);          // candidato em correção (modo candidato do DutyFormSheet)
+  // FÉRIAS detetadas no calendário (LVE/ANL/VAC) — sugeridas como EVENTOS vacDays no
+  // confirmar (auditoria 2026-07-11: sem isto, o € do mês e o saldo 22 não batiam para
+  // quem sincroniza por calendário). Só dias ainda SEM evento de férias; opt-out à vista.
+  const [vacDates, setVacDates] = useState([]);
+  const [vacSel, setVacSel] = useState(true);
 
   const load = async (opt) => {
     setLoading(true); setDenied(false);
@@ -63,6 +68,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!fl.ok && !nf.ok) setDenied(true);
+    setVacDates((nf.vacations || []).filter((d) => !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === d)));
+    setVacSel(true);
     setCands(next);
     setLoading(false);
   };
@@ -203,11 +210,14 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         saveDuty(c.duty.duty_date, importSaveFields(c, src, duties[c.duty.duty_date]?.extra));
         if (c.status === 'warn') warn++;
       }
+      // FÉRIAS sugeridas (calendário): registo deliberado — só com o toggle ligado.
+      const vacAdded = (src === 'calendar' && vacSel && vacDates.length && addAeEvents) ? vacDates.length : 0;
+      if (vacAdded) addAeEvents(vacDates.map((d) => ({ date: d, type: 'vacDays' })));
       success();
       const saved = saves.length;
       const ignored = fixCount;   // os "a corrigir" ficaram de fora
-      const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}.`,
-        `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}.`);
+      const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}${vacAdded ? ` · ${vacAdded} dia(s) de férias registados` : ''}.`,
+        `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}${vacAdded ? ` · ${vacAdded} leave day(s) logged` : ''}.`);
       if (onDone) {
         // Sucesso normal → fecha e devolve o resultado à Escala (mostra o toast flutuante).
         onClose(); onDone({ saved, source: src });
@@ -303,6 +313,18 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                   <Text style={[s.summS, fixCount ? { color: C.warnText } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
                 </View>
               </View>
+              {/* FÉRIAS detetadas (LVE/ANL/VAC) → sugerir como EVENTOS (o € e o saldo 22
+                  nascem de registo). Toggle à vista — desligar = não regista nada. */}
+              {source === 'calendar' && vacDates.length ? (
+                <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setVacSel((v) => !v)}
+                  accessibilityRole="checkbox" accessibilityState={{ checked: vacSel }}>
+                  <View style={[s.vacTick, vacSel && s.vacTickOn]}>{vacSel ? <Ionicons name="checkmark" size={13} color="#141414" /> : null}</View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.vacT}>{l(`Férias no calendário: ${vacDates.length} dia(s)`, `Leave in the calendar: ${vacDates.length} day(s)`)}</Text>
+                    <Text style={s.vacS} numberOfLines={1}>{`${vacDates[0]} → ${vacDates[vacDates.length - 1]}`} · {l('registar como eventos de férias (AE + saldo)', 'log as leave events (CLA + balance)')}</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
               {infos.map(({ c, info }) => {
                 const ic = info.kind === 'ready' ? { name: 'checkmark', bg: C.greenSoft || C.soft, fg: C.green }
                   : info.kind === 'removed' ? { name: 'close', bg: C.redSoft || C.soft, fg: C.red }
@@ -442,5 +464,11 @@ const makeStyles = (C) => StyleSheet.create({
   summT: { fontSize: TYPE.value, fontFamily: FONT.heavy, color: C.text },
   summS: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.sub, marginTop: 2, lineHeight: 17 },
   fixHint: { fontSize: 12, fontFamily: FONT.medium, color: C.warnText, textAlign: 'center', marginTop: 10 },
+  // Linha das FÉRIAS sugeridas (LVE do calendário → eventos): tick amarelo = a marca de escolha da pele.
+  vacRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft, borderRadius: 14, padding: 12, marginBottom: 10 },
+  vacTick: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
+  vacTickOn: { backgroundColor: '#FFB800', borderColor: '#FFB800' },
+  vacT: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
+  vacS: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
 });

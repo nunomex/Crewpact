@@ -108,6 +108,11 @@ export function mapNonFlight(ev, codes) {
   if (isAllDayNoTime(ev, text)) return null;            // dia-inteiro sem horas → não é serviço
   const start = new Date(ev.startDate);
   const finish = new Date(ev.endDate);
+  // Sinais que mudam o €€ do AE (2026-07-11, auditoria do dinheiro): CBT/CBTB = e-learning
+  // → Art. 43 paga 0 (sem a flag, o piloto levava 3 NS a mais); OFC8 = dia inteiro de
+  // escritório → 3 NS (sem a flag pagava OFC4 = 1,5). Vêm do TEXTO do evento.
+  const eLearning = kind === 'training' && /\bCBTB?\b/i.test(text);
+  const ofc8 = kind === 'office' && /\bOFC\s?8\b/i.test(text);
   return {
     kind,
     dateISO: isoLocal(start),
@@ -116,7 +121,27 @@ export function mapNonFlight(ev, codes) {
     end: hhmm(finish),
     startDate: start,
     endDate: finish,
+    ...(eLearning ? { eLearning: true } : {}),
+    ...(ofc8 ? { officeType: 'ofc8' } : {}),
   };
+}
+
+// Dias de FÉRIAS de um evento (LVE/ANL/VAC) — para o Confirmar-import SUGERIR o bloco
+// como eventos vacDays (o € do AE e o saldo 22 nascem de REGISTO; isto só sugere, não
+// grava). Aceita all-day multi-dia (o bloco típico das férias) → expande dia a dia.
+export function vacationDatesFromEvent(ev, codes) {
+  const text = eventText(ev);
+  if (!/\b(LVE|ANL|VAC)\b/i.test(text)) return [];
+  if (codes.dayOff && !codes.dayOff.test(text)) return [];   // guarda: tem de ser folga/ausência
+  const out = [];
+  const start = new Date(ev.startDate);
+  const end = new Date(ev.endDate);
+  // All-day termina à meia-noite do dia seguinte → [start, end); com horas → só o dia de início.
+  const last = ev.allDay ? new Date(end.getTime() - 1) : start;
+  for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= last; d.setDate(d.getDate() + 1)) {
+    out.push(isoLocal(d));
+  }
+  return out;
 }
 
 // ── Atividades (agrupamento de setores) ──────────────────────────────────────

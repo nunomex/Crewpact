@@ -17,7 +17,7 @@ export const isNightStop = (route, base, sectors) => {
 
 // Serviço-irmão (forma de `extra`): normaliza uma duty-row para os campos de um serviço do dia.
 // Partilhado por buildImportCandidates (merge do sheet) e buildIncoming (merge da auto-deteção).
-const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null });
+const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null, ...(d.eLearning ? { eLearning: true } : {}), ...(d.officeType ? { officeType: d.officeType } : {}) });
 
 // Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
 // → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
@@ -96,6 +96,9 @@ export const dutyFromNonFlight = (it) => {
     sectors: 0,
     flight_minutes: 0,
     route: null,
+    // Sinais de €€ do AE lidos do calendário/PDF (e-learning paga 0 · OFC8 paga 3 NS).
+    ...(it.eLearning ? { eLearning: true } : {}),
+    ...(it.officeType ? { officeType: it.officeType } : {}),
   };
 };
 
@@ -192,6 +195,10 @@ export const importSaveFields = (c, source = 'calendar', existingExtra = null) =
     sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route,
     kind: c.kind, nightStop: !!d.nightStop, source, snap, legs: d.legs || null,
     extra: extra.length ? extra : null,
+    // Sinais de €€ do AE (auditoria 2026-07-11): sem eles o motor sobre/subpagava
+    // (CBT importado pagava 3 NS de formação; OFC8 pagava só OFC4).
+    ...(d.eLearning ? { eLearning: true } : {}),
+    ...(d.officeType ? { officeType: d.officeType } : {}),
   };
 };
 
