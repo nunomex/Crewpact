@@ -19,8 +19,9 @@ export const ROSTER_CODES = {
     training:       /\b(SIM|TRG|RECURRENT|CBT|GS|CEET|CRM|DG|AVSEC|RTW|LPC|OPC)\b|(?<![\d/][\s/]?)\bSEP\b(?!\s?\d)/i,
     office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN|MTG)\b/i,       // terra/escritório/reunião
     // DOWE (folga de fim de semana) é o crítico: sem ele, uma folga era proposta como
-    // serviço no import. SICK/MAT/UPL = ausências (também não são duty).
-    dayOff:         /\bFTGD\b|D\/O|\bRDO\b|\bANL\b|\bVAC\b|\bLVE\b|\bDOWE\b|\bSICK\b|\bMAT\b|\bUPL\b/i,
+    // serviço no import. SICK/MAT/UPL = ausências. GDO (golden day off — folga protegida)
+    // e P/T (dia não-trabalhado do part-time) vieram do calendário REAL do founder (2026-07-11).
+    dayOff:         /\bFTGD\b|D\/O|\bRDO\b|\bANL\b|\bVAC\b|\bLVE\b|\bDOWE\b|\bSICK\b|\bMAT\b|\bUPL\b|\bGDO\b|\bP\/T\b/i,
   },
   // jet2 / volotea / wizz / hifly → acrescentar aqui (com o diagnóstico).
 };
