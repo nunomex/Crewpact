@@ -40,7 +40,8 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
       if ((s.kind || 'flight') !== 'flight') continue;
       const dists = routeDistancesNM(s.route);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
-      total += ae.perDiem(category, dists, index, fleet);   // `fleet` (TAP: WB/NB → coluna A); easyJet ignora o 4.º arg
+      // `fleet` (TAP: WB/NB → coluna A); `date` = tabela do AE em vigor NESSE dia (linha do tempo).
+      total += ae.perDiem(category, dists, index, fleet, date);
       withRoute++;
     }
   }
@@ -54,7 +55,9 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
 export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, index = 1 } = {}) => {
   if (!ae || !category || !ae.SECTOR_BANDS) return null;
   const bands = ae.SECTOR_BANDS;
-  const nominal = ((ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[category]) || 0) * index;
+  // Setor nominal do MÊS pedido (linha do tempo das tabelas); sem tableAt = tabela plana.
+  const noms = (ae.tableAt ? ae.tableAt(ym).NOMINAL_SECTOR : ae.NOMINAL_SECTOR) || ae.NOMINAL_SECTOR;
+  const nominal = ((noms && noms[category]) || 0) * index;
   const byBand = {};
   bands.forEach((b) => { byBand[b.id] = 0; });
   let total = 0, withRoute = 0, missing = 0, count = 0;
@@ -85,12 +88,13 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
 //   'instr'    → €/dia (AE piloto Art. 42)          'cclt' → €/dia de treino (Cl. 35)
 //   'upranker' → €/SETOR do serviço (Cl. 34)         'cti'  → €/dia, 4 NS (Cl. 35)
 // Devolve 0 quando o AE não tem o item (TAP) — não se inventa prestação.
-export const roleEurFor = (ae, category, role, sectors = 0) => {
+// `ym` (opcional) data o cálculo — tabela do AE em vigor nesse mês (linha do tempo).
+export const roleEurFor = (ae, category, role, sectors = 0, ym) => {
   if (!ae || !role) return 0;
-  if (role === 'instr' && ae.instructor) return ae.instructor();
-  if (role === 'upranker' && ae.upranker) return +(ae.upranker() * Math.max(0, Number(sectors) || 0)).toFixed(2);
-  if (role === 'cclt' && ae.cclt) return ae.cclt();
-  if (role === 'cti' && ae.ctiFlexi) return ae.ctiFlexi(category);
+  if (role === 'instr' && ae.instructor) return ae.instructor(ym);
+  if (role === 'upranker' && ae.upranker) return +(ae.upranker(ym) * Math.max(0, Number(sectors) || 0)).toFixed(2);
+  if (role === 'cclt' && ae.cclt) return ae.cclt(ym);
+  if (role === 'cti' && ae.ctiFlexi) return ae.ctiFlexi(category, ym);
   return 0;
 };
 
@@ -156,7 +160,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         // item (ex. TAP) → 0: não se inventa prestação que o acordo não tem.
         if (ae.airportStandby) {
           const dm = svcDurMin(s);
-          adtyEur += ae.airportStandby(category, { called: dayHasFlight, over4h: dm == null ? true : dm >= 240, index });
+          adtyEur += ae.airportStandby(category, { called: dayHasFlight, over4h: dm == null ? true : dm >= 240, index, ym: date });
           adtyDays++;
         }
         continue;
@@ -167,7 +171,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       if (kind === 'flight' || kind === 'training') {
         const role = s.role || (s.instructor ? 'instr' : null);
         if (role) {
-          const eur = roleEurFor(ae, category, role, s.sectors);
+          const eur = roleEurFor(ae, category, role, s.sectors, date);
           if (eur > 0) { instrEur += eur; instructorDaysAuto++; }
         } else if (kind === 'training' && !s.eLearning && ae.ADHOC_SECTORS) {
           // FORMANDO em formação de terra/simulador = 3 NS (Art. 43 piloto; só e-learning=0).
@@ -182,7 +186,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       // ADTY pelo tempo de standby (só quando não há duty de standby à parte no mesmo dia).
       const ps = s.special && s.special.preStandby;
       if (ae.airportStandby && !dayHasSb && ps && ps.type === 'airport' && Number(ps.standbyH) > 0) {
-        adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index });
+        adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index, ym: date });
         adtyDays++;
       }
       const dists = routeDistancesNM(s.route);
@@ -191,11 +195,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       withRoute++;
     }
   }
-  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet });
+  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet, ym });
   // DDO/WFLY/IDO derivados das condições — valorizados pelo monthExtras do próprio AE (a
   // lei). AE sem o item (ex. TAP) → monthExtras ignora a chave → 0 (não se inventa prestação).
   const condEur = (ddoDaysAuto || wflyDaysAuto || idoDaysAuto) && ae.monthExtras
-    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index }).total).toFixed(2)
+    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index, ym }).total).toFixed(2)
     : 0;
   const plusEur = +(adtyEur + instrEur + condEur).toFixed(2);
   if (plusEur) {
@@ -213,7 +217,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet } = {}) => {
   if (!ae || !category) return null;
   const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet });
-  const baseTotal = m ? m.total : (ae.monthlyBase ? ae.monthlyBase(category, { contract, index }) : 0);
-  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index }) : null;
+  const baseTotal = m ? m.total : (ae.monthlyBase ? ae.monthlyBase(category, { contract, index, ym }) : 0);
+  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);
 };

@@ -18,7 +18,7 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
     const k = ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS.find((x) => x.id === type) : null;
     return (k && k.label && (k.label[lang] || k.label.pt)) || type;
   };
-  const rate = (type, date) => { const cat = date ? crewAt(String(date).slice(0, 7)).category : null; return (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [type]: 1 }).total : null; };   // categoria EFETIVA-DATADA (crewAt), não a plana
+  const rate = (type, date) => { const ym = date ? String(date).slice(0, 7) : null; const cat = ym ? crewAt(ym).category : null; return (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [type]: 1 }, { ym }).total : null; };   // categoria E tabela do AE EFETIVA-DATADAS (crewAt + linha do tempo)
   const fmtEur = (n) => {
     if (n == null) return '—';
     const [i, d] = Number(n).toFixed(2).split('.');

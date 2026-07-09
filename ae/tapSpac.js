@@ -16,6 +16,8 @@
 // (default = (1.03)^(ano-2023), EDITÁVEL, sempre marcado "estimado"). Per-diem (A-3.2) e
 // comando em cruzeiro NÃO são indexados (tabelas inalteradas) → golden e exatos.
 
+import { pickTable } from './tables';
+
 export const AE_ID = 'tap-spac';
 export const AE_LABEL = 'TAP · SPAC (pilotos)';
 
@@ -78,7 +80,6 @@ export const PER_DIEM = {
 // SUB-modela um piloto de WB que faça um setor curto (a regra é "WB cobra sempre WB"). O 2000 NM
 // NÃO vem da fonte — é o limiar-proxy do modelo.
 export const LC_THRESHOLD_NM = 2000;
-const perDiemRow = (cat) => (cat === 'CTE' ? PER_DIEM.CTE : PER_DIEM.OP);
 
 // Frota do piloto — o TAP distingue WB (wide-body) vs NB (narrow-body) p/ a COLUNA de
 // per-diem A (a regra do AE: "piloto de WB cobra sempre WB"). Atributo de perfil (estável),
@@ -98,45 +99,64 @@ export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
 
 const r2 = (n) => +(+n).toFixed(2);
-const vbOf = (cat, index = 1) => (VB_2023[cat] || 0) * index;
+
+// Vencimentos por função / hora (não indexados a não ser via VB).
+export const COMANDO_EUR = 200;                 // Comando em cruzeiro (cl. 11.ª) — €/setor > 3h
+
+// ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
+// Cada entrada = os VALORES publicados com efeitos a partir de `from` (fonte BTE).
+// UMA entrada hoje (Tabela A-3 do BTE 29/2023 — nenhum número sem fonte, Constituição
+// §6); revisão/novo AE ACRESCENTA entrada, nunca reescreve. A regra de atualização
+// anual do VB (`index`, +3%/ano estimado) é ORTOGONAL: multiplica o VB desta tabela.
+// `VB` = a Tabela A-3.1 do degrau (aqui, os valores-base 2023).
+export const TABLE_VERSIONS = [{
+  from: '2023-01-01', label: 'RRRGS Anexo 3 · Tabelas A-3.1/A-3.2 (BTE 29/2023)',
+  VB: VB_2023, VE_PCT, VS_PCT, PER_DIEM, LC_THRESHOLD_NM, COMANDO_EUR,
+}];
+export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+
+const vbOf = (cat, index = 1, T = tableAt()) => (T.VB[cat] || 0) * index;
+const rowOf = (cat, T = tableAt()) => (cat === 'CTE' ? T.PER_DIEM.CTE : T.PER_DIEM.OP);
 
 // Remuneração base mensal (€) = VB × índice × (1 + VE 2%) × fração do contrato. VS (1,5%,
 // só comandantes seniores) fica à parte (depende de antiguidade). VB já é MENSAL (≠ easyJet,
 // que divide o anual por 14); os subsídios de férias/Natal são prestações à parte.
-export const monthlyBase = (cat, { contract = '12/12', index = 1 } = {}) =>
-  r2(vbOf(cat, index) * (1 + VE_PCT) * contractFactor(contract));
+// `ym` data o mês (tabela em vigor); sem ele = tabela atual.
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
+  const T = tableAt(ym);
+  return r2(vbOf(cat, index, T) * (1 + T.VE_PCT) * contractFactor(contract));
+};
 
 // Per diem (€) de UM dia de serviço de voo (Tabela A-3.2). distancesNM = setores do dia
 // (a app passa 1 duty/dia). TAP paga POR DIA, não por setor → devolve UM valor de Per diem A.
 // `fleet`: 'WB' cobra SEMPRE a coluna WB/LC-NB (regra "WB cobra sempre WB"); 'NB'/ausente
 // cobra por operação (long-courier ≥ LC_THRESHOLD → WB/LC-NB; senão MC-NB). Não indexado.
-export const perDiem = (cat, distancesNM = [], _index = 1, fleet) => {
+export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym) => {
   if (!distancesNM || !distancesNM.length) return 0;
-  const row = perDiemRow(cat);
+  const T = tableAt(ym);
+  const row = rowOf(cat, T);
   if (fleet === 'WB') return row.A_lc;
   const valids = distancesNM.map(Number).filter((d) => isFinite(d) && d > 0);
   const maxNM = valids.length ? Math.max(...valids) : 0;
-  return maxNM >= LC_THRESHOLD_NM ? row.A_lc : row.A_mc;
+  return maxNM >= T.LC_THRESHOLD_NM ? row.A_lc : row.A_mc;
 };
 
 // Pernoita: TAP NÃO tem abono de pernoita em dinheiro. A estadia rende Per diem B (coluna
 // WB/NB) + hotel pago pela empresa. Modelamos a pernoita = Per diem B (CTE 180 / OP 135).
-export const nightStop = (cat, _index = 1) => perDiemRow(cat).B;
+export const nightStop = (cat, _index = 1, ym) => rowOf(cat, tableAt(ym)).B;
 
-// Vencimentos por função / hora (não indexados a não ser via VB).
-export const COMANDO_EUR = 200;                 // Comando em cruzeiro (cl. 11.ª) — €/setor > 3h
-export const comando = () => COMANDO_EUR;
-export const vs = (cat, index = 1) => r2(VS_PCT * vbOf(cat, index));            // senioridade — €/mês
+export const comando = (ym) => tableAt(ym).COMANDO_EUR;
+export const vs = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * vbOf(cat, index, T)); };   // senioridade — €/mês
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.
-export const hourly = (cat, limit = 1, index = 1) => r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index));
+export const hourly = (cat, limit = 1, index = 1, ym) => r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, tableAt(ym)));
 
 // Estimativa mensal de apoio (€): base (VB+VE) + per diems do mês + pernoitas (Per diem B).
 //   duties = array de serviços (cada um = array de distâncias NM das pernas do dia).
 //   nightStops = nº de pernoitas; extraSectors = ignorado (TAP não usa setor nominal).
-export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, fleet } = {}) => {
-  const base = monthlyBase(category, { contract, index });
-  const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, fleet), 0));
-  const nightTotal = r2(nightStops * nightStop(category));
+export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, fleet, ym } = {}) => {
+  const base = monthlyBase(category, { contract, index, ym });
+  const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, fleet, ym), 0));
+  const nightTotal = r2(nightStops * nightStop(category, 1, ym));
   const extras = 0;   // TAP não tem prestação por setor nominal (escritório/ADTY cobertos por per diem A)
   const variable = r2(perDiemTotal + nightTotal + extras);
   return {
@@ -185,16 +205,16 @@ export const EXTRA_KINDS = [
   { id: 'hoursL2',        calc: 'hourly2', per: 'hour',  label: { pt: 'Horas de voo (Limite 2)',          en: 'Flight hours (Limit 2)' } },
 ];
 const EXTRA_VALUE = {
-  comandoSectors: () => COMANDO_EUR,
-  hoursL1: (cat, index) => hourly(cat, 1, index),
-  hoursL2: (cat, index) => hourly(cat, 2, index),
+  comandoSectors: (cat, index, ym) => comando(ym),
+  hoursL1: (cat, index, ym) => hourly(cat, 1, index, ym),
+  hoursL2: (cat, index, ym) => hourly(cat, 2, index, ym),
 };
-export const monthExtras = (cat, counts = {}, { index = 1 } = {}) => {
+export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat, index) || 0;
+    const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;

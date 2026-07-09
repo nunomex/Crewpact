@@ -156,7 +156,7 @@ export default function SettingsScreen({ navigation }) {
   const aeIndex = (ae && ae.indexFactor) ? ae.indexFactor(now.getFullYear()) : 1;   // indexação 2025+ (Anexo I)
   const aeMonth = (ae && crewCategory) ? monthlyAe(duties, crewCategory, crewContract, ae, { ym, index: aeIndex, fleet: crewFleet }) : null;
   // Extras do mês (caminho único = Home/Cálculos). aeMonth.total já inclui abono (cabine).
-  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index: aeIndex }) : null;
+  const aeXt = (ae && ae.monthExtras && crewCategory) ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index: aeIndex, ym }) : null;
   const aeTotal = aeMonth ? +(aeMonth.total + (aeXt ? aeXt.total : 0)).toFixed(2) : null;
   const aeExtrasShown = aeMonth ? +(aeMonth.extras + (aeXt ? aeXt.total : 0)).toFixed(2) : 0;
   const fmtEur = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };

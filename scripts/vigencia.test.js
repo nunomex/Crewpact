@@ -79,6 +79,23 @@ for (const { id, mod } of MODULES) {
   }
 }
 
+// ── Linha do tempo das TABELAS (effective-dating, 2026-07-10) — integridade estrutural ──
+// Cada módulo AE tem de expor TABLE_VERSIONS (≥1 entrada, `from` AAAA-MM-DD, ordem
+// ascendente) + tableAt. Sem isto, uma revisão futura não teria onde assentar → FALHA.
+for (const { id, mod } of MODULES) {
+  const tv = mod.TABLE_VERSIONS;
+  if (!Array.isArray(tv) || !tv.length || typeof mod.tableAt !== 'function') {
+    failures++;
+    lines.push(`  ✗ ${id} — SEM linha do tempo de tabelas (TABLE_VERSIONS/tableAt) — estrutura de revisão em falta.`);
+    continue;
+  }
+  const badFrom = tv.find((v) => !/^\d{4}-\d{2}-\d{2}$/.test(v.from || ''));
+  if (badFrom) { failures++; lines.push(`  ✗ ${id} — entrada da linha do tempo com \`from\` inválido: "${badFrom.from}".`); continue; }
+  const unsorted = tv.some((v, i) => i > 0 && v.from <= tv[i - 1].from);
+  if (unsorted) { failures++; lines.push(`  ✗ ${id} — TABLE_VERSIONS fora de ordem ascendente por \`from\`.`); continue; }
+  lines.push(`  ✓ ${id} — linha do tempo de tabelas OK (${tv.length} versão/versões · última: ${tv[tv.length - 1].from}).`);
+}
+
 // ── Fontes FTL (lei) — NÃO expiram; governa-se a REVERIFICAÇÃO (lastVerified) e as questões
 //    abertas (needsReview). Avisos NÃO bloqueiam (só os AE caducados sem reconhecimento bloqueiam). ──
 const { FTL_SOURCES } = require(path.resolve('ftl/sources.js'));

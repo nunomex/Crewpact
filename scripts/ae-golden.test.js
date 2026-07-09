@@ -617,6 +617,45 @@ eq('TAP cabine categoria CAB0 pt', tapCabin.categoryLabel('CAB0', 'pt'), 'Tripul
 eq('TAP cabine categoria SC1 en', tapCabin.categoryLabel('SC1', 'en'), 'Supervisor (S/C 1)');
 eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
 
+// ═══ LINHA DO TEMPO DAS TABELAS (effective-dating, 2026-07-10) ═══
+// O resolvedor (ae/tables.js) + a identidade: com UMA versão por módulo, calcular
+// com/sem `ym` tem de dar EXATAMENTE o mesmo € — prova de que a estrutura não
+// mexeu no dinheiro. Fronteiras testadas com uma linha do tempo SINTÉTICA (o
+// segundo degrau real entra quando um acordo novo for publicado, com fonte).
+{
+  const { pickTable } = require(path.resolve('ae/tables.js'));
+  const vs = [{ from: '2024-02-01', v: 1 }, { from: '2025-11-01', v: 2 }];
+  eq('tables: sem data → última', pickTable(vs).v, 2);
+  eq('tables: antes da 1.ª → clamp à 1.ª', pickTable(vs, '2023-06').v, 1);
+  eq('tables: mês do from (dia 1) → nova', pickTable(vs, '2025-11').v, 2);
+  eq('tables: véspera do degrau → antiga', pickTable(vs, '2025-10-31').v, 1);
+  eq('tables: mês do 1.º from → 1.ª', pickTable(vs, '2024-02').v, 1);
+  eq('tables: muito depois → última', pickTable(vs, '2030-01-15').v, 2);
+  eq('tables: vazio → null', pickTable([], '2025-01'), null);
+
+  const MODULES = [
+    ['easyJet piloto', ae], ['easyJet cabine', cabin],
+    ['TAP piloto', tapPilot], ['TAP cabine', tapCabin],
+  ];
+  for (const [name, m] of MODULES) {
+    const tv = Array.isArray(m.TABLE_VERSIONS) ? m.TABLE_VERSIONS : [];
+    eq(`${name}: TABLE_VERSIONS existe (≥1)`, tv.length >= 1, true);
+    eq(`${name}: from válido (AAAA-MM-DD)`, /^\d{4}-\d{2}-\d{2}$/.test((tv[0] || {}).from || ''), true);
+    eq(`${name}: tableAt() = última entrada`, typeof m.tableAt === 'function' ? m.tableAt() : undefined, tv[tv.length - 1]);
+    // IDENTIDADE (1 versão): ym no passado/futuro = sem ym, cêntimo a cêntimo.
+    const cat = m.CATEGORIES[0];
+    eq(`${name}: monthlyBase invariante ao ym`, m.monthlyBase(cat, { ym: '2023-01' }), m.monthlyBase(cat, {}));
+    const mo = (ym) => m.computeAeMonth({ category: cat, duties: [[500], [1200]], nightStops: 1, ym });
+    eq(`${name}: computeAeMonth invariante ao ym (total)`, mo('2024-03').total, mo(undefined).total);
+    eq(`${name}: computeAeMonth invariante ao ym (variável)`, mo('2030-06').variable, mo(undefined).variable);
+  }
+  // monthExtras invariante ao ym (contadores próprios de cada AE).
+  eq('easyJet piloto: extras invariantes ao ym', ae.monthExtras('CPT', { ddo: 1 }, { ym: '2024-01' }).total, ae.monthExtras('CPT', { ddo: 1 }).total);
+  eq('easyJet cabine: extras invariantes ao ym', cabin.monthExtras('CM', { rdp: 1 }, { ym: '2024-01' }).total, cabin.monthExtras('CM', { rdp: 1 }).total);
+  eq('TAP piloto: extras invariantes ao ym', tapPilot.monthExtras('CTE', { comandoSectors: 1 }, { ym: '2024-01' }).total, tapPilot.monthExtras('CTE', { comandoSectors: 1 }).total);
+  eq('TAP cabine: extras invariantes ao ym', tapCabin.monthExtras('CAB3', { vhHours: 1 }, { ym: '2024-01' }).total, tapCabin.monthExtras('CAB3', { vhHours: 1 }).total);
+}
+
 // ── Resumo ──
 console.log(`\nAE golden — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

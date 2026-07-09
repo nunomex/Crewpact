@@ -6,6 +6,8 @@
 // Módulo PURO (sem React Native) — testável por golden. Estimativa de apoio;
 // NÃO substitui o processamento salarial oficial. Categorias: FA1, FA, CMP, CM.
 
+import { pickTable } from './tables';
+
 export const AE_ID = 'easyjet-snpvac';
 export const AE_LABEL = 'Easyjet · SNPVAC (cabine)';
 export const CATEGORIES = ['CM', 'CMP', 'FA', 'FA1'];
@@ -74,6 +76,20 @@ export const SECTOR_BANDS = [
 export const sectorMult = (distNM) =>
   (SECTOR_BANDS.find((b) => Number(distNM) <= b.maxNM) || SECTOR_BANDS[SECTOR_BANDS.length - 1]).mult;
 
+// ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
+// Cada entrada = os VALORES do Anexo I com efeitos a partir de `from` (fonte BTE/DRE).
+// UMA entrada hoje (só o degrau Nov-2025 está modelado — nenhum número sem fonte,
+// Constituição §6); uma revisão/novo AE ACRESCENTA uma entrada, nunca reescreve.
+// O motor mensal resolve a tabela pelo mês (`ym`); sem `ym` → a última (o "hoje").
+export const TABLE_VERSIONS = [{
+  from: '2025-11-01', label: 'Anexo I · degrau Nov-2025 (BTE/DRE)',
+  NMW_MONTHLY, BASE_ANNUAL, NOMINAL_SECTOR, SECTOR_BANDS, NIGHT_STOP_EUR,
+  HOLIDAY_DAY_SECTORS, OFFICE_SECTORS, CASH_HANDLING_PCT, SNC_EUR, DDO_EUR, IDO_EUR,
+  WFLY_PCT_ANNUAL, RDP_FLOOR, LANGUAGE_3RD, LANGUAGE_EXTRA, BENEFITS_ANNUAL, SICK_PCT,
+  UPRANKER_SECTOR, CCLT_DAY, CTI_FLEXI_SECTORS, PERF_BONUS_WEEKS, POSITIONING,
+}];
+export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+
 // Modalidades de contrato e fração da base anual (12/12 = 100%). Fontes: Cl. 46
 // (10/12), 47 (8/12), 48 (intermitente 9/3 = 9×100%+3×25% = 9,75/12), 78 (5453=100%),
 // 80 (part-times fixos/sazonais). Sazonal = 8 meses parcial + 4 meses full.
@@ -98,41 +114,46 @@ export const contractFactor = (c) => CONTRACT_FACTOR[c] != null ? CONTRACT_FACTO
 export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
 
-// Base anual de uma categoria (FA1 = SMN × 14).
-const annualBase = (cat) => cat === 'FA1' ? NMW_MONTHLY * SALARY_INSTALMENTS : (BASE_ANNUAL[cat] || 0);
+// Base anual de uma categoria (FA1 = SMN × 14). `T` = tabela em vigor (tableAt).
+const annualBase = (cat, T = tableAt()) => cat === 'FA1' ? T.NMW_MONTHLY * SALARY_INSTALMENTS : (T.BASE_ANNUAL[cat] || 0);
 
-// Pagamento base mensal (€) = anual × fração do contrato / 14.
-export const monthlyBase = (cat, { contract = '12/12', index = 1 } = {}) =>
-  +((annualBase(cat) * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
+// Pagamento base mensal (€) = anual × fração do contrato / 14. `ym` data o mês (tabela em vigor).
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) =>
+  +((annualBase(cat, tableAt(ym)) * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
 
 // Per diem (€) de UM serviço de voo: Σ multiplicadores dos setores × setor nominal.
-export const perDiem = (cat, distancesNM = [], index = 1) => {
-  const nom = (NOMINAL_SECTOR[cat] || 0) * index;
+// (4.º arg `fleet` ignorado — paridade de interface com a TAP; 5.º = `ym`.)
+export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
+  const T = tableAt(ym);
+  const nom = (T.NOMINAL_SECTOR[cat] || 0) * index;
   const mult = (distancesNM || []).reduce((s, d) => s + sectorMult(d), 0);
   return +(mult * nom).toFixed(2);
 };
 
 // ── Calculadoras individuais (Anexo I) — cada pagamento do AE, à parte ──
+// Todas aceitam `ym` opcional no fim (mês a que o cálculo respeita); sem ele = tabela atual.
 const r2 = (n) => +(+n).toFixed(2);
-const nomOf = (cat) => NOMINAL_SECTOR[cat] || 0;
+const nomOf = (cat, T = tableAt()) => T.NOMINAL_SECTOR[cat] || 0;
 
-export const cashHandling = (cat) => r2(CASH_HANDLING_PCT * annualBase(cat) / 12);   // Art. 54 — €/mês
-export const holidayDay   = (cat) => r2(HOLIDAY_DAY_SECTORS * nomOf(cat));            // Art. 60 — €/dia de férias
-export const nightStop    = () => NIGHT_STOP_EUR;                                     // Art. 56 — pernoita = €46 FIXOS (interface uniforme c/ pilotos; ignora cat/index)
-export const office       = (cat) => r2(OFFICE_SECTORS * nomOf(cat));                 // Art. 70 — €/dia em terra
-export const wfly         = (cat) => r2(WFLY_PCT_ANNUAL * annualBase(cat));           // Art. 69 — €/dia (1% base anual)
-export const rdp          = (cat) => r2(Math.max(nomOf(cat), RDP_FLOOR[cat] || 0));   // Art. 67 — €/evento
-export const sickDay      = (cat) => r2(SICK_PCT * (annualBase(cat) / SALARY_INSTALMENTS) / 30);  // Art. 61 — €/dia (após 3)
-export const language     = (n = 1) => n >= 1 ? r2(LANGUAGE_3RD + (n - 1) * LANGUAGE_EXTRA) : 0;   // Art. 65 — €/ano
-export const positioning  = (cat, band = 'medio') => { const t = POSITIONING[cat]; return t && t[band] != null ? t[band] : null; };  // Anexo I.18
-export const ctiFlexi     = (cat) => r2(CTI_FLEXI_SECTORS * nomOf(cat));              // Cl. 35 — €/dia (cat. Chefe)
-export const upranker     = () => UPRANKER_SECTOR;                                    // Cl. 34 — €/setor (a desempenhar Chefe)
-export const cclt         = () => CCLT_DAY;                                           // Cl. 35 — €/dia de treino (Verificador de Linha)
-export const perfBonus    = (cat, { contract = '12/12', index = 1 } = {}) =>          // Cl. 63 — bónus anual (alvo = 2 semanas)
-  r2(annualBase(cat) * (PERF_BONUS_WEEKS / 52) * contractFactor(contract) * index);
+export const cashHandling = (cat, ym) => { const T = tableAt(ym); return r2(T.CASH_HANDLING_PCT * annualBase(cat, T) / 12); };   // Art. 54 — €/mês
+export const holidayDay   = (cat, ym) => { const T = tableAt(ym); return r2(T.HOLIDAY_DAY_SECTORS * nomOf(cat, T)); };            // Art. 60 — €/dia de férias
+export const nightStop    = (_cat, _index, ym) => tableAt(ym).NIGHT_STOP_EUR;         // Art. 56 — pernoita = € FIXOS (assinatura uniforme c/ pilotos/TAP; ignora cat/index)
+export const office       = (cat, ym) => { const T = tableAt(ym); return r2(T.OFFICE_SECTORS * nomOf(cat, T)); };                 // Art. 70 — €/dia em terra
+export const wfly         = (cat, ym) => { const T = tableAt(ym); return r2(T.WFLY_PCT_ANNUAL * annualBase(cat, T)); };           // Art. 69 — €/dia (1% base anual)
+export const rdp          = (cat, ym) => { const T = tableAt(ym); return r2(Math.max(nomOf(cat, T), T.RDP_FLOOR[cat] || 0)); };   // Art. 67 — €/evento
+export const sickDay      = (cat, ym) => { const T = tableAt(ym); return r2(T.SICK_PCT * (annualBase(cat, T) / SALARY_INSTALMENTS) / 30); };  // Art. 61 — €/dia (após 3)
+export const language     = (n = 1, ym) => { const T = tableAt(ym); return n >= 1 ? r2(T.LANGUAGE_3RD + (n - 1) * T.LANGUAGE_EXTRA) : 0; };   // Art. 65 — €/ano
+export const positioning  = (cat, band = 'medio', ym) => { const t = tableAt(ym).POSITIONING[cat]; return t && t[band] != null ? t[band] : null; };  // Anexo I.18
+export const ctiFlexi     = (cat, ym) => { const T = tableAt(ym); return r2(T.CTI_FLEXI_SECTORS * nomOf(cat, T)); };              // Cl. 35 — €/dia (cat. Chefe)
+export const upranker     = (ym) => tableAt(ym).UPRANKER_SECTOR;                      // Cl. 34 — €/setor (a desempenhar Chefe)
+export const cclt         = (ym) => tableAt(ym).CCLT_DAY;                             // Cl. 35 — €/dia de treino (Verificador de Linha)
+export const perfBonus    = (cat, { contract = '12/12', index = 1, ym } = {}) => {    // Cl. 63 — bónus anual (alvo = 2 semanas)
+  const T = tableAt(ym);
+  return r2(annualBase(cat, T) * (T.PERF_BONUS_WEEKS / 52) * contractFactor(contract) * index);
+};
 // Assistência no aeroporto (Art. 58): { called, over4h } → €. "setor médio" = 1,2× nominal.
-export const airportStandby = (cat, { called = false, over4h = false } = {}) => {
-  const med = 1.2 * nomOf(cat);
+export const airportStandby = (cat, { called = false, over4h = false, ym } = {}) => {
+  const med = 1.2 * nomOf(cat, tableAt(ym));
   return called ? r2(over4h ? med : 0) : r2(over4h ? 2 * med : med);
 };
 
@@ -218,12 +239,13 @@ export const catalogFor = (category, contract = '12/12', opts = {}) =>
 
 // Estimativa mensal de apoio (€) — junta os cálculos INTERLIGADOS: base + abono
 // para falhas + per diems + pernoitas (€46 fixos) + extras.
-export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1 } = {}) => {
-  const nom = (NOMINAL_SECTOR[category] || 0) * index;
-  const base = monthlyBase(category, { contract, index });
-  const cash = cashHandling(category);
-  const perDiemTotal = +(duties.reduce((s, legs) => s + perDiem(category, legs, index), 0)).toFixed(2);
-  const nightTotal = +(nightStops * NIGHT_STOP_EUR).toFixed(2);   // €46 fixos por noite
+export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
+  const T = tableAt(ym);
+  const nom = (T.NOMINAL_SECTOR[category] || 0) * index;
+  const base = monthlyBase(category, { contract, index, ym });
+  const cash = cashHandling(category, ym);
+  const perDiemTotal = +(duties.reduce((s, legs) => s + perDiem(category, legs, index, undefined, ym), 0)).toFixed(2);
+  const nightTotal = +(nightStops * T.NIGHT_STOP_EUR).toFixed(2);   // € fixos por noite
   const extras = +(extraSectors * nom).toFixed(2);
   const variable = +(perDiemTotal + nightTotal + extras).toFixed(2);
   return {
@@ -249,22 +271,22 @@ export const EXTRA_KINDS = [
   { id: 'snc',      calc: 'snc',        per: 'event', label: { pt: 'Alteração de escala (SNC)',        en: 'Short-notice change (SNC)' }, auto: true },
 ];
 const EXTRA_VALUE = {
-  vacDays:  (cat) => holidayDay(cat),
-  sickDays: (cat) => sickDay(cat),
-  rdp:      (cat) => rdp(cat),
-  ddo:      () => DDO_EUR,
-  ido:      () => IDO_EUR,
-  wfly:     (cat) => wfly(cat),
-  snc:      () => SNC_EUR,
+  vacDays:  (cat, ym) => holidayDay(cat, ym),
+  sickDays: (cat, ym) => sickDay(cat, ym),
+  rdp:      (cat, ym) => rdp(cat, ym),
+  ddo:      (cat, ym) => tableAt(ym).DDO_EUR,
+  ido:      (cat, ym) => tableAt(ym).IDO_EUR,
+  wfly:     (cat, ym) => wfly(cat, ym),
+  snc:      (cat, ym) => tableAt(ym).SNC_EUR,
 };
 // Valoriza os contadores → { items: [{id, n, each, total}], total }. (Cabine sem
-// indexação — valores já no Anexo I mais recente; `index` aceite por paridade.)
-export const monthExtras = (cat, counts = {}, { index = 1 } = {}) => {
+// indexação — `index` aceite por paridade.) `ym` data o mês → tabela em vigor.
+export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat) || 0;
+    const each = EXTRA_VALUE[k.id](cat, ym) || 0;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;

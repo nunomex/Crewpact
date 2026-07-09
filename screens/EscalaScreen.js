@@ -217,7 +217,7 @@ export default function EscalaScreen({ navigation, route }) {
   const extraKindOf = (tp) => extraKinds.find((k) => k.id === tp) || null;
   const isAbsence = (tp) => tp === 'vacDays' || tp === 'sickDays';   // extras que OCUPAM o dia
   const extraLabel = (tp) => { const k = extraKindOf(tp); return (k && k.label && (k.label[lang] || k.label.pt)) || tp; };
-  const extraEur = (tp, cat) => (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [tp]: 1 }).total : null;   // cat = categoria EFETIVA-DATADA (crewAt), não a plana
+  const extraEur = (tp, cat, iso) => (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [tp]: 1 }, { ym: iso ? String(iso).slice(0, 7) : undefined }).total : null;   // cat E tabela do AE efetivas-datadas (crewAt + linha do tempo)
   const absCode = (tp) => (tp === 'vacDays' ? l('FÉR', 'LVE') : l('DOE', 'SCK'));
   const dayAbs = {};   // iso → 1.º evento de AUSÊNCIA desse dia (férias/doença)
   const dayOv = {};    // iso → eventos de PAGAMENTO sobre um dia TRABALHADO (snc/rdp) — não são ausências
@@ -517,7 +517,7 @@ export default function EscalaScreen({ navigation, route }) {
         <ScrollView showsVerticalScrollIndicator={false} style={s.dsScroll} keyboardShouldPersistTaps="handled">
         {dayIso && !dayDuty ? (() => {
           const abs = dayAbs[dayIso];   // ausência (férias/doença) desse dia, se houver
-          const absEur = abs ? extraEur(abs.type, crewAt(dayIso).category) : null;   // € pela categoria em vigor nesse dia
+          const absEur = abs ? extraEur(abs.type, crewAt(dayIso).category, dayIso) : null;   // € pela categoria/tabela em vigor nesse dia
           return (
             <View style={s.dsBody}>
               <Text style={s.dsDate}>{dayDateLbl(dayIso)}{dayIso === today ? ` · ${l('hoje', 'today')}` : ''}</Text>
@@ -564,8 +564,8 @@ export default function EscalaScreen({ navigation, route }) {
             const collapsed = legs.length > 3 && !(secExpand && canExpand);
             const shown = collapsed ? legs.slice(0, 3) : legs;
             let perDiem = null;
-            if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet); }
-            const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
+            if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet, dayIso); }
+            const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, dayIso) : null;
             const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
             const end = so != null ? so : (onM != null ? onM + (isFlight ? pf : 0) : null);   // débrief só em voo (235c)
             const endsNext = end != null && rm != null && (end % 1440) < rm;   // serviço acaba no dia seguinte
@@ -701,7 +701,7 @@ export default function EscalaScreen({ navigation, route }) {
               {dayOv[dayIso] ? dayOv[dayIso].map((e) => (
                 <View key={e.id} style={s.dsOvRow}>
                   <Icon name="wallet" size={14} color={PELE.ok} />
-                  <Text style={s.dsOvTxt}>{extraLabel(e.type)}{extraEur(e.type, catD) != null ? `  ·  +${fmtEur(extraEur(e.type, catD))}` : ''}</Text>
+                  <Text style={s.dsOvTxt}>{extraLabel(e.type)}{extraEur(e.type, catD, dayIso) != null ? `  ·  +${fmtEur(extraEur(e.type, catD, dayIso))}` : ''}</Text>
                 </View>
               )) : null}
               {hotelEl}

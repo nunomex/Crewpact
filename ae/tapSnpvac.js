@@ -12,6 +12,8 @@
 // de haver "C/C", o supervisor passa a S/C 1..S/C 7. Per-diem e pernoita = "ajudas de
 // custo complementares" POR DIA DE CALENDÁRIO (cl. 7.ª), não por setor.
 
+import { pickTable } from './tables';
+
 export const AE_ID = 'tap-snpvac';
 export const AE_LABEL = 'TAP · SNPVAC (cabine)';
 
@@ -67,31 +69,44 @@ export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
 
 const r2 = (n) => +(+n).toFixed(2);
-const vbOf = (cat, index = 1) => (VB_2026[cat] || 0) * index;
+
+// ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
+// Cada entrada = os VALORES publicados com efeitos a partir de `from` (fonte BTE).
+// UMA entrada hoje (a coluna 2026 do RRRGS — nenhum número sem fonte, Constituição
+// §6; o BTE 7/2024 TEM colunas 2024/2025 → podem entrar como entradas históricas
+// quando forem transcritas da fonte). `VB` = a tabela do degrau (aqui, coluna 2026).
+export const TABLE_VERSIONS = [{
+  from: '2026-01-01', label: 'RRRGS cl. 3.ª/7.ª/8.ª · coluna 2026 (BTE 7/2024)',
+  NMW_MONTHLY, VB: VB_2026, AC1_DAY, AC2_DAY, EXTRAORD_DAY, VS_PCT, VH_PCT, CHEFIA_PCT,
+}];
+export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+
+const vbOf = (cat, index = 1, T = tableAt()) => (T.VB[cat] || 0) * index;
 
 // Remuneração base mensal (€) = VB × fração do contrato. VB já é MENSAL (cl. 3.ª); valores
 // de 2026 já publicados → `index` aceite por paridade mas default 1 (sem indexação/derivação).
-export const monthlyBase = (cat, { contract = '12/12', index = 1 } = {}) =>
-  r2(vbOf(cat, index) * contractFactor(contract));
+// `ym` data o mês (tabela em vigor); sem ele = tabela atual.
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) =>
+  r2(vbOf(cat, index, tableAt(ym)) * contractFactor(contract));
 
 // Per diem (€) de UM dia de serviço de voo = AC1 (cl. 7.ª), POR DIA, valor único 2026 (150 €).
 // distancesNM só serve para saber se houve voo nesse dia (a app passa 1 duty/dia).
-export const perDiem = (cat, distancesNM = [], _index = 1) =>
-  (distancesNM && distancesNM.length) ? AC1_DAY : 0;
+export const perDiem = (cat, distancesNM = [], _index = 1, _fleet, ym) =>
+  (distancesNM && distancesNM.length) ? tableAt(ym).AC1_DAY : 0;
 
 // Pernoita = AC2 "Estadia" (cl. 7.ª), POR DIA, 80 € (2026) + hotel pago pela empresa.
-export const nightStop = (cat, _index = 1) => AC2_DAY;
+export const nightStop = (cat, _index = 1, ym) => tableAt(ym).AC2_DAY;
 
 // Vencimentos por função/hora.
-export const vh = (cat, index = 1) => r2(VH_PCT * vbOf(cat, index));               // €/hora acima do plafond
-export const vs = (cat, years = 0, index = 1) => r2(VS_PCT * Math.max(0, years) * vbOf(cat, index));  // senioridade — €/mês
-export const extraord = () => EXTRAORD_DAY;                                        // complemento extraordinário — €/dia
+export const vh = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VH_PCT * vbOf(cat, index, T)); };               // €/hora acima do plafond
+export const vs = (cat, years = 0, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * Math.max(0, years) * vbOf(cat, index, T)); };  // senioridade — €/mês
+export const extraord = (ym) => tableAt(ym).EXTRAORD_DAY;                          // complemento extraordinário — €/dia
 
 // Estimativa mensal de apoio (€): base + AC1 dos voos + AC2 das pernoitas.
-export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1 } = {}) => {
-  const base = monthlyBase(category, { contract, index });
-  const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs), 0));
-  const nightTotal = r2(nightStops * nightStop(category));
+export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
+  const base = monthlyBase(category, { contract, index, ym });
+  const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, undefined, ym), 0));
+  const nightTotal = r2(nightStops * nightStop(category, 1, ym));
   const extras = 0;   // sem prestação por setor nominal
   const variable = r2(perDiemTotal + nightTotal + extras);
   return {
@@ -141,15 +156,15 @@ export const EXTRA_KINDS = [
   { id: 'vhHours',      calc: 'vh',       per: 'hour', label: { pt: 'Horas acima do plafond',                 en: 'Hours over plafond' } },
 ];
 const EXTRA_VALUE = {
-  extraordDays: () => EXTRAORD_DAY,
-  vhHours: (cat, index) => vh(cat, index),
+  extraordDays: (cat, index, ym) => extraord(ym),
+  vhHours: (cat, index, ym) => vh(cat, index, ym),
 };
-export const monthExtras = (cat, counts = {}, { index = 1 } = {}) => {
+export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat, index) || 0;
+    const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;

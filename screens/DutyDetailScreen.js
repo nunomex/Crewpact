@@ -95,9 +95,9 @@ export default function DutyDetailScreen({ route, navigation }) {
       if (nm == null) { ok = false; break; }
       dists.push(nm);
     }
-    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, ctxAll.crewFleet);
+    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, ctxAll.crewFleet, date);
   }
-  const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD) : null;
+  const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, date) : null;
 
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const fmtDate = (iso) => {

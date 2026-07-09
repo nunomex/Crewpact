@@ -69,8 +69,9 @@ export default function ExtraEventSheet({ visible, onClose }) {
   const vacAfter = vacTaken + fresh.length;
   const vacQuota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
   // € por unidade (valorização oficial do AE — monthExtras com contagem 1).
-  const eachCat = crewAt((iso || isoDay()).slice(0, 7)).category;   // categoria EFETIVA-DATADA no mês do evento (não a plana)
-  const each = (type && ae && ae.monthExtras && eachCat) ? ae.monthExtras(eachCat, { [type]: 1 }).total : null;
+  const eachYm = (iso || isoDay()).slice(0, 7);
+  const eachCat = crewAt(eachYm).category;   // categoria EFETIVA-DATADA no mês do evento (não a plana)
+  const each = (type && ae && ae.monthExtras && eachCat) ? ae.monthExtras(eachCat, { [type]: 1 }, { ym: eachYm }).total : null;
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dec] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`; };
 
   const save = () => {

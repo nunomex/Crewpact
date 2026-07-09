@@ -112,13 +112,13 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
         wrY += m.withRoute; missY += m.missing;
       } else {
-        const b = ae.monthlyBase(catM, { contract: ctrM, index }) || 0;
+        const b = ae.monthlyBase(catM, { contract: ctrM, index, ym }) || 0;
         baseY += b; totalY += b;
         const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet });
         if (pd) { perDiemY += pd.total; totalY += pd.total; wrY += pd.withRoute; missY += pd.missing; }
       }
       if (ae.monthExtras) {
-        const xt = ae.monthExtras(catM, eventCounts(events, ym, duties, ae.SICK_FIRST3 !== false), { index });
+        const xt = ae.monthExtras(catM, eventCounts(events, ym, duties, ae.SICK_FIRST3 !== false), { index, ym });
         if (xt && xt.total) { eventsY += xt.total; totalY += xt.total; }
       }
     }
@@ -248,7 +248,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(y) : 1;
     const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet });
-    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index }) : null;
+    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {
       base: m.base, cash: m.cashHandling || 0, perDiem: m.perDiem, nightStops: m.nightStops,

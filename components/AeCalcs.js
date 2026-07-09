@@ -67,8 +67,8 @@ export default function AeCalcs({ ae, category, contract = '12/12', fleet = null
   const monthEvents = (events || []).filter((e) => e && String(e.date).slice(0, 7) === ym)
     .sort((a, b) => (String(a.date) < String(b.date) ? -1 : 1));
   const counts = eventCounts(events, ym);
-  const xt = ae.monthExtras ? ae.monthExtras(category, counts, { index }) : null;
-  const xRate = (id) => { const r = ae.monthExtras(category, { [id]: 1 }, { index }); return r.items[0] ? r.items[0].each : 0; };
+  const xt = ae.monthExtras ? ae.monthExtras(category, counts, { index, ym }) : null;
+  const xRate = (id) => { const r = ae.monthExtras(category, { [id]: 1 }, { index, ym }); return r.items[0] ? r.items[0].each : 0; };
   const kindLabelOf = (id) => { const k = (ae.EXTRA_KINDS || []).find((x) => x.id === id); return (k && k.label && (k.label[lang] || k.label.pt)) || id; };
   // Total único: monthlyAe.total já inclui o abono (cabine, UMA vez); o `cash` só
   // entra no fallback (quando não há computeAeMonth). + extras manuais do mês.

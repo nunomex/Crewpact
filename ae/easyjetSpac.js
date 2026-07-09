@@ -6,6 +6,8 @@
 // É uma ESTIMATIVA DE APOIO ao piloto; NÃO substitui o processamento salarial
 // oficial da companhia. Categorias: CPT, SFO, FO, SO.
 
+import { pickTable } from './tables';
+
 export const AE_ID = 'easyjet-spac';
 export const AE_LABEL = 'Easyjet · SPAC (pilotos)';
 export const CATEGORIES = ['CPT', 'SFO', 'FO', 'SO'];
@@ -138,16 +140,32 @@ export const SECTOR_BANDS = [
 export const sectorMult = (distNM) =>
   (SECTOR_BANDS.find((b) => Number(distNM) <= b.maxNM) || SECTOR_BANDS[SECTOR_BANDS.length - 1]).mult;
 
+// ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
+// Cada entrada = os VALORES do Anexo I com efeitos a partir de `from` (fonte BTE).
+// UMA entrada hoje (o degrau "1 fev 2024" — nenhum número sem fonte, Constituição §6);
+// revisão/novo AE ACRESCENTA entrada, nunca reescreve. A indexação IPC (`index`) é
+// ORTOGONAL: multiplica os valores de 2024 desta tabela (regra do próprio AE), não
+// é um degrau de tabela. O motor mensal resolve por `ym`; sem `ym` → a última.
+export const TABLE_VERSIONS = [{
+  from: '2024-02-01', label: 'Anexo I · degrau 1-fev-2024 (BTE 40/2023)',
+  BASE_ANNUAL, NOMINAL_SECTOR, SECTOR_BANDS, NIGHT_STOP_SECTORS, VAC_DAY_SECTORS,
+  ADHOC_SECTORS, SNC_EUR, DDO_PCT_ANNUAL, IDO_PCT_ANNUAL, WFLY_PCT_ANNUAL,
+  INSTRUCTOR_EUR, SICK_PCT, BENEFITS_ANNUAL, OFFICE4_SECTORS, OFFICE8_SECTORS,
+  PREGNANCY_PCT, RETENTION_EUR, PERF_BONUS_TARGET, PERF_BONUS_MAX,
+}];
+export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+
 // Pagamento base mensal (€) = anual × fração do contrato / 14 (mês normal;
 // junho/novembro recebem o dobro). Opções: `contract` (modalidade, default 12/12)
 // e `index` (indexação 2025+, ex.: 1.03 para +3%; default 1 = valores de 2024).
-export const monthlyBase = (cat, { contract = '12/12', index = 1 } = {}) =>
-  +(((BASE_ANNUAL[cat] || 0) * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) =>
+  +(((tableAt(ym).BASE_ANNUAL[cat] || 0) * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
 
 // Per diem (€) de UM serviço de voo: soma dos multiplicadores dos setores × setor nominal.
 // distancesNM = array de distâncias de grande círculo (NM), uma por perna/setor.
-export const perDiem = (cat, distancesNM = [], index = 1) => {
-  const nom = (NOMINAL_SECTOR[cat] || 0) * index;
+// (4.º arg `fleet` ignorado — paridade de interface com a TAP; 5.º = `ym`.)
+export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
+  const nom = (tableAt(ym).NOMINAL_SECTOR[cat] || 0) * index;
   const mult = (distancesNM || []).reduce((s, d) => s + sectorMult(d), 0);
   return +(mult * nom).toFixed(2);
 };
@@ -156,11 +174,12 @@ export const perDiem = (cat, distancesNM = [], index = 1) => {
 //   duties = array de serviços; cada serviço = array de distâncias (NM) das suas pernas.
 //   nightStops = nº de paragens nocturnas no mês; extraSectors = setores nominais avulsos
 //   (ad-hoc, dias de escritório, etc.). `index` aplica a indexação 2025+.
-export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1 } = {}) => {
-  const nom = (NOMINAL_SECTOR[category] || 0) * index;
-  const base = monthlyBase(category, { contract, index });   // só a base é proporcional ao contrato
-  const perDiemTotal = +(duties.reduce((s, legs) => s + perDiem(category, legs, index), 0)).toFixed(2);
-  const nightTotal = +(nightStops * NIGHT_STOP_SECTORS * nom).toFixed(2);
+export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
+  const T = tableAt(ym);
+  const nom = (T.NOMINAL_SECTOR[category] || 0) * index;
+  const base = monthlyBase(category, { contract, index, ym });   // só a base é proporcional ao contrato
+  const perDiemTotal = +(duties.reduce((s, legs) => s + perDiem(category, legs, index, undefined, ym), 0)).toFixed(2);
+  const nightTotal = +(nightStops * T.NIGHT_STOP_SECTORS * nom).toFixed(2);
   const extras = +(extraSectors * nom).toFixed(2);
   const variable = +(perDiemTotal + nightTotal + extras).toFixed(2);
   return {
@@ -170,33 +189,37 @@ export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [
 };
 
 // ── Calculadoras individuais (Anexo I) — cada prestação do AE, à parte ──
+// Todas aceitam `ym` opcional no fim (mês a que o cálculo respeita); sem ele = tabela atual.
 const r2 = (n) => +(+n).toFixed(2);
-const nomOf = (cat, index = 1) => (NOMINAL_SECTOR[cat] || 0) * index;
+const nomOf = (cat, index = 1, T = tableAt()) => (T.NOMINAL_SECTOR[cat] || 0) * index;
+const baOf = (cat, T = tableAt()) => T.BASE_ANNUAL[cat] || 0;
 
-export const nightStop  = (cat, index = 1) => r2(NIGHT_STOP_SECTORS * nomOf(cat, index));  // Art. 39 — €/paragem
-export const vacDay     = (cat, index = 1) => r2(VAC_DAY_SECTORS * nomOf(cat, index));      // Art. 38 — €/dia de férias
-export const adhoc      = (cat, index = 1) => r2(ADHOC_SECTORS * nomOf(cat, index));        // Art. 43 — €/dever ad-hoc
-export const instructor = () => INSTRUCTOR_EUR;                                              // €/dia de instrução
-export const snc        = () => SNC_EUR;                                                     // €/evento (alteração de escala)
-export const ddo        = (cat, index = 1) => r2(DDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);   // Art. — 0,4% base anual
-export const ido        = (cat, index = 1) => r2(IDO_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);   // Art. — 0,8% base anual
-export const wfly       = (cat, index = 1) => r2(WFLY_PCT_ANNUAL * (BASE_ANNUAL[cat] || 0) * index);  // Art. — 1% base anual
-export const sickDay    = (cat, index = 1) => r2(SICK_PCT * ((BASE_ANNUAL[cat] || 0) * index / SALARY_INSTALMENTS) / 30);  // 60% base diária (dias 1-3)
-export const benefits   = (cat) => BENEFITS_ANNUAL[cat] || 0;                          // Anexo I.8 — €/ano
-export const office4    = (cat, index = 1) => r2(OFFICE4_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC4 (1,5 NS)
-export const office8    = (cat, index = 1) => r2(OFFICE8_SECTORS * nomOf(cat, index)); // Anexo I.14 — OFC8 (3 NS)
-export const pregnancy  = (cat, { contract = '12/12', index = 1 } = {}) => r2(PREGNANCY_PCT * monthlyBase(cat, { contract, index }));  // Anexo I.11 — €/mês
-export const retention  = (cat) => RETENTION_EUR[cat] || 0;                            // Anexo I.15 — €/ano (sazonal)
-export const loyalty    = (cat, { years = 0, contract = '12/12', index = 1 } = {}) =>  // Anexo I.9 — €/ano (antiguidade)
-  r2(loyaltyPct(cat, years) * (BASE_ANNUAL[cat] || 0) * index * contractFactor(contract));
+export const nightStop  = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.NIGHT_STOP_SECTORS * nomOf(cat, index, T)); };  // Art. 39 — €/paragem
+export const vacDay     = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VAC_DAY_SECTORS * nomOf(cat, index, T)); };      // Art. 38 — €/dia de férias
+export const adhoc      = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.ADHOC_SECTORS * nomOf(cat, index, T)); };        // Art. 43 — €/dever ad-hoc
+export const instructor = (ym) => tableAt(ym).INSTRUCTOR_EUR;                                // €/dia de instrução
+export const snc        = (ym) => tableAt(ym).SNC_EUR;                                       // €/evento (alteração de escala)
+export const ddo        = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.DDO_PCT_ANNUAL * baOf(cat, T) * index); };   // Art. — 0,4% base anual
+export const ido        = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.IDO_PCT_ANNUAL * baOf(cat, T) * index); };   // Art. — 0,8% base anual
+export const wfly       = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.WFLY_PCT_ANNUAL * baOf(cat, T) * index); };  // Art. — 1% base anual
+export const sickDay    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.SICK_PCT * (baOf(cat, T) * index / SALARY_INSTALMENTS) / 30); };  // 60% base diária (dias 1-3)
+export const benefits   = (cat, ym) => tableAt(ym).BENEFITS_ANNUAL[cat] || 0;          // Anexo I.8 — €/ano
+export const office4    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.OFFICE4_SECTORS * nomOf(cat, index, T)); }; // Anexo I.14 — OFC4 (1,5 NS)
+export const office8    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.OFFICE8_SECTORS * nomOf(cat, index, T)); }; // Anexo I.14 — OFC8 (3 NS)
+export const pregnancy  = (cat, { contract = '12/12', index = 1, ym } = {}) => r2(tableAt(ym).PREGNANCY_PCT * monthlyBase(cat, { contract, index, ym }));  // Anexo I.11 — €/mês
+export const retention  = (cat, ym) => tableAt(ym).RETENTION_EUR[cat] || 0;            // Anexo I.15 — €/ano (sazonal)
+export const loyalty    = (cat, { years = 0, contract = '12/12', index = 1, ym } = {}) =>  // Anexo I.9 — €/ano (antiguidade)
+  r2(loyaltyPct(cat, years) * baOf(cat, tableAt(ym)) * index * contractFactor(contract));
 // Art. 46 — bónus de performance anual (€/ano). `max` → teto; default = alvo.
-export const perfBonus  = (cat, { contract = '12/12', index = 1, max = false } = {}) =>
-  r2(((max ? PERF_BONUS_MAX[cat] : PERF_BONUS_TARGET[cat]) || 0) * (BASE_ANNUAL[cat] || 0) * index * contractFactor(contract));
+export const perfBonus  = (cat, { contract = '12/12', index = 1, max = false, ym } = {}) => {
+  const T = tableAt(ym);
+  return r2(((max ? T.PERF_BONUS_MAX[cat] : T.PERF_BONUS_TARGET[cat]) || 0) * baOf(cat, T) * index * contractFactor(contract));
+};
 // Anexo I.5 — serviço em aeroporto (ADTY). Devolve só o ABONO de reserva (€); o
 // per-diem dos voos operados é somado à parte. Não chamado: <4h=1×NS, ≥4h=2×NS;
 // chamado: <4h=0 (só per-diem do voo), ≥4h=2×NS. (Piloto usa setor NOMINAL, ≠ cabine.)
-export const airportStandby = (cat, { called = false, over4h = false, index = 1 } = {}) => {
-  const ns = nomOf(cat, index);
+export const airportStandby = (cat, { called = false, over4h = false, index = 1, ym } = {}) => {
+  const ns = nomOf(cat, index, tableAt(ym));
   if (called) return over4h ? r2(2 * ns) : 0;
   return over4h ? r2(2 * ns) : r2(ns);
 };
@@ -294,24 +317,25 @@ export const EXTRA_KINDS = [
 ];
 // € por unidade de cada extra (categoria + indexação). Por-evento → sem fração de contrato.
 const EXTRA_VALUE = {
-  instructorDays: () => instructor(),
-  adhocDays:  (cat, index) => adhoc(cat, index),
-  vacDays:    (cat, index) => vacDay(cat, index),
-  sickDays:   (cat, index) => sickDay(cat, index),
-  ddo:        (cat, index) => ddo(cat, index),
-  ido:        (cat, index) => ido(cat, index),
-  wfly:       (cat, index) => wfly(cat, index),
-  snc:        () => snc(),
+  instructorDays: (cat, index, ym) => instructor(ym),
+  adhocDays:  (cat, index, ym) => adhoc(cat, index, ym),
+  vacDays:    (cat, index, ym) => vacDay(cat, index, ym),
+  sickDays:   (cat, index, ym) => sickDay(cat, index, ym),
+  ddo:        (cat, index, ym) => ddo(cat, index, ym),
+  ido:        (cat, index, ym) => ido(cat, index, ym),
+  wfly:       (cat, index, ym) => wfly(cat, index, ym),
+  snc:        (cat, index, ym) => snc(ym),
 };
 // Valoriza os contadores → { items: [{id, n, each, total}], total }. counts = mapa
 // { <id>: nº }. Negativos/decimais → saneados; cap aplicado (ex.: doença ≤ 3).
-export const monthExtras = (cat, counts = {}, { index = 1 } = {}) => {
+// `ym` data o mês → tabela em vigor nesse mês.
+export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     let n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (k.cap) n = Math.min(n, k.cap);
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat, index) || 0;
+    const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;
