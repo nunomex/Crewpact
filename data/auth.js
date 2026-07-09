@@ -108,13 +108,14 @@ export const validateEmail = (email, lang = 'pt') => {
 export const validatePassword = (pw, isRegister = false, lang = 'pt') => {
   if (!pw) return m('pwReq', lang);
   if (isRegister) {
-    // Espelha a política do servidor Supabase: 8+, minúscula, maiúscula, número, especial.
-    // (Descoberto por teste ao vivo: o servidor devolvia weak_password sem carácter especial.)
+    // Política "à Apple" (decisão 2026-07-10): 8+ · minúscula · maiúscula · número — SEM
+    // carácter especial (o NIST desaconselha regras de composição; o símbolo obrigatório
+    // era herança da definição default do Supabase, não uma escolha). TEM de espelhar o
+    // dashboard: Authentication → Passwords → required characters = "lower, upper, digits".
     if (pw.length < 8)             return m('pwMin', lang);
     if (!/[a-z]/.test(pw))         return m('pwLower', lang);
     if (!/[A-Z]/.test(pw))         return m('pwUpper', lang);
     if (!/[0-9]/.test(pw))         return m('pwNum', lang);
-    if (!/[^A-Za-z0-9]/.test(pw))  return m('pwSpecial', lang);
   }
   return null;
 };

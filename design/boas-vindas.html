@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — boas-vindas + dicas contextuais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:900px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:14px 19px 60px;display:flex;flex-direction:column;overflow:hidden;z-index:1}
+
+  /* ── FOLHA DE BOAS-VINDAS (1 ecrã, à Apple: título grande + linhas + Começar) ── */
+  .wEye{font-size:9px;font-weight:600;letter-spacing:4px;color:var(--grey);text-transform:uppercase;margin-top:44px;text-align:center}
+  .wRule{height:3.5px;width:110px;background:var(--yellow);margin:9px auto 14px}
+  .wTitle{font-family:var(--disp);font-weight:800;font-size:44px;line-height:.96;text-transform:uppercase;text-align:center;letter-spacing:.5px}
+  .wTitle .lt{font-weight:500}
+  .wSub{font-size:12px;font-weight:500;color:var(--grey);text-align:center;margin-top:10px}
+  .wRows{margin-top:30px;display:flex;flex-direction:column}
+  .wRow{display:flex;gap:14px;padding:15px 2px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .wRow:last-child{border-bottom:0}
+  .wNum{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--yellow);min-width:30px;line-height:1.15}
+  .wRow b{display:block;font-size:13.5px;font-weight:800;line-height:1.25}
+  .wRow p{font-size:11.5px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .wBtn{margin-top:auto;background:var(--ink);border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;
+    color:var(--paper);font-size:14px;font-weight:800}
+  .wSkip{font-size:10.5px;font-weight:700;color:var(--grey);text-align:center;margin-top:12px}
+
+  /* ── página Início resumida (fundo das dicas) ── */
+  .greet{font-size:10px;font-weight:500;color:var(--grey);margin-top:12px}
+  .hero{position:relative;min-height:150px;margin-top:4px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0}
+  .gho{position:absolute;right:8px;top:-14px;font-family:var(--disp);font-weight:700;line-height:1;letter-spacing:-2.5px;color:var(--ghost);text-align:right;font-size:132px}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+  .hr{height:1px;background:var(--line);margin:10px 0 0}
+  .dim{opacity:.35}
+
+  /* grelha Escala resumida */
+  .mTitle{font-family:var(--disp);font-weight:700;font-size:30px;margin-top:16px}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:12px;font-size:7.5px;font-weight:800;color:var(--grey);text-align:center;letter-spacing:.6px}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:4px}
+  .cell{aspect-ratio:.86;border:1px solid var(--line);border-radius:8px;font-size:9px;font-weight:700;padding:3px 4px;color:var(--ink)}
+  .cell.off{color:#C9C6BE}
+  .cell .fl{margin-top:5px;height:3px;border-radius:2px;background:var(--yellow)}
+
+  /* ── tab bar (fiel: papel + hairline, ＋ ink 44, ativa ink + ponto) ── */
+  .tabs{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--paper);border-top:1px solid rgba(20,20,20,.13);
+    display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:2}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;font-weight:700;color:var(--grey);min-width:44px}
+  .tab.on{color:var(--ink)}
+  .tab .ic{font-size:16px;line-height:1}
+  .tab .dot{width:4px;height:4px;border-radius:99px;background:var(--yellow)}
+  .tab .dot.off{background:transparent}
+  .plus{width:44px;height:44px;border-radius:99px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:600;box-shadow:0 6px 16px rgba(20,20,20,.18)}
+
+  /* ── DICA contextual (balão pele: papel + hairline + sombra de folha; seta) ── */
+  .tip{position:absolute;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);
+    border-radius:14px;padding:11px 14px;max-width:230px;z-index:3;box-shadow:0 10px 26px rgba(20,22,26,.25)}
+  .tip b{color:var(--yellow);font-weight:800}
+  .tip .tx{font-size:11.5px;font-weight:600;line-height:1.45}
+  .tip .ok{font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:7px}
+  .tip::after{content:'';position:absolute;left:50%;transform:translateX(-50%);border:7px solid transparent}
+  .tip.below-arrow::after{bottom:-14px;border-top-color:var(--ink)}
+  .tipPlus{bottom:86px}
+  .tipCal{top:212px}
+  .tip.up-arrow::after{top:-14px;border-bottom-color:var(--ink);bottom:auto}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · primeira entrada</div>
+  <h1>boas-vindas + dicas no momento certo</h1>
+  <p><b>Sem tour de passos</b> (a Apple não faz; 90% salta). Em vez disso: <b>uma folha única</b> depois do funil
+  (vende o que a app FAZ, não onde se clica) + <b>duas dicas contextuais</b> à iOS-Tips — aparecem na primeira vez
+  que chegas ao sítio, morrem ao toque, nunca mais voltam. O estado 0 (três portas + "Ver exemplo") continua a ser
+  a introdução real ao Início — nada disto o duplica.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="wEye">FTL · AE · CREW</div>
+      <div class="wRule"></div>
+      <div class="wTitle"><span class="lt">BEM-VINDO AO</span><br>CREW<b>PACT</b></div>
+      <div class="wSub">A app que sabe o teu dia de trabalho.</div>
+      <div class="wRows">
+        <div class="wRow"><div class="wNum">01</div><div><b>A legalidade, calculada</b><p>Os limites FTL da lei europeia, verificados ao minuto — sabes sempre se estás legal.</p></div></div>
+        <div class="wRow"><div class="wNum">02</div><div><b>O salário, pelo teu acordo</b><p>Per-diems, pernoitas e extras pelo AE da tua companhia — cêntimo a cêntimo.</p></div></div>
+        <div class="wRow"><div class="wNum">03</div><div><b>Um Início que vive o teu dia</b><p>Folga, véspera, voo, pernoita — a primeira página muda sozinha com a escala.</p></div></div>
+        <div class="wRow"><div class="wNum">04</div><div><b>Cria com o ＋</b><p>Serviços, simulações e eventos nascem no botão do meio.</p></div></div>
+      </div>
+      <div class="wBtn">COMEÇAR</div>
+    </div></div>
+    <div class="t">① Folha de boas-vindas</div>
+    <div class="d">1 ecrã, uma vez na vida — logo a seguir ao funil das 6 perguntas, antes do estado 0. Numeração bento amarela (a gramática da pele), zero bonecos.</div>
+    <div class="spec"><b>Quando:</b> só quem passa pelo onboarding (a flag grava-se no fim do funil — utilizadores existentes nunca a veem) · <b>Sair:</b> COMEÇAR ou gesto de fechar — nunca prende · <b>Motion:</b> fade 240 out(cubic), reduce-aware · <b>EN:</b> "WELCOME TO CREWPACT / The app that knows your working day."</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero dim">
+        <div class="gho">QUI</div>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr dim"></div>
+      <div class="note dim" style="font-size:12px;color:var(--grey);margin-top:18px">…a página vive por baixo, sem bloqueio…</div>
+    </div>
+    <div class="tip tipPlus below-arrow">
+      <div class="tx"><b>Cria aqui.</b> Serviços, simulações e eventos — tudo nasce no ＋.</div>
+      <div class="ok">toca para dispensar</div>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><span class="ic">⌂</span>Início<span class="dot"></span></div>
+      <div class="tab"><span class="ic">▦</span>Escala<span class="dot off"></span></div>
+      <div class="plus">＋</div>
+      <div class="tab"><span class="ic">∿</span>Números<span class="dot off"></span></div>
+      <div class="tab"><span class="ic">◯</span>Perfil<span class="dot off"></span></div>
+    </div>
+    </div>
+    <div class="t">② Dica: o ＋ central</div>
+    <div class="d">Primeira visita ao Início DEPOIS da folha (nunca as duas ao mesmo tempo). Balão ink com a palavra-chave a amarelo, seta ancorada ao ＋.</div>
+    <div class="spec"><b>Quando:</b> 1.ª vez no Início pós-folha · <b>Morre:</b> toque em qualquer lado (no ＋ inclusive — abre o speed-dial E dispensa) · <b>Não bloqueia:</b> a página continua interativa; o balão só flutua · <b>Motion:</b> fade+scale 180 out(cubic); reduce = fade · <b>EN:</b> "Create here. Duties, simulations and events — all born in the ＋."</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="greet" style="opacity:.6">ESCALA · JULHO</div>
+      <div class="mTitle dim">Julho</div>
+      <div class="dow dim"><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span><span>DOM</span></div>
+      <div class="cal dim">
+        <div class="cell off">29</div><div class="cell off">30</div><div class="cell">1</div><div class="cell">2<div class="fl"></div></div><div class="cell">3<div class="fl"></div></div><div class="cell">4</div><div class="cell">5</div>
+        <div class="cell">6</div><div class="cell">7<div class="fl"></div></div><div class="cell">8<div class="fl"></div></div><div class="cell">9</div><div class="cell">10<div class="fl"></div></div><div class="cell">11<div class="fl"></div></div><div class="cell">12</div>
+        <div class="cell">13</div><div class="cell">14</div><div class="cell">15<div class="fl"></div></div><div class="cell">16<div class="fl"></div></div><div class="cell">17</div><div class="cell">18<div class="fl"></div></div><div class="cell">19</div>
+      </div>
+      <div class="hr dim" style="margin-top:14px"></div>
+    </div>
+    <div class="tip tipCal up-arrow">
+      <div class="tx"><b>Toca num dia</b> para ver o detalhe — ou para criar um serviço nesse dia.</div>
+      <div class="ok">toca para dispensar</div>
+    </div>
+    <div class="tabs">
+      <div class="tab"><span class="ic">⌂</span>Início<span class="dot off"></span></div>
+      <div class="tab on"><span class="ic">▦</span>Escala<span class="dot"></span></div>
+      <div class="plus">＋</div>
+      <div class="tab"><span class="ic">∿</span>Números<span class="dot off"></span></div>
+      <div class="tab"><span class="ic">◯</span>Perfil<span class="dot off"></span></div>
+    </div>
+    </div>
+    <div class="t">③ Dica: a grelha da Escala</div>
+    <div class="d">Primeira vez que a aba Escala abre. O único gesto da grelha que não se adivinha — dito no momento em que a grelha está à frente dos olhos.</div>
+    <div class="spec"><b>Quando:</b> 1.ª abertura da aba Escala · <b>Seta:</b> aponta à grelha (ancorada por cima) · <b>Regra global:</b> nunca mais de UMA dica visível na app inteira; a seguinte só na visita seguinte · <b>EN:</b> "Tap a day to see the detail — or to create a duty on that day."</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">as regras (o contrato)</div>
+  <p><b>Uma vez na vida, por utilizador:</b> 3 flags locais (folha · dica-＋ · dica-Escala), por conta, gravadas ao dispensar —
+  reinstalar sem conta nova não as ressuscita se a conta as tiver visto (guardadas com o user id). <b>A folha só nasce do funil:</b>
+  a flag escreve-se no fim do onboarding — quem já tinha conta antes desta feature NUNCA a vê (nada de folhas surpresa a veteranos).
+  <b>Nunca bloqueia:</b> a folha fecha por gesto ou COMEÇAR; as dicas morrem a QUALQUER toque e a página por baixo continua viva —
+  apontam, não trancam. <b>Uma dica de cada vez</b> na app inteira. <b>Sem passos, sem "2 de 5", sem spotlight.</b>
+  <b>Motion do canon:</b> folha fade 240 · dicas fade+scale 180, tudo reduce-aware. <b>A11y:</b> dicas anunciadas ao screen reader,
+  alvos ≥44, dynamic type respeitado. <b>O estado 0 continua a ser a introdução real</b> — a folha vende a magia, as três portas ensinam o primeiro passo.</p>
+</div>
+</body>
+</html>

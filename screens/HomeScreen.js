@@ -30,6 +30,9 @@ import { yearCount } from '../data/aeEvents';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
+import AsyncStorage from '../data/secureStorage';
+import WelcomeSheet from '../components/WelcomeSheet';
+import Tip from '../components/Tip';
 
 // Mapa old-theme → PELE: a LÓGICA (fatiga/estado/limites) usa C.x há muito — em vez de
 // reescrever o motor do ecrã, o C passa a apontar para os tokens da pele (re-skin, não reescrita).
@@ -278,6 +281,43 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false); // pull-to-refresh: relê o calendário a pedido
   const homeScrollRef = useRef(null);
   useScrollToTop(homeScrollRef);   // re-tocar na aba Início → volta ao topo (convenção iOS)
+
+  // ── BOAS-VINDAS + DICA do ＋ (mockup design/boas-vindas.html, 2026-07-10) ──
+  // Folha: 1× na vida, só nasce do funil ('pending' escrito no fim do onboarding).
+  // Dica do ＋: 1.ª VISITA ao Início DEPOIS da folha (nunca as duas juntas — a visita
+  // em que a folha aparece fica marcada e a dica espera pela seguinte). Morre a
+  // qualquer toque (onTouchStart da raiz). Flags por utilizador — nunca reaparecem.
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [plusTip, setPlusTip] = useState(false);
+  const welcomeThisVisit = useRef(false);
+  useEffect(() => {
+    let on = true;
+    if (!user?.id) return () => { on = false; };
+    AsyncStorage.getItem(`cp_welcome_${user.id}`).then((v) => {
+      if (on && v === 'pending') { welcomeThisVisit.current = true; setWelcomeOpen(true); }
+    }).catch(() => {});
+    return () => { on = false; };
+  }, [user?.id]);
+  const closeWelcome = () => {
+    setWelcomeOpen(false);
+    if (user?.id) AsyncStorage.setItem(`cp_welcome_${user.id}`, 'seen').catch(() => {});
+  };
+  useFocusEffect(useCallback(() => {
+    let on = true;
+    if (user?.id && !welcomeThisVisit.current) {
+      Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_plus_${user.id}`)])
+        .then(([w, t]) => { if (on && w === 'seen' && !t) setPlusTip(true); })
+        .catch(() => {});
+    }
+    // Ao SAIR da aba: a visita-da-folha termina (a dica fica elegível na próxima) e
+    // uma dica ainda visível dispensa-se em silêncio (viu-a passar — não se repete).
+    return () => { on = false; welcomeThisVisit.current = false; setPlusTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {}); return false; }); };
+  }, [user?.id]));
+  const dismissPlusTip = () => {
+    if (!plusTip) return;
+    setPlusTip(false);
+    if (user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {});
+  };
 
   // ── Estado do voo AO VIVO (proxy AirLabs via Edge Function `flight-status`) ──
   // Só para o voo do card Serviços, e só DENTRO DA JANELA (~4 h antes da partida até ~1 h
@@ -1122,7 +1162,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <SafeAreaView style={s.safe} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
       {/* Atmosfera — noite: glow de candeeiro (véspera) · dia: HALO da cor do tempo */}
       {night ? (
         <View pointerEvents="none" style={[s.lampWrap, { top: TUNE.lamp.top }]}>
@@ -1441,6 +1481,15 @@ export default function HomeScreen({ navigation }) {
         flightNo={sendCard ? sendCard.flightNo : undefined} dateLabel={sendCard ? sendCard.dateLabel : undefined}
         sectors={sendCard ? sendCard.sectors : undefined} duration={sendCard ? sendCard.duration : undefined}
         date={sendCard ? sendCard.date : undefined} legs={sendCard ? sendCard.legs : undefined} />
+
+      {/* Dica do ＋ (1.ª visita pós-folha) — flutua acima da tab bar, seta ao ＋; a página fica viva. */}
+      <Tip visible={plusTip} arrow="down" lang={lang} style={{ bottom: 10 }}
+        bold={l('Cria aqui.', 'Create here.')}
+        tail={l('Serviços, simulações e eventos — tudo nasce no ＋.', 'Duties, simulations and events — all born in the ＋.')}
+        onDismiss={dismissPlusTip} />
+
+      {/* Folha de boas-vindas — 1× na vida, só nascida do funil (flag 'pending'). */}
+      <WelcomeSheet visible={welcomeOpen} onDone={closeWelcome} lang={lang} />
     </SafeAreaView>
   );
 }
@@ -1452,8 +1501,8 @@ const makeSkin = (P, night) => StyleSheet.create({
   greet: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 10 },
 
   // Banda de alerta (mockup .alertband): sangra até às margens, borda fina acima/abaixo.
-  band: { marginTop: 9, marginHorizontal: -22, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: P.warnSoft, borderTopWidth: 1, borderBottomWidth: 1, borderColor: night ? 'rgba(240,138,60,0.35)' : '#F2CBA5' },
-  bandRed: { backgroundColor: P.redSoft, borderColor: night ? 'rgba(229,115,104,0.35)' : '#E7C0BA' },
+  band: { marginTop: 9, marginHorizontal: -22, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: P.warnSoft, borderTopWidth: 1, borderBottomWidth: 1, borderColor: P.warnSoftLine },
+  bandRed: { backgroundColor: P.redSoft, borderColor: P.redSoftLine },
   bandT: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.warn },
   bandTRed: { color: P.red },
   bandS: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: night ? '#E8B27E' : '#B07840', marginTop: 1 },

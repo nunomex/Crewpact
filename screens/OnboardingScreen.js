@@ -9,10 +9,11 @@
 //    (dia 01 por convenção — o prémio de permanência salta por anos, o dia é irrelevante).
 //  · O just-in-time dos Números foi DESCARTADO (funil completo → nada fica por perguntar).
 // A gravação (updateProfile + upsertProfile) é a MESMA do modo reconfiguração de sempre.
-import React, { useContext, useState, useRef } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getLocales } from 'expo-localization';
+import AsyncStorage from '../data/secureStorage';
 import Icon from '../components/Icon';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { countryName as countryNameOf, countryFlag } from '../data/countries';
@@ -23,6 +24,23 @@ import { getAe } from '../ae';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+
+// VISTO de seleção (mockup design/onboarding-selecao.html ①/⑤, 2026-07-10): disco
+// amarelo 22 + check ink — a MESMA marca em linhas e cartões ("amarelo = escolhido";
+// o ink invertido fica reservado a botões). Pop suave ao aparecer (o eco do "Conta
+// criada"); reduce-motion = direto.
+function SelTick({ reduce, style }) {
+  const v = useRef(new Animated.Value(reduce ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduce) { v.setValue(1); return; }
+    Animated.spring(v, { toValue: 1, friction: 6, tension: 280, useNativeDriver: true }).start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Animated.View style={[o.tick, style, { transform: [{ scale: v }] }]}>
+      <Icon name="check" size={12} color={PELE.ink} />
+    </Animated.View>
+  );
+}
 
 export default function OnboardingScreen() {
   const { user, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang } = useContext(AppContext);
@@ -140,6 +158,9 @@ export default function OnboardingScreen() {
     setSaving(false);
     if (result.user) setUser(result.user);
     setProfile(payload);
+    // A folha de BOAS-VINDAS só nasce do funil (mockup boas-vindas): arma-se aqui,
+    // o Início mostra-a 1× e marca 'seen'. Quem já tinha conta nunca a vê.
+    if (user?.id) await AsyncStorage.setItem(`cp_welcome_${user.id}`, 'pending').catch(() => {});
     success();
     setOnboarded(true);
   };
@@ -162,7 +183,7 @@ export default function OnboardingScreen() {
           <Text style={[o.lbl, sel && { color: PELE.ink }]} numberOfLines={1}>{tx(item.label || item.name, lang)}</Text>
           {sub ? <Text style={o.sub} numberOfLines={1}>{sub}</Text> : null}
         </View>
-        {sel ? <View style={o.selDot} /> : <Icon name="chevron" size={14} color={PELE.ghost} />}
+        {sel ? <SelTick reduce={reduce} /> : <Icon name="chevron" size={14} color={PELE.ghost} />}
       </TouchableOpacity>
     );
   };
@@ -204,12 +225,14 @@ export default function OnboardingScreen() {
               { id: 'cabin', t: l('Tripulante de cabine', 'Cabin crew'), s2: ae || selAirline ? l('acordo próprio da cabine', 'the cabin crew’s own agreement') : '' },
             ].map((c) => {
               const sel = draft.crewType === c.id;
+              const dimmed = !sel && !!draft.crewType;   // há escolha e não é este → esbate
               return (
                 <TouchableOpacity key={c.id} style={[o.bigcard, sel && o.bigcardSel]} activeOpacity={0.8}
                   onPress={() => { select(); setDraft({ ...draft, crewType: c.id, crewCategory: null, crewContract: null, crewFleet: null }); }}
                   accessibilityRole="button" accessibilityState={{ selected: sel }}>
-                  <Text style={[o.bigT, sel && { color: PELE.paper }]}>{c.t}</Text>
-                  {c.s2 ? <Text style={[o.bigS, sel && { color: PELE.onInkSub }]}>{c.s2}</Text> : null}
+                  {sel ? <SelTick reduce={reduce} style={o.bigTick} /> : null}
+                  <Text style={[o.bigT, dimmed && { color: PELE.grey }]}>{c.t}</Text>
+                  {c.s2 ? <Text style={o.bigS}>{c.s2}</Text> : null}
                 </TouchableOpacity>
               );
             })
@@ -228,7 +251,7 @@ export default function OnboardingScreen() {
             <View>
               <View style={o.monthPill}>
                 <TextInput value={draft.serviceStart} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, serviceStart: maskMonth(v) }); }}
-                  placeholder="2018-03" placeholderTextColor="#B4B0A8" keyboardType="number-pad"
+                  placeholder="2018-03" placeholderTextColor={PELE.placeholder} keyboardType="number-pad"
                   maxLength={7} style={o.monthInput} allowFontScaling={false} />
               </View>
               <Text style={o.hint}>{l('Formato AAAA-MM (ex.: 2018-03). Editável depois no Perfil.', 'Format YYYY-MM (e.g. 2018-03). Editable later in Profile.')}</Text>
@@ -276,11 +299,15 @@ const o = StyleSheet.create({
   code: { fontFamily: PELE_FONT.display, fontSize: 19, color: PELE.grey, minWidth: 44 },
   lbl: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   sub: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
-  selDot: { width: 9, height: 9, borderRadius: 99, backgroundColor: PELE.yellow },
+  // Visto de seleção (substituiu o ponto 9px e a placa preta — mockup onboarding-selecao)
+  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center' },
+  bigTick: { position: 'absolute', top: 14, right: 14 },
   grp: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.8, color: PELE.grey, textTransform: 'uppercase', marginTop: 14, marginBottom: 2 },
 
   bigcard: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: 18, paddingVertical: 24, paddingHorizontal: 20, marginBottom: 12 },
-  bigcardSel: { backgroundColor: PELE.ink, borderColor: PELE.ink },
+  // Escolhido = PAPEL com borda ink + visto no canto (a inversão a preto morreu:
+  // ink invertido é linguagem de BOTÃO, não de seleção — decisão do founder 2026-07-10)
+  bigcardSel: { borderColor: PELE.ink, borderWidth: 2, paddingVertical: 23.5, paddingHorizontal: 19.5 },
   bigT: { fontSize: 16.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   bigS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
 

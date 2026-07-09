@@ -551,7 +551,7 @@ export const STRINGS = {
     'profile.pwOkMsg': 'Palavra-passe alterada.',
 
     // Login
-    'login.tagline': 'O teu acordo de empresa, sempre contigo.',
+    'login.tagline': 'Voa. Nós contamos o resto.',
     'login.noAccount': 'Não tens conta?',
     'login.createLink': 'Criar conta',
     'login.errSignupHint': 'Ainda não tens conta?',
@@ -1044,7 +1044,7 @@ export const STRINGS = {
     'profile.pwOkMsg': 'Password changed.',
 
     // Login
-    'login.tagline': 'Your collective agreement, always with you.',
+    'login.tagline': 'You fly. We count the rest.',
     'login.noAccount': "Don't have an account?",
     'login.createLink': 'Create account',
     'login.errSignupHint': "Don't have an account yet?",

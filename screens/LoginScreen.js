@@ -43,7 +43,7 @@ function Field({ value, onChangeText, placeholder, error, secure,
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#B4B0A8"
+          placeholderTextColor={PELE.placeholder}
           secureTextEntry={secure && !show}
           autoCapitalize={autoCapitalize}
           keyboardType={keyboardType}
@@ -176,6 +176,10 @@ export default function LoginScreen() {
   const suFullName = `${suFirst.trim()} ${suLast.trim()}`.trim();
 
   const lPwRef    = useRef();
+  // Encadeamento do "seguinte" no teclado do SIGNUP (auditoria 2026-07-10: o next não saltava).
+  const suLastRef  = useRef();
+  const suEmailRef = useRef();
+  const suPwRef    = useRef();
   const newPw2Ref = useRef();
   const inFlight  = useRef(false);   // guarda anti-duplo-submit: ignora toques enquanto há pedido a decorrer
 
@@ -458,16 +462,20 @@ export default function LoginScreen() {
                 ) : null}
                 <Field value={suFirst} onChangeText={v => { setSuFirst(v); setSuErr(e => ({ ...e, first: '' })); }}
                   placeholder={lang === 'en' ? 'first name' : 'primeiro nome'} error={suErr.first} icon="person-outline"
-                  autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next" />
+                  autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next"
+                  onSubmitEditing={() => suLastRef.current?.focus()} />
                 <Field value={suLast} onChangeText={v => { setSuLast(v); setSuErr(e => ({ ...e, last: '' })); }}
                   placeholder={lang === 'en' ? 'last name' : 'apelido'} error={suErr.last} icon="person-outline"
-                  autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="next" />
+                  autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="next"
+                  inputRef={suLastRef} onSubmitEditing={() => suEmailRef.current?.focus()} />
                 <Field value={suEmail} onChangeText={v => { setSuEmail(v); setSuErr(e => ({ ...e, email: '' })); }}
                   placeholder={t('login.email', lang)} error={suErr.email} icon="mail-outline"
-                  keyboardType="email-address" textContentType="username" autoComplete="email" returnKeyType="next" />
+                  keyboardType="email-address" textContentType="username" autoComplete="email" returnKeyType="next"
+                  inputRef={suEmailRef} onSubmitEditing={() => suPwRef.current?.focus()} />
                 <Field value={suPw} onChangeText={v => { setSuPw(v); setSuErr(e => ({ ...e, pw: '' })); }}
                   placeholder={lang === 'en' ? 'create a password' : 'cria uma palavra-passe'} error={suErr.pw} secure icon="lock-closed-outline"
-                  textContentType="newPassword" autoComplete="new-password" returnKeyType="done" onSubmitEditing={handleSignup} />
+                  textContentType="newPassword" autoComplete="new-password" returnKeyType="done"
+                  inputRef={suPwRef} onSubmitEditing={handleSignup} />
                 <StrengthBar password={suPw} lang={lang} />
                 <PillButton onPress={handleSignup} loading={loading} label={t('login.createLink', lang)} />
                 {/* TERMOS no ponto legalmente relevante: aceites AO CRIAR (clickwrap-lite; links abrem o site) — cobre email E social. */}
@@ -615,7 +623,7 @@ const s = StyleSheet.create({
   wmNameBold:   { fontFamily: PELE_FONT.displayHeavy },
   tagline:      { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.grey, textAlign: 'center', lineHeight: 19, marginBottom: 30, alignSelf: 'center', maxWidth: 230 },
 
-  // Botão-pílula ink + seta amarela
+  // Botão-pílula ink (56 DELIBERADO vs campos 54: o CTA destaca-se 2pt — auditoria 2026-07-10)
   btn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: PELE.ink, borderRadius: 999, height: 56, marginTop: SPACE.xs },
   btnTxt:       { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },
 
@@ -629,9 +637,9 @@ const s = StyleSheet.create({
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -2, marginBottom: 22, marginRight: 4 },
 
   // Banners de erro/ok (tons suaves da pele)
-  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#E7C0BA' },
+  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: PELE.redSoftLine },
   errBannerTxt: { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.red },
-  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.okSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#BFE0CD' },
+  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.okSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: PELE.okSoftLine },
   okBannerTxt:  { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.ok },
 
   // Cabeçalho dos passos (forgot/reset à esquerda; code centra inline) — H2 Barlow do mockup
@@ -656,5 +664,5 @@ const s = StyleSheet.create({
   socialRow:    { flexDirection: 'row', justifyContent: 'center', gap: 18 },
   socialCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
   socialOff:    { opacity: 0.35 },
-  socialSoon:   { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.8, textTransform: 'uppercase', textAlign: 'center', marginTop: 14 },
+  socialSoon:   { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', marginTop: 14 },   // tracking = orTxt (mesmo papel tipográfico)
 });

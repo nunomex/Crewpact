@@ -1,7 +1,8 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useScrollToTop } from '@react-navigation/native';
+import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
+import Tip from '../components/Tip';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import { RADIUS, GUTTER, TYPE, SPACE, SHADOW, PELE, PELE_FONT } from '../data/constants';
 import Icon from '../components/Icon';
@@ -94,6 +95,25 @@ export default function EscalaScreen({ navigation, route }) {
     if (!user?.id) return;
     AsyncStorage.getItem(`cp_record_${user.id}`).then(v => { if (v) { try { setRecForm(JSON.parse(v)); } catch { /* corrompido */ } } }).catch(() => {});
   }, [user?.id]);
+
+  // ── DICA da grelha (mockup design/boas-vindas.html, 2026-07-10): 1.ª abertura da
+  // aba, SÓ pós-folha de boas-vindas (contas nascidas do funil). Morre a qualquer
+  // toque; ao sair da aba com a dica visível, marca-se vista (viu-a passar).
+  const [gridTip, setGridTip] = useState(false);
+  useFocusEffect(useCallback(() => {
+    let on = true;
+    if (user?.id) {
+      Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_escala_${user.id}`)])
+        .then(([w, t2]) => { if (on && w === 'seen' && !t2) setGridTip(true); })
+        .catch(() => {});
+    }
+    return () => { on = false; setGridTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {}); return false; }); };
+  }, [user?.id]));
+  const dismissGridTip = () => {
+    if (!gridTip) return;
+    setGridTip(false);
+    if (user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {});
+  };
 
   // FAB "Serviço" (tab bar) → salta para o mês de hoje e abre o popup do novo serviço (hoje).
   useEffect(() => {
@@ -359,7 +379,7 @@ export default function EscalaScreen({ navigation, route }) {
   ].filter(Boolean).join(' · ') : '';
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <SafeAreaView style={s.safe} edges={['top']} onTouchStart={gridTip ? dismissGridTip : undefined}>
       <PeleSide label="ESCALA" accent={monthName.toUpperCase()} />
       <View style={s.body}>
         {/* Topo pele (mockup) — avatar↖ · sino↗. Ferramentas realojadas: importar→FAB "+" ·
@@ -870,6 +890,12 @@ export default function EscalaScreen({ navigation, route }) {
           })}
         </View>
       </PeleSheet>
+
+      {/* Dica da grelha (1.ª abertura pós-folha) — flutua sobre a grelha, seta para cima. */}
+      <Tip visible={gridTip} arrow="up" lang={lang} style={{ top: 264 }}
+        bold={l('Toca num dia', 'Tap a day')}
+        tail={l('para ver o detalhe — ou para criar um serviço nesse dia.', 'to see the detail — or to create a duty on that day.')}
+        onDismiss={dismissGridTip} />
     </SafeAreaView>
   );
 }

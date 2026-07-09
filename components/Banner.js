@@ -6,7 +6,7 @@ import { RADIUS, PELE, PELE_FONT } from '../data/constants';
 // Tom do banner → fundo suave + borda + acento do ÍCONE (tokens da PELE).
 // A pílula de ação é INK (texto papel = contraste máximo, acessível).
 const TONES = {
-  warn: { soft: PELE.warnSoft, border: '#F2CBA5', accent: PELE.warn },
+  warn: { soft: PELE.warnSoft, border: PELE.warnSoftLine, accent: PELE.warn },
   info: { soft: PELE.info, border: '#CBDDE9', accent: '#3A6A8A' },
 };
 

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — seleção no onboarding (4 variantes)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:900px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:20px 18px;box-shadow:0 14px 36px rgba(20,22,26,.08)}
+  .q{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1;text-transform:uppercase;margin-bottom:2px}
+  .qsub{font-size:11px;font-weight:500;color:var(--grey);margin-bottom:10px}
+
+  .row{display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)}
+  .code{font-family:var(--disp);font-weight:700;font-size:19px;color:var(--grey);min-width:44px}
+  .lblw{flex:1;min-width:0}
+  .lbl{font-size:14px;font-weight:700;color:var(--ink)}
+  .sub{font-size:10.5px;font-weight:500;color:var(--grey);margin-top:1px}
+  .chev{color:var(--ghost);font-size:13px;font-weight:800}
+
+  /* ① visto */
+  .tick{width:22px;height:22px;border-radius:99px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+  .tick svg{width:12px;height:12px}
+  /* ② régua à esquerda */
+  .row.rule{position:relative;background:var(--soft);border-radius:12px;padding-left:14px;border-bottom-color:transparent}
+  .row.rule::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--yellow)}
+  /* ③ placa ink */
+  .row.inkrow{background:var(--ink);border-radius:14px;padding-left:14px;padding-right:14px;border-bottom-color:transparent}
+  .row.inkrow .code{color:var(--yellow)}
+  .row.inkrow .lbl{color:var(--paper)}
+  .row.inkrow .sub{color:rgba(244,242,237,0.55)}
+  /* ④ ponto atual */
+  .dot{width:9px;height:9px;border-radius:99px;background:var(--yellow)}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · onboarding · seleção de opção</div>
+  <h1>como se marca a escolhida?</h1>
+  <p>O ponto 9px (atual, ④) é a linguagem certa mas pode ser tímido para uma decisão de perfil — e o founder também
+  questiona a <b>inversão a preto</b> dos cartões Piloto/Cabine. A resposta de sistema: <b>UMA linguagem de seleção
+  para tudo</b>. As variantes ①–④ tratam as linhas; o quadro ⑤ mostra os cartões SEM inversão, com a mesma marca da ①.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="card">
+      <div class="q">A tua categoria?</div>
+      <div class="qsub">O AE paga por categoria.</div>
+      <div class="row"><span class="code">CPT</span><span class="lblw"><span class="lbl">Comandante</span></span><span class="chev">›</span></div>
+      <div class="row"><span class="code">SFO</span><span class="lblw"><span class="lbl" style="color:var(--ink)">Oficial-piloto sénior</span></span>
+        <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6.5"/></svg></span></div>
+      <div class="row"><span class="code">FO</span><span class="lblw"><span class="lbl">Oficial-piloto</span></span><span class="chev">›</span></div>
+      <div class="row" style="border-bottom:0"><span class="code">SO</span><span class="lblw"><span class="lbl">Oficial-piloto júnior</span></span><span class="chev">›</span></div>
+    </div>
+    <div class="t">① Visto — a convenção Apple</div>
+    <div class="d">Disco amarelo 22 + check ink no lugar do chevron. Ecoa o "Conta criada" (check amarelo) — a mesma celebração, em miniatura.</div>
+    <div class="spec"><b>Prós:</b> convenção universal (Settings do iOS), lê-se de relance, alvo visual generoso. <b>Contras:</b> nenhum sério. <b>Motion:</b> pop suave do disco (spring f6) ao selecionar.</div>
+  </div>
+
+  <div class="mock">
+    <div class="card">
+      <div class="q">A tua categoria?</div>
+      <div class="qsub">O AE paga por categoria.</div>
+      <div class="row"><span class="code">CPT</span><span class="lblw"><span class="lbl">Comandante</span></span><span class="chev">›</span></div>
+      <div class="row rule"><span class="code" style="color:var(--ink)">SFO</span><span class="lblw"><span class="lbl">Oficial-piloto sénior</span></span></div>
+      <div class="row"><span class="code">FO</span><span class="lblw"><span class="lbl">Oficial-piloto</span></span><span class="chev">›</span></div>
+      <div class="row" style="border-bottom:0"><span class="code">SO</span><span class="lblw"><span class="lbl">Oficial-piloto júnior</span></span><span class="chev">›</span></div>
+    </div>
+    <div class="t">② Régua à esquerda + fundo soft</div>
+    <div class="d">A régua amarela do wordmark, deitada ao serviço da seleção; a linha ganha fundo soft e arredonda.</div>
+    <div class="spec"><b>Prós:</b> editorial, muito "pele", silencioso. <b>Contras:</b> menos convencional (o utilizador tem de aprender); o realce à esquerda compete com o código Barlow.</div>
+  </div>
+
+  <div class="mock">
+    <div class="card">
+      <div class="q">A tua categoria?</div>
+      <div class="qsub">O AE paga por categoria.</div>
+      <div class="row"><span class="code">CPT</span><span class="lblw"><span class="lbl">Comandante</span></span><span class="chev">›</span></div>
+      <div class="row inkrow"><span class="code">SFO</span><span class="lblw"><span class="lbl">Oficial-piloto sénior</span></span></div>
+      <div class="row"><span class="code">FO</span><span class="lblw"><span class="lbl">Oficial-piloto</span></span><span class="chev">›</span></div>
+      <div class="row" style="border-bottom:0"><span class="code">SO</span><span class="lblw"><span class="lbl">Oficial-piloto júnior</span></span><span class="chev">›</span></div>
+    </div>
+    <div class="t">③ Placa ink — a linguagem dos cartões</div>
+    <div class="d">A escolhida inverte (fundo ink, código amarelo, texto papel) — exatamente o que os cartões Piloto/Cabine já fazem.</div>
+    <div class="spec"><b>Prós:</b> UMA linguagem de seleção no funil inteiro; certeza máxima de relance. <b>Contras:</b> pesado em listas longas (33 bases); a placa "salta" na grelha hairline.</div>
+  </div>
+
+  <div class="mock">
+    <div class="card">
+      <div class="q">A tua categoria?</div>
+      <div class="qsub">O AE paga por categoria.</div>
+      <div class="row"><span class="code">CPT</span><span class="lblw"><span class="lbl">Comandante</span></span><span class="chev">›</span></div>
+      <div class="row"><span class="code" style="color:var(--ink)">SFO</span><span class="lblw"><span class="lbl">Oficial-piloto sénior</span></span><span class="dot"></span></div>
+      <div class="row"><span class="code">FO</span><span class="lblw"><span class="lbl">Oficial-piloto</span></span><span class="chev">›</span></div>
+      <div class="row" style="border-bottom:0"><span class="code">SO</span><span class="lblw"><span class="lbl">Oficial-piloto júnior</span></span><span class="chev">›</span></div>
+    </div>
+    <div class="t">④ Ponto 9px — o atual (controlo)</div>
+    <div class="d">A referência para comparares. É coerente com o resto da app (ponto da tab bar), mas discreto para uma decisão de perfil.</div>
+    <div class="spec"><b>Prós:</b> já existe; o mais calmo. <b>Contras:</b> foi o que te deixou em dúvida — sinal fraco para uma escolha que define o salário.</div>
+  </div>
+
+  <div class="mock">
+    <div class="card">
+      <div class="q">Piloto ou cabine?</div>
+      <div class="qsub">O acordo de empresa é diferente para cada um.</div>
+      <div style="border:2px solid var(--ink);border-radius:16px;padding:16px;margin-top:6px;position:relative">
+        <span class="tick" style="position:absolute;top:14px;right:14px"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6.5"/></svg></span>
+        <div style="font-family:var(--disp);font-weight:700;font-size:24px;text-transform:uppercase">Piloto</div>
+        <div class="sub" style="margin-top:3px">acordo próprio dos pilotos</div>
+      </div>
+      <div style="border:1.5px solid var(--line);border-radius:16px;padding:16px;margin-top:10px">
+        <div style="font-family:var(--disp);font-weight:700;font-size:24px;text-transform:uppercase;color:var(--grey)">Tripulante de cabine</div>
+        <div class="sub" style="margin-top:3px">acordo próprio da cabine</div>
+      </div>
+    </div>
+    <div class="t">⑤ Cartões Piloto/Cabine — SEM inversão</div>
+    <div class="d">O cartão escolhido mantém-se papel: a borda engrossa para ink (1.5→2) e ganha o MESMO visto amarelo da variante ① no canto. O não-escolhido esbate para cinza.</div>
+    <div class="spec"><b>A jogada de sistema:</b> visto amarelo = "escolhido" em TODO o funil (linhas + cartões) — uma palavra, dita sempre da mesma maneira. A placa preta deixa de existir na seleção (o ink invertido fica reservado a botões/CTAs). <b>Motion:</b> o mesmo pop do disco.</div>
+  </div>
+
+</div>
+</body>
+</html>

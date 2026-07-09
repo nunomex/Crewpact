@@ -125,7 +125,7 @@ export default function LockScreen() {
             <View style={s.pwPill}>
               <Ionicons name="lock-closed-outline" size={17} color={PELE.grey} style={{ marginRight: 11 }} />
               <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry
-                placeholder={t('profile.pwCur', lang)} placeholderTextColor="#B4B0A8" style={s.pwInput} autoFocus
+                placeholder={t('profile.pwCur', lang)} placeholderTextColor={PELE.placeholder} style={s.pwInput} autoFocus
                 textContentType="password" autoComplete="current-password"
                 autoCapitalize="none" autoCorrect={false} editable={!pwBusy} onSubmitEditing={submitPw} returnKeyType="go" />
             </View>

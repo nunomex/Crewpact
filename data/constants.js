@@ -142,6 +142,10 @@ export const PELE = {
   ok: '#118A55', warn: '#E86A10', red: '#C6362B', info: '#EAF2F7',
   // tons suaves de estado (cartões "pintados": Hoje, cartões de domínio da INFO)
   okSoft: '#E7F3EC', warnSoft: '#FBEAD2', redSoft: '#F6E9E6', yellowSoft: '#FBF1D6',
+  // bordas dos tons suaves (banda/banners — um degrau acima do soft; eram hex fantasma)
+  okSoftLine: '#BFE0CD', warnSoftLine: '#F2CBA5', redSoftLine: '#E7C0BA',
+  // placeholder de input (auditoria 2026-07-10: estava hardcoded em 3 ecrãs)
+  placeholder: '#B4B0A8',
   // sobre placa PRETA (cartões escuros da carteira · dock · FAB)
   onInk: '#FFFFFF', onInkSub: '#8F8F88', onInkFaint: '#DDDBD3',
 };
@@ -154,6 +158,8 @@ export const PELE_NIGHT = {
   yellow: '#FFB800',
   ok: '#46C98A', warn: '#F08A3C', red: '#E57368', info: 'rgba(234,242,247,0.12)',
   okSoft: 'rgba(70,201,138,0.14)', warnSoft: 'rgba(240,138,60,0.14)', redSoft: 'rgba(229,115,104,0.14)', yellowSoft: 'rgba(255,184,0,0.12)',
+  okSoftLine: 'rgba(70,201,138,0.35)', warnSoftLine: 'rgba(240,138,60,0.35)', redSoftLine: 'rgba(229,115,104,0.35)',
+  placeholder: 'rgba(244,242,237,0.38)',
   onInk: '#0D131C', onInkSub: '#8F8F88', onInkFaint: '#3A4250',
 };
 // Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
