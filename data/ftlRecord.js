@@ -88,89 +88,166 @@ export const buildRecordModel = ({
   };
 };
 
-// Modelo → documento HTML (A4, pronto a imprimir / exportar para PDF).
-export const recordHtml = (model, lang = 'pt') => {
+// Fantasma do período no cabeçalho ("JUL ’26" · "2026" · "’25–’26") — meses FIXOS (Intl varia).
+const MON3 = {
+  pt: ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'],
+  en: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+};
+const WD3 = {
+  pt: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'],
+  en: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
+};
+// Data da linha HUMANIZADA ("SEG 15 JUN", como a app fala) — o ISO cru era frio e ilegível
+// (crítica do user ao 1.º PDF, 2026-07-10). O sufixo (1/2) dos dias com 2 serviços mantém-se.
+const fmtRowDate = (dateStr, lang) => {
+  const s = String(dateStr || '');
+  const iso = s.slice(0, 10);
+  const sfx = s.length > 10 ? s.slice(10).trim() : '';
+  const d = new Date(`${iso}T12:00:00`);
+  if (isNaN(d)) return { main: s, sfx: '' };
+  const W = WD3[lang] || WD3.pt, M = MON3[lang] || MON3.pt;
+  return { main: `${W[d.getDay()]} ${d.getDate()} ${M[d.getMonth()]}`, sfx };
+};
+const periodGhost = (startIso, endIso, lang) => {
+  const a = String(startIso || '').slice(0, 10), b = String(endIso || '').slice(0, 10);
+  if (!a) return '—';
+  const M = MON3[lang] || MON3.pt;
+  const [ya, ma] = [a.slice(0, 4), Number(a.slice(5, 7)) - 1];
+  const [yb, mb] = [b.slice(0, 4), Number(b.slice(5, 7)) - 1];
+  if (ya === yb && ma === mb) return `${M[ma]} ’${ya.slice(2)}`;
+  if (ya === yb) return ya;
+  return `’${ya.slice(2)}–’${yb.slice(2)}`;
+};
+
+// Modelo → documento HTML (A4, pronto a imprimir / exportar para PDF) — NA PELE (2026-07-10,
+// mockup design/relatorios.html frame ②): eyebrow + fantasma do período, linha meta, régua
+// ink, tabela com hairlines e números tabulares, amarelo de marcador SÓ nos totais, janelas
+// 210 com mini-barras. `fontsCss` = @font-face base64 injetado pelo caller (o PDF fica
+// autocontido); vazio → cai nas famílias do sistema (o documento continua legível).
+export const recordHtml = (model, lang = 'pt', fontsCss = '') => {
   const L = LBL[lang] || LBL.pt;
   const W = WIN[lang] || WIN.pt;
   const { header: hd, rows, totals, cumulative } = model;
-  const meta = (k, v) => v ? `<tr><td class="k">${esc(L[k])}</td><td class="v">${esc(v)}</td></tr>` : '';
-  const dataRows = rows.length ? rows.map(r => `
+  // Identidade em GRELHA de especificação (rótulo em cima, valor em baixo) — os spans
+  // corridos liam-se como sopa (crítica do user ao 1.º PDF).
+  const metaCell = (k, v) => (v ? `<div class="mi"><div class="mk">${esc(L[k])}</div><div class="mv">${esc(v)}</div></div>` : '');
+  const dataRows = rows.length ? rows.map(r => {
+    const dt = fmtRowDate(r.date, lang);
+    return `
     <tr${r.over ? ' class="over"' : ''}>
-      <td>${esc(r.date)}</td><td>${esc(r.report)}</td><td>${esc(r.off)}</td><td>${esc(r.on)}</td>
+      <td class="d">${esc(dt.main)}${dt.sfx ? `<span class="sfx"> · ${esc(dt.sfx.replace(/[()]/g, ''))}</span>` : ''}</td>
+      <td class="n g">${esc(r.report)}</td>
+      <td class="n g">${esc(r.off)}–${esc(r.on)}</td>
       <td class="n">${esc(r.sectors)}</td><td class="n">${minToHhmm(r.flightMin)}</td>
-      <td class="n">${esc(r.fdp)}</td><td class="n">${esc(r.duty)}</td><td class="n">${esc(r.rest)}</td>
-    </tr>`).join('') : `<tr><td colspan="9" class="empty">${esc(L.noData)}</td></tr>`;
-  const cumRows = (arr) => arr.map(w => `
-    <tr${w.over ? ' class="over"' : ''}><td>${esc(W[w.id] || w.id)}</td>
-      <td class="n">${fh(w.done)} h</td><td class="n">${esc(w.limit)} h</td></tr>`).join('');
+      <td class="n">${esc(r.fdp)}</td><td class="n">${esc(r.duty)}</td><td class="n g">${esc(r.rest)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" class="empty">${esc(L.noData)}</td></tr>`;
+  // Janelas 210 com mini-barra (feito/limite); acima do limite → barra/valores a vermelho.
+  const winRow = (w) => {
+    const pct = w.limit ? Math.min(100, Math.round((w.done / w.limit) * 100)) : 0;
+    return `<div class="win${w.over ? ' over' : ''}"><div class="wl">${esc(W[w.id] || w.id)}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="wv">${fh(w.done)} / ${esc(w.limit)} h</div></div>`;
+  };
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #14181f; margin: 28px; font-size: 12px; }
-  h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: -.3px; }
-  .sub { color: #6b7280; font-size: 11px; margin-bottom: 16px; }
-  table { width: 100%; border-collapse: collapse; }
-  .meta td { padding: 2px 0; vertical-align: top; }
-  .meta .k { color: #6b7280; width: 120px; }
-  .meta .v { font-weight: 600; }
-  .sec { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: #6b7280; font-weight: 700; margin: 20px 0 6px; }
-  .grid th, .grid td { border-bottom: 1px solid #e5e7eb; padding: 6px 5px; text-align: left; }
-  .grid th { font-size: 9px; letter-spacing: .6px; text-transform: uppercase; color: #6b7280; border-bottom: 1.5px solid #14181f; }
-  .grid td.n, .grid th.n { text-align: right; font-variant-numeric: tabular-nums; font-family: "SFMono-Regular", Menlo, monospace; }
-  .grid tr.over td { color: #b42318; font-weight: 700; }
-  .grid .empty { text-align: center; color: #6b7280; padding: 16px; }
-  .grid tfoot td { border-top: 1.5px solid #14181f; border-bottom: none; font-weight: 700; padding-top: 7px; }
-  .cols { display: flex; gap: 24px; }
-  .cols > div { flex: 1; }
-  .decl { margin-top: 22px; font-size: 11px; line-height: 1.5; }
-  .sign { display: flex; gap: 40px; margin-top: 40px; }
-  .sign > div { flex: 1; }
-  .line { border-bottom: 1px solid #14181f; height: 30px; }
-  .cap { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: .6px; margin-top: 4px; }
-  .foot { margin-top: 26px; font-size: 9px; color: #9aa3af; line-height: 1.5; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+  ${fontsCss}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --red:#C6362B; }
+  @page { margin: 34px 36px; }
+  body { font-family: 'Hanken Grotesk', -apple-system, Helvetica, sans-serif; color: var(--ink); margin: 34px 36px; font-size: 11px; }
+  .brand { display: flex; justify-content: space-between; align-items: baseline; }
+  .wm { font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 1px; }
+  .wm i { font-style: normal; color: var(--yellow); }
+  .reg { font-size: 8.5px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--grey); }
+  .perHero { position: relative; min-height: 78px; margin-top: 8px; }
+  .perGho { position: absolute; right: -4px; top: -10px; font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-weight: 800; font-size: 86px; line-height: 1; letter-spacing: -2px; color: var(--ghost); }
+  .title { font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.02; padding-top: 26px; position: relative; max-width: 340px; }
+  /* Identidade em GRELHA de especificação — rótulo pequeno em cima, valor em baixo. */
+  .meta { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 12px; }
+  .mi { min-width: 64px; }
+  .mk { font-size: 7px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+  .mv { font-size: 10px; font-weight: 800; margin-top: 2px; }
+  .rule { height: 1.5px; background: var(--ink); margin-top: 12px; }
+  /* Faixa-resumo — o mês num relance, ANTES da tabela (o leitor não precisa de somar). */
+  .sum { display: flex; gap: 34px; margin: 14px 0 4px; }
+  .si .sv { font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-weight: 800; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; display: inline-block; border-bottom: 3px solid var(--yellow); padding-bottom: 3px; }
+  .si .sl { font-size: 7px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); margin-top: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  tr { page-break-inside: avoid; }
+  th { font-size: 7.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--grey); text-align: left; padding: 6px 4px; border-bottom: 1.5px solid var(--ink); }
+  th.n { text-align: right; }
+  td { font-size: 9.5px; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+  /* Hierarquia na linha: a DATA é a âncora (ink, forte); horas de contexto em cinza;
+     os números que contam (setores·voo·PSV·serviço) em Barlow ink. */
+  td.d { font-weight: 800; white-space: nowrap; }
+  td.d .sfx { font-weight: 600; color: var(--grey); font-size: 8px; }
+  td.n { text-align: right; font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-weight: 600; font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.n.g { color: var(--grey); font-size: 10.5px; }
+  tr.over td { color: var(--red); font-weight: 800; }
+  .empty { text-align: center; color: var(--grey); padding: 16px; }
+  .secT { font-size: 8.5px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--grey); margin: 0 0 7px; }
+  .winCols { display: flex; gap: 26px; margin-top: 20px; page-break-inside: avoid; }
+  .winCols > div { flex: 1; }
+  .win { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .win .wl { width: 96px; font-size: 8.5px; font-weight: 700; }
+  .win .bar { flex: 1; height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+  .win .bar i { display: block; height: 100%; background: var(--ink); }
+  .win .wv { width: 84px; text-align: right; font-family: 'Barlow Condensed', 'Avenir Next Condensed', sans-serif; font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .win.over .bar i { background: var(--red); }
+  .win.over .wv { color: var(--red); font-weight: 700; }
+  .decl { font-size: 9px; font-weight: 500; color: var(--grey); line-height: 1.55; margin-top: 18px; page-break-inside: avoid; }
+  .sig { display: flex; gap: 28px; margin-top: 38px; page-break-inside: avoid; }
+  .sig > div { flex: 1; border-top: 1px solid var(--ink); padding-top: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--grey); }
+  .adv { font-size: 7.5px; font-weight: 600; color: var(--grey); margin-top: 18px; border-top: 1px solid var(--line); padding-top: 8px; line-height: 1.5; }
 </style></head><body>
-  <h1>${esc(L.title)}</h1>
-  <div class="sub">${esc(L.subtitle)}</div>
-  <table class="meta">
-    ${meta('operator', hd.operator)}${meta('crew', hd.name)}${meta('crewId', hd.crewId)}${meta('email', hd.email)}
-    ${meta('period', hd.periodStart ? `${hd.periodStart} — ${hd.periodEnd}` : '')}
-    ${meta('generated', hd.generatedAt)}
-  </table>
+  <div class="brand">
+    <div class="wm">CREW<i>PACT</i></div>
+    <div class="reg">${esc(L.subtitle)}</div>
+  </div>
+  <div class="perHero">
+    <div class="perGho">${esc(periodGhost(hd.periodStart, hd.periodEnd, lang))}</div>
+    <div class="title">${esc(L.title)}</div>
+  </div>
+  <div class="meta">
+    ${metaCell('crew', hd.name)}${metaCell('crewId', hd.crewId)}${metaCell('operator', hd.operator)}
+    ${metaCell('period', hd.periodStart ? `${String(hd.periodStart).slice(0, 10)} — ${String(hd.periodEnd).slice(0, 10)}` : '')}
+    ${metaCell('generated', hd.generatedAt)}
+  </div>
+  <div class="rule"></div>
 
-  <div class="sec">${esc(L.period)}</div>
-  <table class="grid">
+  <div class="sum">
+    <div class="si"><span class="sv">${esc(totals.duties)}</span><div class="sl">${lang === 'en' ? 'duty periods' : 'períodos de serviço'}</div></div>
+    <div class="si"><span class="sv">${esc(totals.sectors)}</span><div class="sl">${esc(L.sectors)}</div></div>
+    <div class="si"><span class="sv">${minToHhmm(totals.flightMin) || '0:00'}</span><div class="sl">${lang === 'en' ? 'flight hours' : 'horas de voo'}</div></div>
+  </div>
+
+  <table>
     <thead><tr>
-      <th>${esc(L.date)}</th><th>${esc(L.report)}</th><th>${esc(L.off)}</th><th>${esc(L.on)}</th>
+      <th>${esc(L.date)}</th><th class="n">${esc(L.report)}</th><th class="n">${esc(L.off)}–${esc(L.on)}</th>
       <th class="n">${esc(L.sectors)}</th><th class="n">${esc(L.flight)}</th>
       <th class="n">${esc(L.fdp)}</th><th class="n">${esc(L.duty)}</th><th class="n">${esc(L.rest)}</th>
     </tr></thead>
     <tbody>${dataRows}</tbody>
-    <tfoot><tr>
-      <td colspan="4">${esc(L.totals)}</td>
-      <td class="n">${esc(totals.sectors)}</td><td class="n">${minToHhmm(totals.flightMin)}</td>
-      <td class="n"></td><td class="n"></td><td class="n"></td>
-    </tr></tfoot>
   </table>
 
-  <div class="cols">
+  <div class="winCols">
     <div>
-      <div class="sec">${esc(L.cumDuty)}</div>
-      <table class="grid"><thead><tr><th>${esc(L.window)}</th><th class="n">${esc(L.done)}</th><th class="n">${esc(L.limit)}</th></tr></thead>
-      <tbody>${cumRows(cumulative.duty)}</tbody></table>
+      <div class="secT">${esc(L.cumDuty)}</div>
+      ${cumulative.duty.map(winRow).join('')}
     </div>
     <div>
-      <div class="sec">${esc(L.cumFlight)}</div>
-      <table class="grid"><thead><tr><th>${esc(L.window)}</th><th class="n">${esc(L.done)}</th><th class="n">${esc(L.limit)}</th></tr></thead>
-      <tbody>${cumRows(cumulative.flight)}</tbody></table>
+      <div class="secT">${esc(L.cumFlight)}</div>
+      ${cumulative.flight.map(winRow).join('')}
     </div>
   </div>
 
   <p class="decl">${esc(L.declaration)}</p>
-  <div class="sign">
-    <div><div class="line"></div><div class="cap">${esc(L.crew)}${hd.name ? ` — ${esc(hd.name)}` : ''}</div></div>
-    <div><div class="line"></div><div class="cap">${esc(L.signature)} · ${esc(L.placeDate)}</div></div>
+  <div class="sig">
+    <div>${esc(L.signature)}${hd.name ? ` — ${esc(hd.name)}` : ''}</div>
+    <div>${esc(L.placeDate)}</div>
   </div>
-  <div class="foot">${esc(L.advisory)}</div>
+  <div class="adv">${esc(L.advisory)}</div>
 </body></html>`;
 };

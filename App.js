@@ -78,6 +78,9 @@ import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
 import HotelStationScreen from './screens/HotelStationScreen';
+import RelatoriosScreen   from './screens/RelatoriosScreen';
+import DisrupcaoScreen    from './screens/DisrupcaoScreen';
+import EstabilidadeScreen from './screens/EstabilidadeScreen';
 import HotelDetailScreen  from './screens/HotelDetailScreen';
 import TabBar             from './components/TabBar';   // a navegação: barra convencional polida (padrão "melhores apps")
 import OfflineBanner      from './components/OfflineBanner';
@@ -161,6 +164,9 @@ function PerfilStack() {
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
       <Stack.Screen name="HotelStation" component={HotelStationScreen} />
       <Stack.Screen name="HotelDetail" component={HotelDetailScreen} />
+      <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
+      <Stack.Screen name="Disrupcao" component={DisrupcaoScreen} />
+      <Stack.Screen name="Estabilidade" component={EstabilidadeScreen} />
       <Stack.Screen name="Biblioteca" component={InfoScreen} />
       <Stack.Screen name="FtlDetail"  component={FtlDetailScreen} />
     </Stack.Navigator>
@@ -231,6 +237,11 @@ export default function App() {
   const makeHotelCurrent = (station, idx) => setHotels((prev) => { const k = String(station).toUpperCase(); return prev[k] ? { ...prev, [k]: hotelMakeCurrent(prev[k], idx) } : prev; });
   const removeHotelAt = (station, idx) => setHotels((prev) => { const k = String(station).toUpperCase(); const r = hotelRemoveAt(prev[k], idx); const n = { ...prev }; if (r) n[k] = r; else delete n[k]; return n; });
   const removeHotel = (station) => setHotels((prev) => { const n = { ...prev }; delete n[String(station).toUpperCase()]; return n; });
+  // ARQUIVO de alterações de escala (disrupção SNC/RDP): cada alteração CONFIRMADA no import
+  // fica com antes→depois + carimbo de DETEÇÃO — a testemunha com memória (o eCrew reescreve
+  // a história; a prova só existe se alguém guardar as versões). Local, cap 400 entradas.
+  const [rosterLog, setRosterLog] = useState([]);
+  const addRosterLog = (list) => setRosterLog((prev) => [...prev, ...(list || [])].slice(-400));
   const [extraOpen, setExtraOpen] = useState(false);         // GESTÃO de extras (mini-FAB) — lista/apagar
   const [addExtraOpen, setAddExtraOpen] = useState(false);   // formulário de ADICIONAR extra (aberto pela gestão)
   const addAeEvents = (list) => setAeEvents((prev) => [
@@ -652,7 +663,7 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev, ht] = await Promise.all([
+        const [r, dl, fs, pf, al, ax, vd, rm, ci, cn, ev, ht, rlg] = await Promise.all([
           AsyncStorage.getItem(`cp_read_${user.id}`),
           AsyncStorage.getItem(`cp_daylog_${user.id}`),
           AsyncStorage.getItem(`cp_ftlsnap_${user.id}`),
@@ -665,6 +676,7 @@ export default function App() {
           AsyncStorage.getItem(`cp_calendar_name_${user.id}`),
           AsyncStorage.getItem(`cp_ae_events_${user.id}`),
           AsyncStorage.getItem(`cp_hotels_${user.id}`),
+          AsyncStorage.getItem(`cp_rosterlog_${user.id}`),
         ]);
         if (cancelled) return;
         setCalendarId(ci || null);   // calendário do telemóvel escolhido (id) ou null = não ligado
@@ -687,6 +699,7 @@ export default function App() {
           setAeEvents(events);
         } catch { setAeEvents([]); setAeExtras({}); }
         try { setHotels(ht ? (JSON.parse(ht) || {}) : {}); } catch { setHotels({}); }   // hotéis de pernoita
+        try { setRosterLog(rlg ? (JSON.parse(rlg) || []) : []); } catch { setRosterLog([]); }  // arquivo de alterações (disrupção)
         try { setValidities(vd ? (JSON.parse(vd) || []) : []); } catch { setValidities([]); }  // validades & docs
         setRemindersOn(rm === '1');                                                          // lembretes opt-in
         // Catálogo de companhias (global): cache instantânea → refresca do servidor.
@@ -754,6 +767,7 @@ export default function App() {
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_extras_${user.id}`, JSON.stringify(aeExtras)).catch(() => {}); }, [aeExtras, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_ae_events_${user.id}`, JSON.stringify(aeEvents)).catch(() => {}); }, [aeEvents, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_hotels_${user.id}`, JSON.stringify(hotels)).catch(() => {}); }, [hotels, user?.id]);
+  useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_rosterlog_${user.id}`, JSON.stringify(rosterLog)).catch(() => {}); }, [rosterLog, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_validities_${user.id}`, JSON.stringify(validities)).catch(() => {}); }, [validities, user?.id]);
   useEffect(() => { if (hydrated.current && user?.id) AsyncStorage.setItem(`cp_reminders_${user.id}`, remindersOn ? '1' : '0').catch(() => {}); }, [remindersOn, user?.id]);
   useEffect(() => { if (!hydrated.current || !user?.id) return; if (calendarId) AsyncStorage.setItem(`cp_calendar_id_${user.id}`, calendarId).catch(() => {}); else AsyncStorage.removeItem(`cp_calendar_id_${user.id}`).catch(() => {}); }, [calendarId, user?.id]);
@@ -1025,6 +1039,7 @@ export default function App() {
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),
     hotels, saveHotel, saveHotelAt, addHotelAlt, makeHotelCurrent, removeHotelAt, removeHotel,
+    rosterLog, addRosterLog,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,

@@ -38,7 +38,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base, aeEvents, addAeEvents } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -200,6 +200,28 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const conflicts = items.filter((c) => c.status === 'conflict');  // sobrepõem a tua edição
     const saves = items.filter((c) => c.action !== 'delete');
     const run = () => {
+      // ARQUIVO da disrupção (deteta→confirma→GRAVA-SE A MEMÓRIA): cada alteração confirmada
+      // a um serviço existente fica com antes→depois + carimbo de deteção LOCAL — é a prova
+      // que o eCrew não dá (SNC/RDP, ver data/disruption.js). O carimbo é honesto: o momento
+      // em que a app VIU a mudança (esta sincronização), não a publicação da empresa.
+      const p2 = (n) => String(n).padStart(2, '0');
+      const nowD = new Date();
+      const detectedAt = `${nowD.getFullYear()}-${p2(nowD.getMonth() + 1)}-${p2(nowD.getDate())}T${p2(nowD.getHours())}:${p2(nowD.getMinutes())}`;
+      const logEntries = [];
+      for (const c of items) {
+        if (c.action === 'delete') continue;
+        if (c.status !== 'changed' && c.status !== 'conflict') continue;
+        const prev = duties[c.duty.duty_date];
+        if (!prev || prev.deleted || !prev.report_time) continue;
+        logEntries.push({
+          id: `rl${Date.now().toString(36)}${logEntries.length}`,
+          dutyDate: c.duty.duty_date, detectedAt, source: src,
+          route: c.duty.route || prev.route || null,
+          before: { report: prev.report_time || null, end: prev.block_on || null, sectors: prev.sectors ?? null, kind: prev.kind || 'flight' },
+          after: { report: c.duty.report_time || null, end: c.duty.block_on || null, sectors: c.duty.sectors ?? null, kind: c.kind || 'flight' },
+        });
+      }
+      if (logEntries.length && addRosterLog) addRosterLog(logEntries);
       let warn = 0;
       for (const c of items) {
         // Cancelado: só apaga se TU o marcaste (ausência é sinal fraco). Não-marcado → fica como está.

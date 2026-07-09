@@ -562,6 +562,10 @@ export default function SettingsScreen({ navigation }) {
             <Tile icon="bed-outline" label={l('Hotéis', 'Hotels')} value={l('por estação', 'per station')} onPress={() => navigation.navigate('Hoteis')} s={s} />
             {/* Biblioteca = a antiga aba INFO (lei FTL + AE + fontes oficiais + procura) */}
             <Tile icon="book" label={l('Biblioteca', 'Library')} value={l('lei FTL · AE · fontes oficiais', 'FTL law · CLA · official sources')} onPress={() => navigation.navigate('Biblioteca')} s={s} />
+            {/* Relatórios (2026-07-10): o export MUDOU do "···" da Escala para AQUI (padrão
+                Health — os teus documentos exportam-se do Perfil). Wide: casa do futuro
+                relatório de disrupção (RDP/SNC). */}
+            <Tile icon="doc" label={l('Relatórios', 'Reports')} value={l('Registo FTL.245 (PDF) · escala em CSV', 'FTL.245 record (PDF) · roster CSV')} wide onPress={() => navigation.navigate('Relatorios')} s={s} />
             {/* (O card "Companhia · AE" morreu 2026-07-11 — um dado, uma casa: o € do mês
                 vive nos Números (aba), no fecho do Início e no sino "Mês fechado".) */}
           </View>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Relatórios (Perfil) + Registo FTL.245 na pele</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55; --warn:#E86A10; --red:#C6362B;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:960px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:flex;gap:36px;flex-wrap:wrap;max-width:1560px;margin:22px auto 0;align-items:flex-start}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px;max-width:460px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6;max-width:460px}
+  .spec b{color:var(--ink);font-weight:800}
+
+  /* ── frame ① : telefone ── */
+  .phone{width:340px;height:740px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12)}
+  .page{position:absolute;inset:0;padding:16px 19px 20px}
+  .back{width:36px;height:36px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .side{position:absolute;right:9px;top:24px;transform:rotate(90deg);transform-origin:right top;font-size:10px;font-weight:800;letter-spacing:3px;color:var(--ink);white-space:nowrap}
+  .side .y{color:var(--yellow)}
+  .eyb{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-top:14px}
+  .hero{position:relative;min-height:104px}
+  .gho{position:absolute;right:8px;top:-14px;font-family:var(--disp);font-weight:700;font-size:112px;line-height:1;letter-spacing:-3px;color:var(--ghost)}
+  .word{font-family:var(--disp);font-weight:700;font-size:38px;margin-top:26px;position:relative}
+  .kick{font-size:11.5px;font-weight:700;color:var(--grey);margin-top:5px;position:relative}
+  .hr{height:1.5px;background:var(--ink);margin:10px 0 14px}
+  .rcard{border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+  .rK{font-size:8.5px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase}
+  .rName{font-family:var(--disp);font-weight:700;font-size:22px;margin-top:3px}
+  .rMeta{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:3px;line-height:1.5}
+  .rRow{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .seg{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  .segb{padding:7px 12px;font-size:10.5px;font-weight:800;color:var(--grey)}
+  .segb.on{background:var(--ink);color:#fff}
+  .rBtn{flex:1;background:var(--ink);color:var(--paper);border-radius:99px;padding:9px 0;text-align:center;font-size:11px;font-weight:800}
+  .foot2{font-size:9.5px;font-weight:600;color:var(--grey);line-height:1.6;margin-top:4px}
+
+  /* ── frame ② : o DOCUMENTO (A4) ── */
+  .a4{width:480px;min-height:679px;background:#fff;border:1px solid var(--line);box-shadow:0 24px 60px rgba(20,22,26,.14);padding:34px 36px;position:relative}
+  .a4 .brand{display:flex;justify-content:space-between;align-items:baseline}
+  .a4 .wm{font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:1px}
+  .a4 .wm .y{color:var(--yellow)}
+  .a4 .reg{font-size:8px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase}
+  .a4 .perHero{position:relative;height:74px;margin-top:6px}
+  .a4 .perGho{position:absolute;right:-4px;top:-10px;font-family:var(--disp);font-weight:800;font-size:84px;line-height:1;letter-spacing:-2px;color:var(--ghost)}
+  .a4 .title{font-family:var(--disp);font-weight:700;font-size:24px;margin-top:26px;position:relative}
+  /* identidade em GRELHA de especificação (rótulo em cima, valor em baixo) */
+  .a4 .meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:12px}
+  .a4 .mi .mk{font-size:7px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey)}
+  .a4 .mi .mv{font-size:10px;font-weight:800;margin-top:2px}
+  .a4 .rule{height:1.5px;background:var(--ink);margin:12px 0 0}
+  /* faixa-resumo — o mês num relance ANTES da tabela; amarelo = sublinhado dos números */
+  .a4 .sum{display:flex;gap:34px;margin:14px 0 4px}
+  .a4 .si .sv{font-family:'Barlow Condensed';font-weight:800;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;display:inline-block;border-bottom:3px solid var(--yellow);padding-bottom:3px}
+  .a4 .si .sl{font-size:7px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);margin-top:5px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th{font-size:7px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey);text-align:left;padding:5px 4px;border-bottom:1px solid var(--ink)}
+  td{font-size:9px;font-weight:600;padding:5.5px 4px;border-bottom:1px solid var(--line)}
+  td.n,th.n{text-align:right;font-family:var(--disp);font-weight:600;font-size:10.5px;font-variant-numeric:tabular-nums}
+  tr.off td{color:var(--grey);font-weight:500}
+  tr.tot td{border-bottom:none;font-weight:800;padding-top:8px}
+  tr.tot td.n{font-size:11.5px;font-weight:700;position:relative}
+  tr.tot td.lbl{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--grey)}
+  .mark{background:var(--yellow);padding:0 3px}
+  .a4 .secT{font-size:8px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey);margin:16px 0 6px}
+  .win{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .win .wl{width:170px;font-size:8.5px;font-weight:700}
+  .win .bar{flex:1;height:5px;background:var(--soft);border-radius:3px;overflow:hidden}
+  .win .bar i{display:block;height:100%;background:var(--ink)}
+  .win .wv{width:76px;text-align:right;font-family:var(--disp);font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}
+  .a4 .decl{font-size:8.5px;font-weight:500;color:var(--grey);line-height:1.55;margin-top:14px}
+  .a4 .sig{display:flex;gap:26px;margin-top:22px}
+  .a4 .sig div{flex:1;border-top:1px solid var(--ink);padding-top:4px;font-size:7.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey)}
+  .a4 .adv{font-size:7px;font-weight:600;color:var(--grey);margin-top:16px;letter-spacing:.2px}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Relatórios — a casa dos teus documentos + o 245 na pele</div>
+  <h1>relatórios: o cartão do perfil e o próprio PDF</h1>
+  <p>O menu "···" da Escala morre; nasce o cartão <b>Relatórios</b> nas Ferramentas do Perfil (padrão Health: os teus documentos
+  exportam-se do perfil). E o PDF do Registo FTL.245 deixa a Helvetica de sistema e veste a pele — <b>papel, tinta, hairlines,
+  amarelo só nos totais</b>. O relatório de disrupção (RDP/SNC) terá aqui a sua morada quando nascer.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="back">‹</div>
+      <div class="side">RELATÓRIOS · <span class="y">2 DOCS</span></div>
+      <div class="eyb">Documentos</div>
+      <div class="hero">
+        <div class="gho">02</div>
+        <div class="word">Relatórios</div>
+        <div class="kick">prontos a gerar e partilhar · dados do teu telemóvel</div>
+      </div>
+      <div class="hr"></div>
+
+      <div class="rcard">
+        <div class="rK">ORO.FTL.245 · registo legal</div>
+        <div class="rName">Tempos de voo e serviço</div>
+        <div class="rMeta">O teu registo individual assinável — apresentação, calços, PSV, repouso e janelas acumuladas.</div>
+        <div class="rRow">
+          <div class="seg"><span class="segb on">Julho</span><span class="segb">2026</span></div>
+          <div class="rBtn">Gerar PDF</div>
+        </div>
+      </div>
+
+      <div class="rcard">
+        <div class="rK">dados em bruto</div>
+        <div class="rName">Escala em CSV</div>
+        <div class="rMeta">Uma linha por serviço, datas ISO, cabeçalhos limpos — abre no Excel ou Numbers.</div>
+        <div class="rRow">
+          <div class="seg"><span class="segb on">Julho</span><span class="segb">2026</span></div>
+          <div class="rBtn">Partilhar CSV</div>
+        </div>
+      </div>
+
+      <div class="foot2">O Registo 245 é um apoio individual — não substitui os registos oficiais do operador. Tudo é gerado no teu telemóvel.</div>
+    </div></div>
+    <div class="t">① Relatórios — cartão novo nas Ferramentas do Perfil</div>
+    <div class="d">Anatomia root da família (rótulo lateral · fantasma = nº de documentos · kick). Um cartão por documento, com o período (Mês/Ano) e UMA ação. O "···" da Escala morre — um dado, uma casa.</div>
+    <div class="spec"><b>Período:</b> segmento Mês⇄Ano (mês corrente por defeito; ‹› para navegar ou o picker — como os Números) · <b>Gerar PDF</b> → identidade (nome/nº, persistida como hoje) → folha de partilha do sistema · <b>CSV sem pele de propósito</b> (dados são dados) · <b>Disrupção (RDP/SNC):</b> o 3.º cartão nasce AQUI quando a peça existir — nada de mobília morta antes disso.</div>
+  </div>
+
+  <div class="mock">
+    <div class="a4">
+      <div class="brand">
+        <div class="wm">CREW<span class="y">PACT</span></div>
+        <div class="reg">ORO.FTL.245 — registo individual</div>
+      </div>
+      <div class="perHero">
+        <div class="perGho">JUL ’26</div>
+        <div class="title">Registo de Tempos de Voo e Serviço</div>
+      </div>
+      <div class="meta">
+        <div class="mi"><div class="mk">Tripulante</div><div class="mv">Nuno Silva</div></div>
+        <div class="mi"><div class="mk">Nº</div><div class="mv">12345</div></div>
+        <div class="mi"><div class="mk">Operador</div><div class="mv">easyJet</div></div>
+        <div class="mi"><div class="mk">Período</div><div class="mv">2026-07-01 — 2026-07-31</div></div>
+        <div class="mi"><div class="mk">Gerado</div><div class="mv">10 jul 2026</div></div>
+      </div>
+      <div class="rule"></div>
+
+      <div class="sum">
+        <div class="si"><span class="sv">18</span><div class="sl">Períodos de serviço</div></div>
+        <div class="si"><span class="sv">42</span><div class="sl">Setores</div></div>
+        <div class="si"><span class="sv">96:20</span><div class="sl">Horas de voo</div></div>
+      </div>
+
+      <table>
+        <tr><th>Data</th><th class="n">Apres.</th><th class="n">Calços</th><th class="n">Set.</th><th class="n">Voo</th><th class="n">PSV</th><th class="n">Serviço</th><th class="n">Repouso</th></tr>
+        <tr><td style="font-weight:800">SEG 1 JUL</td><td class="n" style="color:var(--grey)">05:30</td><td class="n" style="color:var(--grey)">06:25–14:10</td><td class="n">4</td><td class="n">5:24</td><td class="n">9:06</td><td class="n">9:36</td><td class="n" style="color:var(--grey)">12:18</td></tr>
+        <tr><td style="font-weight:800">TER 2 JUL</td><td class="n" style="color:var(--grey)">06:15</td><td class="n" style="color:var(--grey)">07:05–15:20</td><td class="n">4</td><td class="n">5:54</td><td class="n">9:36</td><td class="n">10:06</td><td class="n" style="color:var(--grey)">18:24</td></tr>
+        <tr><td style="font-weight:800">QUI 4 JUL</td><td class="n" style="color:var(--grey)">14:20</td><td class="n" style="color:var(--grey)">15:05–21:40</td><td class="n">2</td><td class="n">4:06</td><td class="n">7:48</td><td class="n">8:18</td><td class="n" style="color:var(--grey)">10:30</td></tr>
+        <tr><td style="font-weight:800">SEX 5 JUL</td><td class="n" style="color:var(--grey)">06:40</td><td class="n" style="color:var(--grey)">07:25–13:10</td><td class="n">2</td><td class="n">3:54</td><td class="n">7:00</td><td class="n">7:30</td><td class="n" style="color:var(--grey)">—</td></tr>
+      </table>
+
+      <div style="display:flex;gap:26px;margin-top:18px">
+        <div style="flex:1">
+          <div class="secT" style="margin-top:0">Serviço acumulado · 210 a)</div>
+          <div class="win"><div class="wl" style="width:70px">7 dias</div><div class="bar"><i style="width:58%"></i></div><div class="wv">34,8 / 60 h</div></div>
+          <div class="win"><div class="wl" style="width:70px">14 dias</div><div class="bar"><i style="width:52%"></i></div><div class="wv">57,5 / 110 h</div></div>
+          <div class="win"><div class="wl" style="width:70px">28 dias</div><div class="bar"><i style="width:46%"></i></div><div class="wv">88,2 / 190 h</div></div>
+        </div>
+        <div style="flex:1">
+          <div class="secT" style="margin-top:0">Voo acumulado · 210 b)</div>
+          <div class="win"><div class="wl" style="width:70px">28 dias</div><div class="bar"><i style="width:41%"></i></div><div class="wv">41,3 / 100 h</div></div>
+          <div class="win"><div class="wl" style="width:70px">Ano civil</div><div class="bar"><i style="width:57%"></i></div><div class="wv">512,4 / 900 h</div></div>
+          <div class="win"><div class="wl" style="width:70px">12 meses</div><div class="bar"><i style="width:54%"></i></div><div class="wv">540,1 / 1000 h</div></div>
+        </div>
+      </div>
+
+      <div class="decl">Declaro que os registos acima refletem com exatidão os meus períodos de serviço, períodos de serviço de voo, tempos de voo e períodos de repouso, em conformidade com o ORO.FTL.245.</div>
+      <div class="sig"><div>Assinatura</div><div>Local e data</div></div>
+      <div class="adv">Documento gerado pela CrewPact para apoio ao registo individual. Não substitui os registos oficiais do operador.</div>
+    </div>
+    <div class="t">② O PDF — a pele impressa (v2, crítica do founder ao 1.º)</div>
+    <div class="d">O que mudou do v1: <b>faixa-resumo</b> em Barlow grande com o sublinhado amarelo (o mês num relance, antes da tabela — os totais vivem UMA vez, aqui); <b>datas humanas</b> ("SEG 1 JUL", não ISO cru); <b>hierarquia na linha</b> (data-âncora ink · horas de contexto em cinza · os números que contam em Barlow ink); identidade em grelha de especificação; janelas 210 em <b>duas colunas</b>.</div>
+    <div class="spec"><b>Fontes embebidas em base64</b> no HTML (Barlow Condensed + Hanken Grotesk) — o PDF é autocontido e sai igual em qualquer dispositivo (hoje saía em Helvetica do sistema) · <b>Horas a 1 casa decimal</b> como o motor já dá (sem € no 245 — a lei dos cêntimos não se aplica aqui) · <b>Estrutura de dados intacta</b> (buildRecordModel não muda — o re-skin é só o recordHtml) · <b>Escape de HTML mantido</b> em toda a entrada dinâmica.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Share, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import Tip from '../components/Tip';
@@ -12,8 +12,6 @@ import PeleHeader, { peleWord } from '../components/PeleHeader';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
-import { buildRecordModel, recordHtml } from '../data/ftlRecord';
-import { printToPdfAndShare } from '../data/pdf';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
 import { shortNoticeCandidates } from '../data/rosterDiff';
@@ -24,7 +22,6 @@ import { legZulu } from '../data/zulu';
 import DutyFormSheet from '../components/DutyFormSheet';
 import RosterImportSheet from '../components/RosterImportSheet';
 import CalendarPickerSheet from '../components/CalendarPickerSheet';
-import BottomSheet from '../components/BottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
 import GhostButton from '../components/GhostButton';
 import Banner from '../components/Banner';
@@ -32,20 +29,6 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-
-// CSV dos registos (apoio ao registo de tempos/serviço — ORO.FTL.245).
-const buildDutiesCsv = (duties) => {
-  const rows = Object.entries(duties).filter(([, d]) => !d.deleted).sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  const head = 'duty_date,service,report_time,block_off,block_on,sectors,flight_minutes';
-  // Uma linha por SERVIÇO (a lei conta períodos — 210/245): primária + extra do mesmo dia.
-  const body = rows.flatMap(([date, d]) => {
-    const extras = (Array.isArray(d.extra) ? d.extra : []).filter((sv) => sv && (sv.report_time || sv.block_on));
-    const services = [d, ...extras];
-    const n = services.length;
-    return services.map((sv, i) => [date, n > 1 ? `${i + 1}/${n}` : '', sv.report_time || '', sv.block_off || '', sv.block_on || '', sv.sectors || 0, sv.flight_minutes || 0].join(','));
-  });
-  return [head, ...body].join('\n');
-};
 
 // Aba Escala: o MÊS em cards de dia (um por dia). Mês navegável ‹ › + resumo no topo
 // (serviços/folgas/per-diem). A lista começa no dia de hoje (mês atual) e mostra TODOS
@@ -76,9 +59,8 @@ export default function EscalaScreen({ navigation, route }) {
   // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
   const lastNewDuty = useRef(null);
 
-  // Registo 245 (PDF): identidade do tripulante, persistida localmente para reutilizar.
-  const [recOpen, setRecOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);   // menu "···" (Registo 245 · CSV) com rótulos
+  // (Exportar — Registo 245 + CSV — MUDOU DE CASA 2026-07-10: vive no Perfil → Relatórios;
+  //  a Escala fica só operação. Um dado, uma casa.)
   const [importOpen, setImportOpen] = useState(false);
   const [calPickerOpen, setCalPickerOpen] = useState(false);
   const [hubOpen, setHubOpen] = useState(false);       // hub de importar (calendário | PDF)
@@ -90,11 +72,6 @@ export default function EscalaScreen({ navigation, route }) {
   useScrollToTop(scrollRef);             // re-tocar na aba Escala → volta ao topo (convenção iOS)
   const didScrollToday = useRef(false);  // já posicionámos no dia de hoje neste mês?
   const prevYmRef = useRef(null);        // mês renderizado antes (p/ reativar o scroll ao mudar de mês)
-  const [recForm, setRecForm] = useState({ name: '', crewId: '' });
-  useEffect(() => {
-    if (!user?.id) return;
-    AsyncStorage.getItem(`cp_record_${user.id}`).then(v => { if (v) { try { setRecForm(JSON.parse(v)); } catch { /* corrompido */ } } }).catch(() => {});
-  }, [user?.id]);
 
   // ── DICA da grelha (mockup design/boas-vindas.html, 2026-07-10): 1.ª abertura da
   // aba, SÓ pós-folha de boas-vindas (contas nascidas do funil). Morre a qualquer
@@ -105,8 +82,8 @@ export default function EscalaScreen({ navigation, route }) {
   const [gridTip, setGridTip] = useState(false);
   const escBusyRef = useRef(false);
   useEffect(() => {
-    escBusyRef.current = !!(dutyDate || importOpen || dayIso || hubOpen || hotelOpen || calPickerOpen || moreOpen || recOpen || monthPickerOpen);
-  }, [dutyDate, importOpen, dayIso, hubOpen, hotelOpen, calPickerOpen, moreOpen, recOpen, monthPickerOpen]);
+    escBusyRef.current = !!(dutyDate || importOpen || dayIso || hubOpen || hotelOpen || calPickerOpen || monthPickerOpen);
+  }, [dutyDate, importOpen, dayIso, hubOpen, hotelOpen, calPickerOpen, monthPickerOpen]);
   useFocusEffect(useCallback(() => {
     let on = true; let tId = null;
     if (user?.id) {
@@ -353,32 +330,6 @@ export default function EscalaScreen({ navigation, route }) {
       </TouchableOpacity>
     );
   };
-
-  // ── Export ──
-  const onExport = async () => {
-    if (!anyDuty) { Alert.alert(t('duties.title', lang), t('duties.exportEmpty', lang)); return; }
-    try { await Share.share({ message: buildDutiesCsv(duties), title: 'CrewPact — duties (CSV)' }); } catch { /* cancelado */ }
-  };
-  const openPdf = () => {
-    if (!anyDuty) { Alert.alert(t('duties.exportPdf', lang), t('duties.exportEmpty', lang)); return; }
-    select(); setRecOpen(true);
-  };
-  const onGeneratePdf = async () => {
-    if (user?.id) AsyncStorage.setItem(`cp_record_${user.id}`, JSON.stringify(recForm)).catch(() => {});
-    setRecOpen(false);
-    try {
-      const model = buildRecordModel({
-        duties, dayLog,
-        name: recForm.name, crewId: recForm.crewId,
-        operator: company?.name || '', email: user?.email || '',
-        generatedAt: new Date().toLocaleString(locale),
-      });
-      await printToPdfAndShare(recordHtml(model, lang), 'CrewPact · FTL.245');
-      success();
-      notify && notify(l('Registo gerado', 'Record generated'));
-    } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
-  };
-
 
   // ── Banner "alterações na escala" (azul, informativo) ──
   const rcCounts = rosterChanges?.counts;
@@ -845,16 +796,6 @@ export default function EscalaScreen({ navigation, route }) {
             </TouchableOpacity>
           </>
         )}
-        {anyDuty ? (
-          <TouchableOpacity activeOpacity={0.85} onPress={() => { setHubOpen(false); setTimeout(() => setMoreOpen(true), 320); }} style={s.hubOpt}>
-            <View style={s.hubOptIc}><Icon name="share" size={18} color={PELE.ink} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hubOptT}>{l('Exportar', 'Export')}</Text>
-              <Text style={s.hubOptS}>{l('Registo FTL.245 (PDF) · CSV dos serviços.', 'FTL.245 record (PDF) · duties CSV.')}</Text>
-            </View>
-            <Icon name="chevron" size={16} color={PELE.grey} />
-          </TouchableOpacity>
-        ) : null}
         <View style={s.hubNote}><Icon name="lock" size={13} color={PELE.ok} /><Text style={s.hubNoteTxt}>{l('Nada sai do telemóvel · confirmas antes de gravar', 'Nothing leaves your phone · you confirm before saving')}</Text></View>
       </PeleSheet>
       {/* Hotel da pernoita — registar/editar a partir da folha do dia. */}
@@ -874,45 +815,6 @@ export default function EscalaScreen({ navigation, route }) {
           setImportSource('calendar');
           setTimeout(() => setImportOpen(true), 350);
         }} />
-
-      {/* Menu "···" — exportações com rótulo (o que cada uma é, sem adivinhar ícones) */}
-      <BottomSheet visible={moreOpen} onClose={() => setMoreOpen(false)} title={l('Exportar', 'Export')} closeLabel={t('common.close', lang)}>
-        <View style={s.hubBody}>
-          <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(openPdf, 350); }} style={s.hubOpt}>
-            <View style={s.hubOptIc}><Icon name="doc" size={22} color={PELE.ink} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hubOptT}>{l('Registo FTL.245 (PDF)', 'FTL.245 record (PDF)')}</Text>
-              <Text style={s.hubOptS}>{l('Registo de tempos assinável — a lei exige que o guardes (ORO.FTL.245).', 'Signable times record — the law requires you to keep it (ORO.FTL.245).')}</Text>
-            </View>
-            <Icon name="chevron" size={18} color={PELE.grey} />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.9} onPress={() => { setMoreOpen(false); setTimeout(onExport, 350); }} style={s.hubOpt}>
-            <View style={s.hubOptIc}><Icon name="share" size={22} color={PELE.ink} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hubOptT}>{l('Exportar CSV', 'Export CSV')}</Text>
-              <Text style={s.hubOptS}>{l('Todos os serviços em tabela — para folhas de cálculo ou backup.', 'All duties as a table — for spreadsheets or backup.')}</Text>
-            </View>
-            <Icon name="chevron" size={18} color={PELE.grey} />
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
-
-      {/* Registo ORO.FTL.245 (PDF assinável) */}
-      <BottomSheet visible={recOpen} onClose={() => setRecOpen(false)}
-        title={t('duties.recTitle', lang)} closeLabel={t('common.close', lang)}>
-        <View style={s.form}>
-          <Text style={s.recSub}>{t('duties.recSub', lang)}</Text>
-          <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.recName', lang)}</Text>
-          <TextInput value={recForm.name} onChangeText={(v) => setRecForm(f => ({ ...f, name: v }))}
-            placeholder={t('duties.recNamePh', lang)} placeholderTextColor={PELE.grey} style={s.recInput} />
-          <Text style={[s.fieldLbl, { marginTop: 14 }]}>{t('duties.recId', lang)}</Text>
-          <TextInput value={recForm.crewId} onChangeText={(v) => setRecForm(f => ({ ...f, crewId: v }))}
-            placeholder={t('duties.recIdPh', lang)} placeholderTextColor={PELE.grey} autoCapitalize="characters" style={s.recInput} />
-
-          <PrimaryButton onPress={onGeneratePdf} icon="document-text-outline" style={{ marginTop: 20 }} label={t('duties.recGenerate', lang)} />
-          <Text style={s.formHint}>{t('duties.recHint', lang)}</Text>
-        </View>
-      </BottomSheet>
 
       {/* Seletor de MÊS (pele "Julho ▾") — ano ‹ › + 12 meses */}
       <PeleSheet visible={monthPickerOpen} onClose={() => setMonthPickerOpen(false)}>
