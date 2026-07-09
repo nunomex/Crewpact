@@ -290,6 +290,9 @@ export default function HomeScreen({ navigation }) {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [plusTip, setPlusTip] = useState(false);
   const welcomeThisVisit = useRef(false);
+  const plusTipTimer = useRef(null);   // TipKit: a dica entra na MESMA visita, com respiro
+  const focusedRef = useRef(false);    // o Início ainda está em foco quando o timer dispara?
+  const homeBusyRef = useRef(false);   // palco ocupado (folha de detalhe/partilha aberta)?
   useEffect(() => {
     let on = true;
     if (!user?.id) return () => { on = false; };
@@ -301,17 +304,35 @@ export default function HomeScreen({ navigation }) {
   const closeWelcome = () => {
     setWelcomeOpen(false);
     if (user?.id) AsyncStorage.setItem(`cp_welcome_${user.id}`, 'seen').catch(() => {});
+    // Dica do ＋ na MESMA visita (correção 2026-07-10 "aparecem tarde" — o padrão TipKit):
+    // 3s de respiro depois de fechar a folha; só se o Início continuar em foco e o palco
+    // estiver livre. Se o utilizador navegar entretanto, fica o fallback da visita seguinte.
+    const uid = user?.id;
+    if (!uid) return;
+    if (plusTipTimer.current) clearTimeout(plusTipTimer.current);
+    plusTipTimer.current = setTimeout(() => {
+      if (!focusedRef.current || homeBusyRef.current) return;
+      AsyncStorage.getItem(`cp_tip_plus_${uid}`)
+        .then((t) => { if (!t && focusedRef.current && !homeBusyRef.current) setPlusTip(true); })
+        .catch(() => {});
+    }, 3000);
   };
   useFocusEffect(useCallback(() => {
     let on = true;
+    focusedRef.current = true;
     if (user?.id && !welcomeThisVisit.current) {
+      // Fallback (visita seguinte): para quem fechou a app antes do timer da mesma-visita.
       Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_plus_${user.id}`)])
         .then(([w, t]) => { if (on && w === 'seen' && !t) setPlusTip(true); })
         .catch(() => {});
     }
-    // Ao SAIR da aba: a visita-da-folha termina (a dica fica elegível na próxima) e
-    // uma dica ainda visível dispensa-se em silêncio (viu-a passar — não se repete).
-    return () => { on = false; welcomeThisVisit.current = false; setPlusTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {}); return false; }); };
+    // Ao SAIR da aba: a visita-da-folha termina (a dica fica elegível na próxima), o timer
+    // morre, e uma dica ainda visível dispensa-se em silêncio (viu-a passar — não se repete).
+    return () => {
+      on = false; focusedRef.current = false; welcomeThisVisit.current = false;
+      if (plusTipTimer.current) { clearTimeout(plusTipTimer.current); plusTipTimer.current = null; }
+      setPlusTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {}); return false; });
+    };
   }, [user?.id]));
   const dismissPlusTip = () => {
     if (!plusTip) return;
@@ -846,8 +867,8 @@ export default function HomeScreen({ navigation }) {
   const aptOk = !!(depAirport && !airportDis);
   const hero = (() => {
     if (homeState === 'setup') return { icon: 'plane', word: l('Olá!', 'Hello!'), arrow: 'arrow-diag', arrowRot: 90,
-      // kick = convite curto ("do telemóvel" já vive no passo 1 — menos eco da mesma ordem)
-      kick: [l('liga o ', 'connect your '), { y: l('calendário', 'calendar') }, l(' e o Início ganha vida', ' and Home comes alive')] };
+      // kick = A frase do ecrã (setup-v2: funde o antigo "Porquê" + o chip "~1 MIN" — uma voz)
+      kick: [l('Liga a tua ', 'Connect your '), { y: l('escala', 'roster') }, l(' e a app faz o resto — leva ~1 minuto.', ' and the app does the rest — takes ~1 minute.')] };
     if (homeState === 'disrupcao') return {
       ghost: (fsCancelled || fsDiverted) ? '!' : `+${delayMin}`, word: l('Atenção', 'Heads-up'), warn: true, arrow: 'alert',
       kick: fsCancelled ? [l('voo cancelado — confirma com o crewing', 'flight cancelled — check with crewing')]
@@ -988,9 +1009,9 @@ export default function HomeScreen({ navigation }) {
   //  encabeçar o "A seguir" — um dado, uma casa; ver o render da agenda.)
 
   // Micro-texto útil (título BC + frase) — o resumo das perguntas/estado; toca → folha "porquê".
-  const utilTtl = homeState === 'setup' ? l('Porquê', 'Why') : homeState === 'folga' ? l('Estado', 'Status') : homeState === 'vespera' ? l('Amanhã', 'Tomorrow') : homeState === 'pernoita' ? l('Fora', 'Away') : homeState === 'posvoo' ? l('Fecho', 'Wrap-up') : homeState === 'ferias' ? l('Ano', 'Year') : homeState === 'doenca' ? l('Agora', 'Now') : homeState === 'fecho' ? l('Mês', 'Month') : homeState === 'disrupcao' ? 'PSV' : l('Hoje', 'Today');
+  const utilTtl = homeState === 'setup' ? l('Privacidade', 'Privacy') : homeState === 'folga' ? l('Estado', 'Status') : homeState === 'vespera' ? l('Amanhã', 'Tomorrow') : homeState === 'pernoita' ? l('Fora', 'Away') : homeState === 'posvoo' ? l('Fecho', 'Wrap-up') : homeState === 'ferias' ? l('Ano', 'Year') : homeState === 'doenca' ? l('Agora', 'Now') : homeState === 'fecho' ? l('Mês', 'Month') : homeState === 'disrupcao' ? 'PSV' : l('Hoje', 'Today');
   const utilTxt = (() => {
-    if (homeState === 'setup') return l('Sem calendário ligado, a app não sabe nada de ti. Os teus dados ficam no teu telemóvel — e podes espreitar já um dia de exemplo.', 'Without a calendar connected the app knows nothing about you. Your data stays on your phone — and you can peek at an example day right away.');
+    if (homeState === 'setup') return l('Os teus dados ficam no teu telemóvel — a app só lê o calendário que escolheres. Saber mais ›', 'Your data stays on your phone — the app only reads the calendar you choose. Learn more ›');
     if (homeState === 'vespera') return [
       wakeAt ? `${l('acordar', 'wake')} ~${wakeAt}` : null,
       (wxArr && wxArr.tmwMin != null) ? `${l('amanhã cedo', 'early tomorrow')} ${wxArr.tmwMin}°${wxArr.tmwSym ? ` ${wxSymbol(wxArr.tmwSym, lang).label}` : ''}` : null,
@@ -1044,8 +1065,20 @@ export default function HomeScreen({ navigation }) {
     ...qChips.slice(0, 4).filter((it) => it.short).map((it) => ({ key: it.id, label: it.short, tone: it.status, item: it })),
     ...(folgaVac ? [{ key: 'vac', label: `${l('férias', 'vacation')} · ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`, tone: 'neutral' }] : []),
   ] : null;
+  // Setup v2: o "Porquê" completo (privacidade + a dica do portal) vive ATRÁS de
+  // "Saber mais" — progressive disclosure em vez de dois parágrafos no ecrã.
+  const setupWhyItem = homeState === 'setup' ? {
+    id: 'setupWhy', q: l('Privacidade', 'Privacy'),
+    answer: l('Os teus dados ficam no teu telemóvel.', 'Your data stays on your phone.'),
+    suggestion: (/easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
+      ? l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. Dica: no eCrew, ativa o sync da escala para o calendário do telemóvel — com ele ligado, a escala chega sempre atualizada.',
+          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Tip: in eCrew, enable roster sync to your phone calendar — with it on, your roster always arrives fresh.')
+      : l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. Dica: no portal da companhia, ativa a exportação da escala para o calendário do telemóvel.',
+          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Tip: in your crew portal, enable roster export to your phone calendar.')),
+  } : null;
   // O toque-no-bloco só vive onde o útil é prosa — na folga os chips têm alvos próprios.
-  const utilTap = (homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo' || homeState === 'ferias' || homeState === 'fecho') && questionItems.length ? questionItems[0] : null;
+  const utilTap = homeState === 'setup' ? setupWhyItem
+    : (homeState === 'hoje' || homeState === 'vespera' || homeState === 'posvoo' || homeState === 'ferias' || homeState === 'fecho') && questionItems.length ? questionItems[0] : null;
 
   // Dígitos amarelos + donut por estado (o "número do dia").
   const datarow = (() => {
@@ -1075,7 +1108,7 @@ export default function HomeScreen({ navigation }) {
   // Chip do polegar (preto, dígitos amarelos) + ações COM RÓTULO (a primária destacada).
   const chip = (() => {
     // O chip diz a PROMESSA honesta (era "PASSO 1" — eco da ordem que já grita 3×).
-    if (homeState === 'setup') return { v: '~1 MIN', s: l('é o que o setup demora', 'that’s all setup takes') };
+    if (homeState === 'setup') return null;   // v2: sem barra do polegar — o "~1 min" vive no kick do herói
     if (homeState === 'vespera') return { v: cdGhost || '—', s: l('até ao report', 'to report') };
     if (homeState === 'pernoita') return (flight && flight.report)
       ? { v: flight.report, s: l('report amanhã', 'report tomorrow') }
@@ -1126,8 +1159,7 @@ export default function HomeScreen({ navigation }) {
   const shareable = isToday && !isNonFlight && !(flight && flight.demo) && (sectorLegs.some((lg) => lg && (lg.flightNo || lg.flight)) || !!flightNo);
   const shareableClose = homeState === 'pernoita' && closeLegs.length > 0;
   const acts = homeState === 'setup' ? [
-    // Só o EXEMPLO (o "Ligar" ganhou botão-herói no meio — a ação duplicada morreu)
-    { ic: 'eye', lbl: l('Ver exemplo', 'See example'), hot: true, run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
+    // v2: SEM ações no polegar — o exemplo subiu para a zona das portas (uma zona de decisão)
   ] : homeState === 'folga' ? [
     // SEM ações na folga (user 2026-07-09): o ＋ central da tab bar já carrega
     // Serviço·Simulação·Evento — na folga a app baixa a voz (só o chip fica).
@@ -1160,6 +1192,10 @@ export default function HomeScreen({ navigation }) {
   const ghostSize = ghostLen >= 5 ? { fontSize: TUNE.ghost.s5, lineHeight: TUNE.ghost.s5 + 2, top: -8 }
     : ghostLen === 4 ? { fontSize: TUNE.ghost.s4, lineHeight: TUNE.ghost.s4 + 2, top: -11 }
     : null;   // null = o TUNE.ghost.s3 do estilo base
+
+  // Palco do Início ocupado? (folha de detalhe / cartão de partilha) — a dica do ＋
+  // não entra por cima (TipKit: nunca sobre palco ocupado).
+  useEffect(() => { homeBusyRef.current = !!(detailItem || sendCard); }, [detailItem, sendCard]);
 
   // Kick com partes coloridas ({y:...} = amarelo).
   const kickParts = (parts) => (
@@ -1375,15 +1411,10 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
             <>
-              {/* As TRÊS PORTAS de entrada da escala (pedido do user 2026-07-09): botão a sério
-                  para o calendário (o herói), PDF como alternativa, manual como último recurso. */}
-              <View style={s.stp}>
-                <Text style={s.stpN}>1</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.stpT}>{l('Ligar o calendário do telemóvel', 'Connect your phone calendar')}</Text>
-                  <Text style={s.stpS}>{l('é daí que a app lê a tua escala — nunca mais escreves um voo à mão', 'that’s where the app reads your roster — never type a flight again')}</Text>
-                </View>
-              </View>
+              {/* ZONA ÚNICA de decisão (setup-v2, mockup aprovado 2026-07-10): as QUATRO
+                  portas juntas — calendário (herói) · PDF · à mão · exemplo. A motivação
+                  vive no KICK do herói (uma voz); a dica do eCrew MIGROU para a Escala
+                  pós-ligação (o momento em que é acionável); o passo "1" morreu (eco). */}
               <TouchableOpacity style={s.setupBtn} activeOpacity={0.85} onPress={requestAccess}
                 accessibilityRole="button" accessibilityLabel={l('Ligar ao calendário', 'Connect calendar')}>
                 <Icon name="cal" size={16} color={PELE.yellow} />
@@ -1395,18 +1426,17 @@ export default function HomeScreen({ navigation }) {
                 <Icon name="doc" size={15} color={P.ink} />
                 <Text style={s.setupGhostTxt}>{l('Importar PDF da escala', 'Import roster PDF')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.7} hitSlop={6}
-                onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }); }}
-                accessibilityRole="button" accessibilityLabel={l('Adicionar serviço à mão', 'Add a duty by hand')}>
-                <Text style={s.setupManual}>{l('ou adiciona um serviço à mão', 'or add a duty by hand')}</Text>
-              </TouchableOpacity>
-              <View style={s.tip}>
-                <Icon name="sync" size={14} color={PELE.ink} />
-                {/* Dica CREW-AWARE (2026-07-09): "eCrew" só para easyJet — um user TAP/Ryanair
-                    lia o nome do portal errado; sem easyJet fala do "portal da companhia". */}
-                <Text style={s.tipTxt}>{/easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
-                  ? l('No eCrew, ativa o sync para o calendário do telemóvel. Com ele ligado, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In eCrew, enable sync to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')
-                  : l('No portal da tua companhia, ativa a exportação da escala para o calendário do telemóvel. Com ela ligada, a escala chega sempre atualizada — e a app trabalha sem erros.', 'In your airline’s crew portal, enable roster export to your phone calendar. With it on, your roster always arrives fresh — and the app just works.')}</Text>
+              <View style={s.setupLinks}>
+                <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                  onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }); }}
+                  accessibilityRole="button" accessibilityLabel={l('Adicionar serviço à mão', 'Add a duty by hand')}>
+                  <Text style={s.setupLink}>{l('adicionar à mão', 'add by hand')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                  onPress={() => { select(); setCalFlight(DEMO_FLIGHT); }}
+                  accessibilityRole="button" accessibilityLabel={l('Ver um dia de exemplo', 'See an example day')}>
+                  <Text style={s.setupLink}>{l('ver um exemplo', 'see an example')}</Text>
+                </TouchableOpacity>
               </View>
             </>
           ) : null}
@@ -1455,9 +1485,10 @@ export default function HomeScreen({ navigation }) {
           </Animated.View>
         ) : null}
 
-        {/* Barra do polegar — chip + ações com rótulo. Na FOLGA não existe: o chip subiu
-            para encabeçar a agenda e as ações vivem no ＋ central (o fundo fica poster puro). */}
-        {homeState === 'folga' ? null : (
+        {/* Barra do polegar — chip + ações com rótulo. Na FOLGA e no SETUP não existe:
+            na folga o chip subiu p/ a agenda e as ações vivem no ＋; no setup (v2) as
+            portas são a única zona de decisão (o fundo fica poster puro). */}
+        {(homeState === 'folga' || homeState === 'setup') ? null : (
         <Animated.View style={[s.thumb, seg(5)]}>
           <View style={s.chip}>
             <Text style={s.chipV} numberOfLines={1}>{chip.old ? <Text style={s.chipOld}>{chip.old} </Text> : null}{chip.v}</Text>
@@ -1566,18 +1597,15 @@ const makeSkin = (P, night) => StyleSheet.create({
   hotelGo: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   hotelAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderWidth: 1.5, borderColor: P.line, borderStyle: 'dashed', borderRadius: 12, marginVertical: 4 },
   hotelAddTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: P.grey },
-  stp: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 7 },
   // As três portas do setup: botão-herói ink · ghost do PDF · micro-linha do manual.
   setupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.ink, borderRadius: 14, paddingVertical: 13, marginTop: 10 },
   setupBtnTxt: { fontSize: 13.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
   setupGhost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: P.line, borderRadius: 14, paddingVertical: 11, marginTop: 8 },
   setupGhostTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: P.ink },
-  setupManual: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, textAlign: 'center', marginTop: 10, textDecorationLine: 'underline' },
-  stpN: { width: 40, fontFamily: PELE_FONT.display, fontSize: 34, color: P.yellow, lineHeight: 36 },
-  stpT: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
-  stpS: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
-  tip: { marginTop: 8, backgroundColor: '#FFF6DC', borderWidth: 1, borderColor: '#F2E2AC', borderRadius: 12, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  tipTxt: { flex: 1, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: '#5C5232', lineHeight: 17 },
+  // Links da zona das portas (setup-v2): "adicionar à mão · ver um exemplo" — o
+  // sublinhado amarelo dos links da casa. (stp/tip/setupManual morreram com o v2.)
+  setupLinks: { flexDirection: 'row', justifyContent: 'center', gap: 22, marginTop: 16 },
+  setupLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: P.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
 
   // Micro-texto útil (mockup .util)
   util: { flexDirection: 'row', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: P.line },

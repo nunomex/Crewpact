@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — estado 0 v2 (setup sem coro)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:716px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:14px 19px 76px;display:flex;flex-direction:column;overflow:hidden;z-index:1}
+  .pside{position:absolute;top:275px;right:8px;width:260px;z-index:5;transform:rotate(90deg);transform-origin:right top;
+    pointer-events:none;font-size:9px;font-weight:800;letter-spacing:2.4px;color:var(--ink);text-transform:uppercase;text-align:left}
+  .pside b{color:var(--yellow)}
+  .greet{font-size:10px;font-weight:500;color:var(--grey);margin-top:12px}
+  .hero{position:relative;min-height:150px;margin-top:4px;display:flex;flex-direction:column;justify-content:flex-end}
+  .ghostIc{position:absolute;right:-6px;top:-24px;font-size:150px;line-height:1;color:var(--ghost)}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1}
+  .kick{font-size:12.5px;font-weight:600;color:var(--grey);margin-top:8px;line-height:1.5;max-width:250px}
+  .kick b{color:var(--ink)}
+  .hr{height:1px;background:var(--line);margin:14px 0 0}
+
+  .doors{margin-top:22px}
+  .btnInk{background:var(--ink);border-radius:14px;height:54px;display:flex;align-items:center;justify-content:center;gap:9px;
+    color:var(--paper);font-size:14px;font-weight:800}
+  .btnInk .yl{color:var(--yellow)}
+  .btnGhost{border:1.5px solid var(--line);border-radius:14px;height:50px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:13px;font-weight:700;color:var(--ink);margin-top:10px}
+  .links{display:flex;justify-content:center;gap:18px;margin-top:16px;font-size:12px;font-weight:700}
+  .links span{border-bottom:2px solid var(--yellow);padding-bottom:1px}
+
+  .why{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+  .whyT{font-family:var(--disp);font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.4px}
+  .whyP{font-size:11.5px;font-weight:500;color:var(--grey);margin-top:3px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Living Interface · estado 0 v2</div>
+  <h1>setup sem coro</h1>
+  <p>O diagnóstico: <b>3 explicações espalhadas</b> (dica eCrew + "Porquê" + chip ~1 MIN) e <b>2 zonas de ação separadas</b>
+  (portas no meio, exemplo no fundo). A forma Apple: <b>motivação numa linha → UMA zona de decisão → detalhe só quando é preciso</b>.
+  A WelcomeSheet já faz as boas-vindas — o estado 0 pode emagrecer sem perder nada.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone">
+      <div class="pside">PRIMEIRA VEZ · <b>SETUP</b></div>
+      <div class="page">
+        <div class="greet">Bem-vindo, Miguel</div>
+        <div class="hero">
+          <div class="ghostIc">✈</div>
+          <div class="word">Olá!</div>
+          <div class="kick"><b>Liga a tua escala e a app faz o resto</b> — leva ~1 minuto.</div>
+        </div>
+        <div class="hr"></div>
+
+        <div class="doors">
+          <div class="btnInk"><span class="yl">◫</span> Ligar ao calendário</div>
+          <div class="btnGhost">⇪ Importar PDF da escala</div>
+          <div class="links">
+            <span>adicionar à mão</span>
+            <span>ver um exemplo</span>
+          </div>
+        </div>
+
+        <div class="why">
+          <div class="whyT">Privacidade</div>
+          <div class="whyP">Os teus dados ficam no teu telemóvel — a app só lê o calendário que escolheres. <b>Saber mais ›</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="t">Estado 0 v2 — três andares</div>
+    <div class="d">Motivação no kick do herói (funde o "Porquê" e o chip ~1 MIN) · as QUATRO portas juntas numa zona única · uma linha de privacidade no lugar do parágrafo.</div>
+    <div class="spec">
+      <b>Morre:</b> o chip "~1 MIN" (fundido no kick) · o parágrafo "Porquê" (vira 1 linha de privacidade + "Saber mais" → folha detail já existente) · o act "Ver exemplo" da barra do polegar (subiu para as portas) · a barra do polegar inteira no setup (como na folga — fundo limpo).<br>
+      <b>Migra:</b> a dica do eCrew/portal sai do estado 0 → aparece na ESCALA depois de ligar o calendário (o momento em que é acionável) — toast/nota pós-ligação.<br>
+      <b>Fica:</b> herói "Olá!" + avião (agora com o kick a trabalhar) · rótulo lateral · saudação · as hierarquias ink/ghost/link das portas.<br>
+      <b>Toques:</b> "ver um exemplo" = o demo de sempre (com o selo EXEMPLO + pílula de sair já feitos) · "Saber mais ›" abre o porquê completo (privacidade + o que a app lê) na folha de detalhe.
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">porquê isto é "à Apple"</div>
+  <p><b>Uma voz:</b> o ecrã inteiro diz UMA frase ("liga e a app faz o resto — 1 min") em vez de três parágrafos.
+  <b>Uma zona de decisão:</b> calendário (herói) · PDF · à mão · exemplo — o olho escolhe num sítio só; o exemplo deixa de
+  ser referido num texto longe do botão. <b>Progressive disclosure:</b> a instrução do eCrew aparece QUANDO o utilizador
+  liga o calendário (acionável), não antes (ruído); o detalhe de privacidade vive atrás de "Saber mais". <b>O herói
+  trabalha:</b> o kick carrega a promessa — "Olá!" fica como gesto, não como mensagem. Menos é o luxo.</p>
+</div>
+</body>
+</html>

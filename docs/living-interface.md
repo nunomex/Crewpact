@@ -174,18 +174,20 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 > Conteúdo sempre crew-aware: os motores FTL/AE enchem os cartões com os valores
 > do perfil (piloto/cabine, companhia, categoria).
 
-### 0 · Onboarding *(revisto 2026-07-09 — passe estado-a-estado com o founder)*
+### 0 · Onboarding *(v2 2026-07-10, mockup `design/setup-v2.html` — "setup sem coro"; 1.ª revisão 2026-07-09)*
 - **Gatilho:** conta criada, calendário ainda não ligado.
-- **Hero:** ghost ✈ · "Olá!" · kick CURTO "liga o **calendário** e o Início ganha vida"
-  (o "do telemóvel" vive no passo 1 — menos eco da mesma ordem).
-- **Meio — as TRÊS PORTAS (2.ª revisão 2026-07-09, pedido do user):** passo 1 (explica)
-  + **botão-herói "Ligar ao calendário"** (ink, ícone amarelo) + ghost **"Importar PDF
-  da escala"** (→ Escala com `params.pdf` = importação direta) + micro-linha sublinhada
-  **"ou adiciona um serviço à mão"** (→ Escala `newDuty`) + **dica CREW-AWARE**: "No
-  eCrew…" só easyJet; outras leem "No portal da tua companhia, ativa a exportação…".
-- **SEM datarow:** o donut a 15% era progresso FALSO (não media nada) — morreu; a
-  promessa honesta mudou-se para o chip.
-- **Chip:** "~1 MIN · é o que o setup demora". **Ações:** Ligar calendário (hot) · Ver exemplo (demo).
+- **Hero:** ghost ✈ · "Olá!" · **kick = A frase do ecrã**: "Liga a tua **escala** e a app
+  faz o resto — leva ~1 minuto." (funde o antigo parágrafo "Porquê" + o chip "~1 MIN" — UMA voz).
+- **Meio — ZONA ÚNICA com as QUATRO portas:** botão-herói **"Ligar ao calendário"** (ink,
+  ícone amarelo) + ghost **"Importar PDF da escala"** (→ Escala `params.pdf`) + linha de dois
+  links sublinhados a amarelo: **"adicionar à mão"** (→ Escala `newDuty`) · **"ver um exemplo"**
+  (demo — subiu da barra do polegar: era referido no texto longe do botão).
+- **Útil = PRIVACIDADE (1 linha):** "Os teus dados ficam no teu telemóvel — a app só lê o
+  calendário que escolheres. Saber mais ›" → toca e abre a folha de detalhe (privacidade completa
+  + dica do portal). **A dica do eCrew MIGROU** para a Escala, num toast logo após ligar o
+  calendário (progressive disclosure — o único momento em que "ativa o sync" é acionável).
+- **SEM datarow** (o donut a 15% era progresso falso — morto em 2026-07-09) e **SEM barra do
+  polegar** (v2: as portas são a única zona de decisão; o fundo fica poster puro).
 - **Modo EXEMPLO (2026-07-10, à Apple: amostra nunca se confunde com real, sai-se num toque):** com o demo ativo, o rótulo lateral vira **"EXEMPLO · VOO DE AMOSTRA"** e no topo (lugar do sino) vive a pílula **"● Exemplo — sair"** → limpa o voo falso e volta ao setup. Rede: sair da aba / voltar do background re-sincroniza e limpa na mesma. (Antes: sem selo e sem saída — o utilizador ficava "preso" no exemplo sem saber que era falso.)
 - **Desaparece:** TUDO o resto. Identidade NÃO se mostra nem se pergunta — veio do registo.
 - **Objetivo:** uma única missão. O vazio nunca pede desculpa: mostra o caminho e prova o valor (dia de exemplo).

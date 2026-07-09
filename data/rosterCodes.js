@@ -11,9 +11,16 @@ export const ROSTER_CODES = {
     standbyHome:    /\b(HSBY|HSTB|HMSBY)\b/i,                       // standby em casa
     standbyAirport: /\b(ADTY|A?SBY|STBY|STANDBY|RESERVE|RESERVA)\b/i, // standby aeroporto (ADTY = o código easyJet, o mesmo do abono AE Anexo I.5)
     positioning:    /\b(DH|DHD|DEADHEAD|POS|PSN)\b/i,               // posicionamento/deadhead
-    training:       /\b(SIM|TRG|RECURRENT|CBT|GS)\b/i,              // formação/simulador
-    office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN)\b/i,           // terra/escritório
-    dayOff:         /\bFTGD\b|D\/O|\bRDO\b|\bANL\b|\bVAC\b|\bLVE\b/i, // folga/fadiga/férias (não é duty → não importa)
+    // Treino (2026-07-11, siglas confirmadas com o founder): SEP/CEET (recorrente de
+    // segurança + evacuação) · CRM · DG · AVSEC · RTW (regresso ao serviço) · LPC/OPC
+    // (checks de pilotos). ⚠️ "SEP" também é MÊS — e o training testa ANTES do voo no
+    // classify → guardas de contexto: não conta colado a dígitos ("01 SEP", "SEP 26",
+    // "01/SEP"); o "01Sep" compacto do eCrew nem casa \b (dígito→letra não é fronteira).
+    training:       /\b(SIM|TRG|RECURRENT|CBT|GS|CEET|CRM|DG|AVSEC|RTW|LPC|OPC)\b|(?<![\d/][\s/]?)\bSEP\b(?!\s?\d)/i,
+    office:         /\b(GND|GROUND|OFFICE|OFC|ADMIN|MTG)\b/i,       // terra/escritório/reunião
+    // DOWE (folga de fim de semana) é o crítico: sem ele, uma folga era proposta como
+    // serviço no import. SICK/MAT/UPL = ausências (também não são duty).
+    dayOff:         /\bFTGD\b|D\/O|\bRDO\b|\bANL\b|\bVAC\b|\bLVE\b|\bDOWE\b|\bSICK\b|\bMAT\b|\bUPL\b/i,
   },
   // jet2 / volotea / wizz / hifly → acrescentar aqui (com o diagnóstico).
 };

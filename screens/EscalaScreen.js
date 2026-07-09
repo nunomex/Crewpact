@@ -99,15 +99,25 @@ export default function EscalaScreen({ navigation, route }) {
   // ── DICA da grelha (mockup design/boas-vindas.html, 2026-07-10): 1.ª abertura da
   // aba, SÓ pós-folha de boas-vindas (contas nascidas do funil). Morre a qualquer
   // toque; ao sair da aba com a dica visível, marca-se vista (viu-a passar).
+  // Correção "tarde/palco" (TipKit): 800ms de respiro após o foco, e NUNCA com uma
+  // folha aberta — quem chega a meio de uma ação (ligar calendário abre o picker,
+  // PDF abre o import) não leva dica; fica para a próxima entrada limpa.
   const [gridTip, setGridTip] = useState(false);
+  const escBusyRef = useRef(false);
+  useEffect(() => {
+    escBusyRef.current = !!(dutyDate || importOpen || dayIso || hubOpen || hotelOpen || calPickerOpen || moreOpen || recOpen || monthPickerOpen);
+  }, [dutyDate, importOpen, dayIso, hubOpen, hotelOpen, calPickerOpen, moreOpen, recOpen, monthPickerOpen]);
   useFocusEffect(useCallback(() => {
-    let on = true;
+    let on = true; let tId = null;
     if (user?.id) {
-      Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_escala_${user.id}`)])
-        .then(([w, t2]) => { if (on && w === 'seen' && !t2) setGridTip(true); })
-        .catch(() => {});
+      tId = setTimeout(() => {
+        if (!on || escBusyRef.current) return;
+        Promise.all([AsyncStorage.getItem(`cp_welcome_${user.id}`), AsyncStorage.getItem(`cp_tip_escala_${user.id}`)])
+          .then(([w, t2]) => { if (on && !escBusyRef.current && w === 'seen' && !t2) setGridTip(true); })
+          .catch(() => {});
+      }, 800);
     }
-    return () => { on = false; setGridTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {}); return false; }); };
+    return () => { on = false; if (tId) clearTimeout(tId); setGridTip((p) => { if (p && user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {}); return false; }); };
   }, [user?.id]));
   const dismissGridTip = () => {
     if (!gridTip) return;
@@ -823,6 +833,12 @@ export default function EscalaScreen({ navigation, route }) {
       <CalendarPickerSheet visible={calPickerOpen} onClose={() => setCalPickerOpen(false)} currentId={calendarId}
         onSelect={(id, name) => {
           setCalendarId(id); setCalendarName && setCalendarName(name || null);
+          // A dica do eCrew/portal MIGROU do estado 0 para AQUI (setup-v2): o único momento
+          // em que "ativa o sync no portal" é acionável é logo depois de ligar o calendário.
+          notify(l('Calendário ligado ✓', 'Calendar connected ✓'),
+            /easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
+              ? l('Dica: no eCrew, ativa o sync para este calendário — a escala chega sempre atualizada.', 'Tip: in eCrew, enable sync to this calendar — your roster always arrives fresh.')
+              : l('Dica: no portal da companhia, ativa a exportação da escala para este calendário.', 'Tip: in your crew portal, enable roster export to this calendar.'));
           // Ligar = ler o calendário e abrir já o "Confirmar import" (calendário). Pequeno atraso
           // para o Modal do picker fechar antes de abrir o do import (evita modal-sobre-modal).
           setImportSource('calendar');
