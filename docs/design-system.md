@@ -40,7 +40,6 @@
 - **O ＋ central abre o speed-dial em pílulas rotuladas** (Modal + scrim + cascata; back do Android fecha; × = clone pixel-perfect que roda): **Serviço** (→ Escala, novo serviço hoje) · **Simulação** · **Evento** (gate AE). O ＋ é só CRIAR — a Pesquisa vive na Biblioteca. Criar também continua na grelha da Escala (tocar num dia insere NESSE dia) e nos acts contextuais do Início.
 - **Topos LIMPOS (2026-07-09): sem avatar e sem sino em nenhuma página.** O **Perfil é ABA** (a 4.ª); o **sino-arquivo vive no header do Perfil**; a antiga aba INFO virou o cartão **"Biblioteca"** dentro do Perfil (empurrada com ‹, `size="detail"` — lei FTL + AE + fontes + procura, conteúdo intacto).
 - **Notificações à Apple: o botão só existe quando tem algo para dizer.** No Início, ao lado da saudação, a **pílula "● N novidades"** (`NotificationsBell variant="pill"`) aparece SÓ com por-ler e desaparece ao ler — zero mobília em repouso. O crítico continua em-contexto (banda do Início · ponto âmbar da Escala · push).
-- 4 abas (Início · Números · Escala · Info); **Perfil = avatar SÓ no Início** (identidade mora na base; os outros cabeçalhos ficam com o sino).
 
 ---
 
@@ -62,13 +61,13 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 | `Toast` | `notify(title, sub, kind)` global | toasts locais proibidos (o da Escala foi eliminado) |
 | `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora |
 | `Skeleton`, `CountUp`, `useEnter` | loading / números / entrada | todos respeitam reduce-motion |
-| `PrimaryButton` / `GhostButton`, `Banner`, `Eyebrow` | tema antigo | usar nos ecrãs legados; nos da pele, o mockup manda |
+| `PrimaryButton` / `GhostButton`, `Banner`, `Eyebrow` | botões/banner/rótulo partilhados | PELE-FICADOS por dentro (2026-07-09), API intacta — canónicos da pele |
 
 ---
 
 ## §5 · Tema antigo (legado em extinção)
 
-**✅ EXTINTO A NÍVEL DE ECRÃS (2026-07-09):** todos os screens da app estão na pele — o corredor de entrada (Login+signup, Lock, BiometricOffer, Reactivate), o Onboarding (reestruturado: conta primeiro no Login → funil de 6 perguntas pós-login, tudo obrigatório), Hotéis e FtlDetail fecharam a lista; `DetailTopBar`/`PageHeader`/`Eyebrow` (headers do tema antigo) apagados como órfãos. **Resíduo de componentes: ELIMINADO na raiz (2026-07-09)** — `PrimaryButton`/`GhostButton`/`Banner` foram PELE-FICADOS por dentro (tokens PELE, Hanken, spinner amarelo no primário; API intacta) → os 9 consumidores rendem pele sem tocar em call-sites; passam a ser componentes CANÓNICOS da pele. Regras:
+**✅ EXTINTO A NÍVEL DE ECRÃS (2026-07-09):** todos os screens da app estão na pele — o corredor de entrada (Login+signup, Lock, BiometricOffer, Reactivate), o Onboarding (reestruturado: conta primeiro no Login → funil de 6 perguntas pós-login, tudo obrigatório), Hotéis e FtlDetail fecharam a lista; `DetailTopBar`/`PageHeader` (headers do tema antigo) apagados como órfãos. **Resíduo de componentes: ELIMINADO na raiz (2026-07-09)** — `PrimaryButton`/`GhostButton`/`Banner`/`Eyebrow` foram PELE-FICADOS por dentro (tokens PELE, Hanken, spinner amarelo no primário; Eyebrow = canon do PeleHeader 11/bodyHeavy/ls1.4; API intacta) → os consumidores rendem pele sem tocar em call-sites; passam a ser componentes CANÓNICOS da pele. (O Eyebrow chegou a ser apagado por engano — 7 componentes importavam-no; ressuscitado pele-ficado a 2026-07-09.) Regras:
 - Ecrã novo **nasce na pele**.
 - Ecrã legado não se "melhora" à peça — porta-se de uma vez, à letra do mockup correspondente, **re-skin não reescrita** (cálculos intactos).
 

@@ -532,8 +532,8 @@ export default function HomeScreen({ navigation }) {
   const night = homeState === 'vespera' || homeState === 'pernoita';
   const P = night ? PELE_NIGHT : PELE;
   const s = night ? sNight : sDay;
-  // Publica o noturno ao contexto → a WordLine (navegação) herda o tema quando o
-  // Início é a aba ativa (a linha faz parte da Living Interface, não flutua fora dela).
+  // Publica o noturno ao contexto → a TabBar herda o tema quando o
+  // Início é a aba ativa (a barra faz parte da Living Interface, não flutua fora dela).
   useEffect(() => { setHomeNight && setHomeNight(night); }, [night, setHomeNight]);
   // Saudação: primeira-vez = "Bem-vindo" (mockup estado 0); resto pela hora do dia.
   const greet = homeState === 'setup'

@@ -305,7 +305,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [simulateOpen, setSimulateOpen] = useState(false);   // fluxo de simulação aberto?
   // Tema NOTURNO do Início (véspera/pernoita) — o HomeScreen publica-o aqui para a
-  // WordLine (navegação) herdar o tema quando o Início é a aba ativa.
+  // TabBar herdar o tema quando o Início é a aba ativa.
   const [homeNight, setHomeNight] = useState(false);
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
   const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
