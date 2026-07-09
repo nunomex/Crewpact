@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Hotéis v2 (lista + ficha, à pele)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800; --ok:#118A55;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif; --hand:'Caveat',cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:740px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:16px 19px 20px;overflow:hidden}
+  .back{width:36px;height:36px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .gho{position:absolute;right:8px;top:2px;font-family:var(--disp);font-weight:700;font-size:104px;line-height:1;letter-spacing:-2px;color:var(--ghost)}
+  .word{font-family:var(--disp);font-weight:700;font-size:34px;margin-top:16px}
+  .eyb{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-top:22px}
+
+  /* LISTA: o "cartão-foto" da referência vira cartão TIPOGRÁFICO — IATA gigante = a imagem */
+  .hcard{border:1px solid var(--line);border-radius:20px;margin-top:12px;padding:16px 16px 14px;position:relative;overflow:hidden}
+  .hIata{position:absolute;right:2px;top:-12px;font-family:var(--disp);font-weight:800;font-size:92px;line-height:1;letter-spacing:-3px;color:var(--ghost)}
+  .hK{font-size:8.5px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase}
+  .hName{font-family:var(--disp);font-weight:700;font-size:23px;margin-top:3px;position:relative}
+  .hMeta{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:3px;position:relative}
+  .hMeta b{color:var(--ok);font-weight:800}
+  .hActs{display:flex;gap:8px;margin-top:12px;position:relative}
+  .hBtn{flex:1;background:var(--ink);color:var(--paper);border-radius:99px;padding:9px 0;text-align:center;font-size:11px;font-weight:800}
+  .hGo{width:38px;height:34px;border:1.5px solid var(--line);border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px}
+
+  /* FICHA: herói tipográfico (a "foto" da referência) + factos + estadias */
+  .hero2{position:relative;min-height:140px;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .hero2 .big{position:absolute;right:-4px;top:-16px;font-family:var(--disp);font-weight:800;font-size:130px;line-height:1;letter-spacing:-4px;color:var(--ghost)}
+  .hero2 .nm{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.02;margin-top:44px;position:relative;max-width:200px}
+  .hero2 .lc{font-size:11px;font-weight:700;color:var(--grey);margin-top:6px;position:relative}
+  .facts{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);border-radius:99px;padding:6px 11px;font-size:10.5px;font-weight:700;display:flex;gap:5px;align-items:center}
+  .chip i{width:5px;height:5px;border-radius:99px;background:var(--yellow)}
+  .note{margin:14px 2px 0;transform:rotate(-1.6deg);font-family:var(--hand);font-size:18px;line-height:1.3;color:var(--grey)}
+  .note b{font-weight:600;color:var(--ink);background:var(--yellow);padding:0 4px}
+  .secT{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin:18px 0 6px}
+  .stay{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700}
+  .stay small{font-weight:600;color:var(--grey)}
+  .stay .nx{color:var(--ok);font-weight:800}
+  .cta{position:absolute;left:19px;right:19px;bottom:18px;display:flex;gap:8px}
+  .ctaMain{flex:1;background:var(--ink);color:var(--paper);border-radius:99px;padding:15px 0;text-align:center;font-size:13px;font-weight:800}
+  .ctaSq{width:52px;height:48px;border:1.5px solid var(--line);border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:15px}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Hotéis v2 · adaptação das referências do founder</div>
+  <h1>hotéis: lista + ficha</h1>
+  <p>A estrutura das tuas imagens (cartão grande → ficha rica) traduzida para a pele: <b>a "fotografia" é o IATA gigante</b>
+  (a pele proíbe fotos — e às 23h numa escala, o código da estação diz mais que a fachada). <b>Sem preços</b>: o tripulante
+  não paga o hotel — o € da pernoita é do AE e já vive no dia/mês. Uma fonte (hotel por estação), duas portas
+  (o dia da pernoita · este ecrã).</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="back">‹</div>
+      <div class="gho">7</div>
+      <div class="word">Hotéis</div>
+      <div class="eyb">Pernoitas · por estação · derivado da escala</div>
+
+      <div class="hcard">
+        <div class="hIata">FNC</div>
+        <div class="hK">Funchal</div>
+        <div class="hName">Hotel Girassol</div>
+        <div class="hMeta"><b>dormes cá sexta</b> · 4 estadias este ano</div>
+        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
+      </div>
+
+      <div class="hcard">
+        <div class="hIata">AGP</div>
+        <div class="hK">Málaga</div>
+        <div class="hName">NH Málaga</div>
+        <div class="hMeta">última estadia · 28 jun</div>
+        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
+      </div>
+
+      <div class="hcard" style="border-style:dashed">
+        <div class="hIata">LGW</div>
+        <div class="hK">London Gatwick · pernoita 24 jul</div>
+        <div class="hName" style="color:var(--grey)">Sem hotel registado</div>
+        <div class="hMeta">o comandante avisa — regista quando souberes</div>
+        <div class="hActs"><div class="hBtn" style="background:var(--paper);color:var(--ink);border:1.5px solid var(--ink)">＋ Adicionar hotel</div></div>
+      </div>
+    </div></div>
+    <div class="t">① Lista — o cartão-foto vira cartão-IATA</div>
+    <div class="d">Ordenada por relevância: próxima pernoita primeiro, depois por última estadia. A estação SEM hotel mas COM pernoita marcada aparece tracejada a pedir registo — a ponte "o comandante avisou".</div>
+    <div class="spec"><b>Dieta de alvos (retoque Apple):</b> o CARTÃO INTEIRO toca → ficha; fica UM botão direto (Mapas — a régua das 23h). O ✆ e o "›" morreram da lista. <b>Dados:</b> IATA fantasma · cidade (SÓ a cidade — um dado, uma casa: a próxima pernoita vive apenas no verde) · nome · relevância ("dormes cá sexta" verde / "última estadia"). <b>Estadia = noites consecutivas fundidas</b> ("27–28 jun · 2 noites"). <b>Derivação:</b> estações da escala, como hoje. <b>Fantasma do header:</b> nº de hotéis.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="back">‹</div>
+      <div class="hero2">
+        <div class="big">FNC</div>
+        <div class="nm">Hotel Girassol</div>
+        <div class="lc">FUNCHAL · MADEIRA</div>
+      </div>
+      <div class="secT">Telefone</div>
+      <div class="stay"><span style="border-bottom:2px solid var(--yellow);padding-bottom:1px">+351 291 000 000</span><small>toca para ligar</small></div>
+      <div class="secT">Nota</div>
+      <div class="note" style="margin-top:6px"><b>Pequeno-almoço às 06:00.</b> Pede quarto virado às traseiras — mais silencioso.</div>
+      <div class="secT">Estadias</div>
+      <div class="stay"><span class="nx">SEX 12 JUL</span><small>próxima · EJU7841</small></div>
+      <div class="stay"><span>27–28 JUN</span><small>2 noites</small></div>
+      <div style="margin-top:14px">
+        <div class="stay"><span>Editar hotel</span><small>nome · telefone · nota</small></div>
+        <div class="stay"><span style="color:#C6362B">Apagar hotel</span></div>
+      </div>
+      <div class="cta" style="display:block">
+        <div class="ctaMain">Caminho · hotel ⇄ aeroporto</div>
+        <div style="text-align:center;font-size:9.5px;font-weight:600;color:var(--grey);margin-top:6px">abre no Maps — tempo real, com trânsito</div>
+      </div>
+    </div></div>
+    <div class="t">② Ficha — o molde certo é um CONTACTO, não um imóvel</div>
+    <div class="d">A ficha segue a app Contactos: o TELEFONE é um campo tocável (um dado, um alvo — o ✆ duplicado morreu), a nota manuscrita é a "descrição", as estadias são reais. As AÇÕES vivem em grupo no FUNDO (decisão do founder): Editar primeiro, Apagar por último e a vermelho — a destrutiva fecha sempre o grupo. Um só CTA: o caminho.</div>
+    <div class="spec"><b>Sem preços</b> (o tripulante não paga; o € da pernoita é do AE, no dia/mês) · <b>O "15 min" é do Maps, não nosso:</b> o CTA abre DIREÇÕES hotel⇄aeroporto (temos o IATA; o hotel vai por nome+cidade) — o ETA é vivo, com trânsito, sem uma linha de cálculo nossa, sem chave de API. Nenhum número inventado. · <b>Nota = Caveat + marcador</b>; o editar sugere a gramática no placeholder: <i>"ex.: a 15 min do aeroporto · pequeno-almoço às 06:00"</i> · <b>Estadias derivadas</b> da escala (próxima a verde com o voo) · <b>Editar</b> abre o HotelSheet (nome/telefone/nota).</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o fluxo (as duas portas, uma fonte)</div>
+  <p><b>Porta 1 — o dia:</b> o comandante avisa o hotel → no dia da pernoita (Início/Escala) tocas no cartão do hotel →
+  a MESMA ficha desta página, pré-ligada à estação → registas nome/telefone/nota uma vez. <b>Porta 2 — este ecrã:</b>
+  registo antecipado ou consulta. As duas escrevem no MESMO sítio (o catálogo por estação) — registar no dia aparece
+  aqui, e vice-versa. <b>O cartão tracejado</b> é a cola: estação com pernoita futura e sem hotel pede o registo onde ele
+  falta. Sem preços, sem ratings, sem fotos — logística de tripulante, não turismo.</p>
+</div>
+</body>
+</html>

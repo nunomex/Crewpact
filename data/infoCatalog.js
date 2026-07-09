@@ -91,15 +91,75 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
   ] },
 ] };
 
-// Cartões de domínio para um perfil. `prof` = 'pilot' | 'cabin' | 'ryan'.
-// Devolve [{ k, ic, name, sub, stat, u, ks, word, accent, data | lib }].
-// O cartão FONTES é alimentado pela BIBLIOTECA REAL (data/library.js — URLs verificados,
-// crew-aware, golden test:library); marca-se `lib: true` e o InfoScreen injeta as secções
-// (fusão 2026-07-09 — a lista decorativa sem links que aqui vivia morreu).
-export function domainsFor(prof, P) {
+// ── TAP (2026-07-11 — BTE 29/2023 pilotos · BTE 7/2024 cabine, lidos na fonte) ──
+export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
+  { name: 'Base', items: [
+    { v: '8 125', u: '€', name: 'Vencimento base · CTE', art: 'Tabela A-3.1', f: 'VB MENSAL (valores-base 2023): CTE 8.125 · OP3C 6.500 · OP3 6.050 · OP2 5.200 · OP1 4.420. O AE atualiza +2% fixo +1% KPI por ano (estimado).', long: 'Vencimento base (2023 + regra anual)' },
+    { v: '2', u: '%', name: 'Vencimento de exercício', art: 'RRRGS', f: '2% do VB, em serviço ativo — soma-se sempre à base.' },
+  ] },
+  { name: 'Por dia', items: [
+    { v: '202,50', u: '€', name: 'Per diem A · dia de voo', art: 'Tabela A-3.2', f: 'POR DIA de calendário com voo (não por setor): CTE 300 (WB/LC) · 270 (MC) — OP 225 · 202,50. WB cobra sempre WB.', long: 'Per diem A (OP · MC)' },
+    { v: '135', u: '€', name: 'Per diem B · estadia', art: 'Tabela A-3.2', f: 'Dia de estadia/pernoita fora: CTE 180 · OP 135 (+ hotel pago).' },
+    { v: '200', u: '€', name: 'Comando em cruzeiro', art: 'Cl. 11.ª', f: 'Por setor com mais de 3 h a exercer comando em cruzeiro.' },
+  ] },
+  { name: 'Horas', items: [
+    { v: '3', u: '%', name: 'Hora de voo · Limite 1', art: 'Tabela A-3.3', f: '3% do VB por hora acima do plafond.' },
+    { v: '6', u: '%', name: 'Hora de voo · Limite 2', art: 'Tabela A-3.3', f: '6% do VB por hora no segundo limite.' },
+  ] },
+  { name: 'Subsídios & férias', items: [
+    { v: '1,5', u: '%', name: 'Senioridade', art: 'RRRGS', f: '1,5% do VB — comandantes seniores.' },
+    { v: '42', u: 'dias', name: 'Férias', art: 'RUPT Cl. 45.ª', f: '42 dias de CALENDÁRIO por ano civil (piso de 38 mesmo com faltas).' },
+  ] },
+] };
+
+export const AE_TAP_CABIN = { word: 'O teu AE', groups: [
+  { name: 'Base', items: [
+    { v: '2 020,73', u: '€', name: 'Vencimento base · CAB 3', art: 'Cl. 3.ª (2026)', f: 'Tabela 2026 PUBLICADA (sem estimativas): CAB 0 = RMMG 920 · CAB 1 1.214,68 … CAB 5 2.357,32 · S/C 1-7 até 3.287,57.', long: 'Vencimento base (coluna 2026)' },
+  ] },
+  { name: 'Por dia', items: [
+    { v: '150', u: '€', name: 'Ajuda de custo · dia de voo (AC1)', art: 'Cl. 7.ª', f: 'POR DIA de calendário com serviço de voo/DHC (não por setor).' },
+    { v: '80', u: '€', name: 'Estadia / pernoita (AC2)', art: 'Cl. 7.ª', f: 'Por dia de estadia fora ou cancelamento tardio (+ hotel pago).' },
+    { v: '40', u: '€', name: 'Complemento extraordinário', art: 'Cl. 8.ª', f: 'Por dia de assistência.' },
+  ] },
+  { name: 'Horas & funções', items: [
+    { v: '2,5', u: '%', name: 'Vencimento horário', art: 'Cl. 14.ª', f: '2,5% do VB por hora acima dos plafonds.' },
+    { v: '8', u: '%', name: 'Adicional de chefia', art: 'Cl. 11.ª', f: '+8% das ajudas de custo do mês (supervisores/chefia).' },
+    { v: '1', u: '%', name: 'Senioridade', art: 'Cl. 5.ª', f: '1% do VB por cada anuidade.' },
+  ] },
+  { name: 'Férias & subsídios', items: [
+    { v: '42', u: 'dias', name: 'Férias', art: 'Cl. 23.ª', f: '42 dias de CALENDÁRIO por ano (já incluem 12 de compensação de feriados). 1.º ano: 3 dias/mês, máx. 26.' },
+    { v: 'VB+VS', u: '·', name: 'Subsídios férias/Natal', art: 'Cl. 17.ª/18.ª', f: 'Cada um = vencimento base + senioridade.', long: 'Subsídios de férias e Natal' },
+  ] },
+] };
+
+// Cartões de domínio para um perfil — decididos pelo MÓDULO AE (AE_ID), não pelo nome
+// da companhia (correção 2026-07-11: a TAP modelada caía em FTL-only). Devolve
+// [{ k, ic, name, sub, stat, u, ks, word, accent, data | lib }]. O `stat` do cartão AE
+// é o número da TUA categoria (não o exemplo fixo FO/CM). O cartão FONTES é alimentado
+// pela BIBLIOTECA REAL (data/library.js — URLs verificados, golden test:library).
+const eur = (n) => (n == null ? null : (+n).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/, ' '));
+const countItems = (d) => d.groups.reduce((n, g) => n + g.items.length, 0);
+export function domainsFor(P, { ae = null, crewCategory = null } = {}) {
   const ftl = { k: 'ftl', ic: 'shield', name: 'FTL', sub: 'A LEI · EASA', stat: '900', u: 'h', ks: 'voo / ano civil · 8 limites', word: 'A lei', accent: P.red, data: FTL };
   const fontes = (ks) => ({ k: 'fontes', ic: 'book', name: 'Fontes', sub: 'OFICIAIS', stat: '', u: '', ks, word: 'Fontes', accent: P.onInkFaint, lib: true });
-  if (prof === 'cabin') return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SNPVAC', stat: '32,50', u: '€', ks: 'setor nominal · 20 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_CABIN }, fontes('EUR-Lex · EASA · DRE')];
-  if (prof === 'ryan') return [ftl, fontes('EUR-Lex · EASA')];
-  return [ftl, { k: 'ae', ic: 'wallet', name: 'AE', sub: 'EASYJET · SPAC', stat: '38,76', u: '€', ks: 'setor nominal · 21 rubricas', word: 'O teu AE', accent: P.yellow, data: AE_PILOT }, fontes('EUR-Lex · EASA · DRE')];
+  const aeId = ae && ae.AE_ID;
+  const card = (sub, stat, statKs, data) => ({ k: 'ae', ic: 'wallet', name: 'AE', sub, stat, u: '€', ks: `${statKs} · ${countItems(data)} rubricas`, word: 'O teu AE', accent: P.yellow, data });
+  if (aeId === 'easyjet-snpvac') {
+    const cat = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[crewCategory] != null) ? crewCategory : 'CM';
+    return [ftl, card('EASYJET · SNPVAC', eur(ae.NOMINAL_SECTOR[cat]), `setor nominal · ${cat}`, AE_CABIN), fontes('EUR-Lex · EASA · DRE')];
+  }
+  if (aeId === 'easyjet-spac') {
+    const cat = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[crewCategory] != null) ? crewCategory : 'FO';
+    return [ftl, card('EASYJET · SPAC', eur(ae.NOMINAL_SECTOR[cat]), `setor nominal · ${cat}`, AE_PILOT), fontes('EUR-Lex · EASA · DRE')];
+  }
+  if (aeId === 'tap-spac') {
+    const row = crewCategory === 'CTE' ? 'CTE' : 'OP';
+    const val = ae.PER_DIEM && ae.PER_DIEM[row] ? ae.PER_DIEM[row].A_mc : 202.5;
+    return [ftl, card('TAP · SPAC', eur(val), `per diem A (MC) · ${row} · €/dia`, AE_TAP_PILOT), fontes('EUR-Lex · EASA · DRE')];
+  }
+  if (aeId === 'tap-snpvac') {
+    return [ftl, card('TAP · SNPVAC', eur(ae.AC1_DAY != null ? ae.AC1_DAY : 150), 'AC1 · €/dia de voo', AE_TAP_CABIN), fontes('EUR-Lex · EASA · DRE')];
+  }
+  // Sem AE modelado (FTL-only / pending) → a lei + fontes.
+  return [ftl, fontes('EUR-Lex · EASA')];
 }

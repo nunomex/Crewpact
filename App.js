@@ -76,6 +76,7 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
+import HotelDetailScreen  from './screens/HotelDetailScreen';
 import TabBar             from './components/TabBar';   // a navegação: barra convencional polida (padrão "melhores apps")
 import OfflineBanner      from './components/OfflineBanner';
 import Toast              from './components/Toast';
@@ -156,6 +157,7 @@ function PerfilStack() {
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
+      <Stack.Screen name="HotelDetail" component={HotelDetailScreen} />
       <Stack.Screen name="Biblioteca" component={InfoScreen} />
       <Stack.Screen name="FtlDetail"  component={FtlDetailScreen} />
     </Stack.Navigator>

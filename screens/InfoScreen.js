@@ -69,12 +69,11 @@ function SheetBody({ it }) {
 
 export default function InfoScreen() {
   const tabSpace = useTabBarSpace();
-  // Crew-aware REAL: o perfil decide o que aparece. easyJet piloto/cabine → o AE respetivo
-  // (catálogo em infoCatalog); sem AE (Ryanair, ou companhia AE ainda por modelar) → FTL-only.
-  const { crewType, company, ae, lang } = useContext(AppContext);
+  // Crew-aware REAL: o cartão AE decide-se pelo MÓDULO (AE_ID) — correção 2026-07-11:
+  // a TAP modelada caía em FTL-only porque o gate era o NOME da companhia; e o `stat`
+  // do cartão passa a ser o valor da TUA categoria (não o exemplo fixo FO/CM).
+  const { crewType, company, ae, crewCategory, lang } = useContext(AppContext);
   const navigation = useNavigation();   // Biblioteca é EMPURRADA do Perfil → ‹ voltar
-  const isEzy = /easyjet|ezy/i.test([company && company.slug, company && company.name, company && company.engine_code].filter(Boolean).join(' '));
-  const prof = (ae && isEzy) ? (crewType === 'cabin' ? 'cabin' : 'pilot') : 'ryan';
   const eyebrow = `Referência · ${(company && company.name) || '—'} · ${crewType === 'cabin' ? 'Cabine' : 'Piloto'}`;
   // FONTES = a Biblioteca REAL (data/library.js): secções crew-aware (FTL universal · AE da
   // companhia+tipo com deep-link verificado), URLs que ABREM — fusão 2026-07-09 (o mosaico
@@ -85,8 +84,8 @@ export default function InfoScreen() {
   );
   const libCount = useMemo(() => library.reduce((n, sec) => n + sec.items.length, 0), [library]);
   const domains = useMemo(
-    () => domainsFor(prof, P).map((d) => (d.lib ? { ...d, stat: String(libCount) } : d)),
-    [prof, libCount],
+    () => domainsFor(P, { ae, crewCategory }).map((d) => (d.lib ? { ...d, stat: String(libCount) } : d)),
+    [ae, crewCategory, libCount],
   );
   const flat = useMemo(() => {
     const out = [];
