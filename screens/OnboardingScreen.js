@@ -193,7 +193,7 @@ export default function OnboardingScreen() {
       {/* Topo: ‹ voltar (passo > 0) · pontinhos (ativo alonga a amarelo) · Sair (logout) */}
       <View style={o.top}>
         {idx > 0 ? (
-          <TouchableOpacity style={o.back} onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} hitSlop={6}
+          <TouchableOpacity style={o.back} onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} hitSlop={8}
             accessibilityRole="button" accessibilityLabel={l('Voltar', 'Back')}>
             <Icon name="back" size={16} color={PELE.ink} />
           </TouchableOpacity>
@@ -284,21 +284,24 @@ export default function OnboardingScreen() {
 const o = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER + 4, paddingTop: 10 },
-  back: { width: 32, height: 32, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  // Régua da auditoria 2026-07-10 (contexto Setup Assistant: lê-se para DECIDIR):
+  // voltar 36 (alvo) · Sair 13 (é uma AÇÃO, não rodapé) · rótulos de opção 15.5 ·
+  // subs 11.5 · explicação 13.5/20 — o piso de leitura subiu uma unidade em tudo.
+  back: { width: 36, height: 36, borderRadius: 12, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.line },
   dotOn: { width: 14, backgroundColor: PELE.yellow },
-  exit: { fontSize: 11.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  exit: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, paddingVertical: 8, paddingHorizontal: 4 },
   head: { paddingHorizontal: GUTTER + 4, paddingTop: 22, paddingBottom: 14 },
   eyebrow: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2.4, color: PELE.grey, textTransform: 'uppercase' },
   q: { fontFamily: PELE_FONT.display, fontSize: 38, lineHeight: 40, letterSpacing: 0.3, textTransform: 'uppercase', color: PELE.ink, marginTop: 8, marginBottom: 6 },
-  qsub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 19 },
+  qsub: { fontSize: 13.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 20 },
   scroll: { flex: 1, paddingHorizontal: GUTTER + 4 },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: PELE.line },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: PELE.line },
   code: { fontFamily: PELE_FONT.display, fontSize: 19, color: PELE.grey, minWidth: 44 },
-  lbl: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  sub: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
+  lbl: { fontSize: 15.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  sub: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
   // Visto de seleção (substituiu o ponto 9px e a placa preta — mockup onboarding-selecao)
   tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center' },
   bigTick: { position: 'absolute', top: 14, right: 14 },
@@ -308,8 +311,10 @@ const o = StyleSheet.create({
   // Escolhido = PAPEL com borda ink + visto no canto (a inversão a preto morreu:
   // ink invertido é linguagem de BOTÃO, não de seleção — decisão do founder 2026-07-10)
   bigcardSel: { borderColor: PELE.ink, borderWidth: 2, paddingVertical: 23.5, paddingHorizontal: 19.5 },
-  bigT: { fontSize: 16.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
-  bigS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
+  // Cartões da DECISÃO maior do funil em Barlow display (o mockup onboarding-selecao ⑤
+  // desenhava-os a 24 uppercase — o código nunca tinha apanhado isso).
+  bigT: { fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: 0.4, textTransform: 'uppercase', color: PELE.ink },
+  bigS: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
 
   monthPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 22, height: 58 },
   monthInput: { flex: 1, fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: 2, color: PELE.ink },
@@ -318,5 +323,5 @@ const o = StyleSheet.create({
   err: { color: PELE.red, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, textAlign: 'center', paddingHorizontal: 24, paddingBottom: 8 },
   footer: { paddingHorizontal: GUTTER + 4, paddingBottom: 18, paddingTop: 8 },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: PELE.ink, borderRadius: 999, height: 56 },
-  btnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },
+  btnTxt: { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },   // = login (unificado)
 });
