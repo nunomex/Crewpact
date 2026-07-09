@@ -70,10 +70,13 @@ check('EN: frase em inglês', /rest|day|sun|clock/.test(vEn.bold + ' ' + vEn.tai
 eq('disrupção não tem voz', stateVoice({ state: 'disrupcao', dateISO: '2026-07-09' }), null);
 eq('desconhecido → null', stateVoice({ state: 'xpto', dateISO: '2026-07-09' }), null);
 const vVes = stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30' } });
-eq('véspera com report', vVes, { bold: 'Está tudo verificado — dorme.', tail: 'Report às 05:30.' });
+eq('véspera com report (+ destino amanhã)', vVes, { bold: 'Está tudo verificado — dorme.', tail: 'Report às 05:30.', to: 'amanha' });
 eq('véspera SEM report → null (nunca se inventa)', stateVoice({ state: 'vespera', dateISO: '2026-07-09' }), null);
 const vPer = stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC' } });
 check('pernoita com estação', vPer && vPer.bold.includes('FNC'));
+check('pernoita: destino amanhã', vPer && vPer.to === 'amanha');
+const vPos = stateVoice({ state: 'posvoo', dateISO: '2026-07-09', ctx: { restUntil: '08:15' } });
+check('pós-voo: destino hoje', vPos && vPos.to === 'hoje');
 
 // ═══ METEO NA VOZ (mockup design/meteo-voz.html, aprovado 2026-07-10) ═══
 // Frases de DECISÃO (amanhã tem serviço) > conforto de hoje; noite ganha a tudo;
@@ -113,6 +116,25 @@ eq('férias com sol: zero responsabilidades', vFer, { bold: '24° e zero respons
 // Noite continua a ganhar a TUDO (às 22h com serviço amanhã o estado real já é véspera — sem bilhete)
 const vNightCold = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22, ctx: { tmwReport: '05:30' } });
 eq('noite ganha às frases de decisão', vNightCold.bold, 'Noite tranquila.');
+
+// ═══ AVISO NA VOZ (2026-07-10, "gostei disto") — o bilhete menciona a escala mexida ═══
+// Registo humano, SEM números (a contagem vive na linha warn); ganha à meteo E à noite;
+// só folga/férias — a DOENÇA fica calada (cuidar primeiro).
+const vAviso = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { aviso: true } });
+check('folga+aviso: fala da escala', vAviso && /escala/i.test(vAviso.bold + ' ' + vAviso.tail));
+check('aviso: sem números', vAviso && !/\d/.test(vAviso.bold + vAviso.tail));
+// Bilhete-LINK (2026-07-10): frases com destino levam-no; as normais ficam INERTES.
+check('aviso: destino escala', vAviso && vAviso.to === 'escala');
+check('folga normal: INERTE (sem destino)', vSun && vSun.to === undefined);
+const vAvisoNight = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 22, ctx: { aviso: true } });
+check('aviso ganha à noite', vAvisoNight && /escala/i.test(vAvisoNight.bold + ' ' + vAvisoNight.tail));
+const vAvisoFer = stateVoice({ state: 'ferias', dateISO: '2026-07-09', wx: { c: 24, min: 18, max: 24, icon: 'sun' }, ctx: { aviso: true } });
+eq('férias+aviso ganha ao sol (+ destino)', vAvisoFer, { bold: 'A escala mexeu.', tail: 'Sem pressa — espreitas quando voltares.', to: 'escala' });
+const vAvisoDoe = stateVoice({ state: 'doenca', dateISO: '2026-07-09', ctx: { aviso: true } });
+eq('doença+aviso: a voz cuida, não avisa', vAvisoDoe, { bold: 'Cuida de ti.', tail: 'A escala pode esperar — as melhoras.' });
+const vSemAviso = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15 });
+check('sem aviso: pool normal (nada de escala)', vSemAviso && !/mexeu|mexeram/i.test(vSemAviso.bold + vSemAviso.tail));
+eq('determinismo do aviso', vAviso, stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { aviso: true } }));
 
 console.log(`\nvoz do estado — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

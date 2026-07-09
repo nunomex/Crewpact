@@ -171,6 +171,14 @@ export default function StatsScreen({ navigation }) {
   const selKey = curOpts.find((o) => o.k === dialSel) ? dialSel : defaultKey;
   const selMoney = mode === 'money' ? (moneyOpts.find((o) => o.k === selKey) || moneyOpts[0]) : null;
   const selSafe = mode === 'safety' ? (safetyVis.find((o) => o.k === selKey) || safetyVis[0]) : null;
+  // Mostrador à Stocks/Watch: o INTEIRO grande, os cêntimos+€ pequenos e cinza na mesma
+  // linha de base — a lei dos cêntimos intacta e o dado-estrela finalmente a mandar na página.
+  const selEur = selMoney ? (() => {
+    if (selMoney.val == null) return { big: '—', dec: '' };
+    const [i, d] = Number(selMoney.val).toFixed(2).split('.');
+    const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+    return lang === 'en' ? { big: `€${g}`, dec: `.${d}` } : { big: g, dec: `,${d} €` };
+  })() : null;
 
   const pickDial = (k) => { select(); setDialSel(k); };
   const openSheet = (id) => { select(); setSheet(id); };
@@ -181,8 +189,13 @@ export default function StatsScreen({ navigation }) {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <PeleSide label={l('ESTATÍSTICAS', 'STATISTICS')} accent={String(isYear ? year : ym.slice(0, 4))} />
-      <ScrollView ref={statsScrollRef} style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
+      {/* Header FIXO fora do scroll (género do Perfil/Validades, 2026-07-10): eyebrow NA linha
+          de topo à esquerda (padrão da saudação do Início) · fantasma = a ETIQUETA do âmbito
+          (ANO/MÊS — decisão do user; a palavra por baixo carrega o dado) · kick = retrato
+          físico do âmbito (voos·setores) · as ‹› do mês ficam sempre à mão, mesmo com scroll. */}
+      <View style={s.headWrap}>
         <PeleHeader
+          eyebrowTop
           eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
           ghost={isYear ? l('ANO', 'YEAR') : l('MÊS', 'MONTH')}
           word={isYear ? String(year) : monthName}
@@ -196,7 +209,10 @@ export default function StatsScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           ) : null}
+          kick={`${nf(st.flights || 0)} ${l(st.flights === 1 ? 'voo' : 'voos', st.flights === 1 ? 'flight' : 'flights')} · ${nf(st.sectors || 0)} ${l(st.sectors === 1 ? 'setor' : 'setores', st.sectors === 1 ? 'sector' : 'sectors')}`}
         />
+      </View>
+      <ScrollView ref={statsScrollRef} style={{ flex: 1 }} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} showsVerticalScrollIndicator={false}>
 
         {/* Segmento Mês ⇄ Ano */}
         <View style={s.scoperow}>
@@ -250,7 +266,9 @@ export default function StatsScreen({ navigation }) {
               <View style={s.disp}>
                 {mode === 'money' ? (
                   <>
-                    <Text style={[s.dval, selMoney.k !== 'base' && s.dvalGreen]} numberOfLines={1} allowFontScaling={false}>{fmtEur0(selMoney.val)}</Text>
+                    <Text style={[s.dval, selMoney.k !== 'base' && s.dvalGreen]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} allowFontScaling={false}>
+                      {selEur.big}<Text style={s.dvalDec}>{selEur.dec}</Text>
+                    </Text>
                     {selMoney.k === 'total' ? (
                       <View style={s.dsubBox}>
                         <Text style={s.dsub}>{l('Base', 'Base')} · {isYear ? `${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : monthName} · <Text style={s.dsubB}>{fmtEur0(A.base || 0)}</Text></Text>
@@ -479,6 +497,7 @@ export default function StatsScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
+  headWrap: { paddingHorizontal: GUTTER },   // herói fixo fora do scroll (género Perfil/Validades)
   scroll: { paddingHorizontal: GUTTER },
 
   // Nav de mês — vai no `wordTrailing` do PeleHeader (o resto do cabeçalho é do PeleHeader)
@@ -515,9 +534,11 @@ const s = StyleSheet.create({
   // Dial
   money: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 228 },
   disp: { flex: 1, minWidth: 0 },
-  dval: { fontFamily: PELE_FONT.display, fontSize: 40, lineHeight: 40, color: PELE.ink },
+  // Dado-estrela da página: maior que a palavra do topo (44) — a hierarquia manda (2026-07-10, user).
+  dval: { fontFamily: PELE_FONT.display, fontSize: 58, lineHeight: 56, color: PELE.ink },
+  dvalDec: { fontFamily: PELE_FONT.displaySemi, fontSize: 23, color: PELE.grey },
   dvalGreen: { color: PELE.ok },
-  dvalS: { fontFamily: PELE_FONT.display, fontSize: 54, lineHeight: 50, marginTop: 4 },
+  dvalS: { fontFamily: PELE_FONT.display, fontSize: 60, lineHeight: 56, marginTop: 4 },
   dlab: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   dsubBox: { marginTop: 10 },
   dsub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 18 },

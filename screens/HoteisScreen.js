@@ -6,7 +6,7 @@
 // aparece tracejada a pedir registo — a ponte "o comandante avisou".
 // Catálogo intacto (um hotel por estação, local no telemóvel) — só a apresentação mudou.
 import React, { useContext, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GUTTER, PELE, PELE_FONT } from '../data/constants';
 import PeleHeader from '../components/PeleHeader';
@@ -15,7 +15,7 @@ import HotelSheet from '../components/HotelSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { select } from '../data/haptics';
 import { AppContext } from '../data/appContext';
-import { hotelMapsUrl, staysByStation, stayRuns } from '../data/hotels';
+import { staysByStation, stayRuns, hotelCount } from '../data/hotels';
 import { airportInfo } from '../data/airports';
 
 // Dias/meses FIXOS (Intl varia entre dispositivos — lição da folga do Início).
@@ -38,7 +38,8 @@ export default function HoteisScreen({ navigation }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetStation, setSheetStation] = useState(null);   // null = novo (a folha pede a estação)
   const openAdd = (st = null) => { select(); setSheetStation(st); setSheetOpen(true); };
-  const openFicha = (st) => { select(); navigation.navigate('HotelDetail', { station: st }); };
+  // Nível 1 → nível 2: o toque no cartão vai SEMPRE à página da estação (sem rotas escondidas).
+  const openStation = (st) => { select(); navigation.navigate('HotelStation', { station: st }); };
 
   const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
   const stays = useMemo(() => staysByStation(duties, base), [duties, base]);
@@ -54,6 +55,7 @@ export default function HoteisScreen({ navigation }) {
       const pastRuns = runs.filter((r) => r.end < todayISO);
       return {
         st, h: hotels[st] || {},
+        count: hotelCount(hotels[st]),
         next,
         lastPast: pastRuns.length ? pastRuns[pastRuns.length - 1].end : null,
         countYear: pastRuns.filter((r) => r.end.slice(0, 4) === yr).length,
@@ -87,20 +89,20 @@ export default function HoteisScreen({ navigation }) {
     return l(`próxima · ${fmtDM(iso)}`, `next · ${fmtDM(iso)}`);
   };
 
-  const openMaps = (h, st) => { select(); Linking.openURL(hotelMapsUrl(h.name, st, Platform.OS)).catch(() => {}); };
-
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      {/* Anatomia do Validades: rótulo lateral + herói root (fantasma "02") + kick com segmento de atenção. */}
-      <PeleSide label={l('CATÁLOGO', 'CATALOGUE')} accent={`${reg.length} ${l('HOTÉIS', 'HOTELS')}`} />
+      {/* Anatomia do Validades: rótulo lateral + herói root + kick com segmento de atenção.
+          Palavra = AEROPORTOS (decisão do founder); o FANTASMA conta os HOTÉIS lá dentro;
+          o kick soma "N hotéis em M aeroportos" + pendentes a âmbar. */}
+      <PeleSide label={l('CATÁLOGO', 'CATALOGUE')} accent={`${reg.length} ${l('AEROPORTOS', 'AIRPORTS')}`} />
       <View style={s.head}>
         <PeleHeader onBack={() => navigation.goBack()}
-          eyebrow={l('Pernoitas', 'Night stops')}
-          ghost={String(reg.length).padStart(2, '0')}
-          word={l('Hotéis', 'Hotels')}
+          eyebrow={l('Hotéis · pernoitas', 'Hotels · night stops')}
+          ghost={String(reg.reduce((a, e) => a + e.count, 0)).padStart(2, '0')}
+          word={l('Aeroportos', 'Airports')}
           kick={(
             <Text style={s.kick} numberOfLines={1}>
-              {reg.length} {l(reg.length === 1 ? 'hotel' : 'hotéis', reg.length === 1 ? 'hotel' : 'hotels')}
+              {(() => { const th = reg.reduce((a, e) => a + e.count, 0); return `${th} ${l(th === 1 ? 'hotel' : 'hotéis', th === 1 ? 'hotel' : 'hotels')} ${l('em', 'at')} ${reg.length} ${l(reg.length === 1 ? 'aeroporto' : 'aeroportos', reg.length === 1 ? 'airport' : 'airports')}`; })()}
               {pending.length ? <Text style={s.kickW}>{`  ·  ${pending.length} ${l('por registar', 'to log')}`}</Text> : null}
             </Text>
           )} />
@@ -110,24 +112,21 @@ export default function HoteisScreen({ navigation }) {
           <Text style={s.empty}>{l('Ainda sem hotéis. Adiciona em baixo, ou regista direto num dia com pernoita.', 'No hotels yet. Add below, or log one right on a night-stop day.')}</Text>
         ) : null}
 
-        {reg.map(({ st, h, next, lastPast, countYear }) => (
-          <TouchableOpacity key={st} style={s.card} activeOpacity={0.85} onPress={() => openFicha(st)}
-            accessibilityRole="button" accessibilityLabel={`${st} · ${h.name || ''}`}
-            accessibilityHint={l('Toque abre a ficha', 'Tap opens the card')}>
+        {reg.map(({ st, h, count, next, lastPast, countYear }) => (
+          <TouchableOpacity key={st} style={s.card} activeOpacity={0.85} onPress={() => openStation(st)}
+            accessibilityRole="button" accessibilityLabel={`${st} · ${cityOf(st)}`}
+            accessibilityHint={l('Toque abre os hotéis deste aeroporto', 'Tap opens this airport’s hotels')}>
             <Text style={s.cIata} numberOfLines={1} allowFontScaling={false}>{st}</Text>
-            {/* Um dado, uma casa: o eyebrow diz a CIDADE; a próxima pernoita vive SÓ no verde. */}
-            <Text style={s.cK} numberOfLines={1}>{cityOf(st)}</Text>
-            <Text style={s.cName} numberOfLines={1}>{h.name}</Text>
+            {/* Cartão LIMPO (sem botão — o Mapas desceu ao nível 2; o atalho das 23h é a linha
+                🏨 do dia). Eyebrow fala a língua do nível: 1 hotel → o nome dele; 2+ → a contagem. */}
+            <Text style={s.cK} numberOfLines={1}>{count > 1 ? `${count} ${l('hotéis', 'hotels')}` : h.name}</Text>
+            <Text style={s.cName} numberOfLines={1}>{cityOf(st)}</Text>
             <Text style={s.cMeta} numberOfLines={1}>
               {next ? <Text style={s.cMetaOk}>{nextLabel(next.start)}</Text>
                 : lastPast ? l(`última estadia · ${fmtDM(lastPast)}`, `last stay · ${fmtDM(lastPast)}`)
                   : l('ainda sem estadias na escala', 'no stays in your roster yet')}
               {countYear > 0 ? ` · ${countYear} ${l(countYear === 1 ? 'estadia este ano' : 'estadias este ano', countYear === 1 ? 'stay this year' : 'stays this year')}` : ''}
             </Text>
-            <TouchableOpacity style={s.cBtn} activeOpacity={0.85} onPress={() => openMaps(h, st)}
-              accessibilityRole="button" accessibilityLabel={l('Abrir nos Mapas', 'Open in Maps')}>
-              <Text style={s.cBtnTxt} allowFontScaling={false}>{l('Abrir nos Mapas', 'Open in Maps')}</Text>
-            </TouchableOpacity>
           </TouchableOpacity>
         ))}
 
@@ -136,9 +135,9 @@ export default function HoteisScreen({ navigation }) {
           <TouchableOpacity key={st} style={[s.card, s.cardDash]} activeOpacity={0.85} onPress={() => openAdd(st)}
             accessibilityRole="button" accessibilityLabel={l(`Adicionar hotel de ${st}`, `Add the ${st} hotel`)}>
             <Text style={s.cIata} numberOfLines={1} allowFontScaling={false}>{st}</Text>
-            <Text style={s.cK} numberOfLines={1}>{cityOf(st)} · {l('pernoita', 'night stop')} {fmtDM(next.date)}</Text>
-            <Text style={[s.cName, { color: PELE.grey }]} numberOfLines={1}>{l('Sem hotel registado', 'No hotel saved')}</Text>
-            <Text style={s.cMeta} numberOfLines={1}>{l('o comandante avisa — regista quando souberes', 'the captain will say — log it when you know')}</Text>
+            <Text style={s.cK} numberOfLines={1}>{l('pernoita', 'night stop')} {fmtDM(next.date)}</Text>
+            <Text style={[s.cName, { color: PELE.grey }]} numberOfLines={1}>{cityOf(st)}</Text>
+            <Text style={s.cMeta} numberOfLines={1}>{l('sem hotel — o comandante avisa; regista quando souberes', 'no hotel — the captain will say; log it when you know')}</Text>
             <View style={[s.cBtn, s.cBtnGhost]}>
               <Text style={[s.cBtnTxt, { color: PELE.ink }]} allowFontScaling={false}>＋ {l('Adicionar hotel', 'Add hotel')}</Text>
             </View>
@@ -148,7 +147,7 @@ export default function HoteisScreen({ navigation }) {
         <TouchableOpacity style={s.addBtn} activeOpacity={0.85} onPress={() => openAdd(null)} accessibilityRole="button">
           <Text style={s.addTxt}>＋ {l('Adicionar hotel', 'Add hotel')}</Text>
         </TouchableOpacity>
-        <Text style={s.foot}>{l('Um por estação — a linha 🏨 dos dias com pernoita usa este catálogo. Guardado só no telemóvel.', 'One per station — the 🏨 line on night-stop days uses this catalogue. Stored only on your phone.')}</Text>
+        <Text style={s.foot}>{l('A linha 🏨 dos dias com pernoita usa este catálogo — e abre os Mapas num toque. Guardado só no telemóvel.', 'The 🏨 line on night-stop days uses this catalogue — and opens Maps in one tap. Stored only on your phone.')}</Text>
       </ScrollView>
 
       <HotelSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} station={sheetStation} />

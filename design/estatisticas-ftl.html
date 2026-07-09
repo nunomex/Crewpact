@@ -44,7 +44,7 @@
   .money{display:flex;align-items:center;gap:12px;min-height:236px}
   .disp{flex:1;min-width:0}
   .dlab{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
-  .dval{font-family:'Barlow Condensed';font-weight:700;font-size:54px;line-height:.86;font-variant-numeric:tabular-nums;margin-top:4px;color:var(--ink)}
+  .dval{font-family:'Barlow Condensed';font-weight:700;font-size:60px;line-height:.86;font-variant-numeric:tabular-nums;margin-top:4px;color:var(--ink)}
   .dval.ok{color:var(--ok)}.dval.warn{color:var(--warn)}.dval.red{color:var(--red)}
   .dsub{font-size:12.5px;font-weight:600;color:var(--grey);margin-top:10px;font-variant-numeric:tabular-nums;line-height:1.4}.dsub b{color:var(--ink);font-weight:800}
   .col{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
@@ -131,6 +131,7 @@
       <div class="hero">
         <div class="ghost" id="scGhost">ANO</div>
         <div class="mrow"><div class="mleft" id="periodPick"><span class="word" id="scWord">2026</span><span class="mchev"><i data-ic="chevron" data-ic-rot="90" data-ic-size="16"></i></span></div></div>
+        <div style="font-size:12.5px;font-weight:700;color:var(--grey);margin-top:6px" id="scKick">312 voos · 664 setores</div>
       </div>
       <div class="hr"></div>
 
@@ -247,8 +248,8 @@
 
     // toggle Mês/Ano — afeta os cards Voo·Corpo; a Segurança fica "agora" (não muda)
     var SCOPE={
-      ano:{word:'2026',ghost:'ANO',vooKey:'512,4 h',vooCap:'57% do teto',corpoKey:'10,5 h',corpoCap:'repouso mín · 3 curtos'},
-      mes:{word:'Julho',ghost:'MÊS',vooKey:'58,2 h',vooCap:'em julho',corpoKey:'11,0 h',corpoCap:'repouso mín · 1 curto'}
+      ano:{word:'2026',ghost:'ANO',kick:'312 voos · 664 setores',vooKey:'512,4 h',vooCap:'57% do teto',corpoKey:'10,5 h',corpoCap:'repouso mín · 3 curtos'},
+      mes:{word:'Julho',ghost:'MÊS',kick:'38 voos · 96 setores',vooKey:'58,2 h',vooCap:'em julho',corpoKey:'11,0 h',corpoCap:'repouso mín · 1 curto'}
     };
     var scope='ano', curM=6, MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     function filterDial(){
@@ -271,6 +272,7 @@
       document.getElementById('scWord').textContent=(scope==='mes')?MONTHS[curM]:s.word;
       document.querySelector('.mrow').classList.toggle('mes',scope==='mes');
       document.getElementById('scGhost').textContent=s.ghost;
+      document.getElementById('scKick').textContent=s.kick;
       document.getElementById('vooKey').textContent=s.vooKey;
       document.getElementById('vooCap').textContent=s.vooCap;
       document.getElementById('corpoKey').textContent=s.corpoKey;

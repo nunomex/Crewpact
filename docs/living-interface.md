@@ -399,9 +399,23 @@ Tema segue o sistema; modo escuro é candidato futuro (ref-1 glow — reports à
 > não estava bem foi corrigido na hora. Re-testes futuros: frase-gatilho "testar os estados".
 
 O Início real (`screens/HomeScreen.js`) **já corre o motor adaptativo**: derivação
-`homeState` + anatomia fixa das zonas + banda de alerta com cadeia de prioridades
-(materializa a tabela do §2: segurança ILEGAL > limites acima > erro de leitura >
-cancelado/desviado > atraso c/ liveVerdict > inbound > registo-atrasado > aeroporto).
+`homeState` + anatomia fixa das zonas + **avisos v2 (2026-07-10, decisão do founder — a
+BANDA sangrada morreu; nada empurra o herói)**: vermelho de LEGALIDADE (ilegal/limites
+acima) = **pílula vermelha no canto da saudação** (prioridade pílula FTL > pílula
+exemplo > sino > nada; toca→porquê) · vermelho de VOO (cancelado/desviado/atraso) = o
+próprio HERÓI (estado disrupção) · **warns** (erro de leitura > inbound > registo-atrasado
+> escala-mudou > aeroporto) = **linha à docAlert POR BAIXO do Estado**, uma de cada vez.
+E o CHARME em cima da função: nos estados-bilhete (folga/férias) a **voz manuscrita ganha
+consciência da escala mexida** no registo dela ("A escala mexeu. Espreita quando puderes —
+nada entra sem ti.", pools `folga.aviso`/`ferias.aviso`, ganha à meteo E à noite, SEM
+números — a contagem vive na função); a DOENÇA fica calada (cuidar primeiro). **Bilhete-LINK (user, 2026-07-10 "o amarelo dá para carregar"):** frases com destino real
+tocam-se — o marcado amarelo é a língua de link da casa (`to` na pool: aviso→'escala' ·
+véspera/pernoita→'amanha' · pós-voo→'hoje'; o Início traduz com guarda dia-sem-registo→Escala);
+as frases normais ficam INERTES (nada de taps mortos) e a doença em paz. Golden
+`test:voice` 33/33. **Anti-eco (user, 2026-07-10):** na FOLGA a função da escala-mexida é o
+**CHIP do Estado** ("escala · N por rever", âmbar, tocável — era o críptico "2 mud.") e a
+linha warn desse facto CALA-SE (senão eram 3 vozes: bilhete+chip+linha); nos estados sem
+chips, a linha warn é a casa.
 A meteo do destino ganhou a UI (célula da chegada); o Partilhar usa o cartão
 editorial da família (`FlightShareCard`). Acrescentar um estado é **um ramo nas
 derivações** — a arquitetura não muda.
@@ -412,13 +426,13 @@ derivações** — a arquitetura não muda.
 | 1 | Folga | ✅ construído | agenda 3 próximos + € do mês (`monthStats`) + donut do mês |
 | 2 | Véspera | ✅ construído (2026-07-09) | report ≤14h + noite (≥18h): countdown no fantasma, "Amanhã", repouso ✓ + acordar ~, horas neutras, chip H:MM; **estreia o TEMA NOTURNO** (PELE_NIGHT + glow de candeeiro; chip inverte) |
 | 3 | Pré-report | ✅ construído | countdown H:MM, avião ✓/aeroporto ✓ reais, horas + meteo, per-diem + donut PSV |
-| 3b | Disrupção | ✅ construído | banda-causa + "+N Atenção" + horas rasuradas + PSV projetado + chip nova-partida |
+| 3b | Disrupção | ✅ construído | "+N Atenção" no herói (o alarme É o ecrã) + horas rasuradas + PSV projetado + chip nova-partida; a causa (inbound/aeroporto) vive na linha warn sob o Estado (avisos v2) |
 | 4 | Em serviço/voo | ✅ construído (2026-07-09) | barra de PROGRESSO do setor ativo (instantes planeados, anda com o tick) + PSV a ACUMULAR no útil ("PSV 05:12 / máx 13:00") + Partilhar; ETA por instantes live fica como refinamento |
 | 5 | Pós-voo | ✅ construído (2026-07-09) | duty de hoje TERMINADA → "Fechado" + veredicto legal no kick, DUTY/BLOCK/SETORES (tap→detalhe), per-diem+donut PSV, ações Sign-off/Simular; dívida: "repouso até HH:MM" real (motor 235) por ligar — o útil usa a pergunta do repouso |
 | 6 | Pernoita fora | ✅ construído (2026-07-09) | dia fechado FORA da base (nightStopStation) → NOTURNO herdado; fantasma = estação (tempo no expoente), hotel no kick/meio (tap mapas · longo edita · convite sem hotel), útil 10h-235 + € da noite (ae.nightStop) + meteo, chip report amanhã |
 | 7 | Standby | ✅ essencial (2026-07-09) | linha "SE CHAMADO → PSV até HH:MM" (report+máx do motor) sob o serviço; útil ainda genérico (alojamento 225 d/e por expor) |
 | 8 | Formação | ✅ construído (2026-07-09) | ramo não-voo do "hoje" (tipo+horas) + **papel pago** no útil (instrutor — conta no mês, AE) |
-| 9 | Escala mudou | ✅ construído (2026-07-09) | **banda prioritária** no Início ("A tua escala mudou — N por rever", toca→Escala) + hub/ponto âmbar; takeover do herói DESCARTADO (o dia operacional não se esconde; deteta→confirma respeitado) |
+| 9 | Escala mudou | ✅ v2 (2026-07-10) | **linha warn SOB o Estado** ("A tua escala mudou — N por rever", toca→Escala; era banda no topo — o user mudou-a de casa) + hub/ponto âmbar; takeover do herói DESCARTADO (o dia operacional não se esconde; deteta→confirma respeitado) |
 | 10 | Documento crítico | ✅ conforme decisão do user (2026-07-09) | linha vermelha AO PÉ DO ESTADO (tocável→porquê); takeover descartado pelo próprio user ("pode ficar ao pé do estado") |
 | 11 | Fecho do mês | ✅ construído (2026-07-09) | últimos 3 dias + AE: fantasma=dias que faltam, total € amarelo no kick, PARCELAS que somam no meio (tap→Estatísticas), € do mês + donut, nudge dos extras, ações Extra/Números |
 | 12 | Férias | ✅ construído (2026-07-09) | vacDays hoje: fantasma=dias que RESTAM no ano, "ficam 9 de 22 · regressas sexta 18" no kick, halo+tempo, voz "férias a sério."; sem ações (afastamento máximo); véspera ganha no último dia c/ report cedo |

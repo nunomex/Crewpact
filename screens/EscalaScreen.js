@@ -138,10 +138,12 @@ export default function EscalaScreen({ navigation, route }) {
     }
   }, [route.params?.newDuty]);
 
-  // Vindo do sino/banner "Alterações na escala" → abre a folha de revisão (import).
+  // Vindo do sino/bilhete/linha-warn "Alterações na escala" → abre a folha de revisão (import).
+  // Consome-e-LIMPA (lição do `connect`): o param persiste no estado de navegação e um
+  // remount da aba (lazy tabs) voltaria a abrir a folha sem ninguém pedir.
   useEffect(() => {
-    if (route.params?.review) { setImportSource('calendar'); setImportOpen(true); }
-  }, [route.params?.review]);
+    if (route.params?.review) { navigation.setParams({ review: undefined }); setImportSource('calendar'); setImportOpen(true); }
+  }, [route.params?.review]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FAB "Importar" (speed-dial) → abre o HUB (escolher fonte: calendário/PDF), o topo ficou limpo.
   useEffect(() => {
@@ -392,11 +394,13 @@ export default function EscalaScreen({ navigation, route }) {
     <SafeAreaView style={s.safe} edges={['top']} onTouchStart={gridTip ? dismissGridTip : undefined}>
       <PeleSide label="ESCALA" accent={monthName.toUpperCase()} />
       <View style={s.body}>
-        {/* Topo pele (mockup) — avatar↖ · sino↗. Ferramentas realojadas: importar→FAB "+" ·
-            sync→pull-to-refresh · export→link no fundo da grelha. */}
-        {/* Topo da Escala: sincronizar/importar à ESQUERDA (preferência do user 2026-07-09). */}
+        {/* Topo da Escala (2026-07-10, "muda"): eyebrow NA linha de topo à esquerda (padrão das
+            abas — Início/Números/Perfil) e o sincronizar passou à DIREITA (ações à direita;
+            supersede a preferência esquerda de 2026-07-09). */}
         <PeleHeader
-          left={
+          eyebrowTop
+          eyebrow={`${l('A tua escala', 'Your roster')}${calendarId && calendarName ? ` · ${calendarName}` : ''}`}
+          actions={
             /* Sincronizar/Importar — botão do header; PONTO âmbar se há alterações/dessincronia */
             <TouchableOpacity style={s.hdrBtn} onPress={openHub} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={calendarId ? l('Calendário e sincronizar', 'Calendar and sync') : l('Importar escala', 'Import roster')}>
               <Icon name={calendarId ? 'sync' : 'download'} size={19} color={PELE.ink} />
@@ -432,15 +436,17 @@ export default function EscalaScreen({ navigation, route }) {
         ) : (
           <View style={s.monthWrap} {...monthPan.panHandlers}>
             <PeleHeader
-              eyebrow={`${l('A tua escala', 'Your roster')}${calendarId && calendarName ? ` · ${calendarName}` : ''}`}
+              reserveKick
               ghost={y}
               word={
                 /* MÊS (só o mês — o ano é o fantasma) + ▾ · linha AMARELA por baixo quando é o mês atual · swipe muda mês */
                 <Animated.View style={{ transform: [{ translateX: rowX }] }}>
                   <TouchableOpacity style={s.mBtn} onPress={() => { select(); setPickYear(y); setMonthPickerOpen(true); }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={l(`Mudar de mês · ${monthLabel}`, `Change month · ${monthLabel}`)}>
+                    {/* Linha amarela do mês atual REMOVIDA (2026-07-10, user: "tira o kick da
+                        escala") — vivia onde nos outros ecrãs mora o kick e desalinhava as abas;
+                        o "hoje" continua marcado na própria célula da grelha. */}
                     <View style={s.wordWrap}>
                       <Text style={peleWord} numberOfLines={1} allowFontScaling={false}>{monthName.charAt(0).toUpperCase() + monthName.slice(1)}</Text>
-                      {isCurrentMonth ? <View style={s.nowBar} /> : null}
                     </View>
                     <Icon name="chevron" rot={90} size={16} color={PELE.grey} />
                   </TouchableOpacity>
@@ -942,7 +948,9 @@ export default function EscalaScreen({ navigation, route }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
-  body: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 16 },
+  // SEM paddingTop (2026-07-10): o respiro do topo é o do PeleHeader (12) — com os 16 extra
+  // o header da Escala vivia 16pt abaixo do dos Números/Perfil e as abas não alinhavam.
+  body: { flex: 1, paddingHorizontal: GUTTER },
 
   // Cabeçalho
   eyeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
@@ -958,9 +966,10 @@ const s = StyleSheet.create({
   marrow: { width: 36, height: 36, borderRadius: 12, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   mBtn: { flexDirection: 'row', alignItems: 'flex-end', gap: 9 },
   wordWrap: { position: 'relative' },
-  nowBar: { position: 'absolute', left: 0, bottom: -5, width: 26, height: 2.5, borderRadius: 2, backgroundColor: PELE.yellow },   // mês atual — acento curto fixo (marca)
-  hdrBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
-  hdrDot: { position: 'absolute', top: 7, right: 7, width: 9, height: 9, borderRadius: 5, backgroundColor: PELE.warn, borderWidth: 1.5, borderColor: PELE.paper },
+  // 36×36 = o disco do sino do Perfil (2026-07-10): a fila de topo mede pelo conteúdo mais
+  // alto — a 38 o header da Escala vivia 2pt abaixo das outras abas.
+  hdrBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 2 },
+  hdrDot: { position: 'absolute', top: 6, right: 6, width: 9, height: 9, borderRadius: 5, backgroundColor: PELE.warn, borderWidth: 1.5, borderColor: PELE.paper },
   mpTitle: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink, letterSpacing: -0.3, marginBottom: 14 },
   mpYear: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 14 },
   mpYearTxt: { fontFamily: PELE_FONT.display, fontSize: 22, color: PELE.ink, minWidth: 76, textAlign: 'center' },

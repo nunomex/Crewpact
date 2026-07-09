@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, SPACE, FONT } from '../data/constants';
+import { PELE, PELE_FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, rangeFromOption, importSaveFields } from '../data/rosterImport';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
@@ -14,7 +14,7 @@ import { airportCoord, sectorDistanceNM } from '../data/airports';
 import DutyFormSheet from './DutyFormSheet';
 import Eyebrow from './Eyebrow';
 import PrimaryButton from './PrimaryButton';
-import { AppContext, useTheme, isoDay } from '../data/appContext';
+import { AppContext, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
@@ -39,8 +39,6 @@ const demoCands = () => {
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
   const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base, aeEvents, addAeEvents } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -248,7 +246,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Importar', 'Roster · Import')}</Eyebrow></View>
             <Text style={s.h1}>{l('Confirmar import', 'Confirm import')}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={C.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={PELE.ink} /></TouchableOpacity>
         </View>
 
         {/* Fonte da escala: calendário do telemóvel ou texto colado do PDF */}
@@ -257,7 +255,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             const on = source === src.id;
             return (
               <TouchableOpacity key={src.id} onPress={() => switchSource(src.id)} activeOpacity={0.85} style={[s.rChip, s.srcChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
-                <Ionicons name={src.ic} size={15} color={on ? '#fff' : C.sub} />
+                <Ionicons name={src.ic} size={15} color={on ? PELE.paper : PELE.grey} />
                 <Text style={[s.rTxt, on && s.rTxtOn]}>{src.label}</Text>
               </TouchableOpacity>
             );
@@ -287,16 +285,16 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {loading ? (
-            <View style={s.center}><ActivityIndicator color={C.sub} /><Text style={s.dim}>{source === 'paste' ? l('A ler o PDF…', 'Reading PDF…') : l('A ler o calendário…', 'Reading calendar…')}</Text></View>
+            <View style={s.center}><ActivityIndicator color={PELE.grey} /><Text style={s.dim}>{source === 'paste' ? l('A ler o PDF…', 'Reading PDF…') : l('A ler o calendário…', 'Reading calendar…')}</Text></View>
           ) : denied && source === 'calendar' ? (
             <View style={s.center}>
-              <Ionicons name="calendar-outline" size={26} color={C.sub} />
+              <Ionicons name="calendar-outline" size={26} color={PELE.grey} />
               <Text style={s.dim}>{l('Liga o calendário do telemóvel para importar a escala.', 'Connect your phone calendar to import the roster.')}</Text>
               <PrimaryButton onPress={grant} label={l('Ligar ao calendário', 'Connect calendar')} style={{ marginTop: 6, paddingHorizontal: 18 }} />
             </View>
           ) : !shown.length ? (
             <View style={s.center}>
-              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? (C.green || C.sub) : C.sub} />
+              <Ionicons name={cands.length ? 'checkmark-circle-outline' : (source === 'paste' ? 'clipboard-outline' : 'checkmark-done-outline')} size={26} color={cands.length ? PELE.ok : PELE.grey} />
               <Text style={s.dim}>{cands.length
                 ? l('Sem alterações — a escala está igual ao guardado.', 'No changes — your roster matches what you have.')
                 : source === 'paste'
@@ -307,10 +305,10 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
             <>
               {/* Resumo "à prova de falha": leu X · Y prontas · Z a corrigir */}
               <View style={[s.summ, fixCount ? s.summWarn : null]}>
-                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? C.warn : C.green} /></View>
+                <View style={s.summIc}><Ionicons name={fixCount ? 'alert-outline' : 'checkmark-circle-outline'} size={22} color={fixCount ? PELE.warn : PELE.ok} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.summT}>{l(`Li ${shown.length} atividades`, `Read ${shown.length} activities`)}</Text>
-                  <Text style={[s.summS, fixCount ? { color: C.warnText } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
+                  <Text style={[s.summS, fixCount ? { color: '#B07840' } : null]}>{l(`${shown.length - fixCount} prontas`, `${shown.length - fixCount} ready`)}{fixCount ? l(` · ${fixCount} a corrigir antes de somar ao per-diem`, ` · ${fixCount} to fix before they count`) : ''}{replaceCount ? l(` · substitui ${replaceCount} teu(s) manual(is)`, ` · replaces ${replaceCount} of yours`) : ''}</Text>
                 </View>
               </View>
               {/* FÉRIAS detetadas (LVE/ANL/VAC) → sugerir como EVENTOS (o € e o saldo 22
@@ -318,7 +316,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
               {source === 'calendar' && vacDates.length ? (
                 <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setVacSel((v) => !v)}
                   accessibilityRole="checkbox" accessibilityState={{ checked: vacSel }}>
-                  <View style={[s.vacTick, vacSel && s.vacTickOn]}>{vacSel ? <Ionicons name="checkmark" size={13} color="#141414" /> : null}</View>
+                  <View style={[s.vacTick, vacSel && s.vacTickOn]}>{vacSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.vacT}>{l(`Férias no calendário: ${vacDates.length} dia(s)`, `Leave in the calendar: ${vacDates.length} day(s)`)}</Text>
                     <Text style={s.vacS} numberOfLines={1}>{`${vacDates[0]} → ${vacDates[vacDates.length - 1]}`} · {l('registar como eventos de férias (AE + saldo)', 'log as leave events (CLA + balance)')}</Text>
@@ -326,9 +324,9 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                 </TouchableOpacity>
               ) : null}
               {infos.map(({ c, info }) => {
-                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: C.greenSoft || C.soft, fg: C.green }
-                  : info.kind === 'removed' ? { name: 'close', bg: C.redSoft || C.soft, fg: C.red }
-                  : { name: 'time-outline', bg: C.warnSoft || C.soft, fg: C.warn };
+                const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.okSoft, fg: PELE.ok }
+                  : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
+                  : { name: 'time-outline', bg: PELE.warnSoft, fg: PELE.warn };
                 const issue = info.kind === 'fix'
                   ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`) : l('Sem rota — corrige para somar', 'No route — fix to count'))
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
@@ -340,7 +338,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                       <View style={s.cDayRow}>
                         <Text style={s.cDay} numberOfLines={1}>{fmtDay(c.duty.duty_date)} · {lineFor(c)}</Text>
                         {replacesManual(c) ? (
-                          <View style={s.mark}><Ionicons name="create-outline" size={10} color={C.ink} /><Text style={s.markTxt}>{l('Substitui o teu manual', 'Replaces your manual')}</Text></View>
+                          <View style={s.mark}><Ionicons name="create-outline" size={10} color={PELE.ink} /><Text style={s.markTxt}>{l('Substitui o teu manual', 'Replaces your manual')}</Text></View>
                         ) : null}
                       </View>
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
@@ -356,7 +354,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                     {info.kind === 'fix' ? (
                       <Text style={s.cFix}>{l('Corrigir', 'Fix')} ›</Text>
                     ) : info.kind === 'removed' ? (
-                      <View style={[s.cChk, c.selected && s.cChkOn]}>{c.selected ? <Ionicons name="trash" size={13} color="#fff" /> : null}</View>
+                      <View style={[s.cChk, c.selected && s.cChkOn]}>{c.selected ? <Ionicons name="trash" size={13} color={PELE.paper} /> : null}</View>
                     ) : (info.perDiem != null || info.nsEur != null) ? (
                       <View style={s.cPay}>
                         {info.perDiem != null ? <Text style={s.cEur}>+{fmtEur0n(info.perDiem)}</Text> : null}
@@ -375,7 +373,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
           {source === 'calendar' ? (
             <>
               <TouchableOpacity onPress={runDiag} activeOpacity={0.8} style={s.diagBtn} hitSlop={{ top: 5, bottom: 5, left: 8, right: 8 }}>
-                <Ionicons name="construct-outline" size={14} color={C.sub} />
+                <Ionicons name="construct-outline" size={14} color={PELE.grey} />
                 <Text style={s.diagBtnTxt}>{l('Ver o que está no meu calendário', 'See what is in my calendar')}</Text>
               </TouchableOpacity>
               {diag ? (
@@ -413,62 +411,65 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  page: { flex: 1, backgroundColor: C.canvas },
+// PELE (2026-07-10, user: "essa página não está com a nova pele"): estilos ESTÁTICOS na
+// paleta/tipos da casa — Barlow no título e nos €, Hanken no corpo, hairlines, tons soft
+// com as bordas soft (nada de bordas puras a gritar). RE-SKIN: a lógica não mudou.
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: PELE.paper },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: C.red },
-  h1: { fontSize: TYPE.hero, fontFamily: FONT.heavy, color: C.text, letterSpacing: -0.6 },
-  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.red },
+  h1: { fontSize: 28, fontFamily: PELE_FONT.display, color: PELE.ink, letterSpacing: -0.4 },
+  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ranges: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 12 },
-  rChip: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.pill, paddingVertical: 10, alignItems: 'center', backgroundColor: C.card },
+  rChip: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingVertical: 10, alignItems: 'center', backgroundColor: PELE.paper },
   srcChip: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
-  rChipOn: { backgroundColor: C.ink, borderColor: C.ink },
-  rTxt: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub },
-  rTxtOn: { color: '#fff' },
+  rChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
+  rTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  rTxtOn: { color: PELE.paper },
   pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
-  pasteNote: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, marginTop: 10, lineHeight: 16 },
+  pasteNote: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 10, lineHeight: 16 },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
-  dim: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.medium, textAlign: 'center' },
+  dim: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, textAlign: 'center' },
   diagBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
-  diagBtnTxt: { fontSize: 12, color: C.sub, fontFamily: FONT.semibold },
-  diagBox: { backgroundColor: C.soft, borderRadius: RADIUS.md, padding: 12, marginTop: 4 },
-  diagHead: { fontSize: 11, fontFamily: FONT.bold, color: C.text, marginBottom: 8 },
-  diagItem: { fontSize: 11, color: C.sub, fontFamily: FONT.medium, paddingVertical: 3 },
-  crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, padding: 13, marginBottom: 11 },
-  crowFix: { backgroundColor: C.warnSoft, borderColor: C.warn },
-  cDay: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: C.text },
+  diagBtnTxt: { fontSize: 12, color: PELE.grey, fontFamily: PELE_FONT.bodyBold },
+  diagBox: { backgroundColor: PELE.soft, borderRadius: 12, padding: 12, marginTop: 4 },
+  diagHead: { fontSize: 11, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginBottom: 8 },
+  diagItem: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, paddingVertical: 3 },
+  crow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16, padding: 13, marginBottom: 11 },
+  crowFix: { backgroundColor: PELE.warnSoft, borderColor: PELE.warnSoftLine },
+  cDay: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   cDayRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mark: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.soft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  markTxt: { fontSize: 9.5, fontFamily: FONT.heavy, letterSpacing: 0.3, textTransform: 'uppercase', color: C.ink },
-  cMeta: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 2 },
-  cLegs: { fontSize: TYPE.micro, color: C.sub, fontFamily: FONT.medium, marginTop: 3, fontVariant: ['tabular-nums'] },
-  cDiff: { fontSize: TYPE.micro, color: C.warnText || C.text, fontFamily: FONT.semibold, marginTop: 2 },   // warnText ≥4.5:1 (warn puro dava 2.4:1)
+  mark: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: PELE.soft, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  markTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3, textTransform: 'uppercase', color: PELE.ink },
+  cMeta: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 2 },
+  cLegs: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 3, fontVariant: ['tabular-nums'] },
+  cDiff: { fontSize: 11, color: '#B07840', fontFamily: PELE_FONT.body, marginTop: 2 },   // âmbar escuro ≥4.5:1 (warn puro dava 2.4:1)
   // "à prova de falha" — ícone de estado + per-diem + resumo
   statIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cEur: { fontSize: 16, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
+  cEur: { fontSize: 17, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'] },
   cPay: { alignItems: 'flex-end', gap: 1 },
-  cNs: { fontSize: 12.5, fontFamily: FONT.display, color: C.greenText, fontVariant: ['tabular-nums'] },
-  payBreak: { fontSize: 12, fontFamily: FONT.medium, color: C.greenText, textAlign: 'center', marginTop: 8 },
-  cEurMuted: { fontSize: 15, fontFamily: FONT.display, color: C.lineStrong, fontVariant: ['tabular-nums'] },
-  cFix: { fontSize: 13, fontFamily: FONT.heavy, color: C.warnText },
-  cIssue: { color: C.warnText, fontFamily: FONT.semibold },
+  cNs: { fontSize: 13, fontFamily: PELE_FONT.display, color: PELE.ok, fontVariant: ['tabular-nums'] },
+  payBreak: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.ok, textAlign: 'center', marginTop: 8 },
+  cEurMuted: { fontSize: 15, fontFamily: PELE_FONT.display, color: PELE.ghost, fontVariant: ['tabular-nums'] },
+  cFix: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn },
+  cIssue: { color: '#B07840', fontFamily: PELE_FONT.body },
   // Cancelado: checkbox de opt-in p/ apagar (default vazio) + realce da linha quando marcada.
-  cChk: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.red, alignItems: 'center', justifyContent: 'center' },
-  cChkOn: { backgroundColor: C.red, borderColor: C.red },
-  crowDel: { backgroundColor: C.redSoft, borderColor: C.red },
-  summ: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft, borderRadius: RADIUS.lg, padding: 13, marginBottom: 14 },
-  summWarn: { backgroundColor: C.warnSoft },
-  summIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
-  summT: { fontSize: TYPE.value, fontFamily: FONT.heavy, color: C.text },
-  summS: { fontSize: TYPE.label, fontFamily: FONT.semibold, color: C.sub, marginTop: 2, lineHeight: 17 },
-  fixHint: { fontSize: 12, fontFamily: FONT.medium, color: C.warnText, textAlign: 'center', marginTop: 10 },
+  cChk: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: PELE.red, alignItems: 'center', justifyContent: 'center' },
+  cChkOn: { backgroundColor: PELE.red, borderColor: PELE.red },
+  crowDel: { backgroundColor: PELE.redSoft, borderColor: PELE.redSoftLine },
+  summ: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft, borderRadius: 16, padding: 13, marginBottom: 14 },
+  summWarn: { backgroundColor: PELE.warnSoft },
+  summIc: { width: 44, height: 44, borderRadius: 12, backgroundColor: PELE.paper, alignItems: 'center', justifyContent: 'center' },
+  summT: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
+  summS: { fontSize: 12, fontFamily: PELE_FONT.body, color: PELE.grey, marginTop: 2, lineHeight: 17 },
+  fixHint: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: '#B07840', textAlign: 'center', marginTop: 10 },
   // Linha das FÉRIAS sugeridas (LVE do calendário → eventos): tick amarelo = a marca de escolha da pele.
-  vacRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.soft, borderRadius: 14, padding: 12, marginBottom: 10 },
-  vacTick: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
-  vacTickOn: { backgroundColor: '#FFB800', borderColor: '#FFB800' },
-  vacT: { fontSize: 13.5, fontFamily: FONT.bold, color: C.text },
-  vacS: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
-  foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.canvas },
+  vacRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft, borderRadius: 14, padding: 12, marginBottom: 10 },
+  vacTick: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center', backgroundColor: PELE.paper },
+  vacTickOn: { backgroundColor: PELE.yellow, borderColor: PELE.yellow },
+  vacT: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  vacS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
+  foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: PELE.line, backgroundColor: PELE.paper },
 });

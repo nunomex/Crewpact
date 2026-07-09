@@ -11,7 +11,6 @@ import PrimaryButton from '../components/PrimaryButton';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
-import NotificationsBell from '../components/NotificationsBell';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
@@ -439,15 +438,19 @@ export default function SettingsScreen({ navigation }) {
         return (
           <View style={s.headWrap}>
             <PeleHeader
-              size="detail"
-              // Perfil é ABA (2026-07-09): sem ‹ voltar; o SINO (arquivo) vive aqui, à ESQUERDA.
-              left={<NotificationsBell />}
-              // SEM eyebrow ("A tua conta" saiu): o rótulo lateral já diz PERFIL·companhia.
-              // Fantasma = o GALÃO (sigla da categoria); sem categoria cai nas iniciais.
+              // RÉGUA ROOT (2026-07-10, user: "o header não está direito"): o Perfil é ABA —
+              // página-mãe nunca fala mais baixo que as filhas (Validades/Aeroportos a 130/44).
+              // Eyebrow = a FUNÇÃO, NA LINHA DE TOPO à esquerda (padrão da saudação do Início,
+              // decisão do user 2026-07-10); o SINO passou para a DIREITA (ações à direita).
+              bell
+              eyebrowTop
+              eyebrow={t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}
+              // Fantasma = o GALÃO (um só significado); iniciais apenas pré-onboarding (raro).
               ghost={crewCategory || inits}
               word={displayName}
-              // Kick = função (cinza) + categoria (amarela) — a companhia vive no rótulo lateral.
-              kick={<Text style={s.pkick} numberOfLines={1}>{t(crewType === 'pilot' ? 'profile.crewPilot' : 'profile.crewCabin', lang)}{catLbl ? <Text style={s.pkickY}>{`  ·  ${catLbl}`}</Text> : null}</Text>}
+              // Kick = SÓ a categoria por extenso, a amarelo (a função subiu ao eyebrow;
+              // o eco sigla↔extenso é o padrão da casa — Validades: "02" + "2 documentos").
+              kick={catLbl ? <Text style={s.pkick} numberOfLines={1}><Text style={s.pkickY}>{catLbl}</Text></Text> : null}
             />
           </View>
         );
@@ -896,7 +899,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   headWrap: { paddingHorizontal: 20 },   // header canónico fixo (PeleHeader c/ onBack), gutter do ecrã
   // Herói do perfil — fantasma/nome/eyebrow/régua vêm do PeleHeader (size 'detail'); só o kick fica (categoria a amarelo)
-  pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.grey, marginTop: 8 },
+  pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
   pkickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
   pmeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 11 },
   pmetaTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9.5, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },

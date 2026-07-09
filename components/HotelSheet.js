@@ -7,11 +7,14 @@ import { t } from '../data/i18n';
 import { select, success, warning } from '../data/haptics';
 import { AppContext, useTheme } from '../data/appContext';
 import { searchAirports, airportInfo } from '../data/airports';
+import { hotelAt } from '../data/hotels';
 
-// Folha "Hotel da pernoita" — regista/edita o hotel de UMA estação (catálogo pessoal,
-// local). `station` vem derivada da escala; se não for derivável, pede-se aqui (3 letras).
-export default function HotelSheet({ visible, onClose, station = null }) {
-  const { lang, hotels, saveHotel } = useContext(AppContext);
+// Folha "Hotel da pernoita" — regista/edita UM hotel de UMA estação (catálogo pessoal,
+// local). `station` vem derivada da escala; se não for derivável, pede-se aqui.
+// Modos: `idx` (0 = o atual, n = others[n-1]) edita esse hotel; `addAlt` regista OUTRO
+// hotel na estação — e o novo entra logo como o ATUAL ("o comandante avisou que mudou").
+export default function HotelSheet({ visible, onClose, station = null, idx = 0, addAlt = false }) {
+  const { lang, hotels, saveHotel, saveHotelAt, addHotelAlt } = useContext(AppContext);
   const C = useTheme();
   const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -26,7 +29,7 @@ export default function HotelSheet({ visible, onClose, station = null }) {
   useEffect(() => {
     if (!visible) return;
     const code = String(station || '').toUpperCase();
-    const cur = (code && hotels && hotels[code]) || {};
+    const cur = (!addAlt && code && hotels && hotelAt(hotels[code], idx)) || {};
     setSt(code); setStQuery(''); setName(cur.name || ''); setPhone(cur.phone || ''); setNote(cur.note || '');
     setAttempted(false);
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -46,7 +49,10 @@ export default function HotelSheet({ visible, onClose, station = null }) {
   const canSave = stOk && !!name.trim();
   const save = () => {
     if (!canSave) { setAttempted(true); warning(); return; }
-    saveHotel && saveHotel(st, { name: name.trim(), phone: phone.trim() || null, note: note.trim() || null });
+    const data = { name: name.trim(), phone: phone.trim() || null, note: note.trim() || null };
+    if (addAlt) { addHotelAlt && addHotelAlt(st, data); }
+    else if (idx) { saveHotelAt && saveHotelAt(st, idx, data); }
+    else { saveHotel && saveHotel(st, data); }
     success();
     onClose && onClose();
   };
@@ -56,17 +62,18 @@ export default function HotelSheet({ visible, onClose, station = null }) {
       title={stOk ? l(`Hotel da pernoita · ${st}`, `Night-stop hotel · ${st}`) : l('Hotel da pernoita', 'Night-stop hotel')}
       closeLabel={t('common.close', lang)} scroll>
       <View style={s.body}>
-        <Text style={s.sub}>{l('Guarda-se por estação — nas próximas pernoitas neste destino já cá está.', 'Saved per station — it will be there for your next night stops at this destination.')}</Text>
+        {/* O nome é a CHAVE dos Mapas (não temos coordenadas) — ensina-se aqui, uma vez. */}
+        <Text style={s.sub}>{l('Guarda-se por aeroporto — nas próximas pernoitas neste destino já cá está. O Maps procura por este nome: escreve-o como está na porta do hotel.', 'Saved per airport — it will be there for your next night stops at this destination. Maps searches by this name: write it as it reads on the hotel’s door.')}</Text>
 
         {!station ? (
           <>
-            <Text style={s.lbl}>{l('Estação da pernoita', 'Night-stop station')}</Text>
+            <Text style={s.lbl}>{l('Aeroporto da pernoita', 'Night-stop airport')}</Text>
             {st ? (
               <View style={s.stRow}>
                 <View style={s.stChip}>
                   <Text style={s.stChipTxt} allowFontScaling={false}>{st}</Text>
                   <TouchableOpacity onPress={clearSt} hitSlop={10} style={s.stChipX}
-                    accessibilityRole="button" accessibilityLabel={l('Trocar estação', 'Change station')}>
+                    accessibilityRole="button" accessibilityLabel={l('Trocar aeroporto', 'Change airport')}>
                     <Text style={s.stChipXTxt}>×</Text>
                   </TouchableOpacity>
                 </View>

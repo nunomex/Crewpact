@@ -43,8 +43,9 @@
   /* ── DIAL dos ganhos (topo · sempre visível) ── */
   .money{display:flex;align-items:center;gap:12px;min-height:228px}
   .disp{flex:1;min-width:0}
-  .dval{font-family:'Barlow Condensed';font-weight:700;font-size:40px;line-height:.9;color:var(--ink);font-variant-numeric:tabular-nums;transition:color .18s ease}
+  .dval{font-family:'Barlow Condensed';font-weight:700;font-size:58px;line-height:.9;color:var(--ink);font-variant-numeric:tabular-nums;transition:color .18s ease}
   .dval.green{color:var(--ok)}
+  .dval .dec{font-size:23px;font-weight:600;color:var(--grey)} /* cêntimos+€ pequenos (lei intacta) — o inteiro manda na página */
   .dsub{font-size:12px;font-weight:600;color:var(--grey);margin-top:10px;line-height:1.4}.dsub b{color:var(--ink);font-weight:800}
   .gline{display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap}
   .gpill{display:inline-block;background:var(--okSoft);color:var(--ok);font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 9px;font-variant-numeric:tabular-nums}
@@ -153,10 +154,14 @@
     <div class="hdr"><span class="av">NS</span><span class="r"><i data-ic="bell" data-ic-size="18"></i><span class="bdot"></span></span></div>
     <div class="side">ESTATÍSTICAS · <span class="y">2026</span></div>
     <div class="body">
+      <!-- Header do GÉNERO da família (2026-07-10): fantasma = ETIQUETA do âmbito (ANO/MÊS,
+           decisão do founder — a palavra por baixo carrega o dado) · kick = retrato físico do
+           âmbito (voos·setores — não duplica o dial) · FIXO fora do scroll na app. -->
       <div class="eyb">Estatísticas · easyJet · AE</div>
       <div class="hero">
         <div class="ghost" id="scGhost">ANO</div>
         <div class="mrow"><div class="mleft" id="periodPick"><span class="word" id="scWord">2026</span><span class="mchev"><i data-ic="chevron" data-ic-rot="90" data-ic-size="16"></i></span></div></div>
+        <div style="font-size:12.5px;font-weight:700;color:var(--grey);margin-top:6px" id="scKick">312 voos · 664 setores</div>
       </div>
       <div class="hr"></div>
 
@@ -165,7 +170,7 @@
       <div class="seyb" id="ganhosLbl">Os teus ganhos · estimados no ano</div>
       <div class="money">
         <div class="disp">
-          <div class="dval green" id="dVal">20 553,30 €</div>
+          <div class="dval green" id="dVal">20 553<span class="dec">,30 €</span></div>
           <div class="dsub" id="dSub"><div>Base · 6 meses · <b>18 240,00 €</b></div><div class="gline"><span class="gpill">+2 313,30 €</span> ganho acima da base</div></div>
         </div>
         <div class="col" id="dcol">
@@ -278,7 +283,7 @@
     document.querySelectorAll('.s-close').forEach(function(c){c.addEventListener('click',closeAll);});
 
     var SCOPE={
-      ano:{word:'2026',ghost:'ANO',glbl:'estimados no ano',vooKey:'512,4 h',vooCap:'57% do teto',corpoKey:'10,5 h',corpoCap:'repouso mín · 3 curtos',
+      ano:{word:'2026',ghost:'ANO',kick:'312 voos · 664 setores',glbl:'estimados no ano',vooKey:'512,4 h',vooCap:'57% do teto',corpoKey:'10,5 h',corpoCap:'repouso mín · 3 curtos',
         dial:{
           total:{val:'20 553,30 €',pc:'100%',sub:'<div>Base · 6 meses · <b>18 240,00 €</b></div><div class="gline"><span class="gpill">+2 313,30 €</span> ganho acima da base</div>'},
           base:{val:'18 240,00 €',pc:'88,7%',sub:'salário base acumulado · 6 meses'},
@@ -286,7 +291,7 @@
           pern:{val:'506,00 €',pc:'2,5%',sub:'22 paragens nocturnas pagas'},
           extras:{val:'522,80 €',pc:'2,5%',sub:'escala (papéis · OFC) + eventos (DDO · doença)'}
         }},
-      mes:{word:'Julho',ghost:'MÊS',glbl:'estimados em julho',vooKey:'58,2 h',vooCap:'em julho',corpoKey:'11,0 h',corpoCap:'repouso mín · 1 curto',
+      mes:{word:'Julho',ghost:'MÊS',kick:'38 voos · 96 setores',glbl:'estimados em julho',vooKey:'58,2 h',vooCap:'em julho',corpoKey:'11,0 h',corpoCap:'repouso mín · 1 curto',
         dial:{
           total:{val:'3 425,50 €',pc:'100%',sub:'<div>Base · julho · <b>3 040,00 €</b></div><div class="gline"><span class="gpill">+385,50 €</span> ganho acima da base</div>'},
           base:{val:'3 040,00 €',pc:'88,7%',sub:'salário base · julho'},
@@ -297,12 +302,13 @@
     };
     var scope='ano', sel='total', curM=6, MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     var dVal=document.getElementById('dVal'),dSub=document.getElementById('dSub');
-    function pick(k){sel=k;var o=SCOPE[scope].dial[k];if(!o)return;dVal.textContent=o.val;dSub.innerHTML=o.sub;dVal.classList.toggle('green',k!=='base');}
+    function pick(k){sel=k;var o=SCOPE[scope].dial[k];if(!o)return;dVal.innerHTML=String(o.val).replace(/(,\d{2}\s*€)$/,'<span class="dec">$1</span>');dSub.innerHTML=o.sub;dVal.classList.toggle('green',k!=='base');}
     function applyScope(){
       var s=SCOPE[scope];
       document.getElementById('scWord').textContent=(scope==='mes')?MONTHS[curM]:s.word;
       document.querySelector('.mrow').classList.toggle('mes',scope==='mes');
       document.getElementById('scGhost').textContent=s.ghost;
+      document.getElementById('scKick').textContent=s.kick;
       document.getElementById('ganhosLbl').textContent='Os teus ganhos · '+s.glbl;
       document.getElementById('vooKey').textContent=s.vooKey;
       document.getElementById('vooCap').textContent=s.vooCap;

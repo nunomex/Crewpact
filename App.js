@@ -45,6 +45,7 @@ import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão 
 import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
+import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
 
 // ── Caixa-negra de crashes (setup sem adb): um erro FATAL de JS fica gravado ANTES de a app
 // morrer e é mostrado num Alert na reabertura seguinte (efeito no App). Sem isto, "a app vai
@@ -76,6 +77,7 @@ import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
+import HotelStationScreen from './screens/HotelStationScreen';
 import HotelDetailScreen  from './screens/HotelDetailScreen';
 import TabBar             from './components/TabBar';   // a navegação: barra convencional polida (padrão "melhores apps")
 import OfflineBanner      from './components/OfflineBanner';
@@ -157,6 +159,7 @@ function PerfilStack() {
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
+      <Stack.Screen name="HotelStation" component={HotelStationScreen} />
       <Stack.Screen name="HotelDetail" component={HotelDetailScreen} />
       <Stack.Screen name="Biblioteca" component={InfoScreen} />
       <Stack.Screen name="FtlDetail"  component={FtlDetailScreen} />
@@ -220,7 +223,13 @@ export default function App() {
   const [aeExtras, setAeExtras] = useState({});              // LEGADO: contadores antigos — migram p/ eventos no arranque e ficam vazios
   const [aeEvents, setAeEvents] = useState([]);              // Extras do mês como EVENTOS DATADOS [{id, date, type}] — a fonte única
   const [hotels, setHotels] = useState({});                  // Hotéis de pernoita POR ESTAÇÃO { IATA: {name, phone?, note?} } — local
-  const saveHotel = (station, h) => setHotels((prev) => ({ ...prev, [String(station).toUpperCase()]: h }));
+  // Multi-hotel (3 níveis): o ATUAL no topo, os outros em `others[]` (data/hotels.js).
+  // saveHotel preserva os outros (o antigo substituía o registo inteiro e apagava-os).
+  const saveHotel = (station, h) => setHotels((prev) => { const k = String(station).toUpperCase(); return { ...prev, [k]: hotelSetCurrent(prev[k], h) }; });
+  const saveHotelAt = (station, idx, h) => setHotels((prev) => { const k = String(station).toUpperCase(); return prev[k] ? { ...prev, [k]: hotelUpdateAt(prev[k], idx, h) } : prev; });
+  const addHotelAlt = (station, h) => setHotels((prev) => { const k = String(station).toUpperCase(); return { ...prev, [k]: hotelAddAsCurrent(prev[k], h) }; });
+  const makeHotelCurrent = (station, idx) => setHotels((prev) => { const k = String(station).toUpperCase(); return prev[k] ? { ...prev, [k]: hotelMakeCurrent(prev[k], idx) } : prev; });
+  const removeHotelAt = (station, idx) => setHotels((prev) => { const k = String(station).toUpperCase(); const r = hotelRemoveAt(prev[k], idx); const n = { ...prev }; if (r) n[k] = r; else delete n[k]; return n; });
   const removeHotel = (station) => setHotels((prev) => { const n = { ...prev }; delete n[String(station).toUpperCase()]; return n; });
   const [extraOpen, setExtraOpen] = useState(false);         // GESTÃO de extras (mini-FAB) — lista/apagar
   const [addExtraOpen, setAddExtraOpen] = useState(false);   // formulário de ADICIONAR extra (aberto pela gestão)
@@ -1015,7 +1024,7 @@ export default function App() {
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),
-    hotels, saveHotel, removeHotel,
+    hotels, saveHotel, saveHotelAt, addHotelAlt, makeHotelCurrent, removeHotelAt, removeHotel,
     validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,

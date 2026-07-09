@@ -10,9 +10,12 @@
 
 const strHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 
-// Entradas: [negritoPT, caudaPT, negritoEN, caudaEN]
+// Entradas: [negritoPT, caudaPT, negritoEN, caudaEN, to?]
 // MAIÚSCULA inicial em negrito E cauda (user 2026-07-09: o bilhete escreve português
 // correto — a minúscula-depois-do-ponto era maneirismo, num bilhete real ninguém escreve assim).
+// `to` (2026-07-10, user): DESTINO do toque no bilhete — o marcado amarelo é a língua de
+// link da casa. Só frases com destino real o levam ('escala' = rever alterações ·
+// 'hoje'/'amanha' = detalhe do dia); as outras ficam INERTES (nada de taps mortos).
 const POOLS = {
   'folga.sun': [
     ['Descansa — está tudo em dia.', 'Aproveita o sol, {now}° lá fora.', 'Rest — everything’s in order.', 'Enjoy the sun, {now}° outside.'],
@@ -52,20 +55,31 @@ const POOLS = {
   'folga.night': [
     ['Noite tranquila.', 'Está tudo em dia — dorme sem alarmes.', 'Quiet night.', 'Everything’s in order — sleep with no alarms.'],
   ],
+  // ── AVISO NA VOZ (2026-07-10, ideia do user "gostei disto"): quando a escala mexeu,
+  // o bilhete ganha consciência — no REGISTO dele (humano, sem números; a contagem e o
+  // toque-para-rever vivem na linha warn sob o Estado). É charme EM CIMA da função, nunca
+  // em vez dela. Só nos estados-bilhete folga/férias; a DOENÇA fica calada (cuidar primeiro).
+  'folga.aviso': [
+    ['A escala mexeu.', 'Espreita quando puderes — nada entra sem ti.', 'The roster moved.', 'Take a look when you can — nothing lands without you.', 'escala'],
+    ['Mexeram na escala.', 'Quando puderes, dá-lhe uma vista de olhos.', 'They touched the roster.', 'Give it a look when you can.', 'escala'],
+  ],
+  'ferias.aviso': [
+    ['A escala mexeu.', 'Sem pressa — espreitas quando voltares.', 'The roster moved.', 'No rush — look when you’re back.', 'escala'],
+  ],
   folga: [
     ['Descansa — está tudo em dia.', 'Hoje o dia é teu.', 'Rest — everything’s in order.', 'Today is yours.'],
     ['Folga a sério.', 'Nada pendente, nada a vigiar.', 'A proper day off.', 'Nothing pending, nothing to watch.'],
   ],
   // Estados futuros do LI — as pools já cá estão; ganham vida quando os estados nascerem.
   vespera: [
-    ['Está tudo verificado — dorme.', 'Report às {report}.', 'All checked — sleep.', 'Report at {report}.'],
+    ['Está tudo verificado — dorme.', 'Report às {report}.', 'All checked — sleep.', 'Report at {report}.', 'amanha'],
   ],
   posvoo: [
-    ['Dia fechado.', 'Repouso até {restUntil} — amanhã já está preparado.', 'Day closed.', 'Rest until {restUntil} — tomorrow’s already set.'],
-    ['Dia fechado.', 'Bom trabalho — agora descansa.', 'Day closed.', 'Good work — now rest.'],
+    ['Dia fechado.', 'Repouso até {restUntil} — amanhã já está preparado.', 'Day closed.', 'Rest until {restUntil} — tomorrow’s already set.', 'hoje'],
+    ['Dia fechado.', 'Bom trabalho — agora descansa.', 'Day closed.', 'Good work — now rest.', 'hoje'],
   ],
   pernoita: [
-    ['Boa noite em {station}.', 'Está tudo tratado para amanhã.', 'Good night in {station}.', 'Tomorrow’s all set.'],
+    ['Boa noite em {station}.', 'Está tudo tratado para amanhã.', 'Good night in {station}.', 'Tomorrow’s all set.', 'amanha'],
   ],
   ferias: [
     ['Férias a sério.', 'A escala não manda — desfruta.', 'Proper vacation.', 'The roster’s off duty — enjoy.'],
@@ -85,7 +99,10 @@ const eligible = (s, ctx) => ![...s.matchAll(/\{(\w+)\}/g)].some((m) => ctx[m[1]
 // (chuva > frio, SÓ com serviço amanhã) > calor > chuva agora > neve > vento > sol > nuvens.
 export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour = 12, ctx = {} } = {}) {
   let key = state;
-  if (state === 'folga') {
+  // Aviso primeiro (acima da meteo E da noite): se a escala mexeu, é a única coisa que
+  // vale mais que conversa de conforto. ctx.aviso é truthy só com alterações por rever.
+  if ((state === 'folga' || state === 'ferias') && ctx.aviso) key = `${state}.aviso`;
+  else if (state === 'folga') {
     const ic = wx && wx.icon;
     const hasTmwDuty = ctx.tmwReport != null && ctx.tmwReport !== '';
     if (hour >= 21 || hour < 7) key = 'folga.night';
@@ -98,7 +115,7 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
     else if (ic === 'sun' || ic === 'cloud-sun') key = 'folga.sun';
     else if (ic === 'cloud' || ic === 'fog') key = 'folga.cloud';
   }
-  if (state === 'ferias') {
+  if (state === 'ferias' && key === state) {   // key !== state = o aviso já falou (não se atropela)
     const ic = wx && wx.icon;
     if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 22) key = 'ferias.sun';
   }
@@ -110,5 +127,7 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
   if (!use.length) return null;
   const e = use[strHash(`${dateISO}|${state}`) % use.length];
   const [b, t] = lang === 'en' ? [e[2], e[3]] : [e[0], e[1]];
-  return { bold: fill(b, full), tail: fill(t, full) };
+  const out = { bold: fill(b, full), tail: fill(t, full) };
+  if (e[4]) out.to = e[4];   // destino do toque — só quando a frase o tem (o resto fica inerte)
+  return out;
 }

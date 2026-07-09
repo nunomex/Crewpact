@@ -82,37 +82,68 @@
   <div class="mock">
     <div class="phone"><div class="page">
       <div class="back">‹</div>
-      <div class="gho">7</div>
-      <div class="word">Hotéis</div>
-      <div class="eyb">Pernoitas · por estação · derivado da escala</div>
+      <div class="gho">03</div>
+      <div class="word">Aeroportos</div>
+      <div class="eyb">Hotéis · pernoitas</div>
+      <div style="font-size:11px;font-weight:700;color:var(--grey);margin-top:6px">3 hotéis em 2 aeroportos · <span style="color:#E86A10;font-weight:800">1 por registar</span></div>
 
       <div class="hcard">
         <div class="hIata">FNC</div>
-        <div class="hK">Funchal</div>
-        <div class="hName">Hotel Girassol</div>
+        <div class="hK">2 hotéis</div>
+        <div class="hName">Funchal</div>
         <div class="hMeta"><b>dormes cá sexta</b> · 4 estadias este ano</div>
-        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
       </div>
 
       <div class="hcard">
         <div class="hIata">AGP</div>
-        <div class="hK">Málaga</div>
-        <div class="hName">NH Málaga</div>
+        <div class="hK">NH Málaga</div>
+        <div class="hName">Málaga</div>
         <div class="hMeta">última estadia · 28 jun</div>
-        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
       </div>
 
       <div class="hcard" style="border-style:dashed">
         <div class="hIata">LGW</div>
-        <div class="hK">London Gatwick · pernoita 24 jul</div>
-        <div class="hName" style="color:var(--grey)">Sem hotel registado</div>
-        <div class="hMeta">o comandante avisa — regista quando souberes</div>
+        <div class="hK">pernoita 24 jul</div>
+        <div class="hName" style="color:var(--grey)">London Gatwick</div>
+        <div class="hMeta">sem hotel — o comandante avisa; regista quando souberes</div>
         <div class="hActs"><div class="hBtn" style="background:var(--paper);color:var(--ink);border:1.5px solid var(--ink)">＋ Adicionar hotel</div></div>
       </div>
     </div></div>
-    <div class="t">① Lista — o cartão-foto vira cartão-IATA</div>
-    <div class="d">Ordenada por relevância: próxima pernoita primeiro, depois por última estadia. A estação SEM hotel mas COM pernoita marcada aparece tracejada a pedir registo — a ponte "o comandante avisou".</div>
-    <div class="spec"><b>Dieta de alvos (retoque Apple):</b> o CARTÃO INTEIRO toca → ficha; fica UM botão direto (Mapas — a régua das 23h). O ✆ e o "›" morreram da lista. <b>Dados:</b> IATA fantasma · cidade (SÓ a cidade — um dado, uma casa: a próxima pernoita vive apenas no verde) · nome · relevância ("dormes cá sexta" verde / "última estadia"). <b>Estadia = noites consecutivas fundidas</b> ("27–28 jun · 2 noites"). <b>Derivação:</b> estações da escala, como hoje. <b>Fantasma do header:</b> nº de hotéis.</div>
+    <div class="t">① Aeroportos — nível 1 de 3, cartões LIMPOS</div>
+    <div class="d">A palavra do ecrã é "Aeroportos" (o eyebrow "Hotéis · pernoitas" faz a ponte com a porta do Perfil); o FANTASMA conta os HOTÉIS lá dentro; o kick soma "3 hotéis em 2 aeroportos" + pendentes a âmbar. Os cartões perderam o botão: toque no cartão → hotéis desse aeroporto (②).</div>
+    <div class="spec"><b>"Abrir nos Mapas" SAIU deste nível (decisão do founder)</b> — o atalho das 23h não morre: a linha 🏨 do próprio dia (Início/Escala) continua a abrir os Mapas num toque; este ecrã é o CATÁLOGO. A gramática do botão desceu para os cartões do nível ② (onde a escolha acontece). <b>Eyebrow fala a língua do nível:</b> 1 hotel → o NOME dele; 2+ → "2 hotéis"; tracejado → a data da pernoita (e mantém o "＋ Adicionar" — é registo, não navegação). <b>Ordenação:</b> próxima pernoita primeiro, depois última estadia. <b>Estadia = noites consecutivas fundidas.</b></div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="back">‹</div>
+      <div class="eyb" style="margin-top:10px">Hotéis</div>
+      <div class="hero2" style="min-height:120px">
+        <div class="big">FNC</div>
+        <div class="nm" style="margin-top:26px">Funchal</div>
+        <div class="lc">PT · 4 ESTADIAS · PRÓXIMA SEX 12 JUL</div>
+      </div>
+
+      <div class="hcard" style="margin-top:14px">
+        <div class="hK" style="display:flex;align-items:center;gap:6px"><i style="width:14px;height:14px;border-radius:99px;background:var(--yellow);display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;font-style:normal">✓</i> O ATUAL</div>
+        <div class="hName" style="font-size:21px">Hotel Girassol</div>
+        <div class="hMeta">Pequeno-almoço às 06:00 · +351 291 000 000</div>
+        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
+      </div>
+      <div class="hcard">
+        <div class="hName" style="font-size:21px;margin-top:0;color:var(--grey)">Enotel Quinta do Sol</div>
+        <div class="hMeta">sem nota</div>
+        <div class="hActs"><div class="hBtn">Abrir nos Mapas</div></div>
+      </div>
+      <div style="border:1.5px solid var(--line);border-radius:99px;padding:10px 0;text-align:center;font-size:11.5px;font-weight:800;margin-top:2px">＋ Adicionar outro hotel</div>
+
+      <div class="secT">Estadias</div>
+      <div class="stay"><span class="nx">SEX 12 JUL</span><small>próxima · EJU7841</small></div>
+      <div class="stay"><span>27–28 JUN</span><small>2 noites</small></div>
+    </div></div>
+    <div class="t">② Hotéis do aeroporto — nível 2, a escolha vive AQUI</div>
+    <div class="d">Eyebrow "Hotéis" (era "Estação" — a página é sobre eles); palavra = cidade, fantasma = IATA. Os hotéis são CARTÕES com o "Abrir nos Mapas" dentro — a gramática que estava no nível 1 desceu para onde a escolha acontece. Toque no cartão → ficha (③).</div>
+    <div class="spec"><b>Cartão do hotel:</b> o atual leva o visto amarelo no eyebrow; a linha de baixo é a NOTA resumida se existir, senão o telefone, senão "sem nota" (nada inventado) · <b>"＋ Adicionar outro"</b> tem UMA casa: aqui — hotel novo entra logo como o ATUAL ("o comandante avisou que mudou"); o antigo fica na lista · <b>Estadias fundidas</b> por noites consecutivas, do AEROPORTO (não se atribuem a hotéis — seria inventar) · <b>Modelo:</b> `{name,phone,note,others[]}` — o atual no topo; dados de hoje migram sozinhos e o Início/Escala/DutyDetail não mudam uma linha.</div>
   </div>
 
   <div class="mock">
@@ -121,16 +152,13 @@
       <div class="hero2">
         <div class="big">FNC</div>
         <div class="nm">Hotel Girassol</div>
-        <div class="lc">FUNCHAL · MADEIRA</div>
+        <div class="lc">FUNCHAL · O ATUAL</div>
       </div>
       <div class="secT">Telefone</div>
       <div class="stay"><span style="border-bottom:2px solid var(--yellow);padding-bottom:1px">+351 291 000 000</span><small>toca para ligar</small></div>
       <div class="secT">Nota</div>
       <div class="note" style="margin-top:6px"><b>Pequeno-almoço às 06:00.</b> Pede quarto virado às traseiras — mais silencioso.</div>
-      <div class="secT">Estadias</div>
-      <div class="stay"><span class="nx">SEX 12 JUL</span><small>próxima · EJU7841</small></div>
-      <div class="stay"><span>27–28 JUN</span><small>2 noites</small></div>
-      <div style="margin-top:14px">
+      <div style="margin-top:16px">
         <div class="stay"><span>Editar hotel</span><small>nome · telefone · nota</small></div>
         <div class="stay"><span style="color:#C6362B">Apagar hotel</span></div>
       </div>
@@ -139,19 +167,21 @@
         <div style="text-align:center;font-size:9.5px;font-weight:600;color:var(--grey);margin-top:6px">abre no Maps — tempo real, com trânsito</div>
       </div>
     </div></div>
-    <div class="t">② Ficha — o molde certo é um CONTACTO, não um imóvel</div>
-    <div class="d">A ficha segue a app Contactos: o TELEFONE é um campo tocável (um dado, um alvo — o ✆ duplicado morreu), a nota manuscrita é a "descrição", as estadias são reais. As AÇÕES vivem em grupo no FUNDO (decisão do founder): Editar primeiro, Apagar por último e a vermelho — a destrutiva fecha sempre o grupo. Um só CTA: o caminho.</div>
-    <div class="spec"><b>Sem preços</b> (o tripulante não paga; o € da pernoita é do AE, no dia/mês) · <b>O "15 min" é do Maps, não nosso:</b> o CTA abre DIREÇÕES hotel⇄aeroporto (temos o IATA; o hotel vai por nome+cidade) — o ETA é vivo, com trânsito, sem uma linha de cálculo nossa, sem chave de API. Nenhum número inventado. · <b>Nota = Caveat + marcador</b>; o editar sugere a gramática no placeholder: <i>"ex.: a 15 min do aeroporto · pequeno-almoço às 06:00"</i> · <b>Estadias derivadas</b> da escala (próxima a verde com o voo) · <b>Editar</b> abre o HotelSheet (nome/telefone/nota).</div>
+    <div class="t">③ Ficha do hotel — nível 3, SÓ o hotel</div>
+    <div class="d">À Contactos: o TELEFONE é um campo tocável, a nota manuscrita é a "descrição". As estadias SAÍRAM daqui (vivem no aeroporto — um dado, uma casa). Num hotel que NÃO é o atual, a 1.ª ação é "Tornar o atual" (e o eyebrow diz o estado); a linha 🏨 do dia e o cartão do nível ② passam a ser dele.</div>
+    <div class="spec"><b>Sem preços</b> (o tripulante não paga; o € da pernoita é do AE, no dia/mês) · <b>O "15 min" é do Maps, não nosso:</b> o CTA abre DIREÇÕES hotel⇄aeroporto — ETA vivo, com trânsito, sem cálculo nosso, sem chave de API · <b>Nota = Caveat + marcador</b>; o editar ensina no placeholder: <i>"ex.: a 15 min do aeroporto · pequeno-almoço às 06:00"</i> · <b>Ações:</b> Editar · [Tornar o atual, se não-atual] · Apagar (vermelho, fecha o grupo) — apagar o atual promove o seguinte; apagar o último limpa o aeroporto (volta ao tracejado se houver pernoita futura).</div>
   </div>
 
 </div>
 
 <div class="foot">
-  <div class="t">o fluxo (as duas portas, uma fonte)</div>
-  <p><b>Porta 1 — o dia:</b> o comandante avisa o hotel → no dia da pernoita (Início/Escala) tocas no cartão do hotel →
-  a MESMA ficha desta página, pré-ligada à estação → registas nome/telefone/nota uma vez. <b>Porta 2 — este ecrã:</b>
-  registo antecipado ou consulta. As duas escrevem no MESMO sítio (o catálogo por estação) — registar no dia aparece
-  aqui, e vice-versa. <b>O cartão tracejado</b> é a cola: estação com pernoita futura e sem hotel pede o registo onde ele
+  <div class="t">o fluxo (três níveis fixos, duas portas, uma fonte)</div>
+  <p><b>Três níveis, sempre os mesmos:</b> Aeroportos (①, cartões limpos — o fantasma conta os hotéis) → Hotéis do
+  aeroporto + estadias (②, cartões com "Abrir nos Mapas") → Hotel (③: telefone · nota · caminho). O mesmo toque leva
+  sempre ao mesmo sítio — previsibilidade antes de esperteza; e o trabalho das 23h continua a um toque na linha 🏨 do
+  próprio dia (Início/Escala), que abre os Mapas direto. <b>Porta 1 — o dia:</b> o comandante avisa o hotel → tocas na
+  linha 🏨 → a folha de registo pré-ligada ao aeroporto. <b>Porta 2 — este ecrã.</b> As duas escrevem no MESMO catálogo
+  por aeroporto. <b>O cartão tracejado</b> é a cola: aeroporto com pernoita futura e sem hotel pede o registo onde ele
   falta. Sem preços, sem ratings, sem fotos — logística de tripulante, não turismo.</p>
 </div>
 </body>

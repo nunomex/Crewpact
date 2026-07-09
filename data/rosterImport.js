@@ -102,12 +102,18 @@ export const dutyFromNonFlight = (it) => {
   };
 };
 
-// Intervalo de importação a partir da opção do seletor (janela para a frente, de hoje).
+// Intervalo de importação a partir da opção do seletor. '14'/'28' = janela para a frente,
+// de hoje (2 e 4 semanas — o ritmo de publicação). 'month' = o PRÓXIMO MÊS CIVIL inteiro
+// (1→último dia; 2026-07-10, user: a etiqueta "Próximo mês" mentia — era hoje+30 rolante,
+// mas a escala publica-se por mês civil: quem toca "Próximo mês" em julho quer AGOSTO).
 export const rangeFromOption = (option, from = new Date()) => {
   const start = new Date(from); start.setHours(0, 0, 0, 0);
+  if (option === 'month') {
+    const s = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    return { start: s, end: new Date(s.getFullYear(), s.getMonth() + 1, 1) };
+  }
   const end = new Date(start);
   if (option === '14') end.setDate(end.getDate() + 14);
-  else if (option === 'month') end.setMonth(end.getMonth() + 1);   // ~1 mês
   else end.setDate(end.getDate() + 28);                            // '28' (padrão)
   return { start, end };
 };

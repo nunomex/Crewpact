@@ -38,8 +38,15 @@
   .side .y{color:var(--yellow)}
 
   /* [da proposta] faixa de alerta — sítio fixo */
-  .alertband{margin:9px -22px 0;padding:8px 22px;background:var(--warnSoft);border-top:1px solid #F2CBA5;border-bottom:1px solid #F2CBA5;font-size:11px;font-weight:800;color:var(--warn)}
-  .alertband small{display:block;font-weight:600;color:#B07840;margin-top:1px;font-size:10px}
+  /* AVISOS v2 (2026-07-10, founder): a banda sangrada MORREU — nada empurra o herói.
+     Vermelho de LEGALIDADE = pílula na linha da saudação (o slot que já alterna sino/exemplo;
+     prioridade: pílula FTL > exemplo > sino > nada). Vermelho de VOO = o próprio herói
+     (estado disrupção). WARNS = linha à docAlert POR BAIXO do Estado. */
+  .greetrow{display:flex;align-items:center;justify-content:space-between}
+  .redpill{display:inline-flex;align-items:center;gap:6px;background:#F6E9E6;border:1px solid #E7C0BA;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:800;color:#C6362B}
+  .redpill i{width:7px;height:7px;border-radius:99px;background:#C6362B;font-style:normal}
+  .warnline{display:flex;gap:8px;align-items:flex-start;padding:9px 2px;border-bottom:1px solid var(--line);font-size:10.5px;font-weight:800;color:var(--warn)}
+  .warnline small{display:block;font-weight:600;color:#B07840;margin-top:1px;font-size:9.5px}
 
   /* [da líder] hero intacto — TAMANHOS ORIGINAIS da pele-tipografica */
   .hero{position:relative;margin-top:8px;height:218px}
@@ -143,7 +150,7 @@
   const DOCK=['Início','Estatísticas','Escala','FTL/AE'];
   const STATES={
     onboarding:{
-      greet:'Bem-vindo, Nuno', side:'PRIMEIRA VEZ · <span class="y">SETUP</span>', band:null,
+      greet:'Bem-vindo, Nuno', side:'PRIMEIRA VEZ · <span class="y">SETUP</span>',
       hero:{ghost:CPIcons.icon('plane',{size:160}), word:'Olá!', warn:false, kick:'liga o <span class="y">calendário do telemóvel</span> e o Início ganha vida', arrow:CPIcons.icon('arrow-diag',{rot:90,size:26})},
       mid:{setup:{
         step:{n:'1', t:'Ligar o calendário do telemóvel', s:'é daí que a app lê a tua escala — essencial; nunca mais escreves um voo à mão'},
@@ -153,17 +160,18 @@
       chip:{v:'PASSO 1', s:'ligar o calendário'},
       acts:[ {ic:CALI,l:'Ligar calendário',hot:true}, {ic:EYEI,l:'Ver exemplo'} ] },
     folga:{
-      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>', band:null,
+      greet:'Boa tarde, Nuno', side:'FOLGA · <span class="y">PRÓX QUI 26</span>',
       hero:{ghost:'26', word:'Folga', warn:false, kick:'próximo serviço <span class="y">quinta · LIS→FNC · 05:30</span>', arrow:CPIcons.icon('arrow-diag',{rot:90,size:26})},
       mid:{agenda:[
         {a1:'EJU7625 · LIS→FNC', a2:'QUI · report 05:30 · 2 setores'},
         {a1:'FNC→LIS '+CPIcons.icon('moon',{size:13})+' pernoita', a2:'SEX · report 06:15'} ]},
       util:{ttl:'Estado', p:'Escala sincronizada <span class="ok">'+CPIcons.icon('check',{size:11})+'</span> · repouso em dia · férias: ficam <b>9 de 22</b>.'},
+      warn:{t:'A tua escala mudou — 2 alterações por rever', s:'nada entra na tua vida sem confirmares · toca para rever'},
       bigy:{v:'8 943', u:'EUROS · JULHO ESTIMADO'}, donut:{p:61,lab:'MÊS 61%'},
       chip:{v:'2 DIAS', s:'até ao report'},
       acts:[ {ic:PLUSI,l:'Extra',hot:true}, {ic:CLOCKI,l:'Simular'} ] },
     prereport:{
-      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>', band:null,
+      greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
       hero:{ghost:'1:05', word:'Report', warn:false, kick:'às <span class="y">05:30 · 04:30Z</span> · avião '+CPIcons.icon('check',{size:12})+' · aeroporto '+CPIcons.icon('check',{size:12}), arrow:CPIcons.icon('arrow-u',{size:26})},
       mid:{times:[
         {ap:'LIS', aps:'PARTIDA', big:'06:40', cls:'ok', st:'<span class="ok">a tempo '+CPIcons.icon('check',{size:11})+'</span>', sts:'porta 24'},
@@ -174,7 +182,8 @@
       acts:[ {ic:SHARE,l:'Partilhar',hot:true}, {ic:BEDI,l:'Hotel'}, {ic:CLOCKI,l:'Simular'} ] },
     disrupcao:{
       greet:'Bom dia, Nuno', side:'EJU7625 · <span class="y">2 SETORES</span>',
-      band:{t:CPIcons.icon('alert',{size:12})+' O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
+      pill:'FTL · vê porquê',
+      warn:{t:'O teu avião ainda vem a caminho', s:'inbound EJU7624 ~05:10Z · LIS 54% atrasos · o teu voo ainda não está marcado'},
       hero:{ghost:'+25', word:'Atenção', warn:true, kick:'a partida pode derrapar <span class="y">~25 min</span>', arrow:CPIcons.icon('alert',{size:26})},
       mid:{times:[
         {ap:'LIS', aps:'PARTIDA', big:'~07:05', cls:'warn', old:'06:40', st:'<span class="warn">derrapa</span>', sts:'projeção'},
@@ -198,14 +207,16 @@
   function render(id){
     const st=STATES[id];
     document.getElementById('scr').innerHTML=
-      '<div class="greet">'+st.greet+'</div>'
+      /* saudação + PÍLULA (vermelha=legalidade FTL, prioridade sobre o sino) — o herói nunca é empurrado */
+      '<div class="greetrow"><div class="greet">'+st.greet+'</div>'+(st.pill?'<div class="redpill"><i></i>'+st.pill+'</div>':'')+'</div>'
       +'<div class="side">'+st.side+'</div>'
-      +(st.band?'<div class="alertband">'+st.band.t+'<small>'+st.band.s+'</small></div>':'')
       +'<div class="hero"><div class="arrowy">'+st.hero.arrow+'</div><div class="ghostnum">'+st.hero.ghost+'</div>'
         +'<div class="word'+(st.hero.warn?' warn':'')+'">'+st.hero.word+'</div><div class="kick">'+st.hero.kick+'</div></div>'
       +'<div class="hr"></div>'
       +'<div class="mid">'+mid(st.mid)+'</div>'
       +'<div class="util"><div class="ttl">'+st.util.ttl+'</div><p>'+st.util.p+'</p></div>'
+      /* warns (escala mudou · inbound · sync · aeroporto) POR BAIXO do Estado, gramática do docAlert */
+      +(st.warn?'<div class="warnline">'+CPIcons.icon('alert',{size:13})+'<div>'+st.warn.t+'<small>'+st.warn.s+'</small></div></div>':'')
       +'<div class="datarow"><div class="bigy">'+st.bigy.v+'<small>'+st.bigy.u+'</small></div>'
         +'<div class="donutwrap"><div class="donut" style="--p:'+st.donut.p+(st.donut.dc?';--dc:'+st.donut.dc:'')+'"><i></i></div><small>'+st.donut.lab+'</small></div></div>'
       +'<div class="thumb"><div class="chip"><div class="cv">'+st.chip.v+'</div><small>'+st.chip.s+'</small></div>'

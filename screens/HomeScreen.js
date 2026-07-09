@@ -670,8 +670,24 @@ export default function HomeScreen({ navigation }) {
     // da meteo (casaco/trânsito, mockup meteo-voz). Só o dia civil seguinte, nada de "próximo".
     const tmwISO = (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
     const tmwDuty = duties && duties[tmwISO] && !duties[tmwISO].deleted ? duties[tmwISO] : null;
-    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null } });
-  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties]);
+    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
+      // Aviso na voz (2026-07-10): o bilhete menciona a escala mexida NO REGISTO dele —
+      // charme em cima da linha warn acionável, nunca em vez dela. Doença fica calada.
+      aviso: (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) ? true : null } });
+  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges]);
+  // Toque no bilhete (2026-07-10, user: "o amarelo dá para carregar"): a voz com destino
+  // navega — 'escala' → rever alterações · 'hoje'/'amanha' → detalhe do dia (com guarda:
+  // sem registo nesse dia, cai na Escala). Sem destino, o bilhete fica inerte.
+  const goVoice = (to) => {
+    select();
+    // 'escala' abre JÁ a folha de revisão (param `review`, o mesmo caminho do sino) —
+    // aterrar na aba e obrigar a procurar o botão era meio caminho (user 2026-07-10).
+    if (to === 'escala') { navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); return; }
+    const iso = to === 'hoje' ? todayISO
+      : (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+    const reg = duties && duties[iso] && !duties[iso].deleted ? duties[iso] : null;
+    if (reg) openDayDetail(iso); else navigation.navigate('Escala');
+  };
   // O bilhete POUSA na página com ângulo/posição LIVRES (user: "como num post-it de lado")
   // — determinísticos pelo DIA (nada de Math.random): cada dia cai um bocadinho diferente,
   // mas hoje cai sempre igual (re-renders não o fazem "dançar").
@@ -834,27 +850,38 @@ export default function HomeScreen({ navigation }) {
   const docAlert = qAlerts.find((it) => it.id === 'validades') || null;
   const bandAlerts = qAlerts.filter((it) => it.id !== 'validades');
 
-  // Banda de alerta (sítio FIXO, uma de cada vez, por prioridade): segurança FTL (ILEGAL) >
-  // limites acima > erro de leitura > desvio/cancelado > inbound > registo atrasado > aeroporto.
-  const band = (() => {
-    if (bandAlerts.length) return { tone: 'red', t: bandAlerts[0].q, s: bandAlerts[0].answer, onPress: () => { select(); setDetailItem(bandAlerts[0]); } };
-    if (stateLevel === 'over') return { tone: 'red', t: l('Limites FTL acima do teto', 'FTL limits over the cap'), s: stateReason || '', onPress: () => { select(); navigation.navigate('Estatísticas'); } };
-    if (calErr) return { tone: 'warn', t: l('Não consegui ler o calendário', 'Couldn’t read the calendar'), s: l('Puxa para atualizar ou verifica a permissão nas Definições.', 'Pull to refresh or check the permission in Settings.') };
-    if (fsDev && (fsCancelled || fsDiverted)) return { tone: 'red', t: fsCancelled ? l('Voo cancelado', 'Flight cancelled') : l('Voo desviado', 'Flight diverted'), s: String(flightStatus.flightIata || flightNo || '') };
-    if (fsDev) {
+  // AVISOS v2 (2026-07-10, mockup pele-tipografica-final): a BANDA sangrada morreu — nada
+  // empurra o herói. Vermelho de LEGALIDADE → pílula na linha da saudação (prioridade sobre
+  // exemplo/sino). Vermelho de VOO (cancelado/desviado/atraso) → o próprio HERÓI (disrupção).
+  // WARNS → linha à docAlert POR BAIXO do Estado — uma de cada vez, prioridade de sempre.
+  const redPill = (() => {
+    if (bandAlerts.length) return { onPress: () => { select(); setDetailItem(bandAlerts[0]); } };
+    if (stateLevel === 'over') return { onPress: () => { select(); navigation.navigate('Estatísticas'); } };
+    return null;
+  })();
+  // Na FOLGA o chip do ESTADO ("escala · N por rever") JÁ carrega a função e o bilhete o
+  // charme — a linha warn do mesmo facto seria a 3.ª voz (eco apanhado pelo user 2026-07-10).
+  const rosterChipShown = homeState === 'folga' && qChips.slice(0, 4).filter((it) => it.short).some((it) => it.id === 'roster');
+  const warnLine = (() => {
+    if (calErr) return { t: l('Não consegui ler o calendário', 'Couldn’t read the calendar'), s: l('Puxa para atualizar ou verifica a permissão nas Definições.', 'Pull to refresh or check the permission in Settings.') };
+    // Voo desviado/cancelado/atrasado é o HERÓI (estado disrupção) — só cai aqui no caso-limite
+    // de haver desvio sem o estado o refletir (ex.: dia já noutro estado).
+    if (homeState !== 'disrupcao' && fsDev && (fsCancelled || fsDiverted)) return { t: fsCancelled ? l('Voo cancelado', 'Flight cancelled') : l('Voo desviado', 'Flight diverted'), s: String(flightStatus.flightIata || flightNo || '') };
+    if (homeState !== 'disrupcao' && fsDev) {
       const leg = (wDelay && wDelay.which === 'arr') ? flightStatus.arr : flightStatus.dep;
-      return { tone: 'warn',
+      return {
         t: `${flightStatus.flightIata || flightNo || ''} · ${(wDelay && wDelay.which === 'arr') ? l('chega', 'arrives') : l('sai', 'departs')} ${hm(leg && (leg.estimated || leg.actual)) || '—'} · ${l('estava', 'was')} ${hm(leg && leg.scheduled) || '—'}`,
         s: liveVerdict ? `${liveVerdict.projected ? l('Projeção', 'Projected') : l('Com o atraso', 'With the delay')}: PSV ${liveVerdict.realStr} / ${l('máx', 'max')} ${liveVerdict.maxStr}` : l('Confirma o impacto no PSV/descanso.', 'Check the FDP/rest impact.') };
     }
-    if (inboundLate) return { tone: 'warn', t: l('O teu avião ainda vem a caminho', 'Your aircraft is still inbound'), s: `${(inbound && inbound.flightIata) || ''} ${l('chega', 'arrives')} ~${inboundInfo.etaZ}Z · ${l('rotação mín. ~35 min', 'min turnaround ~35 min')}${airportDis ? ` · ${airportDis.delayedPct}% ${l('atrasos', 'delays')}` : ''}` };
-    if (syncBehind) return { tone: 'warn', t: l('O registo ainda tem o planeado', 'Your record still shows the plan'), s: l('Sincroniza a escala eCrew pelo calendário para o PSV/limites acertarem.', 'Sync your eCrew roster via the calendar so FDP/limits are right.') };
+    if (inboundLate) return { t: l('O teu avião ainda vem a caminho', 'Your aircraft is still inbound'), s: `${(inbound && inbound.flightIata) || ''} ${l('chega', 'arrives')} ~${inboundInfo.etaZ}Z · ${l('rotação mín. ~35 min', 'min turnaround ~35 min')}${airportDis ? ` · ${airportDis.delayedPct}% ${l('atrasos', 'delays')}` : ''}` };
+    if (syncBehind) return { t: l('O registo ainda tem o planeado', 'Your record still shows the plan'), s: l('Sincroniza a escala eCrew pelo calendário para o PSV/limites acertarem.', 'Sync your eCrew roster via the calendar so FDP/limits are right.') };
     // Escala mudou (ficha 9 — deteta→confirma→grava): nada entra sem confirmares; toca → Escala.
-    if (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) return { tone: 'warn',
+    // Na folga cala-se: o chip âmbar do Estado é a função (ver rosterChipShown acima).
+    if (!rosterChipShown && rosterChanges && rosterChanges.counts && rosterChanges.counts.total) return {
       t: l(`A tua escala mudou — ${rosterChanges.counts.total} alteração(ões) por rever`, `Your roster changed — ${rosterChanges.counts.total} change(s) to review`),
       s: l('Nada entra na tua vida sem confirmares. Toca para rever.', 'Nothing enters your life unconfirmed. Tap to review.'),
-      onPress: () => { select(); navigation.navigate('Escala'); } };
-    if (airportDis) return { tone: airportDis.tone === 'bad' ? 'red' : 'warn', t: `${(flightStatus && flightStatus.dep && flightStatus.dep.iata) || ''} · ${airportDis.tone === 'bad' ? l('disrupção no aeroporto', 'airport disruption') : l('atrasos generalizados', 'widespread delays')}`, s: `${airportDis.delayedPct}% ${airportDis.side === 'dep' ? l('das partidas atrasadas', 'departures delayed') : l('das chegadas atrasadas', 'arrivals delayed')}${airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}` };
+      onPress: () => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); } };
+    if (airportDis) return { t: `${(flightStatus && flightStatus.dep && flightStatus.dep.iata) || ''} · ${airportDis.tone === 'bad' ? l('disrupção no aeroporto', 'airport disruption') : l('atrasos generalizados', 'widespread delays')}`, s: `${airportDis.delayedPct}% ${airportDis.side === 'dep' ? l('das partidas atrasadas', 'departures delayed') : l('das chegadas atrasadas', 'arrivals delayed')}${airportDis.avgDelayMin ? ` · ${l('média', 'avg')} ${airportDis.avgDelayMin} min` : ''}` };
     return null;
   })();
 
@@ -1062,7 +1089,16 @@ export default function HomeScreen({ navigation }) {
   // a abrir o SEU porquê (a linha antiga abria só o do primeiro). O saldo de férias entra
   // como chip neutro. Os outros estados mantêm a prosa (lá o útil é narrativa, não checklist).
   const estadoChips = homeState === 'folga' ? [
-    ...qChips.slice(0, 4).filter((it) => it.short).map((it) => ({ key: it.id, label: it.short, tone: it.status, item: it })),
+    ...qChips.slice(0, 4).filter((it) => it.short).map((it) => ({
+      key: it.id,
+      // O chip da escala diz AO QUE VEM (user 2026-07-10: a secção "mais visível nas coisas
+      // que contém") — "2 mud." era críptico; com alterações pendentes fala claro, e é ELE
+      // a função na folga (a linha warn cala-se; o bilhete fica com o charme).
+      label: (it.id === 'roster' && it.status === 'warn' && rosterChanges && rosterChanges.counts && rosterChanges.counts.total)
+        ? `${l('escala', 'roster')} · ${rosterChanges.counts.total} ${l('por rever', 'to review')}`
+        : it.short,
+      tone: it.status, item: it,
+    })),
     ...(folgaVac ? [{ key: 'vac', label: `${l('férias', 'vacation')} · ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`, tone: 'neutral' }] : []),
   ] : null;
   // Setup v2: o "Porquê" completo (privacidade + a dica do portal) vive ATRÁS de
@@ -1249,9 +1285,17 @@ export default function HomeScreen({ navigation }) {
         {/* Topo LIMPO (2026-07-09): avatar → aba Perfil · sino fixo → header do Perfil.
             Aqui só a saudação + a PÍLULA de novidades — que SÓ EXISTE quando há por ler
             (o botão de notificações à Apple: informação quando há, mobília nunca). */}
+        {/* Canto da saudação por prioridade (avisos v2): pílula VERMELHA de legalidade FTL >
+            pílula do exemplo > sino-pílula > nada — o herói nunca é empurrado por avisos. */}
         <Animated.View style={[seg(0), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }]}>
           <Text style={[s.greet, { marginTop: 0 }]}>{greet}</Text>
-          {demoOn ? (
+          {redPill ? (
+            <TouchableOpacity style={s.redPill} onPress={redPill.onPress} hitSlop={8}
+              accessibilityRole="button" accessibilityLabel={l('Alerta FTL — ver porquê', 'FTL alert — see why')}>
+              <View style={s.redPillDot} />
+              <Text style={s.redPillTxt} allowFontScaling={false}>FTL · {l('vê porquê', 'see why')}</Text>
+            </TouchableOpacity>
+          ) : demoOn ? (
             <TouchableOpacity style={s.demoPill} onPress={exitDemo} hitSlop={8}
               accessibilityRole="button" accessibilityLabel={l('Sair do exemplo', 'Exit example')}>
               <View style={s.demoPillDot} />
@@ -1259,18 +1303,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           ) : <NotificationsBell variant="pill" night={night} />}
         </Animated.View>
-
-        {/* Banda de alerta — sítio fixo, uma de cada vez */}
-        {band ? (
-          <Animated.View style={seg(1)}>
-            <TouchableOpacity activeOpacity={band.onPress ? 0.85 : 1} onPress={band.onPress} disabled={!band.onPress}
-              style={[s.band, band.tone === 'red' ? s.bandRed : null]}
-              accessibilityRole={band.onPress ? 'button' : undefined}>
-              <Text style={[s.bandT, band.tone === 'red' ? s.bandTRed : null]} numberOfLines={2}>{band.t}</Text>
-              {band.s ? <Text style={s.bandS} numberOfLines={2}>{band.s}</Text> : null}
-            </TouchableOpacity>
-          </Animated.View>
-        ) : null}
 
         {/* HERÓI — fantasma + palavra + kick */}
         {loadingFlight ? <HeroSkeleton /> : (
@@ -1309,8 +1341,15 @@ export default function HomeScreen({ navigation }) {
             amarelo) — igual de dia e de noite, como um marcador real. */}
         {voice ? (
           <Animated.View style={[s.voiceWrap, seg(2), { transform: [{ rotate: `${noteTilt}deg` }], marginLeft: noteShift, marginRight: 10 - noteShift }]}>
+            {/* Bilhete-LINK: com destino (voice.to) toca-se — o marcado amarelo é o convite
+                (a língua de link da casa); sem destino fica INERTE (nada de taps mortos). */}
+            <TouchableOpacity disabled={!voice.to} activeOpacity={0.7} hitSlop={6}
+              onPress={voice.to ? () => goVoice(voice.to) : undefined}
+              accessibilityRole={voice.to ? 'button' : undefined}
+              accessibilityLabel={voice.to ? `${voice.bold} ${voice.tail}` : undefined}>
             {/* cap 1.2 no dynamic type: manuscrita inclinada a escalar 1.4 quebrava o bilhete */}
             <Text style={s.voiceNote} numberOfLines={3} maxFontSizeMultiplier={1.2}><Text style={s.voiceHl}>{' '}{voice.bold}{' '}</Text> {voice.tail}</Text>
+            </TouchableOpacity>
           </Animated.View>
         ) : null}
 
@@ -1463,12 +1502,24 @@ export default function HomeScreen({ navigation }) {
             <Text style={s.utilP} numberOfLines={3}>{utilTxt}</Text>
             )}
           </TouchableOpacity>
-          {/* Documento crítico — ao pé do Estado (não na banda): vermelho, toca → porquê. */}
+          {/* Documento crítico — ao pé do Estado: vermelho, toca → porquê. */}
           {docAlert ? (
             <TouchableOpacity style={s.docAlert} activeOpacity={0.8} onPress={() => { select(); setDetailItem(docAlert); }}
               accessibilityRole="button" accessibilityLabel={docAlert.q}>
               <Icon name="alert" size={14} color={P.red} />
               <Text style={s.docAlertTxt} numberOfLines={2}>{docAlert.answer}{docAlert.suggestion ? <Text style={s.docAlertSub}>  ·  {docAlert.suggestion}</Text> : null}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {/* Avisos operacionais (warn) — POR BAIXO do Estado, na gramática do docAlert
+              (avisos v2, decisão do user 2026-07-10): escala mudou · inbound · sync · aeroporto. */}
+          {warnLine ? (
+            <TouchableOpacity style={s.warnLine} activeOpacity={warnLine.onPress ? 0.8 : 1} onPress={warnLine.onPress} disabled={!warnLine.onPress}
+              accessibilityRole={warnLine.onPress ? 'button' : undefined} accessibilityLabel={warnLine.t}>
+              <Icon name="alert" size={13} color={P.warn} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.warnLineTxt} numberOfLines={2}>{warnLine.t}</Text>
+                {warnLine.s ? <Text style={s.warnLineSub} numberOfLines={2}>{warnLine.s}</Text> : null}
+              </View>
             </TouchableOpacity>
           ) : null}
           {longHaul ? <Text style={s.lhNote} numberOfLines={2}>{l('FTL automático assume aclimatizado e na base — em longo-curso confirma na calculadora.', 'Auto FTL assumes acclimatised and in-base — for long-haul check the calculator.')}</Text> : null}
@@ -1544,12 +1595,14 @@ const makeSkin = (P, night) => StyleSheet.create({
   scroll: { paddingHorizontal: 22, flexGrow: 1 },
   greet: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 10 },
 
-  // Banda de alerta (mockup .alertband): sangra até às margens, borda fina acima/abaixo.
-  band: { marginTop: 9, marginHorizontal: -22, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: P.warnSoft, borderTopWidth: 1, borderBottomWidth: 1, borderColor: P.warnSoftLine },
-  bandRed: { backgroundColor: P.redSoft, borderColor: P.redSoftLine },
-  bandT: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.warn },
-  bandTRed: { color: P.red },
-  bandS: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: night ? '#E8B27E' : '#B07840', marginTop: 1 },
+  // Avisos v2 (2026-07-10): a banda sangrada morreu. Pílula VERMELHA de legalidade (canto da
+  // saudação, gramática da demoPill) + linha warn à docAlert (por baixo do Estado).
+  redPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: P.redSoft, borderWidth: 1, borderColor: P.redSoftLine, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
+  redPillDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.red },
+  redPillTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, color: P.red },
+  warnLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.line },
+  warnLineTxt: { fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: P.warn, lineHeight: 16 },
+  warnLineSub: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: night ? '#E8B27E' : '#B07840', marginTop: 1 },
 
   // Herói (mockup .hero/.ghostnum/.word/.kick — o Início fala mais alto: 170/56)
   hero: { position: 'relative', minHeight: 200, marginTop: 8, justifyContent: 'flex-end', paddingBottom: 4 },

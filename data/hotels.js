@@ -57,6 +57,54 @@ export const staysByStation = (duties, base) => {
   return out;
 };
 
+// ── VÁRIOS HOTÉIS POR ESTAÇÃO (2026-07-09, arquitetura de 3 níveis do founder) ──
+// O ATUAL vive no TOPO do registo (compat total: Início/Escala/DutyDetail leem
+// hotels[st].name como sempre); os outros em `others[]`. Dados antigos (sem others)
+// migram sozinhos. idx: 0 = o atual · n≥1 = others[n-1].
+export const hotelCount = (h) => (h ? 1 + ((h.others && h.others.length) || 0) : 0);
+const bare = (h) => ({ name: h.name, phone: h.phone || null, note: h.note || null });
+export const hotelAt = (h, idx) => {
+  if (!h) return null;
+  if (!idx) return bare(h);
+  return (h.others && h.others[idx - 1]) || null;
+};
+// Editar o ATUAL preserva os outros (era o buraco do saveHotel antigo, que substituía tudo).
+export const hotelSetCurrent = (h, data) => {
+  const others = (h && h.others && h.others.length) ? h.others : undefined;
+  return others ? { ...data, others } : { ...data };
+};
+// Hotel NOVO entra logo como o ATUAL ("o comandante avisou que mudou"); o antigo desce.
+export const hotelAddAsCurrent = (h, data) => (h
+  ? { ...data, others: [bare(h), ...(h.others || [])] }
+  : { ...data });
+export const hotelUpdateAt = (h, idx, data) => {
+  if (!idx) return hotelSetCurrent(h, data);
+  const others = [...((h && h.others) || [])];
+  if (!others[idx - 1]) return h;
+  others[idx - 1] = { ...data };
+  return { ...bare(h), others };
+};
+// Promover others[idx-1] a atual — o antigo atual fica no lugar dele (troca, nada se perde).
+export const hotelMakeCurrent = (h, idx) => {
+  if (!h || !idx || !h.others || !h.others[idx - 1]) return h;
+  const others = [...h.others];
+  const pick = others[idx - 1];
+  others[idx - 1] = bare(h);
+  return { ...pick, others };
+};
+// Apagar: o atual promove o seguinte; o último limpa a estação (devolve null).
+export const hotelRemoveAt = (h, idx) => {
+  if (!h) return null;
+  const others = [...(h.others || [])];
+  if (!idx) {
+    if (!others.length) return null;
+    const next = others.shift();
+    return others.length ? { ...next, others } : { ...next };
+  }
+  others.splice(idx - 1, 1);
+  return others.length ? { ...bare(h), others } : bare(h);
+};
+
 const nextDayISO = (iso) => {
   const d = new Date(`${iso}T12:00:00`);
   d.setDate(d.getDate() + 1);
