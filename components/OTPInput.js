@@ -1,15 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
-import { RADIUS, TYPE, FONT, PALETTE_DARK } from '../data/constants';
-import { useTheme } from '../data/appContext';
+import { RADIUS, PELE, PELE_FONT } from '../data/constants';
 
 // Caixa de código OTP (6 dígitos numéricos) — partilhada entre reset de password (Login),
-// confirmação de email (Onboarding) e mudar-email (Settings, dentro de um MODAL).
+// confirmação de email (signup) e mudar-email (Settings, dentro de um MODAL).
+// PELE-FICADA por dentro (2026-07-10): seleção = amarelo (vermelho é perigo, nunca foco),
+// dígitos em Barlow. API intacta.
 // O TextInput real é TRANSPARENTE e COBRE as caixas (não um 1×1 escondido): tocar nas caixas =
 // tocar no campo → foca direto, fiável mesmo dentro de um Modal. `len` permite outro tamanho.
 export default function OTPInput({ value, onChange, len = 6, autoFocus = true }) {
-  const C = useTheme();
-  const otp = makeOtp(C);
   const ref = useRef();
   // Foco com pequeno atraso: dentro de um Modal, focar no mount (autoFocus) muitas vezes não abre
   // o teclado (timing do Modal). O atraso garante que o campo já está montado e recebe o teclado.
@@ -30,9 +29,10 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
       <TextInput
         ref={ref}
         value={value}
+        // SEM maxLength: no iOS, colar conteúdo maior que o limite é BLOQUEADO por inteiro
+        // (e o código copiado do Mail traz espaços/quebras). A sanitização abaixo já corta a `len`.
         onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, len))}
         keyboardType="numeric"
-        maxLength={len}
         style={otp.overlay}
         caretHidden
         // O teclado SUGERE o código recebido em vez de obrigar a decorar (iOS: QuickType
@@ -44,12 +44,12 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
   );
 }
 
-const makeOtp = (C) => StyleSheet.create({
+const otp = StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20, position: 'relative' },
-  box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: C.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: C.redSoft, borderColor: C.red },
-  boxFilled:{ backgroundColor: C === PALETTE_DARK ? C.inkSoft : C.card, borderColor: C.line },
-  digit:    { fontSize: TYPE.title, fontFamily: FONT.bold, color: C.text },
+  box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  boxActive:{ backgroundColor: PELE.paper, borderColor: PELE.yellow },
+  boxFilled:{ backgroundColor: PELE.paper, borderColor: PELE.line },
+  digit:    { fontSize: 22, fontFamily: PELE_FONT.display, color: PELE.ink },
   // Sobrepõe as caixas (transparente): os toques vão para o campo real, foca sem intermediário.
   overlay:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0 },
 });

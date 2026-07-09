@@ -142,6 +142,12 @@ export const register = async (name, email, password, lang = 'pt', extra = {}) =
     options: { data: { name: name.trim(), ...extra } },
   });
   if (error) return { ok: false, error: mapError(error, lang) };
+  // Anti-enumeração do Supabase: signUp com um email JÁ REGISTADO (e confirmado) NÃO dá
+  // erro — devolve um user "fantasma" com identities:[] e não envia email nenhum. Sem este
+  // check, a UI ficava no ecrã do código à espera de um email que nunca chega.
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return { ok: false, error: m('registered', lang) };
+  }
   if (!data.session) {
     // Confirmação de email LIGADA (autoconfirm OFF) → conta criada mas SEM sessão até
     // confirmar a posse do email. Sinaliza needsConfirm → a UI pede o código (verifySignupCode).
