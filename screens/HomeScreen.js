@@ -786,8 +786,15 @@ export default function HomeScreen({ navigation }) {
   })();
   const f28 = flightLimits.find((w) => w.days === 28) || null;
 
-  // Rótulo lateral (PeleSide) por estado.
-  const sideL = homeState === 'setup' ? [l('PRIMEIRA VEZ', 'FIRST TIME'), 'SETUP']
+  // MODO EXEMPLO (estado 0 → "Ver exemplo"): o voo é FALSO e tem de o dizer sempre
+  // (dados de amostra nunca se confundem com reais) e sair-se num toque — a pílula no
+  // topo limpa; sair da aba/voltar do background continua a limpar (syncFlight).
+  const demoOn = !!(flight && flight.demo);
+  const exitDemo = () => { select(); setCalFlight(null); };
+
+  // Rótulo lateral (PeleSide) por estado. Em modo exemplo, o rótulo DIZ que é exemplo.
+  const sideL = demoOn ? [l('EXEMPLO', 'EXAMPLE'), l('VOO DE AMOSTRA', 'SAMPLE FLIGHT')]
+    : homeState === 'setup' ? [l('PRIMEIRA VEZ', 'FIRST TIME'), 'SETUP']
     // FOLGA (decisão do user 2026-07-09, 2.ª iteração): fantasma = dia da semana CURTO
     // ("QUI" — a língua dos rosters, 3 letras = tamanho gigante) e o rótulo dá a coordenada
     // de calendário "9 JULHO" (o mês não aparecia em lado nenhum na folga). Dia de trabalho
@@ -1208,7 +1215,13 @@ export default function HomeScreen({ navigation }) {
             (o botão de notificações à Apple: informação quando há, mobília nunca). */}
         <Animated.View style={[seg(0), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }]}>
           <Text style={[s.greet, { marginTop: 0 }]}>{greet}</Text>
-          <NotificationsBell variant="pill" night={night} />
+          {demoOn ? (
+            <TouchableOpacity style={s.demoPill} onPress={exitDemo} hitSlop={8}
+              accessibilityRole="button" accessibilityLabel={l('Sair do exemplo', 'Exit example')}>
+              <View style={s.demoPillDot} />
+              <Text style={s.demoPillTxt}>{l('Exemplo — sair', 'Example — exit')}</Text>
+            </TouchableOpacity>
+          ) : <NotificationsBell variant="pill" night={night} />}
         </Animated.View>
 
         {/* Banda de alerta — sítio fixo, uma de cada vez */}
@@ -1575,6 +1588,10 @@ const makeSkin = (P, night) => StyleSheet.create({
   uChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: P.line, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 9 },
   uChipDot: { width: 5, height: 5, borderRadius: 99 },
   uChipTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: P.ink },
+  // Pílula do MODO EXEMPLO (topo, no lugar do sino): sempre visível, sai num toque.
+  demoPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: P.soft, borderWidth: 1, borderColor: P.line, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
+  demoPillDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.yellow },
+  demoPillTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
   lampWrap: { position: 'absolute', alignSelf: 'center', top: -70, zIndex: 0 },
   // A voz sob a régua — deck de duas alturas: display marcado + cauda-sussurro.

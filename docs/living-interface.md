@@ -186,6 +186,7 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 - **SEM datarow:** o donut a 15% era progresso FALSO (não media nada) — morreu; a
   promessa honesta mudou-se para o chip.
 - **Chip:** "~1 MIN · é o que o setup demora". **Ações:** Ligar calendário (hot) · Ver exemplo (demo).
+- **Modo EXEMPLO (2026-07-10, à Apple: amostra nunca se confunde com real, sai-se num toque):** com o demo ativo, o rótulo lateral vira **"EXEMPLO · VOO DE AMOSTRA"** e no topo (lugar do sino) vive a pílula **"● Exemplo — sair"** → limpa o voo falso e volta ao setup. Rede: sair da aba / voltar do background re-sincroniza e limpa na mesma. (Antes: sem selo e sem saída — o utilizador ficava "preso" no exemplo sem saber que era falso.)
 - **Desaparece:** TUDO o resto. Identidade NÃO se mostra nem se pergunta — veio do registo.
 - **Objetivo:** uma única missão. O vazio nunca pede desculpa: mostra o caminho e prova o valor (dia de exemplo).
 
