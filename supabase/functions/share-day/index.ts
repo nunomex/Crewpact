@@ -355,8 +355,10 @@ Deno.serve(async (req: Request) => {
     // Contexto do AEROPORTO de chegada (Airport Intelligence): só quando está mesmo
     // complicado — limiares GÉMEOS do airportDisruption (data/flightDelay.js): amostra
     // ≥8, aviso a ≥30% atrasados ou ≥10% cancelados. Explica à família o "porquê".
+    // CONDICIONAL (decisão do founder): só SEM ETA ao vivo — com estimativa real, o
+    // contexto geral ao lado da resposta específica é ansiedade grátis para a família.
     let airportWarn: string | null = null;
-    if (!landed && key && arr && arr !== '—') {
+    if (!landed && !etaHm && key && arr && arr !== '—') {
       const ap = await airportStats(key, arr);
       const a = ap && ap.arr;
       if (a && a.n >= 8 && (a.delayedPct >= 30 || a.cancelPct >= 10)) {
@@ -385,7 +387,7 @@ Deno.serve(async (req: Request) => {
         if (s0 && s0.c != null) { wxC = Math.round(Number(s0.c)); wxSym = s0.s || null; }
       }
       return json({ ok: true, found: true, expired: false, date: shareDate, legsCount: legs.length, family: isFamily,
-        flight: fno, dep, arr, etaHm, depHm, durationMin, wxC, wxSym, landed, status: statusTxt, tone: statusCls || 'none',
+        flight: fno, dep, arr, city: esc(String(last.city || '')), etaHm, depHm, durationMin, wxC, wxSym, landed, status: statusTxt, tone: statusCls || 'none',
         airportWarn, etaTs, depTs, nowTs: Math.floor(Date.now() / 1000) });
     }
     const inner = `
@@ -445,6 +447,9 @@ Deno.serve(async (req: Request) => {
       flight: String(x?.flight || '').toUpperCase().replace(/\s+/g, '').slice(0, 8),
       dep: String(x?.dep || '').toUpperCase().slice(0, 3),
       arr: String(x?.arr || '').toUpperCase().slice(0, 3),
+      // cidade do destino (opcional) — a página mostra "Paris" sob o anel; vem da app
+      // (catálogo airports.js), a Edge não tem nomes. Sanitizada e curta.
+      city: String(x?.city || '').replace(/[<>&"']/g, '').slice(0, 28),
     }))
     .filter((x) => x.flight);
   if (!legs.length) return json({ ok: false, error: 'no_legs' }, 400);

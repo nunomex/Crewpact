@@ -5,12 +5,24 @@
   Ficheiro ESTÁTICO único (index.html) — PRONTA A ARRASTAR para o Cloudflare Pages
   (upload direto, grátis, sem git). O *.supabase.co não renderiza HTML (anti-phishing
   do gateway), por isso a página vive num domínio nosso (voo.crewpact.app). Lê
-  /c<token> (ou ?t=) e pede os DADOS à Edge `share-day` (GET público &j=1, CORS aberto);
+  /c/<token> (ou ?t=) e pede os DADOS à Edge `share-day` (GET público &j=1, CORS aberto);
   re-pede a cada 60 s até aterrar. Zero dependências, zero cookies, noindex.
   Depois de publicar: secret SHARE_PAGE_URL = URL da página (Edge → Secrets).
-  PELE: linguagem do CARTÃO de partilha (fantasma do DESTINO + ANEL de countdown que
-  enche com o progresso + tira Partida·Chegada·Duração·Tempo), dia/noite pela hora de
-  quem abre. Mesmo cérebro (dados da Edge, atualiza sozinho).
+
+  SINTONIA v2 (design/partilha-sintonia.html, iterado à exaustão com o founder):
+  · O UX FICA (anel countdown + rota com o avião + fantasma do destino) — só a roupa:
+    dia = PAPER branco · noite = NAVY NOTURNO da app (#0D131C) — uma só noite no
+    ecossistema (app · cartão · página); o cream e o teal morreram.
+  · CIDADE do destino sob o anel ("Paris") — o anel diz QUANDO, a cidade diz ONDE,
+    a rota confirma em códigos. Vem no JSON (city, gravada pela app na partilha).
+  · MANUSCRITA junto do vivo ("atualiza sozinho — não precisas de refrescar", Caveat)
+    — só enquanto voa; o rodapé formal morreu (a expiração diz-se no estado expirado).
+  · STATS do aeroporto CONDICIONAIS — só SEM ETA ao vivo (com estimativa real, contexto
+    geral = ansiedade grátis). A Edge já filtra; o cliente confirma.
+  · METEO = os ícones da CASA (paths canónicos do design/icons.js) — os emoji morreram.
+  · Ritmo selado: herói centrado com bias ótico 2.1:1 · eyebrow→anel 20 · anel→cidade 20
+    · cidade→rota 7 · rota→manuscrita 15 · tira mt18 pt15, células CENTRADAS · moldura 24.
+    Espaço elástico só nas margens do conjunto — nunca entre irmãos de conteúdo.
 -->
 <html lang="pt">
 <head>
@@ -28,18 +40,21 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#141414">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  html{--bg:#F4F1E8;--ink:#141414;--sub:#8A8574;--faint:#B3B1A9;--ghost:rgba(20,20,20,.05);--line:rgba(20,20,20,.14);
-       --accent:#B9820A;--accentbg:rgba(255,184,0,.16);--track:rgba(20,20,20,.10);--glow:rgba(185,130,10,.5);--ok:#0E7A4B;--okbg:rgba(17,138,85,.12)}
-  html.night{--bg:#0C3A3B;--ink:#fff;--sub:rgba(255,255,255,.62);--faint:rgba(255,255,255,.42);--ghost:rgba(255,255,255,.06);--line:rgba(255,255,255,.16);
-       --accent:#FFB800;--accentbg:rgba(255,184,0,.18);--track:rgba(255,255,255,.16);--glow:rgba(255,184,0,.55);--ok:#46C98A;--okbg:rgba(70,201,138,.18)}
+  /* DIA = paper (a placa da casa) · --ring separado do --accent: o anel/avião enchem a
+     AMARELO puro (fill ≥3px pode); o texto acentuado usa o amarelo-escuro legível. */
+  html{--bg:#FFFFFF;--ink:#141414;--sub:#77776F;--faint:#B4B0A8;--ghost:#E2E1DC;--line:rgba(20,20,20,.14);
+       --accent:#B9820A;--accentbg:rgba(255,184,0,.16);--ring:#FFB800;--track:rgba(20,20,20,.10);--glow:rgba(255,184,0,.45);
+       --ok:#0E7A4B;--okbg:rgba(17,138,85,.12);--hand:rgba(20,20,20,.6)}
+  /* NOITE = o navy NOTURNO da app (#0D131C) — a mesma noite do tripulante e do cartão. */
+  html.night{--bg:#0D131C;--ink:#F4F2ED;--sub:rgba(244,242,237,.55);--faint:rgba(244,242,237,.42);--ghost:rgba(255,255,255,.055);--line:rgba(244,242,237,.14);
+       --accent:#FFB800;--accentbg:rgba(255,184,0,.18);--ring:#FFB800;--track:rgba(255,255,255,.16);--glow:rgba(255,184,0,.55);
+       --ok:#46C98A;--okbg:rgba(70,201,138,.18);--hand:rgba(244,242,237,.7)}
   body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
-  html.night body{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.10),transparent 55%),var(--bg)}
-  html:not(.night) body{background:radial-gradient(110% 45% at 82% 6%,rgba(255,184,0,.14),transparent 55%),var(--bg)}
   /* 100dvh = altura VISÍVEL (a barra do Safari não tapa); 100vh = fallback. */
-  .wrap{position:relative;max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:26px 24px 22px;overflow:hidden}
+  .wrap{position:relative;max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:26px 24px 24px;overflow:hidden}
   #inner{flex:1;display:flex;flex-direction:column}
 
   .ghost{position:absolute;right:2px;top:-16px;font-family:'Barlow Condensed';font-weight:800;font-size:190px;line-height:.8;letter-spacing:-6px;color:var(--ghost);z-index:0;pointer-events:none}
@@ -50,32 +65,42 @@
   .live.done{background:var(--okbg);color:var(--ok)}
   .live .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
 
-  /* HERÓI = ANEL (centrado). O anel enche com o PROGRESSO do voo; o número é o countdown. */
-  .hero{position:relative;z-index:2;margin:auto 0;display:flex;flex-direction:column;align-items:center}
+  /* espaçadores do conjunto — bias ótico 2.1:1 (o fantasma ganha o topo; centrado
+     geométrico lê alto). Elástico SÓ aqui, nunca entre irmãos de conteúdo. */
+  .sp1{flex:2.1}.sp2{flex:1}
+
+  /* HERÓI = ANEL. O anel enche com o PROGRESSO do voo; o número é o countdown. */
+  .hero{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center}
   .eyb{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:var(--sub)}
-  .ring{position:relative;width:224px;height:224px;margin-top:16px}
+  .ring{position:relative;width:224px;height:224px;margin-top:20px}
   .ring svg{transform:rotate(-90deg)}
   .rbg{fill:none;stroke:var(--track);stroke-width:9}
-  .rfg{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 9px var(--glow));animation:fill 2.4s cubic-bezier(.3,.8,.3,1) forwards}
+  .rfg{fill:none;stroke:var(--ring);stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 9px var(--glow));animation:fill 2.4s cubic-bezier(.3,.8,.3,1) forwards}
   .rctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
   .rnum{font-family:'Barlow Condensed';font-weight:800;font-size:92px;line-height:.8;color:var(--ink);font-variant-numeric:tabular-nums}
   .rnum .u{font-size:30px;color:var(--sub)}
   .rlab{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--sub);font-weight:800;margin-top:8px}
   .rok{font-family:'Barlow Condensed';font-weight:800;font-size:56px;color:var(--ok);line-height:1}
+  /* a CIDADE (o anel diz QUANDO, ela diz ONDE); abraça a rota (nome+códigos = 1 unidade) */
+  .rct{font-family:'Barlow Condensed';font-weight:700;font-size:21px;letter-spacing:-.3px;color:var(--ink);margin-top:20px;text-align:center}
   /* Rota VIVA: o avião atravessa LIS •——✈—— FNC pela posição do progresso (eixo do ESPAÇO;
      o anel dá o TEMPO). Subtil de propósito — detalhe sob o anel, não segundo herói. */
-  .route{display:flex;align-items:center;gap:11px;margin-top:24px;align-self:stretch}
+  .route{display:flex;align-items:center;gap:11px;margin-top:7px;align-self:stretch}
   .rc{font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:.6px;color:var(--ink);flex:0 0 auto}
   .track{position:relative;flex:1;height:2px;background:var(--track);border-radius:2px}
-  .track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px}
-  .track .plane{position:absolute;top:50%;color:var(--accent);transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px var(--glow));display:flex;line-height:0}
+  .track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ring);border-radius:2px}
+  .track .plane{position:absolute;top:50%;color:var(--ring);transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px var(--glow));display:flex;line-height:0}
   .route.done .fill{background:var(--ok)}.route.done .plane{color:var(--ok)}
-  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:20px;padding-top:15px;border-top:1px solid var(--line);align-self:stretch}
+  /* a VOZ manuscrita junto do vivo (só enquanto voa) — Caveat 21, pousa da casa */
+  .auto{font-family:'Caveat',cursive;font-weight:600;font-size:21px;color:var(--hand);transform:rotate(-1.2deg);margin-top:15px;text-align:center}
+  /* tira ancorada ao fundo, células CENTRADAS (bilhete de embarque, igual ao cartão) */
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:18px;padding-top:15px;border-top:1px solid var(--line);position:relative;z-index:2}
+  .strip>div{text-align:center}
   .k{font-weight:800;font-size:8px;letter-spacing:.8px;color:var(--sub);text-transform:uppercase}
   .v{font-family:'Barlow Condensed';font-weight:700;font-size:18px;letter-spacing:-.3px;color:var(--ink);margin-top:3px}.v.okc{color:var(--ok)}
-  .warn{font-size:12.5px;color:var(--accent);margin-top:14px;line-height:1.5;font-weight:600;text-align:center}
+  .v svg{vertical-align:-2.5px;margin-left:4px}
+  .warn{font-size:12.5px;color:var(--accent);margin-top:14px;line-height:1.5;font-weight:600;text-align:center;position:relative;z-index:2}
   .msub{font-size:14px;color:var(--sub);margin-top:8px;line-height:1.6}
-  .foot{position:relative;z-index:2;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:11px;color:var(--faint);line-height:1.7}
 
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
   @keyframes fill{from{stroke-dasharray:0 100}}
@@ -88,7 +113,6 @@
     <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
     <div class="hero" style="margin:auto 0"><div class="eyb">A carregar…</div><div class="msub">um instante ✈️</div></div>
   </div>
-  <div class="foot">Link de um tripulante · expira sozinho.<br>Atualiza a cada minuto.</div>
 </div>
 <script>
 (function () {
@@ -101,14 +125,37 @@
   var cur = null;       // últimos dados da Edge
   var clockOff = 0;     // offset servidor−cliente (s) — countdown certo mesmo com relógio torto
 
-  // Tema pela hora LOCAL de quem abre (dia 07–19 cream · resto teal).
+  // Tema pela hora LOCAL de quem abre (dia 07–19 paper · resto navy noturno da app).
   (function () { var h = new Date().getHours(); if (h < 7 || h >= 20) document.documentElement.className = 'night'; })();
 
-  // símbolo met.no → emoji (mínimo; desconhecido → sem emoji, nunca inventa).
   // Avião a apontar para a DIREITA (airliner do Material rodado 90°) — atravessa a rota.
   var PLANE = '<svg viewBox="0 0 24 24" width="15" height="15"><path transform="rotate(90 12 12)" fill="currentColor" d="M22 16v-2l-8.5-5V3.5C13.5 2.67 12.83 2 12 2s-1.5.67-1.5 1.5V9L2 14v2l8.5-2.5V19L8 20.5V22l4-1 4 1v-1.5L13.5 19v-5.5L22 16z"/></svg>';
-  var WXE = { clearsky: '☀️', fair: '🌤', partlycloudy: '⛅', cloudy: '☁️', fog: '🌫', lightrain: '🌦', lightrainshowers: '🌦', rain: '🌧', rainshowers: '🌧', heavyrain: '⛈', heavyrainshowers: '⛈', thunderstorm: '⛈', sleet: '🌨', snow: '❄️', snowshowers: '🌨' };
-  function wxEmoji(code) { var b = String(code || '').replace(/_(day|night|polartwilight)$/, ''); if (b.indexOf('thunder') >= 0) return '⛈'; if (/_night$/.test(String(code || '')) && b === 'clearsky') return '🌙'; return WXE[b] || ''; }
+
+  // METEO = os ícones da CASA (paths canónicos de components/Icon.js) — sem emoji.
+  var WXP = {
+    sun: '<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    moon: '<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    cloud: '<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    'cloud-sun': '<circle cx="7" cy="7" r="2.6"/><path d="M6.4 1.6h1.2v2.5H6.4zM1.6 6.4h2.5v1.2H1.6zM2.8 3.7l.9-.9 1.7 1.7-.9.9zM10.3 2.8l.9.9-1.7 1.7-.9-.9zM2.8 10.3l1.7-1.7.9.9-1.7 1.7z"/><g transform="translate(3.2 3.4) scale(0.85)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g>',
+    rain: '<g transform="translate(0 -2.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M8.2 17.3l1.6.6-1.1 3-1.6-.6zM12.2 17.3l1.6.6-1.1 3-1.6-.6zM16.2 17.3l1.6.6-1.1 3-1.6-.6z"/>',
+    snow: '<g transform="translate(0 -2.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><circle cx="8.9" cy="18.8" r="1.2"/><circle cx="12.7" cy="20.7" r="1.2"/><circle cx="16.5" cy="18.8" r="1.2"/>',
+    thunder: '<g transform="translate(0 -3)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M13.7 14.8l-4.3 5.3h2.4l-1.3 3.7 4.6-5.6h-2.4z"/>',
+    fog: '<g transform="translate(0 -3.4)"><circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/></g><path d="M5.4 17.8h13.2v1.5H5.4zM7.3 20.5h9.4v1.5H7.3z"/>',
+  };
+  // met.no → nome do ícone (espelho de data/weather.js wxIcon; trovoada ganha sempre).
+  function wxName(code) {
+    var raw = String(code || ''); var base = raw.replace(/_(day|night|polartwilight)$/, '');
+    if (!base) return null;
+    if (base.indexOf('thunder') >= 0) return 'thunder';
+    if (base.indexOf('snow') >= 0 || base.indexOf('sleet') >= 0) return 'snow';
+    if (base.indexOf('rain') >= 0) return 'rain';
+    if (base === 'fog') return 'fog';
+    if (base === 'cloudy') return 'cloud';
+    if (base === 'fair' || base === 'partlycloudy') return /_(night|polartwilight)$/.test(raw) ? 'cloud' : 'cloud-sun';
+    if (base === 'clearsky') return /_(night|polartwilight)$/.test(raw) ? 'moon' : 'sun';
+    return null;
+  }
+  function wxSvg(code) { var n = wxName(code); if (!n) return ''; return '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">' + WXP[n] + '</svg>'; }
   function fmtDur(min) { var m = Number(min); if (!isFinite(m) || m <= 0) return '—'; return Math.floor(m / 60) + 'H' + String(m % 60).padStart(2, '0'); }
 
   function stopAll() {
@@ -140,34 +187,40 @@
         : '<div class="rnum" style="font-size:44px">—</div><div class="rlab">sem estimativa</div>');
     var ringStyle = d.landed ? ' style="stroke:var(--ok);filter:drop-shadow(0 0 9px rgba(14,122,75,.5))"' : '';
 
-    // Tira: Partida · Chegada · Duração · Tempo (do destino). "—" quando não há dado.
-    var tempo = (d.wxC != null && d.wxC !== '') ? (esc(d.wxC) + '°' + (wxEmoji(d.wxSym) ? ' ' + wxEmoji(d.wxSym) : '')) : '—';
+    // Tira: Partida · Chegada · Duração · Tempo (ícone da CASA). "—" quando não há dado.
+    var tempo = (d.wxC != null && d.wxC !== '') ? (esc(d.wxC) + '°' + wxSvg(d.wxSym)) : '—';
     var chega = d.etaHm ? (d.landed ? '' : '~') + esc(d.etaHm) : '—';
+    // Stats do aeroporto: SÓ sem ETA ao vivo (com estimativa, contexto geral = ansiedade grátis).
+    var showWarn = !!(d.airportWarn && !d.landed && !d.etaHm);
 
     el.innerHTML =
       '<div class="ghost">' + (esc(d.arr) || '') + '</div>' +   /* fantasma = DESTINO (a chegada é o assunto) */
       '<div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div>' +
         '<span class="live' + (d.landed ? ' done' : '') + '"><span class="p"></span>' + (d.landed ? 'Aterrou' : 'Ao vivo') + '</span></div>' +
+      '<div class="sp1"></div>' +
       '<div class="hero">' +
         '<div class="eyb">Chegada de hoje' + (d.legsCount > 1 ? ' · ' + d.legsCount + ' voos' : (d.flight ? ' · ' + esc(d.flight) : '')) + '</div>' +
         '<div class="ring"><svg width="224" height="224" viewBox="0 0 224 224">' +
           '<circle class="rbg" cx="112" cy="112" r="100"/>' +
           '<circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="' + pct + ' 100"' + ringStyle + '/>' +
         '</svg><div class="rctr">' + ctr + '</div></div>' +
-        '<div class="route' + (d.landed ? ' done' : '') + '">' +
+        (d.city ? '<div class="rct">' + esc(d.city) + '</div>' : '') +
+        '<div class="route' + (d.landed ? ' done' : '') + '"' + (d.city ? '' : ' style="margin-top:20px"') + '>' +
           '<span class="rc">' + (esc(d.dep) || '—') + '</span>' +
           '<div class="track"><div class="fill" style="width:' + pct + '%"></div>' +
             '<div class="plane" style="left:' + pct + '%">' + PLANE + '</div></div>' +
           '<span class="rc">' + (esc(d.arr) || '—') + '</span>' +
         '</div>' +
-        '<div class="strip">' +
-          '<div><div class="k">Partida</div><div class="v">' + (d.depHm ? esc(d.depHm) : '—') + '</div></div>' +
-          '<div><div class="k">Chegada</div><div class="v">' + chega + '</div></div>' +
-          '<div><div class="k">Duração</div><div class="v">' + fmtDur(d.durationMin) + '</div></div>' +
-          '<div><div class="k">Tempo</div><div class="v">' + tempo + '</div></div>' +
-        '</div>' +
-        (d.airportWarn ? '<div class="warn">⚠️ ' + esc(d.airportWarn) + '</div>' : '') +
-      '</div>';
+        (!d.landed ? '<div class="auto">atualiza sozinho — não precisas de refrescar</div>' : '') +
+      '</div>' +
+      '<div class="sp2"></div>' +
+      '<div class="strip">' +
+        '<div><div class="k">Partida</div><div class="v">' + (d.depHm ? esc(d.depHm) : '—') + '</div></div>' +
+        '<div><div class="k">Chegada</div><div class="v">' + chega + '</div></div>' +
+        '<div><div class="k">Duração</div><div class="v">' + fmtDur(d.durationMin) + '</div></div>' +
+        '<div><div class="k">Tempo</div><div class="v">' + tempo + '</div></div>' +
+      '</div>' +
+      (showWarn ? '<div class="warn">⚠️ ' + esc(d.airportWarn) + '</div>' : '');
     if (d.landed) stopAll();   // aterrou → página final, para de gastar
   }
 

@@ -1,7 +1,8 @@
-// ─── Palette ─────────────────────────────────────────────────────────────────
-// Paleta clara (default). As superfícies escuras (ink) usam os tokens onDark*,
-// que são iguais nas duas paletas — por isso os cartões pretos não mudam.
-export const PALETTE_LIGHT = {
+// ─── Palette (LEGADO EXTINTO 2026-07-10) ─────────────────────────────────────
+// O tema antigo morreu: zero consumidores de PALETTE_*/useTheme/FONT. Mantém-se
+// SÓ este bloco de paletas como referência histórica de cores (não importar).
+// A pele viva é PELE/PELE_NIGHT/PELE_FONT, mais abaixo.
+const PALETTE_LIGHT = {
   canvas: "#FFFFFF",
   card: "#FFFFFF",   // superfície de cartão (= canvas no claro; elevada no escuro)
   soft: "#F2F2F0",
@@ -38,7 +39,7 @@ export const PALETTE_LIGHT = {
 
 // Paleta escura — superfícies elevadas sobre canvas, texto quase branco. onDark*
 // mantêm-se (as superfícies ink continuam escuras nos dois modos).
-export const PALETTE_DARK = {
+const PALETTE_DARK = {
   canvas: "#141414",
   card: "#1E1E1E",
   soft: "#232323",
@@ -70,11 +71,8 @@ export const PALETTE_DARK = {
   redText: "#FF6B5E", warnText: "#E2A24E", greenText: "#5FC2A0",
 };
 
-export const PALETTES = { light: PALETTE_LIGHT, dark: PALETTE_DARK };
-
-// Default exportado — usado por ecrãs ainda não convertidos (modo claro) e por
-// código a nível de módulo. Os ecrãs convertidos usam o hook useTheme().
-export const C = PALETTE_LIGHT;
+// (PALETTES/C — exports extintos; as constantes acima ficam locais, sem uso.)
+void PALETTE_LIGHT; void PALETTE_DARK;
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
@@ -116,22 +114,8 @@ export const WEIGHT = {
   bold: "700",
   heavy: "800",     // eyebrows/badges (rótulos densos em maiúsculas)
 };
-// Famílias Inter (1:1 com o mockup, iguais em iOS+Android). Carregadas no App.js.
-// Nos ports usa-se `fontFamily: FONT.<peso>` em vez de `fontWeight` — as fontes
-// estáticas não respondem ao fontWeight, a família é que carrega o peso.
-export const FONT = {
-  regular:  "Inter_400Regular",
-  medium:   "Inter_500Medium",
-  semibold: "Inter_600SemiBold",
-  bold:     "Inter_700Bold",
-  heavy:    "Inter_800ExtraBold",
-  // Fonte de DISPLAY (Sistema A "Instrumento", Space Grotesk) — SÓ números grandes + títulos
-  // de ecrã. A UI/corpo/rótulos ficam Inter. Carregada no App.js.
-  display:     "SpaceGrotesk_600SemiBold",
-  displayBold: "SpaceGrotesk_700Bold",
-};
-// LetterSpacing recomendado para títulos display (negativo = mais apertado/premium).
-export const TRACK_DISPLAY = -0.4;
+// (FONT/TRACK_DISPLAY — Inter + Space Grotesk — EXTINTOS 2026-07-10: o tema antigo
+// morreu e as famílias saíram do useFonts. A pele usa PELE_FONT abaixo.)
 
 // ─── Pele nova (2026) — branco·preto·amarelo, plana, hairline ────────────────
 // Adicionada AO LADO da paleta antiga (não a substitui): porta-se ecrã a ecrã, os

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CrewPact · "O teu ano" — cartão de partilha na pele</title>
+<title>CrewPact · "O meu ano" — poster todo paper, na pele (v10, faixas limpas)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#0a0a0c;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
-  .lead{max-width:860px;text-align:center;margin-bottom:6px}
+  .lead{max-width:900px;text-align:center;margin-bottom:6px}
   .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
   .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
   .row{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
@@ -17,119 +17,191 @@
   .cap{margin:0 2px 13px;text-align:center;max-width:360px}
   .cap .t{font-family:'Barlow Condensed';font-size:16px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
   .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
-  .notes{max-width:760px;margin-top:34px;font-size:11.5px;color:#8b929c;line-height:1.75;text-align:left}
+  .notes{max-width:800px;margin-top:34px;font-size:11.5px;color:#8b929c;line-height:1.75;text-align:left}
   .notes b{color:#e8e8ea}.notes i{color:#FFB800;font-style:normal}
 
-  /* ── O CARTÃO · cores FIXAS (vira imagem PNG, igual para todos) ── */
-  .card{position:relative;border-radius:24px;overflow:hidden;box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
-  .post{width:340px;height:425px}   /* 4:5 — o MESMO formato do cartão do voo */
+  /* ── O POSTER · cores FIXAS (vira imagem PNG, igual para todos) ──
+     v9: TODO PAPER BRANCO, como a app (decisão do founder: "não gosto do preto").
+     Sem a placa ink, o poster é literalmente um ecrã da casa em formato partilhável. */
+  .card{position:relative;border-radius:24px;overflow:hidden;background:#FFFFFF;
+        box-shadow:inset 0 0 0 1px rgba(20,20,20,.08),0 34px 80px -26px rgba(0,0,0,.8)}
+  .post{width:340px;height:425px}   /* 4:5 — feed (captura 1080×1350) */
+  .story{width:300px;height:534px}  /* 9:16 — stories (captura 1080×1920) */
 
-  /* hairline cozida no cartão: invisível em feed escuro, define a borda do PNG em chat claro */
-  .cream{background:#F4F1E8;color:#141414;box-shadow:inset 0 0 0 1px rgba(20,20,20,.08)}
-  /* halo quente no canto (a MESMA gramática do halo do Início — SVG radial no RN) */
-  .cream:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 4%,rgba(255,184,0,.14),transparent 55%);z-index:1}
+  /* A COLUNA AMARELA à direita (a margem do PeleSide) — banda + risca fina, full-height */
+  .band{position:absolute;right:26px;top:0;bottom:0;width:30px;background:#FFB800;z-index:2}
+  .bandthin{position:absolute;right:17px;top:0;bottom:0;width:4px;background:#FFB800;z-index:2}
+  /* o avião na coluna — INK (branco sobre amarelo não lia: ~1.6:1), a subir, terço inferior */
+  .bplane{position:absolute;right:32px;top:300px;z-index:3;font-size:19px;color:#141414;transform:rotate(-90deg)}
+  .story .bplane{top:388px}
+  /* O RÓTULO gravado no topo da banda: curto ("ANO DE VOO" — o EASYJET vive no eyebrow) */
+  .lbl{position:absolute;top:22px;right:34px;z-index:3;writing-mode:vertical-rl;display:flex;align-items:center;gap:8px;
+       font-weight:800;font-size:9.5px;letter-spacing:2.2px;color:#141414;text-transform:uppercase}
+  .lbl:before{content:"";width:3px;height:26px;background:#141414;border-radius:2px}
+  .story .lbl{top:64px}
 
-  /* FANTASMA = O ANO (a assinatura; no irmão é a origem do voo) */
-  .ghost{position:absolute;right:-8px;top:-30px;font-family:'Barlow Condensed';font-weight:800;font-size:172px;line-height:.84;letter-spacing:-8px;color:rgba(20,20,20,.05);pointer-events:none;z-index:1}
+  /* v10.5: o TÍTULO vive na BANDA ("O MEU ANO" gravado na coluna — mata o eco com o
+     selo do topo); o canto sup-esq fica SÓ com a identidade, uma linha quieta.
+     Moldura 22 nos três lados (a direita é o corredor da banda); secção 16 · subsecção 12. */
+  .pad{position:absolute;inset:0;padding:0 72px 22px 22px;display:flex;flex-direction:column;z-index:3}
+  .hd{padding-top:22px}
+  .t2{font-weight:800;font-size:9px;letter-spacing:1.5px;color:#77776F;text-transform:uppercase}
+  .story .hd{padding-top:64px}
 
-  .pad{position:absolute;inset:0;padding:22px;display:flex;flex-direction:column;z-index:2}
-  .top{display:flex;justify-content:space-between;align-items:center}
-  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px;color:#141414}
-  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  /* O FANTASMA COM FAIXA PRÓPRIA (v10, founder: "não gosto de coisas em cima do fantasma").
+     Num poster estático, sobreposição lê-se como desarrumação — cada elemento tem a sua
+     faixa. O fantasma vive SOZINHO entre o header e o herói, à direita, recuado da banda;
+     a faixa é flex:1 com overflow hidden (se faltar espaço, cropa com graça — nunca
+     sobrepõe). No RN: View flex:1 + overflow hidden — sobreposição impossível. */
+  .gz{flex:1;min-height:0;overflow:hidden;display:flex;align-items:flex-end;justify-content:flex-end}
+  /* v10.4: o fantasma cede corpo p/ comprar AR em cima (founder: "não está muito perto?"
+     — estava, ~15px). Assimetria intencional: costura 10 p/ o herói (é dele), ~25 p/ o
+     header (não é). */
+  .g{font-family:'Barlow Condensed';font-weight:800;font-size:80px;line-height:.84;letter-spacing:-3px;color:#E2E1DC;margin-bottom:10px}
+  .story .g{font-size:88px}
 
-  .hero{margin-top:auto}
-  .hk{font-weight:800;font-size:9px;letter-spacing:1.5px;color:#8a8574;text-transform:uppercase}
-  .hrow{display:flex;align-items:baseline;gap:8px;margin-top:2px;margin-left:-3px}
-  /* O NÚMERO: ink, com o SUBLINHADO amarelo RETO — a gramática dos totais do PDF 245
-     escalada (lá 3px sob Barlow 30 ≈ 10%; aqui ~10px sob 104). A rotação/pousa fica
-     para a voz manuscrita — os totais são retos. */
-  .num{position:relative;font-family:'Barlow Condensed';font-weight:900;font-size:104px;line-height:.9;letter-spacing:-3px;color:#141414}
-  .num:after{content:"";position:absolute;left:4px;right:2px;bottom:5px;height:10px;background:#FFB800;z-index:-1;opacity:.95}
-  .unit{font-family:'Barlow Condensed';font-weight:600;font-size:30px;color:#8a8574}
+  /* corpo editorial à esquerda (a faixa do fantasma faz o empurrão — .low sem mt:auto) */
+  .low{margin-top:0}
+  /* O HERÓI = a gramática da casa: kicker + número INK + SUBLINHADO AMARELO (totais).
+     REFINADO (founder: "precisa de ser daquele tamanho?" — não): o herói faz-se pelo
+     CONTRASTE, não pelos píxeis. 78px com ar à volta > 104px apertado. */
+  .hk{font-weight:800;font-size:9px;letter-spacing:1.5px;color:#77776F;text-transform:uppercase;margin-bottom:2px}
+  .word{position:relative;display:inline-block;font-family:'Barlow Condensed';font-weight:900;font-size:78px;line-height:.9;letter-spacing:-2px;color:#141414}
+  .word:after{content:"";position:absolute;left:3px;right:2px;bottom:4px;height:8px;background:#FFB800;z-index:-1;opacity:.95}
+  /* unidade FORA do sublinhado (o marcador do total marca os dígitos, não o "h") */
+  .hrow{display:flex;align-items:baseline;gap:7px}
+  .un{font-family:'Barlow Condensed';font-weight:600;font-size:22px;color:#77776F}
+  .story .word{font-size:84px}
+  /* a TRADUÇÃO humana é manuscrita (Caveat, pousa da casa) */
+  .trans{font-family:'Caveat',cursive;font-weight:600;font-size:20px;color:rgba(20,20,20,.72);margin-top:8px;transform:rotate(-1.5deg);transform-origin:left center}
 
-  .strip{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(20,20,20,.14)}
-  .cell .k{font-weight:800;font-size:7.5px;letter-spacing:.9px;color:#a29a86;text-transform:uppercase}
-  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:19px;margin-top:3px;color:#141414;font-variant-numeric:tabular-nums}
+  .strip{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px;margin-top:16px;padding-top:10px;border-top:1px solid rgba(20,20,20,.14)}
+  .cell .k{font-weight:800;font-size:7px;letter-spacing:.7px;color:#77776F;text-transform:uppercase;white-space:nowrap}
+  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:22px;margin-top:2px;color:#141414}
+  .story .cell .v{font-size:24px}
 
-  .dests{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
-  .chip{border:1px solid rgba(20,20,20,.16);border-radius:999px;padding:5px 10px;font-size:10px;font-weight:800;letter-spacing:.6px;color:#141414}
-  .chip b{color:#a29a86;font-weight:800}
+  .dest{margin-top:12px;padding-top:10px;border-top:1px solid rgba(20,20,20,.14)}
+  .dest .k{font-weight:800;font-size:7.5px;letter-spacing:.9px;color:#77776F;text-transform:uppercase}
+  .dest .line{font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.4px;color:#141414;margin-top:3px}
+  .dest .line b{font-weight:600;color:#77776F}
 
-  /* rodapé SEM segundo ponto amarelo — um cartão, uma marca (o ponto vive no wordmark) */
-  .foot{margin-top:14px;text-align:center;font-weight:800;font-size:9px;letter-spacing:2.5px;color:#a29a86}
+  /* a marca, quieta, no canto inf-esquerdo (diagonal com o rótulo da banda) */
+  .foot{margin-top:12px;display:flex;align-items:center;justify-content:flex-start;gap:7px}
+  .fdot{width:7px;height:7px;border-radius:2.5px;background:#FFB800}
+  .foot span{font-weight:800;font-size:8.5px;letter-spacing:2.5px;color:#77776F}
+
+  /* STORY: zonas seguras do IG */
+  .story .pad{padding-bottom:72px}
+  .szone{position:absolute;left:14px;right:14px;border-top:1px dashed rgba(20,20,20,.22);z-index:4;pointer-events:none}
+  .szone i{position:absolute;right:0;top:2px;font-style:normal;font-size:6.5px;letter-spacing:.8px;color:rgba(20,20,20,.38);font-weight:800}
 
   /* ── A FOLHA à volta (cromo da app — não sai na imagem) ── */
   .sheet{width:340px;border-radius:28px;background:#FFFFFF;border:1px solid #ECEAE4;padding:18px 16px 20px;display:flex;flex-direction:column}
-  .sh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .sh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   .sh-t{font-size:15px;font-weight:700;color:#141414}
   .sh-x{width:36px;height:36px;border-radius:999px;background:#F4F2ED;display:flex;align-items:center;justify-content:center;color:#141414;font-size:13px}
-  .sheet .card{box-shadow:0 18px 44px -18px rgba(20,20,20,.35)}
+  .sh-seg{display:flex;background:#F4F2ED;border-radius:999px;padding:3px;gap:2px;margin-bottom:8px}
+  .sh-seg span{flex:1;text-align:center;padding:7px 0;border-radius:999px;font-size:11.5px;font-weight:800;color:#77776F;cursor:pointer;transition:background .2s,color .2s}
+  .sh-seg .on{background:#141414;color:#fff}
+  .sh-dim{text-align:center;font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#B4B0A8;margin-bottom:12px;text-transform:uppercase;transition:opacity .18s ease}
+
+  /* o cartão dentro da folha: sombra suave (o poster branco precisa de se destacar do papel) */
+  .sheet .card{margin:0 auto;box-shadow:inset 0 0 0 1px rgba(20,20,20,.1),0 18px 44px -18px rgba(20,20,20,.35)}
+  /* COREOGRAFIA do morph: contentor lidera (420ms), conteúdo assenta (+40ms) — ease-out
+     cúbico da casa, sem bounce; a grelha cruza-fade; reduce-motion = nada anima. */
+  .sheet .card{transition:width .42s cubic-bezier(.215,.61,.355,1),height .42s cubic-bezier(.215,.61,.355,1)}
+  .sheet .card .g,.sheet .card .hd,.sheet .card .word,.sheet .card .pad,.sheet .card .cell .v,.sheet .card .bplane,.sheet .card .lbl{transition:all .36s cubic-bezier(.215,.61,.355,1) .04s}
+  .sheet .card .strip{transition:opacity .18s ease}
+  .sheet .card.reflow .strip{opacity:.3}
+  @media (prefers-reduced-motion: reduce){
+    .sheet .card,.sheet .card .g,.sheet .card .hd,.sheet .card .word,.sheet .card .pad,.sheet .card .cell .v,.sheet .card .bplane,.sheet .card .lbl,.sheet .card .strip{transition:none}
+  }
   .sheet .post{width:100%;height:385px}
+  .sheet .post .word{font-size:66px}
+  .sheet .post .g{font-size:56px}
+  .sheet .post .bplane{top:272px}
+  .sheet .story{width:276px;height:490px}
+  .sheet .story .word{font-size:62px}
+  .sheet .story .g{font-size:70px}
+  .sheet .story .hd{padding-top:56px}
+  .sheet .story .lbl{top:56px}
+  .sheet .story .bplane{top:352px}
+  .sheet .story .pad{padding-bottom:64px}
   .sh-hint{font-size:11px;color:#77776F;line-height:1.55;margin-top:13px;font-weight:500}
   .sh-btn{margin-top:12px;background:#141414;color:#fff;border-radius:14px;padding:14px 0;text-align:center;font-size:13.5px;font-weight:800;letter-spacing:.3px}
 </style>
 </head>
 <body>
   <div class="lead">
-    <h1>"O teu ano, num cartão" — a pele no poster</h1>
-    <p>O irmão do cartão do voo (<b>mesma família</b>, mesmo 4:5): fantasma = <b>o ano</b>, ponto amarelo + CrewPact, herói = as horas em Barlow com o <b>marcador amarelo</b> (amarelo nos totais — nunca é texto), tira de células, chips-passaporte dos destinos. <b>Cream fixo</b> — a imagem é igual para todos, não segue tema. O navy e o ponto vermelho morrem.</p>
+    <h1>"O meu ano" v10 — faixas limpas, herói pelo contraste</h1>
+    <p>Todo paper, e agora <b>organizado por faixas — zero sobreposições</b> (founder: "não gosto de coisas em cima do fantasma"): header da casa → <b>fantasma "2026" numa faixa SÓ dele</b> → herói → dados. E o número preto <b>desceu de corpo</b> (78px): o herói faz-se pelo <b>contraste</b>, não pelos píxeis — no Instagram o que trava o scroll é UMA coisa a mandar num cartão cheio de ar. Coluna amarela à direita com rótulo e avião ink; manuscrita; três tintas.</p>
   </div>
 
   <div class="row">
 
-    <!-- ① O CARTÃO (o que sai na imagem) -->
+    <!-- ① O POSTER (o que sai na imagem) -->
     <div class="item">
-      <div class="cap"><div class="t"><b>①</b> O cartão · post 4:5 · cream fixo</div><div class="d">O que a folha de partilha envia. Fantasma = 2026; o ano não se repete em texto.</div></div>
-      <div class="card post cream">
-        <div class="ghost">2026</div>
+      <div class="cap"><div class="t"><b>①</b> O poster · post 4:5 · paper · faixas</div><div class="d">Header → fantasma na faixa própria → herói refinado (kicker + 78px + amarelo) → dados. Nada se sobrepõe a nada.</div></div>
+      <div class="card post">
+        <div class="bandthin"></div>
+        <div class="band"></div>
+        <div class="bplane">✈</div>
+        <div class="lbl">O MEU ANO</div>
         <div class="pad">
-          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
-          <div class="hero">
-            <div class="hk">Horas de voo · easyJet</div>
-            <div class="hrow"><div class="num">684,5</div><div class="unit">h</div></div>
+          <div class="hd">
+            <div class="t2">easyJet · Tripulante de cabine</div>
+          </div>
+          <div class="gz"><div class="g">2026</div></div>
+          <div class="low">
+            <div class="hk">Horas de voo</div>
+            <div class="hrow"><span class="word">684,5</span><span class="un">h</span></div>
+            <div class="trans">≈ 28 dias inteiros no ar</div>
             <div class="strip">
-              <div class="cell"><div class="k">Setores</div><div class="v">412</div></div>
               <div class="cell"><div class="k">Voos</div><div class="v">168</div></div>
               <div class="cell"><div class="k">Pernoitas</div><div class="v">37</div></div>
               <div class="cell"><div class="k">Dias de escala</div><div class="v">186</div></div>
             </div>
-            <div class="dests">
-              <span class="chip">FNC <b>×31</b></span>
-              <span class="chip">OPO <b>×26</b></span>
-              <span class="chip">GVA <b>×19</b></span>
-              <span class="chip">MAD <b>×14</b></span>
+            <div class="dest">
+              <div class="k">Destinos mais voados</div>
+              <div class="line">FNC <b>×31</b> · OPO <b>×26</b> · GVA <b>×19</b> · MAD <b>×14</b></div>
             </div>
-            <div class="foot">CREWPACT.APP</div>
+            <div class="foot"><span class="fdot"></span><span>CREWPACT.APP</span></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ② A FOLHA (cromo pele à volta — como o irmão do voo) -->
+    <!-- ② A FOLHA (cromo pele — o segmento morfa o cartão) -->
     <div class="item">
-      <div class="cap"><div class="t"><b>②</b> A folha · cromo pele</div><div class="d">Papel, título, o cartão, a nota de privacidade e o Partilhar ink — igual à folha do voo.</div></div>
+      <div class="cap"><div class="t"><b>②</b> A folha · cromo pele · <b>ANIMADO</b></div><div class="d">Toca em <b>Post·Story</b> — o poster morfa entre os formatos (demo 2 ciclos e descansa). O rótulo diz o tamanho exato do PNG que sai.</div></div>
       <div class="sheet">
-        <div class="sh-top"><div class="sh-t">O teu ano, num cartão</div><div class="sh-x">✕</div></div>
-        <div class="card post cream">
-          <div class="ghost" style="font-size:158px">2026</div>
+        <div class="sh-top"><div class="sh-t">O teu ano, num poster</div><div class="sh-x">✕</div></div>
+        <div class="sh-seg"><span class="on" id="segPost">Post</span><span id="segStory">Story</span></div>
+        <div class="sh-dim" id="shdim">Feed · 1080 × 1350</div>
+        <div class="card post" id="morphcard">
+            <div class="bandthin"></div>
+          <div class="band"></div>
+          <div class="bplane">✈</div>
+          <div class="lbl">O MEU ANO</div>
           <div class="pad">
-            <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
-            <div class="hero">
-              <div class="hk">Horas de voo · easyJet</div>
-              <div class="hrow"><div class="num" style="font-size:92px">684,5</div><div class="unit">h</div></div>
+            <div class="hd">
+              <div class="t2">easyJet · Tripulante de cabine</div>
+              </div>
+            <div class="gz"><div class="g">2026</div></div>
+            <div class="low">
+              <div class="hk">Horas de voo</div>
+              <div class="hrow"><span class="word">684,5</span><span class="un">h</span></div>
+              <div class="trans">≈ 28 dias inteiros no ar</div>
               <div class="strip">
-                <div class="cell"><div class="k">Setores</div><div class="v">412</div></div>
                 <div class="cell"><div class="k">Voos</div><div class="v">168</div></div>
                 <div class="cell"><div class="k">Pernoitas</div><div class="v">37</div></div>
                 <div class="cell"><div class="k">Dias de escala</div><div class="v">186</div></div>
               </div>
-              <div class="dests">
-                <span class="chip">FNC <b>×31</b></span>
-                <span class="chip">OPO <b>×26</b></span>
-                <span class="chip">GVA <b>×19</b></span>
-                <span class="chip">MAD <b>×14</b></span>
+              <div class="dest">
+                <div class="k">Destinos mais voados</div>
+                <div class="line">FNC <b>×31</b> · OPO <b>×26</b> · GVA <b>×19</b> · MAD <b>×14</b></div>
               </div>
-              <div class="foot">CREWPACT.APP</div>
+              <div class="foot"><span class="fdot"></span><span>CREWPACT.APP</span></div>
             </div>
           </div>
         </div>
@@ -138,26 +210,113 @@
       </div>
     </div>
 
+    <!-- ③ STORY 9:16 — o formato Wrapped -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>③</b> Story · 9:16 · o formato Wrapped</div><div class="d">Tracejado = zona coberta pela UI do Instagram. Header e rótulo descem; o rodapé sobe. A coluna atravessa tudo — é estrutura.</div></div>
+      <div class="card story">
+        <div class="bandthin"></div>
+        <div class="band"></div>
+        <div class="bplane">✈</div>
+        <div class="lbl">O MEU ANO</div>
+        <div class="szone" style="top:52px"><i>UI DO IG</i></div>
+        <div class="szone" style="top:468px"><i>UI DO IG</i></div>
+        <div class="pad">
+          <div class="hd">
+            <div class="t2">easyJet · Tripulante de cabine</div>
+          </div>
+          <div class="gz"><div class="g">2026</div></div>
+          <div class="low">
+            <div class="hk">Horas de voo</div>
+            <div class="hrow"><span class="word">684,5</span><span class="un">h</span></div>
+            <div class="trans">≈ 28 dias inteiros no ar</div>
+            <div class="strip">
+              <div class="cell"><div class="k">Voos</div><div class="v">168</div></div>
+              <div class="cell"><div class="k">Pernoitas</div><div class="v">37</div></div>
+              <div class="cell"><div class="k">Dias de escala</div><div class="v">186</div></div>
+            </div>
+            <div class="dest">
+              <div class="k">Destinos mais voados</div>
+              <div class="line">FNC <b>×31</b> · OPO <b>×26</b> · GVA <b>×19</b> · MAD <b>×14</b></div>
+            </div>
+            <div class="foot"><span class="fdot"></span><span>CREWPACT.APP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="notes">
-    <b>Decisões (aprovadas na análise):</b><br>
-    · <b>Cream #F4F1E8 fixo</b> — "o teu ano" é poster de orgulho à luz do dia; distingue-se do irmão noturno; a imagem não segue tema (igual para todos).<br>
-    · <b>Fantasma = o ano</b> (displayHeavy esbatido, canto sup-dir) — como Escala 07↔Julho: a textura dá o contexto, o ano não se repete em texto. 4 dígitos SEMPRE → tamanho FIXO no RN (zero adjustsFontSizeToFit — lição do Início).<br>
-    · <b>Número ink + <i>sublinhado amarelo RETO</i></b> — a gramática dos totais do PDF 245 escalada (3px sob 30 ≈ 10% → ~10px sob 104). A rotação/pousa pertence à voz manuscrita; totais são retos. No RN: View amarela absoluta atrás dos dígitos.<br>
-    · <b>Tira de células</b> = a gramática do cartão do voo (kickers Hanken 800 minúsculos + valores Barlow, hairline por cima). 4 células: Setores · Voos · Pernoitas · Dias de escala.<br>
-    · <b>Chips-passaporte</b> dos destinos (top 4, hairline sobre o cream) — o "×N" em tom quente.<br>
-    · <b>Halo quente</b> no canto = a gramática do halo do Início (SVG radial no RN); se pesar na captura, cai sem dor.<br>
-    · <b>Cromo fora do cartão</b> (título, hint, Partilhar) = pele direto, copiado da folha do voo.<br>
-    <b>Revisão sénior (2.ª ronda — erros meus corrigidos):</b><br>
-    · Kicker "ANO DE VOO" do topo-dir MORTO — fazia eco com "HORAS DE VOO" do herói e pisava o fantasma. Uma voz por canto; o topo é só a marca.<br>
-    · Segundo ponto amarelo do rodapé MORTO — um cartão, uma marca; rodapé = texto simples.<br>
-    · Números plausíveis: Voos 168 ≤ Dias de escala 186 (mais voos que dias era impossível); 412 setores ≈ 2,45 pernas/dia easyJet.<br>
-    · <b>Hairline cozida no cartão</b> (inset ink .08) — invisível em feed escuro, define a borda do PNG em chat claro. ⚠ O cartão do VOO (cream) tem o mesmo buraco — dar-lhe o mesmo remédio quando se lhe tocar.<br>
-    · Sem tabular-nums no herói (poster estático, proporcional assenta melhor); ✕ da folha a 36 (cânone).<br>
-    · ⚠ Alerta colateral: o FlightShareCard usa adjustsFontSizeToFit com a meteo a chegar async — a classe do bug do fantasma invisível (iOS). Observar no device.<br>
-    <b>Não muda:</b> números do yearStats (golden), view-shot→partilha, privacidade ("a imagem nasce no telemóvel"), guarda isYear &amp;&amp; flightMin&gt;0 nas Estatísticas.<br>
+    <b>v9 — TODO PAPER (founder: "o fundo deve ser todo branco, como a nossa app; não gosto do preto") + o meu UI/UX:</b><br>
+    · <b>A placa ink morreu</b> — e com ela o poster deixa de ser "referência adaptada": é um ECRÃ DA APP em formato partilhável, a afirmação de identidade mais forte possível. Paper #FFFFFF, hairline cozida na borda (essencial em chats claros).<br>
+    · <b>Halo REMOVIDO</b> (founder: "não quero aquela parte amarela tipo sol") — paper puro; o amarelo vive só onde tem significado: a coluna, o sublinhado do total, o ponto da marca.<br>
+    · <b>Re-inking à gramática de claro</b>: herói volta a INK + <i>sublinhado amarelo</i> (a lei dos totais do 245 — o amarelo-texto do lockup escuro NÃO lê sobre branco); "/ horas de voo /" em grey da casa (o eco do dicionário fica na estrutura, não na cor); manuscrita a tinta (Caveat, -1.5°); <b>avião da banda passou a INK</b> (branco sobre amarelo ≈ 1.6:1).<br>
+    · <b>Mantém-se</b>: header da app adaptado (eyebrow identidade crew-aware · palavra "O MEU ano" · régua ink · fantasma #E2E1DC atrás, recuado da banda) · coluna amarela à DIREITA (a margem do PeleSide) com o rótulo curto "ANO DE VOO" gravado · 3 células (crit: setores = jargão, fora) · destinos tipográficos · marca quieta com o ponto amarelo, agora no canto inf-ESQUERDO (diagonal com o rótulo da banda).<br>
+    · Tokens à letra: ghost #E2E1DC · grey #77776F · onInk fora (não há placa escura) · ink #141414 · yellow #FFB800.<br>
+    <b>v10 — faixas limpas + herói refinado (founder: "não gosto de coisas em cima do fantasma" · "o número precisa de ser daquele tamanho?"):</b><br>
+    · <b>Zero sobreposições</b> — num poster estático, sobrepor lê-se como desarrumação (no ecrã vivo da app funciona; no artefacto imóvel não). Organização por FAIXAS verticais: header → <b>fantasma sozinho na faixa dele</b> (direita, recuado da banda) → herói → dados. A régua já não cruza o fantasma; a palavra já não o toca.<br>
+    · No RN a faixa do fantasma é uma <b>View flex:1 com overflow hidden</b> — a sobreposição fica IMPOSSÍVEL por construção; se faltar espaço, o fantasma cropa com graça (comportamento de fantasma), nunca pisa vizinhos.<br>
+    · <b>O herói desceu de corpo (104→78)</b>: o herói faz-se pelo CONTRASTE, não pelos píxeis — kicker "HORAS DE VOO" por cima (a gramática dos heróis da app), sublinhado amarelo afinado (8px), e AR à volta. A escala conta a história: palavra 40 → fantasma pálido 76 → número ink 78 → resto minúsculo. UMA coisa manda — é isso que trava o scroll no IG.<br>
+    · A linha-dicionário "/ horas de voo /" REFORMOU-SE (dizia o mesmo que o kicker+unidade, gastava uma linha) — o último traço estrutural da referência recua; a gramática da app vence por inteiro. A manuscrita fica (é nossa).<br>
+    <b>v10.1 — o topo assente (founder: "mete melhor o fantasma; a linha preta por baixo do 'O meu ano', tira"):</b><br>
+    · <b>A régua saiu do header</b> — a palavra "O meu ano" sobe um ponto (44) e carrega o header sozinha, à app-sem-cerimónia.<br>
+    · <b>O fantasma cresceu e ANCOROU ao fundo da faixa</b> — deixou de flutuar no meio do vazio: pousa visualmente sobre o herói, como textura encostada ao conteúdo. Continua right-aligned, recuado da banda, sem tocar em nada.<br>
+    <b>v10.2 — o título despromovido (founder: "'O meu ano' não gosto; mais pequeno, muda a posição — o que a Apple faria?"):</b><br>
+    · A Apple despromove o título: "O meu ano" era a mais FRACA de três coisas grandes (palavra 44 · fantasma · herói) — passou a <b>selo-título em versaletes</b> no canto sup-esq ("O MEU ANO" ink 11 + "EASYJET · TRIPULANTE DE CABINE" grey 8.5), o lockup título+subtítulo clássico deles. A história é o número; o título é rótulo.<br>
+    · Com o topo quase vazio, o fantasma respira ainda mais (92 post · 102 story). Hierarquia final: <b>UM grande (684,5 h) + UMA textura (2026) + tudo o resto pequeno.</b><br>
+    <b>v10.3 — auditoria de espaçamentos (founder: "os espaçamentos estão bons?"):</b> não estavam — valores avulsos (15/11/12, pt 12/10) são ruído. Normalizado a UMA escala:<br>
+    · <b>Moldura 22</b> nos três lados (topo/esq/fundo; a direita é o corredor da banda — regra própria; a story mantém 72 no fundo: a zona segura do IG manda acima da grelha).<br>
+    · <b>Secção 16</b> (herói→tira) · <b>subsecção 12</b> (tira→destinos, destinos→marca) · <b>pt de dados 10</b> (igual nas duas hairlines).<br>
+    · Costura fantasma→herói <b>10</b> (4 era acidente, 10 é decisão) · sublinhado→manuscrita <b>8</b> (o amarelo precisava de fuga) · exceção ÓTICA deliberada: kicker→número 2 (kickers abraçam o seu número).<br>
+    <b>v10.4 — o respiro do fantasma (founder: "subtítulo↔2026 não está muito perto?"):</b> estava (~15px). O fantasma cedeu corpo (92→80 post · 102→88 story · sheet 56/70) para comprar ~25px de ar em cima. <b>Assimetria intencional</b>: encostado ao herói (costura 10 — é dele), afastado do header (~25 — não é). Margens não resolviam: o espaço total é fixo, só renomeiam o ar; quem paga é o corpo do fantasma.<br>
+    <b>v10.5 — a lupa final ("é preciso algo mais?"):</b> dois achados, aplicados:<br>
+    · <b>O último eco morto</b>: "O MEU ANO" (selo) + "ANO DE VOO" (banda) diziam "ano" 2× em texto → <b>o título migrou para a banda</b> ("O MEU ANO" gravado na coluna — o lugar que o founder sempre quis para o rótulo) e o canto sup-esq ficou SÓ com a identidade ("EASYJET · TRIPULANTE DE CABINE", 9px grey). Menos mobília, zero redundância, mais ar no topo.<br>
+    · <b>O sublinhado marca só os DÍGITOS</b> — a unidade "h" saiu de dentro do marcador (o amarelo dos totais marca o número, não a unidade); baseline-row com gap 7.<br>
+    · Verificado e OK: contrastes dos tokens (grey 9px passa AA por margem curta) · cantos redondos não cortam a risca fina (~1px nos extremos, invisível) · zonas seguras · escala v10.3/10.4 consistente.<br>
+    <b>Histórico de decisões do founder (não repetir o recusado):</b> fantasma-parede · header com marca · corpo centrado · código-de-barras · perfuração · estrutura LAX (v5) · placa ink em baixo (v7-v8) · cream (→ paper). Aprovado ao longo das rondas: rótulo lateral/na banda · fantasma contido · manuscrita · sublinhado amarelo · coluna à direita · header adaptado · fundo branco.<br>
+    <b>Animação: só o morph Post⇄Story</b> (contentor 420ms + conteúdo +40ms, grelha cruza-fade, demo 2 ciclos e descansa, reduce-motion = nada). No RN: LayoutAnimation.easeInEaseOut + useReduceMotion.<br>
+    <b>Redes:</b> Post 4:5 → captura FIXA 1080×1350 · Story 9:16 → 1080×1920 (zonas seguras do IG; a coluna pode viver sob a UI — é estrutura); partilha pela folha do SISTEMA; o rótulo sob o segmento diz sempre o tamanho que sai.<br>
+    <b>No RN:</b> coluna = 2 Views amarelas + Icon 'plane' (ink) rodado; Caveat = PELE_FONT.hand; tamanhos FIXOS (sem adjustsFontSizeToFit — lição do Início); célula "dias" 1.25fr; captura nunca depende da animação.<br>
+    <b>Não muda:</b> números do yearStats (golden) + identidade crew-aware do perfil (piloto/cabine no eyebrow), view-shot→partilha, privacidade ("a imagem nasce no telemóvel"; o papel, nunca o nome), guarda isYear &amp;&amp; flightMin&gt;0.<br>
+    <b>Alertas colaterais (registados):</b> o cartão do VOO cream merece a mesma hairline de borda; e usa adjustsFontSizeToFit com meteo async (observar no device).<br>
     <b>Prémio:</b> com este port o useTheme fica com zero consumidores → Inter + Space Grotesk podem sair do useFonts (arranque/tamanho).
   </div>
+
+<script>
+  // Quadro ②: morph Post ⇄ Story (demo 2 ciclos e descansa; o toque toma o controlo;
+  // reduce-motion = sem demo, sem transição).
+  (function(){
+    var card = document.getElementById('morphcard');
+    var pSeg = document.getElementById('segPost');
+    var sSeg = document.getElementById('segStory');
+    var dim  = document.getElementById('shdim');
+    var story = false, manual = false;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function setFmt(s){
+      if (s === story) return;
+      story = s;
+      card.classList.add('reflow');
+      card.classList.toggle('story', s);
+      card.classList.toggle('post', !s);
+      pSeg.classList.toggle('on', !s);
+      sSeg.classList.toggle('on', s);
+      dim.style.opacity = 0;
+      setTimeout(function(){
+        dim.textContent = s ? 'Stories · 1080 × 1920' : 'Feed · 1080 × 1350';
+        dim.style.opacity = 1;
+      }, 180);
+      setTimeout(function(){ card.classList.remove('reflow'); }, 300);
+    }
+    pSeg.addEventListener('click', function(){ manual = true; setFmt(false); });
+    sSeg.addEventListener('click', function(){ manual = true; setFmt(true); });
+    if (!reduce) {
+      var shots = 0;
+      var loop = setInterval(function(){
+        if (manual || shots >= 4) { clearInterval(loop); if (!manual && story) setFmt(false); return; }
+        shots++; setFmt(!story);
+      }, 3000);
+    }
+  })();
+</script>
 </body>
 </html>

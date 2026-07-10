@@ -1,5 +1,4 @@
-import React, { useContext } from 'react';
-import { PALETTES } from './constants';
+import React from 'react';
 
 // Contexto + helpers partilhados, num módulo-FOLHA (não importa o App.js). Os
 // ecrãs/componentes importam daqui (não de '../App'), o que QUEBRA o ciclo de
@@ -22,5 +21,4 @@ export const toZulu = (dateISO, hhmm) => {
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 };
 
-// Paleta ativa (claro/escuro). Ecrãs fazem `const C = useTheme()`.
-export const useTheme = () => useContext(AppContext)?.palette || PALETTES.light;
+// (useTheme EXTINTO 2026-07-10 — o tema antigo morreu; a pele usa tokens PELE/PELE_NIGHT.)

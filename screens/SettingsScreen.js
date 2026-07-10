@@ -76,7 +76,7 @@ function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot,
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, theme, setTheme, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -576,7 +576,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.seclbl}>{l('Segurança & conta', 'Security & account')}</Text>
           <View style={s.grid}>
             <Tile icon="shield-checkmark-outline" label={l('Segurança', 'Security')} value={lockEnabled ? l('bloqueio ligado', 'lock on') : l('bloqueio desligado', 'lock off')} valueColor={lockEnabled ? PELE.ok : null} onPress={() => setSecModal(true)} s={s} />
-            <Tile icon="contrast-outline" label={l('Idioma & tema', 'Language & theme')} value={theme === 'dark' ? l('escuro', 'dark') : l('claro', 'light')} valueStrong onPress={() => setPrefModal(true)} s={s} />
+            <Tile icon="language-outline" label={l('Idioma & avisos', 'Language & alerts')} value={lang === 'en' ? 'EN' : 'PT'} valueStrong onPress={() => setPrefModal(true)} s={s} />
             <Tile icon="mail-outline" label={l('Mudar e-mail', 'Change email')} value={user?.email} onPress={openEmailChange} s={s} />
             <Tile icon="download-outline" label={l('Exportar dados', 'Export data')} value="RGPD" onPress={exportData} s={s} />
           </View>
@@ -869,14 +869,13 @@ export default function SettingsScreen({ navigation }) {
       ) : null}
 
 
-      {/* Idioma & tema — preferências */}
-      <CenterDialog visible={prefModal} onClose={() => setPrefModal(false)} title={l('Idioma & tema', 'Language & theme')} closeLabel={t('common.close', lang)}>
+      {/* Idioma & avisos — preferências (o toggle de TEMA morreu 2026-07-10: a pele é
+          paper + noturno POR-ESTADO da LI; um tema global não muda nada) */}
+      <CenterDialog visible={prefModal} onClose={() => setPrefModal(false)} title={l('Idioma & avisos', 'Language & alerts')} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 16 }}>
           <View style={s.gbox}>
             <Row icon="language-outline" label={t('profile.language', lang)} s={s}
               right={<Seg options={[{ id: 'pt', label: 'PT' }, { id: 'en', label: 'EN' }]} value={lang} setValue={setLang} />} />
-            <Row icon="contrast-outline" label={t('profile.theme', lang)} s={s}
-              right={<Seg options={[{ id: 'light', label: t('profile.themeLight', lang) }, { id: 'dark', label: t('profile.themeDark', lang) }]} value={theme} setValue={setTheme} />} />
             <Row icon="notifications-outline" label={l('Lembretes', 'Reminders')} sub={l('Validades, próximo serviço e alterações', 'Documents, next duty and roster changes')} last s={s}
               right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={remindersOn ? 'on' : 'off'} setValue={(v) => toggleReminders(v === 'on')} />} />
           </View>

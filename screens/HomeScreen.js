@@ -1171,7 +1171,7 @@ export default function HomeScreen({ navigation }) {
   // construtor serve o voo de HOJE (pré/em voo) e o já ATERRADO da pernoita — a página
   // da família mostra "Aterrou ✓" o dia todo (memória na Edge), partilhar depois é válido.
   const [sendCard, setSendCard] = useState(null);
-  const openShareLeg = (lg, date) => {
+  const openShareLeg = (lg, date, landed = false) => {
     if (!lg || !date) return;
     select();
     const dep = String(lg.dep || '').toUpperCase(), arr = String(lg.arr || '').toUpperCase();
@@ -1179,7 +1179,12 @@ export default function HomeScreen({ navigation }) {
     const toMin2 = (z) => { const m = /^(\d{1,2}):(\d{2})$/.exec(z || ''); return m ? (+m[1] * 60 + +m[2]) : null; };
     const om = toMin2(legZulu(date, lg, 'off')), nm = toMin2(legZulu(date, lg, 'on'));
     const blockMin = (om != null && nm != null) ? ((nm - om + 1440) % 1440) : null;
-    setSendCard({ dep, arr, depTime: lg.off || '', arrTime: lg.on || '', flightNo: fno, date, sectors: 1,
+    // Pílula de estado no cartão — SÓ do que o Início sabe de certeza: pernoita/fechado =
+    // aterrou; antes da partida (hora de parede) = "hoje às"; senão = no ar (~ planeado).
+    const nowM = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
+    const offM = toMin2(lg.off);
+    const status = landed ? { kind: 'landed' } : (offM != null && nowM < offM) ? { kind: 'today' } : { kind: 'air' };
+    setSendCard({ dep, arr, depTime: lg.off || '', arrTime: lg.on || '', flightNo: fno, date, sectors: 1, status,
       dateLabel: new Date(`${date}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
       duration: blockMin ? `${Math.floor(blockMin / 60)}H${String(blockMin % 60).padStart(2, '0')}` : '',
       legs: [{ flight: fno, dep, arr }] });
@@ -1191,7 +1196,7 @@ export default function HomeScreen({ navigation }) {
   };
   // Pernoita: partilha o voo de HOJE que aterrou fora (a última perna do dia fechado).
   const closeLegs = (todayEnded && Array.isArray(todayEnded.legs)) ? todayEnded.legs.filter((lg) => lg && (lg.flightNo || lg.flight)) : [];
-  const openShareClose = () => openShareLeg(closeLegs.length ? closeLegs[closeLegs.length - 1] : null, todayISO);
+  const openShareClose = () => openShareLeg(closeLegs.length ? closeLegs[closeLegs.length - 1] : null, todayISO, true);
   const shareable = isToday && !isNonFlight && !(flight && flight.demo) && (sectorLegs.some((lg) => lg && (lg.flightNo || lg.flight)) || !!flightNo);
   const shareableClose = homeState === 'pernoita' && closeLegs.length > 0;
   const acts = homeState === 'setup' ? [
@@ -1570,7 +1575,8 @@ export default function HomeScreen({ navigation }) {
         depTime={sendCard ? sendCard.depTime : undefined} arrTime={sendCard ? sendCard.arrTime : undefined}
         flightNo={sendCard ? sendCard.flightNo : undefined} dateLabel={sendCard ? sendCard.dateLabel : undefined}
         sectors={sendCard ? sendCard.sectors : undefined} duration={sendCard ? sendCard.duration : undefined}
-        date={sendCard ? sendCard.date : undefined} legs={sendCard ? sendCard.legs : undefined} />
+        date={sendCard ? sendCard.date : undefined} legs={sendCard ? sendCard.legs : undefined}
+        status={sendCard ? sendCard.status : undefined} />
 
       {/* Dica do ＋ (1.ª visita pós-folha) — flutua acima da tab bar, seta ao ＋; a página fica viva. */}
       <Tip visible={plusTip} arrow="down" lang={lang} style={{ bottom: 10 }}

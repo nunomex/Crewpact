@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, Appearance, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, Alert } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
 // ampliação a 1.4× — chega para melhorar a leitura sem partir os layouts de
@@ -17,16 +17,16 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from './data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
 import NetInfo from '@react-native-community/netinfo';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
-import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
-// Pele nova (2026): Barlow Condensed (display/números) + Hanken Grotesk (corpo). Ver PELE_FONT.
+import { useFonts } from 'expo-font';
+// Pele nova (2026): Barlow Condensed (display/números) + Hanken Grotesk (corpo) + Caveat (voz).
+// Inter + Space Grotesk EXTINTOS (2026-07-10, tema antigo morto) — menos arranque/memória.
 import { BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold } from '@expo-google-fonts/barlow-condensed';
 import { HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk';
 import { Caveat_600SemiBold } from '@expo-google-fonts/caveat';   // a VOZ manuscrita (o bilhete pessoal do Início — escolha final do user)
 import { getLocales } from 'expo-localization';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { C, PALETTES, FONT, TYPE } from './data/constants';
-import { AppContext, isoDay, useTheme } from './data/appContext';
+import { TYPE, PELE, PELE_FONT } from './data/constants';
+import { AppContext, isoDay } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
 import { mapUser } from './data/auth';
@@ -96,10 +96,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// AppContext / isoDay / useTheme vivem em data/appContext (módulo-folha) para
-// QUEBRAR o ciclo de require App ↔ screens (que enchia os logs de WARN). São
-// importados acima (uso interno) e reexportados aqui para compatibilidade.
-export { AppContext, isoDay, useTheme };
+// AppContext / isoDay vivem em data/appContext (módulo-folha) para QUEBRAR o
+// ciclo de require App ↔ screens (que enchia os logs de WARN). São importados
+// acima (uso interno) e reexportados aqui para compatibilidade.
+export { AppContext, isoDay };
 
 // Bloqueio biometria/PIN (opt-in): re-tranca a app ao voltar de segundo plano
 // se já passaram 5 min — para reaberturas rápidas (ver a escala) não chatear.
@@ -215,8 +215,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   // Fonte Inter (1:1 com o mockup, igual em iOS+Android). Carrega os pesos que o
-  // design usa; aplica-se por ecrã via FONT (fontFamily) à medida que se porta.
-  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold,
+  // design usa; aplica-se por ecrã via PELE_FONT (fontFamily).
+  const [fontsLoaded, fontError] = useFonts({
     BarlowCondensed_500Medium, BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold,
     HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold, HankenGrotesk_800ExtraBold,
     Caveat_600SemiBold });
@@ -258,9 +258,8 @@ export default function App() {
   // (signupMode MORREU 2026-07-09: o criar-conta é uma vista do LoginScreen — conta primeiro.)
 
   const [lang, setLang]                 = useState(() => { const c = getLocales?.()[0]?.languageCode?.toLowerCase(); return c === 'pt' ? 'pt' : 'en'; });   // device: PT→PT, resto→EN
-  // Tema: por defeito segue o SISTEMA (como o idioma); uma escolha guardada no Perfil
-  // (cp_theme) prevalece — antes arrancava sempre em claro e ignorava o modo escuro do SO.
-  const [theme, setTheme]               = useState(() => (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light'));
+  // (theme/setTheme EXTINTOS 2026-07-10 — a pele é paper + noturno POR-ESTADO da LI;
+  //  o toggle do Perfil saiu; cp_theme deixa de se ler/gravar.)
   const [readNotifIds, setReadNotifIds] = useState(new Set());
   const [dayLog, setDayLog]             = useState({}); // cálculos FTL por dia: { 'YYYY-MM-DD': { psv, rest } }
   const [loadedUserId, setLoadedUserId] = useState(null); // uid cujo perfil já foi resolvido (gate de loading)
@@ -621,19 +620,6 @@ export default function App() {
     })();
   }, []);
   useEffect(() => { if (langHydrated.current) AsyncStorage.setItem('cp_lang', lang).catch(() => {}); }, [lang]);
-
-  // Tema (claro/escuro) — preferência global do dispositivo, como o idioma.
-  const themeHydrated = useRef(false);
-  useEffect(() => {
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem('cp_theme');
-        if (saved === 'light' || saved === 'dark') setTheme(saved);
-      } catch { /* mantém o default 'light' */ }
-      themeHydrated.current = true;
-    })();
-  }, []);
-  useEffect(() => { if (themeHydrated.current) AsyncStorage.setItem('cp_theme', theme).catch(() => {}); }, [theme]);
 
   // Catálogo de companhias (global) — carrega já no ARRANQUE, também pré-login, para
   // o wizard de criação de conta poder mostrar as companhias antes de a conta existir.
@@ -1048,7 +1034,6 @@ export default function App() {
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,
-    theme, setTheme, palette: PALETTES[theme] || PALETTES.light,
     readNotifIds, setReadNotifIds,
     ftlSnap, updateFtlSnap,
     dayLog, updateDayLog, removeDayLog,
@@ -1067,8 +1052,8 @@ export default function App() {
   // ── Render flow: Splash → Login → Onboarding → Main ──
   const renderScreen = () => {
     if (authLoading) return (
-      <View style={{ flex: 1, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={palette.text} />
+      <View style={{ flex: 1, backgroundColor: PELE.paper, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={PELE.ink} />
       </View>
     );
     // O criar-conta vive DENTRO do LoginScreen desde 2026-07-09 (conta primeiro → código →
@@ -1088,8 +1073,8 @@ export default function App() {
     // Espera a resolução do perfil (profiles → cache → metadata) antes de decidir
     // entre onboarding e app — evita "flash" do onboarding a quem já tem perfil.
     if (loadedUserId !== user.id) return (
-      <View style={{ flex: 1, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={palette.text} />
+      <View style={{ flex: 1, backgroundColor: PELE.paper, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={PELE.ink} />
       </View>
     );
     if (!onboarded)  return <OnboardingScreen />;
@@ -1100,11 +1085,12 @@ export default function App() {
     return <RootNav />;
   };
 
-  const palette = PALETTES[theme] || PALETTES.light;
+  // Navegação sempre na pele (paper) — o tema antigo morreu (o noturno da LI é
+  // por-estado, não global; theme/setTheme extintos 2026-07-10).
   const navTheme = {
     ...DefaultTheme,
-    dark: theme === 'dark',
-    colors: { ...DefaultTheme.colors, background: palette.canvas, card: palette.canvas, text: palette.text, border: palette.line, primary: palette.ink },
+    dark: false,
+    colors: { ...DefaultTheme.colors, background: PELE.paper, card: PELE.paper, text: PELE.ink, border: PELE.line, primary: PELE.ink },
   };
 
   // Pronto = o renderScreen mostraria um ecrã REAL (não o spinner de carga). O
@@ -1121,7 +1107,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AppContext.Provider value={ctx}>
-        <StatusBar style={(!splashHidden || theme === 'dark') ? 'light' : 'dark'} />
+        <StatusBar style={!splashHidden ? 'light' : 'dark'} />
         <NavigationContainer theme={navTheme}>
           {renderScreen()}
         </NavigationContainer>
@@ -1135,11 +1121,11 @@ export default function App() {
         {/* Privacidade no multitarefas: tapa o conteúdo quando a app sai de 'active' (padrão banca).
             pointerEvents:none → nunca prende o utilizador; some assim que volta a 'active'. */}
         {obscured && user ? (
-          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: palette.canvas, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ width: 64, height: 64, borderRadius: 999, backgroundColor: palette.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-              <Ionicons name="lock-closed" size={26} color={palette.onDark} />
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: PELE.paper, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 64, height: 64, borderRadius: 999, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <Ionicons name="lock-closed" size={26} color={PELE.onInk} />
             </View>
-            <Text style={{ fontSize: TYPE.hero, fontFamily: FONT.bold, letterSpacing: -0.5, color: palette.text }}>CrewPact</Text>
+            <Text style={{ fontSize: TYPE.hero, fontFamily: PELE_FONT.display, letterSpacing: -0.5, color: PELE.ink }}>CrewPact</Text>
           </View>
         ) : null}
       </AppContext.Provider>

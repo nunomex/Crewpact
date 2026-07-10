@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · Sintonia da partilha — cartão da família + página do link (v2, sem banda)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0c;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:920px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:360px}
+  .cap .t{font-family:'Barlow Condensed';font-size:16px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+  .notes{max-width:820px;margin-top:34px;font-size:11.5px;color:#8b929c;line-height:1.75;text-align:left}
+  .notes b{color:#e8e8ea}.notes i{color:#FFB800;font-style:normal}
+
+  /* ── O CARTÃO — a composição ORIGINAL (aprovada no device) vestida com a pele.
+     SEM banda: a coluna amarela é EXCLUSIVA do poster do ano (artefacto público de
+     marca); o cartão de família é íntimo — a estrela é o voo, a marca sussurra. ── */
+  .card{position:relative;border-radius:24px;overflow:hidden;box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
+  .c45{width:340px;height:425px}
+  .pad{position:absolute;inset:0;padding:22px;display:flex;flex-direction:column;z-index:1}
+  .grow{flex:1}
+  /* FANTASMA = o DESTINO, gigante, a SANGRAR na borda (o drama do original — sem corredor) */
+  .cghost{position:absolute;right:-14px;top:-30px;font-family:'Barlow Condensed';font-weight:800;font-size:280px;line-height:.8;letter-spacing:-10px;z-index:0}
+  .bhead{display:flex;align-items:center;justify-content:space-between}
+  .brandc{display:flex;align-items:center;gap:8px}
+  .brandc b{font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .fdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+  .t2{font-weight:800;font-size:9px;letter-spacing:1.5px;text-transform:uppercase}
+  .pill{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .pill .pd{width:7px;height:7px;border-radius:99px;background:currentColor}
+  .city{font-family:'Barlow Condensed';font-weight:900;font-size:92px;line-height:.9;letter-spacing:-3px}
+  .rt{font-weight:800;font-size:10px;letter-spacing:2.6px;margin-top:10px}
+  .strip{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid}
+  .web .strip{margin-top:18px}
+  /* células CENTRADAS nos dois objetos (founder) — a tira lê bilhete de embarque igual
+     no cartão e na página */
+  .cell{text-align:center}
+  .cell .k{font-weight:800;font-size:7px;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap}
+  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:20px;margin-top:2px}
+
+  /* DIA = paper (a placa da casa; o cream morreu) */
+  .day{background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(20,20,20,.08),0 34px 80px -26px rgba(0,0,0,.8)}
+  .day .cghost{color:#E2E1DC}
+  .day .brandc b{color:#141414}
+  .day .t2{color:#77776F}
+  .day .pill.ok{background:rgba(17,138,85,.12);color:#0E7A4B}
+  .day .pill.air{background:rgba(255,184,0,.18);color:#9A6B1E}
+  .day .city{color:#141414}
+  .day .rt{color:#77776F}
+  .day .strip{border-top-color:rgba(20,20,20,.14)}
+  .day .cell .k{color:#77776F}.day .cell .v{color:#141414}
+
+  /* NOITE = o navy NOTURNO da app (PELE_NIGHT #0D131C; o teal morreu) */
+  .night{background:#0D131C}
+  .night .cghost{color:rgba(255,255,255,.055)}
+  .night .brandc b{color:#F4F2ED}
+  .night .t2{color:rgba(244,242,237,.55)}
+  .night .pill.ok{background:rgba(70,201,138,.16);color:#46C98A}
+  .night .pill.air{background:rgba(240,138,60,.16);color:#F08A3C}
+  .night .city{color:#F4F2ED}
+  .night .rt{color:rgba(244,242,237,.55)}
+  .night .strip{border-top-color:rgba(244,242,237,.14)}
+  .night .cell .k{color:rgba(244,242,237,.55)}.night .cell .v{color:#F4F2ED}
+
+  /* ── A PÁGINA DO LINK — O UX ENTREGUE FICA COMO ESTÁ (decisão do founder: "gosto de
+     como tava assim") — teal, anel, rota com o avião, stats do aeroporto, tudo intocado.
+     Mudanças: (1) a linha fria do rodapé vira MANUSCRITA · (2) meteo = ícones da casa. ── */
+  /* NOITE = o navy NOTURNO da app (#0D131C — decisão do founder: uma só noite em todo o
+     ecossistema: app · cartão · página; o teal morre). DIA = paper (mesma lógica p/ o cream). */
+  .web{width:300px;height:620px;border-radius:30px;background:#0D131C;position:relative;overflow:hidden;
+       box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
+  .ghostbig{position:absolute;right:-8px;top:-16px;font-family:'Barlow Condensed';font-weight:800;font-size:170px;line-height:.8;letter-spacing:-6px;color:rgba(255,255,255,.06);z-index:0}
+  .web .pad{padding:20px}
+  .whead{display:flex;align-items:center;justify-content:space-between}
+  .wbrand{display:flex;align-items:center;gap:7px}
+  .wbrand b{font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px;color:#fff}
+  .lpill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:rgba(255,184,0,.16);color:#FFB800;font-size:9px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase}
+  .lpill .p{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  .weyb{text-align:center;font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;font-weight:800;color:rgba(255,255,255,.62)}
+  /* o ANEL entregue: pista fina + progresso amarelo + countdown ao centro */
+  /* o anel é o herói — ganha AR à volta (afinação do founder: "afasta só mais um pouco") */
+  .ring{position:relative;width:204px;height:204px;margin:20px auto 0}
+  .ring svg{transform:rotate(-90deg)}
+  .rbg{fill:none;stroke:rgba(255,255,255,.16);stroke-width:8}
+  .rfg{fill:none;stroke:#FFB800;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 0 9px rgba(255,184,0,.5));animation:fill 2.4s cubic-bezier(.3,.8,.3,1) forwards}
+  @keyframes fill{from{stroke-dasharray:0 100}}
+  .rctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .rnum{font-family:'Barlow Condensed';font-weight:800;font-size:78px;line-height:.9;color:#fff;font-variant-numeric:tabular-nums}
+  .rnum .u{font-size:26px;color:rgba(255,255,255,.62)}
+  .rlab{font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.62);font-weight:800;margin-top:8px}
+  /* a CIDADE do destino (founder: "o nome de onde vai aterrar") — entre o anel e a rota:
+     o anel diz QUANDO, a cidade diz ONDE, a rota confirma em códigos. */
+  .rct{text-align:center;font-family:'Barlow Condensed';font-weight:700;font-size:21px;letter-spacing:-.3px;color:#fff;margin-top:20px}
+  /* a rota entregue: linha fina + avião AMARELO na posição real */
+  .prog{display:flex;align-items:center;gap:10px;margin-top:7px}
+  .pc{font-family:'Barlow Condensed';font-weight:700;font-size:15px;color:#fff;letter-spacing:.5px}
+  .track{position:relative;flex:1;height:18px}
+  .dots{position:absolute;left:0;right:0;top:50%;height:1.5px;transform:translateY(-50%);background:rgba(255,255,255,.22);border-radius:2px}
+  .done{position:absolute;left:0;top:50%;height:2.5px;transform:translateY(-50%);background:#FFB800;border-radius:2px}
+  .tplane{position:absolute;top:50%;transform:translate(-50%,-50%);line-height:0}
+  .tplane svg{display:block;transform:rotate(90deg);filter:drop-shadow(0 2px 5px rgba(0,0,0,.3))}
+  .st2 .k{color:rgba(255,255,255,.55)}.st2 .v{color:#fff}
+  /* células da página CENTRADAS (founder) — a tira lê como bilhete de embarque */
+  .web .cell{text-align:center}
+  /* stats do aeroporto — CONDICIONAL (decisão do founder): só aparece SEM ETA ao vivo
+     (gere a expectativa no vazio); com ETA real esconde-se (contexto geral com resposta
+     específica = ansiedade grátis p/ a família). O quadro ③ tem ETA → sem a linha. */
+  .wstat{margin-top:12px;font-size:11px;font-weight:700;color:#FFB800;line-height:1.5}
+  /* (trust "Link de um tripulante · expira sozinho" REMOVIDA — decisão do founder:
+     "expira sozinho" só interessa quando expira, e o estado "Link expirado" já o diz.) */
+  /* a manuscrita vive JUNTO DO VIVO (decisão do founder) — comenta o anel+rota que
+     atualizam sozinhos; o fundo fica para a informação formal (trust). */
+  .auto{text-align:center;font-family:'Caveat',cursive;font-weight:600;font-size:21px;color:rgba(255,255,255,.7);transform:rotate(-1.2deg);margin-top:15px}
+  /* METEO = os ícones da CASA (os do Início) — os emoji morrem no cartão e na página */
+  .wx{display:inline-block;vertical-align:-2.5px;margin-left:4px;line-height:0}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>Sintonia v2 — a língua, não a mobília</h1>
+    <p>Veredicto sincero pedido pelo founder, aplicado: <b>a coluna amarela é EXCLUSIVA do poster do ano</b> (artefacto público de marca). O cartão da família e a página do link voltam à <b>composição original</b> — a estrela é o voo, a marca sussurra — vestidos com a pele: <b>paper de dia · navy noturno à noite</b>, fantasma do destino a <b>sangrar na borda</b>, pílula de estado, tira de células. Sintonia = os mesmos tokens, tipos e gramáticas; não a mesma mobília.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- ① CARTÃO DA FAMÍLIA · DIA -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>①</b> Cartão · aterrou · dia · 4:5</div><div class="d">A composição original: fantasma DESTINO a sangrar na borda, marca+data no sussurro, pílula verde, Paris em ink, rota com o nº, células. Paper.</div></div>
+      <div class="card c45 day">
+        <div class="cghost">CDG</div>
+        <div class="pad">
+          <div class="bhead"><div class="brandc"><span class="fdot"></span><b>CrewPact</b></div><div class="t2">06 Jul 2026</div></div>
+          <div class="pill ok"><span class="pd"></span>Aterrou · 14:28</div>
+          <div class="grow"></div>
+          <div class="city">Paris</div>
+          <div class="rt">LIS → CDG · EJU1234</div>
+          <div class="strip">
+            <div class="cell"><div class="k">Partida</div><div class="v">12:08</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">14:28</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2h20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">21°<span class="wx"><svg width="14" height="14" viewBox="0 0 24 24"><g stroke="#141414" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="#141414" stroke="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></g></svg></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② CARTÃO DA FAMÍLIA · NOITE -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>②</b> Cartão · no ar · noite</div><div class="d">Chegada à noite → o navy NOTURNO da app (#0D131C — a família vê a cor que o tripulante vê). Pílula âmbar.</div></div>
+      <div class="card c45 night">
+        <div class="cghost">CDG</div>
+        <div class="pad">
+          <div class="bhead"><div class="brandc"><span class="fdot"></span><b>CrewPact</b></div><div class="t2">06 Jul 2026</div></div>
+          <div class="pill air"><span class="pd"></span>No ar · aterra ~23:05</div>
+          <div class="grow"></div>
+          <div class="city">Paris</div>
+          <div class="rt">LIS → CDG · EJU1234</div>
+          <div class="strip">
+            <div class="cell"><div class="k">Partida</div><div class="v">20:48</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">~23:05</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2h20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">13°<span class="wx"><svg width="14" height="14" viewBox="0 0 24 24"><path fill="#F4F2ED" d="M20.2 14.6A8.5 8.5 0 0 1 9.4 3.8 8.5 8.5 0 1 0 20.2 14.6z"/></svg></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ A PÁGINA DO LINK -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>③</b> A página do link · <b>o UX entregue fica</b></div><div class="d">Fiel ao que está no ar (decisão do founder): teal, anel countdown, avião na rota, stats do aeroporto. Duas mudanças só: a manuscrita no rodapé e a meteo com os ícones da casa.</div></div>
+      <div class="web">
+        <div class="ghostbig">CDG</div>
+        <div class="pad">
+          <div class="whead">
+            <div class="wbrand"><span class="fdot"></span><b>CrewPact</b></div>
+            <span class="lpill"><span class="p"></span>Ao vivo</span>
+          </div>
+          <div class="grow" style="flex:2.1"></div>
+          <div class="weyb">Chegada de hoje · EJU1234</div>
+          <div class="ring">
+            <svg width="204" height="204" viewBox="0 0 204 204">
+              <circle class="rbg" cx="102" cy="102" r="92"/>
+              <circle class="rfg" cx="102" cy="102" r="92" pathLength="100" stroke-dasharray="64 100"/>
+            </svg>
+            <div class="rctr"><div class="rnum">78<span class="u">min</span></div><div class="rlab">p/ aterrar</div></div>
+          </div>
+          <div class="rct">Paris</div>
+          <div class="prog">
+            <span class="pc">LIS</span>
+            <span class="track">
+              <span class="dots"></span>
+              <span class="done" style="width:64%"></span>
+              <span class="tplane" style="left:64%"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FFB800" d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>
+            </span>
+            <span class="pc">CDG</span>
+          </div>
+          <div class="auto">atualiza sozinho — não precisas de refrescar</div>
+          <div class="grow"></div>
+          <div class="strip st2" style="border-top-color:rgba(255,255,255,.16)">
+            <div class="cell"><div class="k">Partida</div><div class="v">20:48</div></div>
+            <div class="cell"><div class="k">Chegada</div><div class="v">~23:05</div></div>
+            <div class="cell"><div class="k">Duração</div><div class="v">2h20</div></div>
+            <div class="cell"><div class="k">Tempo</div><div class="v">13°<span class="wx"><svg width="14" height="14" viewBox="0 0 24 24"><path fill="#fff" d="M20.2 14.6A8.5 8.5 0 0 1 9.4 3.8 8.5 8.5 0 1 0 20.2 14.6z"/></svg></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <b>Sintonia v2 — o veredicto sincero, aplicado ("quero como tu fazias"):</b><br>
+    · <b>A coluna amarela SAIU do cartão e da página</b> — ocupava 17% da largura a devolver redundância ("O MEU VOO" não informa ninguém numa conversa pessoal; o avião era decoração; o CREWPACT.APP já tinha casa) e fazia da marca a coisa mais alta num artefacto cuja estrela é o voo. <b>A banda fica EXCLUSIVA do poster do ano</b> (artefacto público de marca, denso — lá ela é estrutura e ganhou o lugar).<br>
+    · <b>Doutrina selada: sintonia = a LÍNGUA, não a mobília.</b> Um sistema, três objetos, cada um com a ênfase da sua função: o poster ostenta; o cartão e a página sussurram. O que os une: tokens (paper · navy noturno · amarelo · ghost), Barlow/Hanken/Caveat, a gramática do fantasma, a pílula de estado, a tira de células, o ponto da marca.<br>
+    · <b>Cartão</b> = a composição original aprovada no device, na pele: fantasma DESTINO gigante a <b>sangrar na borda</b> (o drama de volta — sem corredor), marca+data no sussurro, pílula (verde aterrou / âmbar no ar), "Paris" ink puro (o sublinhado amarelo é lei dos TOTAIS — cidade não é total), rota letterspaced com o nº, 4 células. Dia paper · noite navy noturno (#0D131C — cream e teal mortos). 4:5 único (vai por chat).<br>
+    · <b>Página: O UX ENTREGUE FICA COMO ESTÁ</b> (screenshot do founder de voo.crewpact.app: "gosto de como tava assim") — teal, anel countdown com progresso, avião na rota, stats do aeroporto ("58% das chegadas atrasadas · média 44 min" — honestidade que fica), rodapé de confiança. <b>Duas mudanças SÓ</b>: (1) "Atualiza a cada minuto." vira <b>MANUSCRITA</b> ("atualiza sozinho — não precisas de refrescar", Caveat via Google Fonts no template) · (2) <b>meteo com os ícones da CASA</b>. Implementação = cirúrgica no template share-day (não é re-skin).<br>
+    · <b>CORREÇÃO da "nota-descoberta"</b>: a página entregue JÁ ERA o design rico em teal — o "navy antigo" que reportei era o wrapper dos ESTADOS DE ERRO do template (li só o topo do index.ts). A memória do founder estava certa; o erro foi meu.<br>
+    · <b>METEO = os ícones do Início, nos DOIS objetos</b> (decisão do founder: "quero iguais aos da app") — os emoji ☀/🌙/⛅ morrem na célula TEMPO. No RN: `Icon` + `wxIcon` (data/weather.js — já existem). Na página web: os MESMOS paths do design/icons.js em SVG inline. Os do mockup são aproximações; a implementação usa os paths canónicos.<br>
+    · <b>Espaçamentos da página (crit do founder: o wstat pisava a manuscrita)</b>: os rodapés estavam ABSOLUTOS e o fluxo empurrado colidia — a mesma classe de bug do poster. Correção estrutural: tudo em FLUXO (colisão impossível). REGRA: âncora absoluta só quando o fluxo não resolve — no template da Edge idem.<br>
+    · <b>Arrumação final (founder)</b>: a <b>manuscrita subiu para junto do VIVO</b> — logo abaixo do anel+rota, a comentar o que atualiza sozinho (mt12) — e o fundo ficou para a <b>informação formal</b>: "Link de um tripulante · expira sozinho" é o único rodapé (mt16). Cada voz no seu lugar: a humana ao pé do coração da página, a de confiança a fechá-la.<br>
+    · <b>UMA SÓ NOITE no ecossistema (decisão do founder)</b>: a página adota o <b>navy noturno da app (#0D131C)</b> à noite — app, cartão e página dormem na MESMA cor; o teal (órfão pré-pele) morre de vez. E pela mesma lógica, o <b>dia da página passa de cream a PAPER</b>. O UX não se toca: são 2 trocas de hex no template share-day.<br>
+    · <b>"Link de um tripulante · expira sozinho" REMOVIDA</b> (decisão do founder, concordo): a informação da expiração pertence ao MOMENTO da expiração — e o estado "Link expirado — pede um novo" já existe e já o diz; "de um tripulante" não informa quem recebeu o link da própria pessoa. A Apple corta o disclaimer que descreve em vez de servir. A página fecha com a manuscrita junto do vivo como única voz de remate.<br>
+    · <b>Stats do aeroporto = CONDICIONAIS</b> (análise minha, founder concordou): a estatística "58% das chegadas atrasadas · média 44 min" só aparece <b>quando NÃO há ETA ao vivo</b> ("sem estimativa" — aí é a única coisa honesta que gere a expectativa da família); <b>com ETA real, esconde-se</b> — contexto geral ao lado de resposta específica é ansiedade grátis ("58% atrasadas" com o voo A TEMPO só assusta). A MESMA régua das outras remoções: a informação pertence ao momento em que serve. Implementação: um `if` no template (o serviço airportStats fica — muda só o QUANDO se mostra).<br>
+    · <b>Anel CENTRADO verticalmente + passe de espaçamentos</b> (founder, 2 rondas): o CONJUNTO inteiro (eyebrow → anel → cidade → rota → manuscrita → tira) centra como UM bloco entre dois espaçadores flex — o ar excedente vai para as MARGENS do conjunto, nunca para o meio (crit do founder: o grow entre manuscrita e tira abria um buraco). Ritmo fixo (afinado com o founder): eyebrow→anel <b>20</b> · anel→cidade <b>20</b> · cidade→rota <b>7</b> (nome+códigos = UMA unidade, abraçam-se) · rota→manuscrita <b>15</b> (voz diferente, afasta-se um passo) · tira pt12 · moldura 20. Lei da proximidade: o espaço codifica o agrupamento.<br>
+    · <b>A tira voltou ao FUNDO</b> (decisão final do founder) — herói centrado entre os espaçadores, tira ancorada em baixo como a página entregue, mas agora com <b>chão mínimo de 18</b> (mt fixo) + o elástico por cima: o buraco de antes era o elástico SEM mínimo. Regra composta: elástico nas margens do conjunto, e onde ele encosta a conteúdo, sempre com mínimo fixo.<br>
+    · <b>Bloco central DESCE (bias ótico 2.1:1, iterado 2×)</b> (founder: "baixar um pouco" → "baixa mais um pouco") — o elástico de CIMA pesa 2.1 contra 1 do de baixo: o fantasma ganha o topo, a centragem corrige-se ao olho, e ecoa o Início da app (textura em cima, herói assente). Nenhum espaçamento fixo mexeu; o chão mínimo de 18 sob a manuscrita protege o fundo em ecrãs baixos.<br>
+    · <b>Células CENTRADAS nos DOIS objetos</b> (founder confirmou na 2.ª pergunta) — a tira lê bilhete de embarque igual no cartão e na página, célula a célula. O `.web .cell` específico ficou redundante (herda do base).<br>
+    · <b>Manuscrita da página a 21</b> (founder + concordância): a Caveat lê pequena para o corpo (altura-x baixa) e o público inclui olhos mais velhos; na família de objetos ela anda nos 20–25 (Início 25 · poster 20) — 17 era o mais miudinho. 21 = presente e legível, ainda nota à margem (não título); opacidade sobe um ponto (.7) pela mesma razão.<br>
+    · <b>A CIDADE do destino entrou</b> (founder: "o nome de onde vai aterrar") — "Paris" em Barlow 21, entre o anel e a rota: o anel diz QUANDO, a cidade diz ONDE, a rota confirma em códigos (cascata 78min → Paris → LIS✈CDG). Para a família, "Paris" vale mais que "CDG". Implementação: nome da cidade pelo catálogo de aeroportos (se o airports-coords da Edge não tiver o campo, acrescenta-se — dado estático, sem API).<br>
+    <b>Implementação (quando o founder disser "avança")</b>: cartão = re-skin do FlightShareCard com as lições do poster (lineHeight=fontSize, âncoras fixas, SEM adjustsFontSizeToFit — o auto-shrink com a meteo async morre) · página = template HTML novo na Edge (deploy por CLI, do founder). Privacidade intacta nos dois: sem tripulação, sem escala, link 24h.<br>
+  </div>
+</body>
+</html>
