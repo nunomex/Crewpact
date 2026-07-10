@@ -51,7 +51,9 @@
       "expo-font",
       "./plugins/withDisableScriptSandboxing",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing",
+      "expo-status-bar"
     ]
   }
 }
