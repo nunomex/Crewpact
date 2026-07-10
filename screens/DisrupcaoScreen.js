@@ -124,7 +124,7 @@ export default function DisrupcaoScreen({ navigation }) {
           }, 600);
         }
       } catch { Alert.alert(l('Disrupção', 'Disruption'), t('duties.recErr', lang)); }
-      setBusy(false);
+      setTimeout(() => setBusy(false), 600);   // engole o toque-fantasma da dispensa (Android)
     }, 450);
   };
 

@@ -126,22 +126,37 @@ export function mapNonFlight(ev, codes) {
   };
 }
 
-// Dias de FÉRIAS de um evento (LVE/ANL/VAC) — para o Confirmar-import SUGERIR o bloco
-// como eventos vacDays (o € do AE e o saldo 22 nascem de REGISTO; isto só sugere, não
-// grava). Aceita all-day multi-dia (o bloco típico das férias) → expande dia a dia.
-export function vacationDatesFromEvent(ev, codes) {
-  const text = eventText(ev);
-  if (!/\b(LVE|ANL|VAC)\b/i.test(text)) return [];
-  if (codes.dayOff && !codes.dayOff.test(text)) return [];   // guarda: tem de ser folga/ausência
+// Expansão dia-a-dia de um evento: all-day termina à meia-noite do dia seguinte → [start,
+// end); com horas → só o dia de início. Partilhada pelas sugestões de férias e doença.
+const eventDays = (ev) => {
   const out = [];
   const start = new Date(ev.startDate);
   const end = new Date(ev.endDate);
-  // All-day termina à meia-noite do dia seguinte → [start, end); com horas → só o dia de início.
   const last = ev.allDay ? new Date(end.getTime() - 1) : start;
   for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= last; d.setDate(d.getDate() + 1)) {
     out.push(isoLocal(d));
   }
   return out;
+};
+
+// Dias de FÉRIAS de um evento (LVE/ANL/VAC) — para o Confirmar-import SUGERIR o bloco
+// como eventos vacDays (o € do AE e o saldo 22 nascem de REGISTO; isto só sugere, não
+// grava). Aceita all-day multi-dia (o bloco típico das férias).
+export function vacationDatesFromEvent(ev, codes) {
+  const text = eventText(ev);
+  if (!/\b(LVE|ANL|VAC)\b/i.test(text)) return [];
+  if (codes.dayOff && !codes.dayOff.test(text)) return [];   // guarda: tem de ser folga/ausência
+  return eventDays(ev);
+}
+
+// Dias de DOENÇA (SICK) — sugeridos como eventos sickDays no Confirmar-import (2026-07-10,
+// a par das férias): o Art. 48 pago funciona por EPISÓDIO de dias consecutivos, e o motor
+// agrupa-os a partir dos dias registados. Só sugere — gravar é decisão do utilizador.
+export function sickDatesFromEvent(ev, codes) {
+  const text = eventText(ev);
+  if (!/\bSICK\b/i.test(text)) return [];
+  if (codes.dayOff && !codes.dayOff.test(text)) return [];   // guarda: tem de ser ausência
+  return eventDays(ev);
 }
 
 // ── Atividades (agrupamento de setores) ──────────────────────────────────────

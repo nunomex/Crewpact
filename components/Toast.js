@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useContext } from 'react';
 import { Animated, View, Text, StyleSheet, AccessibilityInfo } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './Icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RADIUS, SPACE, TYPE, FONT, SHADOW } from '../data/constants';
-import { AppContext, useTheme } from '../data/appContext';
+import { PELE as P, PELE_NIGHT as N, PELE_FONT as F, SHADOW } from '../data/constants';
+import { AppContext } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { t } from '../data/i18n';
 
@@ -11,19 +11,19 @@ import { t } from '../data/i18n';
 // e recolhe. É puramente informativo (pointerEvents none) — nunca bloqueia o toque.
 //   'sync' = tudo foi para o servidor · 'warn' = ficou offline (vai repetir) ·
 //   'changes' = há alterações POR REVER (âmbar — atenção, não "está tudo bem").
+// Pele nova (2026-07-10): placa ink; discos de estado nos tons NOTURNOS (legíveis no escuro);
+// 'ok' = disco amarelo + glifo ink (a marca).
 const META = {
-  sync: { icon: 'cloud-done-outline',    tint: (C) => C.green },
-  warn: { icon: 'cloud-offline-outline', tint: (C) => C.warn },
-  ok:   { icon: 'checkmark-circle',      tint: (C) => C.ink },
-  imported: { icon: 'checkmark',         tint: (C) => C.green },  // import concluído (verde)
-  changes:  { icon: 'sync-circle-outline', tint: (C) => C.warn }, // mudanças por rever (âmbar)
+  sync: { icon: 'sync',  tint: N.ok },
+  warn: { icon: 'cloud', tint: N.warn },
+  ok:   { icon: 'check', tint: P.yellow, fg: P.ink },
+  imported: { icon: 'check', tint: N.ok },  // import concluído (verde)
+  changes:  { icon: 'sync',  tint: N.warn }, // mudanças por rever (âmbar)
 };
 
 export default function Toast({ toast, lang, onHide }) {
-  const C = useTheme();
   const ctx = useContext(AppContext);
   const insets = useSafeAreaInsets();
-  const s = makeStyles(C);
   const reduce = useReduceMotion();
   const y = useRef(new Animated.Value(-160)).current;
   const timer = useRef(null);
@@ -61,8 +61,8 @@ export default function Toast({ toast, lang, onHide }) {
     // Sem accessibilityLiveRegion: o announceForAccessibility já anuncia — os dois juntos liam 2× no TalkBack.
     <Animated.View pointerEvents="none"
       style={[s.toast, { top: insets.top + 8 + offlineShift, transform: [{ translateY: y }] }]}>
-      <View style={[s.icon, { backgroundColor: m.tint(C) }]}>
-        <Ionicons name={m.icon} size={18} color="#fff" />
+      <View style={[s.icon, { backgroundColor: m.tint }]}>
+        <Icon name={m.icon} size={17} color={m.fg || '#FFFFFF'} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.title} numberOfLines={2}>{title}</Text>
@@ -72,11 +72,11 @@ export default function Toast({ toast, lang, onHide }) {
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  toast: { position: 'absolute', left: 16, right: 16, zIndex: 100, flexDirection: 'row', alignItems: 'center', gap: SPACE.md,
-    backgroundColor: C.ink, borderRadius: RADIUS.lg, paddingVertical: 12, paddingHorizontal: 14,
+const s = StyleSheet.create({
+  toast: { position: 'absolute', left: 16, right: 16, zIndex: 100, flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: P.ink, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14,
     ...SHADOW.md },
-  icon: { width: 34, height: 34, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: '#fff' },
-  sub: { fontSize: TYPE.label, color: 'rgba(255,255,255,0.7)', marginTop: 1, fontFamily: FONT.medium },
+  icon: { width: 34, height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 12.5, fontFamily: F.bodyBold, color: '#FFFFFF' },
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1, fontFamily: F.bodyMed },
 });

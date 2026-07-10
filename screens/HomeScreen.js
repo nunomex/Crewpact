@@ -1450,8 +1450,8 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
             <>
-              {/* ZONA ÚNICA de decisão (setup-v2, mockup aprovado 2026-07-10): as QUATRO
-                  portas juntas — calendário (herói) · PDF · à mão · exemplo. A motivação
+              {/* ZONA ÚNICA de decisão (setup-v2; "à mão" REMOVIDO 2026-07-10 — tudo vem do
+                  calendário): TRÊS portas — calendário (herói) · PDF · exemplo. A motivação
                   vive no KICK do herói (uma voz); a dica do eCrew MIGROU para a Escala
                   pós-ligação (o momento em que é acionável); o passo "1" morreu (eco). */}
               <TouchableOpacity style={s.setupBtn} activeOpacity={0.85} onPress={requestAccess}
@@ -1466,11 +1466,6 @@ export default function HomeScreen({ navigation }) {
                 <Text style={s.setupGhostTxt}>{l('Importar PDF da escala', 'Import roster PDF')}</Text>
               </TouchableOpacity>
               <View style={s.setupLinks}>
-                <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-                  onPress={() => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }); }}
-                  accessibilityRole="button" accessibilityLabel={l('Adicionar serviço à mão', 'Add a duty by hand')}>
-                  <Text style={s.setupLink}>{l('adicionar à mão', 'add by hand')}</Text>
-                </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                   onPress={() => { select(); setCalFlight(DEMO_FLIGHT); }}
                   accessibilityRole="button" accessibilityLabel={l('Ver um dia de exemplo', 'See an example day')}>

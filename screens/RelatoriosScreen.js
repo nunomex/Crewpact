@@ -23,6 +23,10 @@ import { disruptionCandidates, stabilityCandidates } from '../data/disruption';
 
 // Fontes da pele embebidas nos PDFs — módulo partilhado (245 + disrupção).
 import { warmFontsCss, fontsCssNow } from '../data/pdfFonts';
+// CSV como FICHEIRO a sério (2026-07-10: funciona em Expo Go — o dev build é só para LER
+// PDFs; partilhar ficheiros já é hoje, como o 245 prova): escreve na cache → share → apaga.
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 // CSV dos registos (apoio ao registo de tempos/serviço — ORO.FTL.245). Uma linha por
 // SERVIÇO (a lei conta períodos — 210/245): primária + extra do mesmo dia. Datas ISO.
@@ -124,7 +128,11 @@ export default function RelatoriosScreen({ navigation }) {
   // gera-se com as fontes do sistema em vez de esperar (nunca se trava por tipografia).
   React.useEffect(() => { warmFontsCss(); }, []);
 
+  // ESCUDO anti-toque-fantasma (bug device 2026-07-10): no Android, o toque que fecha a
+  // folha de partilha ATRAVESSA e aterra nos cartões por baixo (abria a identidade do 245
+  // logo a seguir ao CSV). Enquanto `busy` (e ~600ms após fechar), os cartões ficam surdos.
   const openPdf = () => {
+    if (busy) return;
     if (!svcCount) { Alert.alert(t('duties.exportPdf', lang), t('duties.exportEmpty', lang)); return; }
     select(); setRecOpen(true);
   };
@@ -148,13 +156,32 @@ export default function RelatoriosScreen({ navigation }) {
         success();
         notify && notify(l('Registo gerado', 'Record generated'));
       } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
-      setBusy(false);
+      setTimeout(() => setBusy(false), 600);   // engole o toque-fantasma da dispensa da partilha
     }, 450);
   };
   const onExportCsv = async () => {
+    if (busy) return;
     if (!svcCount) { Alert.alert(t('duties.title', lang), t('duties.exportEmpty', lang)); return; }
     select();
-    try { await Share.share({ message: buildDutiesCsv(dutiesInPeriod), title: `CrewPact — duties ${period.label} (CSV)` }); } catch { /* cancelado */ }
+    setBusy(true);
+    const csv = buildDutiesCsv(dutiesInPeriod);
+    try {
+      // FICHEIRO .csv real com nome digno ("CrewPact-escala-julho-2026.csv") — abre direto
+      // no Excel/Numbers. BOM UTF-8 para os acentos não partirem no Excel. Apaga-se depois.
+      const slug = period.label.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').toLowerCase();
+      const uri = `${FileSystem.cacheDirectory}CrewPact-escala-${slug}.csv`;
+      await FileSystem.writeAsStringAsync(uri, `﻿${csv}`);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'text/csv', UTI: 'public.comma-separated-values-text', dialogTitle: `CrewPact — ${l('escala', 'roster')} ${period.label} (CSV)` });
+      } else {
+        await Share.share({ message: csv, title: `CrewPact — duties ${period.label} (CSV)` });
+      }
+      try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cache limpa-se sozinha */ }
+    } catch {
+      // Qualquer falha do caminho-ficheiro → o texto continua a sair (nunca fica preso).
+      try { await Share.share({ message: csv, title: `CrewPact — duties ${period.label} (CSV)` }); } catch { /* cancelado */ }
+    }
+    setTimeout(() => setBusy(false), 600);   // engole o toque-fantasma da dispensa
   };
 
   const segBtn = (id, label) => (
@@ -174,81 +201,80 @@ export default function RelatoriosScreen({ navigation }) {
           kick={l('prontos a gerar e partilhar · dados do teu telemóvel', 'ready to generate and share · data from your phone')} />
       </View>
 
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: tabSpace + 8 }]} showsVerticalScrollIndicator={false}>
-        {/* Período partilhado — Mês ⇄ Ano + ‹ › (como os Números) */}
-        <View style={s.perRow}>
-          <View style={s.segWrap}>{[segBtn('month', l('Mês', 'Month')), segBtn('year', l('Ano', 'Year'))]}</View>
-          <View style={s.perNav}>
-            <TouchableOpacity onPress={() => shift(-1)} hitSlop={8} style={s.perBtn} activeOpacity={0.7}
-              accessibilityRole="button" accessibilityLabel={l('Período anterior', 'Previous period')}>
-              <Icon name="chevron" rot={180} size={14} color={PELE.ink} />
-            </TouchableOpacity>
-            <Text style={s.perLbl} numberOfLines={1} allowFontScaling={false}>{period.label}</Text>
-            <TouchableOpacity disabled={atNow} onPress={() => shift(1)} hitSlop={8} style={s.perBtn} activeOpacity={0.7}
-              accessibilityRole="button" accessibilityLabel={l('Período seguinte', 'Next period')}>
-              <Icon name="chevron" size={14} color={atNow ? PELE.ghost : PELE.ink} />
-            </TouchableOpacity>
+      {/* flexGrow:1 — os cartões ENCHEM até ao fundo (pedido do user: sem branco morto);
+          o scroll só desperta se o Dynamic Type gigante não couber. */}
+      <ScrollView contentContainerStyle={[s.scroll, { flexGrow: 1, paddingBottom: tabSpace + 8 }]} showsVerticalScrollIndicator={false}>
+        {/* Período à Apple (Fitness/Health): segmento a TODA a largura + passeador centrado. */}
+        <View style={s.segWrap}>{[segBtn('month', l('Mês', 'Month')), segBtn('year', l('Ano', 'Year'))]}</View>
+        <View style={s.perNav}>
+          <TouchableOpacity onPress={() => shift(-1)} hitSlop={8} style={s.perBtn} activeOpacity={0.7}
+            accessibilityRole="button" accessibilityLabel={l('Período anterior', 'Previous period')}>
+            <Icon name="chevron" rot={180} size={14} color={PELE.ink} />
+          </TouchableOpacity>
+          <Text style={s.perLbl} numberOfLines={1} allowFontScaling={false}>{period.label}</Text>
+          <TouchableOpacity disabled={atNow} onPress={() => shift(1)} hitSlop={8} style={s.perBtn} activeOpacity={0.7}
+            accessibilityRole="button" accessibilityLabel={l('Período seguinte', 'Next period')}>
+            <Icon name="chevron" size={14} color={atNow ? PELE.ghost : PELE.ink} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Registo FTL.245 — a LISTA é o botão (dieta de alvos): o cartão inteiro toca,
+            a explicação longa vive dentro; 3 cartões cabem sem scroll (pedido do user). */}
+        <TouchableOpacity style={[s.card, (!svcCount || busy) && s.cardOff]} activeOpacity={0.85} onPress={openPdf} disabled={busy}
+          accessibilityRole="button" accessibilityLabel={l('Gerar o Registo FTL.245 em PDF', 'Generate the FTL.245 record as PDF')}>
+          <View style={s.cBody}>
+            <Text style={s.cK}>{l('ORO.FTL.245 · registo legal', 'ORO.FTL.245 · legal record')}</Text>
+            <Text style={s.cName} numberOfLines={1}>{l('Tempos de voo e serviço', 'Flight and duty times')}</Text>
+            <Text style={s.cLine} numberOfLines={1}>{busy ? l('A gerar…', 'Generating…')
+              : svcCount ? `${svcCount} ${l(svcCount === 1 ? 'período de serviço' : 'períodos de serviço', svcCount === 1 ? 'duty period' : 'duty periods')} · PDF ${l('assinável', 'signable')}`
+              : l(`sem serviços em ${period.label}`, `no duties in ${period.label}`)}</Text>
           </View>
-        </View>
+          <Icon name="chevron" size={16} color={PELE.ghost} />
+        </TouchableOpacity>
 
-        {/* Registo FTL.245 */}
-        <View style={s.card}>
-          <Text style={s.cK}>{l('ORO.FTL.245 · registo legal', 'ORO.FTL.245 · legal record')}</Text>
-          <Text style={s.cName}>{l('Tempos de voo e serviço', 'Flight and duty times')}</Text>
-          <Text style={s.cMeta}>{l('O teu registo individual assinável — apresentação, calços, PSV, repouso e janelas acumuladas.', 'Your signable individual record — report, blocks, FDP, rest and cumulative windows.')}</Text>
-          <Text style={s.cCount}>{svcCount} {l(svcCount === 1 ? 'período de serviço em' : 'períodos de serviço em', svcCount === 1 ? 'duty period in' : 'duty periods in')} {period.label}</Text>
-          <TouchableOpacity style={[s.cBtn, (!svcCount || busy) && s.cBtnOff]} activeOpacity={0.85} onPress={openPdf} disabled={busy}
-            accessibilityRole="button" accessibilityLabel={l('Gerar PDF', 'Generate PDF')}>
-            <Text style={s.cBtnTxt} allowFontScaling={false}>{busy ? l('A gerar…', 'Generating…') : l('Gerar PDF', 'Generate PDF')}</Text>
-          </TouchableOpacity>
-        </View>
+        {/* CSV — toque = partilhar. */}
+        <TouchableOpacity style={[s.card, !svcCount && s.cardOff]} activeOpacity={0.85} onPress={onExportCsv}
+          accessibilityRole="button" accessibilityLabel={l('Partilhar a escala em CSV', 'Share the roster as CSV')}>
+          <View style={s.cBody}>
+            <Text style={s.cK}>{l('dados em bruto', 'raw data')}</Text>
+            <Text style={s.cName} numberOfLines={1}>{l('Escala em CSV', 'Roster as CSV')}</Text>
+            <Text style={s.cLine} numberOfLines={1}>{svcCount ? l('uma linha por serviço · Excel/Numbers', 'one row per duty · Excel/Numbers') : l(`sem serviços em ${period.label}`, `no duties in ${period.label}`)}</Text>
+          </View>
+          <Icon name="chevron" size={16} color={PELE.ghost} />
+        </TouchableOpacity>
 
-        {/* CSV */}
-        <View style={s.card}>
-          <Text style={s.cK}>{l('dados em bruto', 'raw data')}</Text>
-          <Text style={s.cName}>{l('Escala em CSV', 'Roster as CSV')}</Text>
-          <Text style={s.cMeta}>{l('Uma linha por serviço, datas ISO, cabeçalhos limpos — abre no Excel ou Numbers.', 'One row per duty, ISO dates, clean headers — opens in Excel or Numbers.')}</Text>
-          <Text style={s.cCount}>{svcCount} {l(svcCount === 1 ? 'período de serviço em' : 'períodos de serviço em', svcCount === 1 ? 'duty period in' : 'duty periods in')} {period.label}</Text>
-          <TouchableOpacity style={[s.cBtn, !svcCount && s.cBtnOff]} activeOpacity={0.85} onPress={onExportCsv}
-            accessibilityRole="button" accessibilityLabel={l('Partilhar CSV', 'Share CSV')}>
-            <Text style={s.cBtnTxt} allowFontScaling={false}>{l('Partilhar CSV', 'Share CSV')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Disrupção (3.º documento — mockup design/disrupcao.html frame ①): só fala quando há. */}
+        {/* Disrupção (easyJet) — toque = rever candidatos. Só fala quando há. */}
         {hasDisruption ? (
-          <View style={s.card}>
-            <Text style={s.cK}>{isPilot ? l('AE easyJet · Art. 63.º SNC', 'easyJet CLA · Art. 63 SNC') : l('AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC', 'easyJet CLA · Cl. 67 RDP · Cl. 66 SNC')}</Text>
-            <Text style={s.cName}>{l('Disrupção de escala', 'Roster disruption')}</Text>
-            <Text style={s.cMeta}>{l('Alterações arquivadas viram candidatos a pagamento — revês, e sai a prova para o formulário RDF.', 'Archived changes become payment candidates — you review, and out comes the evidence for the RDF form.')}</Text>
-            {disCands.length ? (
-              <Text style={s.cHot}>{disCands.length} {l(disCands.length === 1 ? 'candidato' : 'candidatos', disCands.length === 1 ? 'candidate' : 'candidates')} {l('em', 'in')} {period.label}{disEur ? ` · ${l('até', 'up to')} ${(() => { const [i, d] = disEur.toFixed(2).split('.'); return lang === 'en' ? `€${i}.${d}` : `${i},${d} €`; })()}` : ''}</Text>
-            ) : (
-              <Text style={s.cCount}>{l('sem irregularidades detetadas em', 'no irregularities detected in')} {period.label}</Text>
-            )}
-            <TouchableOpacity style={s.cBtn} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Disrupcao'); }}
-              accessibilityRole="button" accessibilityLabel={l('Rever candidatos', 'Review candidates')}>
-              <Text style={s.cBtnTxt} allowFontScaling={false}>{disCands.length ? l('Rever candidatos', 'Review candidates') : l('Ver histórico', 'View history')}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => { if (busy) return; select(); navigation.navigate('Disrupcao'); }}
+            accessibilityRole="button" accessibilityLabel={l('Disrupção de escala — rever candidatos', 'Roster disruption — review candidates')}>
+            <View style={s.cBody}>
+              <Text style={s.cK}>{isPilot ? l('AE easyJet · Art. 63.º SNC', 'easyJet CLA · Art. 63 SNC') : l('AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC', 'easyJet CLA · Cl. 67 RDP · Cl. 66 SNC')}</Text>
+              <Text style={s.cName} numberOfLines={1}>{l('Disrupção de escala', 'Roster disruption')}</Text>
+              {disCands.length ? (
+                <Text style={[s.cLine, s.cLineHot]} numberOfLines={1}>{disCands.length} {l(disCands.length === 1 ? 'candidato' : 'candidatos', disCands.length === 1 ? 'candidate' : 'candidates')}{disEur ? ` · ${l('até', 'up to')} ${(() => { const [i, d] = disEur.toFixed(2).split('.'); return lang === 'en' ? `€${i}.${d}` : `${i},${d} €`; })()}` : ''}</Text>
+              ) : (
+                <Text style={s.cLine} numberOfLines={1}>{l('sem irregularidades detetadas', 'no irregularities detected')}</Text>
+              )}
+            </View>
+            <Icon name="chevron" size={16} color={PELE.ghost} />
+          </TouchableOpacity>
         ) : null}
 
-        {/* Guardião da estabilidade (TAP — mockup design/disrupcao.html frame ④): sem €, é conformidade. */}
+        {/* Guardião da estabilidade (TAP) — toque = rever sinais. Sem €: é conformidade. */}
         {hasStability ? (
-          <View style={s.card}>
-            <Text style={s.cK}>{isPilot ? l('RUPT TAP · Cl. 15.ª/3 — comum acordo', 'TAP RUPT · Cl. 15/3 — mutual agreement') : l('RUPT TAP · Cl. 13.ª — limites −2h/+3h/48h', 'TAP RUPT · Cl. 13 — limits −2h/+3h/48h')}</Text>
-            <Text style={s.cName}>{l('Estabilidade do planeamento', 'Roster stability')}</Text>
-            <Text style={s.cMeta}>{l('O RUPT protege a tua escala por consentimento — alterações fora dos limites viram sinais, e sai a prova de conformidade.', 'The RUPT protects your roster by consent — changes outside the limits become flags, and out comes the compliance evidence.')}</Text>
-            {staCands.length ? (
-              <Text style={s.cHot}>{staCands.length} {l(staCands.length === 1 ? 'sinal' : 'sinais', staCands.length === 1 ? 'flag' : 'flags')} {l('em', 'in')} {period.label}</Text>
-            ) : (
-              <Text style={s.cCount}>{l('sem sinais fora dos limites em', 'no flags outside the limits in')} {period.label}</Text>
-            )}
-            <TouchableOpacity style={s.cBtn} activeOpacity={0.85} onPress={() => { select(); navigation.navigate('Estabilidade'); }}
-              accessibilityRole="button" accessibilityLabel={l('Rever sinais', 'Review flags')}>
-              <Text style={s.cBtnTxt} allowFontScaling={false}>{staCands.length ? l('Rever sinais', 'Review flags') : l('Ver histórico', 'View history')}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => { if (busy) return; select(); navigation.navigate('Estabilidade'); }}
+            accessibilityRole="button" accessibilityLabel={l('Estabilidade do planeamento — rever sinais', 'Roster stability — review flags')}>
+            <View style={s.cBody}>
+              <Text style={s.cK}>{isPilot ? l('RUPT TAP · Cl. 15.ª/3 — comum acordo', 'TAP RUPT · Cl. 15/3 — mutual agreement') : l('RUPT TAP · Cl. 13.ª — limites −2h/+3h/48h', 'TAP RUPT · Cl. 13 — limits −2h/+3h/48h')}</Text>
+              <Text style={s.cName} numberOfLines={1}>{l('Estabilidade do planeamento', 'Roster stability')}</Text>
+              {staCands.length ? (
+                <Text style={[s.cLine, s.cLineHot]} numberOfLines={1}>{staCands.length} {l(staCands.length === 1 ? 'sinal fora dos limites' : 'sinais fora dos limites', staCands.length === 1 ? 'flag outside the limits' : 'flags outside the limits')}</Text>
+              ) : (
+                <Text style={s.cLine} numberOfLines={1}>{l('sem sinais fora dos limites', 'no flags outside the limits')}</Text>
+              )}
+            </View>
+            <Icon name="chevron" size={16} color={PELE.ghost} />
+          </TouchableOpacity>
         ) : null}
 
         <Text style={s.foot}>{l('O Registo 245 é um apoio individual — não substitui os registos oficiais do operador. Tudo é gerado no teu telemóvel.', 'The 245 record is individual support — it does not replace the operator’s official records. Everything is generated on your phone.')}</Text>
@@ -275,26 +301,26 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   head: { paddingHorizontal: GUTTER },
   scroll: { paddingHorizontal: GUTTER },
-  // Período (gramática do segmento dos Números)
-  perRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  segWrap: { flexDirection: 'row', borderWidth: 1, borderColor: PELE.line, borderRadius: 999, overflow: 'hidden' },
-  segb: { paddingVertical: 7, paddingHorizontal: 14 },
+  // Período à Apple (2026-07-10): segmento Mês|Ano a TODA a largura + passeador CENTRADO.
+  // Receita do segmento = a dos NÚMEROS (calha soft + polegar ink) — um controlo, uma pele.
+  segWrap: { flexDirection: 'row', backgroundColor: PELE.soft, borderRadius: 999, padding: 3, gap: 2, marginBottom: 10 },
+  segb: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 999 },
   segbOn: { backgroundColor: PELE.ink },
   segTxt: { fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey },
   segTxtOn: { color: PELE.paper },
-  perNav: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  perNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 },
   perBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  perLbl: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, maxWidth: 130, textAlign: 'center', textTransform: 'capitalize' },
-  // Cartões dos documentos
-  card: { borderWidth: 1, borderColor: PELE.line, borderRadius: 20, padding: 16, marginBottom: 12 },
+  perLbl: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, minWidth: 130, textAlign: 'center', textTransform: 'capitalize' },
+  // Cartões COMPACTOS (2026-07-10, user: os 3 sem scroll): a lista É o botão — cartão
+  // inteiro toca, uma linha de estado, chevron; a explicação longa vive dentro de cada doc.
+  // flex:1 — os cartões repartem o ESPAÇO até ao fundo (conteúdo centra na vertical).
+  card: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: PELE.line, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 13, marginBottom: 10, minHeight: 76 },
+  cardOff: { opacity: 0.45 },   // .45 deliberado (≠ .35 da casa): a linha de estado tem de se LER ("sem serviços em julho")
+  cBody: { flex: 1, minWidth: 0 },
   cK: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey },
-  cName: { fontFamily: PELE_FONT.display, fontSize: 22, letterSpacing: -0.2, color: PELE.ink, marginTop: 3 },
-  cMeta: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3, lineHeight: 16 },
-  cCount: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginTop: 8 },
-  cHot: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn, marginTop: 8 },
-  cBtn: { backgroundColor: PELE.ink, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
-  cBtnOff: { opacity: 0.35 },
-  cBtnTxt: { fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
+  cName: { fontFamily: PELE_FONT.display, fontSize: 21, letterSpacing: -0.2, color: PELE.ink, marginTop: 2 },
+  cLine: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 3 },
+  cLineHot: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.warn },
   foot: { fontSize: 9.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15, marginTop: 4 },
   // Folha da identidade
   shTitle: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink },

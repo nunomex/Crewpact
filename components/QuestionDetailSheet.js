@@ -1,14 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, FONT, SPACE } from '../data/constants';
-import { useTheme } from '../data/appContext';
-import BottomSheet from './BottomSheet';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import PeleSheet from './PeleSheet';
+import Icon from './Icon';
+import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { validityLabel } from '../data/validities';
 
 // Folha "porquê" das perguntas do Início — a JUSTIFICAÇÃO detalhada (os números por trás da
 // resposta), em mini-barras estilo Oura/Health + conselho. NÃO inventa nada: formata o `raw`
 // que cada pergunta já traz (data/today.js). Aberta ao tocar numa pergunta.
+// Pele nova sobre PeleSheet; tons de estado = ok/warn/red da pele (alteração de escala = âmbar,
+// a MESMA língua do pontinho da aba Escala).
 
 const pMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 const fmtMin = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
@@ -66,20 +67,21 @@ function detailFor(it, lang) {
   return out;
 }
 
-function DetailContent({ item, lang, onNav, C, s }) {
+function DetailContent({ item, lang, onNav }) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const d = detailFor(item, lang);
-  const vTone = item.status === 'bad' ? C.redText : item.status === 'warn' ? (C.warnText || C.text)
-    : item.status === 'info' ? C.brand : item.status === 'ok' ? C.greenText : C.text;
-  const fillC = (t) => (t === 'red' ? C.red : t === 'amber' ? (C.warn || C.text) : C.green);
-  const rowTone = (t) => (t === 'bad' ? C.redText : t === 'warn' ? (C.warnText || C.text) : t === 'ok' ? C.greenText : C.text);
+  // Sem acento-cor da pele em texto (o amarelo não lê sobre papel): info = ink neutro.
+  const vTone = item.status === 'bad' ? P.red : item.status === 'warn' ? P.warn
+    : item.status === 'ok' ? P.ok : P.ink;
+  const fillC = (t) => (t === 'red' ? P.red : t === 'amber' ? P.warn : P.ok);
+  const rowTone = (t) => (t === 'bad' ? P.red : t === 'warn' ? P.warn : t === 'ok' ? P.ok : P.ink);
   const dateLbl = (iso) => {
     const dt = new Date(iso + 'T00:00:00'); if (isNaN(dt)) return iso;
     const x = dt.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'short', day: 'numeric', month: 'short' });
     return x.charAt(0).toUpperCase() + x.slice(1);
   };
   return (
-    <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+    <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
       <Text style={[s.verdict, { color: vTone }]}>{d.verdict}</Text>
 
       {d.bars.length ? (
@@ -113,7 +115,7 @@ function DetailContent({ item, lang, onNav, C, s }) {
           {d.changes.slice(0, 8).map((c, i) => (
             <View key={i} style={[s.prow, i > 0 && s.prowBorder]}>
               <Text style={s.prowK}>{dateLbl(c.date)}</Text>
-              <Text style={[s.prowV, { color: c.k === 'removed' ? C.redText : c.k === 'added' ? C.greenText : C.brand }]}>{c.label}</Text>
+              <Text style={[s.prowV, { color: c.k === 'removed' ? P.red : c.k === 'added' ? P.ok : P.warn }]}>{c.label}</Text>
             </View>
           ))}
         </View>
@@ -121,7 +123,7 @@ function DetailContent({ item, lang, onNav, C, s }) {
 
       {d.advise ? (
         <View style={s.advise}>
-          <Ionicons name="bulb-outline" size={16} color={C.warnText || C.text} />
+          <Icon name="bulb" size={16} color={P.warn} />
           <Text style={s.adviseT}>{d.advise}</Text>
         </View>
       ) : null}
@@ -129,7 +131,7 @@ function DetailContent({ item, lang, onNav, C, s }) {
       {d.navTo ? (
         <TouchableOpacity style={s.nav} activeOpacity={0.85} onPress={() => onNav && onNav(d.navTo)} accessibilityRole="button">
           <Text style={s.navT}>{d.navTo.label}</Text>
-          <Ionicons name="arrow-forward" size={16} color="#fff" />
+          <Icon name="chevron" size={14} color={P.onInk} />
         </TouchableOpacity>
       ) : null}
 
@@ -139,39 +141,46 @@ function DetailContent({ item, lang, onNav, C, s }) {
 }
 
 export default function QuestionDetailSheet({ item, lang, onClose, onNav }) {
-  const C = useTheme();
-  const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   return (
-    <BottomSheet visible={!!item} onClose={onClose} eyebrow={l('Porquê', 'Why')} title={item ? item.q : ''} closeLabel={l('Fechar', 'Close')} maxHeight={580}>
-      {item ? <DetailContent item={item} lang={lang} onNav={onNav} C={C} s={s} /> : null}
-    </BottomSheet>
+    <PeleSheet visible={!!item} onClose={onClose}>
+      {item ? (
+        <>
+          <Text style={s.kick} allowFontScaling={false}>{l('Porquê', 'Why')}</Text>
+          <Text style={s.title} allowFontScaling={false}>{item.q}</Text>
+          <DetailContent item={item} lang={lang} onNav={onNav} />
+        </>
+      ) : null}
+    </PeleSheet>
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
-  body: { paddingHorizontal: SPACE.lg + 4, paddingTop: 14, paddingBottom: 22 },
-  verdict: { fontSize: 21, fontFamily: FONT.display, letterSpacing: -0.3, lineHeight: 26 },
-  why: { fontSize: 10, fontFamily: FONT.heavy, letterSpacing: 1, color: C.sub, marginBottom: 11, marginLeft: 1 },
+const s = StyleSheet.create({
+  kick: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.6, textTransform: 'uppercase', color: P.grey },
+  title: { fontFamily: F.display, fontSize: 24, letterSpacing: -0.3, lineHeight: 28, color: P.ink, marginTop: 2 },
+  scroll: { maxHeight: Math.round(Dimensions.get('window').height * 0.62) },
+  body: { paddingTop: 14, paddingBottom: 6 },
+  verdict: { fontSize: 22, fontFamily: F.display, letterSpacing: -0.3, lineHeight: 26 },
+  why: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.4, color: P.grey, marginBottom: 11, marginLeft: 1 },
   // mini-barras (estilo Oura)
   bar: { marginBottom: 14 },
   barTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
-  barK: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, flex: 1 },
-  barV: { fontSize: 12.5, fontFamily: FONT.heavy, fontVariant: ['tabular-nums'], marginLeft: 8 },
-  barTag: { fontSize: 11, fontFamily: FONT.heavy, color: C.redText },
-  track: { height: 8, borderRadius: 99, backgroundColor: C.soft2 || C.soft, overflow: 'hidden' },
+  barK: { fontSize: 12.5, fontFamily: F.bodyBold, color: P.ink, flex: 1 },
+  barV: { fontSize: 12.5, fontFamily: F.bodyHeavy, fontVariant: ['tabular-nums'], marginLeft: 8 },
+  barTag: { fontSize: 11, fontFamily: F.bodyHeavy, color: P.red },
+  track: { height: 8, borderRadius: 99, backgroundColor: P.soft2, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 99 },
   // painel k/v (validades, serviço anterior, alterações)
-  panel: { backgroundColor: C.soft, borderRadius: RADIUS.md, paddingHorizontal: 14, marginTop: 6 },
+  panel: { backgroundColor: P.soft, borderRadius: 14, paddingHorizontal: 14, marginTop: 6 },
   prow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11, gap: 12 },
-  prowBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  prowK: { fontSize: 12.5, fontFamily: FONT.semibold, color: C.sub, flex: 1 },
-  prowV: { fontSize: 12.5, fontFamily: FONT.bold, color: C.text, fontVariant: ['tabular-nums'] },
+  prowBorder: { borderTopWidth: 1, borderTopColor: P.line },
+  prowK: { fontSize: 12.5, fontFamily: F.body, color: P.grey, flex: 1 },
+  prowV: { fontSize: 12.5, fontFamily: F.bodyBold, color: P.ink, fontVariant: ['tabular-nums'] },
   // conselho
-  advise: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', backgroundColor: C.warnSoft || C.soft, borderRadius: RADIUS.md, padding: 13, marginTop: 16 },
-  adviseT: { flex: 1, fontSize: 12, fontFamily: FONT.medium, color: C.warnText || C.text, lineHeight: 17 },
-  // botão de navegação (escala)
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.ink, borderRadius: RADIUS.md, paddingVertical: 13, marginTop: 14 },
-  navT: { color: '#fff', fontSize: 14, fontFamily: FONT.bold },
-  foot: { fontSize: 10.5, fontFamily: FONT.medium, color: C.sub, marginTop: 14, textAlign: 'center', lineHeight: 15 },
+  advise: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', backgroundColor: P.warnSoft, borderWidth: 1, borderColor: P.warnSoftLine, borderRadius: 14, padding: 13, marginTop: 16 },
+  adviseT: { flex: 1, fontSize: 11.5, fontFamily: F.bodyMed, color: P.ink, lineHeight: 16 },
+  // botão de navegação (escala/validades)
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.ink, borderRadius: 14, paddingVertical: 13, marginTop: 14 },
+  navT: { color: P.onInk, fontSize: 13.5, fontFamily: F.bodyHeavy, letterSpacing: 0.3 },
+  foot: { fontSize: 10, fontFamily: F.bodyMed, color: P.grey, marginTop: 14, textAlign: 'center', lineHeight: 15 },
 });

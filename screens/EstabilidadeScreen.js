@@ -96,7 +96,7 @@ export default function EstabilidadeScreen({ navigation }) {
         success();
         notify && notify(l('Prova gerada', 'Evidence generated'));
       } catch { Alert.alert(l('Estabilidade', 'Stability'), t('duties.recErr', lang)); }
-      setBusy(false);
+      setTimeout(() => setBusy(false), 600);   // engole o toque-fantasma da dispensa (Android)
     }, 450);
   };
 

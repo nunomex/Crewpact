@@ -33,7 +33,8 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // Aba Escala: o MÊS em cards de dia (um por dia). Mês navegável ‹ › + resumo no topo
 // (serviços/folgas/per-diem). A lista começa no dia de hoje (mês atual) e mostra TODOS
 // os dias — serviço (tipo+rota+horas+€, com pílula 🌙 da pernoita) ou folga (dia vazio).
-// Tocar num serviço → DutyDetail; tocar numa folga → DutyFormSheet (inserir nesse dia).
+// Tocar num serviço → DutyDetail; tocar numa folga → vista leve do dia (a escala vem do
+// calendário — criar à mão morreu 2026-07-10; editar-como-correção fica nos importados).
 // Apagar manuais vive no DutyDetail. Per-diem/pernoita derivados do motor AE (ae.perDiem/
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
@@ -57,7 +58,6 @@ export default function EscalaScreen({ navigation, route }) {
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // seletor de mês (pele "Julho ▾")
   const [pickYear, setPickYear] = useState(null);
   // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
-  const lastNewDuty = useRef(null);
 
   // (Exportar — Registo 245 + CSV — MUDOU DE CASA 2026-07-10: vive no Perfil → Relatórios;
   //  a Escala fica só operação. Um dado, uma casa.)
@@ -102,18 +102,7 @@ export default function EscalaScreen({ navigation, route }) {
     if (user?.id) AsyncStorage.setItem(`cp_tip_escala_${user.id}`, '1').catch(() => {});
   };
 
-  // FAB "Serviço" (tab bar) → salta para o mês de hoje e abre o popup do novo serviço (hoje).
-  useEffect(() => {
-    const n = route.params?.newDuty;
-    if (n && n !== lastNewDuty.current) {
-      lastNewDuty.current = n;
-      const t0 = new Date(); setMonthDate(new Date(t0.getFullYear(), t0.getMonth(), 1));
-      const today = isoDay();
-      // O FAB CRIA sempre um serviço novo → mostra o índice de tipos. Dia com serviço → ACRESCENTA (append); vazio → primário.
-      setDutyAppend(!!(duties[today] && !duties[today].deleted));
-      setDutyDate(today);
-    }
-  }, [route.params?.newDuty]);
+  // (＋ "Serviço" manual REMOVIDO 2026-07-10 — tudo vem do calendário; o param newDuty morreu.)
 
   // Vindo do sino/bilhete/linha-warn "Alterações na escala" → abre a folha de revisão (import).
   // Consome-e-LIMPA (lição do `connect`): o param persiste no estado de navegação e um
@@ -180,7 +169,7 @@ export default function EscalaScreen({ navigation, route }) {
   // Hub de importar (mini-fab / cartão "IR" / arranque) → escolher fonte; depois abre o "Confirmar import".
   const openHub = () => { select(); setHubOpen(true); };
   const openImport = (src) => { setImportSource(src || 'calendar'); setHubOpen(false); setImportOpen(true); };
-  const addManual = () => { select(); setHubOpen(false); const today = isoDay(); setTimeout(() => { setDutyAppend(!!(duties[today] && !duties[today].deleted)); setDutyDate(today); }, 340); };   // criar serviço novo (índice); dia ocupado → append. Sequenciado p/ não travar (Modal→Modal)
+  // (addManual REMOVIDO 2026-07-10 — criar à mão morreu; editar-como-correção fica.)
 
   // ── € (cêntimos, NUNCA arredonda — money-no-rounding) ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, d] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
@@ -313,9 +302,10 @@ export default function EscalaScreen({ navigation, route }) {
     return (
       <TouchableOpacity key={iso} activeOpacity={0.7} style={[s.gc, { width: cellW }, weekend && s.gcWk, isDuty && { backgroundColor: tagBg(d.kind || 'flight') }, abs && (abs.type === 'sickDays' ? s.gcSick : s.gcAbs), isToday && s.gcNow, iso === flashIso && s.gcFlash]}
         accessibilityRole="button" accessibilityLabel={a11y}
-        accessibilityHint={l('Toque abre o detalhe · toque longo edita', 'Tap opens detail · long press edits')}
+        accessibilityHint={isDuty ? l('Toque abre o detalhe · toque longo edita', 'Tap opens detail · long press edits') : l('Toque abre o detalhe', 'Tap opens detail')}
         onPress={() => openDay(iso)}
-        onLongPress={() => { select(); setDutyDate(iso); }}>
+        // Toque longo = EDITAR (correção) — só em dias COM serviço; criar à mão morreu (2026-07-10).
+        onLongPress={isDuty ? () => { select(); setDutyDate(iso); } : undefined}>
         <Text style={[s.gn, isVoo && s.gnOnDark]}>{dd}</Text>
         {isDuty ? (
           <Text style={[s.tagCode, isVoo && s.tagCodeOnDark]} numberOfLines={1}>{nSvc > 1 ? `${nSvc}× ` : ''}{dutyCode(d)}</Text>
@@ -382,7 +372,6 @@ export default function EscalaScreen({ navigation, route }) {
 
             <View style={s.orline}><View style={s.orlineBar} /><Text style={s.orlineTxt}>{l('ou', 'or')}</Text><View style={s.orlineBar} /></View>
             <GhostButton onPress={() => openImport('paste')} icon="document-text-outline" radius="lg" style={{ marginTop: 10 }} label={l('Importar PDF da escala', 'Import roster PDF')} />
-            <GhostButton onPress={addManual} icon="add" radius="lg" style={{ marginTop: 10 }} label={l('Adicionar serviço à mão', 'Add a duty by hand')} />
           </ScrollView>
         ) : (
           <View style={s.monthWrap} {...monthPan.panHandlers}>
@@ -464,9 +453,9 @@ export default function EscalaScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* SEM FAB flutuante (2026-07-09): criar serviço = tocar num DIA da grelha (insere
-          nesse dia) OU o ＋ central da tab bar → "Serviço" (chega cá via route.params.newDuty)
-          · importar/PDF = hub do header · no arranque, os CTAs grandes. */}
+      {/* DutyFormSheet SÓ para EDITAR-como-correção (2026-07-10: criar à mão morreu — a
+          escala vem do calendário; o formulário abre por toque longo/Editar em dias
+          importados e no modo-candidato do import). */}
       <DutyFormSheet visible={!!dutyDate} onClose={() => { setDutyDate(null); setDutyAppend(false); setDutyEditExtra(null); }} date={dutyDate} append={dutyAppend} editExtra={dutyEditExtra}
         onSaved={(iso) => { setFlashIso(iso); setTimeout(() => setFlashIso(null), 900); }} />
       <RosterImportSheet visible={importOpen} initialSource={importSource} onConnect={connectCalendar}
@@ -526,10 +515,8 @@ export default function EscalaScreen({ navigation, route }) {
                   <Text style={s.dsOffTxt}>{l('Folga — sem serviço registado', 'Day off — no duty recorded')}</Text>
                 </View>
               )}
-              <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(false); setDutyDate(iso); }); }} activeOpacity={0.8} style={s.dsAdd}>
-                <Icon name="plus" size={16} color={PELE.ink} />
-                <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
-              </TouchableOpacity>
+              {/* "adicionar serviço" REMOVIDO (2026-07-10): a escala vem do calendário. */}
+              <Text style={s.dsFromCal}>{l('A escala deste dia vem do calendário — sincroniza para atualizar.', 'This day’s roster comes from the calendar — sync to update.')}</Text>
             </View>
           );
         })() : null}
@@ -724,10 +711,8 @@ export default function EscalaScreen({ navigation, route }) {
                   <Text style={s.dsBtnPrimaryTxt}>{l('Ver tudo', 'See all')}</Text><Icon name="chevron" size={15} color={PELE.yellow} />
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(true); setDutyDate(iso); }); }} activeOpacity={0.8} style={s.dsAdd}>
-                <Icon name="plus" size={16} color={PELE.ink} />
-                <Text style={s.dsAddTxt}>{l('adicionar serviço', 'add service')}</Text>
-              </TouchableOpacity>
+              {/* "＋ adicionar serviço" (2.º período) REMOVIDO (2026-07-10): o split-duty
+                  vem do calendário (multi-eventos no dia); editar os existentes fica. */}
             </View>
           );
         })() : null}
@@ -842,7 +827,7 @@ export default function EscalaScreen({ navigation, route }) {
       {/* Dica da grelha (1.ª abertura pós-folha) — flutua sobre a grelha, seta para cima. */}
       <Tip visible={gridTip} arrow="up" lang={lang} style={{ top: 264 }}
         bold={l('Toca num dia', 'Tap a day')}
-        tail={l('para ver o detalhe — ou para criar um serviço nesse dia.', 'to see the detail — or to create a duty on that day.')}
+        tail={l('para ver o detalhe desse dia — setores, horas e per-diem.', 'to see that day’s detail — sectors, times and per diem.')}
         onDismiss={dismissGridTip} />
     </SafeAreaView>
   );
@@ -1012,8 +997,7 @@ const s = StyleSheet.create({
   dsHotelAddTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
   dsOffRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 6, backgroundColor: PELE.soft, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14 },
   dsOffTxt: { flex: 1, fontSize: 13.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  dsAdd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, borderWidth: 1.5, borderColor: PELE.line, borderStyle: 'dashed', borderRadius: 14, paddingVertical: 12 },
-  dsAddTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
+  dsFromCal: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 16, marginTop: 10 },
   dsAbsDel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, paddingVertical: 8 },
   dsAbsDelTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.red },
   dsSvcActs: { flexDirection: 'row', gap: 18, marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: PELE.line },

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
-import { buildImportCandidates, rangeFromOption, importSaveFields } from '../data/rosterImport';
+import { buildImportCandidates, importSaveFields } from '../data/rosterImport';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
@@ -18,7 +18,19 @@ import { AppContext, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
-const RANGES = [{ id: '14', d: 14 }, { id: '28', d: 28 }, { id: 'month', d: 30 }];
+// JANELA ÚNICA (2026-07-10, doutrina do user — o seletor 14/28/mês morreu; a Apple não
+// pergunta o que pode saber): lê os ÚLTIMOS 12 MESES (a janela FTL mais longa — 1000h/12m —
+// precisa deles; o € do ano e o 245 idem) até ao FIM DO MÊS SEGUINTE (tudo o que o feed
+// publica). GUARDA: os cancelados só se detetam PARA A FRENTE (hoje→fim do mês seguinte) —
+// os feeds aparam eventos antigos e a ausência no passado não significa que não voou.
+const importWindow = () => {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  return {
+    start: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),   // −12 meses
+    end: new Date(now.getFullYear(), now.getMonth() + 2, 1),                 // fim do mês seguinte
+    fwdStart: now,                                                           // cancelados: só daqui p/ a frente
+  };
+};
 
 // ⚠️ TEMPORÁRIO — candidatos de EXEMPLO para ver o preview sem eventos no
 // calendário. Pôr DEMO_EXAMPLES=false (ou remover) quando já houver escala real.
@@ -44,7 +56,6 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
 
   const [source, setSource] = useState(initialSource || 'calendar');   // 'calendar' | 'paste'
-  const [range, setRange] = useState('28');
   const [loading, setLoading] = useState(false);
   const [denied, setDenied] = useState(false);
   const [cands, setCands] = useState([]);
@@ -56,22 +67,28 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // quem sincroniza por calendário). Só dias ainda SEM evento de férias; opt-out à vista.
   const [vacDates, setVacDates] = useState([]);
   const [vacSel, setVacSel] = useState(true);
+  // DOENÇA (SICK) detetada no calendário — sugerida como episódio (Art. 48), a par das férias.
+  const [sickDates, setSickDates] = useState([]);
+  const [sickSel, setSickSel] = useState(true);
 
-  const load = async (opt) => {
+  const load = async () => {
     setLoading(true); setDenied(false);
-    const { start, end } = rangeFromOption(opt);
+    const { start, end, fwdStart } = importWindow();
     const co = company?.slug;
     const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
-    const window = { start: isoDay(start), end: isoDay(end) };  // p/ detetar cancelados na janela
+    // Cancelados SÓ na janela para a frente: o passado é acrescentar/atualizar, nunca apagar.
+    const window = { start: isoDay(fwdStart), end: isoDay(end) };
     let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base }) : [];
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!fl.ok && !nf.ok) setDenied(true);
     setVacDates((nf.vacations || []).filter((d) => !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === d)));
     setVacSel(true);
+    setSickDates((nf.sicks || []).filter((d) => !(aeEvents || []).some((e) => e && e.type === 'sickDays' && e.date === d)));
+    setSickSel(true);
     setCands(next);
     setLoading(false);
   };
-  useEffect(() => { if (visible && source === 'calendar') load(range); }, [visible, range, source, calendarId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (visible && source === 'calendar') load(); }, [visible, source, calendarId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Abrir já na fonte pedida (ex.: vindo do hub "Importar PDF" → 'paste').
   useEffect(() => { if (visible && initialSource) setSource(initialSource); }, [visible, initialSource]); // eslint-disable-line react-hooks/exhaustive-deps
   // RGPD: ao fechar, descartar o que foi lido do PDF (não fica nada em memória).
@@ -118,7 +135,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
   // Ligar/escolher calendário é na Escala — o botão delega no fluxo do EscalaScreen (onConnect).
   const grant = () => { onConnect && onConnect(); };
-  const runDiag = async () => { const { start, end } = rangeFromOption(range); setDiag(await diagnoseEvents(start, end, company?.slug, calendarId)); };
+  // Diagnóstico = só a janela OPERACIONAL (hoje→fim do mês seguinte) — listar 12 meses seria ruído.
+  const runDiag = async () => { const { end, fwdStart } = importWindow(); setDiag(await diagnoseEvents(fwdStart, end, company?.slug, calendarId)); };
 
   // Vindo do hub "Importar PDF" (initialSource='paste') → abre logo o seletor de ficheiros (poupa 1 toque).
   const pdfAutoRef = useRef(false);
@@ -230,14 +248,16 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         saveDuty(c.duty.duty_date, importSaveFields(c, src, duties[c.duty.duty_date]?.extra));
         if (c.status === 'warn') warn++;
       }
-      // FÉRIAS sugeridas (calendário): registo deliberado — só com o toggle ligado.
+      // FÉRIAS e DOENÇA sugeridas (calendário): registo deliberado — só com o toggle ligado.
       const vacAdded = (src === 'calendar' && vacSel && vacDates.length && addAeEvents) ? vacDates.length : 0;
       if (vacAdded) addAeEvents(vacDates.map((d) => ({ date: d, type: 'vacDays' })));
+      const sickAdded = (src === 'calendar' && sickSel && sickDates.length && addAeEvents) ? sickDates.length : 0;
+      if (sickAdded) addAeEvents(sickDates.map((d) => ({ date: d, type: 'sickDays' })));
       success();
       const saved = saves.length;
       const ignored = fixCount;   // os "a corrigir" ficaram de fora
-      const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}${vacAdded ? ` · ${vacAdded} dia(s) de férias registados` : ''}.`,
-        `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}${vacAdded ? ` · ${vacAdded} leave day(s) logged` : ''}.`);
+      const savedMsg = l(`${saved} aplicada(s)${deletes.length ? ` · ${deletes.length} cancelada(s)` : ''}${ignored ? ` · ${ignored} ignorada(s)` : ''}${warn ? ` · ${warn} com aviso` : ''}${vacAdded ? ` · ${vacAdded} dia(s) de férias registados` : ''}${sickAdded ? ` · ${sickAdded} dia(s) de doença registados` : ''}.`,
+        `${saved} applied${deletes.length ? ` · ${deletes.length} cancelled` : ''}${ignored ? ` · ${ignored} skipped` : ''}${warn ? ` · ${warn} with warnings` : ''}${vacAdded ? ` · ${vacAdded} leave day(s) logged` : ''}${sickAdded ? ` · ${sickAdded} sick day(s) logged` : ''}.`);
       if (onDone) {
         // Sucesso normal → fecha e devolve o resultado à Escala (mostra o toast flutuante).
         onClose(); onDone({ saved, source: src });
@@ -285,17 +305,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         </View>
 
         {source === 'calendar' ? (
-          /* Seletor de intervalo */
-          <View style={s.ranges}>
-            {RANGES.map((r) => {
-              const on = range === r.id;
-              return (
-                <TouchableOpacity key={r.id} onPress={() => { select(); setRange(r.id); }} activeOpacity={0.85} style={[s.rChip, on && s.rChipOn]} hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}>
-                  <Text style={[s.rTxt, on && s.rTxtOn]}>{r.id === 'month' ? l('Próximo mês', 'Next month') : `${r.d} ${l('dias', 'days')}`}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          /* Janela ÚNICA (o seletor morreu): a nota diz o que se lê e a guarda do passado. */
+          <Text style={s.winNote}>{l('Lê os últimos 12 meses e o mês seguinte — o passado só acrescenta (nunca apaga nada teu).', 'Reads the last 12 months plus next month — the past only adds (it never deletes anything of yours).')}</Text>
         ) : (
           /* Upload do PDF — extração 100% LOCAL (nativo PDFKit/PDFBox). RGPD: o ficheiro é lido
              no telemóvel e a cópia é APAGADA logo a seguir; nada sai do dispositivo. */
@@ -345,6 +356,29 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                   </View>
                 </TouchableOpacity>
               ) : null}
+              {/* DOENÇA (SICK) — a par das férias: sugerida como episódio Art. 48; gravar é teu. */}
+              {source === 'calendar' && sickDates.length ? (
+                <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setSickSel((v) => !v)}
+                  accessibilityRole="checkbox" accessibilityState={{ checked: sickSel }}>
+                  <View style={[s.vacTick, sickSel && s.vacTickOn]}>{sickSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.vacT}>{l(`Doença no calendário: ${sickDates.length} dia(s)`, `Sick days in the calendar: ${sickDates.length} day(s)`)}</Text>
+                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {l('registar como episódio de doença (Art. 48)', 'log as a sick episode (Art. 48)')}</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+              {/* Disclosure do PASSADO (à Apple: uma vez, no momento certo): meses antigos
+                  entram com o € DERIVÁVEL; o que o calendário não conta não se inventa. */}
+              {(() => {
+                const todayISO = isoDay(new Date());
+                const pastCount = shown.filter((x) => x.duty.duty_date < todayISO).length;
+                return pastCount ? (
+                  <View style={s.pastInfo}>
+                    <Ionicons name="information-circle-outline" size={15} color={PELE.grey} style={{ marginTop: 1 }} />
+                    <Text style={s.pastInfoTxt}>{l(`${pastCount} de meses anteriores — entra o € derivável da escala (voos · pernoitas · escritório) e os acumulados FTL. O que o calendário não conta — DDO, WFLY, papéis pagos — não se inventa: se os houve, regista-os como Eventos (aceitam qualquer data).`, `${pastCount} from previous months — the roster-derived € (flights · night stops · office) and FTL accumulators come in. What the calendar can’t tell — DDO, WFLY, paid roles — is never invented: if they happened, log them as Events (any date works).`)}</Text>
+                  </View>
+                ) : null;
+              })()}
               {infos.map(({ c, info }) => {
                 const ic = info.kind === 'ready' ? { name: 'checkmark', bg: PELE.okSoft, fg: PELE.ok }
                   : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
@@ -449,6 +483,7 @@ const s = StyleSheet.create({
   rChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
   rTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
   rTxtOn: { color: PELE.paper },
+  winNote: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, paddingHorizontal: 24, paddingBottom: 12, lineHeight: 16 },
   pasteWrap: { paddingHorizontal: 24, paddingBottom: 12 },
   pasteNote: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, marginTop: 10, lineHeight: 16 },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
@@ -493,5 +528,8 @@ const s = StyleSheet.create({
   vacTickOn: { backgroundColor: PELE.yellow, borderColor: PELE.yellow },
   vacT: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   vacS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
+  // Disclosure do passado — informação calma (soft, cinza), não alarme.
+  pastInfo: { flexDirection: 'row', gap: 8, backgroundColor: PELE.soft, borderRadius: 12, padding: 11, marginBottom: 12 },
+  pastInfoTxt: { flex: 1, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15 },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: PELE.line, backgroundColor: PELE.paper },
 });

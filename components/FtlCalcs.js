@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { RADIUS, TYPE, FONT } from '../data/constants';
+import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { Stepper, Seg } from './Stepper';
 import { CalcCard, ResultBlock } from './CalcCard';
 import { PSV_ACCLIMATISED } from '../data/ftl'; // só a lista de faixas (UI)
@@ -13,7 +13,10 @@ import {
   QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 } from '../ftl';
 import { t } from '../data/i18n';
-import { useTheme } from '../data/appContext';
+
+// PELE-FICADO por dentro (2026-07-10), API intacta. Mapa de tokens locais → PELE:
+// os componentes referem C.* inline (herança do tema antigo); a pele não tem useTheme.
+const C = { ink: P.ink, soft: P.soft, sub: P.grey, text: P.ink, line: P.line, red: P.red, redSoft: P.redSoft, redText: P.red, warnText: P.warn, greenText: P.ok };
 
 // Toda a matemática FTL vem do motor `ftl/` — os componentes só tratam de UI.
 // Transição suave ao mostrar/esconder (ex.: fim-limite, troca de estado).
@@ -24,8 +27,6 @@ const anim = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInE
 
 // Botão "Confirmar e registar" — grava o cálculo no dia-alvo (hoje ou dia do Calendário).
 function RegisterBtn({ lang, disabled, onPress }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled} style={[cs.regBtn, disabled && { opacity: 0.4 }]} activeOpacity={0.85}>
       <Text style={cs.regBtnTxt}>{t('ftl.register', lang)}</Text>
@@ -35,13 +36,11 @@ function RegisterBtn({ lang, disabled, onPress }) {
 
 // Seletor de faixa em chips com scroll horizontal (rótulos longos, ex.: Quadro 1).
 function ChipRow({ items, value, onChange }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
       {items.map((label, i) => (
         <TouchableOpacity key={label} onPress={() => onChange(i)} style={[cs.chip, { backgroundColor: value === i ? C.ink : C.soft }]} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
-          <Text style={[cs.chipTxt, { color: value === i ? '#fff' : C.sub }]}>{label}</Text>
+          <Text style={[cs.chipTxt, { color: value === i ? P.onInk : C.sub }]}>{label}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -54,8 +53,6 @@ function ChipRow({ items, value, onChange }) {
 // e Quadro 4 (desconhecido com SGRF/FRM). A 1.ª coluna cobre "1–2" setores, por
 // isso a coluna = setores − 2 (com mínimo 0).
 export function PsvCalc({ lang, onRegister, collapsible }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const [accState, setAccState] = useState('acc'); // 'acc' | 'unk' | 'frm' (manual)
   const [autoAcc, setAutoAcc] = useState(false);   // modo Auto (Quadro 1)
   const [diffIdx, setDiffIdx] = useState(0);       // faixa de diferença de fuso (Quadro 1)
@@ -165,13 +162,13 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
             {PSV_ACCLIMATISED.map((r, i) => (
               <TouchableOpacity key={r.start} onPress={() => pickBand(i)} style={[cs.chip, { backgroundColor: startIdx === i ? C.ink : C.soft }]} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
-                <Text style={[cs.chipTxt, { color: startIdx === i ? '#fff' : C.sub }]}>{r.start}</Text>
+                <Text style={[cs.chipTxt, { color: startIdx === i ? P.onInk : C.sub }]}>{r.start}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
           <View style={cs.timeRow}>
             <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
-            <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={C.sub}
+            <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={P.placeholder}
               keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, reportOutOfBand && cs.timeInputErr]} />
           </View>
           {reportOutOfBand && <Text style={cs.errNote}>{t('ftl.reportBand', lang)} {fmtBandRange(bandStr)}</Text>}
@@ -198,8 +195,6 @@ export function PsvCalc({ lang, onRegister, collapsible }) {
 // Calculadora de ATIVIDADE (manual) — uma atividade dá os três de uma vez:
 // PSV máximo (205) vs FDP real, horas para os Limites (210) e repouso mínimo (235).
 export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSectors, initEnd }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [accState, setAccState] = useState('acc'); // manual
   const [autoAcc, setAutoAcc] = useState(false);   // modo Auto (Quadro 1)
@@ -284,12 +279,12 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
 
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.reportTime', lang)}</Text>
-        <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={report} onChangeText={onReport} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.endTime', lang)}</Text>
-        <TextInput value={end} onChangeText={onEnd} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={end} onChangeText={onEnd} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       {isAcc && bandStr ? <Text style={cs.note}>{t('ftl.psvStart', lang)}: {fmtBandRange(bandStr)}</Text> : null}
@@ -325,7 +320,7 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
         <>
           <View style={cs.timeRow}>
             <Text style={cs.timeLbl}>{t('ftl.splitStart', lang)}</Text>
-            <TextInput value={brkStart} onChangeText={onBrkStart} placeholder="HH:MM" placeholderTextColor={C.sub}
+            <TextInput value={brkStart} onChangeText={onBrkStart} placeholder="HH:MM" placeholderTextColor={P.placeholder}
               keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
           </View>
           <View style={cs.segRow}>
@@ -338,7 +333,7 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
       )}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.flightTime', lang)}</Text>
-        <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={flight} onChangeText={onFlight} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       <Stepper label={t('ftl.postFlight', lang)} value={postFlight} setValue={setPostFlight} min={0} max={120} />
@@ -398,8 +393,6 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
 
 // Limites de serviço / voo.
 export function LimitsCalc({ lang, onRegister, collapsible }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const days = t('ftl.days', lang);
   // Janelas vindas do motor (ORO.FTL.210) — sem constantes duplicadas.
   const LIM_DUTY = DUTY_WINDOWS.map((w) => ({ id: w.id, label: `${w.days} ${days}`, v: w.limit }));
@@ -447,8 +440,6 @@ export function LimitsCalc({ lang, onRegister, collapsible }) {
 // Repouso mínimo. Na base e fora da base são cálculos separados — escolhe o
 // local, introduz o serviço anterior desse turno e regista só esse valor.
 export function RestCalc({ lang, collapsible, onRegister }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const [place, setPlace] = useState('base');
   const [prev, setPrev] = useState(0);
   const [awayTz4, setAwayTz4] = useState(false); // 235(b)(3)(ii): fora da base com fuso ≥ 4 h → piso 14 h
@@ -513,7 +504,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
       <Seg options={[{ id: 'after', label: t('ftl.restDirAfter', lang) }, { id: 'before', label: t('ftl.restDirBefore', lang) }]} value={dir} setValue={setDir} />
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{dir === 'after' ? t('ftl.offBlock', lang) : t('ftl.reportTime', lang)}</Text>
-        <TextInput value={timeStr} onChangeText={setTimeStr} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={timeStr} onChangeText={setTimeStr} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       {resClock != null && (
@@ -547,7 +538,7 @@ export function RestCalc({ lang, collapsible, onRegister }) {
         <>
           <View style={cs.timeRow}>
             <Text style={cs.timeLbl}>{t('ftl.reducedValue', lang)}</Text>
-            <TextInput value={redStr} onChangeText={onRed} placeholder="HH:MM" placeholderTextColor={C.sub}
+            <TextInput value={redStr} onChangeText={onRed} placeholder="HH:MM" placeholderTextColor={P.placeholder}
               keyboardType="numbers-and-punctuation" maxLength={5} style={[cs.timeInput, red.belowFloor && cs.timeInputErr]} />
           </View>
           {redMin != null && (
@@ -574,8 +565,6 @@ export function RestCalc({ lang, collapsible, onRegister }) {
 //  • Cabina  → dado o PSV máximo prolongado + classe, mostra o repouso a bordo mín.
 //  • Pilotos → dado a classe + nº de pilotos extra, mostra o PSV MÁXIMO permitido.
 export function InflightRestCalc({ lang, collapsible, isPilot }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const [cls, setCls] = useState('c1');
   const [fdp, setFdp] = useState('');   // PSV máximo prolongado (HH:MM) — cabina
   const [sectors, setSectors] = useState(0);
@@ -628,7 +617,7 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
       {clsSeg}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.maxExtFdp', lang)}</Text>
-        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       <Stepper label={t('ftl.sectors', lang)} value={sectors} setValue={setSectors} min={0} max={5} />
@@ -653,8 +642,6 @@ export function InflightRestCalc({ lang, collapsible, isPilot }) {
 
 // Standby (CS FTL.1.225) — impacto no PSV máximo e contagem como serviço.
 export function StandbyCalc({ lang, collapsible, onRegister }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const toH = (min) => +(min / 60).toFixed(1);
   const [type, setType] = useState('airport');
@@ -684,13 +671,13 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
       {!isAirport && (
         <View style={cs.timeRow}>
           <Text style={cs.timeLbl}>{t('ftl.sbStart', lang)}</Text>
-          <TextInput value={start} onChangeText={onStart} placeholder="HH:MM" placeholderTextColor={C.sub}
+          <TextInput value={start} onChangeText={onStart} placeholder="HH:MM" placeholderTextColor={P.placeholder}
             keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
         </View>
       )}
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.sbMaxFdp', lang)}</Text>
-        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={fdp} onChangeText={onFdp} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
 
@@ -729,8 +716,6 @@ export function StandbyCalc({ lang, collapsible, onRegister }) {
 
 // Posicionamento (ORO.FTL.215(b)) — conta 100% como período de serviço (ORO.FTL.210).
 export function PositioningCalc({ lang, collapsible, onRegister }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [dur, setDur] = useState('');
   const onDur = (v) => { const m = maskClock(v); if (m == null) return; anim(); setDur(m); };
@@ -741,7 +726,7 @@ export function PositioningCalc({ lang, collapsible, onRegister }) {
     <CalcCard title={t('ftl.calcPositioning', lang)} style={cs.wrap} collapsible={collapsible} defaultOpen={!collapsible}>
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.posDuration', lang)}</Text>
-        <TextInput value={dur} onChangeText={onDur} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={dur} onChangeText={onDur} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       {complete && (
@@ -760,8 +745,6 @@ export function PositioningCalc({ lang, collapsible, onRegister }) {
 
 // Adiamento da apresentação (CS FTL.1.205(d)) — qual a hora que manda no PSV máximo.
 export function DelayedReportingCalc({ lang, collapsible }) {
-  const C = useTheme();
-  const cs = makeCs(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [accState, setAccState] = useState('acc');
   const [sectors, setSectors] = useState(0);
@@ -783,12 +766,12 @@ export function DelayedReportingCalc({ lang, collapsible }) {
         value={accState} setValue={(v) => { anim(); setAccState(v); setSectors(s => Math.min(s, v === 'acc' ? 10 : 8)); }} />
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.origReport', lang)}</Text>
-        <TextInput value={orig} onChangeText={onOrig} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={orig} onChangeText={onOrig} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       <View style={cs.timeRow}>
         <Text style={cs.timeLbl}>{t('ftl.delayedReport', lang)}</Text>
-        <TextInput value={delayed} onChangeText={onDelayed} placeholder="HH:MM" placeholderTextColor={C.sub}
+        <TextInput value={delayed} onChangeText={onDelayed} placeholder="HH:MM" placeholderTextColor={P.placeholder}
           keyboardType="numbers-and-punctuation" maxLength={5} style={cs.timeInput} />
       </View>
       <Stepper label={t('ftl.sectors', lang)} value={sec} setValue={setSectors} min={0} max={maxSectors} />
@@ -820,32 +803,32 @@ export function DelayedReportingCalc({ lang, collapsible }) {
   );
 }
 
-const makeCs = (C) => StyleSheet.create({
+const cs = StyleSheet.create({
   wrap: { marginBottom: 10 },
-  fieldLabel: { fontSize: 13, color: C.text, marginBottom: 8 },
-  chip: { borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7 },
-  chipTxt: { fontSize: TYPE.label, fontFamily: FONT.semibold },
-  regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.ink, borderRadius: RADIUS.pill, paddingVertical: 12, marginTop: 12 },
-  regBtnTxt: { color: '#fff', fontSize: TYPE.sub, fontFamily: FONT.bold },
-  note: { fontSize: TYPE.micro, color: C.sub, marginTop: 10, lineHeight: 16 },
-  extRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  extLbl: { fontSize: TYPE.sub, color: C.text, fontFamily: FONT.medium },
-  extVal: { fontSize: TYPE.value, fontFamily: FONT.bold, color: C.text },
+  fieldLabel: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 0.5, textTransform: 'uppercase', color: P.grey, marginBottom: 8 },
+  chip: { borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  chipTxt: { fontSize: 12, fontFamily: F.bodyBold },
+  regBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: P.ink, borderRadius: 14, paddingVertical: 13, marginTop: 12 },
+  regBtnTxt: { color: P.onInk, fontSize: 13, fontFamily: F.bodyHeavy, letterSpacing: 0.3 },
+  note: { fontSize: 11, fontFamily: F.bodyMed, color: P.grey, marginTop: 10, lineHeight: 16 },
+  extRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: P.line },
+  extLbl: { fontSize: 12.5, fontFamily: F.bodyMed, color: P.ink },
+  extVal: { fontSize: 17, fontFamily: F.display, color: P.ink, fontVariant: ['tabular-nums'] },
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginTop: 4 },
-  timeLbl: { fontSize: TYPE.body, color: C.text, flex: 1, paddingRight: 8 },
-  timeInput: { width: 84, textAlign: 'center', fontFamily: FONT.medium, fontSize: TYPE.body, backgroundColor: C.soft, borderRadius: 8, paddingVertical: 9, borderWidth: 1.5, borderColor: C.line, color: C.text },
-  timeInputErr: { borderColor: C.red, color: C.redText, backgroundColor: C.redSoft },
-  errNote: { fontSize: TYPE.micro, color: C.redText, marginTop: 4, fontFamily: FONT.semibold },
-  okNote: { fontSize: TYPE.micro, color: C.greenText, marginTop: 4, fontFamily: FONT.semibold },
-  warnNote: { fontSize: TYPE.micro, color: C.warnText, marginTop: 4, fontFamily: FONT.semibold },
+  timeLbl: { fontSize: 13, fontFamily: F.bodyMed, color: P.ink, flex: 1, paddingRight: 8 },
+  timeInput: { width: 84, textAlign: 'center', fontFamily: F.displayMed, fontSize: 16, backgroundColor: P.soft, borderRadius: 12, paddingVertical: 9, borderWidth: 1.5, borderColor: P.line, color: P.ink },
+  timeInputErr: { borderColor: P.red, color: P.red, backgroundColor: P.redSoft },
+  errNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.red, marginTop: 4 },
+  okNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.ok, marginTop: 4 },
+  warnNote: { fontSize: 11, fontFamily: F.bodyBold, color: P.warn, marginTop: 4 },
   // Calculadora de atividade (DutyCalc)
   segRow: { marginTop: 8, marginBottom: 4 },
-  advToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 4, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line },
-  advToggleTxt: { fontSize: TYPE.label, fontFamily: FONT.bold, color: C.text, letterSpacing: 0.3, textTransform: 'uppercase' },
-  advCaret: { fontSize: TYPE.body, color: C.sub },
-  dutyResult: { marginTop: 14, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
+  advToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 4, paddingVertical: 10, borderTopWidth: 1, borderTopColor: P.line },
+  advToggleTxt: { fontSize: 11, fontFamily: F.bodyHeavy, color: P.ink, letterSpacing: 0.5, textTransform: 'uppercase' },
+  advCaret: { fontSize: 13, color: P.grey },
+  dutyResult: { marginTop: 14, borderWidth: 1, borderColor: P.line, borderRadius: 14, padding: 14 },
   dutyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  dutyDivider: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  dutyLbl: { fontSize: TYPE.sub, color: C.sub, fontFamily: FONT.semibold },
-  dutyVal: { fontSize: TYPE.body, fontFamily: FONT.bold, color: C.text },
+  dutyDivider: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: P.line },
+  dutyLbl: { fontSize: 12.5, fontFamily: F.bodyMed, color: P.grey },
+  dutyVal: { fontSize: 13.5, fontFamily: F.bodyBold, color: P.ink, fontVariant: ['tabular-nums'] },
 });

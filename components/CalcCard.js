@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, TYPE, FONT } from '../data/constants';
+import Icon from './Icon';
 import Eyebrow from './Eyebrow';
+import { PELE as P, PELE_NIGHT as N, PELE_FONT as F } from '../data/constants';
 import { t } from '../data/i18n';
-import { useTheme } from '../data/appContext';
 
 // Invólucro de calculadora. Por defeito estático (eyebrow + caixa).
 // Com `collapsible`, vira acordeão (fechado se `defaultOpen={false}`).
+// PELE-FICADO por dentro (2026-07-10), API intacta.
 export function CalcCard({ title = 'CALCULADORA', children, style, collapsible = false, defaultOpen = true }) {
-  const C = useTheme();
-  const c = makeC(C);
   const [open, setOpen] = useState(defaultOpen);
   if (collapsible) {
     return (
       <View style={[c.acc, style]}>
         <TouchableOpacity style={c.accHead} activeOpacity={0.7} onPress={() => setOpen(o => !o)}>
-          <Ionicons name="calculator-outline" size={13} color={C.red} />
+          <Icon name="gauge" size={13} color={P.ink} />
           <Eyebrow>{title}</Eyebrow>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.sub} style={{ marginLeft: 'auto' }} />
+          <Icon name="chevron" rot={open ? -90 : 90} size={14} color={P.grey} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
         {open && <View style={c.accBody}>{children}</View>}
       </View>
@@ -27,7 +25,7 @@ export function CalcCard({ title = 'CALCULADORA', children, style, collapsible =
   return (
     <View style={style}>
       <View style={c.head}>
-        <Ionicons name="calculator-outline" size={13} color={C.red} />
+        <Icon name="gauge" size={13} color={P.ink} />
         <Eyebrow>{title}</Eyebrow>
       </View>
       <View style={c.inner}>{children}</View>
@@ -35,13 +33,12 @@ export function CalcCard({ title = 'CALCULADORA', children, style, collapsible =
   );
 }
 
-// Bloco de resultado (caixa preta, número a vermelho).
+// Bloco de resultado (placa ink, número a AMARELO — o amarelo da pele vive nos totais).
 // API flexível: `lines` (multi-linha [{label,val}]) OU `label`+`value` (linha única).
 // `audit` (opcional) torna o resultado auditável: estado + secção expansível
 // "Como foi calculado" (regra, entradas, fórmula/passos, resultado, justificação).
-export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = TYPE.display, audit, lang = 'pt' }) {
-  const C = useTheme();
-  const c = makeC(C);
+// Estados ok/erro sobre a placa usam os tons NOTURNOS (luminosidade p/ fundo escuro).
+export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = 30, audit, lang = 'pt' }) {
   const [open, setOpen] = useState(false);
   const data = lines || [{ label, val: value }];
   const valid = audit?.valid;
@@ -56,8 +53,8 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
 
       {valid ? (
         <View style={c.validRow}>
-          <View style={[c.validDot, { backgroundColor: valid.ok ? C.green : C.red }]} />
-          <Text style={[c.validTxt, { color: valid.ok ? C.green : C.red }]}>{valid.label}</Text>
+          <View style={[c.validDot, { backgroundColor: valid.ok ? N.ok : N.red }]} />
+          <Text style={[c.validTxt, { color: valid.ok ? N.ok : N.red }]}>{valid.label}</Text>
         </View>
       ) : null}
 
@@ -67,7 +64,7 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
         <>
           <TouchableOpacity style={c.auditToggle} activeOpacity={0.7} onPress={() => setOpen(o => !o)}>
             <Text style={c.auditToggleTxt}>{t('audit.how', lang)}</Text>
-            <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color="rgba(255,255,255,0.7)" />
+            <Icon name="chevron" rot={open ? -90 : 90} size={13} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>
           {open ? (
             <View style={c.auditBody}>
@@ -89,7 +86,7 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
 
               <View style={[c.auditKv, c.auditResult]}>
                 <Text style={c.auditK}>{t('audit.result', lang)}</Text>
-                <Text style={[c.auditV, { color: C.red }]}>{audit.result}</Text>
+                <Text style={[c.auditV, { color: P.yellow }]}>{audit.result}</Text>
               </View>
 
               {audit.why ? (
@@ -106,31 +103,31 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = T
   );
 }
 
-const makeC = (C) => StyleSheet.create({
+const c = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  inner: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 14 },
-  acc: { borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.lg, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: C.card },
+  inner: { borderWidth: 1, borderColor: P.line, borderRadius: 14, padding: 14 },
+  acc: { borderWidth: 1, borderColor: P.line, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: P.paper },
   accHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   accBody: { marginTop: 12 },
-  result: { marginTop: 12, backgroundColor: C.ink, borderRadius: 12, padding: 14 },
-  resLabel: { fontSize: TYPE.eyebrow, letterSpacing: 2, color: 'rgba(255,255,255,0.7)', fontFamily: FONT.semibold, textTransform: 'uppercase' },
-  resVal: { color: C.red, fontFamily: FONT.display, marginTop: 2, fontVariant: ['tabular-nums'] },
-  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
+  result: { marginTop: 12, backgroundColor: P.ink, borderRadius: 14, padding: 14 },
+  resLabel: { fontSize: 10, letterSpacing: 2, color: P.onInkSub, fontFamily: F.bodyHeavy, textTransform: 'uppercase' },
+  resVal: { color: P.yellow, fontFamily: F.display, marginTop: 2, fontVariant: ['tabular-nums'] },
+  resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: F.bodyMed, marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 
   validRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   validDot: { width: 7, height: 7, borderRadius: 4 },
-  validTxt: { fontSize: TYPE.micro, fontFamily: FONT.bold, letterSpacing: 0.3, textTransform: 'uppercase' },
+  validTxt: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 0.3, textTransform: 'uppercase' },
 
   auditToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 10 },
-  auditToggleTxt: { fontSize: TYPE.sub, fontFamily: FONT.semibold, color: 'rgba(255,255,255,0.85)' },
+  auditToggleTxt: { fontSize: 12, fontFamily: F.body, color: 'rgba(255,255,255,0.85)' },
   auditBody: { marginTop: 4 },
-  auditHd: { fontSize: TYPE.eyebrow, letterSpacing: 1.5, color: 'rgba(255,255,255,0.6)', fontFamily: FONT.bold, textTransform: 'uppercase', marginTop: 14, marginBottom: 5 },
-  auditRule: { fontSize: TYPE.sub, fontFamily: FONT.bold, color: '#fff' },
-  auditText: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 17, marginTop: 3 },
+  auditHd: { fontSize: 10, letterSpacing: 1.5, color: 'rgba(255,255,255,0.6)', fontFamily: F.bodyHeavy, textTransform: 'uppercase', marginTop: 14, marginBottom: 5 },
+  auditRule: { fontSize: 12, fontFamily: F.bodyBold, color: '#FFFFFF' },
+  auditText: { fontSize: 11, fontFamily: F.bodyMed, color: 'rgba(255,255,255,0.7)', lineHeight: 17, marginTop: 3 },
   auditKv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 3 },
-  auditK: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', flex: 1 },
-  auditV: { fontSize: TYPE.micro, fontFamily: FONT.semibold, color: '#fff' },
-  auditFormula: { fontSize: TYPE.sub, fontFamily: FONT.medium, color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  auditStep: { fontSize: TYPE.micro, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginTop: 4 },
+  auditK: { fontSize: 11, fontFamily: F.bodyMed, color: 'rgba(255,255,255,0.7)', flex: 1 },
+  auditV: { fontSize: 11, fontFamily: F.body, color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  auditFormula: { fontSize: 12, fontFamily: F.bodyMed, color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontVariant: ['tabular-nums'] },
+  auditStep: { fontSize: 11, fontFamily: F.bodyMed, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginTop: 4 },
   auditResult: { marginTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8 },
 });

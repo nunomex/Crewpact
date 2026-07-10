@@ -1,19 +1,18 @@
 import React, { useState, useMemo, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { RADIUS, FONT } from '../data/constants';
+import Icon from './Icon';
+import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { searchAirports, airportInfo } from '../data/airports';
-import { AppContext, useTheme } from '../data/appContext';
+import { AppContext } from '../data/appContext';
 import { select, success } from '../data/haptics';
 
 // Adiciona UM setor de cada vez: escolhes 2 estações (origem → destino) e confirmas no ✓ →
 // emite `onAdd(dep, arr)` (o pai cria o setor com o nº de voo escrito). Pesquisa por nome/sigla
 // + input tolerante ("lis opo"/"LISOPO"). Sem a grelha "as tuas estações" (removida a pedido).
 // `onAdd` pode devolver `false` (ex. falta o nº do voo) → mantém as estações escolhidas.
+// PELE-FICADO por dentro (2026-07-10), API intacta; sigla em Barlow (a gramática dos IATA).
 export default function AirportRoute({ onAdd, error }) {
   const { lang } = useContext(AppContext);
-  const C = useTheme();
-  const s = makeStyles(C);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const [picked, setPicked] = useState([]);   // até 2 aeroportos (origem, destino)
@@ -45,13 +44,13 @@ export default function AirportRoute({ onAdd, error }) {
     <View>
       {/* Caixa: ícone + chips (origem → destino) + input OU ✓ quando há 2 */}
       <View style={[s.box, focused && s.boxOn, error && s.boxErr]}>
-        <Ionicons name="search" size={16} color={C.sub} />
+        <Icon name="search" size={16} color={P.grey} />
         {picked.map((c, i) => (
           <React.Fragment key={c + i}>
             {i > 0 ? <Text style={s.arrow}>→</Text> : null}
             <View style={s.chip}>
-              <Text style={s.chipTxt}>{c}</Text>
-              <TouchableOpacity onPress={() => removeAt(i)} hitSlop={{ top: 13, bottom: 13, left: 13, right: 14 }} style={s.chipX}><Ionicons name="close" size={12} color="#fff" /></TouchableOpacity>
+              <Text style={s.chipTxt} allowFontScaling={false}>{c}</Text>
+              <TouchableOpacity onPress={() => removeAt(i)} hitSlop={{ top: 13, bottom: 13, left: 13, right: 14 }} style={s.chipX}><Icon name="close" size={11} color={P.onInk} /></TouchableOpacity>
             </View>
           </React.Fragment>
         ))}
@@ -62,14 +61,14 @@ export default function AirportRoute({ onAdd, error }) {
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 150)}
             placeholder={picked.length === 0 ? l('origem (ex. LIS)', 'origin (e.g. LIS)') : l('destino (ex. OPO)', 'destination (e.g. OPO)')}
-            placeholderTextColor={C.sub}
+            placeholderTextColor={P.placeholder}
             autoCapitalize="characters"
             autoCorrect={false}
             style={s.input}
           />
         ) : (
           <TouchableOpacity onPress={commit} style={s.ok} activeOpacity={0.85} accessibilityLabel={l('Adicionar setor', 'Add sector')}>
-            <Ionicons name="checkmark" size={18} color="#fff" />
+            <Icon name="check" size={16} color={P.onInk} />
           </TouchableOpacity>
         )}
       </View>
@@ -80,12 +79,12 @@ export default function AirportRoute({ onAdd, error }) {
           <Text style={s.dhead}>{l('Resultados', 'Results')}</Text>
           {sugg.map((r, i) => (
             <TouchableOpacity key={r.iata} onPress={() => add(r.iata)} activeOpacity={0.7} style={[s.opt, i > 0 && s.optBorder]}>
-              <View style={s.pin}><Ionicons name="location-outline" size={15} color={C.sub} /></View>
+              <View style={s.pin}><Icon name="pin" size={14} color={P.grey} /></View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={s.optCity} numberOfLines={1}>{r.city || r.name}</Text>
                 <Text style={s.optName} numberOfLines={1}>{[r.name, r.cc].filter(Boolean).join(' · ')}</Text>
               </View>
-              <View style={s.badge}><Text style={s.badgeTxt}>{r.iata}</Text></View>
+              <View style={s.badge}><Text style={s.badgeTxt} allowFontScaling={false}>{r.iata}</Text></View>
             </TouchableOpacity>
           ))}
         </View>
@@ -94,25 +93,25 @@ export default function AirportRoute({ onAdd, error }) {
   );
 }
 
-const makeStyles = (C) => StyleSheet.create({
+const s = StyleSheet.create({
   box: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 7, minHeight: 52,
-    borderWidth: 1.5, borderColor: C.line, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14, paddingVertical: 8 },
-  boxOn: { borderColor: C.ink },
-  boxErr: { borderColor: C.red },
-  arrow: { color: C.sub, fontSize: 13 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 32, backgroundColor: C.ink, borderRadius: 11, paddingLeft: 11, paddingRight: 8 },
-  chipTxt: { color: '#fff', fontFamily: FONT.bold, fontSize: 14, letterSpacing: 0.4 },
+    borderWidth: 1.5, borderColor: P.line, borderRadius: 16, backgroundColor: P.paper, paddingHorizontal: 14, paddingVertical: 8 },
+  boxOn: { borderColor: P.ink },
+  boxErr: { borderColor: P.red },
+  arrow: { color: P.grey, fontSize: 13 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 32, backgroundColor: P.ink, borderRadius: 11, paddingLeft: 11, paddingRight: 8 },
+  chipTxt: { color: P.onInk, fontFamily: F.display, fontSize: 15, letterSpacing: 0.8 },
   chipX: { width: 18, height: 18, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, minWidth: 100, height: 32, fontFamily: FONT.semibold, fontSize: 14, color: C.text, padding: 0, includeFontPadding: false, textAlignVertical: 'center' },
-  ok: { width: 36, height: 32, borderRadius: 10, backgroundColor: C.green || C.ink, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  input: { flex: 1, minWidth: 100, height: 32, fontFamily: F.body, fontSize: 14, color: P.ink, padding: 0, includeFontPadding: false, textAlignVertical: 'center' },
+  ok: { width: 36, height: 32, borderRadius: 10, backgroundColor: P.ok, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
 
-  drop: { marginTop: 10, borderWidth: 1, borderColor: C.line, borderRadius: 16, backgroundColor: C.card, overflow: 'hidden' },
-  dhead: { fontSize: 10.5, fontFamily: FONT.heavy, letterSpacing: 1.1, textTransform: 'uppercase', color: C.sub, paddingHorizontal: 14, paddingTop: 11, paddingBottom: 7 },
+  drop: { marginTop: 10, borderWidth: 1, borderColor: P.line, borderRadius: 16, backgroundColor: P.paper, overflow: 'hidden' },
+  dhead: { fontSize: 10.5, fontFamily: F.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: P.grey, paddingHorizontal: 14, paddingTop: 11, paddingBottom: 7 },
   opt: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 10 },
-  optBorder: { borderTopWidth: 1, borderTopColor: C.line },
-  pin: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  optCity: { fontSize: 14, fontFamily: FONT.bold, color: C.text },
-  optName: { fontSize: 11, fontFamily: FONT.medium, color: C.sub, marginTop: 1 },
-  badge: { backgroundColor: C.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
-  badgeTxt: { fontFamily: FONT.heavy, fontSize: 13, letterSpacing: 1, color: C.text },
+  optBorder: { borderTopWidth: 1, borderTopColor: P.line },
+  pin: { width: 30, height: 30, borderRadius: 9, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
+  optCity: { fontSize: 14, fontFamily: F.bodyBold, color: P.ink },
+  optName: { fontSize: 11, fontFamily: F.bodyMed, color: P.grey, marginTop: 1 },
+  badge: { backgroundColor: P.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
+  badgeTxt: { fontFamily: F.display, fontSize: 13.5, letterSpacing: 1, color: P.ink },
 });

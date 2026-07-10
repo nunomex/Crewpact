@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrewPact · "O teu ano" — cartão de partilha na pele</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0c;color:#e8e8ea;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:34px 20px 90px;display:flex;flex-direction:column;align-items:center}
+  .lead{max-width:860px;text-align:center;margin-bottom:6px}
+  .lead h1{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .lead p{margin-top:9px;font-size:12.5px;color:#9aa0a8;line-height:1.6}.lead p b{color:#FFB800}
+  .row{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+  .item{display:flex;flex-direction:column;align-items:center}
+  .cap{margin:0 2px 13px;text-align:center;max-width:360px}
+  .cap .t{font-family:'Barlow Condensed';font-size:16px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px}.cap .t b{color:#FFB800}
+  .cap .d{font-size:11px;color:#8b929c;margin-top:4px;line-height:1.5}
+  .notes{max-width:760px;margin-top:34px;font-size:11.5px;color:#8b929c;line-height:1.75;text-align:left}
+  .notes b{color:#e8e8ea}.notes i{color:#FFB800;font-style:normal}
+
+  /* ── O CARTÃO · cores FIXAS (vira imagem PNG, igual para todos) ── */
+  .card{position:relative;border-radius:24px;overflow:hidden;box-shadow:0 34px 80px -26px rgba(0,0,0,.8)}
+  .post{width:340px;height:425px}   /* 4:5 — o MESMO formato do cartão do voo */
+
+  /* hairline cozida no cartão: invisível em feed escuro, define a borda do PNG em chat claro */
+  .cream{background:#F4F1E8;color:#141414;box-shadow:inset 0 0 0 1px rgba(20,20,20,.08)}
+  /* halo quente no canto (a MESMA gramática do halo do Início — SVG radial no RN) */
+  .cream:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 70% at 82% 4%,rgba(255,184,0,.14),transparent 55%);z-index:1}
+
+  /* FANTASMA = O ANO (a assinatura; no irmão é a origem do voo) */
+  .ghost{position:absolute;right:-8px;top:-30px;font-family:'Barlow Condensed';font-weight:800;font-size:172px;line-height:.84;letter-spacing:-8px;color:rgba(20,20,20,.05);pointer-events:none;z-index:1}
+
+  .pad{position:absolute;inset:0;padding:22px;display:flex;flex-direction:column;z-index:2}
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .brand{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:-.2px;color:#141414}
+  .bdot{width:8px;height:8px;border-radius:3px;background:#FFB800}
+
+  .hero{margin-top:auto}
+  .hk{font-weight:800;font-size:9px;letter-spacing:1.5px;color:#8a8574;text-transform:uppercase}
+  .hrow{display:flex;align-items:baseline;gap:8px;margin-top:2px;margin-left:-3px}
+  /* O NÚMERO: ink, com o SUBLINHADO amarelo RETO — a gramática dos totais do PDF 245
+     escalada (lá 3px sob Barlow 30 ≈ 10%; aqui ~10px sob 104). A rotação/pousa fica
+     para a voz manuscrita — os totais são retos. */
+  .num{position:relative;font-family:'Barlow Condensed';font-weight:900;font-size:104px;line-height:.9;letter-spacing:-3px;color:#141414}
+  .num:after{content:"";position:absolute;left:4px;right:2px;bottom:5px;height:10px;background:#FFB800;z-index:-1;opacity:.95}
+  .unit{font-family:'Barlow Condensed';font-weight:600;font-size:30px;color:#8a8574}
+
+  .strip{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(20,20,20,.14)}
+  .cell .k{font-weight:800;font-size:7.5px;letter-spacing:.9px;color:#a29a86;text-transform:uppercase}
+  .cell .v{font-family:'Barlow Condensed';font-weight:700;font-size:19px;margin-top:3px;color:#141414;font-variant-numeric:tabular-nums}
+
+  .dests{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+  .chip{border:1px solid rgba(20,20,20,.16);border-radius:999px;padding:5px 10px;font-size:10px;font-weight:800;letter-spacing:.6px;color:#141414}
+  .chip b{color:#a29a86;font-weight:800}
+
+  /* rodapé SEM segundo ponto amarelo — um cartão, uma marca (o ponto vive no wordmark) */
+  .foot{margin-top:14px;text-align:center;font-weight:800;font-size:9px;letter-spacing:2.5px;color:#a29a86}
+
+  /* ── A FOLHA à volta (cromo da app — não sai na imagem) ── */
+  .sheet{width:340px;border-radius:28px;background:#FFFFFF;border:1px solid #ECEAE4;padding:18px 16px 20px;display:flex;flex-direction:column}
+  .sh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .sh-t{font-size:15px;font-weight:700;color:#141414}
+  .sh-x{width:36px;height:36px;border-radius:999px;background:#F4F2ED;display:flex;align-items:center;justify-content:center;color:#141414;font-size:13px}
+  .sheet .card{box-shadow:0 18px 44px -18px rgba(20,20,20,.35)}
+  .sheet .post{width:100%;height:385px}
+  .sh-hint{font-size:11px;color:#77776F;line-height:1.55;margin-top:13px;font-weight:500}
+  .sh-btn{margin-top:12px;background:#141414;color:#fff;border-radius:14px;padding:14px 0;text-align:center;font-size:13.5px;font-weight:800;letter-spacing:.3px}
+</style>
+</head>
+<body>
+  <div class="lead">
+    <h1>"O teu ano, num cartão" — a pele no poster</h1>
+    <p>O irmão do cartão do voo (<b>mesma família</b>, mesmo 4:5): fantasma = <b>o ano</b>, ponto amarelo + CrewPact, herói = as horas em Barlow com o <b>marcador amarelo</b> (amarelo nos totais — nunca é texto), tira de células, chips-passaporte dos destinos. <b>Cream fixo</b> — a imagem é igual para todos, não segue tema. O navy e o ponto vermelho morrem.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- ① O CARTÃO (o que sai na imagem) -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>①</b> O cartão · post 4:5 · cream fixo</div><div class="d">O que a folha de partilha envia. Fantasma = 2026; o ano não se repete em texto.</div></div>
+      <div class="card post cream">
+        <div class="ghost">2026</div>
+        <div class="pad">
+          <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
+          <div class="hero">
+            <div class="hk">Horas de voo · easyJet</div>
+            <div class="hrow"><div class="num">684,5</div><div class="unit">h</div></div>
+            <div class="strip">
+              <div class="cell"><div class="k">Setores</div><div class="v">412</div></div>
+              <div class="cell"><div class="k">Voos</div><div class="v">168</div></div>
+              <div class="cell"><div class="k">Pernoitas</div><div class="v">37</div></div>
+              <div class="cell"><div class="k">Dias de escala</div><div class="v">186</div></div>
+            </div>
+            <div class="dests">
+              <span class="chip">FNC <b>×31</b></span>
+              <span class="chip">OPO <b>×26</b></span>
+              <span class="chip">GVA <b>×19</b></span>
+              <span class="chip">MAD <b>×14</b></span>
+            </div>
+            <div class="foot">CREWPACT.APP</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② A FOLHA (cromo pele à volta — como o irmão do voo) -->
+    <div class="item">
+      <div class="cap"><div class="t"><b>②</b> A folha · cromo pele</div><div class="d">Papel, título, o cartão, a nota de privacidade e o Partilhar ink — igual à folha do voo.</div></div>
+      <div class="sheet">
+        <div class="sh-top"><div class="sh-t">O teu ano, num cartão</div><div class="sh-x">✕</div></div>
+        <div class="card post cream">
+          <div class="ghost" style="font-size:158px">2026</div>
+          <div class="pad">
+            <div class="top"><div class="brand"><span class="bdot"></span>CrewPact</div></div>
+            <div class="hero">
+              <div class="hk">Horas de voo · easyJet</div>
+              <div class="hrow"><div class="num" style="font-size:92px">684,5</div><div class="unit">h</div></div>
+              <div class="strip">
+                <div class="cell"><div class="k">Setores</div><div class="v">412</div></div>
+                <div class="cell"><div class="k">Voos</div><div class="v">168</div></div>
+                <div class="cell"><div class="k">Pernoitas</div><div class="v">37</div></div>
+                <div class="cell"><div class="k">Dias de escala</div><div class="v">186</div></div>
+              </div>
+              <div class="dests">
+                <span class="chip">FNC <b>×31</b></span>
+                <span class="chip">OPO <b>×26</b></span>
+                <span class="chip">GVA <b>×19</b></span>
+                <span class="chip">MAD <b>×14</b></span>
+              </div>
+              <div class="foot">CREWPACT.APP</div>
+            </div>
+          </div>
+        </div>
+        <div class="sh-hint">Os números vêm da tua escala registada (ano civil). A imagem é criada no telemóvel — partilhas se e com quem quiseres.</div>
+        <div class="sh-btn">Partilhar</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <b>Decisões (aprovadas na análise):</b><br>
+    · <b>Cream #F4F1E8 fixo</b> — "o teu ano" é poster de orgulho à luz do dia; distingue-se do irmão noturno; a imagem não segue tema (igual para todos).<br>
+    · <b>Fantasma = o ano</b> (displayHeavy esbatido, canto sup-dir) — como Escala 07↔Julho: a textura dá o contexto, o ano não se repete em texto. 4 dígitos SEMPRE → tamanho FIXO no RN (zero adjustsFontSizeToFit — lição do Início).<br>
+    · <b>Número ink + <i>sublinhado amarelo RETO</i></b> — a gramática dos totais do PDF 245 escalada (3px sob 30 ≈ 10% → ~10px sob 104). A rotação/pousa pertence à voz manuscrita; totais são retos. No RN: View amarela absoluta atrás dos dígitos.<br>
+    · <b>Tira de células</b> = a gramática do cartão do voo (kickers Hanken 800 minúsculos + valores Barlow, hairline por cima). 4 células: Setores · Voos · Pernoitas · Dias de escala.<br>
+    · <b>Chips-passaporte</b> dos destinos (top 4, hairline sobre o cream) — o "×N" em tom quente.<br>
+    · <b>Halo quente</b> no canto = a gramática do halo do Início (SVG radial no RN); se pesar na captura, cai sem dor.<br>
+    · <b>Cromo fora do cartão</b> (título, hint, Partilhar) = pele direto, copiado da folha do voo.<br>
+    <b>Revisão sénior (2.ª ronda — erros meus corrigidos):</b><br>
+    · Kicker "ANO DE VOO" do topo-dir MORTO — fazia eco com "HORAS DE VOO" do herói e pisava o fantasma. Uma voz por canto; o topo é só a marca.<br>
+    · Segundo ponto amarelo do rodapé MORTO — um cartão, uma marca; rodapé = texto simples.<br>
+    · Números plausíveis: Voos 168 ≤ Dias de escala 186 (mais voos que dias era impossível); 412 setores ≈ 2,45 pernas/dia easyJet.<br>
+    · <b>Hairline cozida no cartão</b> (inset ink .08) — invisível em feed escuro, define a borda do PNG em chat claro. ⚠ O cartão do VOO (cream) tem o mesmo buraco — dar-lhe o mesmo remédio quando se lhe tocar.<br>
+    · Sem tabular-nums no herói (poster estático, proporcional assenta melhor); ✕ da folha a 36 (cânone).<br>
+    · ⚠ Alerta colateral: o FlightShareCard usa adjustsFontSizeToFit com a meteo a chegar async — a classe do bug do fantasma invisível (iOS). Observar no device.<br>
+    <b>Não muda:</b> números do yearStats (golden), view-shot→partilha, privacidade ("a imagem nasce no telemóvel"), guarda isYear &amp;&amp; flightMin&gt;0 nas Estatísticas.<br>
+    <b>Prémio:</b> com este port o useTheme fica com zero consumidores → Inter + Space Grotesk podem sair do useFonts (arranque/tamanho).
+  </div>
+</body>
+</html>

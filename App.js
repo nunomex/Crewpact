@@ -36,7 +36,7 @@ import { capabilitiesFor, resolvePostFlight, resolveVacationDays } from './data/
 import { migrateCrew, resolveCrew } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
-import { buildIncoming, rangeFromOption } from './data/rosterImport';
+import { buildIncoming } from './data/rosterImport';
 import { diffRoster } from './data/rosterDiff';
 import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
@@ -964,7 +964,11 @@ export default function App() {
     if (!calendarId) return null;   // só deteta se houver calendário LIGADO (sem prompt; sem leitura "às cegas")
     try {
       const co = company?.slug;
-      const { start, end } = rangeFromOption('month');
+      // Janela da DETEÇÃO: de HOJE até ao fim do mês SEGUINTE — explícita, porque a opção
+      // 'month' do rangeFromOption passou a ser o mês civil seguinte (2026-07-10) e herdá-la
+      // aqui deixava a deteção CEGA para o resto do mês corrente (onde vive o RDP no-dia).
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const end = new Date(start.getFullYear(), start.getMonth() + 2, 1);
       const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
       if (!fl.ok && !nf.ok) return null;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });

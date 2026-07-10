@@ -102,21 +102,10 @@ export const dutyFromNonFlight = (it) => {
   };
 };
 
-// Intervalo de importação a partir da opção do seletor. '14'/'28' = janela para a frente,
-// de hoje (2 e 4 semanas — o ritmo de publicação). 'month' = o PRÓXIMO MÊS CIVIL inteiro
-// (1→último dia; 2026-07-10, user: a etiqueta "Próximo mês" mentia — era hoje+30 rolante,
-// mas a escala publica-se por mês civil: quem toca "Próximo mês" em julho quer AGOSTO).
-export const rangeFromOption = (option, from = new Date()) => {
-  const start = new Date(from); start.setHours(0, 0, 0, 0);
-  if (option === 'month') {
-    const s = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-    return { start: s, end: new Date(s.getFullYear(), s.getMonth() + 1, 1) };
-  }
-  const end = new Date(start);
-  if (option === '14') end.setDate(end.getDate() + 14);
-  else end.setDate(end.getDate() + 28);                            // '28' (padrão)
-  return { start, end };
-};
+// (rangeFromOption REMOVIDO 2026-07-10: o seletor 14/28/mês morreu — a janela do import é
+//  única e vive no RosterImportSheet (−12 meses → fim do mês seguinte); a deteção automática
+//  tem a sua própria janela explícita no App.js. Um helper partilhado com semânticas
+//  divergentes já causou uma regressão hoje — não voltar a criá-lo.)
 
 // Candidatos de importação: atividades (voos) + duties SEM-VOO do calendário.
 // Cada candidato: { duty (com kind), kind, status: 'ok'|'warn'|'exists', exists,

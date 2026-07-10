@@ -15,7 +15,7 @@ import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
-import { RADIUS, TYPE, PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
@@ -699,7 +699,7 @@ export default function SettingsScreen({ navigation }) {
               autoCapitalize="characters" autoCorrect={false} placeholder={CONFIRM_WORD} placeholderTextColor={PELE.grey}
               style={s.pwInput} editable={!delBusy} />
           </View>
-          {delErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginTop: 8 }}>{delErr}</Text> : null}
+          {delErr ? <Text style={{ color: PELE.red, fontSize: 13, marginTop: 8 }}>{delErr}</Text> : null}
           <TouchableOpacity onPress={handleDeleteAccount} disabled={delBusy || !delReady} activeOpacity={0.85}
             style={[s.delBtn, (delBusy || !delReady) && s.delBtnOff]}>
             <Text style={s.delBtnTxt}>{delBusy ? l('A apagar…', 'Deleting…') : l('Apagar a minha conta', 'Delete my account')}</Text>
@@ -777,7 +777,7 @@ export default function SettingsScreen({ navigation }) {
               </View>
             </View>
           ))}
-          {pwErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginBottom: 10 }}>{pwErr}</Text> : null}
+          {pwErr ? <Text style={{ color: PELE.red, fontSize: 13, marginBottom: 10 }}>{pwErr}</Text> : null}
           <PrimaryButton onPress={handleChangePw} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
@@ -791,7 +791,7 @@ export default function SettingsScreen({ navigation }) {
               keyboardType="numbers-and-punctuation" maxLength={10} style={s.pwInput} autoCorrect={false} />
           </View>
           <Text style={s.sdHint}>{l('Calcula a antiguidade para o prémio de permanência (Anexo I.9). Deixa vazio para remover.', 'Computes seniority for the loyalty bonus (Appendix I.9). Leave empty to clear.')}</Text>
-          {sdErr ? <Text style={{ color: PELE.red, fontSize: TYPE.label, marginBottom: 10 }}>{sdErr}</Text> : null}
+          {sdErr ? <Text style={{ color: PELE.red, fontSize: 13, marginBottom: 10 }}>{sdErr}</Text> : null}
           <PrimaryButton onPress={saveStartDate} label={t('common.save', lang)} style={{ marginTop: 4 }} />
         </View>
       </CenterDialog>
@@ -924,34 +924,34 @@ const s = StyleSheet.create({
   rv: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, color: PELE.grey },
   // Modal de password
   eyebrow: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey },
-  fieldLabel: { fontSize: TYPE.label, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.ink, marginBottom: 6 },
   pwInputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: PELE.line, borderRadius: 12, paddingHorizontal: 14 },
-  pwInput: { flex: 1, paddingVertical: 12, fontSize: TYPE.body, color: PELE.ink },
+  pwInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: PELE.ink },
   pwEye: { padding: 4, marginLeft: 6 },
-  sdHint: { fontSize: TYPE.label, color: PELE.grey, marginTop: 8, marginBottom: 10, lineHeight: 16 },
+  sdHint: { fontSize: 13, color: PELE.grey, marginTop: 8, marginBottom: 10, lineHeight: 16 },
   baseWrap: { flexDirection: 'row', gap: 8 },
-  baseChip: { flex: 1, borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center', backgroundColor: PELE.paper },
+  baseChip: { flex: 1, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 14, paddingVertical: 14, alignItems: 'center', backgroundColor: PELE.paper },
   baseChipOn: { borderColor: PELE.red, backgroundColor: PELE.redSoft },
-  baseChipTxt: { fontSize: TYPE.body, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  baseChipTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
   baseChipTxtOn: { color: PELE.red },
-  baseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, backgroundColor: PELE.paper },
+  baseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, backgroundColor: PELE.paper },
   baseRowOn: { borderColor: PELE.red, backgroundColor: PELE.redSoft },
-  baseRowBadge: { minWidth: 42, height: 38, borderRadius: RADIUS.sm, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  baseRowBadge: { minWidth: 42, height: 38, borderRadius: 10, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   baseRowBadgeTxt: { color: '#fff', fontSize: 12.5, fontFamily: PELE_FONT.bodyBold },
-  baseRowCity: { fontSize: TYPE.sub, fontFamily: PELE_FONT.body, color: PELE.ink },
+  baseRowCity: { fontSize: 14, fontFamily: PELE_FONT.body, color: PELE.ink },
   ymLabel: { fontSize: 12.5, fontFamily: PELE_FONT.body, color: PELE.grey, marginBottom: 8 },
-  ymInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper, letterSpacing: 1, textAlign: 'center' },
+  ymInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper, letterSpacing: 1, textAlign: 'center' },
   // Apagar conta (destrutivo)
-  delWarn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 14 },
-  delWarnTxt: { flex: 1, fontSize: TYPE.label, fontFamily: PELE_FONT.body, color: PELE.red, lineHeight: 16 },
-  delBody: { fontSize: TYPE.sub, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
-  delBtn: { backgroundColor: PELE.red, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
+  delWarn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 14 },
+  delWarnTxt: { flex: 1, fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.red, lineHeight: 16 },
+  delBody: { fontSize: 14, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
+  delBtn: { backgroundColor: PELE.red, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 14 },
   delBtnOff: { opacity: 0.4 },
-  delBtnTxt: { color: '#fff', fontSize: TYPE.body, fontFamily: PELE_FONT.bodyBold },
+  delBtnTxt: { color: '#fff', fontSize: 15, fontFamily: PELE_FONT.bodyBold },
   // Mudar e-mail
-  emSub: { fontSize: TYPE.sub, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
-  emErr: { color: PELE.red, fontSize: TYPE.label, marginTop: 8 },
-  emResend: { fontSize: TYPE.sub, fontFamily: PELE_FONT.bodyBold, color: PELE.red },
+  emSub: { fontSize: 14, color: PELE.ink, lineHeight: 20, marginBottom: 16 },
+  emErr: { color: PELE.red, fontSize: 13, marginTop: 8 },
+  emResend: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.red },
   // Mosaicos bento (mockup perfil-final)
   seclbl: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: PELE.grey, marginTop: 17, marginLeft: 2, marginBottom: 9 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
@@ -973,10 +973,10 @@ const s = StyleSheet.create({
   favTxt: { fontFamily: PELE_FONT.display, fontSize: 16, color: PELE.onInk },
   fname: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 10.5, color: PELE.ink },
   // Diálogos da família (adicionar / ver link)
-  famInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: TYPE.body, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper },
+  famInput: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: PELE_FONT.bodyMed, color: PELE.ink, backgroundColor: PELE.paper },
   famHint: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 16, marginTop: 12 },
   famRevoke: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 10 },
-  famRevokeTxt: { fontSize: TYPE.sub, fontFamily: PELE_FONT.body, color: PELE.red },
+  famRevokeTxt: { fontSize: 14, fontFamily: PELE_FONT.body, color: PELE.red },
   // Modelo B — opções da pessoa (partilhar voo + registo)
   famShareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: PELE.ink, borderRadius: 13, paddingVertical: 14 },
   famShareTxt: { fontSize: 14, fontFamily: PELE_FONT.bodyBold, color: PELE.onInk },

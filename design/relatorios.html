@@ -38,11 +38,14 @@
   .word{font-family:var(--disp);font-weight:700;font-size:38px;margin-top:26px;position:relative}
   .kick{font-size:11.5px;font-weight:700;color:var(--grey);margin-top:5px;position:relative}
   .hr{height:1.5px;background:var(--ink);margin:10px 0 14px}
-  .rcard{border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+  /* cartões COMPACTOS (2026-07-10: os 3 sem scroll) — a lista É o botão */
+  .rcard{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:18px;padding:13px 15px;margin-bottom:10px}
+  .rcard .chev{color:var(--ghost);font-weight:800;font-size:15px}
+  .rBody{flex:1;min-width:0}
   .rK{font-size:8.5px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase}
-  .rName{font-family:var(--disp);font-weight:700;font-size:22px;margin-top:3px}
-  .rMeta{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:3px;line-height:1.5}
-  .rRow{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .rName{font-family:var(--disp);font-weight:700;font-size:21px;margin-top:2px}
+  .rLine{font-size:10.5px;font-weight:700;color:var(--grey);margin-top:3px}
+  .rLine.hot{color:var(--warn);font-weight:800}
   .seg{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
   .segb{padding:7px 12px;font-size:10.5px;font-weight:800;color:var(--grey)}
   .segb.on{background:var(--ink);color:#fff}
@@ -111,31 +114,41 @@
       </div>
       <div class="hr"></div>
 
+      <div class="seg" style="display:flex;margin-bottom:10px"><span class="segb on" style="flex:1;text-align:center">Mês</span><span class="segb" style="flex:1;text-align:center">Ano</span></div>
+      <div style="text-align:center;font-size:12.5px;font-weight:800;margin-bottom:12px">‹ &nbsp;julho 2026&nbsp; ›</div>
+
       <div class="rcard">
-        <div class="rK">ORO.FTL.245 · registo legal</div>
-        <div class="rName">Tempos de voo e serviço</div>
-        <div class="rMeta">O teu registo individual assinável — apresentação, calços, PSV, repouso e janelas acumuladas.</div>
-        <div class="rRow">
-          <div class="seg"><span class="segb on">Julho</span><span class="segb">2026</span></div>
-          <div class="rBtn">Gerar PDF</div>
+        <div class="rBody">
+          <div class="rK">ORO.FTL.245 · registo legal</div>
+          <div class="rName">Tempos de voo e serviço</div>
+          <div class="rLine">18 períodos de serviço · PDF assinável</div>
         </div>
+        <div class="chev">›</div>
       </div>
 
       <div class="rcard">
-        <div class="rK">dados em bruto</div>
-        <div class="rName">Escala em CSV</div>
-        <div class="rMeta">Uma linha por serviço, datas ISO, cabeçalhos limpos — abre no Excel ou Numbers.</div>
-        <div class="rRow">
-          <div class="seg"><span class="segb on">Julho</span><span class="segb">2026</span></div>
-          <div class="rBtn">Partilhar CSV</div>
+        <div class="rBody">
+          <div class="rK">dados em bruto</div>
+          <div class="rName">Escala em CSV</div>
+          <div class="rLine">uma linha por serviço · Excel/Numbers</div>
         </div>
+        <div class="chev">›</div>
+      </div>
+
+      <div class="rcard">
+        <div class="rBody">
+          <div class="rK">AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC</div>
+          <div class="rName">Disrupção de escala</div>
+          <div class="rLine hot">2 candidatos · até 43,00 €</div>
+        </div>
+        <div class="chev">›</div>
       </div>
 
       <div class="foot2">O Registo 245 é um apoio individual — não substitui os registos oficiais do operador. Tudo é gerado no teu telemóvel.</div>
     </div></div>
-    <div class="t">① Relatórios — cartão novo nas Ferramentas do Perfil</div>
-    <div class="d">Anatomia root da família (rótulo lateral · fantasma = nº de documentos · kick). Um cartão por documento, com o período (Mês/Ano) e UMA ação. O "···" da Escala morre — um dado, uma casa.</div>
-    <div class="spec"><b>Período:</b> segmento Mês⇄Ano (mês corrente por defeito; ‹› para navegar ou o picker — como os Números) · <b>Gerar PDF</b> → identidade (nome/nº, persistida como hoje) → folha de partilha do sistema · <b>CSV sem pele de propósito</b> (dados são dados) · <b>Disrupção (RDP/SNC):</b> o 3.º cartão nasce AQUI quando a peça existir — nada de mobília morta antes disso.</div>
+    <div class="t">① Relatórios — os 3 documentos SEM scroll (v2, pedido do founder)</div>
+    <div class="d">A LISTA é o botão: cartão compacto de toque inteiro (eyebrow · nome · UMA linha de estado · chevron) — as descrições longas e os botões internos morreram (a explicação vive dentro de cada documento). O período é UM, partilhado, acima dos cartões.</div>
+    <div class="spec"><b>Toques:</b> 245 → folha da identidade → PDF · CSV → folha de partilha · Disrupção/Estabilidade → o ecrã de revisão · <b>Linha de estado honesta:</b> contagem do período; âmbar quando há candidatos/sinais; "A gerar…" durante o PDF · <b>Sem serviço no período:</b> cartão esmaecido (45%) · <b>Período à Apple (v3):</b> segmento Mês|Ano a TODA a largura + passeador ‹ › CENTRADO (Fitness/Health) · <b>Cartões com flex (v3):</b> os 3 repartem o espaço ATÉ AO FUNDO (conteúdo centrado; minHeight 76) — sem branco morto; o scroll só desperta com Dynamic Type gigante.</div>
   </div>
 
   <div class="mock">

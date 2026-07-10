@@ -99,7 +99,8 @@ export default function TabBar({ state, navigation }) {
   const fire = (fn) => { select(); closeDial(fn); };
 
   const ACTIONS = [
-    { key: 'duty',  icon: 'plus',  label: l('Serviço', 'Duty'),         run: () => navigation.navigate('Escala', { screen: 'EscalaMain', params: { newDuty: Date.now() } }) },
+    // "Serviço" manual REMOVIDO (2026-07-10, doutrina do user): tudo vem do CALENDÁRIO;
+    // o manual ficou só para a simulação. Editar-como-correção continua nos dias importados.
     { key: 'sim',   icon: 'gauge', label: l('Simulação', 'Simulation'), run: () => openSimulation && openSimulation() },
     ...(ae && Array.isArray(ae.EXTRA_KINDS) ? [{ key: 'extra', icon: 'wallet', label: l('Evento', 'Event'), run: () => openExtra && openExtra() }] : []),
   ];

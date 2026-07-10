@@ -21,7 +21,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent } = require(path.resolve('data/calendarParse.js'));
+const { classify, mapFlight, mapNonFlight, isAllDayNoTime, vacationDatesFromEvent, sickDatesFromEvent } = require(path.resolve('data/calendarParse.js'));
 const { codesFor } = require(path.resolve('data/rosterCodes.js'));
 const codes = codesFor('easyjet');
 
@@ -69,6 +69,15 @@ eq('LVE all-day 3 dias → expande certo',
   ['2026-08-04', '2026-08-05', '2026-08-06']);
 eq('LVE com horas (1 dia) → só o dia', vacationDatesFromEvent(ev('LVE'), codes), ['2026-07-01']);
 eq('voo NÃO gera férias', vacationDatesFromEvent(ev('EJU7625 LIS-FNC 06:40-08:15'), codes), []);
+
+// ── SICK → dias de doença sugeridos (episódio Art. 48), a par das férias ──
+eq('SICK all-day 3 dias → expande certo',
+  sickDatesFromEvent(ev('SICK', { allDay: true, start: '2026-03-10T00:00:00', end: '2026-03-13T00:00:00' }), codes),
+  ['2026-03-10', '2026-03-11', '2026-03-12']);
+eq('SICK com horas (1 dia) → só o dia', sickDatesFromEvent(ev('SICK'), codes), ['2026-07-01']);
+eq('voo NÃO gera doença', sickDatesFromEvent(ev('EJU7625 LIS-FNC 06:40-08:15'), codes), []);
+eq('LVE não gera doença (nem SICK gera férias)',
+  [sickDatesFromEvent(ev('LVE'), codes), vacationDatesFromEvent(ev('SICK'), codes)], [[], []]);
 // A guarda do MÊS: "SEP" colado a dígitos é data, não treino (o training testa antes do voo).
 eq('"01 SEP" (data) NÃO é treino', classify('CHECK-IN 01 SEP', codes) !== 'training', true);
 eq('"SEP 26" (data) NÃO é treino', classify('ROSTER SEP 26', codes) !== 'training', true);
