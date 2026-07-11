@@ -73,7 +73,8 @@ const html = (body: string, status = 200) =>
 
 const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-// Token URL-safe (26 chars base32-ish) — não adivinhável.
+// Token URL-safe: 16 bytes CSPRNG → 16 chars base32 = 80 bits, sem viés de módulo
+// (256 é múltiplo de 32) → uniforme e não adivinhável.
 const newToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes).map((b) => 'abcdefghijklmnopqrstuvwxyz234567'[b % 32]).join('');
@@ -133,7 +134,7 @@ function legsFromDuty(duty: any): { flight: string; dep: string; arr: string; of
       const l = lg as Record<string, any>;
       const flight = String(l?.flightNo || l?.flight || '').toUpperCase().replace(/\s+/g, '');
       if (!flight) continue;
-      out.push({ flight, dep: String(l?.dep || '').toUpperCase().slice(0, 3), arr: String(l?.arr || '').toUpperCase().slice(0, 3), off: String(l?.off || ''), on: String(l?.on || '') });
+      out.push({ flight, dep: String(l?.dep || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3), arr: String(l?.arr || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3), off: String(l?.off || ''), on: String(l?.on || '') });
     }
   };
   if ((duty.kind || 'flight') === 'flight') push(meta.legs);
@@ -342,16 +343,19 @@ Deno.serve(async (req: Request) => {
     const key = Deno.env.get('AIRLABS_KEY') || '';
     const f = key && last.flight ? await liveCached(key, last.flight, shareDate || '') : null;
 
-    const dep = esc(f?.dep_iata || last.dep || '—');
-    const arr = esc(f?.arr_iata || last.arr || '—');
-    const fno = esc(f?.flight_iata || last.flight || '');
+    // Valores CRUS: o canal JSON transporta DADOS, não HTML. Quem renderiza é que escapa
+    // — a página (web/chegada) faz esc() de tudo, e o ramo HTML aqui em baixo idem. (Antes
+    // escapava-se aqui E na página → duplo-encode: "Val-d'Or" saía "Val-d&#39;Or".)
+    const dep = f?.dep_iata || last.dep || '—';
+    const arr = f?.arr_iata || last.arr || '—';
+    const fno = f?.flight_iata || last.flight || '';
     const eta = f?.arr_actual || f?.arr_estimated || f?.arr_time || null;   // hora LOCAL do aeroporto (AirLabs)
-    const etaHm = eta ? esc(String(eta).slice(11, 16)) : null;
+    const etaHm = eta ? String(eta).slice(11, 16) : null;
     const st = String(f?.status || '').toLowerCase();
     const landed = st === 'landed' || !!f?.arr_actual;
     const delayed15 = (f?.dep_delayed ?? 0) >= 15;
     const statusCls = landed ? 'ok' : (st === 'cancelled' || st === 'canceled' || st === 'diverted') ? 'bad' : (delayed15 ? 'warn' : '');
-    const statusTxt = landed ? 'Aterrou' : st === 'en-route' ? 'No ar' : st === 'scheduled' ? 'Agendado' : (st ? esc(f!.status) : 'Sem dados ao vivo');
+    const statusTxt = landed ? 'Aterrou' : st === 'en-route' ? 'No ar' : st === 'scheduled' ? 'Agendado' : (st ? String(f!.status) : 'Sem dados ao vivo');
     // Contexto do AEROPORTO de chegada (Airport Intelligence): só quando está mesmo
     // complicado — limiares GÉMEOS do airportDisruption (data/flightDelay.js): amostra
     // ≥8, aviso a ≥30% atrasados ou ≥10% cancelados. Explica à família o "porquê".
@@ -373,7 +377,7 @@ Deno.serve(async (req: Request) => {
       const depTs = num(f?.dep_actual_ts);
       // Tira do cartão: Partida (hora real/estimada/prevista) + Duração (minutos de voo AirLabs).
       const depT = f?.dep_actual || f?.dep_estimated || f?.dep_time || null;   // hora LOCAL de partida
-      const depHm = depT ? esc(String(depT).slice(11, 16)) : null;
+      const depHm = depT ? String(depT).slice(11, 16) : null;   // cru (a página/HTML escapam)
       const durationMin = num(f?.duration);
       // Tempo AGORA no destino — coords do catálogo embebido (funciona em TODOS os links,
       // família incluída; a Edge não recebe coords). series[0] = agora. stationWx cacheia 45 min.
@@ -387,16 +391,16 @@ Deno.serve(async (req: Request) => {
         if (s0 && s0.c != null) { wxC = Math.round(Number(s0.c)); wxSym = s0.s || null; }
       }
       return json({ ok: true, found: true, expired: false, date: shareDate, legsCount: legs.length, family: isFamily,
-        flight: fno, dep, arr, city: esc(String(last.city || '')), etaHm, depHm, durationMin, wxC, wxSym, landed, status: statusTxt, tone: statusCls || 'none',
+        flight: fno, dep, arr, city: String(last.city || ''), etaHm, depHm, durationMin, wxC, wxSym, landed, status: statusTxt, tone: statusCls || 'none',
         airportWarn, etaTs, depTs, nowTs: Math.floor(Date.now() / 1000) });
     }
     const inner = `
 <div class="eyebrow">Chegada de hoje${legs.length > 1 ? ` · ${legs.length} voos` : ''}</div>
-<div class="flight">${fno || 'Voo'}</div>
-<div class="route">${dep} → ${arr}</div>
-<div class="eta">${etaHm ? `~${etaHm}` : '—'}</div>
-<div class="etaSub">${etaHm ? `hora local de ${arr}` : 'ainda sem estimativa — volta a abrir mais perto da hora'}${landed ? ' · já em terra ✓' : ''}</div>
-<span class="status ${statusCls}">${statusTxt}</span>${airportWarn ? `<div class="etaSub" style="margin-top:10px">⚠️ ${airportWarn}</div>` : ''}`;
+<div class="flight">${esc(fno || 'Voo')}</div>
+<div class="route">${esc(dep)} → ${esc(arr)}</div>
+<div class="eta">${etaHm ? `~${esc(etaHm)}` : '—'}</div>
+<div class="etaSub">${etaHm ? `hora local de ${esc(arr)}` : 'ainda sem estimativa — volta a abrir mais perto da hora'}${landed ? ' · já em terra ✓' : ''}</div>
+<span class="status ${statusCls}">${esc(statusTxt)}</span>${airportWarn ? `<div class="etaSub" style="margin-top:10px">⚠️ ${esc(airportWarn)}</div>` : ''}`;
     return html(page(`${fno} ${dep}→${arr} · CrewPact`, inner, !landed));
   }
 
@@ -420,6 +424,9 @@ Deno.serve(async (req: Request) => {
   if (body.familyAction === 'create') {
     const label = String(body.label || '').slice(0, 40).trim();
     if (!label) return json({ ok: false, error: 'no_label' }, 400);
+    // Teto por utilizador — trava a criação sem fim (bloat auto-infligido).
+    const { count } = await admin().from('family_links').select('id', { count: 'exact', head: true }).eq('uid', uid);
+    if ((count ?? 0) >= 25) return json({ ok: false, error: 'too_many' }, 429);
     const token = newToken();
     const { data: ins, error: insE } = await admin().from('family_links')
       .insert({ token, uid, label }).select('id').single();
@@ -442,11 +449,15 @@ Deno.serve(async (req: Request) => {
 
   const date = String(body.date || '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ ok: false, error: 'bad_date' }, 400);
+  // Rate-limit: no máximo 10 partilhas descartáveis por minuto por utilizador (trava o loop de spam).
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count: recent } = await admin().from('shared_days').select('id', { count: 'exact', head: true }).eq('uid', uid).gte('created_at', since);
+  if ((recent ?? 0) >= 10) return json({ ok: false, error: 'rate' }, 429);
   const legs = (Array.isArray(body.legs) ? body.legs : []).slice(0, 8)
     .map((x: Record<string, unknown>) => ({
-      flight: String(x?.flight || '').toUpperCase().replace(/\s+/g, '').slice(0, 8),
-      dep: String(x?.dep || '').toUpperCase().slice(0, 3),
-      arr: String(x?.arr || '').toUpperCase().slice(0, 3),
+      flight: String(x?.flight || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8),
+      dep: String(x?.dep || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3),
+      arr: String(x?.arr || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3),
       // cidade do destino (opcional) — a página mostra "Paris" sob o anel; vem da app
       // (catálogo airports.js), a Edge não tem nomes. Sanitizada e curta.
       city: String(x?.city || '').replace(/[<>&"']/g, '').slice(0, 28),

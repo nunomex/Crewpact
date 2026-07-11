@@ -6,7 +6,7 @@
 -- `duties`, que a app já sincroniza). Sem expiry — morre por REVOGAÇÃO (a app
 -- apaga a linha) ou quando a conta é apagada (purga diária de órfãos, abaixo).
 -- Privacidade: só a chegada do próprio dia, nunca a escala nem histórico; token
--- aleatório 26 chars; RLS nega tudo — o acesso é SÓ pela Edge (service role).
+-- aleatório 80-bit (16 chars base32); RLS nega tudo — o acesso é SÓ pela Edge (service role).
 --
 -- CORRER no SQL Editor do dashboard (uma vez).
 

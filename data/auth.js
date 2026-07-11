@@ -271,6 +271,11 @@ export const verifyResetCode = async (email, token, lang = 'pt') => {
 export const resetPassword = async (_email, _token, newPw, lang = 'pt') => {
   const e = validatePassword(newPw, true, lang);   // reforça a política na LÓGICA (não só na UI)
   if (e) return { ok: false, error: e };
+  // GUARDA: esta função MUDA a password da sessão ativa — só é segura logo a seguir a
+  // verifyResetCode (que cria a sessão de RECUPERAÇÃO). Sem sessão ativa, RECUSA: nunca
+  // se muda às cegas a password de uma sessão que não veio do fluxo de recuperação.
+  const { data: sess } = await supabase.auth.getSession();
+  if (!sess?.session) return { ok: false, error: mapError({ message: 'Auth session missing' }, lang) };
   // After verifyOtp the user is authenticated — updateUser works directly
   const { error } = await supabase.auth.updateUser({ password: newPw });
   if (error) return { ok: false, error: mapError(error, lang) };

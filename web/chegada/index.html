@@ -174,6 +174,7 @@
     if (d.expired) { msg('Link expirado', 'Este link já não está ativo — pede um novo.'); stopAll(); return; }
     if (d.noFlight) { msg('Sem chegada hoje', 'Hoje não há voo para acompanhar. Guarda esta página — mostra sempre a chegada do dia. ✈️'); return; }
     var n = nowS();
+    var nLegs = Number(d.legsCount) || 0;   // numérico — único campo que entra no innerHTML sem esc()
     var minsLeft = (!d.landed && d.etaTs && d.etaTs > n) ? Math.max(1, Math.round((d.etaTs - n) / 60)) : null;
     var pct = 0;
     if (d.landed) pct = 100;
@@ -199,7 +200,7 @@
         '<span class="live' + (d.landed ? ' done' : '') + '"><span class="p"></span>' + (d.landed ? 'Aterrou' : 'Ao vivo') + '</span></div>' +
       '<div class="sp1"></div>' +
       '<div class="hero">' +
-        '<div class="eyb">Chegada de hoje' + (d.legsCount > 1 ? ' · ' + d.legsCount + ' voos' : (d.flight ? ' · ' + esc(d.flight) : '')) + '</div>' +
+        '<div class="eyb">Chegada de hoje' + (nLegs > 1 ? ' · ' + nLegs + ' voos' : (d.flight ? ' · ' + esc(d.flight) : '')) + '</div>' +
         '<div class="ring"><svg width="224" height="224" viewBox="0 0 224 224">' +
           '<circle class="rbg" cx="112" cy="112" r="100"/>' +
           '<circle class="rfg" cx="112" cy="112" r="100" pathLength="100" stroke-dasharray="' + pct + ' 100"' + ringStyle + '/>' +

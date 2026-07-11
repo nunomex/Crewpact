@@ -35,6 +35,24 @@ const WX_TTL_MIN = 45;   // o modelo atualiza ~1×/h; o TOS pede para não pedir
 
 const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+// Cache curto do lookup ao vivo (tabela `flight_live`, partilhada com share-day mas
+// com PREFIXO `fs|`/`fsreg|` — nunca colide com as chaves "VOO|DIA" dela). Sem isto,
+// cada card/auto-fill/rotação martelava o AirLabs → a função era a única alavanca de
+// custo alcançável por quem tivesse a anon key. TTL curto porque o estado ao vivo muda.
+const LIVE_TTL_SEC = 60;
+// deno-lint-ignore no-explicit-any
+async function cacheGet(rowKey: string): Promise<any | undefined> {
+  try {
+    const { data: c } = await admin().from('flight_live').select('data, computed_at').eq('flight', rowKey).maybeSingle();
+    if (c && Date.now() - new Date(c.computed_at).getTime() < LIVE_TTL_SEC * 1000) return c.data ?? null;
+  } catch { /* tabela ainda não criada → segue sem cache */ }
+  return undefined;   // undefined = MISS (distinto de null = "sem voo" já cacheado)
+}
+// deno-lint-ignore no-explicit-any
+async function cachePut(rowKey: string, val: any): Promise<void> {
+  try { await admin().from('flight_live').upsert({ flight: rowKey, computed_at: new Date().toISOString(), data: val }); } catch { /* sem cache */ }
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -170,6 +188,18 @@ async function lookup(key: string, id: string): Promise<ReturnType<typeof slim> 
   } catch { return null; }
 }
 
+// lookup + CACHE curto (60 s) — cobre os modos single e batch e o 2.º passo do reg.
+async function lookupCached(key: string, id: string): Promise<ReturnType<typeof slim> | null> {
+  const clean = String(id || '').toUpperCase().replace(/\s+/g, '');
+  if (!clean) return null;
+  const rowKey = `fs|${clean}`;
+  const hit = await cacheGet(rowKey);
+  if (hit !== undefined) return hit;   // slim OU null cacheado
+  const s = await lookup(key, clean);
+  await cachePut(rowKey, s);
+  return s;
+}
+
 // deno-lint-ignore no-explicit-any
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -177,6 +207,17 @@ Deno.serve(async (req: Request) => {
 
   const key = Deno.env.get('AIRLABS_KEY');
   if (!key) return json({ ok: false, error: 'no_key' }, 500);
+
+  // ── Auth: exige SESSÃO de utilizador (não basta a anon key, que vai no bundle) ──
+  // A app invoca com o JWT da sessão (functions.invoke anexa-o); getUser REJEITA a anon
+  // key → só contas registadas chamam esta função. Sobe a fasquia do abuso da quota
+  // AirLabs de "qualquer um com a key pública" para "utilizador autenticado".
+  const authHeader = req.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ ok: false, error: 'unauthorized' }, 401);
+  const userClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+  const { data: uData, error: uErr } = await userClient.auth.getUser(jwt);
+  if (uErr || !uData?.user) return json({ ok: false, error: 'unauthorized' }, 401);
 
   // deno-lint-ignore no-explicit-any
   let body: Record<string, any> = {};
@@ -186,7 +227,7 @@ Deno.serve(async (req: Request) => {
   if (Array.isArray(body.flights)) {
     const ids = body.flights.slice(0, 8).map((x: unknown) => String(x || '')).filter(Boolean);  // teto 8 legs
     if (!ids.length) return json({ ok: false, error: 'no_flight' }, 400);
-    const results = await Promise.all(ids.map((id: string) => lookup(key, id)));
+    const results = await Promise.all(ids.map((id: string) => lookupCached(key, id)));
     return json({ ok: true, results });
   }
 
@@ -206,13 +247,16 @@ Deno.serve(async (req: Request) => {
   if (body.reg) {
     const reg = String(body.reg).toUpperCase().replace(/[^A-Z0-9-]/g, '');
     if (!reg) return json({ ok: false, error: 'no_reg' }, 400);
+    const rowKey = `fsreg|${reg}`;
+    const hit = await cacheGet(rowKey);   // cacheia a resolução reg→voo (slim OU null)
+    if (hit !== undefined) return json(hit ? { ok: true, found: true, ...hit } : { ok: true, found: false });
     try {
       const r = await fetch(`https://airlabs.co/api/v9/flights?reg_number=${encodeURIComponent(reg)}&api_key=${key}`);
       const j = await r.json();
       const cur = Array.isArray(j?.response) && j.response.length ? j.response[0] : null;
       const id = cur && (cur.flight_icao || cur.flight_iata);
-      if (!id) return json({ ok: true, found: false });
-      const s = await lookup(key, String(id));
+      const s = id ? await lookup(key, String(id)) : null;
+      await cachePut(rowKey, s);
       return json(s ? { ok: true, found: true, ...s } : { ok: true, found: false });
     } catch { return json({ ok: true, found: false }); }
   }
@@ -220,6 +264,6 @@ Deno.serve(async (req: Request) => {
   // ── Modo ÚNICO (card ao vivo): { flight_iata|flight_icao } ──
   const single = body.flight_iata || body.flight_icao;
   if (!single) return json({ ok: false, error: 'no_flight' }, 400);
-  const s = await lookup(key, String(single));
+  const s = await lookupCached(key, String(single));
   return json(s ? { ok: true, found: true, ...s } : { ok: true, found: false });
 });
