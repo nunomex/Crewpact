@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- Landing mínima do domínio raiz (crewpact.app) — NA PELE da casa.
+     Publica-se no dia das leis junto com termos.html + privacidade.html
+     (copiados FRESCOS de legal/ no momento do deploy — ver docs no repo/memória).
+     Deploy: npx wrangler pages deploy web/site - -project-name crewpact-site -->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — FTL · AE · Crew</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Hanken+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#141414;--grey:#77776F;--line:#ECEAE4;--yellow:#FFB800;--ghost:#E2E1DC;--soft:#F4F2ED}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink);background:#fff;min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:760px;margin:0 auto;padding:64px 24px 40px;flex:1;display:flex;flex-direction:column;width:100%}
+  .eye{font-size:11px;font-weight:800;letter-spacing:3px;color:var(--grey);text-transform:uppercase}
+  .rule{height:4px;width:120px;background:var(--yellow);margin:10px 0 18px}
+  h1{font-family:'Barlow Condensed';font-weight:800;font-size:64px;line-height:.95;text-transform:uppercase;letter-spacing:.5px}
+  .sub{font-size:17px;color:#33322E;margin-top:16px;max-width:52ch;line-height:1.6}
+  .ghost{font-family:'Barlow Condensed';font-weight:800;font-size:min(26vw,190px);line-height:.8;color:var(--ghost);letter-spacing:1px;user-select:none;margin-top:auto;padding-top:48px;overflow:hidden;white-space:nowrap}
+  .soon{display:inline-block;margin-top:22px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey)}
+  .foot{border-top:1px solid var(--line);padding:18px 24px;display:flex;gap:22px;justify-content:center;flex-wrap:wrap}
+  .foot a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:underline;text-decoration-color:var(--yellow);text-decoration-thickness:2px}
+  .foot span{font-size:13px;color:var(--grey)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eye">FTL · AE · CREW</div>
+  <div class="rule"></div>
+  <h1>CrewPact</h1>
+  <p class="sub">A escala, os limites de voo e o teu acordo de empresa — calculados no teu telemóvel, com as fontes oficiais à vista. Feito por tripulantes, para tripulantes.</p>
+  <span class="soon">Em breve na App Store</span>
+  <div class="ghost">CREWPACT</div>
+</div>
+<div class="foot">
+  <a href="/termos">Termos e Condições</a>
+  <a href="/privacidade">Política de Privacidade</a>
+  <span>suporte@crewpact.app</span>
+</div>
+</body>
+</html>
