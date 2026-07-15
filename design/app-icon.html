@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — o ícone da app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .sec{max-width:1560px;margin:26px auto 0}
+  .sec .t{font-family:var(--disp);font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.4px}
+  .sec .d{font-size:12.5px;font-weight:500;color:var(--grey);margin-top:3px;max-width:820px;line-height:1.55}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* squircle iOS (aproximação) */
+  .ic{border-radius:22.4%;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .s180{width:180px;height:180px}
+  .s120{width:120px;height:120px}
+  .s60{width:60px;height:60px}
+  .s29{width:29px;height:29px}
+
+  /* ── O ESCOLHIDO: campo ink · C branco · sublinhado amarelo ── */
+  .ink{background:var(--ink)}
+  .cwrap{display:flex;flex-direction:column;align-items:center;transform:translateY(-2%)}
+  .c{font-family:var(--disp);font-weight:700;color:#fff;line-height:.86}
+  .s180 .c{font-size:118px} .s120 .c{font-size:79px} .s60 .c{font-size:39px} .s29 .c{font-size:19px}
+  .u{background:var(--yellow);border-radius:99px}
+  .s180 .u{width:64px;height:11px;margin-top:10px} .s120 .u{width:43px;height:7.5px;margin-top:7px}
+  .s60 .u{width:21px;height:4px;margin-top:3.5px} .s29 .u{width:10.5px;height:2px;margin-top:1.6px}
+
+  /* variante clara (iOS 18 light) */
+  .paperic{background:var(--paper);border:1px solid rgba(20,20,20,.06)}
+  .paperic .c{color:var(--ink)}
+
+  /* ── Alternativa: o MARCADOR (amarelo atrás do C, gesto da manuscrita) ── */
+  .mark{position:relative;display:flex;align-items:center;justify-content:center}
+  .mk{position:absolute;background:var(--yellow);transform:rotate(-2deg)}
+  .s180 .mk{width:96px;height:58px;border-radius:6px} .s60 .mk{width:32px;height:19px;border-radius:2px} .s29 .mk{width:15px;height:9px;border-radius:1px}
+  .mark .c{position:relative}
+
+  /* home screen simulada */
+  .homes{display:flex;gap:26px;flex-wrap:wrap;margin-top:14px}
+  .home{border-radius:26px;padding:22px 20px 16px;width:300px}
+  .home.light{background:linear-gradient(160deg,#DFE5EC,#C9D2DD)}
+  .home.dark{background:linear-gradient(160deg,#20242B,#0E1116)}
+  .hrow{display:flex;gap:18px;align-items:flex-start}
+  .app{display:flex;flex-direction:column;align-items:center;gap:6px;width:60px}
+  .app .nm{font-size:10px;font-weight:600;color:rgba(0,0,0,.72)}
+  .home.dark .app .nm{color:rgba(255,255,255,.85)}
+  .dummy{width:60px;height:60px;border-radius:22.4%;background:rgba(255,255,255,.55)}
+  .home.dark .dummy{background:rgba(255,255,255,.14)}
+
+  .rowIc{display:flex;gap:22px;align-items:flex-end;margin-top:14px;flex-wrap:wrap}
+  .lbl{font-size:10px;font-weight:700;color:var(--grey);text-align:center;margin-top:6px;letter-spacing:.4px}
+  .no{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
+  .noItem{width:150px}
+  .noWhy{font-size:10.5px;font-weight:600;color:var(--grey);line-height:1.5;margin-top:8px}
+  .noWhy b{color:#B3261E}
+  .strike{position:relative}
+  .strike::after{content:'';position:absolute;left:-6px;right:-6px;top:50%;height:2.5px;background:#B3261E;transform:rotate(-8deg);border-radius:99px}
+
+  /* recusados */
+  .yellowic{background:var(--yellow)}
+  .plane{font-size:64px}
+  .ghostic .g{font-family:var(--disp);font-weight:700;font-size:52px;letter-spacing:-1px;color:rgba(255,255,255,.14);line-height:1}
+  .ghostic .dot{position:absolute;right:16%;bottom:16%;width:12px;height:12px;border-radius:99px;background:var(--yellow)}
+  .cpic .c2{font-family:var(--disp);font-weight:700;font-size:64px;color:#fff;letter-spacing:-1px}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · identidade · App Store</div>
+  <h1>o ícone da app</h1>
+  <p>Decisão de designer, não menu: <b>um glifo, um campo, um acento</b>. O glifo é o "C" em Barlow Condensed
+  tratado como <b>forma</b> (não como palavra — a HIG desencoraja texto; uma letra-forma é o limite aceitável,
+  à Pinterest/Netflix). O campo é <b>ink</b> (premium e calmo, vive bem em qualquer wallpaper). O acento é o gesto
+  mais próprio da marca: <b>o sublinhado amarelo do herói</b> — o "amarelo nos totais" que vive debaixo de todos os
+  números grandes da app. Quem usa a CrewPact reconhece o ícone como reconhece o Início.</p>
+</div>
+
+<div class="sec">
+  <div class="t">A escolha — em todos os tamanhos</div>
+  <div class="d">O teste que importa: a 29 px (Spotlight/Definições) o C continua nítido e o sublinhado continua a ler-se como risco amarelo. Sem detalhe que morra ao encolher.</div>
+  <div class="rowIc">
+    <div><div class="ic ink s180"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="lbl">180 · App Store</div></div>
+    <div><div class="ic ink s120"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="lbl">120</div></div>
+    <div><div class="ic ink s60"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="lbl">60 · Home</div></div>
+    <div><div class="ic ink s29"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="lbl">29 · Spotlight</div></div>
+    <div><div class="ic paperic s60"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="lbl">variante CLARA (iOS 18)</div></div>
+  </div>
+
+  <div class="homes">
+    <div class="home light">
+      <div class="hrow">
+        <div class="app"><div class="ic ink s60"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="nm">CrewPact</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Fotos</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Mail</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Mapas</div></div>
+      </div>
+    </div>
+    <div class="home dark">
+      <div class="hrow">
+        <div class="app"><div class="ic ink s60"><div class="cwrap"><div class="c">C</div><div class="u"></div></div></div><div class="nm">CrewPact</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Fotos</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Mail</div></div>
+        <div class="app"><div class="dummy"></div><div class="nm">Mapas</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="t">A alternativa séria — o marcador</div>
+  <div class="d">O outro gesto da casa: o marcador amarelo da voz manuscrita, ATRÁS do C (rotação -2° como o bilhete).
+  Mais quente e mais "assinatura"… mas a 29 px o marcador vira mancha e a rotação perde-se. Fica registada — a escolha continua a de cima.</div>
+  <div class="rowIc">
+    <div><div class="ic ink s180 mark"><div class="mk"></div><div class="c">C</div></div><div class="lbl">180</div></div>
+    <div><div class="ic ink s60 mark"><div class="mk"></div><div class="c">C</div></div><div class="lbl">60</div></div>
+    <div><div class="ic ink s29 mark"><div class="mk"></div><div class="c">C</div></div><div class="lbl">29 — já é mancha</div></div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="t">Recusados — e porquê</div>
+  <div class="no">
+    <div class="noItem"><div class="ic yellowic s120 strike"><span class="plane">✈</span></div><div class="noWhy"><b>Avião:</b> é a categoria inteira, não a marca — e o Flighty é dono do avião-no-ícone. A CrewPact não é tracking, é a vida do tripulante.</div></div>
+    <div class="noItem"><div class="ic yellowic s120 strike"><div class="cwrap"><div class="c" style="color:#141414">C</div></div></div><div class="noWhy"><b>Campo amarelo cheio:</b> à distância de um home screen, ícone amarelo = Snapchat. O amarelo da casa é acento, não campo.</div></div>
+    <div class="noItem"><div class="ic ink s120 ghostic strike"><span class="g">QUI</span><span class="dot"></span></div><div class="noWhy"><b>Fantasma "QUI":</b> a assinatura do Início não sobrevive a 29 px (vira ruído cinzento) — e 3 letras = texto, que a HIG desencoraja.</div></div>
+    <div class="noItem"><div class="ic ink s120 cpic strike"><span class="c2">CP</span></div><div class="noWhy"><b>Monograma "CP":</b> lê-se corporate/genérico (e CP = a ferrovia portuguesa). Uma letra é forma; duas são sigla.</div></div>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para a produção)</div>
+  <p><b>Composição:</b> campo `PELE.ink` #141414 · "C" Barlow Condensed Bold branco, opticamente centrado (baseline
+  compensada -2%) · sublinhado `PELE.yellow` #FFB800, largura ≈ 54% da largura do C, altura ≈ 6% do ícone, cantos
+  totalmente redondos — as MESMAS proporções do sublinhado dos heróis da app. <b>· Ficheiros:</b> 1024×1024 sem
+  cantos (o iOS aplica a máscara squircle) → `assets/icon.png` + `app.json`; Android adaptive icon (foreground =
+  C+sublinhado com margem de segurança ~25%, background = ink). <b>· iOS 18:</b> variante clara (paper + C ink +
+  sublinhado amarelo) e tinted (o sistema tinge — o C aguenta) — opcionais, o escuro é o principal. <b>· Splash:</b>
+  mantém-se o atual; revisita-se com os screenshots da loja, mais perto do lançamento. <b>· Regra de ouro:</b>
+  nenhum texto além da letra-forma; nenhum gradiente; nenhuma sombra — a pele é plana também aos 29 px.</p>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
@@ -8,7 +8,7 @@ import PeleHeader from '../components/PeleHeader';
 import DutyFormSheet from '../components/DutyFormSheet';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
-import { select } from '../data/haptics';
+import { select, warning, success } from '../data/haptics';
 import { AppContext, isoDay, toZulu } from '../data/appContext';
 import { computeDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
@@ -26,7 +26,7 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // "Editar" abre o DutyFormSheet partilhado; apagar SÓ nos manuais (a fonte manda nos importados).
 export default function DutyDetailScreen({ route, navigation }) {
   const ctxAll = useContext(AppContext);
-  const { lang, duties, ae, crewAt, removeDuty } = ctxAll;
+  const { lang, duties, ae, crewAt, removeDuty, saveDuty, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const [editing, setEditing] = useState(false);
@@ -39,11 +39,22 @@ export default function DutyDetailScreen({ route, navigation }) {
     if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
     else navigation.goBack();
   };
+  // DESFAZER em vez de confirmar (mockup design/desfazer.html, aprovado 2026-07-15):
+  // apaga JÁ e oferece 5 s de "Desfazer" no toast — o Alert morreu. O objeto é capturado
+  // ANTES; repor = saveDuty com ele (repõe deleted:false + re-deriva o FTL do dia; o sync
+  // re-upserta sozinho). Local = desfazível; os importados continuam bloqueados (a fonte manda).
   const confirmDelete = () => {
-    Alert.alert(t('duties.delTitle', lang), t('duties.delMsg', lang), [
-      { text: t('common.cancel', lang), style: 'cancel' },
-      { text: t('duties.delConfirm', lang), style: 'destructive', onPress: () => { select(); removeDuty && removeDuty(date); navigation.goBack(); } },
-    ]);
+    const captured = duties[date] ? { ...duties[date] } : null;
+    if (!captured) return;
+    warning();
+    removeDuty && removeDuty(date);
+    navigation.goBack();
+    const wd = (lang === 'en' ? ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] : ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'])[new Date(`${date}T12:00:00`).getDay()];
+    const what = captured.route ? String(captured.route).replace(/-/g, ' → ') : t('duties.kind.' + (captured.kind || 'flight'), lang);
+    notify && notify(
+      l('Serviço apagado', 'Duty deleted'), `${wd} ${Number(date.slice(8, 10))} · ${what}`, 'del',
+      { label: l('Desfazer', 'Undo'), onPress: () => { success(); saveDuty && saveDuty(date, captured); } },
+    );
   };
 
   const BackBtn = () => (

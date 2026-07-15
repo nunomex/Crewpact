@@ -79,7 +79,7 @@ Onde o movimento existe hoje — atualizar quando se adiciona/remove:
 - `hooks/useEnter.js` — entrada de ecrã (opacity+translate, 820, reduce-aware)
 - `hooks/useCountUp.js` + `components/CountUp.js` — números a contar (reduce-aware)
 - `components/PeleSheet.js` — folha: fade 180 + spring; saída 200/240; teclado 220/200; arrasto PanResponder (reduce = fade sem deslocação)
-- `components/Toast.js` — spring in / timing out 260 (reduce-aware)
+- `components/Toast.js` — spring in / timing out 260 (reduce-aware) · **com AÇÃO (desfazer, 2026-07-15)**: hold fixo 5 s + barra de tempo amarela (width, linear, nativeDriver:false — reduce = texto "5 s") + pílula amarela tocável (container box-none); Desfazer fecha o toast (200ms) e repõe — o item a voltar É o feedback, sem 2.º toast
 - `components/Skeleton.js` — shimmer loop 750/750 (reduce = estático a meia-opacidade)
 - `components/AccountCreated.js` — celebração pele (anel ink spring + tick amarelo back(2) + texto 320 + pulse 650; reduce = estado final)
 - `components/DutyFormSheet.js` — cascata de secções 820 (constantes do useEnter; reduce-aware)

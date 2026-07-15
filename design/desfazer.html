@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — desfazer em vez de confirmar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800; --red:#B3261E;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:430px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:16px 19px;display:flex;flex-direction:column}
+
+  /* O TOAST com ação — a peça nova */
+  .toast{position:absolute;left:14px;right:14px;top:16px;background:var(--ink);border-radius:16px;
+    padding:12px 12px 12px 14px;display:flex;align-items:center;gap:11px;box-shadow:0 14px 34px rgba(20,22,26,.3);z-index:5}
+  .tic{width:34px;height:34px;border-radius:99em;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+  .tw{flex:1;min-width:0}
+  .tt{font-size:12.5px;font-weight:700;color:#fff}
+  .ts{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);margin-top:1px}
+  .undo{background:var(--yellow);color:var(--ink);font-size:11.5px;font-weight:800;letter-spacing:.3px;
+    border-radius:999px;padding:8px 14px;flex-shrink:0}
+  .tbar{position:absolute;left:14px;right:14px;bottom:0;height:2.5px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
+  .tbar i{display:block;height:100%;width:62%;background:var(--yellow);border-radius:99px}
+
+  /* conteúdo de fundo simplificado */
+  .eyeb{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-top:64px}
+  .row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+  .row .k{font-family:var(--disp);font-weight:700;font-size:17px;width:52px}
+  .row .m{flex:1}
+  .row .m b{display:block;font-size:12px;font-weight:800}
+  .row .m span{font-size:10px;color:var(--grey);font-weight:600}
+  .gap{border:1.5px dashed var(--line);border-radius:14px;padding:12px;margin-top:10px;text-align:center;
+    font-size:10.5px;color:var(--grey);font-weight:600}
+  .ghostrow{opacity:.35}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · UX · confiança</div>
+  <h1>desfazer em vez de confirmar</h1>
+  <p>Hoje as remoções vivem em 3 regimes diferentes: o serviço manual pede confirmação (Alert), a validade pede
+  confirmação E pede desculpa ("Não dá para desfazer."), e o extra apaga <b>sem rede nenhuma</b>. O padrão premium
+  unifica: <b>age já, oferece "Desfazer" durante 5 segundos</b> no Toast global (que ganha um slot de ação).
+  A confirmação pune 100% das ações para prevenir 2% de enganos; o desfazer pune 0% e salva os mesmos 2%.
+  <b>Mantêm confirmação</b> só as ações irreversíveis do lado do servidor: apagar conta · revogar link de família ·
+  terminar sessão. Âmbito local = desfazível.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="toast">
+        <div class="tic" style="background:var(--red);color:#fff">✕</div>
+        <div class="tw"><div class="tt">Serviço apagado</div><div class="ts">QUI 9 · LIS→FNC→LIS · 4 setores</div></div>
+        <div class="undo">Desfazer</div>
+        <div class="tbar"><i></i></div>
+      </div>
+      <div class="eyeb">Escala · Julho</div>
+      <div class="gap">o dia 9 ficou livre</div>
+      <div class="row"><div class="k">SEX 10</div><div class="m"><b>LIS → LGW → LIS</b><span>report 05:40 · 4 setores</span></div></div>
+      <div class="row"><div class="k">SÁB 11</div><div class="m"><b>Folga</b><span>—</span></div></div>
+    </div></div>
+    <div class="t">① Apagar serviço manual — sem perguntar</div>
+    <div class="d">Toque em Apagar no detalhe → apaga JÁ e volta à Escala; o toast diz o quê (com a rota — provas, não genérico) e oferece a pílula amarela. A barra fina mostra o tempo a esgotar.</div>
+    <div class="spec"><b>Morre:</b> o Alert "Apagar serviço? / Cancelar / Apagar" do DutyDetail. <b>· Háptico:</b> warning ao apagar. <b>· EN:</b> "Duty deleted · THU 9 · LIS→FNC→LIS" / "Undo".</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="eyeb">Escala · Julho</div>
+      <div class="row"><div class="k">QUI 9</div><div class="m"><b>LIS → FNC → LIS</b><span>report 05:05 · 4 setores · manual</span></div></div>
+      <div class="row"><div class="k">SEX 10</div><div class="m"><b>LIS → LGW → LIS</b><span>report 05:40 · 4 setores</span></div></div>
+      <div class="row ghostrow"><div class="k">SÁB 11</div><div class="m"><b>Folga</b><span>—</span></div></div>
+    </div></div>
+    <div class="t">② Tocaste em Desfazer — está de volta</div>
+    <div class="d">O serviço reaparece na Escala tal e qual (mesmo dia, mesmos dados). SEM segundo toast — o item a voltar É o feedback; a app fica calada.</div>
+    <div class="spec"><b>Mecânica:</b> o objeto é capturado ANTES de apagar; Desfazer = re-inserir (o sync re-upserta sozinho). <b>· Háptico:</b> success no desfazer. <b>· VoiceOver:</b> o toast anuncia "Serviço apagado. Desfazer disponível." e a pílula é botão acessível.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="toast">
+        <div class="tic" style="background:var(--red);color:#fff">✕</div>
+        <div class="tw"><div class="tt">Validade apagada</div><div class="ts">Médico classe 1 · expirava 12 SET</div></div>
+        <div class="undo">Desfazer</div>
+        <div class="tbar"><i style="width:80%"></i></div>
+      </div>
+      <div class="eyeb">Validades &amp; Documentos</div>
+      <div class="row"><div class="k">✈</div><div class="m"><b>Licença CCA</b><span>referência · não expira</span></div></div>
+      <div class="row"><div class="k">🛂</div><div class="m"><b>Passaporte</b><span>expira 03 MAR 2031</span></div></div>
+    </div></div>
+    <div class="t">③ Validade — morre o "não dá para desfazer"</div>
+    <div class="d">O Alert atual até pede desculpa ("Não dá para desfazer."). Agora dá: apaga já, 5 s para voltar atrás. O copy apologético desaparece porque deixou de ser verdade.</div>
+    <div class="spec"><b>Morre:</b> o Alert do ValidadesScreen. <b>· Desfazer</b> = re-adicionar com o MESMO id (a carteira reordena sozinha). <b>· EN:</b> "Item deleted · Class 1 medical" / "Undo".</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="toast">
+        <div class="tic" style="background:var(--red);color:#fff">✕</div>
+        <div class="tw"><div class="tt">Evento removido</div><div class="ts">Dia de folga trabalhado · 12 JUL</div></div>
+        <div class="undo">Desfazer</div>
+        <div class="tbar"><i style="width:45%"></i></div>
+      </div>
+      <div class="eyeb">Eventos do mês</div>
+      <div class="row"><div class="k">02</div><div class="m"><b>Standby aeroporto</b><span>ADTY · pago</span></div></div>
+      <div class="row"><div class="k">18</div><div class="m"><b>Doença</b><span>episódio · dia 2</span></div></div>
+    </div></div>
+    <div class="t">④ Extra/evento — ganha a rede que nunca teve</div>
+    <div class="d">Hoje o × do ExtrasManager apaga SEM confirmação nem rede — um dedo escorregado e o € do mês muda em silêncio. O undo dá a rede sem adicionar fricção: continua a 1 toque.</div>
+    <div class="spec"><b>Não muda:</b> o gesto (1 toque no ×). <b>Muda:</b> aparece o toast com Desfazer — o dinheiro do mês nunca muda sem hipótese de voltar. É o caso onde o padrão AUMENTA a segurança em vez de reduzir fricção.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="eyeb" style="margin-top:16px">O que MANTÉM confirmação</div>
+      <div class="row"><div class="k" style="color:var(--red)">⚠</div><div class="m"><b>Apagar conta</b><span>servidor · graça de 7 dias — ConfirmDialog fica</span></div></div>
+      <div class="row"><div class="k" style="color:var(--red)">⚠</div><div class="m"><b>Revogar link de família</b><span>servidor · o link morre JÁ para quem o tem — fica</span></div></div>
+      <div class="row"><div class="k" style="color:var(--red)">⚠</div><div class="m"><b>Terminar sessão</b><span>fica</span></div></div>
+      <div class="gap" style="margin-top:18px">regra: local = desfazível · servidor-irreversível = confirmação honesta</div>
+    </div></div>
+    <div class="t">⑤ A fronteira do padrão</div>
+    <div class="d">O undo não é dogma: onde o efeito sai do aparelho e não volta (conta, link revogado), a confirmação é a resposta honesta. A regra cabe numa linha.</div>
+    <div class="spec"><b>Também fora:</b> apagar serviços IMPORTADOS continua bloqueado como hoje (a fonte manda — corrige no eCrew/PDF); o undo só toca os manuais.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="toast">
+        <div class="tic" style="background:var(--red);color:#fff">✕</div>
+        <div class="tw"><div class="tt">Serviço apagado</div><div class="ts">QUI 9 · LIS→FNC→LIS</div></div>
+        <div class="undo">Desfazer</div>
+        <div class="tbar"><i style="width:15%"></i></div>
+      </div>
+      <div class="eyeb">Anatomia</div>
+      <div class="gap" style="text-align:left;line-height:1.7">
+        placa ink (o Toast de sempre) · disco vermelho ✕ (remoção)<br>
+        título = o QUÊ · sub = a PROVA (rota/nome/data)<br>
+        pílula AMARELA "Desfazer" (a língua de ação da casa)<br>
+        barra fina amarela = o tempo a esgotar (5 s fixos)<br>
+        novo apagar substitui o toast → a janela anterior fecha
+      </div>
+    </div></div>
+    <div class="t">⑥ Anatomia do toast com ação</div>
+    <div class="d">É o Toast global de sempre + um slot de ação opcional. Sem ação, nada muda (continua não-tocável). Com ação: 5 s fixos, a pílula é o único alvo de toque.</div>
+    <div class="spec"><b>Toques:</b> container box-none (o resto do ecrã continua livre) · pílula ≥44pt com hitSlop. <b>· Reduce-motion:</b> aparece/sai sem deslizar, a barra de tempo vira texto "5s" (nada anima). <b>· Uma ação por toast, sempre "Desfazer"</b> — não é um sistema de botões genérico.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para o código)</div>
+  <p><b>Toast:</b> `notify(title, sub, kind, action?)` — `action = { label, onPress }`; com ação o hold é FIXO (5000 ms,
+  ignora o proporcional-ao-texto), o container passa a `box-none` e SÓ a pílula recebe toques; kind novo `del`
+  (disco `PELE.red`, glifo ✕). Barra de tempo = Animated width (nativeDriver false só nela) com ramo reduce (texto).
+  <b>· Mecânica por candidato:</b> serviço manual = capturar `duties[date]` → `removeDuty` → Desfazer re-upserta o objeto
+  (o sync trata do servidor); validade = capturar → `removeValidity` → re-adicionar com o MESMO id; extra/evento =
+  capturar → `del` → re-adicionar. <b>· Janela única:</b> um apagar novo substitui o toast e FECHA a janela do anterior
+  (fica apagado — sem fila de undos). Fechar a app a meio = apagado (honesto). <b>· Háptica:</b> warning no apagar ·
+  success no desfazer. <b>· VoiceOver:</b> announce "X apagado. Desfazer disponível." + pílula `accessibilityRole="button"`.
+  <b>· Morre:</b> Alert do DutyDetail · Alert (+copy "Não dá para desfazer") das Validades. <b>· Fica:</b> ConfirmDialog
+  de conta/link/sessão · o bloqueio dos importados (a fonte manda). <b>· Goldens:</b> nada de motor puro — é UI+fluxo;
+  verificação = device (os 4 cenários + VoiceOver + reduce-motion).</p>
+</div>
+</body>
+</html>

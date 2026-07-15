@@ -329,7 +329,9 @@ export default function App() {
   // TabBar herdar o tema quando o Início é a aba ativa.
   const [homeNight, setHomeNight] = useState(false);
   // Toast de AÇÃO genérico (confirma guardar/apagar/aplicar) — exposto via contexto.
-  const notify = (title, sub, kind) => setToast({ kind: kind || 'ok', title, sub: sub || null, ts: Date.now() });
+  // `action` (mockup desfazer, 2026-07-15): { label, onPress } — o toast ganha a pílula
+  // "Desfazer" (5 s fixos, box-none). Sem ação, o toast continua puramente informativo.
+  const notify = (title, sub, kind, action) => setToast({ kind: kind || 'ok', title, sub: sub || null, action: action || null, ts: Date.now() });
 
   // Caixa-negra: a sessão anterior morreu com erro fatal de JS? Mostra-o UMA vez (e limpa).
   useEffect(() => {

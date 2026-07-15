@@ -59,8 +59,8 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 | `PeleSheet` | folha modal da pele | gesto de arrasto + teclado já resolvidos |
 | `Icon` + `design/icons.js` | pictogramas SVG próprios | emoji proibido |
 | `HeaderActions` | sino + avatar (ecrãs-aba) | avatar navega ao Perfil |
-| `Toast` | `notify(title, sub, kind)` global | toasts locais proibidos (o da Escala foi eliminado) |
-| `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora |
+| `Toast` | `notify(title, sub, kind, action?)` global | toasts locais proibidos; `action={label,onPress}` = pílula "Desfazer" (5 s, kind `del`) — ver motion §7 |
+| `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora. **Fronteira do desfazer (2026-07-15): local = apaga-já + toast "Desfazer" (5 s); servidor-irreversível (conta·link família·sessão) = confirmação honesta.** |
 | `Skeleton`, `CountUp`, `useEnter` | loading / números / entrada | todos respeitam reduce-motion |
 | `PrimaryButton` / `GhostButton`, `Banner`, `Eyebrow` | botões/banner/rótulo partilhados | PELE-FICADOS por dentro (2026-07-09), API intacta — canónicos da pele |
 

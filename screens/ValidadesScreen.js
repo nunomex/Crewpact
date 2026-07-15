@@ -1,5 +1,5 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Animated, PanResponder, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Animated, PanResponder, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
@@ -40,7 +40,7 @@ const slotFor = (i) => SLOTS[Math.min(Math.max(i, 0), SLOTS.length - 1)];
 
 // "Validades & Documentos" (premium) — CARTEIRA (deck) do que expira + FORMULÁRIO RICO por tipo.
 export default function ValidadesScreen({ navigation }) {
-  const { validities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang } = useContext(AppContext);
+  const { validities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang, notify } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const insets = useSafeAreaInsets();
@@ -147,13 +147,22 @@ export default function ValidadesScreen({ navigation }) {
     else { addFrontRef.current = new Set(sorted.map((x) => x.id)); addValidity(item); }   // marca o "antes" → cartão novo assenta à frente
     success(); setEditing(null);
   };
+  // DESFAZER em vez de confirmar (mockup design/desfazer.html, 2026-07-15): apaga JÁ +
+  // 5 s de "Desfazer" no toast — morreu o Alert (e o copy "Não dá para desfazer", que
+  // deixou de ser verdade). Captura-se o item GUARDADO (validities, não o draft em edição);
+  // repor = addValidity com o MESMO id (o spread do item ganha ao id gerado — a carteira reordena).
   const deleteEditing = () => {
     if (!editing?.id) { setEditing(null); return; }
+    const captured = validities.find((v) => v.id === editing.id);
     warning();
-    Alert.alert(l('Apagar esta validade?', 'Delete this item?'), l('Não dá para desfazer.', 'This cannot be undone.'), [
-      { text: l('Cancelar', 'Cancel'), style: 'cancel' },
-      { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => { removeValidity(editing.id); success(); setEditing(null); } },
-    ]);
+    removeValidity(editing.id);
+    setEditing(null);
+    if (captured) {
+      notify && notify(
+        l('Validade apagada', 'Item deleted'), validityLabel(captured.type, isPilot, lang), 'del',
+        { label: l('Desfazer', 'Undo'), onPress: () => { success(); addValidity({ ...captured }); } },
+      );
+    }
   };
 
   const sorted = sortValidities(validities);

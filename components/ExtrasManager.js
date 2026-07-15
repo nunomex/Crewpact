@@ -11,7 +11,7 @@ import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { success, warning } from '../data/haptics';
 
 export default function ExtrasManager({ visible, onClose, onAdd }) {
-  const { lang, ae, crewAt, aeEvents, removeAeEvent } = useContext(AppContext);
+  const { lang, ae, crewAt, aeEvents, removeAeEvent, addAeEvents, notify } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const kindLabel = (type) => {
@@ -32,7 +32,20 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
   );
   const total = useMemo(() => events.reduce((sum, e) => sum + (rate(e.type, e.date) || 0), 0), [events]);   // eslint-disable-line
 
-  const del = (id) => { warning(); removeAeEvent && removeAeEvent(id); };
+  // DESFAZER (mockup design/desfazer.html, 2026-07-15): o × apagava SEM rede nenhuma —
+  // um dedo escorregado e o € do mês mudava em silêncio. Continua a 1 toque, mas o toast
+  // dá 5 s de "Desfazer" (repor = addAeEvents com o MESMO id — a lista/€ voltam sozinhos).
+  const del = (id) => {
+    const captured = (aeEvents || []).find((e) => e.id === id);
+    warning();
+    removeAeEvent && removeAeEvent(id);
+    if (captured) {
+      notify && notify(
+        l('Evento removido', 'Event removed'), `${kindLabel(captured.type)} · ${eventDateLabel(captured.date, lang)}`, 'del',
+        { label: l('Desfazer', 'Undo'), onPress: () => { success(); addAeEvents && addAeEvents([{ ...captured }]); } },
+      );
+    }
+  };
 
   return (
     <PeleSheet visible={visible} onClose={onClose}>
