@@ -136,5 +136,50 @@ const vSemAviso = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, h
 check('sem aviso: pool normal (nada de escala)', vSemAviso && !/mexeu|mexeram/i.test(vSemAviso.bold + vSemAviso.tail));
 eq('determinismo do aviso', vAviso, stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { aviso: true } }));
 
+// ═══ MARCOS NA VOZ (mockup design/marcos-voz.html, aprovado 2026-07-11) ═══
+// Horas do ano: banda [marco, marco+15h), número REDONDO; aniversário: mês do
+// serviceStart dias 1–3; precedência aviso > marco > noite > meteo; SÓ na folga.
+
+// Dentro da banda (507h → marco 500) — número redondo + destino Números
+const vM500 = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 507 } });
+check('marco horas: diz 500 (redondo, nunca 507)', vM500 && /500/.test(vM500.bold) && !/507/.test(vM500.bold + vM500.tail));
+check('marco horas: destino numeros', vM500 && vM500.to === 'numeros');
+
+// Bordas da banda: 499.9 = ainda não · 515 = já passou (desliga sozinho)
+check('antes do marco: silêncio do marco', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 499.9 } }); return v && !/500/.test(v.bold); })());
+check('banda esgotada (515h): pool normal', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 515 } }); return v && !/500/.test(v.bold); })());
+
+// Marco ganha à noite E à meteo de decisão
+const vMNight = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22, ctx: { yearHours: 752, tmwReport: '05:30' } });
+check('marco ganha à noite e ao casaco', vMNight && /750/.test(vMNight.bold));
+
+// Aviso ganha ao marco (função antes de charme)
+const vMAviso = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 507, aviso: true } });
+check('aviso ganha ao marco', vMAviso && /escala/i.test(vMAviso.bold) && !/500/.test(vMAviso.bold + vMAviso.tail));
+
+// Férias: o marco CALA-SE (a app não fala de trabalho quando estás desligado)
+const vMFer = stateVoice({ state: 'ferias', dateISO: '2026-07-09', wx: { c: 24, min: 18, max: 24, icon: 'sun' }, ctx: { yearHours: 507 } });
+check('férias: marco calado', vMFer && !/500|horas/i.test(vMFer.bold + vMFer.tail));
+
+// Aniversário: 1 ano = singular ("Um ano") · N anos = plural · dias 1–3 do mês · precisa de companhia
+const vA1 = stateVoice({ state: 'folga', dateISO: '2026-07-02', wx: SUN, hour: 15, ctx: { serviceStart: '2025-07-01', companhia: 'easyJet' } });
+eq('aniversário 1 ano: singular', vA1 && vA1.bold, 'Um ano de easyJet.');
+const vA3 = stateVoice({ state: 'folga', dateISO: '2026-07-03', wx: SUN, hour: 15, ctx: { serviceStart: '2023-07-01', companhia: 'easyJet' } });
+eq('aniversário 3 anos: plural', vA3 && vA3.bold, '3 anos de easyJet.');
+check('aniversário: inerte (sem destino)', vA3 && vA3.to === undefined);
+check('dia 4: janela fechada', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-07-04', wx: SUN, hour: 15, ctx: { serviceStart: '2023-07-01', companhia: 'easyJet' } }); return v && !/easyJet/.test(v.bold); })());
+check('mês errado: nada', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-08-02', wx: SUN, hour: 15, ctx: { serviceStart: '2023-07-01', companhia: 'easyJet' } }); return v && !/easyJet/.test(v.bold); })());
+check('0 anos (entrou este ano): nada', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-07-02', wx: SUN, hour: 15, ctx: { serviceStart: '2026-07-01', companhia: 'easyJet' } }); return v && !/easyJet|ano/.test(v.bold); })());
+check('sem companhia: nada (nunca se inventa)', (() => { const v = stateVoice({ state: 'folga', dateISO: '2026-07-02', wx: SUN, hour: 15, ctx: { serviceStart: '2023-07-01' } }); return v && !/ano de/.test(v.bold); })());
+
+// Horas > aniversário quando coincidem (o aniversário tem 3 dias de janela e sobrevive)
+const vMBoth = stateVoice({ state: 'folga', dateISO: '2026-07-02', wx: SUN, hour: 15, ctx: { yearHours: 507, serviceStart: '2023-07-01', companhia: 'easyJet' } });
+check('horas > aniversário', vMBoth && /500/.test(vMBoth.bold));
+
+// EN + determinismo
+const vMEn = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 507 }, lang: 'en' });
+check('marco EN', vMEn && /500/.test(vMEn.bold) && /hours/.test(vMEn.bold));
+eq('determinismo do marco', vM500, stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 507 } }));
+
 console.log(`\nvoz do estado — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

@@ -18,6 +18,7 @@ import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
 import { AppContext } from '../data/appContext';
+import AsyncStorage from '../data/secureStorage';
 
 // Cor do estado da janela FTL (≥90% vermelho · ≥70% laranja · resto verde) — pele.
 const barColor = (r) => (r >= 0.9 ? PELE.red : r >= 0.7 ? PELE.warn : PELE.ok);
@@ -164,6 +165,34 @@ export default function StatsScreen({ navigation }) {
   });
   const safetyVis = safetyRows.filter((o) => o.when === 'always' || o.when === (isYear ? 'ano' : 'mes'));
   const fullest = safetyRows.reduce((a, b) => (b.r > (a ? a.r : -1) ? b : a), null);   // janela mais cheia (card Segurança)
+
+  // ── O PRIMEIRO ALERTA EXPLICADO (mockup design/primeiro-alerta.html, aprovado 2026-07-11) ──
+  // Progressive disclosure (o padrão da dica do eCrew): a 1.ª vez NA VIDA DA CONTA que uma
+  // janela FTL pinta (≥70%), nasce UMA nota a ensinar o vocabulário das cores — e nunca mais.
+  // Ao nascer grava JÁ a flag mas fica em estado local a sessão toda (não pisca ao re-render);
+  // a montagem seguinte lê a flag e cala-se. Sem "entendi", sem X — dispensa-se sozinha.
+  const painted = !!(fullest && fullest.r >= 0.7);
+  const [alertBaptism, setAlertBaptism] = useState(false);
+  useEffect(() => {
+    if (!painted || !user?.id) return;
+    const k = `cp_alert_explained_${user.id}`;
+    AsyncStorage.getItem(k).then((v) => {
+      if (v) return;
+      setAlertBaptism(true);
+      AsyncStorage.setItem(k, '1').catch(() => {});
+    }).catch(() => {});
+  }, [painted, user?.id]);
+  // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
+  // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
+  const baptismNote = alertBaptism ? (
+    <Text style={s.note}>
+      <Text style={s.noteInk}>{l('Primeira vez com cor? ', 'First time seeing colour? ')}</Text>
+      <Text style={[s.noteInk, { color: PELE.warn }]}>{l('Amarelo', 'Yellow')}</Text>
+      {l(' = janela acima de 70% — atenção cedo, não é decisão. ', ' = a window above 70% — early attention, not a decision. ')}
+      <Text style={[s.noteInk, { color: PELE.red }]}>{l('Vermelho', 'Red')}</Text>
+      {l(' = acima de 90% — confirma com o planeamento. A cor mede a tua margem; a app estima, nunca declara legalidade.', ' = above 90% — check with crewing. Colour measures your margin; the app estimates, it never declares legality.')}
+    </Text>
+  ) : null;
 
   // Opções e seleção corrente do dial (derivada — cai no default se a chave já não é visível)
   const curOpts = mode === 'money' ? moneyOpts : safetyVis;
@@ -324,6 +353,8 @@ export default function StatsScreen({ navigation }) {
                 {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.note}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
               </View>
             ) : null}
+            {/* Batismo das cores no modo FTL: a nota nasce SOB O DIAL (o elemento que pintou). */}
+            {mode !== 'money' && baptismNote ? <View style={s.aeNotes}>{baptismNote}</View> : null}
 
             {/* ── Bento (cards → folhas) ── */}
             <View style={s.div} />
@@ -339,6 +370,8 @@ export default function StatsScreen({ navigation }) {
                   <Text style={[s.btKeyWide, { color: barColor(fullest ? fullest.r : 0) }]}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
                 </TouchableOpacity>
               ) : null}
+              {/* Batismo das cores no modo AE: a nota nasce SOB O CARD Segurança (linha própria na grelha). */}
+              {mode === 'money' && baptismNote ? <View style={{ flexBasis: '100%' }}>{baptismNote}</View> : null}
 
               <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('voo')}>
                 <View style={s.btTop}><View style={s.btIc}><Icon name="plane" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.voo}</Text></View>
@@ -559,6 +592,7 @@ const s = StyleSheet.create({
 
   aeNotes: { marginTop: 12, gap: 4 },
   note: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 15 },
+  noteInk: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
 
   div: { height: 1, backgroundColor: PELE.line, marginTop: 22, marginBottom: 16 },
   mais: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: PELE.grey, marginBottom: 12 },

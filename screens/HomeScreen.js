@@ -22,7 +22,7 @@ import { AppContext, toZulu } from '../data/appContext';
 import { airportZulu, legZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { monthStats } from '../data/stats';
+import { monthStats, yearStats } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
 import { stateVoice } from '../data/stateVoice';
 import { crewState } from '../data/crewState';
@@ -170,7 +170,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight } = useContext(AppContext);
+  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart } = useContext(AppContext);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -670,11 +670,18 @@ export default function HomeScreen({ navigation }) {
     // da meteo (casaco/trânsito, mockup meteo-voz). Só o dia civil seguinte, nada de "próximo".
     const tmwISO = (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
     const tmwDuty = duties && duties[tmwISO] && !duties[tmwISO].deleted ? duties[tmwISO] : null;
+    // MARCOS na voz (mockup marcos-voz, 2026-07-11): as horas do ano SÓ se calculam na
+    // folga (o único estado onde o marco fala) — nos outros o custo é zero. O motor
+    // decide banda/janela; aqui só se entrega o dado (yearStats = o mesmo dos Números).
+    const yearH = homeState === 'folga'
+      ? (() => { try { return +(yearStats(duties || {}, { year: Number(todayISO.slice(0, 4)) }).flightMin / 60); } catch { return null; } })()
+      : null;
     return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxArr, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
+      yearHours: yearH, serviceStart: serviceStart || null, companhia: (company && company.name) || null,
       // Aviso na voz (2026-07-10): o bilhete menciona a escala mexida NO REGISTO dele —
       // charme em cima da linha warn acionável, nunca em vez dela. Doença fica calada.
       aviso: (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) ? true : null } });
-  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges]);
+  }, [homeState, lang, todayISO, wxArr, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company]);
   // Toque no bilhete (2026-07-10, user: "o amarelo dá para carregar"): a voz com destino
   // navega — 'escala' → rever alterações · 'hoje'/'amanha' → detalhe do dia (com guarda:
   // sem registo nesse dia, cai na Escala). Sem destino, o bilhete fica inerte.
@@ -683,6 +690,8 @@ export default function HomeScreen({ navigation }) {
     // 'escala' abre JÁ a folha de revisão (param `review`, o mesmo caminho do sino) —
     // aterrar na aba e obrigar a procurar o botão era meio caminho (user 2026-07-10).
     if (to === 'escala') { navigation.navigate('Escala', { screen: 'EscalaMain', params: { review: Date.now() } }); return; }
+    // 'numeros' (marcos-voz 2026-07-11): o marco de horas abre os Números — o ano dele.
+    if (to === 'numeros') { navigation.navigate('Estatísticas'); return; }
     const iso = to === 'hoje' ? todayISO
       : (() => { const d = new Date(`${todayISO}T12:00:00`); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
     const reg = duties && duties[iso] && !duties[iso].deleted ? duties[iso] : null;

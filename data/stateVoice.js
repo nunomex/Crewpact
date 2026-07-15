@@ -66,6 +66,20 @@ const POOLS = {
   'ferias.aviso': [
     ['A escala mexeu.', 'Sem pressa — espreitas quando voltares.', 'The roster moved.', 'No rush — look when you’re back.', 'escala'],
   ],
+  // ── MARCOS NA VOZ (mockup design/marcos-voz.html, aprovado 2026-07-11) ──
+  // Reconhecimento SEM celebração (a carta de design proíbe confetes): o marco é uma
+  // linha manuscrita e mais nada. SÓ NA FOLGA — nas férias a app não fala de trabalho,
+  // na doença fica o bilhete de melhoras. O número é o MARCO redondo (500, nunca 507).
+  'folga.marcoHoras': [
+    ['{mHoras} horas de voo este ano.', 'Contadas uma a uma.', '{mHoras} flight hours this year.', 'Counted one by one.', 'numeros'],
+    ['{mHoras} horas este ano.', 'E o ano ainda não acabou.', '{mHoras} hours this year.', 'And the year isn’t over yet.', 'numeros'],
+  ],
+  'folga.marcoAno1': [
+    ['Um ano de {companhia}.', 'Já parece casa.', 'One year at {companhia}.', 'Feels like home already.'],
+  ],
+  'folga.marcoAnos': [
+    ['{anos} anos de {companhia}.', 'Contados desde o primeiro report.', '{anos} years at {companhia}.', 'Counted since the first report.'],
+  ],
   folga: [
     ['Descansa — está tudo em dia.', 'Hoje o dia é teu.', 'Rest — everything’s in order.', 'Today is yours.'],
     ['Folga a sério.', 'Nada pendente, nada a vigiar.', 'A proper day off.', 'Nothing pending, nothing to watch.'],
@@ -99,9 +113,27 @@ const eligible = (s, ctx) => ![...s.matchAll(/\{(\w+)\}/g)].some((m) => ctx[m[1]
 // (chuva > frio, SÓ com serviço amanhã) > calor > chuva agora > neve > vento > sol > nuvens.
 export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour = 12, ctx = {} } = {}) {
   let key = state;
-  // Aviso primeiro (acima da meteo E da noite): se a escala mexeu, é a única coisa que
-  // vale mais que conversa de conforto. ctx.aviso é truthy só com alterações por rever.
+  // ── MARCOS (mockup marcos-voz, aprovado 2026-07-11) — sem memória, sem random: ──
+  // horas = banda pós-cruzamento [marco, marco+15h) (≈ as 1–2 folgas a seguir a cruzar);
+  // aniversário = mês do serviceStart, dias 1–3 (o onboarding só recolhe mês/ano — não
+  // se inventa um dia). Precedência: horas > aniversário (se coincidirem, o aniversário
+  // tem 3 dias de janela e sobrevive à banda).
+  const MARCOS_H = [1000, 750, 500, 250, 100];
+  const marcoH = (state === 'folga' && ctx.yearHours != null)
+    ? (MARCOS_H.find((m) => ctx.yearHours >= m && ctx.yearHours < m + 15) || null) : null;
+  const anivAnos = (() => {
+    if (state !== 'folga' || !ctx.serviceStart || !ctx.companhia || !dateISO) return 0;
+    const [sy, sm] = String(ctx.serviceStart).split('-').map(Number);
+    const [y, m, d] = String(dateISO).split('-').map(Number);
+    if (!sy || !sm || !y || m !== sm || d > 3) return 0;
+    return Math.max(0, y - sy);
+  })();
+  // Aviso primeiro (acima dos marcos, da meteo E da noite): se a escala mexeu, é a única
+  // coisa que vale mais que conversa. ctx.aviso é truthy só com alterações por rever.
   if ((state === 'folga' || state === 'ferias') && ctx.aviso) key = `${state}.aviso`;
+  else if (marcoH) key = 'folga.marcoHoras';
+  else if (anivAnos === 1) key = 'folga.marcoAno1';
+  else if (anivAnos >= 2) key = 'folga.marcoAnos';
   else if (state === 'folga') {
     const ic = wx && wx.icon;
     const hasTmwDuty = ctx.tmwReport != null && ctx.tmwReport !== '';
@@ -120,7 +152,8 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
     if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 22) key = 'ferias.sun';
   }
   const full = { ...ctx, now: wx ? wx.c : null, min: wx ? wx.min : null, max: wx ? wx.max : null,
-    wind: wx ? wx.wind : null, tmwMin: wx ? wx.tmwMin : null };
+    wind: wx ? wx.wind : null, tmwMin: wx ? wx.tmwMin : null,
+    mHoras: marcoH, anos: anivAnos || null };
   const fit = (arr) => (arr || []).filter((e) => eligible(e[0], full) && eligible(e[1], full));
   // Variante do tempo primeiro; sem elegíveis (ex.: sem temperatura) cai na pool base do estado.
   const use = fit(POOLS[key]).length ? fit(POOLS[key]) : fit(POOLS[state]);

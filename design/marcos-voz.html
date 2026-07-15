@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — marcos na voz (bilhete manuscrito)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --yellow:#FFB800;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif; --hand:'Caveat',cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:900px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* topo de telemóvel (só a metade que interessa: herói + bilhete) — fiel ao HomeScreen */
+  .phone{width:100%;max-width:340px;height:430px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .halo{position:absolute;right:-127px;top:-85px;width:360px;height:360px;border-radius:99em;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, rgba(255,214,120,.16) 0%, rgba(255,214,120,0) 70%)}
+  .page{position:absolute;inset:0;padding:14px 19px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:1}
+  .greet{font-size:10px;font-weight:500;color:var(--grey);margin-top:12px}
+  .hero{position:relative;min-height:150px;margin-top:4px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0}
+  .gho{position:absolute;right:8px;top:-14px;font-family:var(--disp);font-weight:700;line-height:1;letter-spacing:-2.5px;color:var(--ghost);text-align:right;font-size:132px}
+  .wx{position:absolute;right:9px;top:0;text-align:right;font-size:9px;font-weight:700;color:var(--grey)}
+  .word{font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+  .hr{height:1px;background:var(--line);margin:10px 0 0}
+  .note{margin:22px 4px 2px;font-family:var(--hand);font-size:19px;line-height:1.3;color:var(--grey)}
+  .note b{font-weight:600;color:var(--ink);background:var(--yellow);padding:0 4px}
+  .r1{transform:rotate(-1.2deg)} .r2{transform:rotate(-2.7deg)} .r3{transform:rotate(-1.8deg)}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Living Interface · voz</div>
+  <h1>marcos na voz</h1>
+  <p>Os marcos entram na app <b>pelo bilhete manuscrito</b>, nunca por cards celebratórios (contador com
+  overshoot/confete = gamificação, proibida pela carta de design). Dois marcos, ambos de <b>dados que já
+  existem</b>: as horas de voo do ano (motor de stats, golden) e o aniversário de companhia (<b>crewStart</b>
+  do onboarding). Âmbito: <b>SÓ a folga</b> — nas férias a app não fala de trabalho (afastamento máximo),
+  na doença fica o bilhete de melhoras. Determinístico, sem memória: o marco de horas usa uma <b>banda
+  pós-cruzamento</b> (mostra enquanto as horas estão até 15 h acima do marco), o aniversário usa os
+  <b>dias 1–3 do mês</b> (o crewStart só tem mês/ano — não se inventa um dia).</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☀<br>18°–26°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r2"><b>500 horas de voo este ano.</b> Contadas uma a uma.</div>
+    </div></div>
+    <div class="t">① Marco de horas do ano</div>
+    <div class="d">As horas cruzaram um marco redondo — o bilhete diz o número certo, na voz de sempre. O marcador amarelo TOCA → abre os Números (o ano dele).</div>
+    <div class="spec"><b>Gatilho:</b> horas do ano ∈ [marco, marco+15h) · marcos 100 / 250 / 500 / 750 / 1000 <b>· EN:</b> "500 flight hours this year. Counted one by one." <b>· to:</b> 'numeros' <b>· Número:</b> o MARCO (500), nunca o valor corrente (507) — o bilhete fala redondo.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Bom dia, Miguel</div>
+      <div class="hero">
+        <div class="gho">SEG</div>
+        <span class="wx">☁<br>11°–17°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r1"><b>Um ano de easyJet.</b> Já parece casa.</div>
+    </div></div>
+    <div class="t">② Primeiro aniversário de companhia</div>
+    <div class="d">O crewStart fez um ano este mês. Singular tem pool própria — "1 anos" nunca acontece.</div>
+    <div class="spec"><b>Gatilho:</b> mês atual = mês do crewStart · anos = 1 · dia do mês 1–3 <b>· EN:</b> "One year at easyJet. Feels like home already." <b>· Inerte</b> (sem destino natural — nada de taps mortos).</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">SEX</div>
+        <span class="wx">☀<br>14°–21°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r3"><b>3 anos de easyJet.</b> Contados desde o primeiro report.</div>
+    </div></div>
+    <div class="t">③ Aniversário N anos</div>
+    <div class="d">A cauda ancora no operacional ("desde o primeiro report") — reconhecimento sem sentimentalismo.</div>
+    <div class="spec"><b>Gatilho:</b> mês = mês do crewStart · anos ≥ 2 · dia 1–3 <b>· EN:</b> "3 years at easyJet. Counted since the first report." <b>· {companhia}</b> = nome real do perfil (elegibilidade: sem companhia, sem frase).</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">QUI</div>
+        <span class="wx">☀<br>18°–26°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r1"><b>A escala mexeu.</b> Espreita quando puderes — nada entra sem ti.</div>
+    </div></div>
+    <div class="t">④ Precedência: o aviso ganha ao marco</div>
+    <div class="d">Mesmo dia do card ①, mas a escala tem alterações por rever — o marco espera (a banda de 15 h dá-lhe mais folgas para aparecer). Função antes de charme, sempre.</div>
+    <div class="spec"><b>Ordem completa:</b> aviso &gt; <b>MARCO</b> &gt; noite &gt; decisão de amanhã (chuva/frio) &gt; conforto (calor/chuva/neve/vento/sol/nuvens). O marco é raro (2–4×/ano) — ganha à meteo, perde ao dever.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa tarde, Miguel</div>
+      <div class="hero">
+        <div class="gho">TER</div>
+        <span class="wx">☀<br>22°–29°</span>
+        <div class="word">Férias</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r2"><b>29° e zero responsabilidades.</b> Aproveita.</div>
+    </div></div>
+    <div class="t">⑤ Férias: o marco CALA-SE</div>
+    <div class="d">As 500 horas cruzaram durante as férias? A app não fala de trabalho quando estás desligado — o marco fica na banda e aparece na primeira folga a seguir (se ainda lá estiver).</div>
+    <div class="spec"><b>Regra de âmbito:</b> marcos SÓ na folga. Férias = pool de férias intacta · doença = bilhete de melhoras intacto. "A app sabe estar de férias contigo" (ficha 12) ganha ao reconhecimento.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="halo"></div><div class="page">
+      <div class="greet">Boa noite, Miguel</div>
+      <div class="hero">
+        <div class="gho">SÁB</div>
+        <span class="wx">☾<br>12°</span>
+        <div class="word">Folga</div>
+      </div>
+      <div class="hr"></div>
+      <div class="note r3"><b>750 horas este ano.</b> E o ano ainda não acabou.</div>
+    </div></div>
+    <div class="t">⑥ Marco à noite (variante da pool)</div>
+    <div class="d">O marco ganha à frase da noite (é mais raro). Segunda variante da pool de horas — a rotação determinística do dia escolhe entre as duas.</div>
+    <div class="spec"><b>Pool horas (2 variantes):</b> "Contadas uma a uma." · "E o ano ainda não acabou." <b>· EN:</b> "750 hours this year. And the year isn't over yet." <b>· Seed:</b> dateISO — a mesma frase o dia todo, roda no dia seguinte.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para o código)</div>
+  <p><b>Dados:</b> horas do ano = motor de stats que já alimenta os Números e o poster "O meu ano" (nada novo a calcular)
+  · aniversário = <b>crewStart</b> (mês/ano, do onboarding) + <b>companhia</b> do perfil.
+  <b>· Sem memória, sem random:</b> banda [marco, marco+15h) para as horas (≈ as 1–2 folgas a seguir ao cruzamento);
+  dias 1–3 do mês para o aniversário. Ambos puros — entram no <b>test:voice</b> como tudo o resto.
+  <b>· Precedência:</b> aviso &gt; marco (horas &gt; aniversário se coincidirem — o mais raro primeiro? NÃO: horas primeiro
+  por ser mais pessoal do ano; o aniversário tem 3 dias de janela e sobrevive) &gt; noite &gt; meteo.
+  <b>· Toque:</b> horas → <b>'numeros'</b> (novo destino no gate do HomeScreen: abre a aba Números) · aniversário → inerte.
+  <b>· O que NÃO existe:</b> cards, contadores, confetes, push — o marco é uma linha manuscrita e mais nada.
+  A app reconhece; não aplaude.</p>
+</div>
+</body>
+</html>
