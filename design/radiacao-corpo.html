@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — radiação cósmica na folha Corpo (v2, passe do designer)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --soft2:#FAFAF9; --yellow:#FFB800; --ok:#1E7A46; --warn:#B96A00; --red:#B3261E;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* a FOLHA (PeleSheet) — só a folha, sobre scrim */
+  .phone{width:100%;max-width:340px;height:520px;background:#8a8880;border-radius:38px;position:relative;overflow:hidden;
+    box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:26px 26px 38px 38px;padding:18px 20px 20px}
+  .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 14px}
+  .shead{display:flex;align-items:center;gap:11px}
+  .shIc{width:38px;height:38px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .shName{font-family:var(--disp);font-weight:700;font-size:20px}
+  .shName i{font-style:normal;color:var(--yellow);font-weight:800}
+  .shSub{font-size:10.5px;font-weight:600;color:var(--grey)}
+  .b3{display:flex;border:1px solid var(--line);border-radius:14px;margin-top:14px}
+  .bc{flex:1;padding:12px 10px;text-align:center}
+  .bc+.bc{border-left:1px solid var(--line)}
+  .bn{font-family:var(--disp);font-weight:700;font-size:24px}
+  .bn small{font-size:13px;color:var(--grey)}
+  .bl{font-size:8.5px;font-weight:700;color:var(--grey);margin-top:3px;line-height:1.3}
+
+  /* ── A SECÇÃO (v2, achatada): linha da gramática da folha — hairline + rótulo/valor + contexto ── */
+  .rad{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+  .radRow{display:flex;align-items:baseline;gap:8px}
+  .radLab{font-size:9px;font-weight:800;letter-spacing:1.3px;color:var(--grey);text-transform:uppercase;flex:1}
+  .radVal{font-family:var(--disp);font-weight:700;font-size:26px}
+  .radVal small{font-size:13px;color:var(--grey);font-weight:600}
+  .radCtx{font-size:9.5px;font-weight:600;color:var(--grey);line-height:1.5;margin-top:5px}
+  .radCtx b{color:var(--ink)}
+  .bapt{background:#FFF9E8;border:1px solid #F2E2AC;border-radius:12px;padding:10px 12px;margin-top:12px;
+    font-size:9.5px;font-weight:600;color:#5C5232;line-height:1.55}
+  .bapt b{color:var(--ink)}
+  .note{font-size:9.5px;font-weight:600;color:var(--grey);line-height:1.5;margin-top:12px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Números · folha Corpo · fase 2 · v2</div>
+  <h1>radiação cósmica — o passe do designer</h1>
+  <p>V2 depois do teste "a Apple lançava isto?" — <b>4 cortes sobre a v1</b>: ① a BARRA morreu (as barras FTL
+  merecem existir porque MEXEM e mudam decisões; a radiação de curto-curso vive para sempre nos 9–30% — uma
+  barra eternamente vazia é mobília, e a escala 0→6 fabricava "enchimento" de uma categoria que não é limite
+  pessoal); ② <b>"±30%" → "≈"</b> (a língua de estimativa da casa — o til da manuscrita; a tolerância explica-se
+  UMA vez, no batismo); ③ <b>uma unidade só</b> — mSv em todo o lado (µSv no mês obrigava a converter);
+  ④ a caixa própria achatou-se para a <b>gramática da folha</b> (hairline + rótulo/valor + linha de contexto —
+  o mesmo peso visual do resto). Mantêm-se: batismo 1×-na-vida · cobertura honesta · zero voos → secção nem
+  aparece · nunca "estás dentro".</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="sheet">
+      <div class="grab"></div>
+      <div class="shead">
+        <div class="shIc">🛏</div>
+        <div><div class="shName"><i>03</i> · Corpo</div><div class="shSub">repouso & fadiga · o teu ano</div></div>
+      </div>
+      <div class="b3">
+        <div class="bc"><div class="bn">10,2<small>h</small></div><div class="bl">Menor repouso entre serviços</div></div>
+        <div class="bc"><div class="bn">3</div><div class="bl">Repousos abaixo de 11 h</div></div>
+        <div class="bc"><div class="bn">5<small>d</small></div><div class="bl">Sequência máx. de serviço</div></div>
+      </div>
+
+      <!-- A SECÇÃO v2: linha achatada -->
+      <div class="rad">
+        <div class="radRow">
+          <div class="radLab">Radiação cósmica · estimativa</div>
+          <div class="radVal">≈ 1,8 <small>mSv</small></div>
+        </div>
+        <div class="radCtx">Limite legal: <b>20 mSv/ano</b> · a companhia é obrigada a avaliar o teu valor oficial — pede-lho.</div>
+      </div>
+
+      <div class="bapt"><b>Primeira vez?</b> És, por lei, um trabalhador exposto a radiação cósmica (Diretiva 2013/59/Euratom). A tua companhia é <b>obrigada</b> a avaliar a tua dose anual e a informar-te — pede-lhe o valor oficial. Isto é uma estimativa da tua escala (±30%), calculada no telemóvel; nada é guardado nem enviado.</div>
+
+      <div class="note"><b>128</b> dias de folga e <b>14</b> paragens noturnas no ano.</div>
+    </div></div>
+    <div class="t">① Ano — número + âncora, sem mobília</div>
+    <div class="d">O "≈" diz estimativa num carácter; a âncora legal (20/ano) dá a escala sem barra nenhuma. O batismo (1×-na-vida) explica o direito e a tolerância — e nunca mais aparece.</div>
+    <div class="spec"><b>Valor:</b> mSv, 1 decimal, prefixo "≈" sempre. <b>· Cor do valor:</b> ink — passa a warn/red SÓ se a dose estimada cruzar 70%/90% do limiar de 6 mSv (categoria A) — coisa que um curto-curso nunca vê; a cor volta a ser informação rara, não decoração.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="sheet">
+      <div class="grab"></div>
+      <div class="shead">
+        <div class="shIc">🛏</div>
+        <div><div class="shName"><i>03</i> · Corpo</div><div class="shSub">repouso & fadiga · o teu mês</div></div>
+      </div>
+      <div class="b3">
+        <div class="bc"><div class="bn">11,5<small>h</small></div><div class="bl">Menor repouso entre serviços</div></div>
+        <div class="bc"><div class="bn">0</div><div class="bl">Repousos abaixo de 11 h</div></div>
+        <div class="bc"><div class="bn">4<small>d</small></div><div class="bl">Sequência máx. de serviço</div></div>
+      </div>
+
+      <div class="rad">
+        <div class="radRow">
+          <div class="radLab">Radiação cósmica · estimativa</div>
+          <div class="radVal">≈ 0,2 <small>mSv</small></div>
+        </div>
+        <div class="radCtx">No ano: <b>≈ 1,8 mSv</b> · limite legal: 20 mSv/ano.</div>
+      </div>
+
+      <div class="note"><b>11</b> dias de folga e <b>1</b> paragem noturna no mês.</div>
+    </div></div>
+    <div class="t">② Mês — a mesma unidade, o ano como contexto</div>
+    <div class="d">Nada de µSv (era imposto cognitivo) e nada de nota-redirect: o acumulado do ano ao lado responde à pergunta real — "quanto é que este mês pesa no todo?".</div>
+    <div class="spec"><b>Mês:</b> mSv 1 decimal (0,2). <b>· Contexto:</b> acumulado do ano corrente + âncora legal, na mesma linha. Sem batismo se já foi visto (flag única).</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="sheet">
+      <div class="grab"></div>
+      <div class="shead">
+        <div class="shIc">🛏</div>
+        <div><div class="shName"><i>03</i> · Corpo</div><div class="shSub">repouso & fadiga · o teu ano</div></div>
+      </div>
+      <div class="b3">
+        <div class="bc"><div class="bn">10,2<small>h</small></div><div class="bl">Menor repouso entre serviços</div></div>
+        <div class="bc"><div class="bn">3</div><div class="bl">Repousos abaixo de 11 h</div></div>
+        <div class="bc"><div class="bn">5<small>d</small></div><div class="bl">Sequência máx. de serviço</div></div>
+      </div>
+
+      <div class="rad">
+        <div class="radRow">
+          <div class="radLab">Radiação cósmica · estimativa</div>
+          <div class="radVal">≈ 1,6 <small>mSv</small></div>
+        </div>
+        <div class="radCtx"><b>4 voos sem rota</b> não entram na estimativa — completa as rotas na Escala para contar tudo.</div>
+      </div>
+
+      <div class="note"><b>128</b> dias de folga e <b>14</b> paragens noturnas no ano.</div>
+    </div></div>
+    <div class="t">③ Cobertura honesta — a nota certa no momento certo</div>
+    <div class="d">Sem batismo (já foi); com voos sem rota, a linha de contexto dá lugar à cobertura — a estimativa nunca finge que contou o que não pôde. Uma nota de cada vez.</div>
+    <div class="spec"><b>Prioridade da linha de contexto:</b> cobertura (flightsWithout&gt;0) &gt; âncora legal. Nunca as duas empilhadas.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para o código) — v2</div>
+  <p><b>Onde:</b> folha Corpo do StatsScreen — secção `rad` achatada (hairline-top) entre as 3 células e a nota
+  de folgas/paragens; a MESMA gramática visual da folha, sem caixa própria. <b>· Dados:</b> `yearRadiation(duties,{year})`
+  (existe); o MÊS ganha `{ym}` opcional no motor (prefixo YYYY-MM — golden novo) + o ano corrente como contexto.
+  <b>· Formato:</b> "≈ X,X mSv" SEMPRE (uma unidade, 1 decimal, o til é a língua de estimativa da casa); a
+  tolerância ±30% explica-se no batismo, uma vez. <b>· SEM barra</b> (morta no passe: nunca informaria uma decisão).
+  <b>· Cor do valor:</b> ink; warn/red só a ≥70%/90% de 6 mSv (`RADIATION_LIMITS_MSV.categoryA`) — informação rara,
+  não decoração. <b>· Batismo:</b> flag `cp_radiation_explained_&lt;uid&gt;` (o padrão do batismo das cores). <b>· Linha
+  de contexto (uma de cada vez):</b> cobertura &gt; âncora legal (ano) / acumulado-do-ano (mês). <b>· Zero voos com
+  dose → a secção NÃO aparece.</b> <b>· Nunca:</b> "estás dentro/legal", guardar a dose, poster, gravidez.
+  <b>· Fase 3 à parte:</b> Biblioteca (EUR-Lex/DRE/FAA CARI) + frase ao advogado.</p>
+</div>
+</body>
+</html>

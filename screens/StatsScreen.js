@@ -13,6 +13,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
+import { yearRadiation, RADIATION_LIMITS_MSV } from '../data/radiation';
 import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
@@ -182,6 +183,29 @@ export default function StatsScreen({ navigation }) {
       AsyncStorage.setItem(k, '1').catch(() => {});
     }).catch(() => {});
   }, [painted, user?.id]);
+  // ── Radiação cósmica ESTIMADA (fase 2, mockup design/radiacao-corpo.html v2) ──
+  // Motor puro data/radiation.js (golden 34+ vs CARI-7/ICRU-84): dose derivada da escala,
+  // no device, NUNCA guardada. "≈" = a língua de estimativa da casa; cor só se a dose
+  // cruzar 70/90% do limiar de categoria A (6 mSv) — informação rara, não decoração.
+  const rad = useMemo(() => yearRadiation(duties || {}, isYear ? { year: +year } : { ym: st.ym }), [duties, isYear, year, st.ym]);
+  const radYear = useMemo(() => (isYear ? null : yearRadiation(duties || {}, { year: Number(String(st.ym || '').slice(0, 4)) })), [duties, isYear, st.ym]);
+  const fmtMsv = (v) => (v || 0).toLocaleString(locale, { minimumFractionDigits: v < 0.095 ? 2 : 1, maximumFractionDigits: v < 0.095 ? 2 : 1 });
+  const radTone = isYear && rad.mSv >= 0.9 * RADIATION_LIMITS_MSV.categoryA ? PELE.red
+    : isYear && rad.mSv >= 0.7 * RADIATION_LIMITS_MSV.categoryA ? PELE.warn : null;
+  // Batismo (1×-na-vida, o padrão do batismo das cores): explica o DIREITO (a companhia é
+  // obrigada a informar — 2013/59 Art. 35.º/3) e a tolerância; grava ao nascer, fica a sessão.
+  const [radBaptism, setRadBaptism] = useState(false);
+  const radVisible = rad.flightsWithDose > 0;
+  useEffect(() => {
+    if (!radVisible || !user?.id) return;
+    const k = `cp_radiation_explained_${user.id}`;
+    AsyncStorage.getItem(k).then((v) => {
+      if (v) return;
+      setRadBaptism(true);
+      AsyncStorage.setItem(k, '1').catch(() => {});
+    }).catch(() => {});
+  }, [radVisible, user?.id]);
+
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
   const baptismNote = alertBaptism ? (
@@ -520,6 +544,32 @@ export default function StatsScreen({ navigation }) {
           <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.reducedRests || 0}</Text><Text style={s.blab}>{l('Repousos abaixo de 11 h', 'Rests below 11 h')}</Text></View>
           <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.longestStreak}<Text style={s.bnumU}>d</Text></Text><Text style={s.blab}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text></View>
         </View>
+        {/* ── Radiação cósmica (v2 do mockup: linha achatada, SEM barra — número + âncora;
+            zero voos com dose → a secção nem aparece; uma linha de contexto de cada vez). ── */}
+        {radVisible ? (
+          <View style={s.rad}>
+            <View style={s.radRow}>
+              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')}</Text>
+              <Text style={[s.radVal, radTone ? { color: radTone } : null]} allowFontScaling={false}>≈ {fmtMsv(rad.mSv)}<Text style={s.radValU}> mSv</Text></Text>
+            </View>
+            <Text style={s.radCtx}>
+              {rad.flightsWithout > 0 ? (
+                <><Text style={s.radCtxB}>{rad.flightsWithout} {rad.flightsWithout === 1 ? l('voo sem rota não entra', 'flight without a route is not counted') : l('voos sem rota não entram', 'flights without a route are not counted')}</Text>{l(' na estimativa — completa as rotas na Escala.', ' in the estimate — complete the routes in the roster.')}</>
+              ) : isYear ? (
+                <>{l('Limite legal: ', 'Legal limit: ')}<Text style={s.radCtxB}>20 mSv/{l('ano', 'year')}</Text>{l(' · a companhia é obrigada a avaliar o teu valor oficial — pede-lho.', ' · your airline must assess your official dose — ask them for it.')}</>
+              ) : (
+                <>{l('No ano: ', 'This year: ')}<Text style={s.radCtxB}>≈ {fmtMsv(radYear ? radYear.mSv : 0)} mSv</Text> · {l('limite legal: 20 mSv/ano.', 'legal limit: 20 mSv/year.')}</>
+              )}
+            </Text>
+            {radBaptism ? (
+              <Text style={s.radBapt}>
+                <Text style={s.radBaptB}>{l('Primeira vez? ', 'First time? ')}</Text>
+                {l('És, por lei, um trabalhador exposto a radiação cósmica (Diretiva 2013/59/Euratom). A tua companhia é obrigada a avaliar a tua dose anual e a informar-te — pede-lhe o valor oficial. Isto é uma estimativa da tua escala (±30%), calculada no telemóvel; nada é guardado nem enviado.',
+                  'By law, you are a worker exposed to cosmic radiation (Directive 2013/59/Euratom). Your airline must assess your annual dose and inform you — ask for the official value. This is an estimate from your roster (±30%), computed on your phone; nothing is stored or sent.')}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Repousos entre 10 h e 11 h são legais fora de base (ORO.FTL.235) — sem quebra do mínimo.', ' Rests between 10 h and 11 h are legal away from base (ORO.FTL.235) — no breach of the minimum.') : ''}</Text>
       </PeleSheet>
 
@@ -593,6 +643,18 @@ const s = StyleSheet.create({
   aeNotes: { marginTop: 12, gap: 4 },
   note: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 15 },
   noteInk: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
+
+  // Radiação cósmica (folha Corpo, mockup radiacao-corpo v2): linha achatada na gramática
+  // da folha — hairline + rótulo/valor + contexto; batismo no âmbar-doc (1×-na-vida).
+  rad: { borderTopWidth: 1, borderTopColor: PELE.line, marginTop: 14, paddingTop: 12 },
+  radRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  radLab: { flex: 1, fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.3, color: PELE.grey, textTransform: 'uppercase' },
+  radVal: { fontFamily: PELE_FONT.display, fontSize: 24, color: PELE.ink, fontVariant: ['tabular-nums'] },
+  radValU: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed },
+  radCtx: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 15, marginTop: 5 },
+  radCtxB: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
+  radBapt: { backgroundColor: '#FFF9E8', borderWidth: 1, borderColor: '#F2E2AC', borderRadius: 12, padding: 11, marginTop: 12, fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: '#5C5232', lineHeight: 15, overflow: 'hidden' },
+  radBaptB: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
 
   div: { height: 1, backgroundColor: PELE.line, marginTop: 22, marginBottom: 16 },
   mais: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.1, textTransform: 'uppercase', color: PELE.grey, marginBottom: 12 },
