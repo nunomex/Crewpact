@@ -23,15 +23,16 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { libraryFor, FTL_SOURCES, AE_SOURCES, AE_DEEPLINKS } = require(path.resolve('data/library.js'));
+const { libraryFor, FTL_SOURCES, AE_SOURCES, AE_DEEPLINKS, RADIATION_SOURCES } = require(path.resolve('data/library.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const ok = (name, cond) => { if (cond) pass++; else { fail++; fails.push('  ✗ ' + name); } };
 
-// Domínios OFICIAIS permitidos (nada de blogs).
-const OFFICIAL = ['eur-lex.europa.eu', 'easa.europa.eu', 'gep.msess.gov.pt', 'gep.mtsss.gov.pt', 'gov.pt'];
+// Domínios OFICIAIS permitidos (nada de blogs). faa.gov = a agência do modelo CARI (radiação);
+// diariodarepublica.pt = o DRE (DL 108/2018 + deep-links dos AE).
+const OFFICIAL = ['eur-lex.europa.eu', 'easa.europa.eu', 'gep.msess.gov.pt', 'gep.mtsss.gov.pt', 'gov.pt', 'diariodarepublica.pt', 'faa.gov'];
 const hostOf = (url) => { const m = /^https:\/\/([^/]+)/.exec(String(url)); return m ? m[1] : ''; };
-const allUrls = [...FTL_SOURCES, ...AE_SOURCES].map((x) => x.url);
+const allUrls = [...FTL_SOURCES, ...AE_SOURCES, ...RADIATION_SOURCES].map((x) => x.url);
 
 ok('todos os links são HTTPS', allUrls.every((u) => /^https:\/\//.test(u)));
 ok('todos os links são de domínios OFICIAIS', allUrls.every((u) => OFFICIAL.some((d) => hostOf(u).endsWith(d))));
@@ -41,7 +42,7 @@ ok('AE aponta para os portais do BTE/gov', AE_SOURCES.every((x) => /gep\.m(s|t)e
 // Estrutura crew-aware.
 const piloto = libraryFor({ companyName: 'easyJet', isPilot: true, lang: 'pt' });
 const cabine = libraryFor({ companyName: 'easyJet', isPilot: false, lang: 'pt' });
-ok('2 secções: FTL + AE', piloto.length === 2 && piloto[0].key === 'ftl' && piloto[1].key === 'ae');
+ok('3 secções: FTL + AE + Radiação', piloto.length === 3 && piloto[0].key === 'ftl' && piloto[1].key === 'ae' && piloto[2].key === 'radiacao');
 ok('FTL é UNIVERSAL (tag), igual p/ piloto e cabine', piloto[0].tag === cabine[0].tag && /Universal/i.test(piloto[0].tag));
 ok('FTL: mesmos items p/ piloto e cabine (uma só lei)', JSON.stringify(piloto[0].items) === JSON.stringify(cabine[0].items));
 ok('AE crew-aware: piloto inclui "Piloto" e a companhia', /Piloto/.test(piloto[1].tag) && /easyJet/.test(piloto[1].tag));
@@ -72,6 +73,16 @@ ok('AE: reconhece slug "tap-air-portugal" → deep-link TAP', /TAP/.test(library
 // Companhia SEM deep-link (ex.: Ryanair) → só os portais genéricos, mas continua a funcionar.
 const outra = libraryFor({ companySlug: 'ryanair', companyName: 'Ryanair', isPilot: true, lang: 'pt' });
 ok('AE: companhia sem deep-link → 1.º link é o portal BTE', outra[1].items[0].key === 'bte');
+
+// RADIAÇÃO — universal (como o FTL): a mesma secção p/ piloto e cabine; fontes = lei + modelo.
+ok('Radiação é UNIVERSAL (tag), igual p/ piloto e cabine', piloto[2].tag === cabine[2].tag && /Universal/i.test(piloto[2].tag));
+ok('Radiação: mesmos items p/ piloto e cabine', JSON.stringify(piloto[2].items) === JSON.stringify(cabine[2].items));
+ok('Radiação: 3 fontes (Euratom + DL 108/2018 + CARI-7)', RADIATION_SOURCES.length === 3
+  && /eur-lex\.europa\.eu/.test(RADIATION_SOURCES[0].url)
+  && /files\.diariodarepublica\.pt/.test(RADIATION_SOURCES[1].url)
+  && /www\.faa\.gov/.test(RADIATION_SOURCES[2].url));
+ok('Radiação: a diretiva cita o artigo das tripulações (35.º/3)', /35/.test(RADIATION_SOURCES[0].sub.pt));
+ok('Radiação: nota diz "estimativa" e a obrigação da companhia', /estimativa/i.test(piloto[2].note) && /obrigada/i.test(piloto[2].note));
 
 console.log(`\nBiblioteca — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

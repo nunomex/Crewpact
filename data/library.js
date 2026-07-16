@@ -1,9 +1,11 @@
-// Biblioteca — fontes OFICIAIS de onde saem os cálculos da app (FTL e AE). Só links oficiais
-// (EUR-Lex / EASA / BTE); nada de blogs. Crew-aware:
+// Biblioteca — fontes OFICIAIS de onde saem os cálculos da app (FTL, AE e Radiação). Só links
+// oficiais (EUR-Lex / EASA / BTE / DRE / FAA); nada de blogs. Crew-aware:
 //   • FTL é UNIVERSAL — uma só lei da UE para piloto E cabine. A diferença piloto/cabine são
 //     TABELAS dentro do mesmo documento (não documentos separados) → NÃO se divide por tipo.
 //   • AE (Acordo de Empresa) divide-se mesmo por COMPANHIA e por TIPO DE TRIPULAÇÃO — piloto e
 //     cabine têm acordos separados → secção crew-aware (companhia + piloto/cabine).
+//   • RADIAÇÃO CÓSMICA é UNIVERSAL (como o FTL): a diretiva vale para toda a tripulação da UE
+//     sem distinção de tipo; o modelo científico (CARI-7, FAA) é o mesmo para todos.
 
 // FTL — regulamentos UE (universais). URLs verificados (EUR-Lex / EASA).
 export const FTL_SOURCES = [
@@ -13,6 +15,17 @@ export const FTL_SOURCES = [
     url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32012R0965' },
   { key: 'easaEar', label: 'EASA · Easy Access Rules (Air Ops)', sub: { pt: 'CS-FTL.1 + AMC/GM consolidados (inclui ARO.OPS.230)', en: 'CS-FTL.1 + consolidated AMC/GM (incl. ARO.OPS.230)' },
     url: 'https://www.easa.europa.eu/en/document-library/easy-access-rules/easy-access-rules-air-operations-regulation-eu-no-9652012' },
+];
+
+// RADIAÇÃO CÓSMICA — a lei da exposição das tripulações + o modelo científico da estimativa.
+// URLs verificados 2026-07-15 (EUR-Lex · DRE texto original · página oficial do CARI na FAA).
+export const RADIATION_SOURCES = [
+  { key: 'euratom', label: 'Diretiva 2013/59/Euratom', sub: { pt: 'Art. 35.º/3 — tripulações: avaliar, escalas, informar · EUR-Lex', en: 'Art. 35(3) — aircrew: assess, rosters, inform · EUR-Lex' },
+    url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32013L0059' },
+  { key: 'dl108', label: 'DL n.º 108/2018 (PT)', sub: { pt: 'Art. 84.º — proteção das tripulações de voo · DRE (texto original, com alterações posteriores)', en: 'Art. 84 — flight crew protection · DRE (original text, later amended)' },
+    url: 'https://files.diariodarepublica.pt/1s/2018/12/23200/0549005543.pdf' },
+  { key: 'cari7', label: 'FAA · CARI-7', sub: { pt: 'O modelo de referência das doses de voo — a base da estimativa da app', en: 'The reference model for flight doses — the basis of the app’s estimate' },
+    url: 'https://www.faa.gov/data_research/research/med_humanfacs/aeromedical/radiobiology/cari7' },
 ];
 
 // AE — portais OFICIAIS onde os Acordos de Empresa se publicam (Portugal). Fallback p/ qualquer
@@ -89,6 +102,14 @@ export const libraryFor = ({ companySlug = null, companyName = null, isPilot = t
         : l('Por COMPANHIA e por TIPO — piloto e cabine têm acordos SEPARADOS. Procura o da tua companhia no BTE.',
             'Per COMPANY and per TYPE — pilots and cabin have SEPARATE agreements. Find your company’s in the BTE.'),
       items: aeItems,
+    },
+    {
+      key: 'radiacao',
+      title: l('Radiação cósmica', 'Cosmic radiation'),
+      tag: l('Universal', 'Universal'),
+      note: l('Lei UE — IGUAL para piloto e cabine. A companhia é obrigada a avaliar e a informar a tua dose oficial; a app mostra a estimativa da tua escala (±30%).',
+              'EU law — the SAME for pilot and cabin. Your airline must assess and inform your official dose; the app shows the estimate from your roster (±30%).'),
+      items: RADIATION_SOURCES.map(tr),
     },
   ];
 };
