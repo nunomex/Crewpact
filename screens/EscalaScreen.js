@@ -54,7 +54,12 @@ export default function EscalaScreen({ navigation, route }) {
   const [hotelOpen, setHotelOpen] = useState(false);      // folha do hotel da pernoita (a partir do dia)
   const [hotelStation, setHotelStation] = useState(null); // estação da pernoita do dia aberto
   const [secExpand, setSecExpand] = useState(false); // sheet: expandir lista de setores se for cheia
-  const [gridW, setGridW] = useState(0);          // largura medida da grelha → célula = (W − gaps)/7
+  // Largura da grelha DETERMINÍSTICA à nascença (ecrã − gutters; a cadeia até à grelha
+  // não tem mais padding horizontal) → o calendário renderiza INTEIRO no 1.º frame, como
+  // as outras abas. Começar a 0 criava um mount em 2 tempos (página → onLayout → células
+  // aparecem e o resto salta) que se lia como "a transição da Escala é diferente" (user
+  // 2026-07-16). O onLayout fica só a CORRIGIR casos raros (split-screen, rotação).
+  const [gridW, setGridW] = useState(() => Dimensions.get('window').width - GUTTER * 2);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // seletor de mês (pele "Julho ▾")
   const [pickYear, setPickYear] = useState(null);
   // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
@@ -413,7 +418,7 @@ export default function EscalaScreen({ navigation, route }) {
                     setRefreshing(false);
                   }} />}>
               <View style={s.wkhead}>{WD.map((w, i) => <Text key={i} style={[s.wkh, i >= 5 && s.wkhWe]}>{w}</Text>)}</View>
-              <View style={s.cal} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
+              <View style={s.cal} onLayout={(e) => { const w = e.nativeEvent.layout.width; setGridW((p) => (Math.abs(w - p) > 0.5 ? w : p)); }}>
                 {cellW ? (
                   <>
                     {Array.from({ length: firstWeekday }).map((_, i) => (

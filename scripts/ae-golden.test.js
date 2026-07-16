@@ -550,13 +550,15 @@ eq('TAP senioridade CTE (1,5% VB)', tapPilot.vs('CTE'), 121.88);    // 0.015×81
   eq('TAP mês CTE: variável', r.variable, 450);
   eq('TAP mês CTE: total', r.total, 8737.50);
 }
-// Índice de atualização (+3%/ano, sempre estimado) e vigência
+// Índice = degraus EM VIGOR no ano (adiamentos 2024/2025 jan→31-dez, assembleia 22-03-2024)
 eq('TAP index 2023 = 1', tapPilot.indexFactor(2023), 1);
-eq('TAP index 2024 = +3%', tapPilot.indexFactor(2024), 1.03);
-eq('TAP index 2026 = (1.03)^3', tapPilot.indexFactor(2026), 1.092727);
+eq('TAP index 2024 = 1 (aumento ADIADO p/ 31-dez-2024)', tapPilot.indexFactor(2024), 1);
+eq('TAP index 2025 = 1 degrau (o de 2024, desde 31-dez)', tapPilot.indexFactor(2025), 1.03);
+eq('TAP index 2026 = 3 degraus (31-dez-2025 + 1-jan-2026)', tapPilot.indexFactor(2026), 1.092727);
 eq('TAP index 2027 congela (fim vigência)', tapPilot.indexFactor(2027), 1.092727);   // sem teto sobrestimaria
 eq('TAP index 2030 ainda congelado', tapPilot.indexFactor(2030), 1.092727);
-eq('TAP index sempre estimado (2024)', tapPilot.isIndexEstimated(2024), true);
+eq('TAP 2024 NÃO estimado (vigora a tabela golden 2023)', tapPilot.isIndexEstimated(2024), false);
+eq('TAP 2025 estimado (degrau aplicado)', tapPilot.isIndexEstimated(2025), true);
 eq('TAP index 2023 não estimado', tapPilot.isIndexEstimated(2023), false);
 eq('TAP base CTE indexada 2026', tapPilot.monthlyBase('CTE', { index: tapPilot.indexFactor(2026) }), 9055.98);  // 8125×1.092727×1.02
 eq('TAP vigência até dez-2026', tapPilot.AE_VALID_UNTIL, '2026-12-31');

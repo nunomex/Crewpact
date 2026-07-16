@@ -39,26 +39,31 @@ export const VB_2023 = { CTE: 8125, OP3C: 6500, OP3: 6050, OP2: 5200, OP1: 4420 
 export const VE_PCT = 0.02;    // Vencimento de exercício = 2% do VB (sempre, serviço ativo)
 export const VS_PCT = 0.015;   // Vencimento de senioridade = 1,5% do VB (comandantes seniores)
 
-// ── Atualização anual do VB (regra do AE) ──────────────────────────────────
-// O VB 2023 é o único publicado. `index` escala-o para o ano corrente. Default =
-// +3%/ano (2% fixo + 1% KPI; KPI confirmado por resultados líquidos positivos 2023-25).
+// ── Atualização anual do VB (regra do AE + os ADIAMENTOS de 2024/2025) ──────
+// O VB 2023 é o único publicado. `index` escala-o pelos DEGRAUS EM VIGOR no ano.
+// Regra do AE: +2% fixo + 1% KPI a 1-jan (KPI confirmado por resultados líquidos
+// positivos 2023-25). MAS os pilotos aprovaram (assembleia 22-03-2024, 51,7%) ADIAR
+// os aumentos de 2024 e 2025 de 1-JAN para 31-DEZ do próprio ano → durante 2024
+// vigora a base 2023 (a tabela GOLDEN, sem estimativa!); durante 2025 vigora 1 degrau
+// (o de 2024, em vigor desde 31-dez-2024); em 2026 acumulam-se os 3 (31-dez-2025 +
+// 1-jan-2026, sem notícia de adiamento do terceiro). Congela em (1.03)³ depois da
+// vigência (31-12-2026) — sem teto, um YTD de 2027+ sobrestimaria a base.
 export const INDEX_BASE_YEAR = 2023;   // ano dos valores da Tabela A-3.1
 export const INDEX_LAST_YEAR = 2026;   // fim da vigência (31-12-2026) — a indexação congela aqui
 export const ANNUAL_RAISE = 0.03;      // +2% fixo + 1% KPI (melhor evidência pública)
-// Fator multiplicativo a aplicar ao VB de 2023 num dado ano. ≤2023 → 1; acumula +3%/ano ATÉ
-// à vigência (2026) e CONGELA depois (2027+ não tem base contratual p/ novos degraus — como o
-// easyJet congela no fim do seu AE). Sem este teto, um YTD de 2027+ sobrestimaria a base.
+// Degraus EM VIGOR durante o ano (adiamentos incluídos): ≤2024 → 0 · 2025 → 1 · ≥2026 → 3.
 export const indexFactor = (year, { raise = ANNUAL_RAISE } = {}) => {
-  const y = Math.min(+year || INDEX_BASE_YEAR, INDEX_LAST_YEAR);
-  if (y <= INDEX_BASE_YEAR) return 1;
-  return +Math.pow(1 + raise, y - INDEX_BASE_YEAR).toFixed(6);
+  const y = +year || INDEX_BASE_YEAR;
+  const steps = y <= 2024 ? 0 : (y === 2025 ? 1 : 3);
+  return steps ? +Math.pow(1 + raise, steps).toFixed(6) : 1;
 };
-// O VB atualizado NUNCA é publicado → qualquer índice >1 é SEMPRE estimativa.
-export const isIndexEstimated = (year) => (+year || INDEX_BASE_YEAR) > INDEX_BASE_YEAR;
+// O VB escalado NUNCA é publicado → estimado = qualquer ano com degrau aplicado.
+// 2024 DEIXOU de ser estimado (o adiamento fez vigorar a tabela golden de 2023).
+export const isIndexEstimated = (year, opts) => indexFactor(year, opts) > 1;
 // Nota de metodologia p/ a UI (≠ easyJet, que indexa ao IPC do INE): aqui o índice é a regra do AE.
 export const indexNote = (year, lang = 'pt') => lang === 'en'
-  ? `Base 2023 (BTE) + AE rule +3%/yr to ${year} · estimate — official updated values not published.`
-  : `Base 2023 (BTE) + regra AE +3%/ano até ${year} · estimativa — valores oficiais atualizados não publicados.`;
+  ? `2023 base (BTE) + CLA steps in force in ${year} (+3%/yr; 2024/2025 deferred to 31 Dec) · estimate — official updated values not published.`
+  : `Base 2023 (BTE) + degraus AE em vigor em ${year} (+3%/ano; 2024/2025 adiados p/ 31-dez) · estimativa — valores oficiais atualizados não publicados.`;
 
 // Vigência (BTE 29/2023): valores-base 2023; AE vigente até 31-12-2026.
 export const AE_VALID_FROM = '2023-01-01';
