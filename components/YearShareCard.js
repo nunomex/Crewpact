@@ -123,9 +123,13 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
           </View>
           <Text style={s.dim}>{fmt === 'post' ? 'FEED · 1080 × 1350' : 'STORIES · 1080 × 1920'}</Text>
 
-          {/* O POSTER (capturado tal e qual — cores fixas, não segue tema) */}
+          {/* O POSTER (capturado tal e qual — cores fixas, não segue tema).
+              CANTOS RETOS na captura (lição do cartão da família, 2026-07-16): PNG com
+              cantos transparentes vira JPEG no WhatsApp/IG → cantos PRETOS. O redondo
+              fica na MOLDURA exterior (só pré-visualização); a plataforma arredonda. */}
+          <View style={{ borderRadius: px(24, k), overflow: 'hidden' }}>
           <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}
-            style={[s.card, { width: M.w, height: M.h, borderRadius: px(24, k) }]}>
+            style={[s.card, { width: M.w, height: M.h }]}>
             {/* a coluna amarela: risca fina + banda, full-height */}
             <View style={[s.yband, { right: px(17, k), width: px(4, k) }]} />
             <View style={[s.yband, { right: px(26, k), width: px(30, k) }]} />
@@ -194,6 +198,7 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
               </View>
             </View>
           </ViewShot>
+          </View>
 
           <Text style={s.hint}>{l('Os números vêm da tua escala registada (ano civil). A imagem é criada no telemóvel — partilhas se e com quem quiseres.', 'Numbers come from your recorded roster (calendar year). The image is made on your phone — share it if and with whom you want.')}</Text>
           <PrimaryButton onPress={share} icon="share-outline" label={busy ? l('A preparar…', 'Preparing…') : l('Partilhar', 'Share')} style={{ marginTop: 14, alignSelf: 'stretch' }} />

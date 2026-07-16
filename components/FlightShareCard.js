@@ -136,7 +136,11 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
           </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-          {/* O CARTÃO — capturado tal e qual (cores fixas, não segue o tema da app) */}
+          {/* O CARTÃO — capturado tal e qual (cores fixas, não segue o tema da app).
+              CANTOS RETOS na captura (user 2026-07-16): PNG com cantos transparentes vira
+              JPEG no WhatsApp → cantos PRETOS. O arredondado é cromo da app → vive na
+              MOLDURA exterior (fora da captura); no chat, quem arredonda é a plataforma. */}
+          <View style={s.mask}>
           <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}
             style={[s.card, { width: CW, height: CH, backgroundColor: TH.bg, borderColor: TH.border }]}>
             {/* Fantasma = o DESTINO (esbatido atrás → nítido no herói: a viagem conta-se 2×) */}
@@ -176,6 +180,7 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
               </View>
             </View>
           </ViewShot>
+          </View>
 
           <Text style={s.hint}>{l('Um envio: a imagem do voo + o link para acompanhar a chegada ao vivo. A imagem nasce no telemóvel; sem tripulação nem escala.', 'One send: the flight image + the live-arrival link. The image is made on your phone; no crew, no roster.')}</Text>
           <PrimaryButton onPress={send} icon="share-outline" label={busy ? l('A preparar…', 'Preparing…') : personLabel ? l(`Enviar à ${personLabel}`, `Send to ${personLabel}`) : l('Enviar', 'Send')} style={{ marginTop: 14, alignSelf: 'stretch' }} />
@@ -198,8 +203,10 @@ const s = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 40, alignItems: 'center' },
   hint: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 19, marginTop: 16, alignSelf: 'stretch' },
 
-  // Cartão (dimensões/cores por inline — fixas na captura)
-  card: { borderRadius: 24, padding: 22, overflow: 'hidden', justifyContent: 'space-between', borderWidth: 1 },
+  // Cartão (dimensões/cores por inline — fixas na captura). SEM borderRadius: a captura
+  // sai retangular pura (à prova do JPEG do WhatsApp); o redondo é da máscara exterior.
+  mask: { borderRadius: 24, overflow: 'hidden' },
+  card: { padding: 22, overflow: 'hidden', justifyContent: 'space-between', borderWidth: 1 },
   ghost: { position: 'absolute', fontFamily: PELE_FONT.displayHeavy, includeFontPadding: false, zIndex: 0 },
   cTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 2 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
