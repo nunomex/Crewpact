@@ -1,7 +1,7 @@
 import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, AppState, RefreshControl, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Rect, Defs, RadialGradient, LinearGradient, Stop } from 'react-native-svg';
 import { PELE, PELE_NIGHT, PELE_FONT } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
@@ -159,7 +159,10 @@ const FORCE_HOME_STATE = null;
 const TUNE = {
   ghost: { s3: 190, s4: 160, s5: 140 },                    // fantasma por nº de caracteres (1-3 · 4 · ≥5)
   wxSup: { right: 12, top: 2, size: 22 },                  // expoente do tempo no fantasma
-  halo: { size: 430, right: -150, top: -100, op: 0.16 },   // brilho ambiente (folga/pós-voo/férias)
+  halo: { size: 430, right: -150, top: -100, op: 0.16, opSun: 0.2 },   // ponto AMBIENTE (sem símbolo no herói) · opSun = dose do sol motivado
+  haloMot: { size: 460, right: -196, top: -176 },          // ponto MOTIVADO: centro ≈ expoente do tempo (luz nasce do símbolo)
+  veil: { h: 300, opRain: 0.1, opCloud: 0.08 },            // VÉU difuso do topo (céu coberto = luz sem fonte pontual)
+  sun: { golden: '#F0A500', noon: '#FFCF4D' },             // temperatura da luz do sol pela hora (manhã/tarde âmbar · meio-dia pálido)
   lamp: { w: 360, h: 320, top: -70, op: 0.16 },            // candeeiro noturno (véspera/pernoita)
 };
 const DEMO_FLIGHT = (() => {
@@ -705,13 +708,22 @@ export default function HomeScreen({ navigation }) {
   // elemento — o ângulo é o 1.º a ceder p/ não virar "scrapbook" (auditoria à Apple).
   const noteTilt = -(1 + (noteSeed % 21) / 10);     // -1.0° … -3.0°
   const noteShift = noteSeed % 11;                  // 0 … 10 px de desvio
-  const haloTone = (() => {
+  // ── SISTEMA DE LUZ (fundos-vivos ① + ronda halo-motivado, 2026-07-16) ──
+  // Gramática física, 3 regras: PONTO (sol/lua = fonte pontual → círculo radial) · VÉU
+  // (céu coberto = luz difusa → gradiente do topo; um círculo na chuva seria mentira
+  // física) · TEMPERATURA (sol da manhã/fim de tarde = âmbar; meio-dia = pálido). O ponto
+  // ANCORA no expoente do tempo quando ele existe (luz MOTIVADA — o sol desenhado brilha);
+  // sem símbolo no herói (pós-voo) → âncora ambiente: NUNCA se inventa uma fonte. Estados
+  // calmos apenas; a disrupção fica seca (quando aperta, a app só fala operacional).
+  const atmo = (() => {
     if (homeState !== 'folga' && homeState !== 'posvoo' && homeState !== 'ferias') return null;
     const ic = wxArr && wxArr.icon;
-    if (ic === 'rain' || ic === 'thunder') return '#5A7896';
-    if (ic === 'snow' || ic === 'fog' || ic === 'cloud') return '#7E8CA0';
-    if (hourNow >= 20 || hourNow < 7 || ic === 'moon') return '#2E4E78';
-    return PELE.yellow;
+    if (ic === 'rain' || ic === 'thunder') return { kind: 'veil', tone: '#5A7896', op: TUNE.veil.opRain };
+    if (ic === 'snow' || ic === 'fog' || ic === 'cloud') return { kind: 'veil', tone: '#7E8CA0', op: TUNE.veil.opCloud };
+    const anchored = (homeState === 'folga' || homeState === 'ferias') && !!ic;   // o expoente só vive nesses heróis
+    if (hourNow >= 20 || hourNow < 7 || ic === 'moon') return { kind: 'point', tone: '#2E4E78', op: TUNE.halo.op, anchored };
+    const tone = (hourNow >= 10 && hourNow < 16) ? TUNE.sun.noon : TUNE.sun.golden;
+    return { kind: 'point', tone, op: anchored ? TUNE.halo.opSun : TUNE.halo.op, anchored };
   })();
 
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -1256,7 +1268,8 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']} onTouchStart={plusTip ? dismissPlusTip : undefined}>
-      {/* Atmosfera — noite: glow de candeeiro (véspera) · dia: HALO da cor do tempo */}
+      {/* Atmosfera — noite: candeeiro (luz motivada original) · dia: PONTO (sol/lua, ancorado
+          ao expoente quando existe) ou VÉU (céu coberto, difuso do topo). Tudo estático. */}
       {night ? (
         <View pointerEvents="none" style={[s.lampWrap, { top: TUNE.lamp.top }]}>
           <Svg width={TUNE.lamp.w} height={TUNE.lamp.h}>
@@ -1270,17 +1283,31 @@ export default function HomeScreen({ navigation }) {
             <Circle cx={TUNE.lamp.w / 2} cy={TUNE.lamp.h * 0.42} r={TUNE.lamp.w * 0.47} fill="url(#lamp)" />
           </Svg>
         </View>
-      ) : haloTone ? (
-        <View pointerEvents="none" style={[s.haloWrap, { right: TUNE.halo.right, top: TUNE.halo.top }]}>
-          <Svg width={TUNE.halo.size} height={TUNE.halo.size}>
+      ) : atmo && atmo.kind === 'veil' ? (
+        <View pointerEvents="none" style={s.veilWrap}>
+          <Svg width="100%" height={TUNE.veil.h}>
+            <Defs>
+              <LinearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={atmo.tone} stopOpacity={String(atmo.op)} />
+                <Stop offset="100%" stopColor={atmo.tone} stopOpacity="0" />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#veil)" />
+          </Svg>
+        </View>
+      ) : atmo ? (
+        <View pointerEvents="none" style={[s.haloWrap, atmo.anchored
+          ? { right: TUNE.haloMot.right, top: TUNE.haloMot.top }
+          : { right: TUNE.halo.right, top: TUNE.halo.top }]}>
+          <Svg width={atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size} height={atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size}>
             <Defs>
               <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor={haloTone} stopOpacity={String(TUNE.halo.op)} />
-                <Stop offset="55%" stopColor={haloTone} stopOpacity={String(TUNE.halo.op / 3)} />
-                <Stop offset="100%" stopColor={haloTone} stopOpacity="0" />
+                <Stop offset="0%" stopColor={atmo.tone} stopOpacity={String(atmo.op)} />
+                <Stop offset="55%" stopColor={atmo.tone} stopOpacity={String(atmo.op / 3)} />
+                <Stop offset="100%" stopColor={atmo.tone} stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Circle cx={TUNE.halo.size / 2} cy={TUNE.halo.size / 2} r={TUNE.halo.size / 2} fill="url(#halo)" />
+            <Circle cx={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} cy={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} r={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} fill="url(#halo)" />
           </Svg>
         </View>
       ) : null}
@@ -1684,6 +1711,7 @@ const makeSkin = (P, night) => StyleSheet.create({
   demoPillDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.yellow },
   demoPillTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
+  veilWrap: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 0 },   // véu difuso (céu coberto) — largura total, desce do topo
   lampWrap: { position: 'absolute', alignSelf: 'center', top: -70, zIndex: 0 },
   // A voz sob a régua — deck de duas alturas: display marcado + cauda-sussurro.
   // A voz sob a régua — BILHETE MANUSCRITO (Caveat, escolha final do user): uma caneta só,
