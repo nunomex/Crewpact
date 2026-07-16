@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Prova: todo o número abre a sua lei</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --soft2:#FAFAF9; --yellow:#FFB800; --ok:#1E7A46;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:560px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:20px}
+  .ptitle{font-family:var(--disp);font-weight:700;font-size:22px}
+  .psub{font-size:10px;color:var(--grey);font-weight:600;margin-top:2px}
+  .panel{border:1px solid var(--line);border-radius:14px;margin-top:14px;overflow:hidden}
+  .phead{font-size:9px;font-weight:800;letter-spacing:1.4px;color:var(--grey);text-transform:uppercase;padding:10px 13px 0}
+  .prow{display:flex;align-items:center;gap:8px;padding:10px 13px;border-top:1px solid var(--line)}
+  .prow:first-of-type{border-top:0}
+  .prow .k{flex:1}
+  .prow .k b{display:block;font-size:12px;font-weight:800}
+  .prow .k span{font-size:9.5px;color:var(--grey);font-weight:600}
+  .prow .v{font-family:var(--disp);font-weight:700;font-size:17px}
+  .prow .k .s{color:var(--yellow);font-weight:800}
+
+  /* a folha da PROVA */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:26px 26px 38px 38px;padding:18px 20px 22px}
+  .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 14px}
+  .eyeb{display:flex;align-items:center;gap:7px}
+  .edot{width:7px;height:7px;border-radius:99px;background:var(--yellow)}
+  .etxt{font-size:9.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);text-transform:uppercase}
+  .sh1{font-family:var(--disp);font-weight:700;font-size:24px;margin-top:8px}
+  .sh1 small{font-size:15px;color:var(--grey)}
+  .lawTag{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:99px;padding:6px 11px;margin-top:8px;font-size:10px;font-weight:800}
+  .lawTag .s{color:var(--yellow)}
+  .resumoLab{font-size:8.5px;font-weight:800;letter-spacing:1.3px;color:#B4B0A8;text-transform:uppercase;margin-top:14px}
+  .resumo{font-size:12.5px;font-weight:600;color:#33322E;line-height:1.6;margin-top:5px}
+  .artline{font-size:11px;font-weight:800;margin-top:10px}
+  .artline span{color:var(--grey);font-weight:600}
+  .btn{background:var(--ink);color:#fff;border-radius:12px;padding:12px 0;text-align:center;font-size:12px;font-weight:800;margin-top:14px}
+  .consult{font-size:9px;font-weight:600;color:var(--grey);line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Prova · confiança como produto</div>
+  <h1>todo o número abre a sua lei</h1>
+  <p>A disciplina interna da casa ("nenhum número sem fonte") vira <b>feature visível</b>: os números-estrela
+  ganham a etiqueta <b>§ artigo</b> — tocas, e abre a folha da PROVA: o resumo da regra (rotulado como resumo,
+  nunca citação), o artigo exato, e o botão para a <b>fonte oficial</b> (os deep-links da Biblioteca).
+  <b>Crew-aware por obrigação</b>: o per diem da cabine easyJet é o Art. 53.º (SNPVAC); o dos pilotos é outro
+  artigo noutro acordo (SPAC) — a Prova resolve pelo perfil, como o AE já faz. O FTL e a radiação são universais.
+  Âmbito: superfícies de DETALHE (DutyDetail, folhas dos Números, Simulação, Extras) — <b>nunca o herói do Início</b>.</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="ptitle">LIS → FNC → LIS</div>
+      <div class="psub">QUI 9 · 4 setores · apresentação 05:05</div>
+      <div class="panel">
+        <div class="phead">Pagamento</div>
+        <div class="prow">
+          <div class="k"><b>Per diem da rota</b><span>4 setores · bandas de distância · <span class="s">§</span> 53.º</span></div>
+          <div class="v" style="color:var(--ok)">+46,10 €</div>
+        </div>
+        <div class="prow">
+          <div class="k"><b>Pernoita</b><span>1 noite fora · valor fixo · <span class="s">§</span> 56.º</span></div>
+          <div class="v" style="color:var(--ok)">+46,00 €</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="phead">FTL · Segurança</div>
+        <div class="prow">
+          <div class="k"><b>PSV máximo</b><span>apres. 05:05 · 4 setores · <span class="s">§</span> ORO.FTL.205</span></div>
+          <div class="v">11:30</div>
+        </div>
+        <div class="prow">
+          <div class="k"><b>Repouso mínimo a seguir</b><span>fora de base · <span class="s">§</span> ORO.FTL.235</span></div>
+          <div class="v">12:00</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="t">① O § inline — metadado, não etiqueta (passe do designer)</div>
+    <div class="d">A pílula morreu: o artigo entra na linha de sub que JÁ existe, em cinza, com só o § amarelo como acento. Quando todas as linhas têm etiqueta, a etiqueta é papel de parede — inline, é metadado. Tocar na LINHA abre a Prova.</div>
+    <div class="spec"><b>Onde:</b> DutyDetail · folhas dos Números · Extras. <b>Fora:</b> herói do Início, poster, bilhetes E a Simulação (o veredicto não é dossier — o "Avançado" já leva às calculadoras). <b>· Alvo de toque:</b> a linha inteira (≥44pt). <b>· Sem batismo novo</b> — o § é auto-descritivo à curiosidade.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone">
+      <div class="page" style="opacity:.4">
+        <div class="ptitle">LIS → FNC → LIS</div>
+        <div class="psub">QUI 9 · 4 setores</div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="eyeb"><div class="edot"></div><div class="etxt">A lei deste número</div></div>
+        <div class="sh1">Per diem <small>· +46,10 €</small></div>
+        <div class="lawTag"><span class="s">§</span> AE easyJet · Cabine (SNPVAC)</div>
+        <div class="resumoLab">Resumo da app — lê o artigo na fonte</div>
+        <div class="resumo">Por cada setor voado é devido um per diem, calculado por bandas de distância de grande círculo (milhas náuticas) entre os aeroportos. A app soma o nominal de cada setor do mês.</div>
+        <div class="artline">Art. 53.º <span>· AE easyJet/SNPVAC · BTE 8/2024 · em vigor até 31/01/2027</span></div>
+        <div class="btn">Abrir a fonte oficial (DRE) ↗</div>
+        <div class="consult">Resumo informativo — o texto que vale é o do artigo. Valores de referência; confirma sempre com a companhia.</div>
+      </div>
+    </div>
+    <div class="t">② A folha da Prova — resumo, artigo, fonte</div>
+    <div class="d">Três andares: o RESUMO (rotulado como resumo da app — nunca fingimos citar), o artigo com a vigência do acordo, e o botão para o documento oficial no DRE (o deep-link que a Biblioteca já tem).</div>
+    <div class="spec"><b>Honestidade dupla:</b> "resumo da app" assumido (zero risco de citação errada + zero questão de direitos) + o rodapé consultivo de sempre. <b>· O botão</b> usa openLibraryLink + os AE_DEEPLINKS existentes.</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone">
+      <div class="page" style="opacity:.4">
+        <div class="ptitle">Números</div>
+        <div class="psub">Segurança · janelas FTL</div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="eyeb"><div class="edot"></div><div class="etxt">A lei deste número</div></div>
+        <div class="sh1">Voo · 28 dias <small>· 78 / 100 h</small></div>
+        <div class="lawTag"><span class="s">§</span> FTL · Universal (piloto e cabine) · ORO.FTL.210</div>
+        <div class="resumoLab">Resumo da app — lê o artigo na fonte</div>
+        <div class="resumo">Em quaisquer 28 dias consecutivos, o tempo total de voo não pode exceder 100 horas. É um dos três tetos acumulados (28 dias · ano civil · 12 meses) que a app acompanha na aba Números.</div>
+        <div class="artline">ORO.FTL.210 (a)(1) <span>· Reg. (UE) 83/2014 · EUR-Lex</span></div>
+        <div class="btn">Abrir a fonte oficial (EUR-Lex) ↗</div>
+        <div class="consult">Resumo informativo — o texto que vale é o do regulamento. A app estima, nunca declara legalidade.</div>
+      </div>
+    </div>
+    <div class="t">③ FTL e radiação — as universais</div>
+    <div class="d">Nas leis universais o selo diz "Universal (piloto e cabine)" — a mesma folha para toda a gente. A radiação já tem as fontes na Biblioteca; a Prova só as liga aos números.</div>
+    <div class="spec"><b>Os ~10 números-estrela do arranque:</b> per diem · pernoita · extras (DDO/doença) · vencimento base (Anexo I) · PSV máx (205) · repouso (235) · limites 28d/ano (210) · standby (225/230) · radiação (2013/59, 35.º/3) · férias. Crescer é acrescentar entradas ao registo, nunca UI nova.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para o código)</div>
+  <p><b>Motor:</b> `data/prova.js` — registo puro `{ id → resolver(profile) → { titulo, lawTag, resumo(pt/en),
+  artigo, vigencia?, url } }`; crew-aware pelo MESMO caminho do AE (companhia + isPilot → SNPVAC/SPAC/TAP…;
+  FTL/radiação = universal); URLs = reutilizar `AE_DEEPLINKS`/`FTL_SOURCES`/`RADIATION_SOURCES` da Biblioteca
+  (uma fonte de verdade, zero URLs novos). <b>· Golden `test:prova`:</b> toda a entrada tem artigo+resumo+URL
+  oficial (domínios da Biblioteca) · easyJet cabine ≠ pilotos (Art. 53.º ≠ o do SPAC) · universais iguais p/
+  os dois tipos · sem companhia AE → entradas AE ausentes (nunca se inventa). <b>· UI:</b> `ProvaSheet`
+  (PeleSheet genérica, 1 componente) + o `§ artigo` INLINE no sub das linhas (passe do designer: a pílula MORREU —
+  quando todas as linhas têm etiqueta, a etiqueta é papel de parede; inline é metadado). Linha inteira tocável (≥44pt).
+  Âmbito: DutyDetail · folhas dos Números · Extras — a SIMULAÇÃO fica FORA (o veredicto não é dossier). O artigo
+  aparece UMA vez na folha (na artline com a vigência; a lawTag é só a identidade do acordo). SEM batismo novo.
+  <b>· Resumos = PARÁFRASE ASSUMIDA</b> ("resumo da app — lê o artigo na fonte") — nunca aspas: zero risco de
+  citação errada e zero questão de direitos; o rodapé consultivo fecha sempre a folha. <b>· Fasear:</b>
+  arranque nos ~10 números-estrela; a etiqueta NUNCA entra no herói do Início/poster/bilhetes.</p>
+</div>
+</body>
+</html>

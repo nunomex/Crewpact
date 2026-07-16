@@ -14,6 +14,10 @@ import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
 import { yearRadiation, RADIATION_LIMITS_MSV } from '../data/radiation';
+import { provaFor } from '../data/prova';
+import ProvaSheet from '../components/ProvaSheet';
+import { monthAudit } from '../data/audit';
+import AuditSheet from '../components/AuditSheet';
 import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
@@ -58,7 +62,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user } = useContext(AppContext);
+  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -70,6 +74,9 @@ export default function StatsScreen({ navigation }) {
   const isYear = scope === 'year';
   const [dialSel, setDialSel] = useState(null);        // bola selecionada no dial (chave)
   const [sheet, setSheet] = useState(null);            // folha de detalhe aberta: 'seg' | 'voo' | 'corpo'
+  const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
+  const provaCtx = { companySlug: company && company.slug, companyName: company && company.name, isPilot, lang };
+  const [auditOpen, setAuditOpen] = useState(null);    // folha da AUDITORIA (radar) — guarda o ym auditado
   const [shareOpen, setShareOpen] = useState(false);   // cartão "Ano de voo" partilhável
 
   // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
@@ -205,6 +212,11 @@ export default function StatsScreen({ navigation }) {
       AsyncStorage.setItem(k, '1').catch(() => {});
     }).catch(() => {});
   }, [radVisible, user?.id]);
+
+  // ── Radar (Auditoria do mês) nos Números — 2.ª entrada do mockup: SÓ modo Ganhos + MÊS.
+  const audit = useMemo(() => (ae && crewCategory && !isYear && st.ym
+    ? monthAudit(duties || {}, { ym: st.ym, ae, cat: crewCategory, fleet: crewFleet, base, rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
+    : null), [ae, crewCategory, isYear, st.ym, duties, crewFleet, base, rosterLog, aeEvents, isPilot]);
 
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
@@ -375,6 +387,12 @@ export default function StatsScreen({ navigation }) {
                 {A.missing ? <Text style={s.note}>{A.missing} {l('voo(s) sem rota completa não somam ao per diem.', 'flight(s) without full route not counted in per diem.')}</Text> : null}
                 {A.estimated ? <Text style={s.note}>{ae.indexNote ? ae.indexNote(isYear ? +year : +String(st.ym).slice(0, 4), lang) : l('Valores indexados · estimativa — IPC oficial por confirmar.', 'Indexed values · estimate — official CPI to be confirmed.')}</Text> : null}
                 {ae && ae.isAgreementExpired && ae.isAgreementExpired(nowD) ? <Text style={s.note}>{l('AE expirado · valores são referência até novo acordo.', 'Agreement expired · values are reference until a new agreement.')}</Text> : null}
+                {/* Radar: a linha só existe com itens (zero = zero mobília). */}
+                {audit && audit.count > 0 ? (
+                  <Text style={[s.note, s.noteInk]} onPress={() => { select(); setAuditOpen(true); }}>
+                    {l('Auditoria do mês', 'Month audit')} · {audit.count} {audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')} ›
+                  </Text>
+                ) : null}
               </View>
             ) : null}
             {/* Batismo das cores no modo FTL: a nota nasce SOB O DIAL (o elemento que pintou). */}
@@ -444,7 +462,9 @@ export default function StatsScreen({ navigation }) {
           <View style={[s.shIc, s.shIcAlarm]}><Icon name="gauge" size={19} color={PELE.red} /></View>
           <View style={s.shTt}>
             <Text style={s.shName}><Text style={s.shNameX}>{idx.seg} </Text>· {l('Segurança', 'Safety')}</Text>
-            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: barColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text></Text>
+            <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: barColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
+              <Text style={s.shLaw} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }}>  ·  <Text style={{ color: PELE.yellow }}>§</Text> ORO.FTL.210</Text>
+            </Text>
           </View>
           <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
         </View>
@@ -548,10 +568,12 @@ export default function StatsScreen({ navigation }) {
             zero voos com dose → a secção nem aparece; uma linha de contexto de cada vez). ── */}
         {radVisible ? (
           <View style={s.rad}>
-            <View style={s.radRow}>
-              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')}</Text>
+            <TouchableOpacity style={s.radRow} activeOpacity={0.7}
+              onPress={() => { select(); setProva({ ...provaFor('radiacao', provaCtx), value: `≈ ${fmtMsv(rad.mSv)} mSv` }); }}
+              accessibilityRole="button" accessibilityLabel={l('Radiação cósmica — ver a lei', 'Cosmic radiation — see the law')}>
+              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')} <Text style={{ color: PELE.yellow }}>§</Text></Text>
               <Text style={[s.radVal, radTone ? { color: radTone } : null]} allowFontScaling={false}>≈ {fmtMsv(rad.mSv)}<Text style={s.radValU}> mSv</Text></Text>
-            </View>
+            </TouchableOpacity>
             <Text style={s.radCtx}>
               {rad.flightsWithout > 0 ? (
                 <><Text style={s.radCtxB}>{rad.flightsWithout} {rad.flightsWithout === 1 ? l('voo sem rota não entra', 'flight without a route is not counted') : l('voos sem rota não entram', 'flights without a route are not counted')}</Text>{l(' na estimativa — completa as rotas na Escala.', ' in the estimate — complete the routes in the roster.')}</>
@@ -574,6 +596,10 @@ export default function StatsScreen({ navigation }) {
       </PeleSheet>
 
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
+      <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
+      <AuditSheet visible={!!auditOpen} onClose={() => setAuditOpen(null)} audit={audit} monthName={monthName}
+        lang={lang} provaCtx={provaCtx}
+        onOpenDay={(iso) => navigation.navigate('Escala', { screen: 'DutyDetail', initial: false, params: { date: iso } })} />
     </SafeAreaView>
   );
 }
@@ -643,6 +669,7 @@ const s = StyleSheet.create({
   aeNotes: { marginTop: 12, gap: 4 },
   note: { fontSize: 11, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 15 },
   noteInk: { color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
+  shLaw: { fontFamily: PELE_FONT.bodyBold, color: PELE.grey },   // § da PROVA no sub da folha (tocável)
 
   // Radiação cósmica (folha Corpo, mockup radiacao-corpo v2): linha achatada na gramática
   // da folha — hairline + rótulo/valor + contexto; batismo no âmbar-doc (1×-na-vida).

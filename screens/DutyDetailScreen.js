@@ -15,6 +15,8 @@ import { sectorDistanceNM } from '../data/airports';
 import { roleEurFor } from '../data/perdiem';
 import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
+import ProvaSheet from '../components/ProvaSheet';
+import { provaFor } from '../data/prova';
 import { legZulu } from '../data/zulu';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
@@ -32,6 +34,8 @@ export default function DutyDetailScreen({ route, navigation }) {
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(false);
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
+  const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
+  const provaCtx = { companySlug: ctxAll.company && ctxAll.company.slug, companyName: ctxAll.company && ctxAll.company.name, isPilot: ctxAll.isPilot, lang };
 
   const date = route.params?.date;
   const duty = date ? duties[date] : null;
@@ -171,17 +175,34 @@ export default function DutyDetailScreen({ route, navigation }) {
   const fatLabel = (b) => t('duties.fatigue' + b.charAt(0).toUpperCase() + b.slice(1), lang);
 
   // Painel de linhas — aceita {k,v,color} ou {k,node}; ignora falsy; 1ª linha sem risca de topo.
+  // PROVA (design/prova.html): uma linha com `prova` ganha o § inline sob o rótulo
+  // (metadado, não etiqueta — a pílula morreu no passe do designer) e fica tocável
+  // (linha inteira) → abre a folha "a lei deste número".
   const Panel = ({ rows }) => {
     const items = rows.filter(Boolean);
     if (!items.length) return null;
     return (
       <View style={s.panel}>
-        {items.map((it, i) => (
-          <View key={i} style={[s.row, i === 0 && s.rowFirst]}>
-            <Text style={s.rowK} numberOfLines={2}>{it.k}</Text>
-            {it.node || <Text style={[s.rowV, it.color ? { color: it.color } : null]} numberOfLines={1}>{it.v}</Text>}
-          </View>
-        ))}
+        {items.map((it, i) => {
+          const inner = (
+            <>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[s.rowK, { flex: 0 }]} numberOfLines={2}>{it.k}</Text>
+                {it.prova ? <Text style={s.rowLaw} numberOfLines={1}><Text style={s.rowLawS}>§ </Text>{it.prova.art}</Text> : null}
+              </View>
+              {it.node || <Text style={[s.rowV, it.color ? { color: it.color } : null]} numberOfLines={1}>{it.v}</Text>}
+            </>
+          );
+          return it.prova ? (
+            <TouchableOpacity key={i} style={[s.row, i === 0 && s.rowFirst]} activeOpacity={0.7}
+              onPress={() => { select(); setProva({ ...it.prova, value: typeof it.v === 'string' ? it.v : null }); }}
+              accessibilityRole="button" accessibilityLabel={`${it.k} — ${l('ver a lei', 'see the law')}`}>
+              {inner}
+            </TouchableOpacity>
+          ) : (
+            <View key={i} style={[s.row, i === 0 && s.rowFirst]}>{inner}</View>
+          );
+        })}
       </View>
     );
   };
@@ -253,7 +274,7 @@ export default function DutyDetailScreen({ route, navigation }) {
             <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
             <Panel rows={[
               (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
-              (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr },
+              (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
               sbAccD && { k: l('PSV', 'FDP'), v: l('não se aplica — standby (225)', 'not applicable — standby (225)') },
               (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
                 v: d.discretion.over
@@ -261,7 +282,7 @@ export default function DutyDetailScreen({ route, navigation }) {
                   : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
                 color: d.discretion.over ? PELE.red : PELE.warn },
               (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
-              (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr },
+              (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
           </>
@@ -307,10 +328,10 @@ export default function DutyDetailScreen({ route, navigation }) {
 
         <Sec icon="wallet">{l('Pagamento · detalhes', 'Pay · details')}</Sec>
         <Panel rows={[
-          (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: PELE.ok },
+          (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: PELE.ok, prova: provaFor('perDiem', provaCtx) },
           (svcEur != null) && { k: svcEur.lbl, v: `+${fmtEur0(svcEur.eur)}`, color: PELE.ok },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
-          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? PELE.ok : null },
+          duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? PELE.ok : null, prova: provaFor('pernoita', provaCtx) },
           (() => {
             const role = duty.role || (duty.instructor ? 'instr' : null);
             if (!role || !ae) return null;
@@ -361,6 +382,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       <DutyFormSheet visible={!!editing} date={date} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setEdited(true); }} />
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, ctxAll.base) : null} />
+      <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
     </SafeAreaView>
   );
 }
@@ -390,6 +412,8 @@ const s = StyleSheet.create({
   rowFirst: { borderTopWidth: 0 },
   rowK: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
   rowV: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  rowLaw: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 2 },   // § inline da PROVA (metadado)
+  rowLawS: { color: PELE.yellow },
   rowVZ: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: 2, letterSpacing: 0.2 },
 
   fatPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },

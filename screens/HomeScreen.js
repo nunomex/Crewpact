@@ -26,6 +26,8 @@ import { monthStats, yearStats } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
 import { stateVoice } from '../data/stateVoice';
 import { crewState } from '../data/crewState';
+import { monthAudit } from '../data/audit';
+import AuditSheet from '../components/AuditSheet';
 import { yearCount } from '../data/aeEvents';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
@@ -173,7 +175,7 @@ const DEMO_FLIGHT = (() => {
 
 export default function HomeScreen({ navigation }) {
   const tabSpace = useTabBarSpace();
-  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart } = useContext(AppContext);
+  const { profile, user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog } = useContext(AppContext);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -1028,6 +1030,13 @@ export default function HomeScreen({ navigation }) {
     todayEnded.sectors ? { k: l('SETORES', 'SECTORS'), v: String(todayEnded.sectors) } : null,
   ].filter(Boolean) : null;
   // Fecho do mês: as PARCELAS do aeMonth (que somam — auditável; toque → Estatísticas).
+  // ── AUDITORIA DO MÊS (design/auditoria-mes.html v2): o radar corre SÓ no estado fecho
+  // (a promessa da ficha 11 do LI levada a sério). Zero itens = zero cartão.
+  const [auditOpen, setAuditOpen] = useState(false);
+  const audit = useMemo(() => (homeState === 'fecho' && ae && crewCategory
+    ? monthAudit(duties || {}, { ym: todayISO.slice(0, 7), ae, cat: crewCategory, fleet: crewFleet, base, rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
+    : null), [homeState, duties, ae, crewCategory, crewFleet, base, rosterLog, aeEvents, isPilot, todayISO]);
+
   const midFecho = (homeState === 'fecho' && monthAe) ? [
     { k: 'BASE', v: eurBare(monthAe.base || 0) },
     monthAe.perDiem ? { k: 'PER-DIEM', v: eurBare(monthAe.perDiem) } : null,
@@ -1463,12 +1472,28 @@ export default function HomeScreen({ navigation }) {
               <View style={s.tap}><Text style={s.tapS} numberOfLines={1}>{c.k}</Text></View>
               <Text style={s.tbig} numberOfLines={1}>{c.v}</Text>
             </TouchableOpacity>
-          )) : midFecho ? midFecho.map((c) => (
-            <TouchableOpacity key={c.k} style={s.trow} activeOpacity={0.75} onPress={() => { select(); navigation.navigate('Estatísticas'); }} accessibilityRole="button">
-              <View style={[s.tap, { width: 96 }]}><Text style={s.tapS} numberOfLines={1}>{c.k}</Text></View>
-              <Text style={[s.tbig, { fontSize: 32, lineHeight: 34 }]} numberOfLines={1}>{c.v}</Text>
-            </TouchableOpacity>
-          )) : agendaRows ? (agendaRows.length ? (
+          )) : midFecho ? (
+            <>
+              {midFecho.map((c) => (
+                <TouchableOpacity key={c.k} style={s.trow} activeOpacity={0.75} onPress={() => { select(); navigation.navigate('Estatísticas'); }} accessibilityRole="button">
+                  <View style={[s.tap, { width: 96 }]}><Text style={s.tapS} numberOfLines={1}>{c.k}</Text></View>
+                  <Text style={[s.tbig, { fontSize: 32, lineHeight: 34 }]} numberOfLines={1}>{c.v}</Text>
+                </TouchableOpacity>
+              ))}
+              {/* O RADAR — só com itens (zero = zero mobília). € "em causa", nunca "a receber". */}
+              {audit && audit.count > 0 ? (
+                <TouchableOpacity style={s.auditCta} activeOpacity={0.85} onPress={() => { select(); setAuditOpen(true); }}
+                  accessibilityRole="button" accessibilityLabel={l('Auditoria do mês', 'Month audit')}>
+                  <View style={s.auditIc}><Icon name="doc" size={17} color={P.ink} /></View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.auditB}>{l('Auditoria do mês', 'Month audit')}</Text>
+                    <Text style={s.auditS} numberOfLines={1}>{audit.count} {audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}{audit.totalEur > 0 ? ` · ≈ ${Math.round(audit.totalEur)} € ${l('em causa', 'at stake')}` : ''}</Text>
+                  </View>
+                  <Icon name="chevron" size={13} color={P.grey} />
+                </TouchableOpacity>
+              ) : null}
+            </>
+          ) : agendaRows ? (agendaRows.length ? (
             <>
               {/* O CARTÃO PRETO do countdown encabeça a agenda (decisão do user 2026-07-09:
                   era duplo-badge com o chip do polegar — o elemento forte subiu para o
@@ -1622,6 +1647,11 @@ export default function HomeScreen({ navigation }) {
 
       {/* Folha de boas-vindas — 1× na vida, só nascida do funil (flag 'pending'). */}
       <WelcomeSheet visible={welcomeOpen} onDone={closeWelcome} lang={lang} />
+
+      {/* Auditoria do mês — a folha do radar (estado fecho). */}
+      <AuditSheet visible={auditOpen} onClose={() => setAuditOpen(false)} audit={audit} monthName={monthName}
+        lang={lang} provaCtx={{ companySlug: company && company.slug, companyName: company && company.name, isPilot, lang }}
+        onOpenDay={(iso) => openDayDetail(iso)} onRegister={() => { openExtra && openExtra(); }} />
     </SafeAreaView>
   );
 }
@@ -1660,6 +1690,11 @@ const makeSkin = (P, night) => StyleSheet.create({
   // Meio adaptativo (mockup .mid/.trow/.ag/.stp/.tip)
   mid: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.line },
   trow: { flexDirection: 'row', alignItems: 'baseline', gap: 12, paddingVertical: 6 },
+  // Auditoria do mês (radar) — o cartão do estado FECHO (auditoria-mes v2)
+  auditCta: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: P.line, borderRadius: 16, padding: 13, marginTop: 12, backgroundColor: night ? 'rgba(255,255,255,0.04)' : P.soft2 },
+  auditIc: { width: 36, height: 36, borderRadius: 11, backgroundColor: night ? 'rgba(255,184,0,0.18)' : P.yellowSoft, alignItems: 'center', justifyContent: 'center' },
+  auditB: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: P.ink },
+  auditS: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
   tap: { width: 74 },
   tapT: { fontSize: 12, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   tapS: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, letterSpacing: 1.5, color: P.grey, marginTop: 1 },

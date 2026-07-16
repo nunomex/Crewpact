@@ -67,7 +67,8 @@ export const AE_DEEPLINKS = {
 };
 
 // Normaliza companhia (slug ou nome) → chave do AE_DEEPLINKS (ex.: 'easyJet Europe' → 'easyjet').
-const companyKey = (slug, name) => {
+// Exportada: a Prova (data/prova.js) resolve pela MESMA normalização — uma fonte, não duas.
+export const companyKey = (slug, name) => {
   const k = String(slug || name || '').toLowerCase().replace(/[^a-z]/g, '');
   if (k.includes('easyjet')) return 'easyjet';
   if (k.startsWith('tap')) return 'tap';   // 'tap' / 'tap-air-portugal' → TAP (SPAC/SNPVAC)
