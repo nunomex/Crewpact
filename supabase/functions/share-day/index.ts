@@ -91,26 +91,29 @@ const coordFor = (code: unknown): { lat: number; lon: number } | null => {
   return e ? { lat: e[0], lon: e[1] } : null;
 };
 
-// ── Página HTML (mobile-first, sem JS além do refresh; estética FIDS/navy da app) ──
+// ── Página HTML (mobile-first, sem JS além do refresh) — NA PELE (2026-07-15): o último
+//    pixel navy do ecossistema morreu; paper/ink/amarelo + Barlow/Hanken, como tudo o resto.
+//    (Só serve estados de erro/fallback — a página real da família vive em voo.crewpact.app.)
 function page(title: string, inner: string, refresh = false) {
   return `<!doctype html><html lang="pt"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ${refresh ? '<meta http-equiv="refresh" content="60">' : ''}
 <meta name="robots" content="noindex">
 <title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;background:#14263A;color:#fff;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
-  .card{background:#1F4E79;border-radius:20px;padding:26px 24px;max-width:400px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.35)}
-  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.2px}
-  .dot{width:8px;height:8px;border-radius:3px;background:#F5402C}
-  .eyebrow{font-size:10.5px;letter-spacing:1.4px;color:rgba(255,255,255,.62);margin-top:20px;text-transform:uppercase;font-weight:800}
-  .flight{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:4px;font-variant-numeric:tabular-nums}
-  .route{font-size:16px;color:rgba(255,255,255,.85);margin-top:2px;font-weight:600}
-  .eta{font-size:44px;font-weight:800;letter-spacing:-1px;margin-top:14px;font-variant-numeric:tabular-nums}
-  .etaSub{font-size:12.5px;color:rgba(255,255,255,.62);margin-top:4px;line-height:1.5}
-  .status{display:inline-block;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.4px;background:rgba(255,255,255,.12)}
-  .ok{background:#1f7a4d}.warn{background:#a35b00}.bad{background:#b3261e}
-  .foot{font-size:11px;color:rgba(255,255,255,.45);margin-top:22px;text-align:center;line-height:1.6}
+  body{margin:0;background:#F4F2ED;color:#141414;font-family:'Hanken Grotesk',-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .card{background:#FFFFFF;border:1px solid #ECEAE4;border-top:3px solid #FFB800;border-radius:20px;padding:26px 24px;max-width:400px;width:100%}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.2px;color:#141414}
+  .dot{width:8px;height:8px;border-radius:99px;background:#FFB800}
+  .eyebrow{font-size:10.5px;letter-spacing:1.6px;color:#77776F;margin-top:20px;text-transform:uppercase;font-weight:800}
+  .flight{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;letter-spacing:-.3px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .route{font-size:15px;color:#33322E;margin-top:2px;font-weight:600}
+  .eta{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:800;letter-spacing:-1px;margin-top:12px;font-variant-numeric:tabular-nums}
+  .etaSub{font-size:12.5px;color:#77776F;margin-top:4px;line-height:1.5}
+  .status{display:inline-block;margin-top:16px;padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.4px;background:#F4F2ED;color:#77776F}
+  .ok{background:#E7F3EC;color:#1E7A46}.warn{background:#FBF1E4;color:#B96A00}.bad{background:#F9E9E8;color:#B3261E}
+  .foot{font-size:11px;color:#9B978F;margin-top:22px;text-align:center;line-height:1.6}
 </style></head><body><div class="card">
 <div class="brand"><span class="dot"></span>CrewPact</div>
 ${inner}
