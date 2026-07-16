@@ -18,6 +18,7 @@ import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
 import { buildRecordModel, recordHtml } from '../data/ftlRecord';
+import { buildCareerModel, careerHtml } from '../data/careerRecord';
 import { printToPdfAndShare } from '../data/pdf';
 import { disruptionCandidates, stabilityCandidates } from '../data/disruption';
 
@@ -49,7 +50,7 @@ const MONS = {
 };
 
 export default function RelatoriosScreen({ navigation }) {
-  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, crewCategory } = useContext(AppContext);
+  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, crewCategory, crewHistory, serviceStart, base, postFlightMin } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -112,10 +113,31 @@ export default function RelatoriosScreen({ navigation }) {
       return d >= period.start && d < period.end;
     });
   }, [hasStability, rosterLog, isPilot, period.start, period.end]);
-  const docCount = 2 + (hasDisruption ? 1 : 0) + (hasStability ? 1 : 0);
+  const docCount = 3 + (hasDisruption ? 1 : 0) + (hasStability ? 1 : 0);
 
-  // Identidade do 245 (nome + nº), persistida como antes (mesma chave — continuidade).
+  // Processo de carreira — o logbook de tripulante (mockup design/processo-carreira.html).
+  // IGNORA o seletor de período (carreira é sempre tudo); a linha "desde X · Y h" torna
+  // isso auto-evidente. Gate = ter registos, seja qual for o perfil (universal).
+  const career = useMemo(() => {
+    let min = 0, first = null;
+    for (const date of Object.keys(duties || {}).sort()) {
+      const d = duties[date];
+      if (!d || d.deleted) continue;
+      if (!first) first = date;
+      for (const sv of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+        if (sv && (sv.kind || 'flight') === 'flight') min += sv.flight_minutes || 0;
+      }
+    }
+    const from = serviceStart || first;
+    return { has: !!first, hours: Math.floor(min / 60), from };
+  }, [duties, serviceStart]);
+  const careerFrom = career.from
+    ? `${MONS[lg][+String(career.from).slice(5, 7) - 1]} ${String(career.from).slice(0, 4)}` : null;
+
+  // Identidade dos PDFs (nome + nº), persistida como antes (mesma chave — continuidade).
+  // A MESMA folha serve o 245 e a Carreira: `recFor` diz qual documento nasce ao gerar.
   const [recOpen, setRecOpen] = useState(false);
+  const [recFor, setRecFor] = useState('245');           // '245' | 'career'
   const [recForm, setRecForm] = useState({ name: '', crewId: '' });
   React.useEffect(() => {
     if (!user?.id) return;
@@ -134,7 +156,11 @@ export default function RelatoriosScreen({ navigation }) {
   const openPdf = () => {
     if (busy) return;
     if (!svcCount) { Alert.alert(t('duties.exportPdf', lang), t('duties.exportEmpty', lang)); return; }
-    select(); setRecOpen(true);
+    select(); setRecFor('245'); setRecOpen(true);
+  };
+  const openCareer = () => {
+    if (busy || !career.has) return;
+    select(); setRecFor('career'); setRecOpen(true);
   };
   const onGeneratePdf = () => {
     if (user?.id) AsyncStorage.setItem(`cp_record_${user.id}`, JSON.stringify(recForm)).catch(() => {});
@@ -146,15 +172,31 @@ export default function RelatoriosScreen({ navigation }) {
     setBusy(true);
     setTimeout(async () => {
       try {
-        const model = buildRecordModel({
-          duties: dutiesInPeriod, dayLog,
-          name: recForm.name, crewId: recForm.crewId,
-          operator: company?.name || '', email: user?.email || '',
-          generatedAt: new Date().toLocaleString(locale),
-        });
-        await printToPdfAndShare(recordHtml(model, lang, fontsCssNow()), 'CrewPact · FTL.245');
-        success();
-        notify && notify(l('Registo gerado', 'Record generated'));
+        if (recFor === 'career') {
+          // Carreira COMPLETA (ignora o período de propósito) — a mesma identidade do 245.
+          const model = buildCareerModel({
+            duties, crewHistory, serviceStart, postFlightMin,
+            name: recForm.name, crewId: recForm.crewId,
+            operator: company?.name || '', base: base || '', categoryNow: crewCategory || '',
+            generatedAt: new Date().toLocaleDateString(locale),
+            // A tabela salarial do AE PROVA a promoção (base superior à data da mudança).
+            baseAt: ae && ae.monthlyBase ? (cat, ym) => ae.monthlyBase(cat, { ym }) : null,
+          });
+          const catLbl = ae && ae.categoryLabel ? (id) => ae.categoryLabel(id, lg) : null;
+          await printToPdfAndShare(careerHtml(model, lg, fontsCssNow(), catLbl), l('CrewPact · Carreira', 'CrewPact · Career'));
+          success();
+          notify && notify(l('Processo gerado', 'Record generated'));
+        } else {
+          const model = buildRecordModel({
+            duties: dutiesInPeriod, dayLog,
+            name: recForm.name, crewId: recForm.crewId,
+            operator: company?.name || '', email: user?.email || '',
+            generatedAt: new Date().toLocaleString(locale),
+          });
+          await printToPdfAndShare(recordHtml(model, lang, fontsCssNow()), 'CrewPact · FTL.245');
+          success();
+          notify && notify(l('Registo gerado', 'Record generated'));
+        }
       } catch { Alert.alert(t('duties.exportPdf', lang), t('duties.recErr', lang)); }
       setTimeout(() => setBusy(false), 600);   // engole o toque-fantasma da dispensa da partilha
     }, 450);
@@ -239,6 +281,20 @@ export default function RelatoriosScreen({ navigation }) {
             <Text style={s.cK}>{l('dados em bruto', 'raw data')}</Text>
             <Text style={s.cName} numberOfLines={1}>{l('Escala em CSV', 'Roster as CSV')}</Text>
             <Text style={s.cLine} numberOfLines={1}>{svcCount ? l('uma linha por serviço · Excel/Numbers', 'one row per duty · Excel/Numbers') : l(`sem serviços em ${period.label}`, `no duties in ${period.label}`)}</Text>
+          </View>
+          <Icon name="chevron" size={16} color={PELE.ghost} />
+        </TouchableOpacity>
+
+        {/* Processo de carreira — o logbook de tripulante. Universal; ignora o período
+            (a linha "desde X · Y h" torna isso auto-evidente — dado em vez de disclaimer). */}
+        <TouchableOpacity style={[s.card, (!career.has || busy) && s.cardOff]} activeOpacity={0.85} onPress={openCareer} disabled={busy}
+          accessibilityRole="button" accessibilityLabel={l('Gerar o Processo de carreira em PDF', 'Generate the Career record as PDF')}>
+          <View style={s.cBody}>
+            <Text style={s.cK}>{l('logbook de tripulante · carreira', 'crew logbook · career')}</Text>
+            <Text style={s.cName} numberOfLines={1}>{l('Processo de carreira', 'Career record')}</Text>
+            <Text style={s.cLine} numberOfLines={1}>{busy && recFor === 'career' ? l('A gerar…', 'Generating…')
+              : career.has ? `${l('desde', 'since')} ${careerFrom} · ${career.hours.toLocaleString(locale)} h ${l('registadas', 'logged')} · PDF ${l('assinável', 'signable')}`
+              : l('sem registos ainda', 'no records yet')}</Text>
           </View>
           <Icon name="chevron" size={16} color={PELE.ghost} />
         </TouchableOpacity>

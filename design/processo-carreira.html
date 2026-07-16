@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Processo de carreira (o primeiro logbook de tripulante de cabine)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --soft2:#FAFAF9; --yellow:#FFB800; --ok:#1E7A46; --warn:#B96A00; --red:#B3261E;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:30px;max-width:1560px;margin:22px auto 0;align-items:start}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* ── frame ①: o telefone (Relatórios) ── */
+  .phone{width:100%;max-width:340px;height:640px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column}
+  .side{position:absolute;right:3px;top:120px;font-size:9px;font-weight:800;letter-spacing:2.2px;color:#B4B0A8;
+    text-transform:uppercase;transform:rotate(90deg);transform-origin:right top;white-space:nowrap}
+  .side b{color:var(--yellow)}
+  .back{font-size:12px;font-weight:800;color:var(--grey)}
+  .eyebrow2{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-top:10px}
+  .hero{position:relative;min-height:112px;display:flex;flex-direction:column;justify-content:flex-end}
+  .gho{position:absolute;right:2px;top:-6px;font-family:var(--disp);font-weight:700;font-size:96px;line-height:1;letter-spacing:-2px;color:var(--ghost)}
+  .word{font-family:var(--disp);font-weight:700;font-size:38px;line-height:1}
+  .kick{font-size:10.5px;font-weight:600;color:var(--grey);margin-top:5px}
+  .hr{height:1px;background:var(--line);margin-top:11px}
+  .seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px;margin-top:12px}
+  .seg div{flex:1;text-align:center;font-size:10.5px;font-weight:800;color:var(--grey);padding:6px 0;border-radius:999px}
+  .seg .on{background:var(--ink);color:var(--paper)}
+  .perNav{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:9px;font-size:11.5px;font-weight:700}
+  .perNav i{width:26px;height:26px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:var(--ink)}
+  .card{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:9px;display:flex;align-items:center;gap:10px}
+  .cB{flex:1;min-width:0}
+  .cK{font-size:7.5px;font-weight:800;letter-spacing:1.5px;color:var(--grey);text-transform:uppercase}
+  .cN{font-family:var(--disp);font-weight:700;font-size:18px;margin-top:1px}
+  .cL{font-size:9.5px;font-weight:700;color:var(--grey);margin-top:2px}
+  .chev{color:#B4B0A8;font-size:13px}
+  .card.new{border-color:var(--ink)}
+
+  /* ── frame ②: o DOCUMENTO A4 ── */
+  .a4{width:100%;max-width:480px;background:var(--paper);border:1px solid var(--line);border-radius:6px;
+    box-shadow:0 20px 50px rgba(20,22,26,.12);padding:26px 28px;margin:0 auto;font-size:8.5px}
+  .brand{display:flex;justify-content:space-between;align-items:baseline}
+  .wm{font-family:var(--disp);font-weight:800;font-size:13px;letter-spacing:1px}
+  .wm i{font-style:normal;color:var(--yellow)}
+  .reg{font-size:6.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey)}
+  .perHero{position:relative;min-height:56px;margin-top:6px}
+  .perGho{position:absolute;right:-3px;top:-8px;font-family:var(--disp);font-weight:800;font-size:62px;line-height:1;letter-spacing:-1.5px;color:var(--ghost)}
+  .title{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1.02;padding-top:20px;position:relative;max-width:250px}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:9px}
+  .mi .mk{font-size:5.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey)}
+  .mi .mv{font-size:8px;font-weight:800;margin-top:1px}
+  .rule{height:1.5px;background:var(--ink);margin-top:9px}
+  .sum{display:flex;gap:24px;margin:11px 0 3px}
+  .si .sv{font-family:var(--disp);font-weight:800;font-size:21px;line-height:1;display:inline-block;border-bottom:2.5px solid var(--yellow);padding-bottom:2px;font-variant-numeric:tabular-nums}
+  .si .sl{font-size:5.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey);margin-top:4px}
+  .secT{font-size:6.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);margin:14px 0 5px}
+  /* percurso: linha do tempo tipográfica — mês-âncora Barlow + evento */
+  .tl{border-left:1.5px solid var(--line);padding-left:10px}
+  .tlR{display:flex;gap:8px;align-items:baseline;padding:3px 0;position:relative}
+  .tlR::before{content:'';position:absolute;left:-12.5px;top:8px;width:4px;height:4px;border-radius:99px;background:var(--ink)}
+  .tlR.cov::before{background:var(--yellow)}
+  .tlR .m{font-family:var(--disp);font-weight:700;font-size:9.5px;width:56px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .tlR .e{font-size:8px;font-weight:700}
+  .tlR .e small{font-weight:600;color:var(--grey);font-size:7px}
+  table{width:100%;border-collapse:collapse;margin-top:2px}
+  th{font-size:5.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--grey);text-align:right;padding:4px 3px;border-bottom:1.5px solid var(--ink)}
+  th:first-child{text-align:left}
+  td{font-size:8px;padding:5px 3px;border-bottom:1px solid var(--line);text-align:right;
+     font-family:var(--disp);font-weight:600;font-size:9px;font-variant-numeric:tabular-nums}
+  td.y{text-align:left;font-family:var(--body);font-weight:800;font-size:8px}
+  td.y small{font-weight:600;color:var(--grey);font-size:6.5px}
+  tr.tot td{border-bottom:0;border-top:1.5px solid var(--ink);font-weight:800;color:var(--ink)}
+  tr.tot td.y{font-size:7px;letter-spacing:.8px;text-transform:uppercase}
+  tr.tot td b{display:inline-block;border-bottom:2px solid var(--yellow);padding-bottom:1px;font-weight:800}
+  .dest{display:flex;gap:14px;flex-wrap:wrap}
+  .de .dc{font-family:var(--disp);font-weight:700;font-size:11px}
+  .de .dn{font-size:6px;font-weight:700;color:var(--grey)}
+  .decl{font-size:6.8px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:13px}
+  .sig{display:flex;gap:20px;margin-top:22px}
+  .sig div{flex:1;border-top:1px solid var(--ink);padding-top:3px;font-size:5.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--grey)}
+  .adv{font-size:5.8px;font-weight:600;color:var(--grey);margin-top:12px;border-top:1px solid var(--line);padding-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Processo de carreira · o primeiro logbook de tripulante de cabine</div>
+  <h1>a tua carreira, provada em papel</h1>
+  <p>Os pilotos têm logbooks; <b>a cabine não tem cultura de logbook — nem ferramenta</b>. A app já constrói o
+  registo sozinha (horas, setores, aeroportos, promoções effective-dated). Falta a moldura: um <b>PDF assinável</b>
+  para mudanças de companhia, entrevistas e upgrades — comprovativo de experiência que hoje ninguém consegue passar
+  a papel. <b>Vive nos Relatórios</b> (Perfil), universal (cabine e pilotos), e <b>ignora o seletor de período</b>
+  — carreira é sempre tudo. <b>Regra de ouro: honestidade de cobertura</b> — o documento diz "registos na app desde X"
+  e nunca finge a carreira completa; os anos parciais levam a marca no próprio ano. Os números saem do <b>mesmo
+  yearStats das Estatísticas</b> — o logbook bate certo com a app, por construção.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ① O cartão nos Relatórios -->
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">RELATÓRIOS · <b>5 DOCS</b></div>
+      <div class="back">‹ Voltar</div>
+      <div class="eyebrow2">Documentos</div>
+      <div class="hero">
+        <div class="gho">05</div>
+        <div class="word">Relatórios</div>
+        <div class="kick">prontos a gerar e partilhar · dados do teu telemóvel</div>
+      </div>
+      <div class="hr"></div>
+      <div class="seg"><div class="on">Mês</div><div>Ano</div></div>
+      <div class="perNav"><i>‹</i> julho 2026 <i>›</i></div>
+
+      <div class="card">
+        <div class="cB"><div class="cK">ORO.FTL.245 · registo legal</div><div class="cN">Tempos de voo e serviço</div>
+        <div class="cL">18 períodos de serviço · PDF assinável</div></div><div class="chev">›</div>
+      </div>
+      <div class="card">
+        <div class="cB"><div class="cK">dados em bruto</div><div class="cN">Escala em CSV</div>
+        <div class="cL">uma linha por serviço · Excel/Numbers</div></div><div class="chev">›</div>
+      </div>
+      <div class="card new">
+        <div class="cB"><div class="cK">logbook de tripulante · carreira</div><div class="cN">Processo de carreira</div>
+        <div class="cL">desde mai 2018 · 2.140 h registadas · PDF assinável</div></div><div class="chev">›</div>
+      </div>
+      <div class="card">
+        <div class="cB"><div class="cK">AE easyJet · Cl. 67.ª RDP · Cl. 66.ª SNC</div><div class="cN">Disrupção de escala</div>
+        <div class="cL">sem irregularidades detetadas</div></div><div class="chev">›</div>
+      </div>
+    </div></div>
+    <div class="t">① O cartão nos Relatórios</div>
+    <div class="d">Terceiro cartão, entre o CSV e a Disrupção — os teus documentos, depois os da companhia.</div>
+    <div class="spec"><b>A linha diz "desde mai 2018"</b> → fica auto-evidente que o seletor Mês/Ano em cima
+    <b>não se aplica</b> a este documento (dado auto-explicativo em vez de disclaimer). Toque → a <b>mesma folha
+    de identidade do 245</b> (nome + nº, chave persistida partilhada) → gera e abre a partilha. Universal:
+    aparece a <b>todos os perfis</b> (cabine e pilotos, AE ou FTL) — o gate é ter registos.</div>
+  </div>
+
+  <!-- ② O documento -->
+  <div class="mock" style="grid-column:span 1">
+    <div class="a4">
+      <div class="brand"><div class="wm">CREW<i>PACT</i></div><div class="reg">Logbook de tripulante · registo individual</div></div>
+      <div class="perHero">
+        <div class="perGho">’18–’26</div>
+        <div class="title">Processo de carreira</div>
+      </div>
+      <div class="meta">
+        <div class="mi"><div class="mk">Tripulante</div><div class="mv">Nuno Silva</div></div>
+        <div class="mi"><div class="mk">Nº de tripulante</div><div class="mv">EZY31245</div></div>
+        <div class="mi"><div class="mk">Operador</div><div class="mv">easyJet</div></div>
+        <div class="mi"><div class="mk">Categoria atual</div><div class="mv">Cabin Manager</div></div>
+        <div class="mi"><div class="mk">Base</div><div class="mv">LIS</div></div>
+        <div class="mi"><div class="mk">Início de serviço</div><div class="mv">14 MAI 2018 · 8 anos</div></div>
+        <div class="mi"><div class="mk">Gerado em</div><div class="mv">16/07/2026</div></div>
+      </div>
+      <div class="rule"></div>
+
+      <div class="sum">
+        <div class="si"><span class="sv">2.140</span><div class="sl">horas de voo</div></div>
+        <div class="si"><span class="sv">3.418</span><div class="sl">setores</div></div>
+        <div class="si"><span class="sv">1.026</span><div class="sl">dias de serviço</div></div>
+        <div class="si"><span class="sv">74</span><div class="sl">aeroportos</div></div>
+      </div>
+      <div style="font-size:6px;font-weight:700;color:var(--grey);margin-top:5px">Totais dos registos na app — desde 12 MAR 2024.</div>
+
+      <div class="secT">Percurso</div>
+      <div class="tl">
+        <div class="tlR"><div class="m">MAI 2018</div><div class="e">Início de serviço · easyJet <small>· Cabin Crew Member</small></div></div>
+        <div class="tlR cov"><div class="m">MAR 2024</div><div class="e"><small>Início dos registos nesta aplicação</small></div></div>
+        <div class="tlR"><div class="m">FEV 2025</div><div class="e">Cabin Manager <small>· promoção</small></div></div>
+      </div>
+
+      <div class="secT">Por ano · registos na app</div>
+      <table>
+        <thead><tr><th>Ano</th><th>Dias de serviço</th><th>Setores</th><th>Voo</th><th>Serviço</th><th>Pernoitas</th></tr></thead>
+        <tbody>
+          <tr><td class="y">2024 <small>· desde MAR</small></td><td>318</td><td>1.244</td><td>762:40</td><td>1.512:10</td><td>14</td></tr>
+          <tr><td class="y">2025</td><td>402</td><td>1.480</td><td>892:20</td><td>1.788:35</td><td>19</td></tr>
+          <tr><td class="y">2026 <small>· até JUL</small></td><td>306</td><td>694</td><td>485:00</td><td>944:25</td><td>8</td></tr>
+          <tr class="tot"><td class="y">Totais</td><td><b>1.026</b></td><td><b>3.418</b></td><td><b>2.140:00</b></td><td><b>4.245:10</b></td><td><b>41</b></td></tr>
+        </tbody>
+      </table>
+
+      <div class="secT">Destinos · 74 aeroportos distintos</div>
+      <div class="dest">
+        <div class="de"><div class="dc">LGW</div><div class="dn">212×</div></div>
+        <div class="de"><div class="dc">FNC</div><div class="dn">148×</div></div>
+        <div class="de"><div class="dc">OPO</div><div class="dn">121×</div></div>
+        <div class="de"><div class="dc">AGP</div><div class="dn">98×</div></div>
+        <div class="de"><div class="dc">CDG</div><div class="dn">76×</div></div>
+      </div>
+
+      <p class="decl">Declaro que os registos acima refletem os meus períodos de serviço tal como registados
+      na aplicação, no período de cobertura indicado.</p>
+      <div class="sig"><div>Assinatura — Nuno Silva</div><div>Local e data</div></div>
+      <div class="adv">Documento gerado pela CrewPact a partir dos registos individuais do tripulante. Não substitui
+      os registos oficiais do operador nem, para pilotos, a caderneta de voo FCL.050. Cobertura: registos na
+      aplicação desde 12 MAR 2024.</div>
+    </div>
+    <div class="t">② O documento — logbook de tripulante</div>
+    <div class="d">A gramática do 245 esticada à carreira: fantasma do intervalo de anos, grelha de identidade,
+    totais de marcador amarelo, tabela com números tabulares.</div>
+    <div class="spec"><b>Fantasma "’18–’26"</b> = a carreira como período (a mesma voz do 245). <b>Percurso</b> =
+    serviceStart + promoções do crewHistory (effective-dated) — <b>o ponto AMARELO marca onde começa a cobertura
+    da app</b>, para a linha do tempo nunca mentir. <b>Anos parciais levam a marca no próprio ano</b> ("desde MAR",
+    "até JUL"). Amarelo SÓ nos totais (convenção dos PDFs da casa).</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">passe do designer — decisões e fronteiras</div>
+  <p><b>① Honestidade de cobertura em 3 camadas</b> — a etiqueta sob os totais, o ponto amarelo no Percurso e a marca
+  nos anos parciais. Um documento de candidatura que finge carreira completa é uma mentira assinada; este diz
+  exatamente o que sabe. <b>② Aviões FORA da v1</b> — o tipo de avião existe nos legs mas em formatos heterogéneos
+  (calendário "A320 · G-EZBY", PDF "[320]", API); num comprovativo de experiência, dado sujo é pior que dado ausente.
+  Volta quando houver normalização com golden. <b>③ Sem gráficos</b> — um logbook é um documento de registo, não um
+  poster; a tabela e os totais são o luxo. <b>④ Motor: reutilizar o yearStats</b> (ae:null) ano a ano — o PDF bate
+  com a aba Estatísticas por construção, zero deteção nova. Módulo puro <b>data/careerRecord.js</b>
+  (buildCareerModel + careerHtml, padrão ftlRecord) + golden <b>test:career</b>. <b>⑤ O € NÃO entra</b> — carreira
+  é experiência, não salário; misturar ganhos num documento para entregar a outra companhia seria um erro de
+  privacidade do próprio user. <b>⑥ Pilotos incluídos com fronteira dita</b> — o advisory nomeia a FCL.050:
+  isto não é caderneta de voo de piloto, é o processo de carreira.</p>
+</div>
+</body>
+</html>
