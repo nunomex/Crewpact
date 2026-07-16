@@ -5,7 +5,7 @@ import Icon from './Icon';
 import PrimaryButton from './PrimaryButton';
 import { PELE, PELE_FONT } from '../data/constants';
 import { t } from '../data/i18n';
-import { success } from '../data/haptics';
+import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
 import { createDayShare } from '../data/shareDay';
 import { airportInfo } from '../data/airports';
@@ -122,9 +122,16 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={s.page}>
+        {/* topo = a MESMA anatomia do poster do ano (eyebrow + ponto amarelo + título
+            display) — um cromo, uma casa (auditoria 2026-07-16). */}
         <View style={s.top}>
-          <Text style={s.topTitle} numberOfLines={1}>{personLabel ? l(`Enviar à ${personLabel}`, `Send to ${personLabel}`) : l('O teu voo', 'Your flight')}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={10} style={s.close} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
+          <View style={{ flex: 1 }}>
+            <View style={s.eyeRow}><View style={s.eyeDot} /><Text style={s.eye} numberOfLines={1} allowFontScaling={false}>
+              {(personLabel ? `${l('ENVIAR', 'SEND')} · ${personLabel}` : `${l('PARTILHAR', 'SHARE')}${dep && arr ? ` · ${dep} → ${arr}` : ''}`).toUpperCase()}</Text></View>
+            <Text style={s.h1} allowFontScaling={false}>{l('O teu voo', 'Your flight')}</Text>
+          </View>
+          <TouchableOpacity onPress={() => { select(); onClose && onClose(); }} hitSlop={10} style={s.close}
+            accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
             <Icon name="close" size={16} color={PELE.ink} />
           </TouchableOpacity>
         </View>
@@ -181,9 +188,13 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
 const s = StyleSheet.create({
   // Chrome (pele)
   page: { flex: 1, backgroundColor: PELE.paper },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 58, paddingBottom: 6 },
-  topTitle: { fontSize: 17, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, flex: 1, marginRight: 12 },
-  close: { width: 36, height: 36, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  // topo — a receita do YearShareCard, ipsis verbis (um cromo, uma casa).
+  top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 58, paddingBottom: 8 },
+  eyeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  eyeDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.yellow },
+  eye: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, color: PELE.grey },
+  h1: { fontSize: 30, fontFamily: PELE_FONT.display, letterSpacing: -0.4, color: PELE.ink },
+  close: { width: 36, height: 36, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   scroll: { padding: 20, paddingBottom: 40, alignItems: 'center' },
   hint: { fontSize: 13, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, lineHeight: 19, marginTop: 16, alignSelf: 'stretch' },
 
