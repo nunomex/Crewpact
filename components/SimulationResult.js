@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { prospectiveDuty } from '../data/rosterImport';
@@ -58,19 +59,39 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
   // ── Veredicto: estás legal? ──
   const verdict = prosp.ok === false ? 'bad' : prosp.ok === true ? 'ok' : 'none';
-  const issueTxt = (it) => it.type === 'fdp' ? l('PSV excede o máximo', 'FDP over the max')
+  const issueTxt = (it) => it.type === 'fdp' ? (d && d.fdp.excessStr ? l(`PSV excede o máximo em ${d.fdp.excessStr}`, `FDP over the max by ${d.fdp.excessStr}`) : l('PSV excede o máximo', 'FDP over the max'))
     : it.type === 'duty28' ? l('serviço acima de 190 h/28 d', 'duty over 190 h/28 d')
     : it.type === 'flight28' ? l('voo acima de 100 h/28 d', 'flight over 100 h/28 d')
     : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h')) : '';
 
-  // ── 7 itens (perguntas/respostas) ──
+  // ── HERÓI de poster (mockup design/simulacao-poster.html, aprovado 2026-07-15 — 2 rondas):
+  // a simulação é um "e-se" do Início e fala a MESMA língua: fantasma + palavra + kick.
+  // Fantasma = 1.ª estação FORA da origem (LIS-FNC-LIS → FNC; o destino que dá identidade
+  // ao serviço) · não-voo = código crew-native · nada = "?". Palavra = O VEREDICTO colorido.
+  // Regras RN da casa: lineHeight=fontSize + includeFontPadding:false, tamanhos
+  // determinísticos por comprimento, NUNCA adjustsFontSizeToFit.
+  const KIND_CODE = { standby: 'STB', reserve: 'RSV', training: 'TRN', positioning: 'POS', ground: 'GND', office: 'OFC' };
+  const ghostTxt = (() => {
+    if (isFlight && duty.route) {
+      const toks = String(duty.route).toUpperCase().split('-').map((x) => x.trim()).filter(Boolean);
+      const away = toks.find((x) => x !== toks[0]);
+      return away || toks[toks.length - 1] || '?';
+    }
+    if (!isFlight && KIND_CODE[kind]) return KIND_CODE[kind];
+    return '?';
+  })();
+  const ghostFs = ghostTxt.length <= 1 ? 148 : ghostTxt.length <= 3 ? 112 : 88;
+  const wordTxt = verdict === 'bad' ? l('Não legal', 'Not legal') : verdict === 'ok' ? l('Legal', 'Legal') : l('E se…', 'What if…');
+  const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey;
+  const reasons = verdict === 'bad' ? prosp.issues.map(issueTxt).filter(Boolean) : [];
+  const psvRatio = (d && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
+  // Kick em texto plano (para o VoiceOver ler o herói como UMA frase).
+  const kickPlain = verdict === 'bad' ? reasons.join(' · ')
+    : verdict === 'ok' ? (psvRatio ? l(`PSV ${psvRatio} · dentro dos limites de 28 d`, `FDP ${psvRatio} · within the 28-day limits`) : l('Dentro do máximo e dos limites de 28 d', 'Within the max and the 28-day limits'))
+    : l('Preenche a apresentação e as horas — o veredicto aparece aqui', 'Fill the report and the times — the verdict shows up here');
+
+  // ── Perguntas/respostas (o PSV MORREU da pilha — o herói responde-lhe; um dado, uma casa) ──
   const items = [];
-  if (d) {
-    const psvA = (d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : (d.fdp.maxFdpStr || '—');
-    items.push({ icon: 'clock', q: l('Qual o teu PSV?', 'What is your FDP?'), a: psvA, tone: d.fdp.over ? 'red' : 'green',
-      adv: d.fdp.over ? (l(`Excede o máximo${d.fdp.excessStr ? ` em ${d.fdp.excessStr}` : ''}.`, `Over the max${d.fdp.excessStr ? ` by ${d.fdp.excessStr}` : ''}.`))
-        : (d.fdp.maxFdpStr ? l(`Dentro do máximo · apresentação ${duty.report_time} · ${duty.sectors || 0} setores.`, `Within the max · report ${duty.report_time} · ${duty.sectors || 0} sectors.`) : null) });
-  }
   if (prosp.fatigue) {
     items.push({ icon: 'heart', q: l('Como fica a fadiga?', 'How is fatigue?'), a: `${fatLbl(prosp.fatigue.band)} · ${prosp.fatigue.score}`, tone: fatTone(prosp.fatigue.band), bar: Math.min(100, prosp.fatigue.score) });
   }
@@ -103,34 +124,34 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
     // Transparente (página opaca) — fullScreen abortava no iOS 26 (transição UIKit c/ teclado).
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
+        {/* Selo anti-confusão nº1 (lição do modo Exemplo): o rótulo lateral diz SEMPRE o que isto é. */}
+        <PeleSide label={l('SIMULAÇÃO', 'SIMULATION')} accent={l('E-SE', 'WHAT-IF')} />
         <View style={s.head}>
-          <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Simulação · resultado', 'Simulation · result')}</Eyebrow></View>
-            <Text style={s.h1} allowFontScaling={false}>{l('Resultado', 'Result')}</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Icon name="close" size={16} color={P.ink} /></TouchableOpacity>
+          <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Simulação · resultado', 'Simulation · result')}</Eyebrow></View>
+          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close} accessibilityRole="button" accessibilityLabel={l('Fechar', 'Close')}><Icon name="close" size={16} color={P.ink} /></TouchableOpacity>
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+          {/* HERÓI de poster — a palavra É o veredicto; lê-se como UMA frase no VoiceOver. */}
+          <View style={s.hero} accessible accessibilityRole="header"
+            accessibilityLabel={`${l('Simulação', 'Simulation')}: ${wordTxt}. ${kickPlain}`}>
+            <Text style={[s.gho, { fontSize: ghostFs, lineHeight: ghostFs }]} allowFontScaling={false} numberOfLines={1}>{ghostTxt}</Text>
+            <Text style={[s.word, { color: wordColor }]} allowFontScaling={false} numberOfLines={1}>{wordTxt}</Text>
+            <Text style={s.kick} numberOfLines={2}>
+              {verdict === 'bad' ? (<>
+                <Text style={s.kickB}>{reasons[0] || ''}</Text>
+                {reasons.length > 1 ? ` · ${reasons.slice(1).join(' · ')}` : ''}
+              </>) : verdict === 'ok' ? (psvRatio ? (<>
+                {'PSV '}<Text style={s.kickB}>{psvRatio}</Text>{l(' · dentro dos limites de 28 d', ' · within the 28-day limits')}
+              </>) : kickPlain) : (<>
+                {l('Preenche a ', 'Fill the ')}<Text style={s.kickB}>{l('apresentação', 'report')}</Text>{l(' e as horas — o veredicto aparece aqui', ' and the times — the verdict shows up here')}
+              </>)}
+            </Text>
+            <View style={s.heroHr} />
+          </View>
+
           <View style={s.crew}><Icon name={isPilot ? 'plane' : 'fam'} size={14} color={P.ink} /><Text style={s.crewTxt} numberOfLines={1}>{crewTxt}</Text></View>
           <Text style={s.sum} numberOfLines={1}>{summary}</Text>
-
-          {/* Veredicto */}
-          <View style={[s.verdict, verdict === 'bad' ? s.verdictBad : verdict === 'ok' ? s.verdictOk : s.verdictNone]}>
-            <View style={[s.vIc, { backgroundColor: verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey }]}>
-              <Icon name={verdict === 'bad' ? 'close' : verdict === 'ok' ? 'check' : 'info'} size={22} color={P.onInk} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.vTit, { color: verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey }]}>
-                {verdict === 'bad' ? l('Não estás legal', 'Not legal') : verdict === 'ok' ? l('Estás legal', "You're legal") : l('Sem dados suficientes', 'Not enough data')}
-              </Text>
-              <Text style={s.vSub} numberOfLines={2}>
-                {verdict === 'bad' ? prosp.issues.map(issueTxt).filter(Boolean).join(' · ')
-                  : verdict === 'ok' ? l('PSV dentro do máximo · não excede os limites de 28 dias', 'FDP within the max · not over the 28-day limits')
-                    : l('Preenche a apresentação e as horas dos setores.', 'Fill the report and sector times.')}
-              </Text>
-            </View>
-          </View>
 
           {/* Perguntas → respostas */}
           {items.map((it, i) => (
@@ -161,7 +182,8 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
         <View style={s.footer}>
           <GhostButton onPress={onEdit} icon="create-outline" radius="lg" style={{ flex: 1 }} label={l('Editar', 'Edit')} />
-          <PrimaryButton onPress={onClose} icon="checkmark" radius="lg" style={{ flex: 1 }} label={l('Concluir', 'Done')} />
+          {/* "Fechar", não "Concluir" — nada se conclui numa leitura (passe do designer, 2026-07-15). */}
+          <PrimaryButton onPress={onClose} icon="checkmark" radius="lg" style={{ flex: 1 }} label={l('Fechar', 'Close')} />
         </View>
 
         {/* ── Avançado · casos especiais (FTL) — calculadores da lei reutilizados, pré-preenchidos
@@ -193,25 +215,25 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: P.paper },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 8 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  page: { flex: 1, backgroundColor: P.paper },   // SEMPRE paper — a simulação é ferramenta, nunca herda o noturno
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 2 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.yellow },
-  h1: { fontSize: 32, fontFamily: F.display, color: P.ink, letterSpacing: -0.4 },
-  close: { width: 36, height: 36, borderRadius: 99, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  body: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24 },
+  close: { width: 36, height: 36, borderRadius: 99, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
+  h1: { fontSize: 32, fontFamily: F.display, color: P.ink, letterSpacing: -0.4, marginTop: 4 },   // só o modal Avançado (o herói tomou o lugar no principal)
+  body: { paddingHorizontal: 24, paddingTop: 2, paddingBottom: 24 },
+
+  // Herói de poster (a língua do Início): fantasma absoluto à direita + palavra-veredicto + kick.
+  hero: { position: 'relative', minHeight: 152, justifyContent: 'flex-end', marginBottom: 12 },
+  gho: { position: 'absolute', right: -4, top: -8, fontFamily: F.display, color: P.ghost, letterSpacing: -2.5, textAlign: 'right', includeFontPadding: false },
+  word: { fontFamily: F.display, fontSize: 44, lineHeight: 44, includeFontPadding: false, letterSpacing: -0.4 },
+  kick: { fontSize: 11.5, fontFamily: F.bodyMed, color: P.grey, marginTop: 6, lineHeight: 15 },
+  kickB: { fontFamily: F.bodyBold, color: P.ink },
+  heroHr: { height: 1, backgroundColor: P.line, marginTop: 12 },
 
   crew: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: P.soft, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 8 },
   crewTxt: { fontSize: 12, fontFamily: F.bodyBold, color: P.ink },
   sum: { fontSize: 12, fontFamily: F.body, color: P.grey, marginBottom: 14, fontVariant: ['tabular-nums'] },
-
-  verdict: { flexDirection: 'row', alignItems: 'center', gap: 13, borderRadius: 18, borderWidth: 1, padding: 15, marginBottom: 13 },
-  verdictOk: { backgroundColor: P.okSoft, borderColor: P.okSoftLine },
-  verdictBad: { backgroundColor: P.redSoft, borderColor: P.redSoftLine },
-  verdictNone: { backgroundColor: P.soft, borderColor: P.line },
-  vIc: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  vTit: { fontSize: 20, fontFamily: F.display, letterSpacing: -0.3 },
-  vSub: { fontSize: 11.5, fontFamily: F.bodyMed, color: P.grey, marginTop: 2, lineHeight: 15 },
 
   qcard: { borderWidth: 1, borderColor: P.line, borderRadius: 14, padding: 13, backgroundColor: P.paper, marginBottom: 9 },
   qcardDep: { backgroundColor: P.soft2 },

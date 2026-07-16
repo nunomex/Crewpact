@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — a simulação em gramática de poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --soft2:#FAFAF9; --yellow:#FFB800; --ok:#1E7A46; --red:#B3261E;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:30px;max-width:1560px;margin:22px auto 0}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1560px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  .phone{width:100%;max-width:340px;height:560px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:16px 19px 14px;display:flex;flex-direction:column;overflow:hidden}
+
+  /* rótulo lateral (PeleSide) */
+  .side{position:absolute;right:3px;top:120px;font-size:9px;font-weight:800;letter-spacing:2.2px;color:#B4B0A8;
+    text-transform:uppercase;transform:rotate(90deg);transform-origin:right top;white-space:nowrap}
+
+  .toprow{display:flex;align-items:center;justify-content:space-between}
+  .eyebrowRow{display:flex;align-items:center;gap:7px}
+  .edot{width:7px;height:7px;border-radius:99px;background:var(--yellow)}
+  .eyeb{font-size:9.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);text-transform:uppercase}
+  .x{width:32px;height:32px;border-radius:99px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink)}
+
+  /* HERÓI de poster */
+  .hero{position:relative;min-height:158px;margin-top:2px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0}
+  .gho{position:absolute;right:6px;top:-10px;font-family:var(--disp);font-weight:700;line-height:1;letter-spacing:-2.5px;color:var(--ghost);text-align:right;font-size:118px}
+  .word{font-family:var(--disp);font-weight:700;font-size:44px;line-height:1}
+  .kick{font-size:11px;font-weight:600;color:var(--grey);margin-top:5px}
+  .kick b{color:var(--ink)}
+  .hr{height:1px;background:var(--line);margin:11px 0 0}
+
+  .crew{display:flex;align-items:center;gap:7px;margin-top:10px}
+  .crewPill{background:var(--soft);border-radius:99px;padding:5px 10px;font-size:10px;font-weight:800}
+  .sum{font-size:10px;font-weight:600;color:var(--grey)}
+
+  /* q-cards (ficam como estão hoje) */
+  .qc{border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-top:8px;display:flex;align-items:center;gap:10px;background:var(--paper)}
+  .qc.dep{background:#FFF9E8}
+  .qic{width:28px;height:28px;border-radius:9px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px}
+  .qc.dep .qic{background:#FFEFC2}
+  .qq{flex:1;font-size:11.5px;font-weight:800}
+  .qa{font-family:var(--disp);font-weight:700;font-size:15px}
+  .footNote{font-size:9px;font-weight:600;color:var(--grey);margin-top:auto;padding-top:8px;line-height:1.45}
+  .btns{display:flex;gap:8px;margin-top:8px}
+  .btn{flex:1;border-radius:12px;padding:10px 0;text-align:center;font-size:11.5px;font-weight:800}
+  .btnG{border:1px solid var(--line);color:var(--ink)}
+  .btnP{background:var(--ink);color:#fff}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · Simulação · Living Interface</div>
+  <h1>a simulação em gramática de poster</h1>
+  <p>O resultado deixa de ser um relatório e passa a ser <b>uma pré-visualização do teu dia</b> — a mesma língua
+  do Início: fantasma + palavra condensada + kick. <b>A palavra É o veredicto</b> ("Legal" verde · "Não legal"
+  vermelho); o fantasma é o <b>destino</b> do serviço simulado (como no cartão do voo). Os selos anti-confusão
+  (lição do modo Exemplo: amostra nunca se confunde com real): <b>rótulo lateral "SIMULAÇÃO · E-SE"</b> + eyebrow
+  + × sempre visível + fundo SEMPRE paper (a simulação é ferramenta — nunca herda o noturno).
+  <b>Passe do designer sénior (2.ª ronda):</b> ① o q-card do PSV <b>morre</b> — o herói responde-lhe (um dado,
+  uma casa; a pilha desce para 5); ② o vazio deixa de ser "Sem dados" e vira <b>convite</b> ("E se…" + fantasma "?");
+  ③ não-voo sem rota = fantasma <b>STB/TRN/POS</b> (códigos crew-native); ④ "Concluir" → <b>"Fechar"</b>
+  (nada se conclui numa leitura).</p>
+</div>
+
+<div class="grid">
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">SIMULAÇÃO · E-SE</div>
+      <div class="toprow"><div class="eyebrowRow"><div class="edot"></div><div class="eyeb">Simulação · resultado</div></div><div class="x">✕</div></div>
+      <div class="hero">
+        <div class="gho">FNC</div>
+        <div class="word" style="color:var(--ok)">Legal</div>
+        <div class="kick">PSV <b>9:30 / 13:00</b> · dentro dos limites de 28 d</div>
+      </div>
+      <div class="hr"></div>
+      <div class="crew"><span class="crewPill">Cabine · CM · 12/12</span><span class="sum">LIS-FNC-LIS · 4 set · apres. 05:05</span></div>
+      <div class="qc"><div class="qic">❤️</div><div class="qq">Como fica a fadiga?</div><div class="qa" style="color:var(--ok)">Baixa · 34</div></div>
+      <div class="qc"><div class="qic">📊</div><div class="qq">Quanto falta aos limites? <span style="color:var(--grey);font-weight:600">28 d</span></div></div>
+      <div class="qc dep"><div class="qic">💶</div><div class="qq">Quanto recebes?</div><div class="qa" style="color:var(--ok)">+46,10 €</div></div>
+      <div class="footNote">Simulação · nada é guardado na tua escala. Valores de referência — confirma sempre com a companhia.</div>
+      <div class="btns"><div class="btn btnG">Editar</div><div class="btn btnP">Fechar</div></div>
+    </div></div>
+    <div class="t">① Legal — a palavra verde é o veredicto</div>
+    <div class="d">O fantasma é o destino (FNC, como no cartão do voo); a palavra condensada dá a resposta antes de leres uma linha que seja. O kick resume a razão. O cartão-veredicto de hoje MORRE — e o q-card do PSV TAMBÉM (o herói absorveu os dois).</div>
+    <div class="spec"><b>Fantasma:</b> destino da rota (última IATA) · tamanhos determinísticos por comprimento (regra da casa). <b>Palavra:</b> `PELE.ok`. <b>· Um dado, uma casa:</b> PSV vive no kick; apresentação/setores vivem na linha-resumo; a pilha começa na fadiga (5 cartões máx).</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">SIMULAÇÃO · E-SE</div>
+      <div class="toprow"><div class="eyebrowRow"><div class="edot"></div><div class="eyeb">Simulação · resultado</div></div><div class="x">✕</div></div>
+      <div class="hero">
+        <div class="gho">LGW</div>
+        <div class="word" style="color:var(--red)">Não legal</div>
+        <div class="kick"><b>PSV excede o máximo em 1:05</b> · voo acima de 100 h/28 d</div>
+      </div>
+      <div class="hr"></div>
+      <div class="crew"><span class="crewPill">Cabine · CM · 12/12</span><span class="sum">LIS-LGW-LIS-FAO · 6 set · apres. 04:40</span></div>
+      <div class="qc"><div class="qic">❤️</div><div class="qq">Como fica a fadiga?</div><div class="qa" style="color:var(--red)">Alta · 82</div></div>
+      <div class="qc"><div class="qic">📊</div><div class="qq">Quanto falta aos limites? <span style="color:var(--grey);font-weight:600">28 d</span></div></div>
+      <div class="qc"><div class="qic">🛏</div><div class="qq">Descanso mínimo a seguir?</div><div class="qa">14:05</div></div>
+      <div class="footNote">Simulação · nada é guardado na tua escala. Valores de referência — confirma sempre com a companhia.</div>
+      <div class="btns"><div class="btn btnG">Editar</div><div class="btn btnP">Fechar</div></div>
+    </div></div>
+    <div class="t">② Não legal — vermelho disciplinado</div>
+    <div class="d">O único sítio onde o vermelho manda na página — perigo real, como a lei da pele exige. O kick lidera com o FACTO ("excede em 1:05") e lista as restantes razões.</div>
+    <div class="spec"><b>Palavra:</b> `PELE.red` · kick com a 1.ª razão a NEGRO + restantes; se não couberem, "· +1". <b>· Fantasma continua ghost</b> (nunca vermelho — o alarme é a palavra, não o cenário).</div>
+  </div>
+
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">SIMULAÇÃO · E-SE</div>
+      <div class="toprow"><div class="eyebrowRow"><div class="edot"></div><div class="eyeb">Simulação · resultado</div></div><div class="x">✕</div></div>
+      <div class="hero">
+        <div class="gho">?</div>
+        <div class="word" style="color:var(--grey)">E se…</div>
+        <div class="kick">Preenche a <b>apresentação</b> e as horas — o veredicto aparece aqui</div>
+      </div>
+      <div class="hr"></div>
+      <div class="crew"><span class="crewPill">Cabine · CM · 12/12</span><span class="sum">Serviço · apres. —</span></div>
+      <div class="qc"><div class="qic">📊</div><div class="qq">Quanto falta aos limites? <span style="color:var(--grey);font-weight:600">28 d</span></div></div>
+      <div class="footNote">Simulação · nada é guardado na tua escala. Valores de referência — confirma sempre com a companhia.</div>
+      <div class="btns"><div class="btn btnG">Editar</div><div class="btn btnP">Fechar</div></div>
+    </div></div>
+    <div class="t">③ Vazio = convite, nunca erro</div>
+    <div class="d">Sem apresentação não há veredicto — mas a página não lidera com ausência: "E se…" convida, o fantasma "?" pergunta, o kick aponta o caminho. (Era "Sem dados" — a Apple não abre com um beco.)</div>
+    <div class="spec"><b>Fantasma:</b> rota → destino (IATA) · não-voo sem rota → código crew-native <b>STB/TRN/POS</b> · nada → <b>"?"</b>. <b>Palavra vazia:</b> "E se…" em `PELE.grey` (EN: "What if…"). Editar é o caminho óbvio.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">o contrato (para o código)</div>
+  <p><b>Re-skin do TOPO de `SimulationResult.js` + 2 cortes</b>: morrem o bloco head atual (eyebrow+h1 "Resultado"),
+  o CARTÃO-veredicto <b>e o q-card do PSV</b> (o herói absorve os dois — um dado, uma casa; a pilha fica com 5 máx:
+  fadiga · limites · descanso · € · validades). Nasce o herói de poster — fantasma (rota → destino/última IATA ·
+  não-voo → STB/TRN/POS · nada → "?"; tamanhos determinísticos por comprimento, `lineHeight=fontSize` +
+  `includeFontPadding:false`, NUNCA `adjustsFontSizeToFit`) + palavra condensada (`Legal` ok · `Não legal` red ·
+  `E se…` grey; EN: Legal/Not legal/What if…) + kick com a razão (no red: FACTO primeiro — "excede em 1:05") + hr.
+  <b>· Selos anti-confusão:</b> rótulo lateral "SIMULAÇÃO · E-SE" (PeleSide ou réplica local no Modal) · eyebrow
+  com ponto amarelo · × sempre visível · fundo SEMPRE `PELE.paper` (nunca noturno — é ferramenta). <b>· Botões:</b>
+  Editar fica · <b>"Concluir" → "Fechar"</b> (nada se conclui numa leitura). <b>· VoiceOver:</b> o herói lê-se como
+  UMA frase ("Simulação: legal. PSV nove e trinta de treze horas…"). <b>· Fica intacto:</b> pílula do perfil +
+  linha-resumo (sob o hr) · os restantes q-cards · "Avançado · casos especiais" · rodapé consultivo · TODOS os
+  cálculos (prospectiveDuty/computeDuty/per-diem — re-skin, não reescrita). <b>· Entrada:</b> o Modal slide de hoje;
+  sem animação nova (máx. 1 momento por ecrã). <b>· Verificação:</b> device (3 veredictos via formulário) — sem
+  golden (é render).</p>
+</div>
+</body>
+</html>
