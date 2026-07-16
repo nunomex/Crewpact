@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact — Pílula→Cartão (legenda da Escala · família cheia)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4;
+    --soft:#F4F2ED; --soft2:#FAFAF9; --yellow:#FFB800; --ok:#1E7A46; --okSoft:#E3F0E8;
+    --warn:#B96A00; --redSoft:#F7E3E1;
+    --disp:'Barlow Condensed',sans-serif; --body:'Hanken Grotesk',sans-serif;
+    --ease:cubic-bezier(.215,.61,.355,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--soft);font-family:var(--body);color:var(--ink);padding:34px 30px 60px}
+  .hd{max-width:1560px;margin:0 auto 8px}
+  .hd .eyebrow{font-size:11px;font-weight:800;letter-spacing:2.4px;color:var(--grey);text-transform:uppercase}
+  .hd h1{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1;margin:6px 0 10px;text-transform:lowercase}
+  .hd p{font-size:14px;font-weight:500;color:var(--grey);max-width:920px;line-height:1.55}
+  .hd p b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:30px;max-width:1100px;margin:22px auto 0;align-items:start}
+  .mock .t{font-family:var(--disp);font-weight:700;font-size:20px;margin-top:12px}
+  .mock .d{font-size:12px;font-weight:500;color:var(--grey);line-height:1.5;margin-top:2px}
+  .spec{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:10.5px;font-weight:500;color:var(--grey);line-height:1.6}
+  .spec b{color:var(--ink);font-weight:800}
+  .foot{max-width:1100px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+  .foot .t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .foot p{font-size:12.5px;font-weight:500;color:var(--grey);line-height:1.7;margin-top:6px}
+  .foot b{color:var(--ink)}
+
+  /* banner reduce-motion (lição simulacao-fluxo: o Windows do founder tem RM ligado) */
+  .rmBan{display:none;max-width:1100px;margin:14px auto 0;background:#FFF7E0;border:1px solid #F2D98C;
+    border-radius:14px;padding:12px 16px;font-size:12px;font-weight:600;color:#6b5313;align-items:center;gap:12px}
+  body.rm .rmBan{display:flex}
+  .rmBan button{margin-left:auto;border:0;background:var(--ink);color:#fff;border-radius:999px;
+    padding:8px 16px;font-family:var(--body);font-weight:800;font-size:12px;cursor:pointer}
+
+  .phone{width:100%;max-width:340px;height:620px;background:var(--paper);border:1px solid var(--line);
+    border-radius:38px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(20,22,26,.12);margin:0 auto}
+  .page{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column}
+  .side{position:absolute;right:3px;top:120px;font-size:9px;font-weight:800;letter-spacing:2.2px;color:#B4B0A8;
+    text-transform:uppercase;transform:rotate(90deg);transform-origin:right top;white-space:nowrap}
+  .side b{color:var(--yellow)}
+  .eyeb2{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--grey);text-transform:uppercase}
+  .hero{position:relative;min-height:96px;display:flex;flex-direction:column;justify-content:flex-end}
+  .gho{position:absolute;right:2px;top:-4px;font-family:var(--disp);font-weight:700;font-size:82px;line-height:1;letter-spacing:-2px;color:var(--ghost)}
+  .word{font-family:var(--disp);font-weight:700;font-size:34px;line-height:1}
+  .hr{height:1px;background:var(--line);margin-top:10px}
+
+  /* ── grelha mini (contexto da Escala) ── */
+  .wk{display:flex;gap:4px;margin-top:12px}
+  .wk span{flex:1;text-align:center;font-size:8px;font-weight:800;letter-spacing:.6px;color:#B4B0A8}
+  .cal{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  .gc{width:calc((100% - 24px)/7);aspect-ratio:.92;border:1px solid var(--line);border-radius:9px;padding:4px 5px;position:relative}
+  .gc .n{font-size:9px;font-weight:800}
+  .gc .tag{position:absolute;left:3px;right:3px;bottom:3px;border-radius:4px;font-size:6.5px;font-weight:800;
+    letter-spacing:.4px;text-align:center;padding:2px 0;color:var(--ink)}
+  .gc.off{background:var(--soft2)}
+  .gc.we .n{color:#B4B0A8}
+
+  /* ═══ O MORPH pílula→cartão (contentor lidera .42s; conteúdo assenta +.04s) ═══ */
+  /* 360ms (não 420): a duração escala com a DISTÂNCIA — 420 é do poster grande; estas
+     pílulas viajam menos, 420 aqui lia-se xaroposo. Curva igual, conteúdo +40ms. */
+  .morph{position:relative;border:1px solid var(--line);background:var(--paper);overflow:hidden;cursor:pointer;
+    border-radius:999px;box-shadow:0 6px 22px -12px rgba(20,22,26,.28);
+    transition:width .36s var(--ease),height .36s var(--ease),border-radius .36s var(--ease)}
+  body.rm:not(.force) .morph,body.rm:not(.force) .pc,body.rm:not(.force) .cc{transition:none!important}
+  .pc,.cc{position:absolute;inset:0;transition:opacity .36s var(--ease) .04s}
+  .pc{display:flex;align-items:center;gap:9px;padding:0 14px}
+  .morph.open .pc{opacity:0;pointer-events:none}
+  .cc{opacity:0;pointer-events:none;padding:14px 16px}
+  .morph.open .cc{opacity:1;pointer-events:auto}
+  .morph .chev{margin-left:auto;font-size:11px;color:var(--grey);transition:transform .42s var(--ease)}
+  .ccHead{display:flex;align-items:center;gap:7px}
+  .ccDot{width:7px;height:7px;border-radius:99px;background:var(--yellow)}
+  .ccT{font-size:9.5px;font-weight:800;letter-spacing:1.8px;color:var(--grey);text-transform:uppercase;flex:1}
+  .ccX{width:26px;height:26px;border-radius:999px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink)}
+
+  /* ① legenda */
+  #legMorph{width:168px;height:40px;margin-top:14px}
+  #legMorph.open{width:100%;height:206px;border-radius:18px}
+  .swStack{display:flex}
+  .swStack i{width:14px;height:14px;border-radius:5px;border:2px solid var(--paper);margin-left:-5px}
+  .swStack i:first-child{margin-left:0}
+  .pc .lbl{font-size:10.5px;font-weight:800;letter-spacing:.8px;color:var(--ink);text-transform:uppercase}
+  .legGrp{font-size:7.5px;font-weight:800;letter-spacing:1.4px;color:#B4B0A8;text-transform:uppercase;margin:12px 0 6px}
+  .legRow{display:flex;flex-wrap:wrap;gap:10px 14px}
+  .legIt{display:flex;align-items:center;gap:6px}
+  .legIt i{width:13px;height:13px;border-radius:5px}
+  .legIt span{font-size:9.5px;font-weight:700;color:var(--grey)}
+  .legIt .eur{font-family:var(--disp);font-weight:700;font-size:11px;color:var(--ok)}
+  .legIt .dotW{width:7px;height:7px;border-radius:99px;background:var(--warn)}
+  .legIt .moon{font-size:10px;color:var(--grey)}
+
+  /* ② família */
+  .seclbl{font-size:9px;font-weight:800;letter-spacing:1.6px;color:var(--grey);text-transform:uppercase;margin-top:16px}
+  #famMorph{width:196px;height:48px;margin-top:9px}
+  #famMorph.open{width:100%;height:266px;border-radius:18px}
+  .fav{width:30px;height:30px;border-radius:999px;background:var(--soft);border:2px solid var(--paper);
+    display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:12px;margin-left:-8px}
+  .fav:first-child{margin-left:0}
+  .favRow{display:flex}
+  .pc .plusN{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--grey)}
+  .famGrid{display:flex;flex-wrap:wrap;gap:12px 4px;margin-top:12px}
+  .famP{width:25%;min-width:60px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .famP .fav{width:40px;height:40px;font-size:15px;margin-left:0;border:1px solid var(--line)}
+  .famP span{font-size:9px;font-weight:700;color:var(--ink)}
+  .famAdd .fav{background:var(--paper);border:1px dashed #CFCBC2;color:var(--grey)}
+  .famAdd span{color:var(--grey)}
+  .famHint{font-size:8.5px;font-weight:600;color:#B4B0A8;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="eyebrow">CrewPact · pílula → cartão · o morph do vídeo, na pele</div>
+  <h1>cresce de onde nasce</h1>
+  <p>O padrão do vídeo (avatar-stack que expande num cartão): o segredo é a <b>geometria contínua</b> — o cartão
+  não aparece do nada, <b>nasce da pílula</b> e volta a ela. Dois usos: <b>① a legenda da Escala</b> (12 itens em
+  2 linhas viram uma pílula com as cores sobrepostas — progressive disclosure) e <b>② a família cheia</b> no Perfil
+  (&gt;4 pessoas → stack de iniciais + "+N"). Motion da casa: <b>contentor lidera 420ms</b> (ease-out cúbico, sem
+  bounce) · <b>conteúdo assenta +40ms</b> (cross-fade) · reduce-motion = troca seca. <b>Toca nas pílulas</b> — são vivas.</p>
+</div>
+
+<div class="rmBan">O teu sistema tem "reduzir movimento" ligado — o morph está em modo troca-seca (como na app).
+  <button onclick="document.body.classList.add('force')">▶ Ver a animação</button></div>
+
+<div class="grid">
+
+  <!-- ① Legenda da Escala -->
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">ESCALA · <b>JULHO</b></div>
+      <div class="eyeb2">A tua escala · eCrew</div>
+      <div class="hero"><div class="gho">2026</div><div class="word">Julho ▾</div></div>
+      <div class="hr"></div>
+      <div class="wk"><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span><span>DOM</span></div>
+      <div class="cal">
+        <div class="gc"><div class="n">13</div><div class="tag" style="background:#141414;color:#fff">LGW</div></div>
+        <div class="gc"><div class="n">14</div><div class="tag" style="background:#E4E1D8">SBY</div></div>
+        <div class="gc off"><div class="n">15</div></div>
+        <div class="gc"><div class="n">16</div><div class="tag" style="background:#141414;color:#fff">FNC</div></div>
+        <div class="gc"><div class="n">17</div><div class="tag" style="background:#FBEAD2">FRM</div></div>
+        <div class="gc we"><div class="n">18</div><div class="tag" style="background:#141414;color:#fff">OPO</div></div>
+        <div class="gc we off"><div class="n">19</div></div>
+      </div>
+
+      <!-- A PÍLULA da legenda -->
+      <div class="morph" id="legMorph" onclick="tg('legMorph')">
+        <div class="pc">
+          <div class="swStack">
+            <i style="background:#141414"></i><i style="background:#E4E1D8"></i><i style="background:#EAE4F2"></i>
+            <i style="background:#E4ECFB"></i><i style="background:#EDE6D6"></i><i style="background:#FBEAD2"></i>
+          </div>
+          <span class="lbl">Legenda</span><span class="chev">˅</span>
+        </div>
+        <div class="cc">
+          <div class="ccHead"><div class="ccT">Legenda</div><span class="chev" style="transform:rotate(180deg)">˅</span></div>
+          <div class="legGrp">Serviços</div>
+          <div class="legRow">
+            <div class="legIt"><i style="background:#141414"></i><span>Voo</span></div>
+            <div class="legIt"><i style="background:#E4E1D8"></i><span>Standby</span></div>
+            <div class="legIt"><i style="background:#EAE4F2"></i><span>Reserva</span></div>
+            <div class="legIt"><i style="background:#E4ECFB"></i><span>Posicion.</span></div>
+            <div class="legIt"><i style="background:#EDE6D6"></i><span>Escritório</span></div>
+            <div class="legIt"><i style="background:#FBEAD2"></i><span>Formação</span></div>
+            <div class="legIt"><i style="border:1px solid var(--line);background:#FAFAF9"></i><span>Folga</span></div>
+          </div>
+          <div class="legGrp">Eventos · marcadores</div>
+          <div class="legRow">
+            <div class="legIt"><i style="background:var(--okSoft)"></i><span>Férias</span></div>
+            <div class="legIt"><i style="background:var(--redSoft)"></i><span>Doença</span></div>
+            <div class="legIt"><span class="eur">€</span><span>Extra pago</span></div>
+            <div class="legIt"><span class="moon">🌙</span><span>Pernoita</span></div>
+            <div class="legIt"><span class="dotW"></span><span>Por sincronizar</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="t">① Legenda da Escala — de 2 linhas fixas a 1 pílula</div>
+    <div class="d">As 6 cores dos serviços SOBREPOSTAS na pílula (a chave fica à vista em miniatura) + "LEGENDA ˅".
+    Toque → o cartão nasce da pílula com os 2 grupos completos.</div>
+    <div class="spec"><b>Fechada por defeito, SEMPRE</b> — o batismo "nasce aberta na 1.ª visita" foi CHUMBADO no passe:
+    a legenda vive abaixo da dobra (ninguém veria o teatro) e a pílula com as 6 cores sobrepostas JÁ é a affordance;
+    menos uma flag. <b>Sem ✕ nem ponto amarelo dentro</b>: uma legenda não é área de trabalho — o cartão inteiro fecha
+    ao toque (o rótulo "LEGENDA ˄" espelha a pílula, continuidade do rótulo). Fica no FUNDO do scroll — a expansão só
+    empurra para baixo, zero saltos no meio.</div>
+  </div>
+
+  <!-- ② Família cheia -->
+  <div class="mock">
+    <div class="phone"><div class="page">
+      <div class="side">PERFIL · <b>CONTA</b></div>
+      <div class="eyeb2">O teu perfil</div>
+      <div class="hero"><div class="gho">NS</div><div class="word">Nuno</div></div>
+      <div class="hr"></div>
+      <div class="seclbl">A tua família · chegada ao vivo</div>
+
+      <!-- A PÍLULA da família (>4 pessoas) -->
+      <div class="morph" id="famMorph" onclick="tg('famMorph')">
+        <div class="pc">
+          <div class="favRow">
+            <div class="fav">M</div><div class="fav">P</div><div class="fav">A</div><div class="fav">JC</div>
+          </div>
+          <span class="plusN">+3</span><span class="chev">˅</span>
+        </div>
+        <div class="cc">
+          <div class="ccHead"><div class="ccT" style="color:#B4B0A8">7 pessoas</div><div class="ccX">✕</div></div>
+          <div class="famGrid">
+            <div class="famP"><div class="fav">M</div><span>Mãe</span></div>
+            <div class="famP"><div class="fav">P</div><span>Pai</span></div>
+            <div class="famP"><div class="fav">A</div><span>Ana</span></div>
+            <div class="famP"><div class="fav">JC</div><span>João C.</span></div>
+            <div class="famP"><div class="fav">AV</div><span>Avó</span></div>
+            <div class="famP"><div class="fav">T</div><span>Tia</span></div>
+            <div class="famP"><div class="fav">R</div><span>Rui</span></div>
+            <div class="famP famAdd"><div class="fav">＋</div><span>Adicionar</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="t">② Família cheia — o widget do vídeo, com iniciais</div>
+    <div class="d">Com &gt;4 pessoas, a tira vira stack de INICIAIS (não temos fotos — RGPD e ainda bem) + "+3".
+    Toque → grelha com nomes; tocar numa pessoa abre o pop-up de sempre (partilhar voo / registo / remover).</div>
+    <div class="spec"><b>≤4 pessoas → a tira atual fica intocada</b> (o morph só nasce quando é preciso — "quando
+    está cheio", como pediste). <b>Sem título dentro do cartão</b> (o rótulo "A tua família · chegada ao vivo" fica
+    visível POR CIMA — repeti-lo dentro era eco; fica só a contagem quieta "7 pessoas" + ✕). <b>O hint morreu</b>
+    (tocar numa pessoa é a ação óbvia — o pop-up explica-se sozinho). O "＋ Adicionar" vive DENTRO do cartão
+    expandido. Aqui o ✕ FICA (≠ legenda): os toques interiores fazem coisas — precisa de alvo de fecho explícito.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="t">especificação do morph — a receita da casa</div>
+  <p><b>① Geometria contínua</b> — um SÓ contentor muda de forma (largura+altura+raio, <b>360ms
+  cubic-bezier(.215,.61,.355,1)</b>, sem bounce — 360 e não os 420 do poster: a duração escala com a distância,
+  e estas pílulas viajam menos); pílula e cartão são as duas caras dele, em <b>cross-fade +40ms</b>
+  (o conteúdo assenta depois do contentor — a coreografia do poster Post⇄Story). <b>② No RN:</b>
+  <b>LayoutAnimation.easeInEaseOut</b> (a receita provada do poster; Expo Go, sem worklets novos) — estado
+  <b>expandido</b> troca os filhos, o LayoutAnimation anima a moldura. <b>③ Reduce-motion = troca seca</b>
+  (useReduceMotion, como sempre). <b>④ A11y:</b> pílula = accessibilityRole button + state expanded;
+  VoiceOver anuncia "Legenda, expandida/recolhida". <b>⑤ Haptic</b> select() no toque.
+  <b>⑥ CORTES DO PASSE (2.ª ronda):</b> batismo nasce-aberta CHUMBADO (abaixo da dobra = teatro invisível; a pílula
+  com as cores é a affordance; menos uma flag) · ✕ e ponto amarelo FORA da legenda (fecha ao toque no cartão inteiro;
+  o ✕ fica SÓ na família, onde os toques interiores fazem coisas) · título dentro do cartão da família FORA (o rótulo
+  da secção já está por cima; eco) · hint "toca numa pessoa" FORA (a ação é óbvia).
+  <b>⑦ O que NUNCA entrou:</b> auto-expandir por scroll (o user manda), badge "a falar" do vídeo (não temos
+  presença ao vivo — não se finge), fotos reais (iniciais são a nossa voz e o nosso RGPD).</p>
+</div>
+
+<script>
+  function tg(id){ document.getElementById(id).classList.toggle('open'); }
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) document.body.classList.add('rm');
+  // demo: 2 ciclos e descansa (o toque manda; com RM sem force, nada anima — troca seca ao toque)
+  var shots = 0, manual = false;
+  document.querySelectorAll('.morph').forEach(function(m){ m.addEventListener('click', function(){ manual = true; }); });
+  var loop = setInterval(function(){
+    if (manual || shots >= 4 || (reduce && !document.body.classList.contains('force'))) { if(shots>=4) clearInterval(loop); return; }
+    shots++;
+    var el = document.getElementById(shots % 2 ? 'legMorph' : 'famMorph');
+    el.classList.toggle('open');
+    setTimeout(function(){ if(!manual) el.classList.remove('open'); }, 2100);
+  }, 2600);
+</script>
+</body>
+</html>

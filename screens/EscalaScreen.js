@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, RefreshControl, Linking, ActivityIndicator, Platform, PanResponder, Animated, Dimensions, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import Tip from '../components/Tip';
@@ -26,6 +26,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import GhostButton from '../components/GhostButton';
 import Banner from '../components/Banner';
 import useTabBarSpace from '../hooks/useTabBarSpace';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -61,6 +62,17 @@ export default function EscalaScreen({ navigation, route }) {
   // 2026-07-16). O onLayout fica só a CORRIGIR casos raros (split-screen, rotação).
   const [gridW, setGridW] = useState(() => Dimensions.get('window').width - GUTTER * 2);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);   // seletor de mês (pele "Julho ▾")
+  // Legenda PÍLULA→CARTÃO (mockup design/pilula-morph.html v2): fechada por defeito —
+  // a pílula com as 6 cores sobrepostas É a chave em miniatura; quem quer os nomes, toca.
+  const [legOpen, setLegOpen] = useState(false);
+  const reduceMotion = useReduceMotion();
+  const toggleLegend = () => {
+    select();
+    // Geometria contínua (o cartão nasce da pílula) — a receita do poster, 360ms de casa
+    // p/ morphs pequenos; reduce-motion = troca seca.
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(360, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+    setLegOpen((v) => !v);
+  };
   const [pickYear, setPickYear] = useState(null);
   // (avatar saiu do cabeçalho 2026-07-09 — o Perfil vive só no Início; identidade mora na base)
 
@@ -431,25 +443,50 @@ export default function EscalaScreen({ navigation, route }) {
                   </>
                 ) : null}
               </View>
-              {/* Legenda — descodifica os códigos/pontos da grelha de relance (Nielsen #6) */}
-              {/* Legenda completa — SERVIÇOS (cada tipo o seu tom, a condizer com a etiqueta da célula) */}
-              <View style={s.legend}>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.ink }]} /><Text style={s.legTxt}>{l('Voo', 'Flight')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#E4E1D8' }]} /><Text style={s.legTxt}>Standby</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#EAE4F2' }]} /><Text style={s.legTxt}>{l('Reserva', 'Reserve')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#E4ECFB' }]} /><Text style={s.legTxt}>{l('Posicion.', 'Positioning')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#EDE6D6' }]} /><Text style={s.legTxt}>{l('Escritório', 'Office')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#FBEAD2' }]} /><Text style={s.legTxt}>{l('Formação', 'Training')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, s.legSwBorder]} /><Text style={s.legTxt}>{l('Folga', 'Off')}</Text></View>
-              </View>
-              {/* Legenda completa — EVENTOS / marcadores */}
-              <View style={s.legend2}>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.okSoft }]} /><Text style={s.legTxt2}>{l('Férias', 'Leave')}</Text></View>
-                <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.redSoft }]} /><Text style={s.legTxt2}>{l('Doença', 'Sick')}</Text></View>
-                <View style={s.legIt}><Text style={s.legEur}>€</Text><Text style={s.legTxt2}>{l('Extra pago', 'Paid extra')}</Text></View>
-                <View style={s.legIt}><Icon name="moon" size={12} color={PELE.grey} /><Text style={s.legTxt2}>{l('Pernoita', 'Night stop')}</Text></View>
-                <View style={s.legIt}><View style={[s.legDot, { backgroundColor: PELE.warn }]} /><Text style={s.legTxt2}>{l('Por sincronizar', 'Pending')}</Text></View>
-              </View>
+              {/* Legenda — PÍLULA→CARTÃO (mockup design/pilula-morph.html v2, aprovado
+                  2026-07-16): fechada por defeito (mobília de aprendizagem — sabida, é
+                  ruído); a pílula mostra as 6 cores SOBREPOSTAS (a chave à vista em
+                  miniatura). Aberta, o CARTÃO INTEIRO fecha ao toque (nada lá dentro é
+                  tocável — sem ✕, sem cerimónia). Vive no fundo do scroll: expandir só
+                  empurra para baixo. */}
+              {!legOpen ? (
+                <TouchableOpacity style={s.legPill} onPress={toggleLegend} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityState={{ expanded: false }} accessibilityLabel={l('Legenda da grelha', 'Grid legend')}>
+                  <View style={s.legStack}>
+                    {[PELE.ink, '#E4E1D8', '#EAE4F2', '#E4ECFB', '#EDE6D6', '#FBEAD2'].map((c, i) => (
+                      <View key={c} style={[s.legStackSw, { backgroundColor: c }, i === 0 && { marginLeft: 0 }]} />
+                    ))}
+                  </View>
+                  <Text style={s.legPillTxt} allowFontScaling={false}>{l('LEGENDA', 'LEGEND')}</Text>
+                  <Icon name="chevron" rot={90} size={12} color={PELE.grey} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={s.legCard} onPress={toggleLegend} activeOpacity={0.9}
+                  accessibilityRole="button" accessibilityState={{ expanded: true }} accessibilityLabel={l('Legenda — fechar', 'Legend — close')}>
+                  <View style={s.legCardHead}>
+                    <Text style={s.legPillTxt} allowFontScaling={false}>{l('LEGENDA', 'LEGEND')}</Text>
+                    <Icon name="chevron" rot={-90} size={12} color={PELE.grey} />
+                  </View>
+                  <Text style={s.legGrp} allowFontScaling={false}>{l('SERVIÇOS', 'DUTIES')}</Text>
+                  <View style={s.legend}>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.ink }]} /><Text style={s.legTxt}>{l('Voo', 'Flight')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#E4E1D8' }]} /><Text style={s.legTxt}>Standby</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#EAE4F2' }]} /><Text style={s.legTxt}>{l('Reserva', 'Reserve')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#E4ECFB' }]} /><Text style={s.legTxt}>{l('Posicion.', 'Positioning')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#EDE6D6' }]} /><Text style={s.legTxt}>{l('Escritório', 'Office')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: '#FBEAD2' }]} /><Text style={s.legTxt}>{l('Formação', 'Training')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, s.legSwBorder]} /><Text style={s.legTxt}>{l('Folga', 'Off')}</Text></View>
+                  </View>
+                  <Text style={s.legGrp} allowFontScaling={false}>{l('EVENTOS · MARCADORES', 'EVENTS · MARKERS')}</Text>
+                  <View style={s.legend2}>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.okSoft }]} /><Text style={s.legTxt2}>{l('Férias', 'Leave')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legSw, { backgroundColor: PELE.redSoft }]} /><Text style={s.legTxt2}>{l('Doença', 'Sick')}</Text></View>
+                    <View style={s.legIt}><Text style={s.legEur}>€</Text><Text style={s.legTxt2}>{l('Extra pago', 'Paid extra')}</Text></View>
+                    <View style={s.legIt}><Icon name="moon" size={12} color={PELE.grey} /><Text style={s.legTxt2}>{l('Pernoita', 'Night stop')}</Text></View>
+                    <View style={s.legIt}><View style={[s.legDot, { backgroundColor: PELE.warn }]} /><Text style={s.legTxt2}>{l('Por sincronizar', 'Pending')}</Text></View>
+                  </View>
+                </TouchableOpacity>
+              )}
               {/* Selo/cartão/banners/férias movidos: importar+sincronizar+mudar → botão do header (hub) · alertas → ponto nesse botão · férias → Estatísticas. */}
               <Text style={s.foot}>{t('duties.syncHint', lang)}</Text>
               {/* Exportar movido para a folha do botão de sincronizar (hub). */}
@@ -595,7 +632,14 @@ export default function EscalaScreen({ navigation, route }) {
                       </View>
                     ))}
                     {legs.length > 3 && canExpand ? (
-                      <TouchableOpacity onPress={() => { select(); setSecExpand((v) => !v); }} hitSlop={6} style={s.dsMore} activeOpacity={0.7}>
+                      <TouchableOpacity onPress={() => {
+                        select();
+                        // O mesmo morph da legenda/família (360ms) — o "+N setores" é a
+                        // 3.ª coleção-que-transborda da casa; consistência quase grátis.
+                        if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(360, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+                        setSecExpand((v) => !v);
+                      }} hitSlop={6} style={s.dsMore} activeOpacity={0.7}
+                        accessibilityRole="button" accessibilityState={{ expanded: !collapsed }}>
                         <Text style={s.dsMoreTxt}>{collapsed ? l(`+ ${legs.length - 3} setores`, `+ ${legs.length - 3} sectors`) : l('mostrar menos', 'show less')}</Text>
                         <Icon name="chevron" rot={collapsed ? 90 : 270} size={13} color={PELE.ink} />
                       </TouchableOpacity>
@@ -1012,7 +1056,16 @@ const s = StyleSheet.create({
   foot: { fontSize: 11, color: PELE.grey, lineHeight: 16, marginTop: SPACE.md, paddingHorizontal: 2 },
 
   // Legenda da grelha (uma linha, compacta)
-  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 10, paddingHorizontal: 2 },
+  // Legenda pílula→cartão (mockup pilula-morph v2): stack de cores sobrepostas na pílula;
+  // cartão com hairline e 2 grupos. Rótulo partilhado (continuidade pílula↔cartão).
+  legPill: { flexDirection: 'row', alignItems: 'center', gap: 9, alignSelf: 'flex-start', borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, marginTop: 12, backgroundColor: PELE.paper },
+  legStack: { flexDirection: 'row' },
+  legStackSw: { width: 14, height: 14, borderRadius: 5, borderWidth: 2, borderColor: PELE.paper, marginLeft: -5 },
+  legPillTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.9, color: PELE.ink },
+  legCard: { borderWidth: 1, borderColor: PELE.line, borderRadius: 18, padding: 14, marginTop: 12, backgroundColor: PELE.paper },
+  legCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  legGrp: { fontSize: 8, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, color: PELE.placeholder, marginTop: 12 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 7, paddingHorizontal: 2 },
   legIt: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legSw: { width: 14, height: 14, borderRadius: 4 },
   legSwBorder: { borderWidth: 1.5, borderColor: PELE.line },

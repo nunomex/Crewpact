@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Share, Linking, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -13,7 +13,8 @@ import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import useEnter from '../hooks/useEnter';
 import { t } from '../data/i18n';
-import { success } from '../data/haptics';
+import { select, success } from '../data/haptics';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 import { PELE, PELE_FONT } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
@@ -89,6 +90,16 @@ export default function SettingsScreen({ navigation }) {
   // Família (modelo B) — pessoas (hook) + partilhar UM voo por pessoa (link 24h + imagem, 1 envio) + registo local.
   const { links: famLinks, reload: reloadFamily, create: createFamily, confirmRevoke: revokeFamily } = useFamilyLinks();
   const family = Array.isArray(famLinks) ? famLinks : [];
+  // Família CHEIA (>4) → pílula stack + "+N" que morfa em cartão-grelha (mockup
+  // design/pilula-morph.html v2, aprovado 2026-07-16). ≤4 → a tira atual, intocada.
+  const famFull = family.length > 4;
+  const [famOpen, setFamOpen] = useState(false);
+  const reduceMotion = useReduceMotion();
+  const toggleFam = () => {
+    select();
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(360, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+    setFamOpen((v) => !v);
+  };
   const [famAddOpen, setFamAddOpen] = useState(false);
   const [famLabel, setFamLabel] = useState('');
   const [famBusy, setFamBusy] = useState(false);
@@ -466,20 +477,61 @@ export default function SettingsScreen({ navigation }) {
           </Animated.View>
         ) : null}
 
-        {/* Família — tira de cartões ao vivo (mockup perfil-final), logo sob o herói */}
+        {/* Família — tira de cartões ao vivo (mockup perfil-final), logo sob o herói.
+            CHEIA (>4): pílula de iniciais sobrepostas + "+N" → morfa em cartão-grelha
+            (pilula-morph v2). O ✕ fica AQUI (≠ legenda da Escala): os toques interiores
+            fazem coisas (abrir pessoa) → precisa de alvo de fecho explícito. */}
         <View>
           <Text style={s.seclbl}>{l('A tua família · chegada ao vivo', 'Your family · live arrival')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.famRow}>
-            <TouchableOpacity style={s.fadd} activeOpacity={0.85} onPress={() => { setFamLabel(''); setFamAddOpen(true); }} accessibilityRole="button" accessibilityLabel={l('Adicionar pessoa', 'Add person')}>
-              <Icon name="plus" size={18} color={PELE.ink} />
+          {famFull && !famOpen ? (
+            <TouchableOpacity style={s.famPill} onPress={toggleFam} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityState={{ expanded: false }}
+              accessibilityLabel={`${l('Família', 'Family')} · ${family.length} ${l('pessoas', 'people')}`}>
+              <View style={{ flexDirection: 'row' }}>
+                {family.slice(0, 4).map((lk, i) => (
+                  <View key={lk.id} style={[s.fav, s.favStk, i === 0 && { marginLeft: 0 }]}><Text style={s.favTxt}>{familyInitials(lk.label)}</Text></View>
+                ))}
+              </View>
+              <Text style={s.famPlus} allowFontScaling={false}>+{family.length - 4}</Text>
+              <Icon name="chevron" rot={90} size={12} color={PELE.grey} />
             </TouchableOpacity>
-            {family.map((lk) => (
-              <TouchableOpacity key={lk.id} style={s.fcard} activeOpacity={0.85} onPress={() => setFamView(lk)} accessibilityRole="button" accessibilityLabel={lk.label}>
-                <View style={s.fav}><Text style={s.favTxt}>{familyInitials(lk.label)}</Text></View>
-                <Text style={s.fname} numberOfLines={1}>{lk.label}</Text>
+          ) : famFull ? (
+            <View style={s.famCard}>
+              <View style={s.famCardHead}>
+                <Text style={s.famCount} allowFontScaling={false}>{family.length} {l('pessoas', 'people')}</Text>
+                <TouchableOpacity onPress={toggleFam} hitSlop={8} style={s.famX}
+                  accessibilityRole="button" accessibilityLabel={l('Fechar', 'Close')}>
+                  <Icon name="close" size={12} color={PELE.ink} />
+                </TouchableOpacity>
+              </View>
+              <View style={s.famGrid}>
+                {family.map((lk) => (
+                  <TouchableOpacity key={lk.id} style={s.famP} activeOpacity={0.85} onPress={() => setFamView(lk)}
+                    accessibilityRole="button" accessibilityLabel={lk.label}>
+                    <View style={[s.fav, s.favBig]}><Text style={[s.favTxt, { fontSize: 17 }]}>{familyInitials(lk.label)}</Text></View>
+                    <Text style={s.famPName} numberOfLines={1}>{lk.label}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity style={s.famP} activeOpacity={0.85} onPress={() => { setFamLabel(''); setFamAddOpen(true); }}
+                  accessibilityRole="button" accessibilityLabel={l('Adicionar pessoa', 'Add person')}>
+                  <View style={[s.fav, s.favBig, s.favAdd]}><Icon name="plus" size={16} color={PELE.grey} /></View>
+                  <Text style={[s.famPName, { color: PELE.grey }]} numberOfLines={1}>{l('Adicionar', 'Add')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.famRow}>
+              <TouchableOpacity style={s.fadd} activeOpacity={0.85} onPress={() => { setFamLabel(''); setFamAddOpen(true); }} accessibilityRole="button" accessibilityLabel={l('Adicionar pessoa', 'Add person')}>
+                <Icon name="plus" size={18} color={PELE.ink} />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+              {family.map((lk) => (
+                <TouchableOpacity key={lk.id} style={s.fcard} activeOpacity={0.85} onPress={() => setFamView(lk)} accessibilityRole="button" accessibilityLabel={lk.label}>
+                  <View style={s.fav}><Text style={s.favTxt}>{familyInitials(lk.label)}</Text></View>
+                  <Text style={s.fname} numberOfLines={1}>{lk.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* Perfil — mosaicos de IDENTIDADE de voo (v2 2026-07-11, mockup perfil-v2: UMA
@@ -966,6 +1018,19 @@ const s = StyleSheet.create({
   tVvHot: { color: '#d9c58e' },
   // Família · tira de cartões (mockup perfil-final)
   famRow: { flexDirection: 'row', gap: 9, alignItems: 'stretch', paddingVertical: 2, paddingRight: 4 },
+  // Família CHEIA — pílula→cartão (pilula-morph v2): stack de iniciais + "+N"; grelha com nomes.
+  famPill: { flexDirection: 'row', alignItems: 'center', gap: 9, alignSelf: 'flex-start', borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8, marginTop: 2, backgroundColor: PELE.paper },
+  favStk: { marginLeft: -10, borderWidth: 2, borderColor: PELE.paper },
+  famPlus: { fontFamily: PELE_FONT.display, fontSize: 15, color: PELE.grey },
+  famCard: { borderWidth: 1, borderColor: PELE.line, borderRadius: 18, padding: 14, marginTop: 2, backgroundColor: PELE.paper },
+  famCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  famCount: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.2, textTransform: 'uppercase', color: PELE.placeholder },
+  famX: { width: 26, height: 26, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  famGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
+  famP: { width: '25%', alignItems: 'center', gap: 5, marginTop: 12 },
+  favBig: { width: 44, height: 44, borderRadius: 22 },
+  favAdd: { backgroundColor: PELE.paper, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CBC8BF' },
+  famPName: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, maxWidth: '92%' },
   fadd: { width: 48, minHeight: 66, borderRadius: 14, backgroundColor: PELE.paper, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CBC8BF', alignItems: 'center', justifyContent: 'center' },
   fcard: { width: 62, borderRadius: 14, backgroundColor: '#FBFAF6', borderWidth: 1.5, borderColor: '#DFDCD2', paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center', gap: 6 },
   fav: { width: 34, height: 34, borderRadius: 17, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center' },

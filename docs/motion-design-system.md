@@ -36,6 +36,7 @@ Formalizados do que a app já pratica (exemplos vivos citados). Animação nova 
 | Entrada de conteúdo de ecrã | 820 ms | out(cubic) | `useEnter` |
 | Dados a crescer (barras, count-up) | 700–800 ms (+delay escalonado) | out(cubic) / linear | GrowBar 800 · MonthBar 700 |
 | Loops ambiente | 650–750 ms por perna | inOut(quad) | Skeleton 750 · pulse 650 |
+| **Morph pílula→cartão** (geometria contínua: o cartão nasce da pílula) | **360 ms** pequeno · **420 ms** grande (a duração escala com a DISTÂNCIA) | out(cubic), conteúdo assenta **+40 ms** | legenda da Escala 360 · família cheia 360 · poster Post⇄Story 420 |
 
 **Easing por defeito: `Easing.out(cubic)`** — chegada suave, arranque decidido. `in(cubic)` só em saídas.
 
