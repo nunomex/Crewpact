@@ -39,20 +39,26 @@ _Dashboard: Auth → Email → **desligar "Secure email change"** + colar o temp
 - [ ] "E-mail alterado" → o **cabeçalho/cartão do Perfil mostra o email novo**.
 
 ## 4 · FTL — toggle de alojamento no formulário
-_Escala → toca num dia de voo → **Editar** (ou "+ adicionar serviço")._
+_Escala → toca num dia de voo importado → **toque longo = Editar** (correção de importados). O
+"+ adicionar serviço" MORREU a 2026-07-10 — o calendário é a fonte; não há criação à mão._
 - [ ] No formulário, abre **"Casos especiais (FTL)"** (o disclosure).
 - [ ] No fundo há o toggle **"Alojamento na pausa (split)"** com o selo **220(d)(e)**.
 - [ ] Ligado → mostra a dica ("só conta se houver pausa em terra ≥3h…").
 - [ ] O ponto vermelho no cabeçalho do disclosure acende com o toggle ligado.
 
 ## 5 · Escala / split-duty (relance)
-- [ ] Um dia com **2 serviços** mostra "N×" na grelha; o detalhe empilha os serviços.
-- [ ] Botão **Sincronizar** (se tens calendário ligado) → toast "em dia" / "X mudanças".
-- [ ] Os veredictos de PSV ("estou legal?") aparecem coerentes (sem falsos-ilegais óbvios).
+_Como chegar (o calendário é a fonte): no calendário de teste, hoje, `HSBY` 05:00–09:00 + `EZY7841 LIS-FNC`
+14:00–15:35 — intervalo ≥ 6 h → 2 serviços SEPARADOS (não fundem)._
+- [ ] Um dia com **2 serviços** mostra "N×" na grelha; o detalhe empilha os serviços (standby, depois voo).
+- [x] Botão **Sincronizar** (se tens calendário ligado) → toast "em dia" / "X mudanças". _(✅ device 2026-09-03, API legacy do SDK 57)_
+- [ ] Os veredictos de PSV ("estou legal?") aparecem coerentes (sem falsos-ilegais óbvios). _Variante: voo a chegar 23:30 → dia 05:00–23:30 com o standby a contar da chamada; continua coerente._
 
 ---
 
-## 6 · Cifra-em-repouso — VALIDAR (fazer POR ÚLTIMO, à parte)
+## 6 · Cifra-em-repouso — ~~VALIDAR~~ **FEITO E REPROVADO (2026-07-02)** → `ENCRYPT=false` definitivo
+_A v1 (AES em JS) corrompia emoji e congelava o "Guardar serviço" no Hermes; recuou sem perda. A v2 é
+cifra NATIVA no dev build (`docs/dev-build.md` item 5). A checklist abaixo fica como guião da v2. A
+SESSÃO Supabase, essa, já vive no Keychain por fatias (2026-09-03, `data/supabase.js`)._
 _Isto liga a cifra a sério. Testa com calma; se falhar, recua sem perda._
 1. Em `data/secureStorage.js`, muda `const ENCRYPT = false` → **`true`**. Recarrega a app.
 2. - [ ] **Entrar** → funciona.
