@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
   const scheduledAt = new Date(Date.now() + GRACE_DAYS * 86400 * 1000).toISOString();
   const app_metadata = { ...(userData.user.app_metadata || {}), deletion_scheduled_at: scheduledAt };
   const { error: upErr } = await admin.auth.admin.updateUserById(uid, { app_metadata });
-  if (upErr) return json({ ok: false, error: upErr.message }, 500);
+  if (upErr) return json({ ok: false, error: 'db' }, 500);   // nunca devolver a mensagem interna do GoTrue
 
   return json({ ok: true, scheduledAt });
 });

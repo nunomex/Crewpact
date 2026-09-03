@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
   // Limpa a marca de eliminação (preserva o resto do app_metadata).
   const app_metadata = { ...(userData.user.app_metadata || {}), deletion_scheduled_at: null };
   const { error: upErr } = await admin.auth.admin.updateUserById(uid, { app_metadata });
-  if (upErr) return json({ ok: false, error: upErr.message }, 500);
+  if (upErr) return json({ ok: false, error: 'db' }, 500);   // nunca devolver a mensagem interna do GoTrue
 
   return json({ ok: true });
 });

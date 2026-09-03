@@ -4,7 +4,7 @@
 // no scrim fecha. Tudo JS-driven (useNativeDriver:false) — o arrasto usa setValue, e misturar
 // com native-driver bloqueava o gesto/animação. Suave que chegue para uma folha.
 import React, { useRef, useEffect, useState } from 'react';
-import { Modal, View, TouchableWithoutFeedback, Animated, PanResponder, StyleSheet, Dimensions, Keyboard, Platform } from 'react-native';
+import { Modal, View, Pressable, Animated, PanResponder, StyleSheet, Dimensions, Keyboard, Platform } from 'react-native';
 import { PELE as P } from '../data/constants';
 import useReduceMotion from '../hooks/useReduceMotion';
 
@@ -63,20 +63,34 @@ export default function PeleSheet({ visible, onClose, children }) {
   if (!shown) return null;
   return (
     <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <TouchableWithoutFeedback onPress={() => { if (kbOpen) { Keyboard.dismiss(); } else if (onClose) { onClose(); } }}>
-        <Animated.View style={[s.scrim, { opacity: op }]} />
-      </TouchableWithoutFeedback>
+     <View style={s.root}>
+      {/* SCRIM = filho NORMAL com flex:1, nunca absoluteFill (device 2026-09-03, RN 0.86/Fabric):
+          com top:0+bottom:0 o Yoga resolvia a LARGURA mas a ALTURA ficava 0 → o scrim era
+          invisível ao hit-test e tocar fora não fechava (o escuro que se via era a própria folha
+          do Modal). A altura por flex resolve-se no mesmo passe que a do root. A folha continua
+          absoluta ancorada ao FUNDO (bottom:0 sem top mede bem). O toque vive num Pressable
+          DENTRO do Animated.View (padrão da speed-dial). Teclado aberto → fecha o teclado, não a folha. */}
+      <Animated.View style={[s.scrim, { opacity: op }]}>
+        <Pressable style={s.scrimHit} onPress={() => { if (kbOpen) { Keyboard.dismiss(); } else if (onClose) { onClose(); } }}
+          accessibilityRole="button" accessibilityLabel="Fechar" />
+      </Animated.View>
       <Animated.View style={[s.sheet, { transform: [{ translateY: Animated.add(ty, kb) }] }, reduce && { opacity: op }]}>
         <View style={s.grabArea} {...pan.panHandlers}><View style={s.grab} /></View>
         {children}
       </Animated.View>
+     </View>
     </Modal>
   );
 }
 
 const s = StyleSheet.create({
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,10,8,0.42)' },
+  root: { flex: 1 },
+  scrim: { flex: 1, backgroundColor: 'rgba(10,10,8,0.42)' },   // NÃO absoluteFill — ver comentário no render
+  scrimHit: { flex: 1 },
   sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: P.paper, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 22, paddingTop: 16, paddingBottom: 30 },
-  grabArea: { alignItems: 'center', paddingBottom: 14 },
+  // Zona de arrasto = 44 pt de alto (mínimo Apple), SEM mexer na geometria visível: os paddings
+  // extra são anulados por margens negativas (2026-09-03, device: "só fecha na pega" — a pega
+  // tinha 18 pt de área útil). O traço fica onde estava.
+  grabArea: { alignItems: 'center', paddingTop: 14, marginTop: -14, paddingBottom: 26, marginBottom: -12 },
   grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: P.line },
 });

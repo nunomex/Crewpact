@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { setPendingReset, clearPendingReset } from './pendingReset';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -178,8 +179,10 @@ export const loginWithApple = async (lang = 'pt') => {
 };
 
 // GOOGLE — OAuth web (browser in-app → Google → callback do Supabase → deep link de
-// volta): funciona em Expo Go sem módulo nativo. Os tokens voltam no fragmento do URL;
-// setSession fecha o ciclo. Dashboard: Auth → Providers → Google (client ID/secret do
+// volta): funciona em Expo Go sem módulo nativo. Fluxo PKCE (auditoria 2026-09-03): volta
+// um `code` na query (nunca tokens no fragmento do URL) e só vale com o verifier que o
+// cliente guardou → exchangeCodeForSession fecha o ciclo (flowType 'pkce' em data/supabase.js).
+// Dashboard: Auth → Providers → Google (client ID/secret do
 // Google Cloud) e o redirect da app na lista Auth → URL Configuration → Redirect URLs
 // (Expo Go = exp://... do Metro; dev build = crewpact://**).
 export const loginWithGoogle = async (lang = 'pt') => {
@@ -193,10 +196,8 @@ export const loginWithGoogle = async (lang = 'pt') => {
     const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (res.type !== 'success' || !res.url) return { ok: false, canceled: true };
     const { params, errorCode } = QueryParams.getQueryParams(res.url);
-    if (errorCode || !params.access_token || !params.refresh_token) return { ok: false, error: m('generic', lang) };
-    const { data: sess, error: sErr } = await supabase.auth.setSession({
-      access_token: params.access_token, refresh_token: params.refresh_token,
-    });
+    if (errorCode || !params.code) return { ok: false, error: m('generic', lang) };
+    const { data: sess, error: sErr } = await supabase.auth.exchangeCodeForSession(params.code);
     if (sErr || !sess?.user) return { ok: false, error: sErr ? mapError(sErr, lang) : m('generic', lang) };
     return { ok: true, user: mapUser(sess.user) };
   } catch (e) {
@@ -259,12 +260,13 @@ export const requestPasswordReset = async (email, lang = 'pt') => {
 };
 
 export const verifyResetCode = async (email, token, lang = 'pt') => {
+  await setPendingReset();   // ANTES: a sessão de recuperação que nasce aqui nunca deve ser restaurada sozinha
   const { error } = await supabase.auth.verifyOtp({
     email: email.trim().toLowerCase(),
     token,
     type: 'recovery',
   });
-  if (error) return { ok: false, error: mapError(error, lang) };
+  if (error) { await clearPendingReset(); return { ok: false, error: mapError(error, lang) }; }
   return { ok: true };
 };
 
@@ -279,6 +281,7 @@ export const resetPassword = async (_email, _token, newPw, lang = 'pt') => {
   // After verifyOtp the user is authenticated — updateUser works directly
   const { error } = await supabase.auth.updateUser({ password: newPw });
   if (error) return { ok: false, error: mapError(error, lang) };
+  await clearPendingReset();   // recuperação CONCLUÍDA — o próximo login é com a password nova
   await supabase.auth.signOut();
   return { ok: true };
 };

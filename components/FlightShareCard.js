@@ -1,4 +1,5 @@
 import React, { useRef, useContext, useState, useEffect } from 'react';
+import * as FileSystem from 'expo-file-system/legacy';   // apagar a captura temporária (auditoria 2026-09-03)
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Alert, Share, Platform, Dimensions } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import Icon from './Icon';
@@ -104,8 +105,10 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
       Alert.alert(l('Sem ligação', 'No connection'), l('Não consegui criar o link ao vivo agora — tenta com rede.', 'Could not create the live link — try when online.'));
       return;
     }
+    let tmp = null;   // captura temporária — apagada no fim (auditoria 2026-09-03)
     try {
       const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      tmp = uri;
       const fileUri = uri.startsWith('file') ? uri : `file://${uri}`;
       const caption = l(`O meu voo de hoje — ${dep} → ${arr}. Acompanha a chegada ao vivo:`, `My flight today — ${dep} → ${arr}. Follow the arrival live:`);
       await Share.share(Platform.OS === 'android'
@@ -114,6 +117,7 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
       success();
       onSent && onSent();   // 4) regista na pessoa
     } catch { /* cancelado / captura indisponível */ }
+    if (tmp) { try { await FileSystem.deleteAsync(tmp, { idempotent: true }); } catch { /* a cache limpa-se sozinha */ } }
     // escudo Android: o toque que fecha a folha de partilha não pode aterrar por baixo
     setTimeout(() => setBusy(false), 600);
     onClose && onClose();

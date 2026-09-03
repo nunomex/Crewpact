@@ -96,3 +96,19 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 ## §8 · Ótica do utilizador (o desempate)
 
 Decidir pela **utilidade de relance** — sem ruído, sem duplo-badge, sem erros silenciosos — não pela estética. Menos carga mental (Constituição §2.3): cada mudança **remove/esconde pelo menos um elemento, ou justifica por escrito porque adiciona**.
+
+## Overlays tocáveis (regra técnica, RN 0.86 / Fabric — 2026-09-03)
+
+Um fundo que fecha ao toque (scrim de folha, overlay de diálogo, scrim da speed-dial) **nunca
+usa `StyleSheet.absoluteFill`**: sob a arquitetura nova, dentro de um `Modal`, um filho com
+`top:0 + bottom:0` resolve a largura mas fica com **altura 0** → vê-se (é a folha do Modal por
+baixo) mas não recebe toques. Provado no device com `onLayout` (`width 402, height 0`).
+
+- Folhas e speed-dial: root `flex:1` + scrim como **filho normal `flex:1`**; o painel fica
+  absoluto ancorado **só ao fundo** (`bottom:0` sem `top` mede bem). — `PeleSheet`, `TabBar`.
+- Diálogos centrados: o overlay **é** o `Pressable` e o cartão engole o toque com
+  `onStartShouldSetResponder={() => true}` (os botões/inputs lá dentro ganham primeiro). —
+  `CenterDialog`, `ConfirmDialog`.
+- Diálogos com formulário: corpo em `ScrollView` e cartão `flexShrink:1` — o teclado encolhe,
+  nunca corta.
+- A pega de arrasto tem **44 pt** de área útil (paddings anulados por margens; visual intacto).

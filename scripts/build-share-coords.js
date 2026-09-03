@@ -39,6 +39,10 @@ const body =
   'const COORDS: Record<string, [number, number]> = ' + JSON.stringify(sorted) + ';\n' +
   'export default COORDS;\n';
 
-const dest = path.resolve('supabase/functions/share-day/airports-coords.ts');
-fs.writeFileSync(dest, body);
+// Duas cópias IGUAIS (as Edge Functions não partilham ficheiros entre pastas no deploy):
+// share-day (tempo do destino) e flight-status (modo meteo — coords SÓ do servidor, 2026-09-03).
+let dest;
+for (dest of ['supabase/functions/share-day/airports-coords.ts', 'supabase/functions/flight-status/airports-coords.ts']) {
+  fs.writeFileSync(path.resolve(dest), body);
+}
 console.log('escrito', path.relative(process.cwd(), dest), '·', keys.length, 'aeroportos ·', Math.round(body.length / 1024), 'KB');

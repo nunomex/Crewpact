@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PELE as P, PELE_FONT as F, SHADOW } from '../data/constants';
 
@@ -12,9 +12,10 @@ export default function ConfirmDialog({ visible, onCancel, onConfirm, icon = 'he
   const accentSoft = danger ? P.redSoft : P.soft;
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel} statusBarTranslucent>
-      <View style={s.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onCancel} />
-        <View style={s.card}>
+      {/* Tocar FORA cancela: o overlay É o Pressable e o cartão ENGOLE o toque (ver CenterDialog —
+          o Touchable absoluteFill media altura 0 sob RN 0.86/Fabric; device 2026-09-03). */}
+      <Pressable style={s.overlay} onPress={onCancel} accessibilityRole="button">
+        <View style={s.card} onStartShouldSetResponder={() => true}>
           <View style={[s.iconWrap, { backgroundColor: accentSoft }]}>
             <Ionicons name={icon} size={28} color={accent} />
           </View>
@@ -29,7 +30,7 @@ export default function ConfirmDialog({ visible, onCancel, onConfirm, icon = 'he
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }

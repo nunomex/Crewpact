@@ -174,15 +174,21 @@ export default function SettingsScreen({ navigation }) {
   const [delWord, setDelWord]   = useState('');
   const [delErr, setDelErr]     = useState('');
   const [delBusy, setDelBusy]   = useState(false);
-  const delReady = delWord.trim().toUpperCase() === CONFIRM_WORD;
+  const [delPw, setDelPw]       = useState('');     // prova de posse (auditoria 2026-09-03)
+  const [delShowPw, setDelShowPw] = useState(false);
+  const delReady = delWord.trim().toUpperCase() === CONFIRM_WORD && delPw.length > 0;
   const handleDeleteAccount = async () => {
     if (delBusy) return;
-    if (!delReady) { setDelErr(l(`Escreve ${CONFIRM_WORD} para confirmar.`, `Type ${CONFIRM_WORD} to confirm.`)); return; }
+    if (!delReady) { setDelErr(l(`Escreve ${CONFIRM_WORD} e a tua palavra-passe para confirmar.`, `Type ${CONFIRM_WORD} and your password to confirm.`)); return; }
     setDelBusy(true); setDelErr('');
+    // Re-auth por password: a palavra escrita trava toques acidentais; a password trava quem
+    // NÃO é o dono (telemóvel na mão). A graça de 7 dias continua a ser a rede de segurança.
+    const re = await reauthenticate(user?.email, delPw, lang);
+    if (!re.ok) { setDelBusy(false); setDelErr(re.error); return; }
     const res = await deleteAccount(lang);
     if (!res.ok) { setDelBusy(false); setDelErr(res.error); return; }
     setDelBusy(false);
-    setDelModal(false); setDelWord('');
+    setDelModal(false); setDelWord(''); setDelPw('');
     success();
     // Período de graça: a conta foi AGENDADA (não apagada já) → NÃO purgar o local (a reativação
     // precisa da escala). Mostra a data-limite e desloga. Entrar de novo dentro do prazo = reativar.
@@ -427,6 +433,11 @@ export default function SettingsScreen({ navigation }) {
     const err = validatePassword(newPw, true, lang);
     if (err) { setPwErr(err); return; }
     if (newPw !== confPw) { setPwErr(t('profile.pwMismatch', lang)); return; }
+    // SEGURANÇA (auditoria 2026-09-03): prova de posse ANTES de trocar — sem isto, quem pegasse
+    // no telemóvel desbloqueado trocava a password e trancava o dono fora (e passava depois o
+    // re-auth do "mudar e-mail"). O campo "palavra-passe atual" já existia; agora é LIDO.
+    const re = await reauthenticate(user?.email, curPw, lang);
+    if (!re.ok) { setPwErr(re.error); return; }
     const res = await changePassword(newPw, lang);
     if (!res.ok) { setPwErr(res.error); return; }
     setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
@@ -745,6 +756,15 @@ export default function SettingsScreen({ navigation }) {
             {l('Tens 7 dias para mudar de ideias: entra de novo dentro do prazo e a conta reativa (a escala e os dados ficam). Passados os 7 dias, é eliminada de vez — perfil, escala, FTL e AE. Queres uma cópia? Exporta primeiro.',
                'You have 7 days to change your mind: sign in again within that window and the account reactivates (your roster and data stay). After 7 days it is permanently deleted — profile, roster, FTL and AE. Want a copy? Export first.')}
           </Text>
+          <Text style={s.fieldLabel}>{t('profile.pwCur', lang)}</Text>
+          <View style={[s.pwInputRow, { marginBottom: 12 }]}>
+            <TextInput value={delPw} onChangeText={(v) => { setDelPw(v); setDelErr(''); }} secureTextEntry={!delShowPw}
+              style={s.pwInput} placeholder="••••••••" placeholderTextColor={PELE.grey} autoCapitalize="none" autoCorrect={false} editable={!delBusy} />
+            <TouchableOpacity onPress={() => setDelShowPw((v) => !v)} hitSlop={8} style={s.pwEye}
+              accessibilityLabel={delShowPw ? t('profile.pwHide', lang) : t('profile.pwShow', lang)}>
+              <Icon name="eye" size={19} color={PELE.grey} />
+            </TouchableOpacity>
+          </View>
           <Text style={s.fieldLabel}>{l(`Escreve ${CONFIRM_WORD} para confirmar`, `Type ${CONFIRM_WORD} to confirm`)}</Text>
           <View style={s.pwInputRow}>
             <TextInput value={delWord} onChangeText={(v) => { setDelWord(v); setDelErr(''); }}
@@ -941,7 +961,7 @@ export default function SettingsScreen({ navigation }) {
             <Row icon="lock-closed-outline" label={t('lock.title', lang)} sub={l('Face ID / código do telemóvel', 'Face ID / device passcode')} s={s}
               right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
             <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => { setSecModal(false); setTimeout(() => setPwModal(true), 300); }} s={s} />
-            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')} sub={l('Desativa agora · eliminada em 7 dias', 'Deactivates now · deleted in 7 days')} danger last onPress={() => { setSecModal(false); setTimeout(() => { setDelWord(''); setDelErr(''); setDelModal(true); }, 300); }} s={s} />
+            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')} sub={l('Desativa agora · eliminada em 7 dias', 'Deactivates now · deleted in 7 days')} danger last onPress={() => { setSecModal(false); setTimeout(() => { setDelWord(''); setDelPw(''); setDelShowPw(false); setDelErr(''); setDelModal(true); }, 300); }} s={s} />
           </View>
         </View>
       </CenterDialog>

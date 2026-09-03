@@ -1,4 +1,5 @@
 import React, { useRef, useContext, useState } from 'react';
+import * as FileSystem from 'expo-file-system/legacy';   // apagar a captura temporária (auditoria 2026-09-03)
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -67,6 +68,7 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
   const share = async () => {
     if (busy) return;
     setBusy(true);
+    let tmp = null;   // captura temporária — apagada no fim (auditoria 2026-09-03)
     try {
       // Captura em resolução NATIVA do Instagram (fixa — não o pixel-ratio do ecrã):
       // nitidez igual em qualquer telemóvel, e o IG não re-escala.
@@ -74,11 +76,13 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
         format: 'png', quality: 1, result: 'tmpfile',
         width: 1080, height: fmt === 'post' ? 1350 : 1920,
       });
+      tmp = uri;
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri.startsWith('file') ? uri : `file://${uri}`, { mimeType: 'image/png', dialogTitle: l('O meu ano de voo', 'My year in the air') });
         success();
       }
     } catch { /* cancelado / captura indisponível — sem drama */ }
+    if (tmp) { try { await FileSystem.deleteAsync(tmp, { idempotent: true }); } catch { /* a cache limpa-se sozinha */ } }
     // escudo Android: o toque que fecha a folha de partilha não pode aterrar nos cartões
     setTimeout(() => setBusy(false), 600);
   };

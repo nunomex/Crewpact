@@ -145,6 +145,10 @@ export default function TabBar({ state, navigation }) {
 
       {/* Speed-dial — Modal: overlay garantido por cima da barra-em-layout; back do Android fecha. */}
       <Modal transparent visible={open} animationType="none" statusBarTranslucent onRequestClose={() => closeDial()}>
+       {/* Root flex:1 + scrim como filho NORMAL (2026-09-03, RN 0.86/Fabric): com absoluteFill o
+           scrim media altura 0 → tocar fora das pílulas não fechava. O dial continua absoluto
+           ancorado ao fundo (bottom sem top mede bem). Ver PeleSheet para o mesmo bug. */}
+       <View style={s.dialRoot}>
         <Animated.View style={[s.scrim, { opacity: anim }]}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => closeDial()} accessibilityLabel={l('Fechar', 'Close')} />
         </Animated.View>
@@ -170,6 +174,7 @@ export default function TabBar({ state, navigation }) {
             </View>
           </TouchableOpacity>
         </Animated.View>
+       </View>
       </Modal>
     </>
   );
@@ -187,7 +192,8 @@ const s = StyleSheet.create({
     shadowColor: '#14161A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.22, shadowRadius: 9, elevation: 5 },
   plusNight: { borderWidth: 1, borderColor: 'rgba(244,242,237,0.18)', shadowOpacity: 0 },
 
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20,22,26,0.45)' },
+  dialRoot: { flex: 1 },
+  scrim: { flex: 1, backgroundColor: 'rgba(20,22,26,0.45)' },   // NÃO absoluteFill — altura 0 sob Fabric
   dial: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   pillRow: { marginBottom: 10 },
   // Pílula rotulada (referência do user): disco do ícone + rótulo na MESMA cápsula.

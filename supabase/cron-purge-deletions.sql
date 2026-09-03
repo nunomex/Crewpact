@@ -31,7 +31,12 @@ begin
   )
   select count(*) into n from gone;
   return n;   -- nº de contas apagadas nesta passagem
-end $$;
+end $;
+
+-- SEGURANÇA (auditoria 2026-09-03): funções em `public` ficam expostas por PostgREST em
+-- /rest/v1/rpc/… e, por omissão, EXECUTÁVEIS por anon/authenticated. Sem isto, qualquer pessoa
+-- com a anon key podia forçar a purga (e ler a contagem). Só o cron (postgres, dono) chama.
+revoke execute on function public.purge_scheduled_deletions() from public, anon, authenticated;
 
 -- Agenda diária às 03:00 UTC. Idempotente (remove a agenda antiga primeiro, se existir).
 do $$

@@ -29,6 +29,7 @@ import { TYPE, PELE, PELE_FONT } from './data/constants';
 import { AppContext, isoDay } from './data/appContext';
 import { t } from './data/i18n';
 import { supabase } from './data/supabase';
+import { hasPendingReset, clearPendingReset } from './data/pendingReset';
 import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
@@ -516,7 +517,14 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        let { data: { session } } = await supabase.auth.getSession();
+        // Recuperação de password ABANDONADA (verifyResetCode criou sessão, resetPassword nunca
+        // correu): NUNCA restaurar essa sessão — sai e limpa a marca (auditoria 2026-09-03).
+        if (session?.user && await hasPendingReset()) {
+          await supabase.auth.signOut().catch(() => {});
+          session = null;
+        }
+        await clearPendingReset();
         if (session?.user) {
           let u = session.user;
           // Se a sessão persistida traz marca de eliminação, VALIDA no servidor (o JWT local pode

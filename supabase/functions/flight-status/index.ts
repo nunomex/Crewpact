@@ -13,18 +13,21 @@
 //       (% atrasados ≥15 min, atraso médio dos atrasados, % cancelados — partidas e
 //       chegadas), agregada do /schedules e CACHEADA 12 min na tabela `airport_stats`
 //       (correr supabase/airport-stats.sql antes; sem a tabela degrada — recalcula sempre).
-//   • Meteo (MET Norway, CC-BY): { wx: 'FNC', lat: 32.6979, lon: -16.7745 } → série
-//       horária TRIMADA (48 h: temp/vento/símbolo/precipitação), CACHEADA 45 min na
-//       tabela `wx_cache` (correr supabase/wx-cache.sql). A app manda as coords
-//       (airports.js tem 5400+); o digest/labels são do cliente (puro, golden).
+//   • Meteo (MET Norway, CC-BY): { wx: 'FNC' } → série horária TRIMADA (48 h: temp/vento/
+//       símbolo/precipitação), CACHEADA 45 min na tabela `wx_cache` (correr supabase/wx-cache.sql).
+//       As COORDS resolvem-se AQUI pelo catálogo (airports-coords.ts) — `lat/lon` do corpo são
+//       IGNORADOS (auditoria 2026-09-03: a cache é por IATA e partilhada por todos + páginas da
+//       família → coords do cliente = envenenamento). O digest/labels são do cliente (puro, golden).
 //
 // DEPLOY (Dashboard): Edge Functions → Deploy → nome `flight-status` → cola → Deploy.
 //   Segredo: Edge Functions → Secrets → AIRLABS_KEY = <a tua key>.
 // DEPLOY (CLI): `supabase functions deploy flight-status` + `supabase secrets set AIRLABS_KEY=...`
 //
-// ⚠️ Se já tinhas a versão anterior deployed, FAZ RE-DEPLOY (esta acrescenta o modo `airport`).
+// ⚠️ RE-DEPLOY obrigatório (2026-09-03): coords da meteo no servidor + rate-limit por uid +
+//    validação de ids + purga das linhas efémeras. (A app continua a mandar lat/lon — ignorados.)
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import COORDS from './airports-coords.ts';   // { IATA: [lat, lon] } — cópia gerada por scripts/build-share-coords.js (igual à da share-day)
 
 const AIRLABS = 'https://airlabs.co/api/v9/flight';
 const AIRLABS_SCH = 'https://airlabs.co/api/v9/schedules';
@@ -51,6 +54,31 @@ async function cacheGet(rowKey: string): Promise<any | undefined> {
 // deno-lint-ignore no-explicit-any
 async function cachePut(rowKey: string, val: any): Promise<void> {
   try { await admin().from('flight_live').upsert({ flight: rowKey, computed_at: new Date().toISOString(), data: val }); } catch { /* sem cache */ }
+  // Higiene oportunista (~1 em 50 escritas): as linhas DESTA função (`fs|`, `fsreg|`, `rl|`) são
+  // efémeras (TTL 60 s / 1 min) — sem purga a tabela crescia sem teto. As chaves "VOO|DIA" da
+  // share-day NÃO são tocadas (a memória do "aterrou" tem de sobreviver o dia).
+  if (Math.random() < 0.02) {
+    try {
+      await admin().from('flight_live').delete()
+        .or('flight.like.fs|%,flight.like.fsreg|%,flight.like.rl|%')
+        .lt('computed_at', new Date(Date.now() - 86_400_000).toISOString());
+    } catch { /* best-effort */ }
+  }
+}
+
+// Rate-limit por UTILIZADOR (auditoria 2026-09-03): balde fixo de 1 minuto guardado em
+// `flight_live` (chave `rl|uid|minuto`, sem tabela nova). Falha da BD → deixa passar (o teto é
+// defesa de quota AirLabs, não segurança; nunca bloquear a app por a cache não existir).
+// Card ao vivo + batch + rotação + meteo + aeroporto juntos ficam bem abaixo de 30/min.
+const RATE_PER_MIN = 30;
+async function rateOk(uid: string): Promise<boolean> {
+  const rowKey = `rl|${uid}|${Math.floor(Date.now() / 60_000)}`;
+  try {
+    const { data: c } = await admin().from('flight_live').select('data').eq('flight', rowKey).maybeSingle();
+    const n = Number(c?.data?.n || 0) + 1;
+    await admin().from('flight_live').upsert({ flight: rowKey, computed_at: new Date().toISOString(), data: { n } });
+    return n <= RATE_PER_MIN;
+  } catch { return true; }
 }
 
 const CORS = {
@@ -140,7 +168,7 @@ async function airportStats(key: string, iata: string): Promise<Record<string, a
 }
 
 // Meteo por estação (MET Norway) — série horária TRIMADA a 48 h, cache 45 min em
-// `wx_cache`. Coords vêm da app (arredondadas a 4 casas — pedido do TOS p/ caching).
+// `wx_cache`. Coords vêm do CATÁLOGO do servidor (arredondadas a 4 casas — TOS do met.no p/ caching).
 // deno-lint-ignore no-explicit-any
 async function stationWx(iata: string, lat: number, lon: number): Promise<Record<string, any> | null> {
   const code = String(iata || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
@@ -178,7 +206,7 @@ async function stationWx(iata: string, lat: number, lon: number): Promise<Record
 // Procura UM voo no AirLabs por id (iata/icao). Devolve a forma slim ou null.
 async function lookup(key: string, id: string): Promise<ReturnType<typeof slim> | null> {
   const clean = id.toUpperCase().replace(/\s+/g, '');
-  if (!clean) return null;
+  if (!/^[A-Z0-9]{3,8}$/.test(clean)) return null;   // só idents plausíveis (vai na URL do AirLabs)
   const p = /^[A-Z]{3}\d/.test(clean) ? 'flight_icao' : 'flight_iata';   // 3 letras+dígito = ICAO
   try {
     const r = await fetch(`${AIRLABS}?${p}=${encodeURIComponent(clean)}&api_key=${key}`);
@@ -191,7 +219,7 @@ async function lookup(key: string, id: string): Promise<ReturnType<typeof slim> 
 // lookup + CACHE curto (60 s) — cobre os modos single e batch e o 2.º passo do reg.
 async function lookupCached(key: string, id: string): Promise<ReturnType<typeof slim> | null> {
   const clean = String(id || '').toUpperCase().replace(/\s+/g, '');
-  if (!clean) return null;
+  if (!/^[A-Z0-9]{3,8}$/.test(clean)) return null;   // idem — nunca cachear lixo sem teto de tamanho
   const rowKey = `fs|${clean}`;
   const hit = await cacheGet(rowKey);
   if (hit !== undefined) return hit;   // slim OU null cacheado
@@ -223,6 +251,9 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { /* corpo vazio */ }
 
+  // ── Rate-limit por utilizador (a share-day já tinha 10/min; esta não tinha nada) ──
+  if (!(await rateOk(uData.user.id))) return json({ ok: false, error: 'rate' }, 429);
+
   // ── Modo BATCH (auto-fill): { flights: [...] } → array de resultados (mesma ordem) ──
   if (Array.isArray(body.flights)) {
     const ids = body.flights.slice(0, 8).map((x: unknown) => String(x || '')).filter(Boolean);  // teto 8 legs
@@ -233,7 +264,11 @@ Deno.serve(async (req: Request) => {
 
   // ── Modo METEO (MET Norway): { wx, lat, lon } → série 48 h (não usa a AIRLABS_KEY) ──
   if (body.wx) {
-    const s = await stationWx(String(body.wx), Number(body.lat), Number(body.lon));
+    // Coords SÓ do catálogo do servidor (nunca do corpo — ver cabeçalho). Código desconhecido → found:false.
+    const code = String(body.wx).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    const co = (COORDS as Record<string, [number, number]>)[code];
+    if (!co) return json({ ok: true, found: false });
+    const s = await stationWx(code, co[0], co[1]);
     return json(s ? { ok: true, found: true, wx: s } : { ok: true, found: false });
   }
 
@@ -245,8 +280,8 @@ Deno.serve(async (req: Request) => {
 
   // ── Modo INBOUND (rotação): { reg } → onde anda o avião AGORA ──
   if (body.reg) {
-    const reg = String(body.reg).toUpperCase().replace(/[^A-Z0-9-]/g, '');
-    if (!reg) return json({ ok: false, error: 'no_reg' }, 400);
+    const reg = String(body.reg).toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 10);
+    if (!/^[A-Z0-9-]{3,10}$/.test(reg)) return json({ ok: false, error: 'no_reg' }, 400);
     const rowKey = `fsreg|${reg}`;
     const hit = await cacheGet(rowKey);   // cacheia a resolução reg→voo (slim OU null)
     if (hit !== undefined) return json(hit ? { ok: true, found: true, ...hit } : { ok: true, found: false });

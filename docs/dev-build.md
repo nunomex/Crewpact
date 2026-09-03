@@ -68,6 +68,8 @@
    Social entra pelo gate `onboarded` → funil de 6 perguntas.
    - **Regra App Store:** oferecendo Google, o "Sign in with Apple" é OBRIGATÓRIO no
      iOS — já respeitada (os dois vêm juntos).
+   - **PKCE já no código (auditoria 2026-09-03):** `flowType:'pkce'` em `data/supabase.js` (+ `data/cryptoShim.js` p/ S256 via expo-crypto) e
+     `exchangeCodeForSession(code)` em `loginWithGoogle` — o callback traz `?code=`, nunca tokens.
    - **Para LIGAR (no dia do build):** 1) `SOCIAL_ENABLED = true` no LoginScreen;
      2) Supabase → Providers → Apple (Client IDs = bundle ID; p/ testar em Expo Go
      seria `host.exp.Exponent`) e Google (Client ID/Secret do Google Cloud, redirect

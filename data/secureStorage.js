@@ -32,9 +32,9 @@
 //    NÃO escreve (não clobbera o enc1: nem vaza claro) — degrada em segurança, nunca brica.
 //  • REGRA DE OURO: getItem NUNCA lança → null em qualquer falha (o call site trata como
 //    "primeira execução" e recarrega do servidor). Valor legado sem 'enc1:' → devolvido tal e qual.
-//  • v1 = SÓ os blobs da app. A SESSÃO Supabase (data/supabase.js) NÃO passa por aqui —
-//    adiada para v1.1 (falha do adaptador de sessão = logout forçado / brick, e corre num
-//    autoRefresh em background fora de try/catch → só depois de provado no device).
+//  • v1 = SÓ os blobs da app. A SESSÃO Supabase NÃO passa por aqui — tem o seu próprio
+//    adaptador em data/supabase.js (2026-09-03): SecureStore por FATIAS com rede AsyncStorage
+//    (nunca brick: falha do Keychain = comportamento antigo). A validar no device.
 // ════════════════════════════════════════════════════════════════════════════
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
