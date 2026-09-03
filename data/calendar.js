@@ -3,7 +3,7 @@
 // ./calendarParse (PURO, testável por golden). Só de leitura — nunca escreve/apaga eventos.
 //
 // Heurísticas pensadas para escalas easyJet e TAP — ver ./calendarParse.
-import * as Calendar from 'expo-calendar';
+import * as Calendar from 'expo-calendar/legacy'; // SDK 57: API antiga (getEventsAsync etc.) vive em /legacy; a nova é orientada a objetos
 import { codesFor } from './rosterCodes';
 import { classify, mapFlight, mapNonFlight, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent, sickDatesFromEvent } from './calendarParse';
 
