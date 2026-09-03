@@ -269,6 +269,16 @@ export default function DutyDetailScreen({ route, navigation }) {
         ) : null}
 
 
+        {/* Sem hora de report → o motor devolve null e a secção FTL desaparecia em SILÊNCIO
+            (device 2026-09-03). Honestidade: dizer que o PSV não foi calculado e como corrigir. */}
+        {(!d && !duty.report_time && (duty.kind || 'flight') === 'flight') ? (
+          <>
+            <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
+            <Panel rows={[
+              { k: l('PSV', 'FDP'), v: l('não calculado — sem hora de report no calendário · Editar para corrigir', 'not calculated — no report time in the calendar · Edit to fix'), color: PELE.warn },
+            ]} />
+          </>
+        ) : null}
         {d ? (
           <>
             <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>

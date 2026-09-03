@@ -135,7 +135,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
           {/* HERÓI de poster — a palavra É o veredicto; lê-se como UMA frase no VoiceOver. */}
           <View style={s.hero} accessible accessibilityRole="header"
             accessibilityLabel={`${l('Simulação', 'Simulation')}: ${wordTxt}. ${kickPlain}`}>
-            <Text style={[s.gho, { fontSize: ghostFs, lineHeight: ghostFs }]} allowFontScaling={false} numberOfLines={1}>{ghostTxt}</Text>
+            <Text style={[s.gho, { fontSize: ghostFs, lineHeight: ghostFs }]} pointerEvents="none" allowFontScaling={false} numberOfLines={1}>{ghostTxt}</Text>
             <Text style={[s.word, { color: wordColor }]} allowFontScaling={false} numberOfLines={1}>{wordTxt}</Text>
             <Text style={s.kick} numberOfLines={2}>
               {verdict === 'bad' ? (<>

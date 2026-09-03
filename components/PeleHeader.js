@@ -64,7 +64,7 @@ export default function PeleHeader({
         <>
           {eyebrow && !eybUp ? <Text style={s.eyb} numberOfLines={1}>{eyebrow}</Text> : null}
           <View style={[s.hero, { minHeight: Z.heroMinH }]}>
-            {ghost != null ? <Text style={[s.ghost, { fontSize: Z.ghostSize, lineHeight: Z.ghostLH, top: Z.ghostTop }]} numberOfLines={1} allowFontScaling={false}>{ghost}</Text> : null}
+            {ghost != null ? <Text style={[s.ghost, { fontSize: Z.ghostSize, lineHeight: Z.ghostLH, top: Z.ghostTop }]} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{ghost}</Text> : null}
             <View style={s.mrow}>
               {typeof word === 'string' ? <Text style={[s.word, { fontSize: Z.wordSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} allowFontScaling={false}>{word}</Text> : word}
               {wordTrailing}

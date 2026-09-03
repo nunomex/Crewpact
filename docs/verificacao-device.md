@@ -48,7 +48,10 @@ _Escala → toca num dia de voo importado → **toque longo = Editar** (correç�
 
 ## 5 · Escala / split-duty (relance)
 _Como chegar (o calendário é a fonte): no calendário de teste, hoje, `HSBY` 05:00–09:00 + `EZY7841 LIS-FNC`
-14:00–15:35 — intervalo ≥ 6 h → 2 serviços SEPARADOS (não fundem)._
+14:00–15:35 — intervalo ≥ 6 h → 2 serviços SEPARADOS (não fundem). ⚠️ Ao criar o evento, confirma o
+campo **Calendário = CrewPact Teste**: o iPhone grava no calendário PREDEFINIDO, e a app só lê o ligado
+(armadilha real, 2026-09-03). Se "não deteta", é quase sempre isto — o diagnóstico "Ver o que está no meu
+calendário" mostra o que a app recebe._
 - [ ] Um dia com **2 serviços** mostra "N×" na grelha; o detalhe empilha os serviços (standby, depois voo).
 - [x] Botão **Sincronizar** (se tens calendário ligado) → toast "em dia" / "X mudanças". _(✅ device 2026-09-03, API legacy do SDK 57)_
 - [ ] Os veredictos de PSV ("estou legal?") aparecem coerentes (sem falsos-ilegais óbvios). _Variante: voo a chegar 23:30 → dia 05:00–23:30 com o standby a contar da chamada; continua coerente._

@@ -920,7 +920,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : l('Novo serviço', 'New service')}</Text>
               <View style={s.hero}>
-                <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{String(DUTY_KINDS.length).padStart(2, '0')}</Text>
+                <Text style={s.ghost} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{String(DUTY_KINDS.length).padStart(2, '0')}</Text>
                 <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{l('Serviços', 'Services')}</Text>
                 <Text style={s.kick}>{DUTY_KINDS.length} {l('tipos · escolhe um', 'types · pick one')}</Text>
               </View>
@@ -950,7 +950,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={s.eyb}>{simulate ? l('Simulação de serviço', 'Service simulation') : isEdit ? l('Editar serviço', 'Edit service') : l('Novo serviço', 'New service')}</Text>
               <View style={s.hero}>
-                <Text style={s.ghost} numberOfLines={1} allowFontScaling={false}>{dayNum}</Text>
+                <Text style={s.ghost} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{dayNum}</Text>
                 <Text style={s.word} numberOfLines={1} allowFontScaling={false}>{kindLabel}</Text>
                 <Text style={s.kick}>{fmtDate(form.date)} · {steps.length} {l('passos', 'steps')}</Text>
               </View>

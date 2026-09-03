@@ -153,7 +153,7 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
                 "F…" com reticências gigantes. Um fantasma nunca pode ter reticências; o que
                 transborda à esquerda é cortado pelo overflow do cartão. */}
             <Text style={[s.ghost, { fontSize: ghostFs, lineHeight: ghostFs, width: CW * 2, textAlign: 'right', right: -Math.round(CW * 0.04), top: -Math.round(CW * 0.055), letterSpacing: -Math.round(ghostFs * 0.035), color: TH.ghost }]}
-              allowFontScaling={false}>{arr || ''}</Text>
+              pointerEvents="none" allowFontScaling={false}>{arr || ''}</Text>
             <View>
               <View style={s.cTop}>
                 <View style={s.brandRow}><View style={s.cDot} /><Text style={[s.cBrand, { color: TH.ink }]} allowFontScaling={false}>CrewPact</Text></View>

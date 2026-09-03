@@ -13,7 +13,8 @@ que o eCrew escreveria — cada um testa um ramo do parser:
 
 | Evento (título) | Horas | Deve virar |
 |---|---|---|
-| `EZY7841 LIS-FNC` | 06:40–08:15 | voo (1 setor) |
+| `EZY7841 LIS-FNC` | 06:40–08:15 | voo (1 setor) — **SEM report → SEM PSV** (o parser nunca inventa dep−1h; o Início diz "Partida às…" + "sem hora de report — PSV não calculado") |
+| idem + notas `RP 05:40` (ou `REPORT`/`C/I`/`CHECK-IN` hh:mm) | 06:40–08:15 | voo COM report → PSV máx/realizado no Início e no Detalhe, § Prova |
 | `EZY7842 FNC-LIS` | 09:00–10:35 | funde com o anterior (2 setores, gap < 6h) |
 | `EJU7625 LIS-OPO` + `EJU7626 OPO-LIS` no dia seguinte 23:50→00:55 | red-eye | serviço a cruzar a meia-noite |
 | `HSBY` | 06:00–14:00 | standby casa |

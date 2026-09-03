@@ -112,3 +112,6 @@ baixo) mas não recebe toques. Provado no device com `onLayout` (`width 402, hei
 - Diálogos com formulário: corpo em `ScrollView` e cartão `flexShrink:1` — o teclado encolhe,
   nunca corta.
 - A pega de arrasto tem **44 pt** de área útil (paddings anulados por margens; visual intacto).
+- **Fantasmas e texto decorativo absoluto: sempre `pointerEvents="none"`.** O fantasma do PeleHeader
+  (`top:-29`) sobrepõe a fila das ações; sob Fabric o hit-test nativo entrega o toque ao Text e o
+  botão irmão (↻ da Escala) morre. Nunca deixar um Text absoluto "apanhar" toques que não são dele.

@@ -936,8 +936,13 @@ export default function HomeScreen({ navigation }) {
       if (inDuty) return { ghost: (activeSector && activeSector.leg.on) || flight.arrTime || '—', word: l('Em voo', 'Airborne'), arrow: 'arrow-u',
         kick: activeSector ? [`${l('setor', 'sector')} ${activeSector.idx + 1}/${activeSector.total} · `, { y: `${activeSector.leg.dep || '?'}→${activeSector.leg.arr || '?'}` }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`]
           : [{ y: routeShort }, ` · ${l('termina', 'ends')} ~${flight.arrTime || '—'}`] };
-      return { ghost: cdGhost || flight.report || '—', word: 'Report', arrow: 'arrow-u',
-        kick: [l('às ', 'at '), { y: `${flight.report || '—'}${ndReportZ ? ` · ${ndReportZ}Z` : ''}` },
+      // Sem hora de report (evento do calendário sem RP/C-I): a palavra é PARTIDA e a hora é a
+      // da partida — nunca "Report · às —" com o countdown à partida disfarçado de report
+      // (device 2026-09-03; decisão do user: honesto, sem inventar dep−1h). O aviso do PSV
+      // não calculado vive na linha HOJE.
+      const hasRep = !!flight.report;
+      return { ghost: cdGhost || flight.report || flight.depTime || '—', word: hasRep ? 'Report' : l('Partida', 'Departure'), arrow: 'arrow-u',
+        kick: [l('às ', 'at '), { y: hasRep ? `${flight.report}${ndReportZ ? ` · ${ndReportZ}Z` : ''}` : `${flight.depTime || '—'}${flight.depTimeZ ? ` · ${flight.depTimeZ}Z` : ''}` },
           planeOk ? ` · ${l('avião', 'aircraft')} ✓` : null, aptOk ? ` · ${l('aeroporto', 'airport')} ✓` : null,
           (!flightStatus && ndSectors) ? ` · ${ndSectors} ${l('setores', 'sectors')}` : null] };
     }
@@ -1100,6 +1105,12 @@ export default function HomeScreen({ navigation }) {
       ? `PSV ${l('projetado', 'projected')} ${liveVerdict.realStr} / ${l('máx', 'max')} ${liveVerdict.maxStr} · ${liveVerdict.verdict === 'over' ? l('ACIMA da lei', 'OVER the limit') : liveVerdict.verdict === 'discretion' ? l('discrição 205(f) pronta', 'commander’s discretion (205f) ready') : l('dentro do limite', 'within the limit')}`
       : l('Confirma o impacto no PSV e no descanso.', 'Check the impact on your FDP and rest.');
     if (homeState === 'hoje') return [
+      // Sem report → sem FDP → sem PSV (o motor devolve null; o parser NUNCA inventa dep−1h).
+      // Dizê-lo em vez de calar (device 2026-09-03: a célula PSV desaparecia em silêncio).
+      (flight && flight.kind === 'flight' && !flight.report) ? l('sem hora de report — PSV não calculado · toque longo no dia para corrigir', 'no report time — FDP not calculated · long-press the day to fix') : null,
+      // 2.º+ serviço do MESMO dia (a lei conta por serviço): o Início nunca o lia (device 2026-09-03:
+      // "sem mais nada a assinalar" com um standby às 22:00). Vem do `extra` da duty guardada.
+      ...((duties[todayISO] && Array.isArray(duties[todayISO].extra)) ? duties[todayISO].extra.map((x, i) => `${i + 2}.º ${l('serviço', 'duty')}: ${t('duties.kind.' + (x.kind || 'flight'), lang).toLowerCase()} ${x.report_time || x.block_off || ''}`.trim()) : []),
       flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg ? `${l('avião', 'aircraft')} ${flightStatus.aircraft.reg}` : null,
       (inDuty && psvRunning) ? `PSV ${psvRunning}${ndPsvMax ? ` / ${l('máx', 'max')} ${ndPsvMax}` : ''}` : ndPsvMax ? `PSV ${l('máx', 'max')} ${ndPsvMax}` : null,
       ndSectors ? `${l('aclimatizado', 'acclimatised')}, ${ndSectors} ${l('setores', 'sectors')}` : null,
@@ -1191,7 +1202,9 @@ export default function HomeScreen({ navigation }) {
         ? { v: closeD.fdp.actualFdpStr, s: `PSV · ${l('máx', 'max')} ${closeD.fdp.maxFdpStr || '—'}` }
         : { v: '✓', s: l('dia fechado', 'day closed') };
     if (homeState === 'disrupcao') { const sch = hm(flightStatus && flightStatus.dep && flightStatus.dep.scheduled); const est = hm(flightStatus && flightStatus.dep && (flightStatus.dep.estimated || flightStatus.dep.actual)); return { old: sch, v: est ? `~${est}` : (sch || '—'), s: l('nova partida', 'new departure') }; }
-    if (homeState === 'hoje') return inDuty ? { v: flight.arrTime || ndArr || '—', s: l('termina ~', 'ends ~') } : { v: flight.report || '—', s: `report${ndReportZ ? ` · ${ndReportZ}Z` : ''}` };
+    if (homeState === 'hoje') return inDuty ? { v: flight.arrTime || ndArr || '—', s: l('termina ~', 'ends ~') }
+      : flight.report ? { v: flight.report, s: `report${ndReportZ ? ` · ${ndReportZ}Z` : ''}` }
+      : { v: flight.depTime || '—', s: `${l('partida', 'departure')}${flight.depTimeZ ? ` · ${flight.depTimeZ}Z` : ''}` };   // sem report: o chip diz a PARTIDA, não "report —"
     if (!flight || cdMin == null) return { v: '—', s: l('sem próximo serviço', 'no next duty') };
     const v = cdMin >= 2880 ? `${Math.round(cdMin / 1440)} ${l('DIAS', 'DAYS')}` : cdMin >= 60 ? `${Math.floor(cdMin / 60)} H` : `${cdMin} MIN`;
     return { v, s: reportMs != null ? l('até ao report', 'to report') : l('até à partida', 'to departure') };
@@ -1363,7 +1376,7 @@ export default function HomeScreen({ navigation }) {
                 ? <View style={s.ghostIcon}><Icon name={hero.icon} size={150} color={PELE.ghost} /></View>
                 : /* SEM adjustsFontSizeToFit: no iOS um Text auto-encolhível pode ficar INVISÍVEL
                      num re-render de irmãos (ex.: a meteo a chegar) — tamanho por comprimento. */
-                <Text style={[s.ghost, ghostSize]} numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
+                <Text style={[s.ghost, ghostSize]} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
               {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde
                   dormes). Na FOLGA o expoente é o carimbo completo do dia: ícone + min–máx
                   por baixo (o kick morreu — sem "hoje" escrito, o fantasma É hoje). */}

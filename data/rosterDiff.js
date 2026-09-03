@@ -39,10 +39,13 @@ const servicesOf = (d) => {
   return arr
     .map((s, i) => ({ s, i }))
     .sort((a, b) => {
-      const ra = val(a.s, 'report_time'), rb = val(b.s, 'report_time');
-      if (ra !== rb) return ra == null ? 1 : rb == null ? -1 : (ra < rb ? -1 : 1);
-      const oa = val(a.s, 'block_off'), ob = val(b.s, 'block_off');
-      if (oa !== ob) return oa == null ? 1 : ob == null ? -1 : (oa < ob ? -1 : 1);
+      // Chave = report OU, sem report, o off-block (2026-09-03): um voo do calendário sem report
+      // (report=null) caía para o FIM e um standby das 22:00 passava-lhe à frente → o diff
+      // comparava voo↔standby posição-a-posição ("Tipo voo→standby, Rota LIS-FNC→—…") em vez
+      // de "serviço a mais". A contagem já estava certa; a leitura do "Rever" não.
+      const key = (s) => val(s, 'report_time') ?? val(s, 'block_off');
+      const ka = key(a.s), kb = key(b.s);
+      if (ka !== kb) return ka == null ? 1 : kb == null ? -1 : (ka < kb ? -1 : 1);
       return a.i - b.i;   // desempate estável
     })
     .map((x) => x.s);

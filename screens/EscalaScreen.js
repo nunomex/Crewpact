@@ -648,7 +648,8 @@ export default function EscalaScreen({ navigation, route }) {
                 ) : null}
 
                 <View style={s.dsMeta}>
-                  {d.report_time ? <View style={s.dsMi}><Text style={s.dsMiLbl}>{l('Apresentação', 'Report')}</Text><Text style={s.dsMiVal}>{d.report_time}</Text></View> : null}
+                  {/* "Report" = a palavra da casa (Início, Detalhe); "APRESENTAÇÃO" partia em 2 linhas na coluna (device 2026-09-03). */}
+                  {d.report_time ? <View style={s.dsMi}><Text style={s.dsMiLbl} numberOfLines={1}>{l('Report', 'Report')}</Text><Text style={s.dsMiVal}>{d.report_time}</Text></View> : null}
                   {d.flight_minutes ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Block hours</Text><Text style={s.dsMiVal}>{minToHhmm(d.flight_minutes)}</Text></View> : null}
                   {dutyMin != null ? <View style={s.dsMi}><Text style={s.dsMiLbl}>Duty hours</Text><Text style={s.dsMiVal}>{minToHhmm(dutyMin)}{endsNext ? ' ⁺¹' : ''}</Text></View> : null}
                 </View>
@@ -671,9 +672,14 @@ export default function EscalaScreen({ navigation, route }) {
                     <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => { setDutyAppend(false); setDutyEditExtra(idx - 1); setDutyDate(iso); }); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
                       <Icon name="edit" size={14} color={PELE.ink} /><Text style={s.dsSvcActTxt}>{l('Editar', 'Edit')}</Text>
                     </TouchableOpacity>
+                    {/* Apagar SÓ manuais (doutrina 2026-07-10: o calendário é a fonte; um serviço importado
+                        apaga-se no calendário e a sincronização propõe o cancelamento). Device 2026-09-03:
+                        o "Apagar" aparecia num standby vindo do calendário. */}
+                    {(dayDuty && dayDuty.source === 'manual') ? (
                     <TouchableOpacity onPress={() => { const iso = dayIso, ix = idx - 1; Alert.alert(l('Apagar serviço', 'Delete service'), l('Apagar este serviço do dia? Os outros mantêm-se.', 'Delete this service? The others stay.'), [{ text: l('Cancelar', 'Cancel'), style: 'cancel' }, { text: l('Apagar', 'Delete'), style: 'destructive', onPress: () => removeDutyService(iso, ix) }]); }} hitSlop={6} style={s.dsSvcAct} activeOpacity={0.7}>
                       <Icon name="trash" size={14} color={PELE.red} /><Text style={[s.dsSvcActTxt, { color: PELE.red }]}>{l('Apagar', 'Delete')}</Text>
                     </TouchableOpacity>
+                    ) : null}
                   </View>
                 ) : null}
               </View>
