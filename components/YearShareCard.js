@@ -1,6 +1,6 @@
 import React, { useRef, useContext, useState } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';   // apagar a captura temporária (auditoria 2026-09-03)
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Dimensions, LayoutAnimation, Platform, UIManager, PixelRatio } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import Icon from './Icon';
@@ -72,9 +72,14 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
     try {
       // Captura em resolução NATIVA do Instagram (fixa — não o pixel-ratio do ecrã):
       // nitidez igual em qualquer telemóvel, e o IG não re-escala.
+      // view-shot 5 (device 2026-09-03): no iOS `width/height` são PONTOS renderizados à escala
+      // do ecrã (UIGraphicsImageRenderer, scale=0) → 1080 pedia 3240 px num iPhone 3×; no Android
+      // são PÍXEIS diretos (Bitmap.createScaledBitmap). Divide-se pelo pixel ratio SÓ no iOS para
+      // os píxeis finais serem exatamente 1080 × 1350/1920 nas duas plataformas.
+      const pr = Platform.OS === 'ios' ? (PixelRatio.get() || 1) : 1;
       const uri = await captureRef(shotRef, {
         format: 'png', quality: 1, result: 'tmpfile',
-        width: 1080, height: fmt === 'post' ? 1350 : 1920,
+        width: 1080 / pr, height: (fmt === 'post' ? 1350 : 1920) / pr,
       });
       tmp = uri;
       if (await Sharing.isAvailableAsync()) {
@@ -139,7 +144,7 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
             <View style={[s.yband, { right: px(26, k), width: px(30, k) }]} />
             {/* o avião ink a subir na banda */}
             <View style={{ position: 'absolute', left: bandCX - px(10, k), top: M.planeTop, zIndex: 3 }}>
-              <Icon name="plane" rot={-90} size={px(19, k)} color={P.ink} />
+              <Icon name="plane" size={px(19, k)} color={P.ink} />   {/* nariz para CIMA, na vertical da banda (user 2026-09-03; base do glifo = nariz-cima) */}
             </View>
             {/* o TÍTULO gravado na banda: segmento ink + "O MEU ANO" rodado (lê de cima p/ baixo) */}
             <View style={{ position: 'absolute', left: bandCX - 1.5, top: M.lblTop, width: 3, height: px(26, k), backgroundColor: P.ink, borderRadius: 2, zIndex: 3 }} />
