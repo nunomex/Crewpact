@@ -22,9 +22,11 @@ _Ecrã de login → "Esqueci-me da palavra-passe"._
 ## 2 · Apagar conta + período de graça + reativação  ⚠️ usa uma CONTA DESCARTÁVEL
 _As 2 Edge Functions + o cron já estão no ar._
 - [ ] Cria/entra numa conta de teste com 1-2 serviços na escala.
-- [ ] **Perfil** (avatar no cabeçalho) → secção **"Os meus dados"** → **"Apagar conta"** (a vermelho).
-- [ ] Diálogo: texto dos **7 dias** (desativada agora, reativável) + campo "Escreve **APAGAR**".
-- [ ] O botão vermelho **só ativa** quando escreves APAGAR certo.
+- [ ] **Aba Perfil** → cartão **"Segurança"** → **"Apagar conta"** (a vermelho, última linha). _(O avatar e a
+      secção "Os meus dados" morreram — 2026-07-09.)_
+- [ ] Diálogo: texto dos **7 dias** (desativada agora, reativável) + campo **palavra-passe** (re-auth,
+      auditoria 2026-09-03) + campo "Escreve **APAGAR**". Com o teclado aberto o corpo ROLA, nunca corta.
+- [ ] O botão vermelho **só ativa** com APAGAR certo **e** password preenchida; password errada → erro no diálogo.
 - [ ] Confirmas → **popup "Conta desativada — eliminada de vez a [data]..."** → **OK** → volta ao login.
 - [ ] **Entras de novo** (mesma conta) → aparece o **ecrã de reativação** ("eliminada em X dias — [data]", botões Reativar / Sair).
 - [ ] **Reativar** → entra na app normal, **escala intacta**.

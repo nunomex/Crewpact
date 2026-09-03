@@ -82,6 +82,13 @@
    caminho do código + escape por password (2026-09-03); o Face ID real com o texto do
    `faceIDPermission` valida-se na 1.ª sessão do dev build.
 
+8. **Apagar conta + graça + reativação — caminho feliz no device (conta DESCARTÁVEL)** — pedido do
+   user 2026-09-03 ("para outra sessão, mete na parte do dev build"). Não depende do build; fica aqui
+   como fila. Servidor verificado (Edges + cron no ar, sondas 401 ok; hoje redeploy c/ erro genérico);
+   o diálogo (password + APAGAR + corpo a rolar) já foi visto no device. Falta: confirmar → popup com a
+   data → login → ecrã de reativação → Reativar com a escala intacta. Guião completo:
+   `docs/verificacao-device.md` §2.
+
 > Ideias Flighty→crew que NÃO precisavam de dev build (partilha com a família ·
 > "Ano de voo" partilhável · inbound do avião) saíram desta lista — feitas já
 > (2026-07-03). Descartado e registado: Shared with You · Friends' Flights ·
