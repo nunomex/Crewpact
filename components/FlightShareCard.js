@@ -148,8 +148,12 @@ export default function FlightShareCard({ visible, onClose, dep, arr, depTime, a
           <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}
             style={[s.card, { width: CW, height: CH, backgroundColor: TH.bg, borderColor: TH.border }]}>
             {/* Fantasma = o DESTINO (esbatido atrás → nítido no herói: a viagem conta-se 2×) */}
-            <Text style={[s.ghost, { fontSize: ghostFs, lineHeight: ghostFs, right: -Math.round(CW * 0.04), top: -Math.round(CW * 0.055), letterSpacing: -Math.round(ghostFs * 0.035), color: TH.ghost }]}
-              numberOfLines={1} allowFontScaling={false}>{arr || ''}</Text>
+            {/* Largura EXPLÍCITA (2×CW) + alinhado à direita e SEM numberOfLines (device 2026-09-03,
+                RN 0.86/Fabric): um Text absoluto só-ancorado-à-direita era medido curto e saía
+                "F…" com reticências gigantes. Um fantasma nunca pode ter reticências; o que
+                transborda à esquerda é cortado pelo overflow do cartão. */}
+            <Text style={[s.ghost, { fontSize: ghostFs, lineHeight: ghostFs, width: CW * 2, textAlign: 'right', right: -Math.round(CW * 0.04), top: -Math.round(CW * 0.055), letterSpacing: -Math.round(ghostFs * 0.035), color: TH.ghost }]}
+              allowFontScaling={false}>{arr || ''}</Text>
             <View>
               <View style={s.cTop}>
                 <View style={s.brandRow}><View style={s.cDot} /><Text style={[s.cBrand, { color: TH.ink }]} allowFontScaling={false}>CrewPact</Text></View>

@@ -101,7 +101,10 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
   const daysInt = Math.floor(hours / 24);            // facto DERIVADO (nada inventado)
   const identity = `${companyName ? `${companyName} · ` : ''}${isPilot ? l('Piloto', 'Pilot') : l('Tripulante de cabine', 'Cabin crew')}`;
   const cells = [
-    { k: l('Voos', 'Flights'), v: nf(st.flights), f: 1 },
+    // SETORES, não "voos" (device 2026-09-03): `st.flights` conta DIAS de serviço com voo (1 num
+    // LIS-OPO-LIS) e o logbook/Estatísticas contam setores (2) → o poster dizia "Voos 1" para o
+    // mesmo dia. Um cromo, uma casa: a métrica partilhável é a que o tripulante conta.
+    { k: l('Setores', 'Sectors'), v: nf(st.sectors), f: 1 },
     { k: l('Pernoitas', 'Night stops'), v: nf(st.nightStops), f: 1 },
     { k: l('Dias de escala', 'Duty days'), v: nf(st.count), f: 1.25 },
   ];

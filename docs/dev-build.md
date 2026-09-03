@@ -77,6 +77,11 @@
      URLs += `crewpact://**`; 4) Apple Developer: capability "Sign in with Apple";
      `app.json` já tem `scheme: crewpact`.
 
+7. **Face ID (validação)** — o Expo Go NÃO suporta Face ID (docs do expo-local-authentication):
+   cai sempre no código do telemóvel. O bloqueio está implementado e testado em Expo Go só pelo
+   caminho do código + escape por password (2026-09-03); o Face ID real com o texto do
+   `faceIDPermission` valida-se na 1.ª sessão do dev build.
+
 > Ideias Flighty→crew que NÃO precisavam de dev build (partilha com a família ·
 > "Ano de voo" partilhável · inbound do avião) saíram desta lista — feitas já
 > (2026-07-03). Descartado e registado: Shared with You · Friends' Flights ·
