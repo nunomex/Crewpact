@@ -144,7 +144,8 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
             <View style={[s.yband, { right: px(26, k), width: px(30, k) }]} />
             {/* o avião ink a subir na banda */}
             <View style={{ position: 'absolute', left: bandCX - px(10, k), top: M.planeTop, zIndex: 3 }}>
-              <Icon name="plane" size={px(19, k)} color={P.ink} />   {/* nariz para CIMA, na vertical da banda (user 2026-09-03; base do glifo = nariz-cima) */}
+              {/* nariz para CIMA, na vertical da banda (user 2026-09-03; base do glifo = nariz-cima) */}
+              <Icon name="plane" size={px(19, k)} color={P.ink} />
             </View>
             {/* o TÍTULO gravado na banda: segmento ink + "O MEU ANO" rodado (lê de cima p/ baixo) */}
             <View style={{ position: 'absolute', left: bandCX - 1.5, top: M.lblTop, width: 3, height: px(26, k), backgroundColor: P.ink, borderRadius: 2, zIndex: 3 }} />
