@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './Icon';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import useReduceMotion from '../hooks/useReduceMotion';
 
@@ -45,7 +45,7 @@ export default function AccountCreated({ name = '', lang = 'pt' }) {
       <View style={styles.center}>
         <Animated.View style={[styles.ring, { transform: [{ scale: ring }] }]}>
           <Animated.View style={{ opacity: tick, transform: [{ scale: tick }] }}>
-            <Ionicons name="checkmark" size={48} color={BRAND.onDark} />
+            <Icon name="check" size={48} color={BRAND.onDark} />
           </Animated.View>
         </Animated.View>
         <Animated.View style={{ opacity: text, transform: [{ translateY: ty }] }}>

@@ -1,22 +1,25 @@
-// LOGIN — PORT À PELE (2026-07-09, mockups `design/login-3.html` + `login-fluxo.html` à letra):
-// wordmark (eyebrow FTL·AE·CREW + régua amarela + CREWPACT em Barlow) · campos-PÍLULA planos
-// (soft + hairline; foco = borda ink) · botão ink em pílula · links com
-// sublinhado amarelo. RE-SKIN, NÃO REESCRITA: a lógica auditada
-// (2026-07-01 — handlers, cooldown do reenviar, anti-duplo-submit, autofill, shake,
-// transições entre vistas, teclado-compacta-topo) está INTACTA.
+// LOGIN — PORTA (2026-11-02, esboço `design/login-v4.html`, opção A+B aprovada pelo Nuno):
+// placa de tinta com a marca + folha de papel com o passo (components/Porta). Dentro da folha, o
+// esqueleto da app toda: ‹ em cima à esquerda · título Barlow 30 à esquerda · UMA ação larga no
+// fundo, que sobe com o teclado. Detalhes do Flighty na entrada: e-mail em letra grande, linha de
+// privacidade com escudo, botão apagado até o e-mail estar certo. O código ENTRA SOZINHO ao 6.º
+// dígito ("A verificar…"), com "Abrir o Mail". A lógica auditada (handlers, cooldown do reenviar,
+// anti-duplo-submit, autofill, shake, transições entre vistas) está INTACTA.
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, KeyboardAvoidingView, Platform,
-  Animated, Easing, Keyboard, ActivityIndicator, Linking,
+  View, Text, TextInput, TouchableOpacity,
+  StyleSheet, Platform,
+  Animated, Easing, ActivityIndicator, Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';   // o do RN foi deprecado (RN 0.81)
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';   // só os logótipos Google/Apple do login social (dev build)
 import StrengthBar from '../components/StrengthBar';
 import OTPInput from '../components/OTPInput';
 import Icon from '../components/Icon';
 import AccountCreated from '../components/AccountCreated';
-import { PELE, PELE_FONT, SPACE, BRAND, TXT } from '../data/constants';
+import Porta, { portaTxt as P } from '../components/Porta';
+import PrimaryButton from '../components/PrimaryButton';
+import GhostButton from '../components/GhostButton';
+import { PELE, PELE_FONT, SPACE, TXT } from '../data/constants';
 import {
   login, requestEmailCode, verifyEmailCode, saveName,
   requestPasswordReset, verifyResetCode, resetPassword,
@@ -28,17 +31,19 @@ import { success, warning, select } from '../data/haptics';
 import { AppContext } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-/* ─── Field (pílula da pele: soft + hairline; foco = ink; erro = vermelho) ─── */
-function Field({ value, onChangeText, placeholder, error, secure,
+/* ─── Field (pílula da pele: soft + hairline; foco = ink; erro = vermelho) ───
+   2026-11-02: rótulo POR CIMA (o placeholder some ao escrever) e sem ícone lá dentro (Lyft, Booking). */
+function Field({ label, value, onChangeText, placeholder, error, secure, lang = 'pt',
   autoCapitalize = 'none', keyboardType = 'default',
-  returnKeyType = 'next', onSubmitEditing, inputRef, icon, autoFocus, ...inputProps }) {
+  returnKeyType = 'next', onSubmitEditing, inputRef, autoFocus, ...inputProps }) {
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   return (
     <View style={f.wrap}>
+      {label ? <Text style={P.label}>{label}</Text> : null}
       <View style={[f.box, focused && f.boxFocused, error && f.boxErr]}>
-        {icon && <Ionicons name={icon} size={17} color={focused ? PELE.ink : PELE.grey} style={f.icon} />}
         <TextInput
+          accessibilityLabel={label || placeholder}
           ref={inputRef}
           value={value}
           onChangeText={onChangeText}
@@ -57,8 +62,9 @@ function Field({ value, onChangeText, placeholder, error, secure,
           {...inputProps}
         />
         {secure && (
-          <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn} hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}>
-            <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={19} color={PELE.grey} />
+          <TouchableOpacity onPress={() => setShow(s => !s)} style={f.eyeBtn} hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
+            accessibilityRole="button" accessibilityLabel={show ? (lang === 'en' ? 'Hide password' : 'Esconder a palavra-passe') : (lang === 'en' ? 'Show password' : 'Mostrar a palavra-passe')}>
+            <Icon name="eye" size={19} color={show ? PELE.ink : PELE.grey} />
           </TouchableOpacity>
         )}
       </View>
@@ -67,39 +73,14 @@ function Field({ value, onChangeText, placeholder, error, secure,
   );
 }
 const f = StyleSheet.create({
-  wrap:       { marginBottom: SPACE.md },
-  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 20, height: 54, borderWidth: 1.5, borderColor: PELE.line },
+  wrap:       { marginBottom: SPACE.lg },
+  box:        { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: SPACE.lgPlus, height: 50, borderWidth: 1.5, borderColor: PELE.line },
   boxFocused: { backgroundColor: PELE.paper, borderColor: PELE.ink },
   boxErr:     { backgroundColor: PELE.redSoft, borderColor: PELE.red },
-  icon:       { marginRight: 11 },
-  input:      { flex: 1, fontSize: 14.5, fontFamily: PELE_FONT.body, color: PELE.ink, backgroundColor: 'transparent' },
+  input:      { flex: 1, fontSize: 15, fontFamily: PELE_FONT.body, color: PELE.ink, backgroundColor: 'transparent' },
   eyeBtn:     { padding: SPACE.xs },
-  err:        { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.red, marginTop: SPACE.xs, marginLeft: 12 },
+  err:        { ...TXT.caption, color: PELE.red, marginTop: SPACE.xs, marginLeft: SPACE.md },
 });
-
-/* ─── Botão-pílula da pele (ink + seta amarela; loading = spinner no lugar da seta) ─── */
-function PillButton({ label, onPress, loading, disabled }) {
-  return (
-    <TouchableOpacity style={[s.btn, (disabled || loading) && { opacity: 0.55 }]} activeOpacity={0.85}
-      onPress={onPress} disabled={disabled || loading} accessibilityRole="button" accessibilityLabel={label}>
-      <Text style={s.btnTxt}>{label}</Text>
-      {loading ? <ActivityIndicator size="small" color={BRAND.onDark} /> : null}
-    </TouchableOpacity>
-  );
-}
-
-/* ─── Wordmark da pele: eyebrow + régua amarela + CREWPACT (Barlow) ─── */
-function Wordmark({ compact, left }) {
-  return (
-    <View style={[s.wm, left && { alignItems: 'flex-start' }, compact && { marginBottom: 18 }]}>
-      <Text style={s.wmEye}>FTL · AE · CREW</Text>
-      <View style={s.wmRule} />
-      <Text style={s.wmName} allowFontScaling={false}>
-        <Text style={s.wmNameLight}>CREW</Text><Text style={s.wmNameBold}>PACT</Text>
-      </Text>
-    </View>
-  );
-}
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
@@ -121,14 +102,8 @@ export default function LoginScreen() {
   const [socialBusy, setSocialBusy] = useState(null);   // 'apple' | 'google' | null
   useEffect(() => { appleAvailable().then(setAppleOk); }, []);
 
-  // Teclado aberto → compactar o topo (marca/padding) para o botão de ação caber
-  // sempre acima do teclado, qualquer que seja o campo em foco.
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
+  // (o teclado a compactar o topo vive agora na Porta: a placa encolhe para uma faixa)
+  const [eFocus, setEFocus] = useState(false);   // linha do e-mail grande: tinta com foco
 
   // Login
   const [lEmail, setLEmail]     = useState('');
@@ -187,6 +162,7 @@ export default function LoginScreen() {
   const shake = useRef(new Animated.Value(0)).current;
   const doShake = () => {
     warning();
+    if (reduce) return;   // movimentos reduzidos: só a vibração (como no bloqueio)
     Animated.sequence([
       Animated.timing(shake, { toValue: 8,  duration: 55, useNativeDriver: true }),
       Animated.timing(shake, { toValue: -8, duration: 55, useNativeDriver: true }),
@@ -203,15 +179,18 @@ export default function LoginScreen() {
   const transX = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] });
   const transOp = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
 
+  // JS-driven DE PROPÓSITO (device 2026-11-02): com o driver nativo, a transição ficava presa no valor
+  // de entrada (conteúdo 28 pt à direita, ou invisível = "fica branco"). Pelo JS, cada fotograma é
+  // gravado nas props da vista e nada o pode repor. São 330 ms numa vista pequena: custo nenhum.
   const navigateTo = (nextView, forward = true) => {
     setGlobalErr('');
-    if (reduce) { setView(nextView); return; }
+    if (reduce) { setView(nextView); trans.setValue(0); return; }
     const exitVal  = forward ? -1 : 1;
     const enterVal = forward ? 1 : -1;
-    Animated.timing(trans, { toValue: exitVal, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+    Animated.timing(trans, { toValue: exitVal, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => {
       setView(nextView);
       trans.setValue(enterVal);
-      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => trans.setValue(0));
     });
   };
 
@@ -271,14 +250,16 @@ export default function LoginScreen() {
     } finally { inFlight.current = false; }
   };
 
-  const handleVerifyCode = async () => {
+  // Chamado SOZINHO ao 6.º dígito (sem botão — Vivid/TikTok). Código errado → abana e limpa as
+  // caixas, pronto para escrever ou colar outra vez.
+  const handleVerifyCode = async (typed = code) => {
     if (inFlight.current) return;
     setCodeErr('');
-    if (code.length < 6) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
+    if (typed.length < 6) { setCodeErr(t('login.codeIncomplete', lang)); doShake(); return; }
     inFlight.current = true; setLoading(true);
     try {
-      const res = await verifyResetCode(resetEmail, code, lang);
-      if (!res.ok) { setCodeErr(res.error); doShake(); return; }
+      const res = await verifyResetCode(resetEmail, typed, lang);
+      if (!res.ok) { setCodeErr(res.error); setCode(''); doShake(); return; }
       setNewPw(''); setNewPw2('');
       navigateTo('reset');
     } finally { inFlight.current = false; setLoading(false); }
@@ -302,14 +283,15 @@ export default function LoginScreen() {
   };
 
   // Código certo: conta que já tinha nome → entra (o gate decide onboarding/app); conta NOVA → nome.
-  const handleVerifyEmailCode = async () => {
+  // Chamado SOZINHO ao 6.º dígito (sem botão "Entrar"). Código errado → abana e limpa as caixas.
+  const handleVerifyEmailCode = async (typed = scCode) => {
     if (inFlight.current) return;
     setScErr('');
-    if (scCode.length < 6) { setScErr(t('login.codeIncomplete', lang)); doShake(); return; }
+    if (typed.length < 6) { setScErr(t('login.codeIncomplete', lang)); doShake(); return; }
     inFlight.current = true; setLoading(true);
     try {
-      const res = await verifyEmailCode(scEmail, scCode, lang);
-      if (!res.ok) { setScErr(res.error); doShake(); return; }
+      const res = await verifyEmailCode(scEmail, typed, lang);
+      if (!res.ok) { setScErr(res.error); setScCode(''); doShake(); return; }
       success();
       if (res.needsName) { setSuFirst(''); setSuLast(''); setSuErr({}); navigateTo('name'); return; }
       setUser(res.user);
@@ -365,325 +347,251 @@ export default function LoginScreen() {
     } finally { inFlight.current = false; setLoading(false); }
   };
 
-  // Bloco social (divisória "ou continuar com" + CÍRCULOS G/, referência da foto do founder):
-  // o social cria a conta E entra num passo (sem OTP — o email já vem verificado pelo fornecedor);
-  // o gate `onboarded` manda os novos para o funil das 6 perguntas, como sempre.
-  // DESATIVADO até à dev build (2026-07-10). 2026-11-02: deixou de aparecer — os botões esbatidos com
-  // "brevemente" eram controlos mortos no 1.º ecrã (as melhores apps: ou funcionam ou não existem).
-  // Ligar = SOCIAL_ENABLED true + config do dashboard (providers/redirects) + dev build.
+  // Login social (Apple/Google): cria a conta E entra num passo; o gate `onboarded` manda os novos
+  // para as 6 perguntas. DESLIGADO até ao dev build (2026-07-10) e escondido desde 2026-11-02 (botões
+  // "brevemente" eram controlos mortos). Ligar = SOCIAL_ENABLED true + config do dashboard + dev build;
+  // aparece por baixo do "Entrar com palavra-passe", na folha da entrada.
   const SOCIAL_ENABLED = false;
   const renderSocial = () => (
-    <>
+    <View style={s.social}>
       <View style={s.orRow}>
         <View style={s.orLine} /><Text style={s.orTxt}>{t('login.or', lang)}</Text><View style={s.orLine} />
       </View>
       <View style={s.socialRow}>
-        <TouchableOpacity style={[s.socialCircle, !SOCIAL_ENABLED && s.socialOff]} activeOpacity={0.85}
-          disabled={!SOCIAL_ENABLED || !!socialBusy} onPress={() => handleSocial('google')}
-          accessibilityRole="button" accessibilityLabel={t('login.withGoogle', lang)} accessibilityState={{ disabled: !SOCIAL_ENABLED }}>
+        <TouchableOpacity style={s.socialCircle} activeOpacity={0.85} disabled={!!socialBusy} onPress={() => handleSocial('google')}
+          accessibilityRole="button" accessibilityLabel={t('login.withGoogle', lang)}>
           {socialBusy === 'google' ? <ActivityIndicator size="small" color={PELE.ink} /> : <Ionicons name="logo-google" size={20} color={PELE.ink} />}
         </TouchableOpacity>
-        {(!SOCIAL_ENABLED || appleOk) ? (
-          <TouchableOpacity style={[s.socialCircle, !SOCIAL_ENABLED && s.socialOff]} activeOpacity={0.85}
-            disabled={!SOCIAL_ENABLED || !!socialBusy} onPress={() => handleSocial('apple')}
-            accessibilityRole="button" accessibilityLabel={t('login.withApple', lang)} accessibilityState={{ disabled: !SOCIAL_ENABLED }}>
-            {socialBusy === 'apple' ? <ActivityIndicator size="small" color={PELE.ink} /> : <Ionicons name="logo-apple" size={22} color={PELE.ink} style={{ marginTop: -2 }} />}
+        {appleOk ? (
+          <TouchableOpacity style={s.socialCircle} activeOpacity={0.85} disabled={!!socialBusy} onPress={() => handleSocial('apple')}
+            accessibilityRole="button" accessibilityLabel={t('login.withApple', lang)}>
+            {socialBusy === 'apple' ? <ActivityIndicator size="small" color={PELE.ink} /> : <Ionicons name="logo-apple" size={22} color={PELE.ink} />}
           </TouchableOpacity>
         ) : null}
       </View>
-      {!SOCIAL_ENABLED ? <Text style={s.socialSoon}>{lang === 'en' ? 'coming soon' : 'brevemente'}</Text> : null}
-    </>
+    </View>
   );
-
-  // Vistas de RECUPERAÇÃO alinham à esquerda (mockup login-fluxo); login/signup centrados.
-  const leftView = view === 'forgot' || view === 'reset';
 
   // Beat "Conta criada" — celebra e entra sozinho (o gate leva ao onboarding do perfil).
   if (created) return <AccountCreated name={suFirst.trim()} lang={lang} />;
 
+  // ── peças repetidas ──
+  const entryValid = !validateEmail(eEmail, lang);   // o botão só acende com um e-mail certo (Flighty)
+  const openMail = () => Linking.openURL('message://').catch(() => {});   // abre a app Mail do iPhone
+  const mailButton = Platform.OS === 'ios'
+    ? <GhostButton glyph="mail" label={l('Abrir o Mail', 'Open Mail')} onPress={openMail} />
+    : null;
+  const pwLink = (email) => (
+    <TouchableOpacity style={s.linkRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={() => goPassword(email)} accessibilityRole="button">
+      <Text style={P.link}>{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
+    </TouchableOpacity>
+  );
+  // Linha por baixo das caixas do código: "A verificar…" enquanto confirma; senão o reenviar com a contagem.
+  const codeStatus = (left, resent, onResend) => (loading
+    ? <Text style={[P.foot, s.status]}>{l('A verificar…', 'Checking…')}</Text>
+    : (
+      <TouchableOpacity style={s.status} onPress={onResend} disabled={left > 0} hitSlop={{ top: 10, bottom: 10, left: 0, right: 10 }}
+        accessibilityRole="button" accessibilityState={{ disabled: left > 0 }}>
+        <Text style={left > 0 ? P.foot : P.link}>
+          {left > 0
+            ? (resent ? l(`Código reenviado. Pedir outro em ${left} s`, `Code resent. Ask again in ${left} s`) : l(`Reenviar em ${left} s`, `Resend in ${left} s`))
+            : l('Reenviar código', 'Resend code')}
+        </Text>
+      </TouchableOpacity>
+    ));
+  const codeTitle = (email) => (
+    <>
+      <Text style={P.title} accessibilityRole="header">{l('Vê o teu e-mail', 'Check your email')}</Text>
+      <Text style={P.body}>{l('Enviámos um código de 6 dígitos para', 'We sent a 6-digit code to')}{'\n'}<Text style={P.strong}>{email}</Text></Text>
+    </>
+  );
+
+  // ‹ só onde há para onde voltar (design-system §10). O nome e a palavra-passe nova não têm.
+  const back = {
+    emailCode: () => { setScCode(''); setScErr(''); navigateTo('entry', false); },
+    login:     goEntry,
+    forgot:    () => navigateTo('login', false),
+    code:      () => { setCode(''); setCodeErr(''); setResentOk(false); navigateTo('forgot', false); },
+  }[view];
+
+  // UMA ação larga no fundo, a subir com o teclado (§10). Nos códigos não há botão: entram sozinhos.
+  const footer = {
+    entry: (
+      <>
+        {/* TERMOS no ponto legalmente relevante: a conta pode nascer AQUI (clickwrap-lite). */}
+        <Text style={s.legal}>
+          {l('Ao continuar aceitas os ', 'By continuing you accept the ')}
+          <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
+          {l(' e a ', ' and the ')}
+          <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Política de Privacidade', 'Privacy Policy')}</Text>.
+        </Text>
+        <PrimaryButton label={l('Continuar', 'Continue')} onPress={handleEntry} loading={loading} disabled={!entryValid} />
+      </>
+    ),
+    emailCode: mailButton,
+    name:   <PrimaryButton label={l('Continuar', 'Continue')} onPress={handleSaveName} loading={loading} />,
+    login:  <PrimaryButton label={l('Entrar', 'Sign in')} onPress={handleLogin} loading={loading} />,
+    forgot: <PrimaryButton label={l('Enviar código', 'Send code')} onPress={handleRequestReset} loading={loading} />,
+    code:   mailButton,
+    reset:  <PrimaryButton label={l('Guardar palavra-passe', 'Save password')} onPress={handleResetPassword} loading={loading} />,
+  }[view];
+
   return (
-    <SafeAreaView style={s.safe}>
-      {/* Idioma segue o telemóvel (PT→PT, resto→EN); a troca manual vive no Perfil. */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={[s.scroll, { flexGrow: 1 }, keyboardOpen && { paddingTop: 34 }]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}>
+    <Porta plate="half" onBack={back} backLabel={l('Voltar', 'Back')} footer={footer}>
+      {/* Transição entre vistas (sai em easeIn, entra em easeOut; movimentos reduzidos = corte).
+          Mantemos sempre os mesmos valores Animated (transX/transOp) no mesmo nó — alternar entre
+          Animated.Value e número deixava a opacidade presa em 0 ao voltar de 'forgot'. */}
+      <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
 
-          {/* Wordmark da pele (compacta com o teclado aberto) */}
-          <Wordmark compact={keyboardOpen} left={leftView} />
-          {(view === 'entry' || view === 'login') && !keyboardOpen ? (
-            <Text style={s.tagline}>{t('login.tagline', lang)}</Text>
-          ) : null}
-
-          {/* Conteúdo com animação de transição.
-              Mantemos sempre os mesmos valores Animated (transX/transOp) para não
-              alternar entre Animated.Value e número estático no mesmo nó — isso, com
-              useNativeDriver, deixava a opacidade presa em 0 ao voltar de 'forgot'
-              para 'login' (o formulário desaparecia). O shake fica nos wrappers
-              internos de cada vista de autenticação. */}
-          <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
-
-            {globalErr ? (
-              <View style={s.errBanner}>
-                <Ionicons name="alert-circle" size={16} color={PELE.red} />
-                <Text style={s.errBannerTxt}>{globalErr}</Text>
-              </View>
-            ) : null}
-
-            {/* Erro de login → empurrão contextual para o registo (o motivo pode ser "sem conta"; a
-                mensagem é genérica de propósito p/ não revelar se o e-mail existe — sem enumeração). */}
-            {view === 'login' && globalErr ? (
-              <TouchableOpacity style={s.errSignupRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={goEntry}>
-                <Text style={s.linkTxt}>{l('Sem conta ou sem palavra-passe?', 'No account or no password?')}</Text>
-                <Text style={s.switchLink}>{l('Entrar com um código', 'Sign in with a code')}</Text>
-              </TouchableOpacity>
-            ) : null}
-
-            {/* ── ENTRADA (e-mail → código) — o caminho principal ── */}
-            {view === 'entry' && (
-              <Animated.View style={{ transform: [{ translateX: shake }] }}>
-                <Text style={s.entryHint}>{l('Entra ou cria conta com o teu e-mail.', 'Sign in or create an account with your email.')}</Text>
-                <Field value={eEmail} onChangeText={v => { setEEmail(v); setEErr(''); }}
-                  placeholder={t('login.email', lang)} error={eErr} icon="mail-outline"
-                  keyboardType="email-address" returnKeyType="go"
-                  textContentType="username" autoComplete="email"
-                  onSubmitEditing={handleEntry} />
-                <PillButton onPress={handleEntry} loading={loading} label={l('CONTINUAR', 'CONTINUE')} />
-                <Text style={s.entryNote}>{l('Enviamos-te um código de 6 dígitos. Não precisas de palavra-passe.', 'We send you a 6-digit code. No password needed.')}</Text>
-                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => goPassword(eEmail)}>
-                  <Text style={s.switchLink}>{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
-                </TouchableOpacity>
-                {/* TERMOS no ponto legalmente relevante: a conta pode nascer AQUI (clickwrap-lite). */}
-                <Text style={s.legal}>
-                  {l('Ao continuar aceitas os ', 'By continuing you accept the ')}
-                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
-                  {l(' e a ', ' and the ')}
-                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Política de Privacidade', 'Privacy Policy')}</Text>.
-                </Text>
-                {SOCIAL_ENABLED ? renderSocial() : null}
-              </Animated.View>
-            )}
-
-            {/* ── CÓDIGO DE ENTRADA ── */}
-            {view === 'emailCode' && (
-              <>
-                <View style={[s.stepHeader, { alignItems: 'center' }]}>
-                  <Text style={[s.stepTitle, { textAlign: 'center' }]}>{t('login.verifyTitle', lang)}</Text>
-                  <Text style={[s.stepSub, { textAlign: 'center' }]}>{t('login.verifySub', lang)}{'\n'}<Text style={s.stepSubStrong}>{scEmail}</Text></Text>
-                </View>
-                <OTPInput value={scCode} onChange={v => { setScCode(v); setScErr(''); }} />
-                {scErr ? (
-                  <View style={[s.errBanner, { marginTop: -12 }]}>
-                    <Ionicons name="alert-circle" size={16} color={PELE.red} />
-                    <Text style={s.errBannerTxt}>{scErr}</Text>
-                  </View>
-                ) : scResent ? (
-                  <View style={[s.okBanner, { marginTop: -12 }]}>
-                    <Ionicons name="checkmark-circle" size={16} color={PELE.ok} />
-                    <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
-                  </View>
-                ) : null}
-                <PillButton onPress={handleVerifyEmailCode} disabled={scCode.length < 6} loading={loading} label={l('ENTRAR', 'SIGN IN')} />
-                <View style={s.codeLinks}>
-                  <TouchableOpacity onPress={handleResendEmailCode} disabled={scLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
-                    <Text style={[s.linkYellow, scLeft > 0 && s.linkMuted]}>
-                      {scLeft > 0 ? t('login.resendIn', lang).replace('{s}', scLeft) : t('login.resend', lang)}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setScCode(''); setScErr(''); navigateTo('entry', false); }}>
-                    <Ionicons name="arrow-back" size={13} color={PELE.grey} />
-                    <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => goPassword(scEmail)}>
-                  <Text style={s.switchLink}>{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {/* ── CONTA NOVA: o nome (a sessão já existe; segue o "Conta criada" e o onboarding) ── */}
-            {view === 'name' && (
-              <Animated.View style={{ transform: [{ translateX: shake }] }}>
-                <View style={s.stepHeader}>
-                  <Text style={s.stepTitle}>{l('Bem-vindo à CrewPact', 'Welcome to CrewPact')}</Text>
-                  <Text style={s.stepSub}>{l('É a primeira vez que entras com este e-mail. Como te chamas?', 'This is your first time with this email. What is your name?')}</Text>
-                </View>
-                <Field value={suFirst} onChangeText={v => { setSuFirst(v); setSuErr(e => ({ ...e, first: '' })); }}
-                  placeholder={l('primeiro nome', 'first name')} error={suErr.first} icon="person-outline"
-                  autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next" autoFocus
-                  onSubmitEditing={() => suLastRef.current?.focus()} />
-                <Field value={suLast} onChangeText={v => { setSuLast(v); setSuErr(e => ({ ...e, last: '' })); }}
-                  placeholder={l('apelido', 'last name')} error={suErr.last} icon="person-outline"
-                  autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="done"
-                  inputRef={suLastRef} onSubmitEditing={handleSaveName} />
-                <PillButton onPress={handleSaveName} loading={loading} label={l('CONTINUAR', 'CONTINUE')} />
-                <Text style={s.entryNote}>{l('A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…).', 'Next: 6 questions about your job (airline, base, rank…).')}</Text>
-              </Animated.View>
-            )}
-
-            {/* ── LOGIN ── */}
-            {view === 'login' && (
-              <Animated.View style={{ transform: [{ translateX: shake }] }}>
-                {/* AutoFill do gestor de palavras-passe (iCloud Keychain / Google) — sem escrever à mão. */}
-                <Field value={lEmail} onChangeText={v => { setLEmail(v); setLErrEmail(''); }}
-                  placeholder={t('login.email', lang)} error={lErrEmail} icon="mail-outline"
-                  keyboardType="email-address" returnKeyType="next"
-                  textContentType="username" autoComplete="email"
-                  onSubmitEditing={() => lPwRef.current?.focus()} />
-                <Field value={lPw} onChangeText={v => { setLPw(v); setLErrPw(''); }}
-                  placeholder={t('login.password', lang)} error={lErrPw} secure icon="lock-closed-outline"
-                  textContentType="password" autoComplete="current-password"
-                  returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
-                <TouchableOpacity style={s.forgotBtn} hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }} onPress={() => { setFInput(''); setFErr(''); navigateTo('forgot'); }}>
-                  <Text style={s.linkYellow}>{t('login.forgot', lang)}</Text>
-                </TouchableOpacity>
-                <PillButton onPress={handleLogin} loading={loading} label={t('login.btnLogin', lang)} />
-                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={goEntry}>
-                  <Text style={s.switchLink}>{l('Receber um código em vez disso', 'Get a code instead')}</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-
-
-            {/* ── ESQUECI A PALAVRA-PASSE ── */}
-            {view === 'forgot' && (
-              <>
-                <View style={s.stepHeader}>
-                  <Text style={s.stepTitle}>{t('login.forgotTitle', lang)}</Text>
-                  <Text style={s.stepSub}>{t('login.forgotSub', lang)}</Text>
-                </View>
-                <Field value={fInput} onChangeText={v => { setFInput(v); setFErr(''); }}
-                  placeholder={t('login.email', lang)} error={fErr}
-                  icon="mail-outline" keyboardType="email-address" autoFocus returnKeyType="done"
-                  onSubmitEditing={handleRequestReset} />
-                <PillButton onPress={handleRequestReset} loading={loading} label={t('login.btnSendCode', lang)} />
-                <TouchableOpacity style={s.linkRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => navigateTo('login', false)}>
-                  <Ionicons name="arrow-back" size={14} color={PELE.grey} />
-                  <Text style={s.linkTxt}>{t('login.backToLogin', lang)}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {/* ── INSERIR CÓDIGO ── */}
-            {view === 'code' && (
-              <>
-                <View style={[s.stepHeader, { alignItems: 'center' }]}>
-                  <Text style={[s.stepTitle, { textAlign: 'center' }]}>{t('login.verifyTitle', lang)}</Text>
-                  <Text style={[s.stepSub, { textAlign: 'center' }]}>{t('login.verifySub', lang)}{'\n'}<Text style={s.stepSubStrong}>{resetEmail}</Text></Text>
-                </View>
-                <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); }} />
-                {codeErr ? (
-                  <View style={[s.errBanner, { marginTop: -12 }]}>
-                    <Ionicons name="alert-circle" size={16} color={PELE.red} />
-                    <Text style={s.errBannerTxt}>{codeErr}</Text>
-                  </View>
-                ) : resentOk ? (
-                  <View style={[s.okBanner, { marginTop: -12 }]}>
-                    <Ionicons name="checkmark-circle" size={16} color={PELE.ok} />
-                    <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
-                  </View>
-                ) : null}
-                <PillButton onPress={handleVerifyCode} disabled={code.length < 6} loading={loading} label={t('login.btnVerify', lang)} />
-                <View style={s.codeLinks}>
-                  <TouchableOpacity onPress={handleResendCode} disabled={resendLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
-                    <Text style={[s.linkYellow, resendLeft > 0 && s.linkMuted]}>
-                      {resendLeft > 0 ? t('login.resendIn', lang).replace('{s}', resendLeft) : t('login.resend', lang)}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setCode(''); setCodeErr(''); setResentOk(false); navigateTo('forgot', false); }}>
-                    <Ionicons name="arrow-back" size={13} color={PELE.grey} />
-                    <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            {/* ── NOVA PALAVRA-PASSE ── */}
-            {view === 'reset' && (
-              <>
-                <View style={s.stepHeader}>
-                  <Text style={s.stepTitle}>{t('login.newPwTitle', lang)}</Text>
-                  <Text style={s.stepSub}>{t('login.newPwSub', lang)}</Text>
-                </View>
-                <Field value={newPw} onChangeText={v => { setNewPw(v); setNewPwErr(''); }}
-                  placeholder={t('login.newPw', lang)} error={newPwErr} secure
-                  icon="lock-closed-outline" returnKeyType="next"
-                  onSubmitEditing={() => newPw2Ref.current?.focus()} />
-                <StrengthBar password={newPw} lang={lang} />
-                <Field value={newPw2} onChangeText={v => { setNewPw2(v); setNewPw2Err(''); }}
-                  placeholder={t('login.confirmPw', lang)} error={newPw2Err} secure
-                  icon="lock-closed-outline" returnKeyType="done"
-                  onSubmitEditing={handleResetPassword} inputRef={newPw2Ref} />
-                <PillButton onPress={handleResetPassword} loading={loading} label={t('login.btnCreatePw', lang)} />
-              </>
-            )}
-
+        {/* ── ENTRADA (e-mail → código) — o caminho principal ── */}
+        {view === 'entry' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            <Text style={P.title} accessibilityRole="header">{l('Qual é o teu e-mail?', 'What is your email?')}</Text>
+            <Text style={P.body}>{l('Entras ou crias conta com ele. Enviamos-te um código de 6 dígitos, sem palavra-passe.', 'Sign in or create an account with it. We send you a 6-digit code, no password.')}</Text>
+            {/* E-mail em letra grande, sem caixa: uma linha por baixo (Flighty). */}
+            <TextInput value={eEmail} onChangeText={v => { setEEmail(v); setEErr(''); }}
+              onFocus={() => setEFocus(true)} onBlur={() => setEFocus(false)}
+              placeholder={l('nome@exemplo.pt', 'name@example.com')} placeholderTextColor={PELE.placeholder}
+              keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+              textContentType="username" autoComplete="email" returnKeyType="go"
+              onSubmitEditing={() => { if (entryValid) handleEntry(); }}
+              accessibilityLabel={l('E-mail', 'Email')} style={s.big} />
+            <View style={[s.hair, eFocus && s.hairOn, !!eErr && s.hairErr]} />
+            {eErr ? <Text style={P.err}>{eErr}</Text> : null}
+            <View style={s.priv}>
+              <Icon name="shield" size={14} color={PELE.ok} />
+              <Text style={[P.foot, s.privTxt]}>{l('Só usamos o teu e-mail para entrares e para te enviarmos os códigos.', 'We only use your email to sign you in and send you codes.')}</Text>
+            </View>
+            {pwLink(eEmail)}
+            {SOCIAL_ENABLED ? renderSocial() : null}
           </Animated.View>
+        )}
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {/* ── CÓDIGO DE ENTRADA — entra sozinho ao 6.º dígito ── */}
+        {view === 'emailCode' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            {codeTitle(scEmail)}
+            <OTPInput value={scCode} onChange={v => { setScCode(v); setScErr(''); if (v.length === 6) handleVerifyEmailCode(v); }} />
+            {scErr ? <Text style={[P.err, s.errOtp]}>{scErr}</Text> : null}
+            {codeStatus(scLeft, scResent, handleResendEmailCode)}
+            {pwLink(scEmail)}
+          </Animated.View>
+        )}
 
-    </SafeAreaView>
+        {/* ── CONTA NOVA: o nome (a sessão já existe; segue o "Conta criada" e o onboarding) ── */}
+        {view === 'name' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            <Text style={P.title} accessibilityRole="header">{l('Como te chamas?', 'What is your name?')}</Text>
+            <Text style={[P.body, s.lead]}>{l('É a primeira vez que entras com este e-mail.', 'This is your first time with this email.')}</Text>
+            <Field label={l('Nome', 'First name')} lang={lang} value={suFirst} onChangeText={v => { setSuFirst(v); setSuErr(e => ({ ...e, first: '' })); }}
+              placeholder={l('o teu nome', 'your first name')} error={suErr.first}
+              autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next" autoFocus
+              onSubmitEditing={() => suLastRef.current?.focus()} />
+            <Field label={l('Apelido', 'Last name')} lang={lang} value={suLast} onChangeText={v => { setSuLast(v); setSuErr(e => ({ ...e, last: '' })); }}
+              placeholder={l('o teu apelido', 'your last name')} error={suErr.last}
+              autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="done"
+              inputRef={suLastRef} onSubmitEditing={handleSaveName} />
+            <Text style={P.foot}>{l('A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…).', 'Next: 6 questions about your job (airline, base, rank…).')}</Text>
+          </Animated.View>
+        )}
+
+        {/* ── ENTRAR COM PALAVRA-PASSE (alternativa) ── */}
+        {view === 'login' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            <Text style={[P.title, s.lead]} accessibilityRole="header">{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
+            {/* AutoFill do gestor de palavras-passe (iCloud Keychain / Google) — sem escrever à mão. */}
+            <Field label={l('E-mail', 'Email')} lang={lang} value={lEmail} onChangeText={v => { setLEmail(v); setLErrEmail(''); }}
+              placeholder={l('nome@exemplo.pt', 'name@example.com')} error={lErrEmail}
+              keyboardType="email-address" returnKeyType="next"
+              textContentType="username" autoComplete="email"
+              onSubmitEditing={() => lPwRef.current?.focus()} />
+            <Field label={l('Palavra-passe', 'Password')} lang={lang} value={lPw} onChangeText={v => { setLPw(v); setLErrPw(''); }}
+              placeholder={l('a tua palavra-passe', 'your password')} error={lErrPw} secure
+              textContentType="password" autoComplete="current-password"
+              returnKeyType="done" onSubmitEditing={handleLogin} inputRef={lPwRef} />
+            <TouchableOpacity style={s.forgotRow} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button"
+              onPress={() => { setFInput(lEmail || ''); setFErr(''); navigateTo('forgot'); }}>
+              <Text style={P.link}>{l('Esqueci-me da palavra-passe', 'I forgot my password')}</Text>
+            </TouchableOpacity>
+            {/* Erro de login → mensagem genérica de propósito (sem revelar se o e-mail existe) e o
+                caminho do código, que serve quem não tem conta ou não tem palavra-passe. */}
+            {globalErr ? (
+              <>
+                <Text style={P.err}>{globalErr}</Text>
+                <TouchableOpacity style={s.linkRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={goEntry} accessibilityRole="button">
+                  <Text style={P.link}>{l('Sem conta ou sem palavra-passe? Entrar com um código', 'No account or no password? Sign in with a code')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </Animated.View>
+        )}
+
+        {/* ── ESQUECI-ME: pedir o código ── */}
+        {view === 'forgot' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            <Text style={P.title} accessibilityRole="header">{l('Recuperar a palavra-passe', 'Reset your password')}</Text>
+            <Text style={[P.body, s.lead]}>{l('Enviamos um código para o teu e-mail. Depois crias uma palavra-passe nova.', 'We send a code to your email. Then you create a new password.')}</Text>
+            <Field label={l('E-mail', 'Email')} lang={lang} value={fInput} onChangeText={v => { setFInput(v); setFErr(''); }}
+              placeholder={l('nome@exemplo.pt', 'name@example.com')} error={fErr}
+              keyboardType="email-address" autoFocus returnKeyType="done"
+              textContentType="username" autoComplete="email"
+              onSubmitEditing={handleRequestReset} />
+          </Animated.View>
+        )}
+
+        {/* ── ESQUECI-ME: o código (o mesmo ecrã do código de entrada) ── */}
+        {view === 'code' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            {codeTitle(resetEmail)}
+            <OTPInput value={code} onChange={v => { setCode(v); setCodeErr(''); if (v.length === 6) handleVerifyCode(v); }} />
+            {codeErr ? <Text style={[P.err, s.errOtp]}>{codeErr}</Text> : null}
+            {codeStatus(resendLeft, resentOk, handleResendCode)}
+          </Animated.View>
+        )}
+
+        {/* ── ESQUECI-ME: a palavra-passe nova ── */}
+        {view === 'reset' && (
+          <Animated.View style={{ transform: [{ translateX: shake }] }}>
+            <Text style={P.title} accessibilityRole="header">{l('Palavra-passe nova', 'New password')}</Text>
+            <Text style={[P.body, s.lead]}>{l('Escolhe uma que não uses noutros sítios.', 'Pick one you do not use anywhere else.')}</Text>
+            <Field label={l('Nova', 'New')} lang={lang} value={newPw} onChangeText={v => { setNewPw(v); setNewPwErr(''); }}
+              placeholder={l('nova palavra-passe', 'new password')} error={newPwErr} secure autoFocus
+              textContentType="newPassword" autoComplete="new-password" returnKeyType="next"
+              onSubmitEditing={() => newPw2Ref.current?.focus()} />
+            <StrengthBar password={newPw} lang={lang} />
+            <Field label={l('Repete', 'Repeat')} lang={lang} value={newPw2} onChangeText={v => { setNewPw2(v); setNewPw2Err(''); }}
+              placeholder={l('repete a nova', 'repeat the new one')} error={newPw2Err} secure
+              textContentType="newPassword" autoComplete="new-password" returnKeyType="done"
+              onSubmitEditing={handleResetPassword} inputRef={newPw2Ref} />
+          </Animated.View>
+        )}
+
+      </Animated.View>
+    </Porta>
   );
 }
 
 const s = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: PELE.paper },
-  scroll:       { padding: 30, paddingBottom: 40, paddingTop: 84 },
+  lead:      { marginBottom: SPACE.xl },              // espaço entre o texto de abertura e os campos
+  // E-mail grande (Flighty): letra 22, sem caixa, linha por baixo (tinta com foco, vermelho com erro).
+  big:       { fontFamily: PELE_FONT.bodyBold, fontSize: 22, color: PELE.ink, marginTop: SPACE.xl, paddingVertical: SPACE.sm },
+  hair:      { height: 1.5, backgroundColor: PELE.line },
+  hairOn:    { backgroundColor: PELE.ink },
+  hairErr:   { backgroundColor: PELE.red },
+  priv:      { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.s, marginTop: SPACE.md },
+  privTxt:   { flex: 1 },
+  linkRow:   { alignSelf: 'flex-start', marginTop: SPACE.xl, paddingVertical: SPACE.xs },
+  forgotRow: { alignSelf: 'flex-end', paddingVertical: SPACE.xs },
+  status:    { alignSelf: 'flex-start', paddingVertical: SPACE.xs },
+  errOtp:    { marginTop: -SPACE.sm, marginBottom: SPACE.sm },
+  legal:     { ...TXT.caption, color: PELE.grey },
+  legalLink: { fontFamily: PELE_FONT.bodyBold, color: PELE.ink, textDecorationLine: 'underline' },
 
-  // Wordmark: eyebrow · régua amarela · CREWPACT (Crew leve + Pact pesado, Barlow tracked)
-  wm:           { alignItems: 'center', marginBottom: 14 },
-  wmEye:        { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
-  wmRule:       { height: 3.5, width: 130, backgroundColor: BRAND.signal, marginTop: 9, marginBottom: 12 },
-  wmName:       { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
-  wmNameLight:  { fontFamily: PELE_FONT.displayMed },
-  wmNameBold:   { fontFamily: PELE_FONT.displayHeavy },
-  tagline:      { fontSize: 13, fontFamily: PELE_FONT.body, color: PELE.grey, textAlign: 'center', lineHeight: 19, marginBottom: 30, alignSelf: 'center', maxWidth: 230 },
-
-  // Botão-pílula ink (56 DELIBERADO vs campos 54: o CTA destaca-se 2pt — auditoria 2026-07-10)
-  btn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: PELE.ink, borderRadius: 999, height: 56, marginTop: SPACE.xs },
-  btnTxt:       { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },
-
-  // Links: sublinhado AMARELO no forte; cinza no neutro
-  linkYellow:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1 },
-  linkTxt:      { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
-  linkMuted:    { color: PELE.grey, borderBottomColor: PELE.line },
-  switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
-  switchLink:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1 },
-  errSignupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4, marginBottom: 16 },
-  forgotBtn:    { alignSelf: 'flex-end', marginTop: -2, marginBottom: 22, marginRight: 4 },
-
-  // Banners de erro/ok (tons suaves da pele)
-  errBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.redSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: PELE.redSoftLine },
-  errBannerTxt: { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.red },
-  okBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PELE.okSoft, borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: PELE.okSoftLine },
-  okBannerTxt:  { flex: 1, fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.ok },
-
-  // Cabeçalho dos passos (forgot/reset à esquerda; code centra inline) — H2 Barlow do mockup
-  stepHeader:   { alignItems: 'flex-start', marginBottom: 18 },
-  stepTitle:    { fontFamily: PELE_FONT.display, fontSize: 26, letterSpacing: 0.5, textTransform: 'uppercase', color: PELE.ink, marginBottom: 6 },
-  stepSub:      { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 19 },
-  stepSubStrong:{ color: PELE.ink, fontFamily: PELE_FONT.bodyBold },
-
-  linkRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
-  codeLinks:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 20 },
-  backInline:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-
-  legal:        { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 16, marginTop: 12, paddingHorizontal: 8 },
-  entryHint:    { ...TXT.body, color: PELE.grey, textAlign: 'center', marginBottom: SPACE.md },
-  entryNote:    { ...TXT.footnote, color: PELE.grey, textAlign: 'center', marginTop: SPACE.md },
-  legalLink:    { color: PELE.ink, fontFamily: PELE_FONT.bodyBold, textDecorationLine: 'underline' },
-  // Social (referência da foto): divisória "ou continuar com" + círculos G/ lado a lado,
-  // papel + hairline (≥44pt de alvo). `socialOff` = desativado até à dev build.
-  // Respiração à Apple: a zona alternativa vive CLARAMENTE abaixo da zona principal
-  // (36 até à divisória · 22 até aos círculos · 14 até ao "brevemente").
-  orRow:        { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 36, marginBottom: 22 },
+  // Login social (dev build): divisória "ou" + círculos G/ (papel + hairline, alvo ≥ 44).
+  social:       { marginTop: SPACE.xxl },
+  orRow:        { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.lgPlus },
   orLine:       { flex: 1, height: 1, backgroundColor: PELE.line },
-  orTxt:        { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.5, textTransform: 'uppercase' },
-  socialRow:    { flexDirection: 'row', justifyContent: 'center', gap: 18 },
-  socialCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
-  socialOff:    { opacity: 0.35 },
-  socialSoon:   { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.grey, letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center', marginTop: 14 },   // tracking = orTxt (mesmo papel tipográfico)
+  orTxt:        { ...TXT.tag, color: PELE.grey },
+  socialRow:    { flexDirection: 'row', justifyContent: 'center', gap: SPACE.lg },
+  socialCircle: { width: 54, height: 54, borderRadius: 999, backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center' },
 });

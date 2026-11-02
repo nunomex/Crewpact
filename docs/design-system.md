@@ -65,6 +65,7 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 | `Icon` + `design/icons.js` | pictogramas SVG próprios | emoji proibido |
 | `IconButton` | ✕ fechar · ‹ voltar · ações de cabeçalho | **único** botão de ícone: 36 redondo, ícone 16 (‹ 18), toque 44, `label` obrigatório, `night` para o tema noturno (§10) |
 | `SheetHeader` | cabeçalho de folhas e páginas modais | rótulo (ponto amarelo) + título `TXT.titleLg` + ✕ à direita; ‹ opcional à esquerda. Não recriar à mão |
+| `Porta` | ecrãs **antes da app** (entrada, código, nome, palavra-passe, Face ID, bloqueio, reativar; onboarding a seguir) | placa de tinta com a marca + folha de papel com o passo; ‹ e `footer` (ação larga) como no §10; a placa encolhe para faixa com o teclado. **Nunca** num ecrã com barra de abas (§11) |
 | `Toast` | `notify(title, sub, kind, action?)` global | toasts locais proibidos; `action={label,onPress}` = pílula "Desfazer" (5 s, kind `del`) — ver motion §7 |
 | `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora. **Fronteira do desfazer (2026-07-15): local = apaga-já + toast "Desfazer" (5 s); servidor-irreversível (conta·link família·sessão) = confirmação honesta.** |
 | `Skeleton`, `CountUp`, `useEnter` | loading / números / entrada | todos respeitam reduce-motion |
@@ -212,6 +213,12 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
   lista grande ou ecrã de partilha (formulário de serviço, importar, calendário, notificações, partilhas,
   Simulação). Ocupa o ecrã, **fecha com ✕ à direita**.
 - Ecrã empilhado (navegação) — detalhe que pertence a uma aba (DutyDetail, Validades, Hotéis): ‹ à esquerda.
+- **Porta (`components/Porta.js`, 2026-11-02, opção A+B do Nuno)** — só **antes da app**: placa de tinta
+  em cima (a marca; nas edições muda só o papel `onDark`) e folha de papel por baixo com o passo.
+  `plate`: `half` (entrada, Face ID) · `tall` (bloqueio, o ecrã de todos os dias) · `band` (reativar).
+  Com o teclado aberto a placa encolhe para uma faixa. **Regra:** se o ecrã tem barra de abas, não tem
+  placa — a placa nunca entra na revisão das abas. Não é um céu: o céu a ecrã inteiro foi recusado em
+  julho (mata o tinta/amarelo, contraste variável, decoração). Esboço: `design/login-v4.html`.
 
 ## §12 · O guardião (`npm run test:design`, no `npm test` e no pre-push)
 

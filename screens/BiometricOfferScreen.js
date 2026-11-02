@@ -1,18 +1,20 @@
-// OFERTA DE BIOMETRIA — PORT À PELE (2026-07-09): disco ink com o ícone do sensor a
-// AMARELO, título Hanken pesado, botão ink (raio 16, mockup .facebtn) e "Agora não"
-// discreto. RE-SKIN, NÃO REESCRITA: opt-in explícito pós-1.º login (padrão Apple/bancos),
-// só aparece com biometria configurada; ativar VALIDA o sensor uma vez antes de ligar.
+// OFERTA DE BIOMETRIA — PORTA (2026-11-02, esboço `design/login-v4.html`, opção A+B): o símbolo do
+// Face ID vive na placa de tinta, a amarelo (papel onDark); na folha, título à esquerda, uma frase e a
+// ação larga no fundo, com "Agora não" por baixo, sem competir (Zing, Trust Wallet).
+// A lógica não mudou: opt-in explícito pós-1.º login (padrão Apple/bancos), só aparece com
+// biometria configurada; ativar VALIDA o sensor uma vez antes de ligar.
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
-import { PELE, PELE_FONT, BRAND } from '../data/constants';
+import { SPACE } from '../data/constants';
+import Porta, { portaTxt as P } from '../components/Porta';
+import PrimaryButton from '../components/PrimaryButton';
 
 export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
-  const [sensor, setSensor] = useState({ name: null, icon: 'finger-print' });
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const [sensor, setSensor] = useState({ name: null, icon: 'lock', facial: true });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
         const name = Platform.OS === 'ios'
           ? (facial ? 'Face ID' : 'Touch ID')
           : (facial ? (lang === 'en' ? 'face unlock' : 'reconhecimento facial') : (lang === 'en' ? 'fingerprint' : 'impressão digital'));
-        setSensor({ name, icon: facial ? 'scan-outline' : 'finger-print' });
+        setSensor({ name, icon: facial ? 'faceid' : 'lock', facial });
       } catch { /* mantém genérico */ }
     })();
   }, [lang]);
@@ -41,33 +43,28 @@ export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
     setBusy(false);   // cancelou/falhou → fica no ecrã (pode tentar de novo ou "Agora não")
   };
 
+  const footer = (
+    <>
+      <PrimaryButton glyph={sensor.icon} label={l(`Ligar o ${name}`, `Turn on ${name}`)} onPress={enable} loading={busy} />
+      <TouchableOpacity onPress={onSkip} disabled={busy} hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }} style={s.later} accessibilityRole="button">
+        <Text style={[P.link, P.center]}>{t('lock.offerLater', lang)}</Text>
+      </TouchableOpacity>
+    </>
+  );
+
   return (
-    <SafeAreaView style={s.safe}>
-      <View style={s.wrap}>
-        <View style={s.icon}><Ionicons name={sensor.icon} size={30} color={BRAND.onDark} /></View>
-        <Text style={s.title}>{t('lock.offerTitle', lang)}</Text>
-        <Text style={s.sub}>{t('lock.offerSub', lang).replace('{name}', name)}</Text>
-        <TouchableOpacity style={[s.btn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={enable} disabled={busy}
-          accessibilityRole="button" accessibilityLabel={t('lock.offerEnable', lang).replace('{name}', name)}>
-          {busy ? <ActivityIndicator size="small" color={BRAND.onDark} /> : <Ionicons name={sensor.icon} size={22} color={BRAND.onDark} />}
-          <Text style={s.btnTxt}>{t('lock.offerEnable', lang).replace('{name}', name)}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onSkip} disabled={busy} hitSlop={8} style={s.ghost}>
-          <Text style={s.ghostTxt}>{t('lock.offerLater', lang)}</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    <Porta plate="half" brand={sensor.facial ? 'faceid' : 'wordmark'} footer={footer}>
+      <Text style={P.title} accessibilityRole="header">{l(`Abrir com ${name}`, `Open with ${name}`)}</Text>
+      <Text style={P.body}>
+        {sensor.facial
+          ? l('A CrewPact abre com a tua cara.', 'CrewPact opens with your face.')
+          : l('A CrewPact abre com a tua impressão digital.', 'CrewPact opens with your fingerprint.')}
+        {l(' Se alguém pegar no teu telemóvel, não vê a tua escala nem o teu salário.', ' If someone picks up your phone, they cannot see your roster or your pay.')}
+      </Text>
+    </Porta>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-  icon: { width: 68, height: 68, borderRadius: 99, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  title: { fontSize: 20, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, textAlign: 'center', marginBottom: 10, letterSpacing: -0.3 },
-  sub: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 20, marginBottom: 26, maxWidth: 280 },
-  btn: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, marginTop: 6 },
-  btnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
-  ghost: { paddingVertical: 12, marginTop: 8 },
-  ghostTxt: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
+  later: { alignSelf: 'center', paddingVertical: SPACE.xs },
 });

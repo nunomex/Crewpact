@@ -1,0 +1,422 @@
+<title>Entrada da CrewPact v4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: cada passo do sistema de entrada em par — à esquerda a A (passos limpos), à direita a A+B
+   (folha de papel sobre a placa de tinta) — e depois os ecrãs que são iguais nas duas. Tema único de
+   propósito: é a pele de dia da app (papel, tinta, amarelo), com a escala TXT/SPACE do Design System 2.0. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --on-ink: #B9B5AB;
+  --red: #C6362B; --red-soft: #F6E9E6; --ok: #118A55;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.legend span { background: var(--paper); border-radius: 99px; padding: 8px 14px; font: 700 13px/1 var(--f-body); }
+.legend b { font-family: var(--f-display); font-size: 17px; margin-right: 6px; }
+
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 44px 40px; }
+.pair { display: grid; gap: 14px; align-content: start; }
+.pair > header, figcaption { display: grid; gap: 3px; }
+.pair > header b, figcaption b { font: 700 21px/1.1 var(--f-display); }
+.pair > header span, figcaption span { font-size: 13px; color: var(--ink-soft); }
+.step { font: 800 11px/1 var(--f-body) !important; letter-spacing: 1px; color: var(--grey) !important; text-transform: uppercase; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding-inline: 8px; }
+.duo figcaption { font: 800 11px/1 var(--f-body); letter-spacing: 1px; text-transform: uppercase; color: var(--grey); }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 40px 34px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+
+/* o telemóvel: 390×844 desenhado à escala real e encolhido ao espaço */
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .55));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* marca */
+.wm-eye { left: 24px; font: 800 11px/1 var(--f-body); letter-spacing: 3px; color: var(--grey); text-transform: uppercase; }
+.wm-rule { left: 24px; width: 120px; height: 4px; background: var(--yellow); }
+.wm-name { left: 24px; font: 48px/1 var(--f-display); letter-spacing: 3px; color: var(--ink); }
+.wm-name .l { font-weight: 500; } .wm-name .b { font-weight: 800; }
+.wm-name.sm { font-size: 28px; letter-spacing: 2px; }
+.on-ink .wm-eye, .on-ink.wm-eye { color: var(--on-ink); }
+.wm-name.on-ink { color: var(--paper); }
+.wm-eye.on-ink { color: var(--on-ink); }
+
+/* placa e folha (A+B) */
+.plate { left: 0; right: 0; top: 0; background: var(--ink); }
+.sheet { left: 0; right: 0; bottom: 0; background: var(--paper); border-radius: 24px 24px 0 0; }
+
+/* peças do ecrã — escala TXT */
+.title { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; text-wrap: balance; }
+.body { left: 24px; right: 24px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.body b { color: var(--ink); font-weight: 700; }
+.foot { left: 24px; right: 24px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.cap { left: 24px; right: 24px; font: 500 11px/15px var(--f-body); color: var(--grey); }
+.cap b { color: var(--ink); font-weight: 700; text-decoration: underline; }
+.big { left: 24px; right: 24px; font: 600 22px/1 var(--f-body); color: var(--ink); }
+.big i { display: inline-block; width: 2px; height: 24px; background: var(--ink); vertical-align: -4px; margin-left: 2px; }
+.hair { left: 24px; right: 24px; height: 1.5px; background: var(--ink); }
+.priv { left: 24px; right: 24px; display: flex; gap: 6px; align-items: flex-start; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.priv .ico { font-size: 14px; margin-top: 1px; flex: none; color: var(--ok); }
+.lab { left: 28px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.field { left: 24px; right: 24px; height: 50px; border-radius: 99px; background: var(--soft); border: 1.5px solid var(--line); padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between; font: 500 15px/1 var(--f-body); color: var(--placeholder); }
+.field.filled { color: var(--ink); }
+.field.focus { border-color: var(--ink); background: var(--paper); }
+.field .ico { color: var(--grey); font-size: 19px; }
+.btn { left: 24px; right: 24px; height: 50px; border-radius: 99px; display: flex; gap: 8px; align-items: center; justify-content: center;
+  font: 800 14px/1 var(--f-body); letter-spacing: .3px; background: var(--ink); color: var(--paper); }
+.btn .ico { font-size: 18px; color: var(--yellow); }
+.btn.sec { background: var(--soft); color: var(--ink); }
+.btn.sec .ico { color: var(--ink); }
+.link { left: 24px; font: 700 13px/1 var(--f-body); color: var(--ink); text-decoration: underline var(--yellow) 2px; text-underline-offset: 4px; }
+.link.c { left: 0; right: 0; text-align: center; }
+.link.r { left: auto; right: 24px; }
+.quiet { font: 700 12px/1 var(--f-body); color: var(--grey); right: 24px; }
+.back { left: 16px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 22px/1 var(--f-body); color: var(--ink); }
+.otp { left: 24px; right: 24px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.otp span { height: 56px; border-radius: 10px; background: var(--soft); border: 1.5px solid transparent; display: grid; place-items: center; font: 700 24px/1 var(--f-display); }
+.otp span.f { background: var(--paper); border-color: var(--line); }
+.otp span.on { background: var(--paper); border-color: var(--yellow); }
+.tile { left: 24px; width: 64px; height: 64px; border-radius: 16px; background: var(--soft); display: grid; place-items: center; color: var(--ink); font-size: 34px; }
+.glyph { left: 24px; color: var(--yellow); font-size: 72px; }
+.glyph .ico, .tile .ico { stroke-width: 1.6; }
+.meter { left: 24px; right: 24px; display: flex; gap: 6px; align-items: center; font: 700 12px/1 var(--f-body); color: var(--ok); }
+.meter i { flex: 1; height: 4px; border-radius: 2px; background: var(--ok); }
+.meter i.o { background: var(--line); }
+.meter span { margin-left: 6px; }
+.tag { left: 24px; background: var(--red-soft); color: var(--red); border-radius: 99px; padding: 6px 10px; font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; }
+.ring { left: 147px; width: 96px; height: 96px; border-radius: 99px; background: var(--ink); display: grid; place-items: center; color: var(--yellow); font-size: 48px; }
+.ctr { left: 24px; right: 24px; text-align: center; }
+
+/* teclado do iPhone (só a forma) */
+.kb { left: 0; right: 0; top: 544px; bottom: 0; background: #D3D6DC; }
+.kb .bar { position: absolute; left: 0; right: 0; top: 0; height: 44px; background: #DADDE2; display: flex; align-items: center; justify-content: center; gap: 10px; font: 600 13px/1 var(--f-body); color: #333; }
+.kb .keys { position: absolute; left: 6px; right: 6px; top: 54px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 7px 6px; }
+.kb .keys i { height: 42px; background: #fff; border-radius: 5px; display: block; box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.kb .keys.num { grid-template-columns: repeat(3, 1fr); }
+.kb .keys.num i { height: 46px; display: grid; place-items: center; font: 400 24px/1 var(--f-body); font-style: normal; color: #111; }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-face" viewBox="0 0 48 48"><path d="M4 15V9a5 5 0 0 1 5-5h6M33 4h6a5 5 0 0 1 5 5v6M44 33v6a5 5 0 0 1-5 5h-6M15 44H9a5 5 0 0 1-5-5v-6M17 18v4M31 18v4M25 18v9h-2M17 32c4 3.5 10 3.5 14 0"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · sistema de entrada · 2 de novembro de 2026</p>
+    <h1>Entrada da CrewPact v4</h1>
+    <p class="lede">Os mesmos passos de hoje (e-mail, código, nome, Face ID, bloqueio) com um só esqueleto: ‹ em cima à esquerda, título grande à esquerda, um botão largo no fundo que sobe com o teclado. Em cada par, à esquerda a A e à direita a A+B, que põe a marca numa placa de tinta e os passos numa folha de papel por cima.</p>
+  </header>
+
+  <section aria-labelledby="h-par">
+    <h2 id="h-par">Lado a lado</h2>
+    <p class="legend"><span><b>A</b>Passos limpos</span><span><b>A+B</b>Folha sobre a placa</span></p>
+    <div class="pairs">
+
+      <!-- 1 · ENTRADA -->
+      <article class="pair">
+        <header><span class="step">1 · Entrada</span><b>A marca e um campo</b><span>O e-mail escreve-se em letra grande, com a linha do escudo por baixo. O botão fica apagado até o e-mail estar certo. O teclado só abre quando tocas no campo.</span></header>
+        <div class="duo">
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A: ecrã de entrada com a marca no topo e o campo de e-mail">
+              <p class="wm-eye" style="top:112px">FTL · AE · Crew</p><span class="wm-rule" style="top:132px"></span>
+              <p class="wm-name" style="top:148px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <p class="title" style="top:252px">Qual é o teu e-mail?</p>
+              <p class="body" style="top:292px">Entras ou crias conta com ele. Enviamos-te um código de 6 dígitos, sem palavra-passe.</p>
+              <p class="big" style="top:368px">nuno@exemplo.pt<i></i></p>
+              <span class="hair" style="top:404px"></span>
+              <p class="priv" style="top:418px"><svg class="ico"><use href="#i-shield"/></svg>O teu e-mail só serve para entrares. Nunca o partilhamos.</p>
+              <p class="link" style="top:470px">Entrar com palavra-passe</p>
+              <p class="cap" style="top:706px">Ao continuar aceitas os <b>Termos</b> e a <b>Política de Privacidade</b>.</p>
+              <p class="btn" style="top:750px">Continuar</p>
+            </div></div>
+            <figcaption>A</figcaption>
+          </figure>
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A+B: a marca numa placa de tinta e o campo de e-mail numa folha de papel">
+              <div class="plate" style="height:352px"></div>
+              <p class="wm-eye on-ink" style="top:150px">FTL · AE · Crew</p><span class="wm-rule" style="top:170px"></span>
+              <p class="wm-name on-ink" style="top:186px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <div class="sheet" style="top:324px"></div>
+              <p class="title" style="top:356px">Qual é o teu e-mail?</p>
+              <p class="body" style="top:396px">Entras ou crias conta com ele. Enviamos-te um código de 6 dígitos, sem palavra-passe.</p>
+              <p class="big" style="top:466px">nuno@exemplo.pt<i></i></p>
+              <span class="hair" style="top:502px"></span>
+              <p class="priv" style="top:516px"><svg class="ico"><use href="#i-shield"/></svg>O teu e-mail só serve para entrares. Nunca o partilhamos.</p>
+              <p class="link" style="top:568px">Entrar com palavra-passe</p>
+              <p class="cap" style="top:706px">Ao continuar aceitas os <b>Termos</b> e a <b>Política de Privacidade</b>.</p>
+              <p class="btn" style="top:750px">Continuar</p>
+            </div></div>
+            <figcaption>A+B</figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <!-- 2 · CÓDIGO -->
+      <article class="pair">
+        <header><span class="step">2 · Código</span><b>Entra sozinho ao 6.º dígito</b><span>Sem botão Entrar: ao último número aparece "A verificar…" e entra. ‹ volta ao e-mail já escrito. "Abrir o Mail" salta para o Mail do iPhone. Na A+B a placa encolhe para uma faixa quando o teclado abre.</span></header>
+        <div class="duo">
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A: ecrã do código com seis caixas e o teclado numérico">
+              <span class="back" style="top:58px">‹</span>
+              <p class="title" style="top:112px">Vê o teu e-mail</p>
+              <p class="body" style="top:152px">Enviámos um código de 6 dígitos para<br><b>nuno@exemplo.pt</b></p>
+              <div class="otp" style="top:220px"><span class="f">4</span><span class="f">8</span><span class="f">2</span><span class="on"></span><span></span><span></span></div>
+              <p class="foot" style="top:294px">Reenviar em 48 s</p>
+              <p class="link" style="top:330px">Entrar com palavra-passe</p>
+              <p class="btn sec" style="top:480px"><svg class="ico"><use href="#i-mail"/></svg>Abrir o Mail</p>
+              <div class="kb"><div class="bar">Do Mail · 482 917</div><div class="keys num"></div></div>
+            </div></div>
+            <figcaption>A</figcaption>
+          </figure>
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A+B: placa encolhida em faixa, folha com o código e o teclado numérico">
+              <div class="plate" style="height:150px"></div>
+              <span class="wm-rule" style="top:64px;width:64px"></span>
+              <p class="wm-name sm on-ink" style="top:78px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <div class="sheet" style="top:128px"></div>
+              <span class="back" style="top:144px">‹</span>
+              <p class="title" style="top:196px">Vê o teu e-mail</p>
+              <p class="body" style="top:236px">Enviámos um código de 6 dígitos para<br><b>nuno@exemplo.pt</b></p>
+              <div class="otp" style="top:300px"><span class="f">4</span><span class="f">8</span><span class="f">2</span><span class="on"></span><span></span><span></span></div>
+              <p class="foot" style="top:372px">Reenviar em 48 s</p>
+              <p class="link" style="top:406px">Entrar com palavra-passe</p>
+              <p class="btn sec" style="top:480px"><svg class="ico"><use href="#i-mail"/></svg>Abrir o Mail</p>
+              <div class="kb"><div class="bar">Do Mail · 482 917</div><div class="keys num"></div></div>
+            </div></div>
+            <figcaption>A+B</figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <!-- 3 · CONTA NOVA -->
+      <article class="pair">
+        <header><span class="step">3 · Só para contas novas</span><b>O nome, e segue</b><span>Sem ‹: a conta já nasceu com o código, não há para onde voltar. Dois campos com rótulo por cima; o iPhone sugere o nome do teu cartão de contacto.</span></header>
+        <div class="duo">
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A: ecrã do nome e apelido com o teclado aberto">
+              <p class="title" style="top:112px">Como te chamas?</p>
+              <p class="body" style="top:152px">É a primeira vez que entras com este e-mail.</p>
+              <p class="lab" style="top:206px">Nome</p>
+              <p class="field filled focus" style="top:222px">Nuno</p>
+              <p class="lab" style="top:290px">Apelido</p>
+              <p class="field" style="top:306px">apelido</p>
+              <p class="foot" style="top:374px">A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…).</p>
+              <p class="btn" style="top:480px">Continuar</p>
+              <div class="kb"><div class="bar">Nuno</div><div class="keys"></div></div>
+            </div></div>
+            <figcaption>A</figcaption>
+          </figure>
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A+B: faixa da marca, folha com nome e apelido, teclado aberto">
+              <div class="plate" style="height:150px"></div>
+              <span class="wm-rule" style="top:64px;width:64px"></span>
+              <p class="wm-name sm on-ink" style="top:78px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <div class="sheet" style="top:128px"></div>
+              <p class="title" style="top:160px">Como te chamas?</p>
+              <p class="body" style="top:200px">É a primeira vez que entras com este e-mail.</p>
+              <p class="lab" style="top:240px">Nome</p>
+              <p class="field filled focus" style="top:256px">Nuno</p>
+              <p class="lab" style="top:322px">Apelido</p>
+              <p class="field" style="top:338px">apelido</p>
+              <p class="foot" style="top:404px">A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…).</p>
+              <p class="btn" style="top:480px">Continuar</p>
+              <div class="kb"><div class="bar">Nuno</div><div class="keys"></div></div>
+            </div></div>
+            <figcaption>A+B</figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <!-- 4 · FACE ID -->
+      <article class="pair">
+        <header><span class="step">4 · Depois das 6 perguntas</span><b>A oferta do Face ID</b><span>Oferecida uma vez. Ligar é o botão largo; "Agora não" fica por baixo, sem competir. Na A+B o símbolo do Face ID vive na placa, em amarelo.</span></header>
+        <div class="duo">
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A: oferta do Face ID com o símbolo num quadrado suave">
+              <span class="tile" style="top:112px"><svg class="ico"><use href="#i-face"/></svg></span>
+              <p class="title" style="top:204px">Abrir com Face ID</p>
+              <p class="body" style="top:244px">A CrewPact abre com a tua cara. Se alguém pegar no teu telemóvel, não vê a tua escala nem o teu salário.</p>
+              <p class="btn" style="top:700px"><svg class="ico"><use href="#i-face"/></svg>Ligar o Face ID</p>
+              <p class="link c" style="top:772px">Agora não</p>
+            </div></div>
+            <figcaption>A</figcaption>
+          </figure>
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A+B: símbolo do Face ID amarelo na placa e a oferta na folha">
+              <div class="plate" style="height:352px"></div>
+              <span class="glyph" style="top:168px"><svg class="ico"><use href="#i-face"/></svg></span>
+              <div class="sheet" style="top:324px"></div>
+              <p class="title" style="top:356px">Abrir com Face ID</p>
+              <p class="body" style="top:396px">A CrewPact abre com a tua cara. Se alguém pegar no teu telemóvel, não vê a tua escala nem o teu salário.</p>
+              <p class="btn" style="top:700px"><svg class="ico"><use href="#i-face"/></svg>Ligar o Face ID</p>
+              <p class="link c" style="top:772px">Agora não</p>
+            </div></div>
+            <figcaption>A+B</figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <!-- 5 · BLOQUEIO -->
+      <article class="pair">
+        <header><span class="step">5 · Todos os dias</span><b>O bloqueio</b><span>O ecrã que mais se vê, por isso é onde a marca ganha espaço. "Usar a palavra-passe ou um código" passa a servir também quem entrou só com código (hoje só aceita a palavra-passe).</span></header>
+        <div class="duo">
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A: ecrã de bloqueio com a marca e o botão do Face ID no fundo">
+              <p class="quiet" style="top:68px">Sair da conta</p>
+              <p class="wm-eye" style="top:112px">FTL · AE · Crew</p><span class="wm-rule" style="top:132px"></span>
+              <p class="wm-name" style="top:148px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <p class="body" style="top:226px">Bloqueada para proteger a tua escala e o teu salário.</p>
+              <p class="btn" style="top:700px"><svg class="ico"><use href="#i-face"/></svg>Desbloquear com Face ID</p>
+              <p class="link c" style="top:772px">Usar a palavra-passe ou um código</p>
+            </div></div>
+            <figcaption>A</figcaption>
+          </figure>
+          <figure>
+            <div class="pw"><div class="ph" role="img" aria-label="A+B: placa de tinta alta com a marca e uma folha curta com o botão do Face ID">
+              <div class="plate" style="height:600px"></div>
+              <p class="quiet" style="top:68px;color:var(--on-ink)">Sair da conta</p>
+              <p class="wm-eye on-ink" style="top:250px">FTL · AE · Crew</p><span class="wm-rule" style="top:270px"></span>
+              <p class="wm-name on-ink" style="top:286px"><span class="l">CREW</span><span class="b">PACT</span></p>
+              <div class="sheet" style="top:572px"></div>
+              <p class="body" style="top:606px">Bloqueada para proteger a tua escala e o teu salário.</p>
+              <p class="btn" style="top:700px"><svg class="ico"><use href="#i-face"/></svg>Desbloquear com Face ID</p>
+              <p class="link c" style="top:772px">Usar a palavra-passe ou um código</p>
+            </div></div>
+            <figcaption>A+B</figcaption>
+          </figure>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-resto">
+    <h2 id="h-resto">O resto do sistema</h2>
+    <p class="lede">Iguais nas duas versões. Na A+B vivem dentro da mesma folha, com a faixa de tinta em cima.</p>
+    <div class="phones">
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Entrar com palavra-passe, com o teclado aberto">
+          <span class="back" style="top:58px">‹</span>
+          <p class="title" style="top:112px">Entrar com palavra-passe</p>
+          <p class="lab" style="top:170px">E-mail</p>
+          <p class="field filled" style="top:186px">nuno@exemplo.pt</p>
+          <p class="lab" style="top:254px">Palavra-passe</p>
+          <p class="field filled focus" style="top:270px">••••••••••<svg class="ico"><use href="#i-eye"/></svg></p>
+          <p class="link r" style="top:338px">Esqueci-me da palavra-passe</p>
+          <p class="btn" style="top:480px">Entrar</p>
+          <div class="kb"><div class="bar">Usar palavra-passe guardada</div><div class="keys"></div></div>
+        </div></div>
+        <figcaption><span class="step">Alternativa</span><b>Com palavra-passe</b><span>O porta-chaves do iPhone preenche as duas. Sem o link "receber um código": o ‹ já volta ao código.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Recuperar a palavra-passe: pedir o código">
+          <span class="back" style="top:58px">‹</span>
+          <p class="title" style="top:112px">Recuperar a palavra-passe</p>
+          <p class="body" style="top:152px">Enviamos um código para o teu e-mail. Depois crias uma palavra-passe nova.</p>
+          <p class="lab" style="top:214px">E-mail</p>
+          <p class="field filled focus" style="top:230px">nuno@exemplo.pt</p>
+          <p class="btn" style="top:480px">Enviar código</p>
+          <div class="kb"><div class="bar">nuno@exemplo.pt</div><div class="keys"></div></div>
+        </div></div>
+        <figcaption><span class="step">Esqueci-me · 1</span><b>Pedir o código</b><span>A seguir vem o mesmo ecrã do código do passo 2.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Palavra-passe nova com o medidor de força">
+          <p class="title" style="top:112px">Palavra-passe nova</p>
+          <p class="body" style="top:152px">Escolhe uma que não uses noutros sítios.</p>
+          <p class="lab" style="top:196px">Nova</p>
+          <p class="field filled focus" style="top:212px">••••••••••••<svg class="ico"><use href="#i-eye"/></svg></p>
+          <p class="meter" style="top:274px"><i></i><i></i><i></i><i class="o"></i><span>Forte</span></p>
+          <p class="lab" style="top:304px">Repete</p>
+          <p class="field" style="top:320px">repete a nova</p>
+          <p class="btn" style="top:480px">Guardar e entrar</p>
+          <div class="kb"><div class="bar">Palavra-passe forte sugerida</div><div class="keys"></div></div>
+        </div></div>
+        <figcaption><span class="step">Esqueci-me · 3</span><b>A palavra-passe nova</b><span>O iPhone sugere uma forte. O medidor fica por baixo do campo, como hoje.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Conta criada: círculo preto com visto amarelo">
+          <span class="ring" style="top:330px"><svg class="ico" style="stroke-width:2.6"><use href="#i-check"/></svg></span>
+          <p class="title ctr" style="top:452px">Conta criada</p>
+          <p class="body ctr" style="top:494px;font-size:15px">Bem-vindo, Nuno</p>
+          <p class="eyebrow ctr" style="top:786px;position:absolute">A entrar</p>
+        </div></div>
+        <figcaption><span class="step">Momento</span><b>Conta criada</b><span>Fica ao centro: não é um formulário, é um instante. Só muda o título, que passa à escala.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Conta agendada para eliminação, com a data">
+          <p class="tag" style="top:112px">Apaga-se a 9 de novembro</p>
+          <p class="title" style="top:150px">A tua conta vai ser apagada</p>
+          <p class="body" style="top:190px">Pediste para apagar a conta a 2 de novembro. Até dia 9 podes voltar atrás: a escala e os teus registos ficam como estavam.</p>
+          <p class="btn" style="top:700px">Manter a minha conta</p>
+          <p class="link c" style="top:772px">Sair</p>
+        </div></div>
+        <figcaption><span class="step">Caso raro</span><b>Reativar</b><span>Os 7 dias de graça com a data escrita, em vez de só "agendada para eliminação".</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>Um só botão</b><span>O botão principal da app (pílula de tinta), sempre no fundo, a subir com o teclado. Hoje há três formas: pílula, cantos de 16 e um que nem ocupa a largura.</span></li>
+      <li><b>Um só título</b><span>Barlow 30 à esquerda em todos os passos. Hoje há 26 em maiúsculas, 30 e letra normal de 20.</span></li>
+      <li><b>‹ em cima à esquerda</b><span>No lugar do link "‹ Mudar e-mail" no meio do ecrã. Só aparece quando há para onde voltar.</span></li>
+      <li><b>A marca só nas portas</b><span>Na entrada e no bloqueio. Os passos começam logo no título (hoje a marca ocupa cerca de 170 pt em cada passo).</span></li>
+      <li><b>Campos sem ícones</b><span>Sem o envelope e o cadeado. Quando há dois campos, rótulo por cima de cada um.</span></li>
+      <li><b>Letra e espaço da escala</b><span>Saem os 21 tamanhos de letra soltos (6 abaixo de 11) e os 47 espaços fora da grelha destes 6 ecrãs.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>A ou A+B?</b><span>A A+B usa a placa de tinta (o nosso material) e não um céu, que já recusámos no Início em julho. Fica nas portas: entrada, bloqueio, Face ID e, a seguir, o onboarding. As abas da app ficam como estão.</span></li>
+      <li><b>O código entra sozinho, sem botão Entrar?</b><span>Recomendo que sim, como o Vivid e o TikTok. Se o código estiver errado, as caixas abanam e a mensagem aparece por baixo.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  // teclas do teclado simulado (só forma)
+  document.querySelectorAll('.keys').forEach((k) => {
+    k.innerHTML = k.classList.contains('num')
+      ? ['1','2','3','4','5','6','7','8','9','','0','⌫'].map((d) => `<i>${d}</i>`).join('')
+      : Array.from({ length: 30 }, () => '<i></i>').join('');
+  });
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

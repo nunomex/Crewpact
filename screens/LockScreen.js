@@ -1,26 +1,31 @@
-// BLOQUEIO — PORT À PELE (2026-07-09, mockup `design/login-fluxo.html` § Face ID à letra):
-// wordmark da pele + saudação + botão ink (raio 16) com o ícone do sensor a AMARELO +
-// escape "entrar com palavra-passe" com o sublinhado amarelo. RE-SKIN, NÃO REESCRITA:
-// a lógica auditada está intacta — fechadura LOCAL sobre a sessão (não faz login no
-// servidor): 1) auto-pede biometria ao abrir; 2) retry com o NOME/ícone certos do sensor
-// (Face ID/Touch ID); 3) fallback nativo p/ o código do telemóvel; 4) escape por
-// palavra-passe (re-auth Supabase → desbloqueia a MESMA sessão, sem logout).
+// BLOQUEIO — PORTA (2026-11-02, esboço `design/login-v4.html`, opção A+B): o ecrã que mais se vê,
+// por isso é onde a marca ganha espaço — placa de tinta ALTA com a marca, folha curta com uma frase
+// e a ação larga no fundo ("Desbloquear com Face ID"). "Sair da conta" fica no canto da placa.
+// A lógica auditada está intacta — fechadura LOCAL sobre a sessão (não faz login no servidor):
+// 1) auto-pede biometria ao abrir; 2) retry com o NOME certo do sensor (Face ID/Touch ID);
+// 3) fallback nativo para o código do telemóvel; 4) escape por PROVA DE POSSE → desbloqueia a
+// MESMA sessão, sem logout. 2026-11-02: o escape aceita palavra-passe OU código por e-mail
+// (ProofField) — antes só a palavra-passe, e quem entrou só com código ficava sem esta saída.
 import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, ActivityIndicator, Animated, Easing } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, TouchableOpacity, StyleSheet, Platform, Animated, Easing } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext } from '../data/appContext';
-import { reauthenticate } from '../data/auth';
+import { proveOwnership } from '../data/auth';
 import { t } from '../data/i18n';
-import { PELE, PELE_FONT, BRAND } from '../data/constants';
+import { PELE, PELE_NIGHT, PELE_FONT, TXT, SPACE } from '../data/constants';
 import { success, warning } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
+import Porta, { portaTxt as P } from '../components/Porta';
+import PrimaryButton from '../components/PrimaryButton';
+import ProofField, { PROOF0, proofReady } from '../components/ProofField';
 
 export default function LockScreen() {
   const { setLocked, logout, lang, user } = useContext(AppContext);
+  const l = (pt, en) => (lang === 'en' ? en : pt);
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState(false);
+  // Véu pelo JS (não nativo) de propósito: dentro da Porta, um valor nativo preso deixaria o ecrã
+  // invisível (o bug do login, device 2026-11-02).
   // Movimento (reduce-aware): fade de entrada · fade curto no DESBLOQUEIO (em vez de
   // corte seco para a app) · shake no falhanço (o mesmo gesto do Login/macOS).
   const reduce = useReduceMotion();
@@ -28,7 +33,7 @@ export default function LockScreen() {
   const shake = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (reduce) { veil.setValue(1); return; }
-    Animated.timing(veil, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(veil, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
   const doShake = () => {
     warning();
@@ -43,15 +48,15 @@ export default function LockScreen() {
   const unlock = () => {
     success();
     if (reduce) { setLocked(false); return; }
-    Animated.timing(veil, { toValue: 0, duration: 150, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => setLocked(false));
+    Animated.timing(veil, { toValue: 0, duration: 150, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => setLocked(false));
   };
   // Sensor real do device → nome/ícone certos (Face ID vs Touch ID; genérico no Android).
-  const [sensor, setSensor] = useState({ name: null, icon: 'finger-print' });
-  // Escape por palavra-passe (quando a biometria falha) — não força logout.
-  const [showPw, setShowPw] = useState(false);
-  const [pw, setPw]         = useState('');
-  const [pwErr, setPwErr]   = useState('');
-  const [pwBusy, setPwBusy] = useState(false);
+  const [sensor, setSensor] = useState({ name: null, icon: 'lock' });
+  // Escape por prova de posse (quando a biometria falha) — não força logout.
+  const [showPw, setShowPw]   = useState(false);
+  const [proof, setProof]     = useState(PROOF0);
+  const [pwErr, setPwErr]     = useState('');
+  const [pwBusy, setPwBusy]   = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -61,7 +66,7 @@ export default function LockScreen() {
         const name = Platform.OS === 'ios'
           ? (facial ? 'Face ID' : 'Touch ID')
           : (facial ? (lang === 'en' ? 'face unlock' : 'reconhecimento facial') : (lang === 'en' ? 'fingerprint' : 'impressão digital'));
-        setSensor({ name, icon: facial ? 'scan-outline' : 'finger-print' });
+        setSensor({ name, icon: facial ? 'faceid' : 'lock' });
       } catch { /* mantém o genérico */ }
     })();
   }, [lang]);
@@ -83,91 +88,70 @@ export default function LockScreen() {
   // Tenta autenticar logo ao abrir o ecrã (uma vez).
   useEffect(() => { authenticate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Escape: re-autentica com a palavra-passe da conta → desbloqueia a MESMA sessão (não faz logout).
-  const submitPw = async () => {
-    if (pwBusy || !pw) return;
+  // Escape: prova de posse (palavra-passe OU código ao e-mail) → desbloqueia a MESMA sessão.
+  const submitProof = async () => {
+    if (pwBusy || !proofReady(proof)) return;
     setPwBusy(true); setPwErr('');
-    const res = await reauthenticate(user?.email, pw, lang);
+    const res = await proveOwnership(user?.email, proof, lang);
     setPwBusy(false);
     if (!res.ok) { setPwErr(res.error); doShake(); return; }
     unlock();
   };
+  const toFace = () => { setShowPw(false); setProof(PROOF0); setPwErr(''); };
 
   const unlockLabel = sensor.name ? `${t('lock.unlockWith', lang)} ${sensor.name}` : t('lock.unlock', lang);
 
-  return (
-    <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <Animated.View style={{ flex: 1, opacity: veil, transform: [{ translateX: shake }] }}>
-      <View style={s.center}>
-        {/* Wordmark da pele (o mesmo do login) */}
-        <Text style={s.wmEye}>FTL · AE · CREW</Text>
-        <View style={s.wmRule} />
-        <Text style={s.wmName} allowFontScaling={false}>
-          <Text style={s.wmNameLight}>CREW</Text><Text style={s.wmNameBold}>PACT</Text>
-        </Text>
-        <Text style={s.sub}>{t('lock.sub', lang)}</Text>
+  const corner = (
+    <TouchableOpacity onPress={logout} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
+      <Text style={s.logout}>{l('Sair da conta', 'Sign out')}</Text>
+    </TouchableOpacity>
+  );
 
-        {!showPw ? (
-          <>
-            {err ? <Text style={s.err}>{t('lock.failed', lang)}</Text> : null}
-            <TouchableOpacity style={[s.faceBtn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={authenticate} disabled={busy}
-              accessibilityRole="button" accessibilityLabel={unlockLabel}>
-              <Ionicons name={sensor.icon} size={24} color={BRAND.onDark} />
-              <Text style={s.faceBtnTxt}>{unlockLabel}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setShowPw(true); setErr(false); }} hitSlop={8} style={s.altBtn}>
-              <Text style={s.altLink}>{t('lock.usePassword', lang)}</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <View style={s.pwBox}>
-            <View style={s.pwPill}>
-              <Ionicons name="lock-closed-outline" size={17} color={PELE.grey} style={{ marginRight: 11 }} />
-              <TextInput value={pw} onChangeText={(v) => { setPw(v); setPwErr(''); }} secureTextEntry
-                placeholder={t('profile.pwCur', lang)} placeholderTextColor={PELE.placeholder} style={s.pwInput} autoFocus
-                textContentType="password" autoComplete="current-password"
-                autoCapitalize="none" autoCorrect={false} editable={!pwBusy} onSubmitEditing={submitPw} returnKeyType="go" />
-            </View>
-            {pwErr ? <Text style={s.err}>{pwErr}</Text> : null}
-            <TouchableOpacity style={[s.faceBtn, { marginTop: 12, alignSelf: 'stretch' }, (!pw || pwBusy) && { opacity: 0.55 }]}
-              activeOpacity={0.85} onPress={submitPw} disabled={!pw || pwBusy} accessibilityRole="button">
-              {pwBusy ? <ActivityIndicator size="small" color={BRAND.onDark} /> : null}
-              <Text style={s.faceBtnTxt}>{t('lock.unlock', lang)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setShowPw(false); setPw(''); setPwErr(''); }} hitSlop={8} style={s.altBtn}>
-              <Text style={s.altLink}>{sensor.name ? `${t('lock.unlockWith', lang)} ${sensor.name}` : t('lock.unlock', lang)}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-      <TouchableOpacity onPress={logout} style={s.logout} hitSlop={8}>
-        <Text style={s.logoutTxt}>{t('profile.logout', lang)}</Text>
+  const footer = !showPw ? (
+    <>
+      <PrimaryButton glyph={sensor.icon} label={unlockLabel} onPress={authenticate} loading={busy} />
+      <TouchableOpacity onPress={() => { setShowPw(true); setErr(false); }} hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }} style={s.alt} accessibilityRole="button">
+        <Text style={[P.link, P.center]}>{l('Usar a palavra-passe ou um código', 'Use your password or a code')}</Text>
       </TouchableOpacity>
-      </Animated.View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    </>
+  ) : (
+    <>
+      <PrimaryButton label={t('lock.unlock', lang)} onPress={submitProof} loading={pwBusy} disabled={!proofReady(proof)} />
+      <TouchableOpacity onPress={toFace} hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }} style={s.alt} accessibilityRole="button">
+        <Text style={[P.link, P.center]}>{unlockLabel}</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  return (
+    <Animated.View style={[s.flex, { opacity: veil }]}>
+      <Porta plate={showPw ? 'half' : 'tall'} corner={corner} footer={footer}>
+        <Animated.View style={{ transform: [{ translateX: shake }] }}>
+          {!showPw ? (
+            <>
+              <Text style={P.body}>{l('Bloqueada para proteger a tua escala e o teu salário.', 'Locked to protect your roster and your pay.')}</Text>
+              {err ? <Text style={P.err}>{t('lock.failed', lang)}</Text> : null}
+            </>
+          ) : (
+            <>
+              <Text style={P.title} accessibilityRole="header">{l('Confirma que és tu', 'Confirm it is you')}</Text>
+              <ProofField email={user?.email} value={proof} onChange={(v) => { setProof(v); setPwErr(''); }} lang={lang} disabled={pwBusy}
+                styles={{ fieldLabel: P.label, pwInputRow: s.pwRow, pwInput: s.pwInput, pwEye: s.pwEye, emErr: P.err }} />
+              {pwErr ? <Text style={P.err}>{pwErr}</Text> : null}
+            </>
+          )}
+        </Animated.View>
+      </Porta>
+    </Animated.View>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  wmEye: { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
-  wmRule: { height: 3.5, width: 130, backgroundColor: BRAND.signal, marginTop: 9, marginBottom: 12 },
-  wmName: { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
-  wmNameLight: { fontFamily: PELE_FONT.displayMed },
-  wmNameBold: { fontFamily: PELE_FONT.displayHeavy },
-  sub: { fontSize: 13, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 10, textAlign: 'center' },
-  err: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.red, marginTop: 14, textAlign: 'center' },
-  // Botão do sensor (mockup .facebtn): ink, raio 16, ícone AMARELO, texto claro.
-  faceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 28, marginTop: 26, alignSelf: 'center' },
-  faceBtnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
-  altBtn: { marginTop: 18, paddingVertical: 6 },
-  altLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1, textAlign: 'center' },
-  pwBox: { alignSelf: 'stretch', marginTop: 26, alignItems: 'center' },
-  pwPill: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 20, height: 54 },
-  pwInput: { flex: 1, fontSize: 14.5, fontFamily: PELE_FONT.body, color: PELE.ink },
-  logout: { alignItems: 'center', paddingVertical: 20 },
-  logoutTxt: { fontSize: 12, fontFamily: PELE_FONT.bodyBold, color: PELE.grey },
+  flex:    { flex: 1 },
+  logout:  { ...TXT.label, color: PELE_NIGHT.grey },
+  alt:     { alignSelf: 'center', paddingVertical: SPACE.xs },
+  // Campo da palavra-passe do ProofField = o mesmo campo-pílula do login.
+  pwRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: SPACE.lgPlus, height: 50 },
+  pwInput: { flex: 1, fontSize: 15, fontFamily: PELE_FONT.body, color: PELE.ink },
+  pwEye:   { padding: SPACE.xs },
 });

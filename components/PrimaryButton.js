@@ -1,13 +1,16 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Icon from './Icon';
 import { RADIUS, PELE, PELE_FONT, BRAND } from '../data/constants';
 
 // Botão primário canónico — PELE-FICADO 2026-07-09 (era o último resíduo do tema antigo):
 // ink + texto papel + spinner AMARELO (a marca), Hanken pesado. A API não mudou (label,
 // onPress, icon Ionicons, disabled, loading, tone 'ink'|'danger', radius 'pill'|'lg',
 // style, ...rest) → os 9 consumidores rendem pele sem tocar em nenhum call-site.
-export default function PrimaryButton({ label, onPress, icon, disabled = false, loading = false, tone = 'ink', radius = 'pill', elevated = false, style, ...rest }) {
+// `glyph` (2026-11-02) = ícone da casa (components/Icon), a amarelo `onDark` sobre a tinta — preferir ao
+// `icon` (Ionicons, legado) em código novo.
+export default function PrimaryButton({ label, onPress, icon, glyph, disabled = false, loading = false, tone = 'ink', radius = 'pill', elevated = false, style, ...rest }) {
   const bg = disabled ? PELE.soft : tone === 'danger' ? PELE.red : BRAND.action;   // edições: o azul do sindicato
   const fg = disabled ? PELE.grey : PELE.paper;
   return (
@@ -17,6 +20,7 @@ export default function PrimaryButton({ label, onPress, icon, disabled = false, 
       style={[s.base, { backgroundColor: bg, borderRadius: radius === 'lg' ? RADIUS.lg : RADIUS.pill }, style]} {...rest}>
       {loading ? <ActivityIndicator color={tone === 'ink' && !disabled ? BRAND.onDark : fg} /> : (
         <>
+          {glyph ? <Icon name={glyph} size={18} color={disabled ? fg : BRAND.onDark} /> : null}
           {icon ? <Ionicons name={icon} size={17} color={fg} /> : null}
           <Text style={[s.txt, { color: fg }]}>{label}</Text>
         </>

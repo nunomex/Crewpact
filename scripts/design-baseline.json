@@ -1,12 +1,12 @@
 {
  "gerado": "2026-11-02",
  "total": {
-  "tipoFora": 320,
-  "tipoMenor11": 150,
-  "espacoFora": 652,
-  "raioFora": 91,
+  "tipoFora": 300,
+  "tipoMenor11": 145,
+  "espacoFora": 610,
+  "raioFora": 88,
   "corSolta": 105,
-  "ionicons": 14,
+  "ionicons": 10,
   "iconeNavSolto": 3,
   "amareloTexto": 5
  },
@@ -15,16 +15,6 @@
    "tipoFora": 0,
    "tipoMenor11": 0,
    "espacoFora": 1,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "screens/BiometricOfferScreen.js": {
-   "tipoFora": 1,
-   "tipoMenor11": 0,
-   "espacoFora": 6,
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 1,
@@ -131,21 +121,11 @@
    "iconeNavSolto": 1,
    "amareloTexto": 0
   },
-  "screens/LockScreen.js": {
-   "tipoFora": 5,
-   "tipoMenor11": 1,
-   "espacoFora": 10,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
   "screens/LoginScreen.js": {
-   "tipoFora": 11,
-   "tipoMenor11": 4,
-   "espacoFora": 19,
-   "raioFora": 3,
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 0,
+   "raioFora": 0,
    "corSolta": 0,
    "ionicons": 1,
    "iconeNavSolto": 0,
@@ -158,16 +138,6 @@
    "raioFora": 2,
    "corSolta": 0,
    "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "screens/ReactivateScreen.js": {
-   "tipoFora": 3,
-   "tipoMenor11": 0,
-   "espacoFora": 6,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 1,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
@@ -217,7 +187,7 @@
    "espacoFora": 2,
    "raioFora": 1,
    "corSolta": 0,
-   "ionicons": 1,
+   "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },
@@ -367,16 +337,6 @@
    "espacoFora": 6,
    "raioFora": 0,
    "corSolta": 1,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "components/OTPInput.js": {
-   "tipoFora": 0,
-   "tipoMenor11": 0,
-   "espacoFora": 1,
-   "raioFora": 0,
-   "corSolta": 0,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0

@@ -28,6 +28,30 @@ _Antes: dashboard Supabase → Auth → Emails → Templates → colar `supabase
       continua. No "Mudar palavra-passe" isto CRIA a primeira palavra-passe. "Usar a palavra-passe" volta ao campo.
       ✓ 2026-11-02: **Mudar palavra-passe** e **Apagar conta** por código (sem ecrã vermelho). Falta: **Mudar e-mail** por código.
 
+### 0b · Layout novo da entrada — a Porta (2026-11-02, esboço `design/login-v4.html`)
+_Fecha a sessão (Perfil → Terminar sessão) para ver a entrada. Usa a conta de teste._
+- [ ] **Entrada:** placa preta em cima com CREWPACT; folha branca por baixo com "Qual é o teu e-mail?", o e-mail
+      em letra grande sem caixa, a linha do escudo verde e "Entrar com palavra-passe". A barra de cima (hora,
+      bateria) aparece **branca** sobre a placa.
+- [ ] O botão **Continuar** está apagado até o e-mail estar certo; acende sozinho quando fica certo.
+- [ ] Tocar no e-mail: o teclado sobe, a placa **encolhe para uma faixa** (CREWPACT pequeno) e o Continuar fica
+      logo acima do teclado. Fechar o teclado: a placa volta a crescer, sem saltos.
+- [x] Passar do e-mail para o código: o conteúdo entra alinhado e as 6 caixas cabem (sem branco, sem 28 pt à
+      direita) ✓ 2026-11-02, depois da correção da animação.
+- [ ] **Código:** ‹ em cima à esquerda; as 6 caixas ocupam a largura toda. Ao 6.º dígito aparece "A verificar…"
+      e **entra sozinho** (sem botão Entrar). Código errado → abana, as caixas limpam-se e a mensagem fica por baixo.
+- [ ] **Abrir o Mail** (no fundo) abre a app Mail do iPhone. "Reenviar em 60 s" conta para baixo.
+- [ ] **Conta nova:** "Como te chamas?" com os rótulos NOME e APELIDO por cima dos campos; sem ‹.
+- [ ] **Entrar com palavra-passe:** ‹ volta à entrada; "Esqueci-me da palavra-passe" à direita, por baixo dos campos;
+      palavra-passe errada → mensagem a vermelho + "Sem conta ou sem palavra-passe? Entrar com um código".
+- [ ] **Esqueci-me:** o e-mail já vem escrito; o código entra sozinho; "Palavra-passe nova" com o medidor.
+- [ ] **Face ID (conta nova, depois das 6 perguntas):** placa com o símbolo do Face ID a amarelo; "Ligar o Face ID"
+      no fundo, "Agora não" por baixo. (No Expo Go o Face ID cai no código do telemóvel — normal.)
+- [ ] **Bloqueio** (com o bloqueio ligado, sai da app 1 min e volta): placa preta alta com a marca, "Sair da conta"
+      no canto; "Desbloquear com Face ID" no fundo. **"Usar a palavra-passe ou um código"** → "Confirma que és tu"
+      com palavra-passe OU "Confirmar com um código" → desbloqueia **sem** sair da conta.
+- [ ] Com **Reduzir movimento** ligado (Definições → Acessibilidade → Movimento), a placa muda de tamanho sem animar.
+
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._
 - [ ] Escreves o email → **Verificar** → passa ao ecrã de **inserir código**.

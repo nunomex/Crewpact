@@ -6,6 +6,64 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## 2026-11-02 — Layout do sistema de entrada (Mobbin + Flighty)
+
+**Commit `6f068dc`** (login por código + prova de posse + DS 2.0 + Início + papéis da cor), antes de mexer no layout.
+**Problemas medidos (6 ecrãs: Login, Conta criada, Face ID, Bloqueio, Reativar, OTP):**
+- 3 formas de botão e 3 estilos de título;
+- o alinhamento salta entre centro e esquerda;
+- voltar é um link no meio do ecrã e o botão principal fica a meio (os dois contra o §10);
+- a marca repete-se em cada passo;
+- ícones dentro dos campos;
+- 21 tamanhos de letra e 47 espaços fora da escala;
+- o código não entra sozinho;
+- o bloqueio só aceita a palavra-passe (não serve contas só-código).
+
+**Flighty:** não tem login. Padrões tirados: e-mail em letra grande, linha do escudo, botão apagado até o e-mail estar certo.
+**Escolhida a A (Nuno), passos limpos:** ‹ à esquerda, título Barlow 30 à esquerda, botão largo no fundo, código entra
+sozinho, "Abrir o Mail". Referências em `referencias/login/` e na coleção do Mobbin.
+**Nuno pediu também ver A+B.** A B "céu à Flighty" bate na recusa de julho (céu a ecrã inteiro no Início: mata o
+tinta e amarelo, contraste variável, decoração). Por isso a A+B do esboço usa a **placa de tinta** + folha de papel.
+**Esboço:** `design/login-v4.html` (https://claude.ai/artifact/5QoSNGwZf8WHWrhmaaxXgx).
+**DECIDIDO (Nuno, "avança"): A+B + código entra sozinho.** Regra: a placa só existe **antes da app** (ecrã com
+barra de abas nunca leva placa); dentro da folha manda o esqueleto da A, que é o da app toda (§10).
+
+**FEITO no código:**
+- **`components/Porta.js`:** placa `half`/`tall`/`band` + folha + ‹ + `footer`. A placa encolhe com o teclado (sem
+  animar com os movimentos reduzidos) e a barra de estado fica branca. Exporta `portaTxt` (título, texto, rótulo,
+  erro, ligação).
+- **Login (7 vistas):**
+  - na Porta;
+  - e-mail grande + linha do escudo + Continuar apagado até o e-mail estar certo;
+  - os 2 códigos entram sozinhos (código errado: abana e limpa);
+  - "Abrir o Mail" (iOS);
+  - rótulos por cima dos campos, sem ícones;
+  - o "esqueci-me" leva o e-mail já escrito.
+- **Bloqueio:** placa alta, "Sair da conta" no canto. A saída aceita palavra-passe OU código (`ProofField` +
+  `proveOwnership`); antes não servia contas só-código.
+- **Face ID:** símbolo a amarelo na placa, "Ligar o Face ID".
+- **Reativar:** selo com a data, "Manter a minha conta".
+- **Conta criada:** ícone da casa.
+- **Botões:** `PrimaryButton` e `GhostButton` ganharam `glyph` (ícones da casa).
+- **`OTPInput`:** caixas a toda a largura, 56 de altura (vale também no Perfil).
+- **Texto corrigido:** "código de 8 dígitos" → 6.
+
+**Verificado no PC:**
+- `npm test` verde;
+- pacote iOS gera;
+- dívida de design 320→300 tipo, 652→610 espaço, Ionicons 14→10; os 6 ecrãs da entrada a zero (o login guarda só os
+  logótipos Google/Apple).
+
+**Falta:** iPhone (guião §0b) · onboarding na mesma Porta (próximo).
+**1.º teste no iPhone (Nuno, captura):** ao passar do e-mail para o código, a folha ficava branca e depois o conteúdo
+aparecia 28 pt à direita, com as caixas a sair do ecrã. Causa: a `LayoutAnimation` da placa, na arquitetura nova do
+iOS, repunha o valor inicial da transição nativa entre passos (28 pt e transparente). Correção: a placa anima pelo
+`Animated` (JS), e a transição do login e o véu do bloqueio passaram ao driver JS. O abanar do login passou a respeitar
+os movimentos reduzidos. Testes ✓ · pacote iOS ✓. **Regra:** nunca `LayoutAnimation` num ecrã com animações nativas
+de transparência ou posição. **Confirmado no iPhone (Nuno): corrigido ✓.**
+
+---
+
 ## 2026-11-02 — Passo 2 das edições (papéis da cor) + revisão do login
 
 **Ícones: em pausa** (decisão do Nuno). Ficam no quadro `design/icone-direcoes.html` (preferência: Amanhecer; o gosto dele

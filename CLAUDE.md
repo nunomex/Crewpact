@@ -29,7 +29,8 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 4. **Calendário é a fonte.** Criar serviços à mão morreu; editar é só corrigir importados.
 5. **Mockups mandam na hierarquia; os números vêm da escala** (Design System 2.0, 2026-11-02). Ler o mockup
    em `design/` antes de tocar num ecrã (os de `design/arquivo/` não se seguem). Texto em `TXT`, espaço em
-   `SPACE`, fechar/voltar com `IconButton`, cabeçalhos de janela com `SheetHeader` — regras em
+   `SPACE`, fechar/voltar com `IconButton`, cabeçalhos de janela com `SheetHeader`, ecrãs antes da app com `Porta`
+   (placa de tinta + folha; nunca com barra de abas) — regras em
    `docs/design-system.md` §9–§12. O `npm run test:design` tranca-as (a dívida só pode descer). Papel permanente: designer sénior
    da Apple — "a Apple lançava isto?".
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,

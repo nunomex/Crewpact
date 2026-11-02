@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Pressable, View, Text, TextInput, StyleSheet, Platform, Keyboard } from 'react-native';
-import { RADIUS, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { RADIUS, PELE, BRAND, SPACE, TXT } from '../data/constants';
 
 // Caixa de código OTP (6 dígitos numéricos) — partilhada entre reset de password (Login),
 // confirmação de email (signup) e mudar-email (Settings, dentro de um MODAL).
@@ -76,15 +76,18 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
   );
 }
 
+// 2026-11-02 (login-v4, Strava/TikTok): as 6 caixas ocupam a largura toda e têm 56 de altura — alvo
+// largo para o polegar e dígitos legíveis à primeira.
+const BOX_H = 56;
 const otp = StyleSheet.create({
-  row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20, position: 'relative' },
-  box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  row:      { flexDirection: 'row', gap: SPACE.sm, alignSelf: 'stretch', marginVertical: SPACE.lgPlus, position: 'relative' },
+  box:      { flex: 1, height: BOX_H, borderRadius: RADIUS.sm, backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   boxActive:{ backgroundColor: PELE.paper, borderColor: BRAND.signal },
   boxFilled:{ backgroundColor: PELE.paper, borderColor: PELE.line },
-  digit:    { fontSize: 22, fontFamily: PELE_FONT.display, color: PELE.ink },
+  digit:    { ...TXT.num, color: PELE.ink },
   // Sobrepõe as caixas: os toques vão para o campo real, foca sem intermediário.
   // NUNCA opacity 0 (device 2026-11-02): o iOS ignora toques em vistas com alpha < 0.01 → o toque
   // longo ("Colar") nunca chegava ao campo. O campo fica opaco e é o TEXTO que é transparente.
   // Altura EXPLÍCITA (= caixa): absoluto com top+bottom pode medir 0 dentro de um Modal (Fabric).
-  overlay:  { position: 'absolute', top: 0, left: 0, right: 0, height: 44, color: 'transparent', backgroundColor: 'transparent' },
+  overlay:  { position: 'absolute', top: 0, left: 0, right: 0, height: BOX_H, color: 'transparent', backgroundColor: 'transparent' },
 });
