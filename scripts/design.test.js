@@ -33,7 +33,15 @@ const SPACE_PROPS = 'padding|paddingHorizontal|paddingVertical|paddingTop|paddin
 const NAV_ICON = /<Icon\s+name="(close|back)"/g;
 
 function measure(src) {
-  const m = { tipoFora: 0, tipoMenor11: 0, espacoFora: 0, raioFora: 0, corSolta: 0, ionicons: 0, iconeNavSolto: 0 };
+  const m = { tipoFora: 0, tipoMenor11: 0, espacoFora: 0, raioFora: 0, corSolta: 0, ionicons: 0, iconeNavSolto: 0, amareloTexto: 0 };
+  // Amarelo sobre papel = 1,73:1 (design-system §6) → estilo de TEXTO amarelo é dívida, exceto se marcado
+  // `// sobre-tinta` (placa preta, onde dá 10,6).
+  // Desde 2026-11-02 o amarelo tem PAPÉIS (BRAND.*): texto em `signal`/`marker` é dívida (sobre papel);
+  // texto em `onDark` é legítimo (placa preta/noite).
+  for (const x of src.matchAll(/\b\w+:\s*\{([^{}]*)\}/g)) {
+    const b = x[1];
+    if (/fontSize/.test(b) && /\bcolor:\s*(BRAND\.(signal|marker)|(P|PELE|C)\.yellow)\b/.test(b) && !/sobre-tinta/.test(b)) m.amareloTexto++;
+  }
   for (const x of src.matchAll(/fontSize:\s*([\d.]+)\b/g)) {
     const n = +x[1];
     if (n >= TYPE_DECORATIVE_MIN) continue;
@@ -70,10 +78,45 @@ for (const f of FILES) {
 }
 for (const k of Object.keys(atual)) if (Object.values(atual[k]).every((v) => v === 0)) delete atual[k];
 
+// Regra DURA (2026-11-02, apanhou o ecrã vermelho "setDelPw doesn't exist"): nenhum nome usado sem
+// estar definido (variável apagada, import esquecido). O pacote gera sem erro e a app só rebenta
+// quando a pessoa toca no botão — por isso tem de ser apanhado aqui.
+{
+  const traverse = require(path.resolve('node_modules/@babel/traverse')).default;
+  const GLOBAIS = new Set(('console setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame Promise Date Math JSON Object Array String Number Boolean Error TypeError RangeError require module exports __DEV__ global globalThis fetch Intl isNaN isFinite parseInt parseFloat Symbol Map Set WeakMap WeakSet RegExp encodeURIComponent decodeURIComponent encodeURI decodeURI URL URLSearchParams Infinity NaN undefined process Buffer atob btoa TextEncoder TextDecoder AbortController queueMicrotask performance navigator alert structuredClone Reflect Proxy BigInt crypto Uint8Array Uint16Array Uint32Array Int32Array Float32Array Float64Array ArrayBuffer DataView FormData Blob Headers Response Request window document arguments escape unescape setImmediate clearImmediate HermesInternal').split(' '));
+  const alvo = ['App.js', ...['screens', 'components', 'data', 'hooks'].flatMap((d) => fs.readdirSync(d).filter((x) => x.endsWith('.js')).map((x) => `${d}/${x}`))];
+  for (const f of alvo) {
+    let ast;
+    try { ast = babel.parseSync(fs.readFileSync(f, 'utf8'), { filename: f, babelrc: false, configFile: false, parserOpts: { sourceType: 'module', plugins: ['jsx'] } }); }
+    catch (e) { duras.push(`${f}: não se consegue ler (${e.message.slice(0, 60)})`); continue; }
+    const vistos = new Set();
+    traverse(ast, {
+      ReferencedIdentifier(p) {
+        const n = p.node.name;
+        if (p.parentPath.isJSXMemberExpression() || (p.isJSXIdentifier() && /^[a-z]/.test(n))) return;
+        if (vistos.has(n) || p.scope.hasBinding(n, true) || GLOBAIS.has(n)) return;
+        vistos.add(n);
+        duras.push(`${f}:${p.node.loc ? p.node.loc.start.line : '?'}: "${n}" é usado mas não está definido — a app rebenta quando este código correr`);
+      },
+    });
+  }
+}
+
+// Regra DURA (2026-11-02, edições por sindicato): a cor de marca só existe como PAPEL (BRAND.signal/marker/
+// onDark/action). `PELE.yellow` ou '#FFB800' escritos fora de data/constants.js partiriam uma edição.
+const MARCA_DIRS = ['screens', 'components', 'data', 'hooks'];
+for (const f of ['App.js', ...MARCA_DIRS.flatMap((d) => fs.readdirSync(d).filter((x) => x.endsWith('.js')).map((x) => `${d}/${x}`))]) {
+  if (f === 'data/constants.js') continue;
+  fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((line, i) => {
+    if (/\b(PELE_NIGHT|PELE|P|C)\.yellow\b|#FFB800/i.test(line) && !/^\s*\/\//.test(line)) duras.push(`${f}:${i + 1}: amarelo escrito à mão — usar BRAND.<papel> (signal · marker · onDark · action)`);
+  });
+}
+
 const base = fs.existsSync(BASE_FILE) ? JSON.parse(fs.readFileSync(BASE_FILE, 'utf8')) : null;
 const subidas = [], descidas = [];
 if (base) {
   for (const [f, m] of Object.entries(atual)) for (const [k, v] of Object.entries(m)) {
+    if (!(k in (base.total || {}))) continue;   // métrica nova: ainda sem chão — entra no próximo --atualizar
     const b = (base.ficheiros[f] || {})[k] || 0;
     if (v > b) subidas.push(`${f}: ${k} ${b} → ${v}`);
     else if (v < b) descidas.push(`${f}: ${k} ${b} → ${v}`);

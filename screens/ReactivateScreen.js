@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { reactivateAccount } from '../data/auth';
 import { success, warning } from '../data/haptics';
 
@@ -48,7 +48,7 @@ export default function ReactivateScreen({ deletionAt, onReactivated, onDismiss,
             {err ? <Text style={s.err}>{err}</Text> : null}
             <TouchableOpacity style={[s.primary, busy && { opacity: 0.55 }]} onPress={reactivate} disabled={busy} activeOpacity={0.85}
               accessibilityRole="button" accessibilityLabel={l('Reativar a minha conta', 'Reactivate my account')}>
-              {busy ? <ActivityIndicator color={PELE.yellow} /> : <Text style={s.primaryTxt}>{l('Reativar a minha conta', 'Reactivate my account')}</Text>}
+              {busy ? <ActivityIndicator color={BRAND.onDark} /> : <Text style={s.primaryTxt}>{l('Reativar a minha conta', 'Reactivate my account')}</Text>}
             </TouchableOpacity>
           </>
         ) : (

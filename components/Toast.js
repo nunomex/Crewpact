@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useContext } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo, Easing } from 'react-native';
 import Icon from './Icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PELE as P, PELE_NIGHT as N, PELE_FONT as F, SHADOW } from '../data/constants';
+import { PELE as P, PELE_NIGHT as N, PELE_FONT as F, SHADOW, BRAND } from '../data/constants';
 import { AppContext } from '../data/appContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { t } from '../data/i18n';
@@ -20,7 +20,7 @@ import { t } from '../data/i18n';
 const META = {
   sync: { icon: 'sync',  tint: N.ok },
   warn: { icon: 'cloud', tint: N.warn },
-  ok:   { icon: 'check', tint: P.yellow, fg: P.ink },
+  ok:   { icon: 'check', tint: BRAND.marker, fg: P.ink },
   imported: { icon: 'check', tint: N.ok },  // import concluído (verde)
   changes:  { icon: 'sync',  tint: N.warn }, // mudanças por rever (âmbar)
   del:      { icon: 'trash', tint: P.red },  // remoção (com Desfazer)
@@ -120,9 +120,9 @@ const s = StyleSheet.create({
   icon: { width: 34, height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 12.5, fontFamily: F.bodyBold, color: '#FFFFFF' },
   sub: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1, fontFamily: F.bodyMed },
-  undo: { backgroundColor: P.yellow, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
+  undo: { backgroundColor: BRAND.marker, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
   undoTxt: { fontSize: 11.5, fontFamily: F.bodyHeavy, color: P.ink, letterSpacing: 0.3 },
   barTrack: { position: 'absolute', left: 14, right: 14, bottom: 4, height: 2.5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: P.yellow, borderRadius: 99 },
+  barFill: { height: '100%', backgroundColor: BRAND.signal, borderRadius: 99 },
   secs: { position: 'absolute', right: 16, bottom: 2, fontSize: 8.5, fontFamily: F.bodyBold, color: 'rgba(255,255,255,0.5)' },
 });

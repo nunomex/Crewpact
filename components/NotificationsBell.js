@@ -2,7 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { RADIUS, SPACE, TYPE, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, SPACE, TYPE, PELE, PELE_FONT, BRAND } from '../data/constants';
 import { buildNotifications } from '../data/notifications';
 import { aeMonthTotal } from '../data/perdiem';
 import { eventCounts } from '../data/aeEvents';
@@ -161,7 +161,7 @@ const s = StyleSheet.create({
   // Pílula do Início — "● N novidades": só existe com por-ler; ponto amarelo = marca.
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: PELE.soft, borderRadius: RADIUS.pill, paddingVertical: 5, paddingHorizontal: 11 },
   pillNight: { backgroundColor: 'rgba(244,242,237,0.10)' },
-  pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: PELE.yellow },
+  pillDot: { width: 6, height: 6, borderRadius: 99, backgroundColor: BRAND.signal },
   pillTxt: { fontSize: 10.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   pillTxtNight: { color: '#F4F2ED' },
 

@@ -114,13 +114,15 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
 
 0. **Topo canónico** (`PeleHeader`): avatar↖ + sino↗ — igual em todos os
    ecrãs-aba. *(v2: decidido em perfil-acesso/perfil-sino, já construído.)*
-1. **Greet** (12px grey) + **rótulo rodado** (`PeleSide`) na margem direita
-   (identidade do momento: "EJU7625 · 2 SETORES").
+1. **Linha do topo** (2026-11-02, Design System 2.0): **data legível** "SEGUNDA · 2 NOVEMBRO" (`TXT.eyebrow` ink) +
+   **tempo** à direita (ícone + min–máx; folga/pernoita/férias) · por baixo o **greet** + a pílula do canto.
+   O **rótulo rodado (`PeleSide`) saiu do Início** — nenhuma das melhores apps roda texto; a data é legível.
 2. **Faixa de alerta** — slot FIXO; só existe quando há alarme; laranja; nunca
    noutro sítio.
 3. **Hero** — número **fantasma** gigante à direita (mockup 190px; no RN real
    170, `adjustsFontSizeToFit` — afinar no device) + **palavra condensada** 56px
-   sobreposta + **kick** (o porquê, com acentos amarelos) + seta amarela.
+   sobreposta + **kick** (o porquê; a ênfase a TINTA — o amarelo sobre papel dava 1,73:1). A seta amarela
+   do canto SAIU (2026-11-02): decorativa e parecia botão; a palavra diz o estado.
    Na disrupção a palavra fica laranja. *(O Início fala mais alto que a régua
    130 dos outros ecrãs — exceção deliberada, como o Perfil 150.)*
 4. **hr** (1.5px ink).
@@ -188,19 +190,27 @@ amarelo-marca sai de cena. Verde = facto confirmado. € sempre com 2 casas.
   calendário (progressive disclosure — o único momento em que "ativa o sync" é acionável).
 - **SEM datarow** (o donut a 15% era progresso falso — morto em 2026-07-09) e **SEM barra do
   polegar** (v2: as portas são a única zona de decisão; o fundo fica poster puro).
-- **Modo EXEMPLO (2026-07-10, à Apple: amostra nunca se confunde com real, sai-se num toque):** com o demo ativo, o rótulo lateral vira **"EXEMPLO · VOO DE AMOSTRA"** e no topo (lugar do sino) vive a pílula **"● Exemplo — sair"** → limpa o voo falso e volta ao setup. Rede: sair da aba / voltar do background re-sincroniza e limpa na mesma. (Antes: sem selo e sem saída — o utilizador ficava "preso" no exemplo sem saber que era falso.)
+- **Modo EXEMPLO (2026-07-10, à Apple: amostra nunca se confunde com real, sai-se num toque):** com o demo ativo, no topo (lugar do sino) vive a pílula **"● Exemplo — sair"** → limpa o voo falso e volta ao setup. Rede: sair da aba / voltar do background re-sincroniza e limpa na mesma. (Antes: sem selo e sem saída — o utilizador ficava "preso" no exemplo sem saber que era falso.)
 - **Desaparece:** TUDO o resto. Identidade NÃO se mostra nem se pergunta — veio do registo.
 - **Objetivo:** uma única missão. O vazio nunca pede desculpa: mostra o caminho e prova o valor (dia de exemplo).
 
 ### 1 · Folga
 - **Gatilho:** sem duty hoje; próximo report > 24 h.
-- **Hero (2026-07-09, 2.ª iteração do user):** ghost = **dia da semana CURTO de hoje** ("QUI" — 3 letras, gigante) · "Folga" · kick = SÓ o tempo de hoje ("hoje 18°–27°"). O rótulo lateral dá a coordenada: "FOLGA · 9 JULHO". O próximo serviço SAIU do kick (era redundante com a agenda).
+- **Hero (2026-11-02, Design System 2.0 — esboço `design/inicio-folga-v3.html` aprovado; à Flighty):** ghost = **os dias até ao
+  próximo serviço** ("3"), dito legível no kick "Próximo serviço **daqui a 3 dias**" + linha "Qui 5 nov · report 06:10 · LIS-FNC".
+  **Sem nada marcado: SEM fantasma** (o Flighty vazio não decora) — kick "Sem serviços marcados" e o herói encolhe.
+  *(Histórico: 2026-07-09 o ghost era o dia da semana "QUI" e a data vivia no rótulo lateral.)*
 - **Voz — REGRA DE ÂMBITO (2026-07-09, do user "não faz sentido em todo o sistema"):** o bilhete SÓ existe quando a app não pede nada — **folga · férias · doença** (o bilhete de melhoras). Estados operacionais (hoje/véspera/pernoita/pós-voo/disrupção/fecho) falam em interface, não em bilhetes — gate no HomeScreen, pools ficam no motor.
 - **Voz (2026-07-09, 7.ª iteração — FINAL do user):** **BILHETE MANUSCRITO em Caveat 25** (`PELE_FONT.hand`, 3.ª família SÓ para a voz; o user testou Sacramento por imagens e voltou à Caveat), marcador amarelo no que importa (`PELE.yellow`+`PELE.ink` fixos — igual de dia e de noite), cauda na mesma caneta em cinza. **O bilhete POUSA LIVRE na página** (user: "como num post-it de lado"): ângulo **-1°…-3°** (teto de contenção — 3 sinais no mesmo elemento, o ângulo cede primeiro) + desvio 0-10px, **determinísticos pelo DIA** (`noteSeed` do todayISO — sem Math.random). Dynamic type capado a 1.2 no bilhete.
 - **Voz × METEO (2026-07-10, mockup `design/meteo-voz.html` aprovado):** o clima entra na app **pelo bilhete, não por cenografia** (pingas/nuvens = ilustração decorativa, recusada pela pele). Quando o tempo é NOTÁVEL a frase do dia é a do tempo, com **números reais do digest** interpolados; senão pool normal; sem meteo → pool normal (nunca bloqueia). Ordem dos gatilhos: noite > **decisão de amanhã** (chuva "conta com trânsito" > frio ≤6° "leva o casaco — X° às {report}", SÓ quando amanhã há serviço — de dia; às 18h o estado já é véspera) > calor ≥26° "pede rua" > chuva agora "sofá com dignidade" > neve > vento ≥25kt "segura o chapéu" (o windKt é de AGORA — nunca promete amanhã) > sol > nuvens. Férias: sol ≥22° "zero responsabilidades". Doença fica LIMPA (o bilhete de melhoras não fala do tempo). Golden `test:voice` 22.
 - **Ações (2026-07-09):** a folga ficou **SEM ações** (Evento/Simular saíram — o ＋ central da tab bar já os carrega; só o chip fica). A app baixa a voz a sério.
-- **Meio (2026-07-09 final):** o **CARTÃO PRETO do countdown encabeça a agenda** (ink + dígitos amarelos "16 H / até ao report", alinhado à direita — subiu da linha do polegar: era duplo-badge com o título vivo, que morreu; um dado, uma casa) + agenda c/ tracinhos (2–3 próximos), linhas com **data explícita** "SEX 10 · report 05:40 · 4 setores". **A linha do polegar NÃO existe na folga** (chip subiu, ações no ＋ central — o fundo é poster puro). **Util:** sincronizada ✓ · repouso em dia · férias X de Y.
-- **Datarow:** mês € estimado + donut mês %. **Chip:** "2 DIAS · até ao report".
+- **Estado (2026-11-02, à Oura/WHOOP):** colunas **rótulo + valor** (Legal · Sim / Escala · Em dia / Férias · 22 de 22), cada uma
+  abre o seu porquê; sem o título "Estado". "OK" passou a **"Em dia"** (palavra de estado concreta).
+- **A seguir (2026-11-02, à Flighty, DEPOIS do dinheiro):** linhas com a **contagem à esquerda** ("3 / dias") e rota·voo +
+  "Qui 5 nov · report · setores · pernoita" à direita; absorve o cartão preto do countdown. Sem nada: um atalho
+  **"Abrir a Escala"** (sincronizar ou importar). Saiu o "nada marcado — desfruta ✌️" (2.ª voz + emoji).
+- **Datarow (2026-11-02):** € do mês **a tinta** + "€" cinzento · "NOVEMBRO · ESTIMADO" · à direita uma **barra** que diz o que mede
+  ("Dia 2 de 30" / MÊS). Nos estados com PSV a mesma barra diz "62%" / PSV (era um anel).
 - **Ações:** Extra (hot) · Simular. **Desaparece:** countdowns, PSV, avisos.
 - **Animação:** assenta uma vez; sem refresh. **Objetivo:** silêncio merecido.
 

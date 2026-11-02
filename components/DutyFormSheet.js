@@ -7,7 +7,7 @@ import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
 import IconButton from './IconButton';
 import PeleSide from './PeleSide';
-import { RADIUS, GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
@@ -977,7 +977,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                           {!last ? (
                             <TouchableOpacity style={s.contBtn} activeOpacity={0.85} onPress={() => { select(); setStep(i + 1); }}>
                               <Text style={s.contBtnTxt}>{l('Continuar', 'Continue')}</Text>
-                              <Icon name="arrow-r" size={15} color={PELE.yellow} />
+                              <Icon name="arrow-r" size={15} color={BRAND.onDark} />
                             </TouchableOpacity>
                           ) : null}
                         </View>
@@ -1029,7 +1029,7 @@ const s = StyleSheet.create({
   node: { position: 'absolute', left: 0, top: 2, width: 23, height: 23, borderRadius: 12, borderWidth: 2.5, borderColor: PELE.line, backgroundColor: PELE.paper, zIndex: 1, alignItems: 'center', justifyContent: 'center' },
   nodeDone: { borderColor: PELE.ok, backgroundColor: PELE.ok },
   nodeActive: { borderColor: PELE.ink, backgroundColor: PELE.ink },
-  nodeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: PELE.yellow },
+  nodeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND.signal },
   shead: { flexDirection: 'row', alignItems: 'baseline', gap: 10, paddingLeft: 36, paddingTop: 1, paddingBottom: 4 },
   stitle: { fontFamily: PELE_FONT.display, fontSize: 23, letterSpacing: -0.2, color: PELE.grey },
   stitleOn: { color: PELE.ink },
@@ -1047,8 +1047,8 @@ const s = StyleSheet.create({
   dayDn: { fontFamily: PELE_FONT.display, fontSize: 30, lineHeight: 30, color: PELE.ink, fontVariant: ['tabular-nums'] },
   dayOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
   dayWdOn: { color: 'rgba(255,255,255,0.65)' },
-  dayDnOn: { color: PELE.yellow },
-  dayDot: { position: 'absolute', bottom: -8, width: 5, height: 5, borderRadius: 3, backgroundColor: PELE.yellow },
+  dayDnOn: { color: BRAND.onDark },
+  dayDot: { position: 'absolute', bottom: -8, width: 5, height: 5, borderRadius: 3, backgroundColor: BRAND.signal },
 
   // Campos
   lbl: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.2, textTransform: 'uppercase', color: PELE.grey, marginBottom: 8 },
@@ -1126,7 +1126,7 @@ const s = StyleSheet.create({
   // Disclosure "Casos especiais (FTL)"
   advHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: PELE.line, borderRadius: 14, backgroundColor: PELE.paper },
   advHeadTxt: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  advDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.yellow },
+  advDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: BRAND.signal },
   advBody: { borderWidth: 1, borderColor: PELE.line, borderTopWidth: 0, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, marginTop: -2, paddingHorizontal: 13, paddingBottom: 13, backgroundColor: PELE.soft },
   advRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 13 },
   advDivider: { borderTopWidth: 1, borderTopColor: PELE.line, marginTop: 13 },

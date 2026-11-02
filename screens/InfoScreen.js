@@ -11,7 +11,7 @@ import PeleSheet from '../components/PeleSheet';
 import PeleSide from '../components/PeleSide';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import { AppContext } from '../data/appContext';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 import { domainsFor } from '../data/infoCatalog';
 import { libraryFor, openLibraryLink } from '../data/library';
 
@@ -44,7 +44,7 @@ function SourceRow({ src, border }) {
     <TouchableOpacity style={[s.src, border && s.srcB]} activeOpacity={0.75}
       onPress={() => openLibraryLink(src.url)}
       accessibilityRole="link" accessibilityLabel={src.label}>
-      <View style={s.srcIc}><Icon name="book" size={15} color={P.yellow} /></View>
+      <View style={s.srcIc}><Icon name="book" size={15} color={BRAND.onDark} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={s.srcNm}>{src.label}</Text>
         <Text style={s.srcSub} numberOfLines={2}>{src.sub}</Text>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Ícone da CrewPact</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: uma coluna por direção de ícone (4 novas + a atual), cada uma com o ícone grande, a escada de
+   tamanhos até 29 e o ecrã principal claro e escuro. Todas na pele da casa: campo tinta, branco e amarelo.
+   Tema único de propósito: quadro de produto sobre o papel suave da casa. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED; --yellow: #FFB800;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--soft); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 40px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: #4E4E48; font-size: 16px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 238px), 1fr)); gap: 20px; align-items: start; }
+.col { background: var(--paper); border-radius: 20px; padding: 20px; display: grid; gap: 18px; }
+.col header { display: grid; gap: 6px; }
+.col header b { font: 800 26px/1 var(--f-display); letter-spacing: .3px; }
+.col header span { font-size: 13.5px; color: #4E4E48; }
+.tag { justify-self: start; font: 800 10px/1 var(--f-body); letter-spacing: 1px; text-transform: uppercase; padding: 6px 9px; border-radius: 99px; background: var(--soft); }
+.tag.rec { background: var(--ink); color: var(--paper); }
+.k { font: 800 10px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); margin: 0 0 8px; }
+.ic { border-radius: 22.4%; overflow: hidden; background: var(--ink); flex-shrink: 0; display: block; }
+.ic svg { display: block; width: 100%; height: 100%; }
+.big { width: 100%; max-width: 180px; aspect-ratio: 1; }
+.ladder { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.ladder figure { margin: 0; display: grid; gap: 5px; justify-items: center; }
+.ladder figcaption { font: 700 10px/1 var(--f-body); color: var(--grey); }
+.homes { display: grid; gap: 10px; }
+.home { border-radius: 18px; padding: 14px 12px 10px; display: flex; justify-content: space-around; }
+.home.light { background: linear-gradient(160deg, #DFE5EC, #C9D2DD); }
+.home.dark { background: linear-gradient(160deg, #20242B, #0E1116); }
+.app { display: grid; justify-items: center; gap: 5px; width: 54px; }
+.app .nm { font: 600 10px/1.1 var(--f-body); color: rgba(0,0,0,.75); white-space: nowrap; }
+.home.dark .app .nm { color: rgba(255,255,255,.88); }
+.dummy { width: 46px; height: 46px; border-radius: 22.4%; background: rgba(255,255,255,.55); }
+.home.dark .dummy { background: rgba(255,255,255,.14); }
+.why { margin: 0; font-size: 13px; color: #4E4E48; }
+.why b { color: var(--ink); }
+.out { background: var(--paper); border-radius: 16px; padding: 16px 20px; max-width: 80ch; font-size: 14px; color: #4E4E48; }
+.out b { color: var(--ink); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <p class="eyebrow">CrewPact · ícone · 2 de novembro de 2026</p>
+    <h1>Ícone da CrewPact</h1>
+    <p class="lede">Todas na pele da app: campo a tinta, branco e o amarelo da casa. A regra é a da Apple: uma forma, sem texto, legível aos 29 pontos das Definições. A ronda mais recente fica em cima; as anteriores ficam por baixo para comparar.</p>
+  </header>
+  <section style="display:grid;gap:18px">
+    <h2 style="font:700 34px/1 var(--f-display);margin:0">Ronda 5 · Amanhecer, quatro variações</h2>
+    <p class="why" style="max-width:78ch">Gostaste do Amanhecer. Cada variação mexe numa só coisa, para veres o que muda: a hora (Madrugada), a técnica (Plano), o enquadramento (Eclipse) e a marca (Pintura). O original fica em primeiro, para comparar.</p>
+    <div class="cols" id="cols5"></div>
+  </section>
+  <section style="display:grid;gap:18px">
+    <h2 style="font:700 34px/1 var(--f-display);margin:0">Ronda 4 · a letra com segredo</h2>
+    <p class="why" style="max-width:78ch">Da tua última referência fica a lição, não a forma: uma letra feita de cortes diagonais secos e uma só curva, que se lê também como aviação. Plana, como as imagens de que gostas. Desenhada de raiz: outra letra (o C da CrewPact), outra construção, e a parte que foge da letra é a pista amarela, o sublinhado da app.</p>
+    <div class="cols" id="cols4"></div>
+  </section>
+  <section style="display:grid;gap:18px">
+    <h2 style="font:700 34px/1 var(--f-display);margin:0">Ronda 3 · uau</h2>
+    <p class="why" style="max-width:78ch">Luz, profundidade e uma história de tripulação em cada um. Quebra de propósito a regra de julho "sem gradientes": é para onde a Apple levou os ícones no iOS 26 (camadas, luz e paralaxe, feitos no Icon Composer). Cada um tem também uma versão plana para os modos tingido e transparente do iPhone. Tudo desenhado de raiz, com as cores da própria app: a noite azul e o amarelo da casa.</p>
+    <div class="cols" id="cols3"></div>
+  </section>
+  <section style="display:grid;gap:18px">
+    <h2 style="font:700 34px/1 var(--f-display);margin:0">Ronda 2 · desenho nosso, a partir das tuas referências</h2>
+    <p class="why" style="max-width:76ch">Retirei a "Cauda", a "Cauda em faixas" e o "Avião de papel": estavam perto de mais das imagens de referência, e a cauda da imagem 2 é uma marca com direitos reservados. A "Deriva" foi construída de raiz com regras diferentes delas.</p>
+    <div class="cols" id="cols2"></div>
+  </section>
+  <section style="display:grid;gap:18px">
+    <h2 style="font:700 34px/1 var(--f-display);margin:0">Ronda 1</h2>
+    <div class="cols" id="cols"></div>
+  </section>
+  <p class="out"><b>Como escolher:</b> olha primeiro para o 29 e para o ecrã escuro. Um ícone bom reconhece-se pela silhueta a esse tamanho, antes de se perceber o desenho. Diz-me qual, ou o que não gostas no atual, e afino a escolhida antes de fazer o ficheiro final de 1024.</p>
+</main>
+<script>
+const Y = '#FFB800', W = '#FFFFFF', K = '#141414';
+// Cada ícone em viewBox 0 0 100 100 (o campo tinta é o fundo do contentor, com o canto do iOS).
+// Ronda 2 — DESENHO NOSSO (2026-11-02). As referências do Nuno deram a lição (a cauda é o mundo da
+// tripulação; uma silhueta forte); a forma é construída de raiz e de propósito diferente delas:
+// virada à DIREITA (as referências apontam à esquerda) · só ARESTAS RETAS (sem bordo de fuga côncavo)
+// · SEM estabilizador · SEM faixas — um único risco amarelo, o sublinhado dos heróis da app.
+// Construção: trapézio (30,22)(44,22)(84,76)(36,76); risco amarelo entre y=60 e y=68.
+const FIN2 = '30,22 44,22 84,76 36,76';
+// Ronda 3 — "uau" (2026-11-02): luz e profundidade (iOS 26 / Icon Composer), desenho de raiz, cores da app
+// (noite PELE_NIGHT #0D131C, amarelo #FFB800). IDs de gradiente com prefixo por conceito.
+const PLANE = 'M21 16v-2l-8-5V3.5C13 2.7 12.33 2 11.5 2S10 2.7 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
+// Ronda 4 — "a letra com segredo" (2026-11-02). Lição da referência do Nuno (letra de cortes diagonais que
+// também se lê como aviação); desenho de raiz e diferente dela: letra C (não A), sem barra cruzada,
+// a perna de baixo é uma PISTA amarela que sai da letra com uma curva. Construção:
+// corpo branco = (33,22)(74,22)(72.4,32)(47.4,32)(41.6,68)(25.6,68) — tronco inclinado como uma deriva;
+// pista amarela = perna de baixo y68–78 até x=86 (foge da letra), canto exterior curvo (revisto após ver desenhado).
+const CBODY = '33,22 74,22 72.4,32 47.4,32 41.6,68 25.6,68';   // perna de cima + tronco inclinado (branco)
+const CPISTA = 'M25.6 68 L86 68 L84.4 78 L38 78 Q25 78 24 70.5 Z';   // perna de baixo = PISTA amarela: mesma espessura, mais comprida que a de cima, a única curva no canto exterior
+// Ronda 5 — variações do Amanhecer (2026-11-02). Mesma construção de raiz: fuselagem + deriva (virada à
+// direita, arestas retas) contra o sol. Cada variação muda UMA coisa. IDs de gradiente com prefixo próprio.
+const AM_FUS = 'M6 80 Q34 74.5 100 71 L100 94 Q44 91 6 82.5 Z';
+const AM_FIN = '18,22 33,22 74,74.2 25,77.6';
+const STARS = (o) => `<circle cx="78" cy="16" r=".9" fill="#fff" opacity="${.75 * o}"/><circle cx="88" cy="30" r=".6" fill="#fff" opacity="${.6 * o}"/><circle cx="66" cy="9" r=".6" fill="#fff" opacity="${.6 * o}"/><circle cx="90" cy="12" r=".5" fill="#fff" opacity="${.5 * o}"/>`;
+const R5 = [
+  { id: 'v0', nome: 'Original', tag: '', tagT: 'O de que gostaste',
+    ideia: 'A cauda contra o sol a nascer, com a luz a acender o bordo de ataque.',
+    porque: '<b>A referência</b> para comparar as quatro variações.',
+    svg: `<defs><linearGradient id="v0Sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset=".52" stop-color="#1D3557"/><stop offset=".8" stop-color="#C8743A"/><stop offset="1" stop-color="#F2A541"/></linearGradient>
+      <radialGradient id="v0Sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF1B8"/><stop offset=".55" stop-color="#FFC93C"/><stop offset="1" stop-color="#FFB800"/></radialGradient>
+      <radialGradient id="v0Glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB800" stop-opacity=".6"/><stop offset="1" stop-color="#FFB800" stop-opacity="0"/></radialGradient></defs>
+      <rect width="100" height="100" fill="url(#v0Sky)"/>${STARS(1)}
+      <circle cx="66" cy="74" r="40" fill="url(#v0Glow)"/><circle cx="66" cy="74" r="16" fill="url(#v0Sun)"/>
+      <path d="${AM_FUS}" fill="#0B0F15"/><polygon points="${AM_FIN}" fill="#0B0F15"/>
+      <line x1="33.2" y1="22.4" x2="73.6" y2="73.8" stroke="#FFD36A" stroke-width="1.3" opacity=".9"/>
+      <path d="M58 73.6 Q80 72 100 71" stroke="#FFD36A" stroke-width="1" fill="none" opacity=".75"/>` },
+  { id: 'v1', nome: 'Madrugada', tag: '', tagT: 'A hora',
+    ideia: 'O momento antes do sol: quase noite, uma faixa âmbar fina no horizonte e só uma lasca de sol a espreitar por cima da fuselagem.',
+    porque: '<b>A mais elegante e a mais calma</b>, perto do tema noturno da app. Aos 29 fica mais escura: a cunha lê-se menos.',
+    svg: `<defs><linearGradient id="v1Sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060A12"/><stop offset=".6" stop-color="#12213A"/><stop offset=".86" stop-color="#34497A"/><stop offset="1" stop-color="#E0873C"/></linearGradient>
+      <radialGradient id="v1Glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB800" stop-opacity=".5"/><stop offset="1" stop-color="#FFB800" stop-opacity="0"/></radialGradient></defs>
+      <rect width="100" height="100" fill="url(#v1Sky)"/>${STARS(1.2)}<circle cx="24" cy="12" r=".7" fill="#fff" opacity=".6"/><circle cx="52" cy="20" r=".5" fill="#fff" opacity=".5"/>
+      <circle cx="66" cy="78" r="34" fill="url(#v1Glow)"/><circle cx="66" cy="80" r="12" fill="#FFC93C"/><rect y="89" width="100" height="11" fill="#06080C"/>
+      <path d="${AM_FUS}" fill="#06080C"/><polygon points="${AM_FIN}" fill="#06080C"/>
+      <line x1="33.2" y1="22.4" x2="73.6" y2="73.8" stroke="#FFC85A" stroke-width=".9" opacity=".7"/>` },
+  { id: 'v2', nome: 'Plano', tag: '', tagT: 'A técnica',
+    ideia: 'Só cores sólidas: céu azul-noite, sol amarelo, silhueta preta. Sem gradientes nem brilhos.',
+    porque: '<b>A mais forte aos 29</b> e a mais perto do teu gosto pelo plano. Também é a base dos modos tingido e transparente do iPhone.',
+    svg: `<rect width="100" height="100" fill="#1C2C48"/>
+      <circle cx="66" cy="72" r="20" fill="#FFB800"/>
+      <path d="${AM_FUS}" fill="#0B0F15"/><polygon points="${AM_FIN}" fill="#0B0F15"/>` },
+  { id: 'v3', nome: 'Eclipse', tag: 'rec', tagT: 'O enquadramento',
+    ideia: 'A cauda muito perto, a cortar o sol ao meio, com a luz a acender o bordo de ataque como um eclipse.',
+    porque: '<b>O mais dramático.</b> A forma ocupa o ícone todo, por isso aos 29 continua a ler-se: metade de um sol e uma aresta de luz.',
+    svg: `<defs><linearGradient id="v3Sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A1120"/><stop offset=".55" stop-color="#1B2F52"/><stop offset="1" stop-color="#D98A3E"/></linearGradient>
+      <radialGradient id="v3Sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4C4"/><stop offset=".6" stop-color="#FFC93C"/><stop offset="1" stop-color="#FFB800"/></radialGradient>
+      <radialGradient id="v3Glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB800" stop-opacity=".7"/><stop offset="1" stop-color="#FFB800" stop-opacity="0"/></radialGradient></defs>
+      <rect width="100" height="100" fill="url(#v3Sky)"/>${STARS(.8)}
+      <circle cx="63" cy="64" r="44" fill="url(#v3Glow)"/><circle cx="63" cy="64" r="22" fill="url(#v3Sun)"/>
+      <polygon points="0,8 24,8 88,100 0,100" fill="#0B0F15"/>
+      <line x1="24.4" y1="8.6" x2="87.6" y2="99.4" stroke="#FFD36A" stroke-width="5" opacity=".22"/>
+      <line x1="24.4" y1="8.6" x2="87.6" y2="99.4" stroke="#FFE08A" stroke-width="1.6"/>` },
+  { id: 'v4', nome: 'Pintura', tag: '', tagT: 'A marca',
+    ideia: 'O original com um risco amarelo pintado na cauda, como a linha da pintura de uma companhia.',
+    porque: '<b>Põe a cor da casa no próprio avião.</b> Risco: dois amarelos (o sol e o risco) competem um pouco aos 29.',
+    svg: `<defs><linearGradient id="v4Sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset=".52" stop-color="#1D3557"/><stop offset=".8" stop-color="#C8743A"/><stop offset="1" stop-color="#F2A541"/></linearGradient>
+      <radialGradient id="v4Sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF1B8"/><stop offset=".55" stop-color="#FFC93C"/><stop offset="1" stop-color="#FFB800"/></radialGradient>
+      <radialGradient id="v4Glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB800" stop-opacity=".5"/><stop offset="1" stop-color="#FFB800" stop-opacity="0"/></radialGradient>
+      <clipPath id="v4Fin"><polygon points="${AM_FIN}"/></clipPath></defs>
+      <rect width="100" height="100" fill="url(#v4Sky)"/>${STARS(1)}
+      <circle cx="66" cy="74" r="36" fill="url(#v4Glow)"/><circle cx="66" cy="74" r="14" fill="url(#v4Sun)"/>
+      <path d="${AM_FUS}" fill="#0B0F15"/><polygon points="${AM_FIN}" fill="#0B0F15"/>
+      <rect x="0" y="52" width="100" height="7" fill="#FFB800" clip-path="url(#v4Fin)"/>
+      <line x1="33.2" y1="22.4" x2="73.6" y2="73.8" stroke="#FFD36A" stroke-width="1.1" opacity=".8"/>` },
+];
+const R4 = [
+  { id: 'pista', nome: 'C de pista', tag: '', tagT: 'Ronda 4',
+    ideia: 'O C da CrewPact em cortes diagonais, com o tronco inclinado como uma deriva. A perna de baixo foge da letra e vira pista amarela: o sublinhado da app a descolar.',
+    porque: '<b>Lê-se duas vezes:</b> primeiro a letra da marca, depois a cauda e a pista. Plana, sem truques de luz, forte aos 29. Serve pilotos e cabine.',
+    svg: `<g transform="translate(-5 0)"><polygon points="${CBODY}" fill="${W}"/><path d="${CPISTA}" fill="${Y}"/></g>` },
+  { id: 'pistaclaro', nome: 'C de pista · claro', tag: '', tagT: 'A mesma, em papel',
+    ideia: 'A mesma marca em tinta sobre papel, como a tua referência. Serve a variante clara do iOS e os documentos.',
+    porque: '<b>Para veres a forma sem o campo escuro.</b> No iPhone o principal continua a ser o escuro; esta é a variante clara.',
+    svg: `<rect width="100" height="100" fill="#F2F0EA"/><g transform="translate(-5 0)"><polygon points="${CBODY}" fill="${K}"/><path d="${CPISTA}" fill="${Y}"/></g>` },
+];
+const R3 = [
+  { id: 'amanhecer', nome: 'Amanhecer', tag: '', tagT: 'Ronda 3 · uau',
+    ideia: 'A cauda do avião recortada contra o sol a nascer por trás dele, com a luz a acender o bordo de ataque. O dia de quem faz o report antes do sol.',
+    porque: '<b>Conta a app inteira numa imagem:</b> a tripulação (a deriva), a interface viva que passa da noite ao dia, e o amarelo da casa no sol. Aos 29 lê-se como um brilho âmbar com uma cunha escura.',
+    svg: `<defs><linearGradient id="amSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset=".52" stop-color="#1D3557"/><stop offset=".8" stop-color="#C8743A"/><stop offset="1" stop-color="#F2A541"/></linearGradient>
+      <radialGradient id="amSun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF1B8"/><stop offset=".55" stop-color="#FFC93C"/><stop offset="1" stop-color="#FFB800"/></radialGradient>
+      <radialGradient id="amGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB800" stop-opacity=".6"/><stop offset="1" stop-color="#FFB800" stop-opacity="0"/></radialGradient></defs>
+      <rect width="100" height="100" fill="url(#amSky)"/>
+      <circle cx="78" cy="16" r=".9" fill="#fff" opacity=".75"/><circle cx="88" cy="30" r=".6" fill="#fff" opacity=".6"/><circle cx="66" cy="9" r=".6" fill="#fff" opacity=".6"/><circle cx="90" cy="12" r=".5" fill="#fff" opacity=".5"/>
+      <circle cx="66" cy="74" r="40" fill="url(#amGlow)"/>
+      <circle cx="66" cy="74" r="16" fill="url(#amSun)"/>
+      <path d="M6 80 Q34 74.5 100 71 L100 94 Q44 91 6 82.5 Z" fill="#0B0F15"/>
+      <polygon points="18,22 33,22 74,74.2 25,77.6" fill="#0B0F15"/>
+      <line x1="33.2" y1="22.4" x2="73.6" y2="73.8" stroke="#FFD36A" stroke-width="1.3" opacity=".9"/>
+      <path d="M58 73.6 Q80 72 100 71" stroke="#FFD36A" stroke-width="1" fill="none" opacity=".75"/>` },
+  { id: 'rasto', nome: 'Rasto', tag: '', tagT: 'O C, reinventado',
+    ideia: 'O rasto de condensação desenha um C no céu da noite e acaba num avião minúsculo. A tua rota a escrever o nome da app.',
+    porque: '<b>Guarda o C da CrewPact</b>, mas conta uma história. Risco: aos 29 o anel amarelo pode lembrar um indicador de carregamento.',
+    svg: `<defs><radialGradient id="raBg" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#1C3050"/><stop offset="1" stop-color="#0A0F18"/></radialGradient>
+      <linearGradient id="raTrail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB800" stop-opacity="0"/><stop offset=".45" stop-color="#FFB800" stop-opacity=".55"/><stop offset="1" stop-color="#FFD24D"/></linearGradient>
+      <radialGradient id="raGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+      <rect width="100" height="100" fill="url(#raBg)"/>
+      <circle cx="20" cy="18" r=".8" fill="#fff" opacity=".7"/><circle cx="84" cy="22" r=".6" fill="#fff" opacity=".6"/><circle cx="30" cy="84" r=".6" fill="#fff" opacity=".5"/><circle cx="86" cy="80" r=".5" fill="#fff" opacity=".5"/>
+      <path d="M70.7 32.6 A27 27 0 1 0 70.7 67.4" fill="none" stroke="url(#raTrail)" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="72" cy="67" r="9" fill="url(#raGlow)"/>
+      <path d="${PLANE}" fill="#fff" transform="translate(72.5 66.6) rotate(68) scale(.46) translate(-12 -12)"/>` },
+  { id: 'janela', nome: 'Janela', tag: '', tagT: 'A vista do escritório',
+    ideia: 'A janela do avião com o céu da madrugada, o sol no horizonte e o horizonte em amarelo: o sublinhado da app.',
+    porque: '<b>A forma que pilotos e cabine reconhecem num relance</b>, com a interface viva lá dentro. Risco: há apps de viagens com janelas; a nossa distingue-se pela luz e pela linha amarela.',
+    svg: `<defs><linearGradient id="jaSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E1A30"/><stop offset=".5" stop-color="#2C5E92"/><stop offset=".76" stop-color="#E9A04A"/><stop offset="1" stop-color="#F6C26B"/></linearGradient>
+      <linearGradient id="jaFrame" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40454F"/><stop offset="1" stop-color="#1B1E23"/></linearGradient>
+      <linearGradient id="jaGloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <clipPath id="jaClip"><rect x="31" y="19" width="38" height="62" rx="19"/></clipPath></defs>
+      <rect width="100" height="100" fill="#141414"/>
+      <rect x="25" y="13" width="50" height="74" rx="25" fill="url(#jaFrame)"/>
+      <g clip-path="url(#jaClip)">
+        <rect x="31" y="19" width="38" height="62" fill="url(#jaSky)"/>
+        <circle cx="50" cy="64" r="7.5" fill="#FFB800"/>
+        <rect x="31" y="64" width="38" height="17" fill="#141414" opacity=".88"/>
+        <rect x="31" y="62.6" width="38" height="2.8" fill="#FFB800"/>
+        <path d="M31 19 L54 19 L31 54 Z" fill="url(#jaGloss)"/></g>` },
+  { id: 'horizonte', nome: 'Horizonte artificial', tag: '', tagT: 'O cockpit',
+    ideia: 'O instrumento que mostra a atitude do avião, inclinado numa curva suave, com o símbolo do avião em amarelo.',
+    porque: '<b>Imediato para pilotos</b> e bonito para todos. Risco: fala mais a pilotos do que a cabine.',
+    svg: `<defs><clipPath id="hoClip"><circle cx="50" cy="50" r="33"/></clipPath>
+      <linearGradient id="hoSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#18467F"/><stop offset="1" stop-color="#4C97E0"/></linearGradient></defs>
+      <rect width="100" height="100" fill="#141414"/>
+      <circle cx="50" cy="50" r="37.5" fill="#262A31"/>
+      <g clip-path="url(#hoClip)"><g transform="rotate(-12 50 50)">
+        <rect x="-10" y="-10" width="120" height="62" fill="url(#hoSky)"/>
+        <rect x="-10" y="52" width="120" height="58" fill="#0D131C"/>
+        <rect x="-10" y="51" width="120" height="2" fill="#fff"/>
+        <rect x="43" y="43" width="14" height="1.4" rx=".7" fill="#fff" opacity=".7"/><rect x="46" y="35" width="8" height="1.2" rx=".6" fill="#fff" opacity=".55"/>
+        <rect x="43" y="60" width="14" height="1.4" rx=".7" fill="#fff" opacity=".45"/></g></g>
+      <path d="M27 52 H41 L45 57" fill="none" stroke="#FFB800" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M73 52 H59 L55 57" fill="none" stroke="#FFB800" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="50" cy="52" r="3.4" fill="#FFB800"/>` },
+];
+const R2 = [
+  { id: 'deriva', nome: 'Deriva', tag: '', tagT: 'Ronda 2 · desenho nosso',
+    ideia: 'A deriva de um avião em arestas retas, com um único risco amarelo: o sublinhado dos números da app, pintado como a linha de uma pintura de companhia.',
+    porque: '<b>Original e da tripulação.</b> Construída de raiz, virada à direita, sem curvas, sem estabilizador e sem faixas: nada da composição das imagens de referência. Serve pilotos e cabine por igual.',
+    svg: `<defs><clipPath id="fin2clip"><polygon points="${FIN2}"/></clipPath></defs>
+      <g transform="translate(-7 1)"><polygon points="${FIN2}" fill="${W}"/>
+        <rect x="0" y="60" width="100" height="8" fill="${Y}" clip-path="url(#fin2clip)"/></g>` },
+  { id: 'atual2', nome: 'Atual', tag: '', tagT: 'O de julho',
+    ideia: 'A letra C condensada com o sublinhado amarelo.',
+    porque: '<b>Não gostas dele.</b> Fica aqui só para comparar.',
+    svg: `<text x="50" y="66" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="66" fill="${W}">C</text>
+      <rect x="40" y="73" width="20" height="6" rx="3" fill="${Y}"/>` },
+];
+const D = [
+  { id: 'brevet', nome: 'Brevet', tag: '', tagT: 'Ronda 1',
+    ideia: 'As asas que todo o tripulante usa ao peito, pilotos e cabine. O círculo amarelo é o pacto ao centro.',
+    porque: '<b>Só a tripulação tem isto.</b> Não é o avião da categoria, é o distintivo de quem trabalha a bordo.',
+    svg: `<g stroke="${W}" stroke-linecap="round" fill="none">
+      <line x1="40" y1="45" x2="11" y2="37" stroke-width="7"/><line x1="40" y1="53" x2="16" y2="50" stroke-width="7"/><line x1="40" y1="61" x2="23" y2="62" stroke-width="7"/>
+      <line x1="60" y1="45" x2="89" y2="37" stroke-width="7"/><line x1="60" y1="53" x2="84" y2="50" stroke-width="7"/><line x1="60" y1="61" x2="77" y2="62" stroke-width="7"/></g>
+      <circle cx="50" cy="53" r="10" fill="${Y}"/>` },
+  { id: 'dia', nome: 'O dia', tag: '', tagT: 'Interface viva',
+    ideia: 'O sol a nascer sobre a régua: a app que acompanha o teu dia, da véspera ao pós-voo.',
+    porque: '<b>Conta a interface viva</b> numa forma. Risco: lembrar uma app de meteorologia.',
+    svg: `<path d="M28 61 A22 22 0 0 1 72 61 Z" fill="${Y}"/><rect x="16" y="61" width="68" height="5" rx="2.5" fill="${W}"/>` },
+  { id: 'visto', nome: 'Visto', tag: '', tagT: 'A promessa',
+    ideia: 'O marcador amarelo do bilhete com um visto recortado: está tudo verificado, legal e pago.',
+    porque: '<b>É a promessa da app</b> e usa o marcador que já existe no Início. Risco: os vistos são o símbolo das listas de tarefas.',
+    svg: `<g transform="rotate(-4 50 50)"><rect x="17" y="36" width="66" height="30" rx="6" fill="${Y}"/></g>
+      <polyline points="34,51 45,61 66,40" fill="none" stroke="${K}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>` },
+  { id: 'limite', nome: 'Limite', tag: '', tagT: 'A lei',
+    ideia: 'O arco do limite de serviço, a encher até à marca: o PSV e o descanso, sempre à vista.',
+    porque: '<b>Fala da lei dos limites</b>, o coração técnico da app. Risco: os anéis lembram o Oura e o Atividade da Apple.',
+    svg: `<circle cx="50" cy="52" r="27" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="9"/>
+      <circle cx="50" cy="52" r="27" fill="none" stroke="${Y}" stroke-width="9" stroke-linecap="round" stroke-dasharray="118 170" transform="rotate(-90 50 52)"/>
+      <rect x="47.5" y="17" width="5" height="12" rx="2.5" fill="${W}"/>` },
+  { id: 'atual', nome: 'Atual', tag: '', tagT: 'O de julho',
+    ideia: 'A letra C condensada com o sublinhado amarelo dos heróis da app.',
+    porque: '<b>Não gostas dele.</b> Fica aqui só para comparar.',
+    svg: `<text x="50" y="66" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="66" fill="${W}">C</text>
+      <rect x="40" y="73" width="20" height="6" rx="3" fill="${Y}"/>` },
+];
+const ic = (d, cls, px) => `<span class="ic ${cls}" ${px ? `style="width:${px}px;height:${px}px"` : ''} role="img" aria-label="Ícone ${d.nome}"><svg viewBox="0 0 100 100">${d.svg}</svg></span>`;
+const card = (d) => `<section class="col" aria-label="${d.nome}">
+  <header><span class="tag ${d.tag}">${d.tagT}</span><b>${d.nome}</b><span>${d.ideia}</span></header>
+  ${ic(d, 'big')}
+  <div><p class="k">Do grande ao pequeno</p><div class="ladder">${[60, 40, 29].map((s) => `<figure>${ic(d, '', s)}<figcaption>${s}</figcaption></figure>`).join('')}</div></div>
+  <div><p class="k">No ecrã principal</p><div class="homes">
+    <div class="home light"><div class="app"><div class="dummy"></div><span class="nm">Mail</span></div><div class="app">${ic(d, '', 46)}<span class="nm">CrewPact</span></div><div class="app"><div class="dummy"></div><span class="nm">Mapas</span></div></div>
+    <div class="home dark"><div class="app"><div class="dummy"></div><span class="nm">Mail</span></div><div class="app">${ic(d, '', 46)}<span class="nm">CrewPact</span></div><div class="app"><div class="dummy"></div><span class="nm">Mapas</span></div></div>
+  </div></div>
+  <p class="why">${d.porque}</p>
+</section>`;
+document.getElementById('cols5').innerHTML = R5.map(card).join('');
+document.getElementById('cols4').innerHTML = R4.map(card).join('');
+document.getElementById('cols3').innerHTML = R3.map(card).join('');
+document.getElementById('cols2').innerHTML = R2.map(card).join('');
+document.getElementById('cols').innerHTML = D.map(card).join('');
+</script>
+</body>
+</html>

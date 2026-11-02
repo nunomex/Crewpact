@@ -6,7 +6,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import PeleSheet from './PeleSheet';
 import ProvaSheet from './ProvaSheet';
 import Icon from './Icon';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 import { provaFor } from '../data/prova';
 import { select } from '../data/haptics';
 
@@ -90,7 +90,7 @@ export default function AuditSheet({ visible, onClose, audit, monthName = '', la
 
 const s = StyleSheet.create({
   eyeb: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  edot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.yellow },
+  edot: { width: 7, height: 7, borderRadius: 99, backgroundColor: BRAND.signal },
   etxt: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.8, color: P.grey, textTransform: 'uppercase' },
   h1: { fontFamily: F.display, fontSize: 24, color: P.ink, marginTop: 6 },
   sub: { fontSize: 11, fontFamily: F.bodyMed, color: P.grey, marginTop: 2 },
@@ -98,7 +98,7 @@ const s = StyleSheet.create({
   iIc: { width: 30, height: 30, borderRadius: 9, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
   iB: { fontSize: 12.5, fontFamily: F.bodyBold, color: P.ink },
   iS: { fontSize: 10, fontFamily: F.bodyMed, color: P.grey, marginTop: 1, lineHeight: 14 },
-  iLawS: { color: P.yellow, fontFamily: F.bodyHeavy, fontSize: 10 },
+  iLawS: { color: BRAND.signal, fontFamily: F.bodyHeavy, fontSize: 10 },
   iLaw: { color: P.grey, fontFamily: F.bodyBold, fontSize: 9.5 },
   iV: { fontFamily: F.display, fontSize: 16, color: P.ink, fontVariant: ['tabular-nums'] },   // INK: candidato ≠ confirmado
   iAct: { fontSize: 8, fontFamily: F.bodyHeavy, letterSpacing: 0.8, color: P.grey, marginTop: 2 },

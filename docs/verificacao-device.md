@@ -10,6 +10,24 @@ Passo-a-passo para confirmar no telemóvel o que não dá para verificar no Wind
 
 ---
 
+## 0 · Entrada por código (login novo, 2026-11-02 — esboço `design/login-v3.html`)
+_Antes: dashboard Supabase → Auth → Emails → Templates → colar `supabase/email-magic-link.html` em "Magic Link"
+(o "Confirm signup" já tem o código). Usa e-mails de TESTE._
+- [ ] O 1.º ecrã é só o e-mail + **CONTINUAR** (sem botões Apple/Google, sem "brevemente"); os Termos no fundo.
+- [x] **Conta que já existe:** e-mail → código chega pelo Resend → **ENTRAR** → entra no Início ✓ (2026-11-02, código escrito à mão).
+- [x] O iPhone sugere o código por cima do teclado ("Do Mail") e o toque longo nas caixas mostra "Colar" ✓ (2026-11-02, após a correção).
+- [x] **E-mail novo:** e-mail → código → **"Bem-vindo à CrewPact"** pede nome e apelido → "Conta criada" com o
+      nome → as 6 perguntas do onboarding → oferta do Face ID → Início com as boas-vindas ✓ (2026-11-02).
+- [ ] Reenviar só fica ativo aos **60 s**; pedir antes dá "Aguarda um minuto antes de pedir outro código".
+- [ ] Código errado → banner vermelho; "Email errado? Corrigir" volta à entrada com o e-mail escrito.
+- [ ] **Entrar com palavra-passe** (na entrada e no código) → o login antigo, com o e-mail já preenchido;
+      falhar a palavra-passe → "Sem conta ou sem palavra-passe? Entrar com um código".
+- [ ] A app NUNCA diz "esse e-mail não tem conta".
+- [x] **Conta criada só por código** (sem palavra-passe): Perfil → Segurança → Apagar conta / Mudar e-mail /
+      Mudar palavra-passe → "Não tens palavra-passe? Confirmar com um código" → Enviar código → 6 dígitos → a ação
+      continua. No "Mudar palavra-passe" isto CRIA a primeira palavra-passe. "Usar a palavra-passe" volta ao campo.
+      ✓ 2026-11-02: **Mudar palavra-passe** e **Apagar conta** por código (sem ecrã vermelho). Falta: **Mudar e-mail** por código.
+
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._
 - [ ] Escreves o email → **Verificar** → passa ao ecrã de **inserir código**.
@@ -85,6 +103,11 @@ _Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'fol
 'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' | null=real). O Fast Refresh aplica ao guardar.
 **No fim, voltar a `null`.** Para conteúdo realista, melhor combinar a alavanca com dados reais._
 
+> **Revisto a 2026-11-02 (Design System 2.0).** Em TODOS os estados do Início: data legível + tempo na linha do
+> topo · SEM rótulo rodado · SEM seta/ícone amarelo no canto · destaques do kick a TINTA (nunca texto amarelo
+> sobre papel) · linha do € a tinta com barra que diz o que mede (era anel). Onde um item abaixo ainda diga
+> "amarelo", "donut" ou "rótulo", vale isto; cada estado é reescrito quando chega a sua vez.
+
 ## 0 · Setup (primeira vez)
 _Dados reais: conta sem calendário ligado. Ou `FORCE='setup'`._
 - [ ] "Bem-vindo, <nome>" + fantasma = AVIÃO + "Olá!" + kick amarelo do calendário.
@@ -92,15 +115,23 @@ _Dados reais: conta sem calendário ligado. Ou `FORCE='setup'`._
 - [ ] Donut 15% SETUP · chip "PASSO 1" · ações **Ligar calendário** (preta) / **Ver exemplo**.
 - [ ] "Ver exemplo" mostra um dia demo (desaparece ao trocar de app — é espreitadela).
 
-## 1 · Folga
-_Dados reais: hoje sem serviço. Com e sem serviço futuro marcado._
-- [ ] Fantasma = **dia de HOJE** (nunca o do próximo) + **símbolo do tempo** no expoente.
-- [ ] Rótulo `FOLGA · QUARTA-FEIRA` (dia por extenso, sem número).
-- [ ] **Halo** suave atrás do fantasma (âmbar sol · azulado chuva) — quase subliminar.
-- [ ] **Voz**: "descansa — está tudo em dia. …" (2 tons; muda com o tempo/dia).
-- [ ] Com próximo serviço: kick "próximo serviço quinta · LIS→FNC · 05:30 · 18°–27°" + agenda (3, tocáveis) + chip "N DIAS até ao report".
-- [ ] Sem nada: "sem serviços marcados" + "nada marcado — desfruta ✌️".
-- [ ] Com AE: € do mês (cêntimos!) + donut % do mês.
+## 1 · Folga  (Design System 2.0 — esboço `design/inicio-folga-v3.html`)
+_Dados reais: hoje sem serviço. Primeiro SEM nada marcado (o caso de 2026-11-02), depois COM serviço futuro._
+
+**Sem nada marcado**
+- [ ] Topo: "SEGUNDA · 2 NOVEMBRO" à esquerda (tinta) + tempo à direita (ícone + min–máx); por baixo a saudação.
+- [ ] Sem rótulo rodado na margem direita · sem seta amarela no canto.
+- [ ] SEM fantasma · "Folga" grande + "Sem serviços marcados" a tinta · o topo não deixa um buraco.
+- [ ] Bilhete manuscrito com o marcador amarelo (como antes).
+- [ ] Estado em colunas: LEGAL · Sim / ESCALA · Em dia / FÉRIAS · 22 de 22 — cada coluna abre o seu porquê.
+- [ ] € do mês a tinta com "€" cinzento + "NOVEMBRO · ESTIMADO"; à direita "Dia 2 de 30", barra amarela fina, "MÊS".
+- [ ] "A SEGUIR" + atalho "Abrir a Escala · Sincronizar ou importar a escala" → abre a Escala.
+- [ ] Brilho do sistema de luz centrado à volta do tempo no canto superior direito.
+
+**Com serviço futuro**
+- [ ] Fantasma = dias até ao próximo serviço · kick "Próximo serviço daqui a N dias" (N a tinta) + "Qui 5 nov · report 06:10 · LIS-FNC".
+- [ ] "A SEGUIR": até 3 linhas, contagem à esquerda (N / dias), rota · voo + data · report · setores · pernoita à
+      direita; tocar abre o detalhe do dia.
 
 ## 2 · Véspera 🌙 (NOTURNO)
 _Dados reais: serviço amanhã com report cedo + serem ≥18h. Ou `FORCE='vespera'` (com o serviço criado)._
@@ -142,7 +173,7 @@ _Dados reais: serviço de hoje terminado com 🌙 fora da base. Ou `FORCE='perno
 - [ ] Ações **Hotel**(preta)/**Partilhar**(o voo que aterrou — o link diz "Aterrou ✓")/Simular.
 
 ## Transversais (em todos)
-- [ ] Rótulo lateral começa no MESMO ponto em todas as abas/ecrãs (Início·Números·Escala·INFO·Perfil·Validades·Detalhe).
+- [ ] Início sem rótulo rodado em nenhum estado; nos outros ecrãs o rótulo ainda existe até à migração de cada um (bloco C).
 - [ ] Fantasma nunca pisa o rótulo · nunca desaparece após uns segundos (o bug do re-render morreu).
 - [ ] Banda de alerta só quando há motivo; aviso de documento crítico vive AO PÉ do Estado (vermelho).
 - [ ] Pull-to-refresh funciona · trocar de aba e voltar não parte nada.

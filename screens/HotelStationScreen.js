@@ -8,7 +8,7 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
 import HotelSheet from '../components/HotelSheet';
@@ -163,7 +163,7 @@ const s = StyleSheet.create({
   card: { borderWidth: 1, borderColor: PELE.line, borderRadius: 20, padding: 16, paddingBottom: 14, marginTop: 12 },
   curRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 },
   // Visto amarelo da casa (a gramática de seleção do onboarding).
-  tick: { width: 15, height: 15, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center' },
+  tick: { width: 15, height: 15, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
   curTxt: { fontSize: 8.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.6, color: PELE.grey },
   cName: { fontFamily: PELE_FONT.display, fontSize: 21, letterSpacing: -0.2, color: PELE.ink },
   cMeta: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },

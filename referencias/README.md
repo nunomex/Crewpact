@@ -30,3 +30,13 @@ O que se tira delas: ✕ redondo em fundo suave, alinhado ao topo do título; o 
 
 O que se tira delas: uma só ação principal, larga, ao alcance do polegar; sair é o ✕ (sem "Cancelar" a
 competir com o Guardar); com o teclado aberto, o botão sobe com ele (AllTrails, Hypelist).
+
+## inicio-folga/ — escolhidas a 2026-11-02 (para o Início no estado folga)
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `flighty-lista-estados.webp` | Flighty | o herói é o tempo até ao próximo voo ("4 DAYS"), que vira estado ("IN AIR"); linhas todas iguais | https://mobbin.com/screens/8e9997ca-3801-4836-9e35-0f9ce7059b2a |
+| `flighty-faixa-estado.webp` | Flighty | uma faixa de estado tingida no topo; cor só com significado | https://mobbin.com/screens/d2a15492-9519-4965-826f-649edbfc3521 |
+| `gentler-streak-dia.webp` | Gentler Streak | palavra de estado + uma frase + recomendações | https://mobbin.com/screens/f9bf6004-fa31-4dbe-818a-6acbd51f0cae |
+| `outsiders-prontidao.webp` | The Outsiders | número herói + palavra de estado + explicação | https://mobbin.com/screens/62d556a4-d34e-4c5a-b50e-20463d8644d7 |
+| `oura-contribuintes.webp` | Oura | contribuintes com rótulo e valor, linha a linha | https://mobbin.com/screens/121db3f0-43f9-4642-830e-d82d26190ba9 |

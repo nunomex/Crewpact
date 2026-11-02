@@ -30,12 +30,16 @@
 - `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos) + **Caveat** (`hand` — manuscrita, USO ÚNICO: a voz do Início, o bilhete pessoal com marcador amarelo). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso.
 - Partilhados com o tema antigo: `RADIUS` (cartão de conteúdo = `lg` 16; folhas/diálogos xl/xxl) · `SPACE` · `SHADOW` (só folhas/diálogos/toasts elevam — **cartões são planos**, borda hairline) · `GUTTER` 16.
 - **Design System 2.0 (2026-11-02):** `TXT` (estilos de texto com nome — §9) · `SPACE` alargado à grelha 2/4 · `TYPE` com os números condensados (24/28/34/44) · `ICON_BTN` (36 · ícone 16 · toque 44) · `SCALE` (as escalas permitidas, lidas pelo guardião §12).
+- **Cor de marca por PAPÉIS — `BRAND` (2026-11-02, base das edições por sindicato):** `signal` (sinais sem texto: pontos,
+  barras, réguas, sublinhados, bordas) · `marker` (fundo com tinta por cima: bilhete, Desfazer, vistos) · `onDark` (marca
+  sobre placa preta/noite: texto, ícones, spinners) · `action` (fundo do botão principal; base = tinta). Na base todos são o
+  amarelo de hoje → nada visível mudou. Uma edição troca SÓ o `BRAND`. **`PELE.yellow`/`#FFB800` fora do `constants.js` = regra dura do guardião.**
 
 **Gramática da pele:**
 - **Fantasma** — numeral/sigla gigante em `PELE.ghost` atrás do herói. Tamanhos **determinísticos por comprimento** (TUNE.ghost s3/s4/s5). ⚠️ **Nunca `adjustsFontSizeToFit` em `Text` absoluto** — bug iOS: fica invisível quando um irmão re-renderiza.
-- **PeleSide** — rótulo lateral rodado 90°, início ancorado no TOPO em todos os ecrãs (wrap width 320 + textAlign left; a rotação ancora o FIM, o wrap fixo devolve o início).
+- **PeleSide (A SAIR — 2026-11-02):** já saiu do Início; nos outros ecrãs sai na migração de cada um (bloco C) — nenhuma das melhores apps roda texto e a informação passa para um sítio legível (data/estado no topo). Onde é **selo funcional** (Simulação "E-SE", modo exemplo) troca por um rótulo visível no cabeçalho. *Histórico:* rótulo lateral rodado 90°, início ancorado no TOPO em todos os ecrãs (wrap width 320 + textAlign left; a rotação ancora o FIM, o wrap fixo devolve o início).
 - **PeleHeader** — **fonte única do cabeçalho** (o fantasma tinha divergido 74/92/130 entre ecrãs antes da consolidação). Régua 130/44/108; slots avatar/back · actions · sino · word/kick. Fora da régua por decisão deliberada: DutyDetail 104 · Perfil 150 · Início (sem fantasma de header).
-- **Amarelo** = marca/realce: numeração bento, kicks, seleção, pontinhos de atenção suave.
+- **Amarelo** = marca/realce: numeração bento, kicks, seleção, pontinhos de atenção suave — **como FUNDO, PONTO, BARRA ou texto SOBRE PLACA PRETA, nunca como texto sobre papel** (§6, medido).
 - **Tema noturno** — conduzido pelo **ESTADO do dia** (véspera/pernoita), NÃO pelo dark-mode do sistema. Fábrica `makeSkin(P, night)` → `sDay`/`sNight`.
 - **Navegação = TAB BAR com ＋ central** (`components/TabBar.js`, 2026-07-09 — referência aprovada pelo user): barra inteira em **papel + hairline no topo**, **em layout** (o conteúdo termina acima dela, nada fica tapado), simetria **`Início · Escala · ＋ · Números · Perfil`**, ativa = **ink + ponto amarelo** (espaço reservado, fade+scale 180ms + pop do ícone, reduce-motion salta); tema noturno herdado do Início via `homeNight`; ponto âmbar em "Escala" (alterações por rever); háptico; `useTabBarSpace` = só folga (20).
 - **O ＋ central abre o speed-dial em pílulas rotuladas** (Modal + scrim + cascata; back do Android fecha; × = clone pixel-perfect que roda): **Serviço** (→ Escala, novo serviço hoje) · **Simulação** · **Evento** (gate AE). O ＋ é só CRIAR — a Pesquisa vive na Biblioteca. Criar também continua na grelha da Escala (tocar num dia insere NESSE dia) e nos acts contextuais do Início.
@@ -82,6 +86,14 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 - **Reduce-motion** respeitado em toda a animação ([motion §5](motion-design-system.md)).
 - Dynamic type cap **1.4**.
 - Contraste: cores de estado vivas só em fills ≥3px e números ≥24px; texto informativo usa tokens `*Text` escurecidos (as vivas falham AA abaixo de 18px — calculado, não estimado).
+- **Amarelo sobre papel = 1,73 : 1** (medido 2026-11-02, `#FFB800` sobre `#FFFFFF`). Chumba em QUALQUER tamanho:
+  texto normal pede 4,5 e texto grande/ícones pedem 3. Por isso o amarelo **nunca é texto nem ícone informativo
+  sobre papel** — nem nos números grandes (a regra "≥24px" acima NÃO vale para o amarelo). Onde passa:
+  tinta sobre amarelo **10,6** (o marcador do bilhete) · amarelo sobre placa preta **10,6** (avatar, cartão do
+  countdown, toasts). Dinheiro e números herói = **tinta**. Se um dia for preciso amarelo como texto, o tom
+  legível é `#8A6300` (5,43) — decisão de marca, não se usa sem o Nuno.
+- O guardião conta os estilos de texto em `BRAND.signal`/`BRAND.marker` (`amareloTexto`, roquete — é dívida sobre papel).
+  Texto da marca sobre placa preta ou na noite usa `BRAND.onDark` e é legítimo.
 - **Dupla codificação** para daltónicos (marca a 90% + % em texto, além da cor).
 - Labels a11y completas nos interativos.
 
@@ -203,7 +215,9 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
 
 ## §12 · O guardião (`npm run test:design`, no `npm test` e no pre-push)
 
-- **Regras duras (zero tolerância):** nenhum `fontWeight` · toda a `LayoutAnimation` respeita os
+- **Regras duras (zero tolerância):** nenhum nome usado sem estar definido (variável apagada → ecrã vermelho só no device) ·
+  nenhum `fontWeight` · nenhum amarelo escrito à mão (`PELE.yellow`/`#FFB800`) fora
+  do `constants.js` — só `BRAND.<papel>` · toda a `LayoutAnimation` respeita os
   movimentos reduzidos · todo o ficheiro que anima com `Animated` lê o reduce-motion · todo o componente
   usado em JSX está importado (o pacote gera sem ele, mas a app rebenta ao abrir o ecrã — apanhou 2
   casos reais na migração).

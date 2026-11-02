@@ -6,6 +6,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import CenterDialog from '../components/CenterDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OTPInput from '../components/OTPInput';
+import ProofField, { PROOF0, proofReady } from '../components/ProofField';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PrimaryButton from '../components/PrimaryButton';
 import Icon from '../components/Icon';
@@ -17,11 +18,11 @@ import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { countryName, countryFlag } from '../data/countries';
 import { addCrewChange, currentCrew } from '../data/crewHistory';
 import appJson from '../app.json';
-import { changePassword, validatePassword, updateProfile, deleteAccount, reauthenticate, requestEmailChange, verifyEmailChange } from '../data/auth';
+import { changePassword, validatePassword, updateProfile, deleteAccount, proveOwnership, requestEmailChange, verifyEmailChange } from '../data/auth';
 import { Seg } from '../components/Stepper';
 import { AppContext, isoDay } from '../data/appContext';
 import { dataExportJson } from '../data/dataExport';
@@ -67,7 +68,7 @@ function Row({ icon, label, sub, value, right, onPress, last, danger, s }) {
 function Tile({ icon, label, value, valueStrong, valueColor, onPress, wide, hot, s }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.tile, wide && s.tileWide, hot && s.tileHot]} accessibilityRole="button" accessibilityLabel={label}>
-      <View style={[s.tIc, hot && s.tIcHot]}><Icon name={ROW_IC[icon] || icon} size={18} color={hot ? PELE.yellow : PELE.ink} /></View>
+      <View style={[s.tIc, hot && s.tIcHot]}><Icon name={ROW_IC[icon] || icon} size={18} color={hot ? BRAND.onDark : PELE.ink} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[s.tLb, hot && s.tLbHot]} numberOfLines={2}>{label}</Text>
         {value ? <Text style={[s.tVv, valueStrong && s.tVvK, hot && s.tVvHot, valueColor ? { color: valueColor } : null]} numberOfLines={1}>{value}</Text> : null}
@@ -162,7 +163,7 @@ export default function SettingsScreen({ navigation }) {
   //  o € do mês vive nos Números/fecho/sino; o Perfil não recalcula o motor a cada render.)
 
   const [pwModal, setPwModal] = useState(false);
-  const [curPw, setCurPw]   = useState('');
+  const [pwProof, setPwProof] = useState(PROOF0);   // prova de posse: palavra-passe atual OU código
   const [newPw, setNewPw]   = useState('');
   const [confPw, setConfPw] = useState('');
   const [pwErr, setPwErr]   = useState('');
@@ -175,21 +176,20 @@ export default function SettingsScreen({ navigation }) {
   const [delWord, setDelWord]   = useState('');
   const [delErr, setDelErr]     = useState('');
   const [delBusy, setDelBusy]   = useState(false);
-  const [delPw, setDelPw]       = useState('');     // prova de posse (auditoria 2026-09-03)
-  const [delShowPw, setDelShowPw] = useState(false);
-  const delReady = delWord.trim().toUpperCase() === CONFIRM_WORD && delPw.length > 0;
+  const [delProof, setDelProof] = useState(PROOF0); // prova de posse (auditoria 2026-09-03): palavra-passe OU código (2026-11-02)
+  const delReady = delWord.trim().toUpperCase() === CONFIRM_WORD && proofReady(delProof);
   const handleDeleteAccount = async () => {
     if (delBusy) return;
-    if (!delReady) { setDelErr(l(`Escreve ${CONFIRM_WORD} e a tua palavra-passe para confirmar.`, `Type ${CONFIRM_WORD} and your password to confirm.`)); return; }
+    if (!delReady) { setDelErr(l(`Escreve ${CONFIRM_WORD} e confirma que és tu para continuar.`, `Type ${CONFIRM_WORD} and confirm it is you to continue.`)); return; }
     setDelBusy(true); setDelErr('');
     // Re-auth por password: a palavra escrita trava toques acidentais; a password trava quem
     // NÃO é o dono (telemóvel na mão). A graça de 7 dias continua a ser a rede de segurança.
-    const re = await reauthenticate(user?.email, delPw, lang);
+    const re = await proveOwnership(user?.email, delProof, lang);
     if (!re.ok) { setDelBusy(false); setDelErr(re.error); return; }
     const res = await deleteAccount(lang);
     if (!res.ok) { setDelBusy(false); setDelErr(res.error); return; }
     setDelBusy(false);
-    setDelModal(false); setDelWord(''); setDelPw('');
+    setDelModal(false); setDelWord(''); setDelProof(PROOF0);
     success();
     // Período de graça: a conta foi AGENDADA (não apagada já) → NÃO purgar o local (a reativação
     // precisa da escala). Mostra a data-limite e desloga. Entrar de novo dentro do prazo = reativar.
@@ -210,12 +210,11 @@ export default function SettingsScreen({ navigation }) {
   // onAuthStateChange só trata SIGNED_OUT → metemos o user atualizado no contexto à mão.
   const [emModal, setEmModal]   = useState(false);
   const [emStep, setEmStep]     = useState('pw');   // 'pw' | 'email' | 'code'
-  const [emPw, setEmPw]         = useState('');
+  const [emProof, setEmProof]   = useState(PROOF0); // prova de posse: palavra-passe OU código
   const [emNew, setEmNew]       = useState('');
   const [emCode, setEmCode]     = useState('');
   const [emErr, setEmErr]       = useState('');
   const [emBusy, setEmBusy]     = useState(false);
-  const [emShowPw, setEmShowPw] = useState(false);
   const [emLeft, setEmLeft]     = useState(0);       // cooldown do reenviar (s)
   const emInFlight = useRef(false);
   useEffect(() => {
@@ -224,13 +223,14 @@ export default function SettingsScreen({ navigation }) {
     return () => clearTimeout(id);
   }, [emLeft]);
   const openEmailChange = () => {
-    setEmStep('pw'); setEmPw(''); setEmNew(''); setEmCode(''); setEmErr(''); setEmShowPw(false); setEmLeft(0); setEmModal(true);
+    setEmStep('pw'); setEmProof(PROOF0); setEmNew(''); setEmCode(''); setEmErr(''); setEmLeft(0); setEmModal(true);
   };
   const handleEmReauth = async () => {
     if (emInFlight.current) return;
     emInFlight.current = true; setEmBusy(true); setEmErr('');
     try {
-      const res = await reauthenticate(user?.email, emPw, lang);
+      if (!proofReady(emProof)) { setEmErr(l('Confirma que és tu: palavra-passe atual ou código.', 'Confirm it is you: current password or code.')); return; }
+      const res = await proveOwnership(user?.email, emProof, lang);
       if (!res.ok) { setEmErr(res.error); return; }
       setEmStep('email'); setEmErr('');
     } finally { emInFlight.current = false; setEmBusy(false); }
@@ -431,17 +431,20 @@ export default function SettingsScreen({ navigation }) {
 
   const handleChangePw = async () => {
     setPwErr('');
+    if (!newPw) { setPwErr(l('Escreve a nova palavra-passe.', 'Type the new password.')); return; }
     const err = validatePassword(newPw, true, lang);
     if (err) { setPwErr(err); return; }
+    if (!confPw) { setPwErr(l('Repete a nova palavra-passe para confirmar.', 'Repeat the new password to confirm.')); return; }
     if (newPw !== confPw) { setPwErr(t('profile.pwMismatch', lang)); return; }
     // SEGURANÇA (auditoria 2026-09-03): prova de posse ANTES de trocar — sem isto, quem pegasse
     // no telemóvel desbloqueado trocava a password e trancava o dono fora (e passava depois o
     // re-auth do "mudar e-mail"). O campo "palavra-passe atual" já existia; agora é LIDO.
-    const re = await reauthenticate(user?.email, curPw, lang);
+    if (!proofReady(pwProof)) { setPwErr(l('Confirma que és tu: palavra-passe atual ou código.', 'Confirm it is you: current password or code.')); return; }
+    const re = await proveOwnership(user?.email, pwProof, lang);
     if (!re.ok) { setPwErr(re.error); return; }
     const res = await changePassword(newPw, lang);
     if (!res.ok) { setPwErr(res.error); return; }
-    setPwModal(false); setCurPw(''); setNewPw(''); setConfPw('');
+    setPwModal(false); setPwProof(PROOF0); setNewPw(''); setConfPw('');
     success();
     Alert.alert(t('profile.pwOkTitle', lang), t('profile.pwOkMsg', lang));
   };
@@ -754,15 +757,7 @@ export default function SettingsScreen({ navigation }) {
             {l('Tens 7 dias para mudar de ideias: entra de novo dentro do prazo e a conta reativa (a escala e os dados ficam). Passados os 7 dias, é eliminada de vez — perfil, escala, FTL e AE. Queres uma cópia? Exporta primeiro.',
                'You have 7 days to change your mind: sign in again within that window and the account reactivates (your roster and data stay). After 7 days it is permanently deleted — profile, roster, FTL and AE. Want a copy? Export first.')}
           </Text>
-          <Text style={s.fieldLabel}>{t('profile.pwCur', lang)}</Text>
-          <View style={[s.pwInputRow, { marginBottom: 12 }]}>
-            <TextInput value={delPw} onChangeText={(v) => { setDelPw(v); setDelErr(''); }} secureTextEntry={!delShowPw}
-              style={s.pwInput} placeholder="••••••••" placeholderTextColor={PELE.grey} autoCapitalize="none" autoCorrect={false} editable={!delBusy} />
-            <TouchableOpacity onPress={() => setDelShowPw((v) => !v)} hitSlop={8} style={s.pwEye}
-              accessibilityLabel={delShowPw ? t('profile.pwHide', lang) : t('profile.pwShow', lang)}>
-              <Icon name="eye" size={19} color={PELE.grey} />
-            </TouchableOpacity>
-          </View>
+          <ProofField email={user?.email} value={delProof} onChange={(v) => { setDelProof(v); setDelErr(''); }} lang={lang} disabled={delBusy} styles={{ fieldLabel: s.fieldLabel, pwInputRow: s.pwInputRow, pwInput: s.pwInput, pwEye: s.pwEye, emErr: s.emErr }} />
           <Text style={s.fieldLabel}>{l(`Escreve ${CONFIRM_WORD} para confirmar`, `Type ${CONFIRM_WORD} to confirm`)}</Text>
           <View style={s.pwInputRow}>
             <TextInput value={delWord} onChangeText={(v) => { setDelWord(v); setDelErr(''); }}
@@ -783,17 +778,10 @@ export default function SettingsScreen({ navigation }) {
         <View style={{ padding: 20 }}>
           {emStep === 'pw' && (
             <>
-              <Text style={s.emSub}>{l('Confirma a tua palavra-passe para continuar.', 'Confirm your password to continue.')}</Text>
-              <Text style={s.fieldLabel}>{t('profile.pwCur', lang)}</Text>
-              <View style={s.pwInputRow}>
-                <TextInput value={emPw} onChangeText={(v) => { setEmPw(v); setEmErr(''); }} secureTextEntry={!emShowPw}
-                  style={s.pwInput} placeholder="••••••••" placeholderTextColor={PELE.grey} autoCapitalize="none" autoCorrect={false} editable={!emBusy} />
-                <TouchableOpacity onPress={() => setEmShowPw((v) => !v)} hitSlop={8} style={s.pwEye}>
-                  <Icon name="eye" size={19} color={PELE.grey} />
-                </TouchableOpacity>
-              </View>
+              <Text style={s.emSub}>{l('Confirma que és tu para continuar.', 'Confirm it is you to continue.')}</Text>
+              <ProofField email={user?.email} value={emProof} onChange={(v) => { setEmProof(v); setEmErr(''); }} lang={lang} disabled={emBusy} styles={{ fieldLabel: s.fieldLabel, pwInputRow: s.pwInputRow, pwInput: s.pwInput, pwEye: s.pwEye, emErr: s.emErr }} />
               {emErr ? <Text style={s.emErr}>{emErr}</Text> : null}
-              <PrimaryButton onPress={handleEmReauth} label={l('Continuar', 'Continue')} loading={emBusy} style={{ marginTop: 14 }} />
+              <PrimaryButton onPress={handleEmReauth} label={l('Continuar', 'Continue')} loading={emBusy} disabled={!proofReady(emProof)} style={{ marginTop: 14 }} />
             </>
           )}
           {emStep === 'email' && (
@@ -830,16 +818,17 @@ export default function SettingsScreen({ navigation }) {
       {/* Change password modal */}
       <CenterDialog visible={pwModal} onClose={() => setPwModal(false)} title={t('profile.pwTitle', lang)} closeLabel={t('common.close', lang)}>
         <View style={{ padding: 20 }}>
+          <ProofField email={user?.email} value={pwProof} onChange={(v) => { setPwProof(v); setPwErr(''); }} lang={lang} styles={{ fieldLabel: s.fieldLabel, pwInputRow: s.pwInputRow, pwInput: s.pwInput, pwEye: s.pwEye, emErr: s.emErr }} />
           {[
-            { label: t('profile.pwCur', lang), val: curPw, set: setCurPw },
-            { label: t('profile.pwNew', lang), val: newPw, set: setNewPw },
-            { label: t('profile.pwConfirm', lang), val: confPw, set: setConfPw },
+            { label: t('profile.pwNew', lang), val: newPw, set: setNewPw, ph: l('nova palavra-passe', 'new password') },
+            { label: t('profile.pwConfirm', lang), val: confPw, set: setConfPw, ph: l('repete a nova', 'repeat the new one') },
           ].map((f, i) => (
             <View key={i} style={{ marginBottom: 12 }}>
               <Text style={s.fieldLabel}>{f.label}</Text>
               <View style={s.pwInputRow}>
                 <TextInput value={f.val} onChangeText={f.set} secureTextEntry={!pwShown[i]}
-                  style={s.pwInput} placeholderTextColor={PELE.grey} placeholder="••••••••" autoCapitalize="none" autoCorrect={false} />
+                  style={s.pwInput} placeholderTextColor={PELE.placeholder} placeholder={f.ph} autoCapitalize="none" autoCorrect={false}
+                  textContentType="newPassword" autoComplete="new-password" />
                 <TouchableOpacity onPress={() => setPwShown(p => ({ ...p, [i]: !p[i] }))} hitSlop={8} style={s.pwEye}
                   accessibilityLabel={pwShown[i] ? t('profile.pwHide', lang) : t('profile.pwShow', lang)}>
                   <Icon name="eye" size={19} color={PELE.grey} />
@@ -959,7 +948,7 @@ export default function SettingsScreen({ navigation }) {
             <Row icon="lock-closed-outline" label={t('lock.title', lang)} sub={l('Face ID / código do telemóvel', 'Face ID / device passcode')} s={s}
               right={<Seg options={[{ id: 'off', label: t('lock.off', lang) }, { id: 'on', label: t('lock.on', lang) }]} value={lockEnabled ? 'on' : 'off'} setValue={(v) => toggleLock(v === 'on')} />} />
             <Row icon="key-outline" label={t('profile.changePw', lang)} onPress={() => { setSecModal(false); setTimeout(() => setPwModal(true), 300); }} s={s} />
-            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')} sub={l('Desativa agora · eliminada em 7 dias', 'Deactivates now · deleted in 7 days')} danger last onPress={() => { setSecModal(false); setTimeout(() => { setDelWord(''); setDelPw(''); setDelShowPw(false); setDelErr(''); setDelModal(true); }, 300); }} s={s} />
+            <Row icon="trash-outline" label={l('Apagar conta', 'Delete account')} sub={l('Desativa agora · eliminada em 7 dias', 'Deactivates now · deleted in 7 days')} danger last onPress={() => { setSecModal(false); setTimeout(() => { setDelWord(''); setDelProof(PROOF0); setDelErr(''); setDelModal(true); }, 300); }} s={s} />
           </View>
         </View>
       </CenterDialog>
@@ -973,7 +962,7 @@ const s = StyleSheet.create({
   headWrap: { paddingHorizontal: 20 },   // header canónico fixo (PeleHeader c/ onBack), gutter do ecrã
   // Herói do perfil — fantasma/nome/eyebrow/régua vêm do PeleHeader (size 'detail'); só o kick fica (categoria a amarelo)
   pkick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 6 },
-  pkickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  pkickY: { color: BRAND.signal, fontFamily: PELE_FONT.bodyHeavy },
   pmeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 11 },
   pmetaTxt: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9.5, letterSpacing: 0.6, textTransform: 'uppercase', color: PELE.grey },
   pmetaB: { color: PELE.ink },
@@ -985,7 +974,7 @@ const s = StyleSheet.create({
   vacIn: { minWidth: 56, textAlign: 'center', backgroundColor: PELE.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, color: PELE.ink, fontSize: 15, fontFamily: PELE_FONT.bodyBold, fontVariant: ['tabular-nums'] },
   gi: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   giCo: { backgroundColor: PELE.ink },
-  giCoTxt: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy, fontSize: 13 },
+  giCoTxt: { color: BRAND.onDark, fontFamily: PELE_FONT.bodyHeavy, fontSize: 13 },
   giDanger: { backgroundColor: PELE.redSoft },
   grLabel: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.ink },
   grSub: { fontFamily: PELE_FONT.body, fontSize: 11, color: PELE.grey, marginTop: 1 },

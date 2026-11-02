@@ -24,7 +24,7 @@ import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 
 // VISTO de seleção (mockup design/onboarding-selecao.html ①/⑤, 2026-07-10): disco
 // amarelo 22 + check ink — a MESMA marca em linhas e cartões ("amarelo = escolhido";
@@ -268,10 +268,10 @@ export default function OnboardingScreen() {
           style={[o.btn, (!canNext || saving) && { opacity: 0.45 }]}
           accessibilityRole="button" accessibilityLabel={isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')}>
           {saving
-            ? <ActivityIndicator color={PELE.yellow} size="small" />
+            ? <ActivityIndicator color={BRAND.onDark} size="small" />
             : <>
                 <Text style={o.btnTxt}>{isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')}</Text>
-                <Icon name="chevron" size={16} color={PELE.yellow} />
+                <Icon name="chevron" size={16} color={BRAND.onDark} />
               </>}
         </TouchableOpacity>
       </View>
@@ -288,7 +288,7 @@ const o = StyleSheet.create({
   back: { width: 36, height: 36, borderRadius: 12, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.line },
-  dotOn: { width: 14, backgroundColor: PELE.yellow },
+  dotOn: { width: 14, backgroundColor: BRAND.signal },
   exit: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, paddingVertical: 8, paddingHorizontal: 4 },
   head: { paddingHorizontal: GUTTER + 4, paddingTop: 22, paddingBottom: 14 },
   eyebrow: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2.4, color: PELE.grey, textTransform: 'uppercase' },
@@ -301,7 +301,7 @@ const o = StyleSheet.create({
   lbl: { fontSize: 15.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   sub: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
   // Visto de seleção (substituiu o ponto 9px e a placa preta — mockup onboarding-selecao)
-  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center' },
+  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
   bigTick: { position: 'absolute', top: 14, right: 14 },
   grp: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.8, color: PELE.grey, textTransform: 'uppercase', marginTop: 14, marginBottom: 2 },
 

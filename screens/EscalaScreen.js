@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScrollToTop, useFocusEffect } from '@react-navigation/native';
 import Tip from '../components/Tip';
 import AsyncStorage from '../data/secureStorage';   // wrapper de cifra-em-repouso (flag OFF por agora = passthrough)
-import { RADIUS, GUTTER, TYPE, SPACE, SHADOW, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, GUTTER, TYPE, SPACE, SHADOW, PELE, PELE_FONT, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -763,7 +763,7 @@ export default function EscalaScreen({ navigation, route }) {
                   <Icon name="edit" size={16} color={PELE.ink} /><Text style={s.dsBtnGhostTxt}>{l('Editar', 'Edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { const iso = dayIso; afterSheet(() => navigation.navigate('DutyDetail', { date: iso })); }} activeOpacity={0.85} style={s.dsBtnPrimary} accessibilityRole="button" accessibilityLabel={l('Ver tudo', 'See all')}>
-                  <Text style={s.dsBtnPrimaryTxt}>{l('Ver tudo', 'See all')}</Text><Icon name="chevron" size={15} color={PELE.yellow} />
+                  <Text style={s.dsBtnPrimaryTxt}>{l('Ver tudo', 'See all')}</Text><Icon name="chevron" size={15} color={BRAND.onDark} />
                 </TouchableOpacity>
               </View>
               {/* "＋ adicionar serviço" (2.º período) REMOVIDO (2026-07-10): o split-duty
@@ -918,7 +918,7 @@ const s = StyleSheet.create({
   mpGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
   mpChip: { width: '31%', paddingVertical: 13, borderRadius: 12, borderWidth: 1, borderColor: PELE.line, alignItems: 'center' },
   mpChipOn: { backgroundColor: PELE.ink, borderColor: PELE.ink },
-  mpChipToday: { borderColor: PELE.yellow, borderWidth: 2 },   // mês REAL de hoje (amarelo = marca)
+  mpChipToday: { borderColor: BRAND.signal, borderWidth: 2 },   // mês REAL de hoje (amarelo = marca)
   mpChipTxt: { fontFamily: PELE_FONT.bodyBold, fontSize: 13, color: PELE.ink },
   mpChipTxtOn: { color: PELE.onInk },
   exportLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18, paddingVertical: 10 },
@@ -983,7 +983,7 @@ const s = StyleSheet.create({
   gcAbs: { backgroundColor: PELE.okSoft },   // dia de férias — projeção só-leitura
   gcSick: { backgroundColor: PELE.redSoft },   // dia de doença
   gcWk: { backgroundColor: PELE.soft },
-  gcNow: { borderColor: PELE.yellow, borderWidth: 2, padding: 4 },   // hoje = borda amarela (marca)
+  gcNow: { borderColor: BRAND.signal, borderWidth: 2, padding: 4 },   // hoje = borda amarela (marca)
   gcFlash: { borderColor: PELE.ok, backgroundColor: PELE.okSoft },
   gn: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, lineHeight: 14 },
   gnOut: { color: '#BEBCB4' },   // dias fora do mês

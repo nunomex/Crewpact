@@ -15,6 +15,7 @@
 // kind) são declaradas pelo tripulante na revisão. A aprovação é da empresa (RDF, Cl. 67.ª/7).
 import { esc } from './ftlRecord';
 
+import { BRAND } from './constants';
 export const POST_BLOCK_MIN = 30;   // fim do tempo de serviço = calços dentro + 30 min (Cl. 67.ª/1)
 
 const hm2min = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -188,7 +189,7 @@ export const disruptionHtml = ({ header = {}, events = [] } = {}, lang = 'pt', f
 <style>
   ${fontsCss}
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --warnSoft:#FBEAD2; }
+  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:${BRAND.signal}; --warnSoft:#FBEAD2; }
   @page { margin: 34px 36px; }
   body { font-family: 'Hanken Grotesk', -apple-system, Helvetica, sans-serif; color: var(--ink); margin: 34px 36px; font-size: 11px; }
   .brand { display: flex; justify-content: space-between; align-items: baseline; }

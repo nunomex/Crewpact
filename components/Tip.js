@@ -5,7 +5,7 @@
 // vida (flag por utilizador, gravada pelo hospedeiro ao dispensar).
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 export default function Tip({ visible, bold, tail, onDismiss, style, arrow = 'down', lang = 'pt' }) {
@@ -41,7 +41,7 @@ const s = StyleSheet.create({
   card: { backgroundColor: PELE.ink, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 14, maxWidth: 240,
     shadowColor: '#14161A', shadowOpacity: 0.25, shadowRadius: 13, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
   tx: { fontSize: 11.5, fontFamily: PELE_FONT.body, color: PELE.paper, lineHeight: 17 },
-  bold: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.yellow },
+  bold: { fontFamily: PELE_FONT.bodyHeavy, color: BRAND.onDark },
   ok: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 7 },
   tri: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
   triDown: { borderTopWidth: 7, borderTopColor: PELE.ink },

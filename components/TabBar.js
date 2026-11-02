@@ -19,7 +19,7 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet, Modal } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
 import { AppContext } from '../data/appContext';
-import { PELE, PELE_NIGHT, PELE_FONT } from '../data/constants';
+import { PELE, PELE_NIGHT, PELE_FONT, BRAND } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, tap } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -137,7 +137,7 @@ export default function TabBar({ state, navigation }) {
           onPressIn={() => !reduce && pressTo(0.92)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={l('Criar', 'Create')} accessibilityState={{ expanded: open }}>
           <Animated.View style={[s.plus, night ? s.plusNight : null, { transform: [{ scale: press }] }]}>
-            <Icon name="plus" size={22} color={PELE.yellow} />
+            <Icon name="plus" size={22} color={BRAND.onDark} />
           </Animated.View>
         </TouchableOpacity>
         {state.routes.slice(half).map((r, i) => renderItem(r, half + i))}
@@ -157,7 +157,7 @@ export default function TabBar({ state, navigation }) {
             <Animated.View key={a.key} style={[s.pillRow, itemAnim(a.i)]}>
               <TouchableOpacity style={[s.pill, { backgroundColor: P.paper, borderColor: P.line }]} activeOpacity={0.85}
                 onPress={() => fire(a.run)} accessibilityRole="button" accessibilityLabel={a.label}>
-                <View style={[s.pillIc, night ? s.pillIcNight : null]}><Icon name={a.icon} size={17} color={PELE.yellow} /></View>
+                <View style={[s.pillIc, night ? s.pillIcNight : null]}><Icon name={a.icon} size={17} color={BRAND.onDark} /></View>
                 <Text numberOfLines={1} style={[s.pillTxt, { color: P.ink }]}>{a.label}</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -169,7 +169,7 @@ export default function TabBar({ state, navigation }) {
             accessibilityRole="button" accessibilityLabel={l('Fechar menu', 'Close menu')}>
             <View style={[s.plus, night ? s.plusNight : null]}>
               <Animated.View style={{ transform: [{ rotate: xRotate }] }}>
-                <Icon name="plus" size={22} color={PELE.yellow} />
+                <Icon name="plus" size={22} color={BRAND.onDark} />
               </Animated.View>
             </View>
           </TouchableOpacity>
@@ -183,7 +183,7 @@ export default function TabBar({ state, navigation }) {
 const s = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
   item: { flex: 1, height: CONTENT_H, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: PELE.yellow },
+  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: BRAND.signal },
   lbl: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3 },
   badge: { position: 'absolute', top: -2, right: -5, width: 7, height: 7, borderRadius: 99, backgroundColor: '#E86A10', borderWidth: 1.5 },
   // ＋ central — O botão de criar: ink, sombra leve (elevar é legítimo — é o herdeiro do FAB).

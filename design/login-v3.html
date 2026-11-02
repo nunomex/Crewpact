@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Entrada da CrewPact</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: o fluxo de entrada em quatro telemóveis lado a lado, pela ordem em que a pessoa os vê
+   (Entrada · Código · Conta nova · Palavra-passe), com as decisões por baixo. Tema único: a pele
+   de dia da app (papel, tinta, amarelo da casa), escala TXT/SPACE do Design System 2.0. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 52px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 18px; }
+
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 40px 38px; align-items: start; padding-inline: 9px; }
+figure { margin: 0; display: grid; gap: 12px; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+.step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 9px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+
+/* peças do ecrã — números da escala (TXT/SPACE) */
+.wm-eye { left: 40px; font: 600 9px/1 var(--f-body); letter-spacing: 4px; color: var(--grey); text-transform: uppercase; }
+.wm-rule { left: 40px; width: 130px; height: 3.5px; background: var(--yellow); }
+.wm-name { left: 40px; font: 38px/40px var(--f-display); letter-spacing: 3px; }
+.wm-name .l { font-weight: 500; } .wm-name .b { font-weight: 800; }
+.title { left: 40px; right: 40px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.body { left: 40px; right: 40px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.foot { left: 40px; right: 40px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.foot b { color: var(--ink); font-weight: 700; }
+.field { left: 40px; right: 40px; height: 50px; border-radius: 99px; background: var(--soft); border: 1px solid var(--line); padding: 0 20px;
+  display: flex; align-items: center; font: 500 15px/1 var(--f-body); color: var(--placeholder); }
+.field.filled { color: var(--ink); }
+.field.focus { border-color: var(--ink); background: var(--paper); }
+.field .lab { position: absolute; top: -18px; left: 4px; font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); }
+.btn { left: 40px; right: 40px; height: 52px; border-radius: 99px; display: grid; place-items: center; font: 700 15px/1 var(--f-body); background: var(--ink); color: #fff; }
+.link { left: 40px; font: 700 13px/1 var(--f-body); color: var(--ink); text-decoration: underline var(--yellow) 2px; text-underline-offset: 4px; }
+.back { left: 24px; top: 58px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 18px/1 var(--f-body); }
+.otp { left: 40px; right: 40px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.otp span { height: 54px; border-radius: 12px; background: var(--soft); border: 1px solid var(--line); display: grid; place-items: center; font: 700 24px/1 var(--f-display); }
+.otp span.on { border: 2px solid var(--yellow); background: var(--paper); }
+.chip { left: 40px; display: inline-flex; gap: 8px; align-items: center; background: var(--soft); border-radius: 99px; padding: 8px 12px; font: 700 12px/1 var(--f-body); }
+.chip u { text-decoration: underline var(--yellow) 2px; text-underline-offset: 3px; }
+.kb { left: 0; right: 0; bottom: 0; height: 250px; background: #D3D6DC; }
+.kb .bar { position: absolute; left: 0; right: 0; top: 0; height: 44px; background: #DADDE2; display: flex; align-items: center; justify-content: center; gap: 10px; font: 600 13px/1 var(--f-body); color: #333; }
+.kb .keys { position: absolute; left: 6px; right: 6px; top: 54px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.kb .keys i { height: 40px; background: #fff; border-radius: 5px; display: block; box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · login · 2 de novembro de 2026</p>
+    <h1>Entrada da CrewPact</h1>
+    <p class="lede">Um só caminho para entrar e para criar conta: o e-mail e um código de 6 dígitos, sem palavra-passe. Quem preferir a palavra-passe continua a tê-la. Tudo isto funciona no Expo Go; a Apple, a Google e as passkeys juntam-se com o dev build.</p>
+  </header>
+
+  <div class="phones">
+    <figure>
+      <div class="pw"><div class="ph" role="img" aria-label="Ecrã de entrada com o campo de e-mail">
+        <p class="wm-eye" style="top:150px">FTL · AE · Crew</p><span class="wm-rule" style="top:168px"></span>
+        <p class="wm-name" style="top:184px"><span class="l">CREW</span><span class="b">PACT</span></p>
+        <p class="body" style="top:248px">Entra ou cria conta com o teu e-mail.</p>
+        <p class="field filled focus" style="top:304px"><span class="lab">E-mail</span>nuno@exemplo.pt</p>
+        <p class="btn" style="top:370px">Continuar</p>
+        <p class="foot" style="top:436px">Enviamos-te um código de 6 dígitos. Não precisas de palavra-passe.</p>
+        <p class="link" style="top:486px">Entrar com palavra-passe</p>
+        <p class="foot" style="top:546px">Ao continuar aceitas os <b>Termos</b> e a <b>Privacidade</b>.</p>
+        <div class="kb"><div class="bar">🔑 Palavras-passe · nuno@exemplo.pt</div><div class="keys"></div></div>
+      </div></div>
+      <figcaption><span class="step">1 · Entrada</span><b>Um campo, um botão</b><span>O iPhone sugere o e-mail guardado na barra do teclado. Com o dev build, "Continuar com a Apple" e "com a Google" aparecem por cima do e-mail.</span></figcaption>
+    </figure>
+
+    <figure>
+      <div class="pw"><div class="ph" role="img" aria-label="Ecrã do código de 6 dígitos">
+        <span class="back" style="display:grid">‹</span>
+        <p class="title" style="top:126px">Vê o teu e-mail</p>
+        <p class="body" style="top:170px">Enviámos um código para</p>
+        <p class="chip" style="top:198px">nuno@exemplo.pt · <u>mudar</u></p>
+        <div class="otp" style="top:258px"><span>4</span><span>8</span><span>2</span><span class="on"></span><span></span><span></span></div>
+        <p class="foot" style="top:330px">O iPhone preenche o código sozinho a partir do Mail. Reenviar em 24 s.</p>
+        <p class="link" style="top:384px">Entrar com palavra-passe</p>
+        <div class="kb"><div class="bar">Do Mail · 482 917</div><div class="keys"></div></div>
+      </div></div>
+      <figcaption><span class="step">2 · Código</span><b>Entra quem já tem conta</b><span>Código certo e a conta existe: entra direto no Início. Já existe hoje para criar conta e recuperar a palavra-passe; passa a servir também para entrar.</span></figcaption>
+    </figure>
+
+    <figure>
+      <div class="pw"><div class="ph" role="img" aria-label="Ecrã de conta nova, com nome e apelido">
+        <span class="back" style="display:grid">‹</span>
+        <p class="title" style="top:126px">Bem-vindo à CrewPact</p>
+        <p class="body" style="top:170px">É a primeira vez que entras com este e-mail. Como te chamas?</p>
+        <p class="field filled focus" style="top:250px"><span class="lab">Nome</span>Nuno</p>
+        <p class="field" style="top:326px"><span class="lab">Apelido</span>apelido</p>
+        <p class="btn" style="top:398px">Continuar</p>
+        <p class="foot" style="top:464px">A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…). Podes criar uma palavra-passe mais tarde, no Perfil.</p>
+      </div></div>
+      <figcaption><span class="step">3 · Só para contas novas</span><b>A conta nasce do código</b><span>Não há "criar conta" à parte: o mesmo código cria-a. Depois do nome, segue o onboarding das 6 perguntas, como hoje.</span></figcaption>
+    </figure>
+
+    <figure>
+      <div class="pw"><div class="ph" role="img" aria-label="Ecrã alternativo com palavra-passe">
+        <span class="back" style="display:grid">‹</span>
+        <p class="title" style="top:126px">Entrar com palavra-passe</p>
+        <p class="field filled" style="top:212px"><span class="lab">E-mail</span>nuno@exemplo.pt</p>
+        <p class="field filled focus" style="top:288px"><span class="lab">Palavra-passe</span>••••••••••</p>
+        <p class="btn" style="top:360px">Entrar</p>
+        <p class="link" style="top:430px">Esqueci-me da palavra-passe</p>
+        <p class="link" style="top:466px">Receber um código em vez disso</p>
+        <div class="kb"><div class="bar">🔑 Usar palavra-passe guardada</div><div class="keys"></div></div>
+      </div></div>
+      <figcaption><span class="step">Alternativa</span><b>Quem prefere palavra-passe</b><span>Igual ao login de hoje, com o porta-chaves do iPhone. Serve as contas que já existem com palavra-passe.</span></figcaption>
+    </figure>
+  </div>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda e porquê</h2>
+    <ul class="notes">
+      <li><b>Um caminho em vez de dois</b><span>Hoje há "entrar" e "criar conta" separados, com cinco campos para quem chega. Fica um campo e um botão, como o Slopes, o Dropbox e o Waking Up.</span></li>
+      <li><b>Ninguém descobre quem usa a app</b><span>A app nunca diz "esse e-mail não tem conta": envia sempre o código. Perguntar ao servidor se o e-mail existe deixaria qualquer pessoa testar e-mails de colegas.</span></li>
+      <li><b>Sem palavras-passe para esquecer</b><span>A sessão fica guardada e o Face ID tranca a app, por isso o código só é pedido ao entrar num telemóvel novo. A palavra-passe continua opcional.</span></li>
+      <li><b>Sem botões mortos</b><span>Os círculos da Apple e da Google com "brevemente" já saíram do ecrã (feito). Voltam a funcionar com o dev build.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dash">
+    <h2 id="h-dash">O que o dashboard da Supabase precisa</h2>
+    <ul class="notes">
+      <li><b>Modelo "Magic Link" com o código</b><span>Para entrar por código, o e-mail tem de mostrar <code>{{ .Token }}</code> em vez de um link, como já fazemos no "Confirmar conta". Faço o modelo em <code>supabase/</code>; colá-lo no dashboard é contigo.</span></li>
+      <li><b>Limites de envio</b><span>Confirmar o limite de e-mails por hora no dashboard e no Resend, porque passa a haver um e-mail por cada entrada num telemóvel novo.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas este fluxo?</b><span>Se sim, passo-o para o código no ecrã de login atual, sem tocar na segurança que já existe (sessão, Face ID, apagar conta).</span></li>
+      <li><b>O código primeiro, ou a palavra-passe primeiro?</b><span>Recomendo o código primeiro, pelas razões acima. A alternativa é o ecrã 4 ser o principal e o código o secundário.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  // teclas do teclado simulado (só forma)
+  const keys = Array.from({ length: 30 }, () => '<i></i>').join('');
+  document.querySelectorAll('.keys').forEach((k) => { k.innerHTML = keys; });
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>
+</body>
+</html>

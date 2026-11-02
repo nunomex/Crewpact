@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Pressable, View, Text, TextInput, StyleSheet, Platform, Keyboard } from 'react-native';
-import { RADIUS, PELE, PELE_FONT } from '../data/constants';
+import { RADIUS, PELE, PELE_FONT, BRAND } from '../data/constants';
 
 // Caixa de código OTP (6 dígitos numéricos) — partilhada entre reset de password (Login),
 // confirmação de email (signup) e mudar-email (Settings, dentro de um MODAL).
@@ -60,8 +60,11 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
         // (e o código copiado do Mail traz espaços/quebras). A sanitização abaixo já corta a `len`.
         onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, len))}
         onPressIn={forceFocus}
-        keyboardType="numeric"
+        // number-pad = o teclado de DÍGITOS que o iOS usa para códigos (o 'numeric' é o decimal,
+        // e a barra "Do Mail" nem sempre aparece por cima dele). (device 2026-11-02)
+        keyboardType="number-pad"
         style={otp.overlay}
+        selectionColor="transparent"
         caretHidden
         blurOnSubmit={false}
         // O teclado SUGERE o código recebido em vez de obrigar a decorar (iOS: QuickType
@@ -76,9 +79,12 @@ export default function OTPInput({ value, onChange, len = 6, autoFocus = true })
 const otp = StyleSheet.create({
   row:      { flexDirection: 'row', gap: 5, justifyContent: 'center', marginVertical: 20, position: 'relative' },
   box:      { width: 36, height: 44, borderRadius: RADIUS.sm, backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  boxActive:{ backgroundColor: PELE.paper, borderColor: PELE.yellow },
+  boxActive:{ backgroundColor: PELE.paper, borderColor: BRAND.signal },
   boxFilled:{ backgroundColor: PELE.paper, borderColor: PELE.line },
   digit:    { fontSize: 22, fontFamily: PELE_FONT.display, color: PELE.ink },
-  // Sobrepõe as caixas (transparente): os toques vão para o campo real, foca sem intermediário.
-  overlay:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0 },
+  // Sobrepõe as caixas: os toques vão para o campo real, foca sem intermediário.
+  // NUNCA opacity 0 (device 2026-11-02): o iOS ignora toques em vistas com alpha < 0.01 → o toque
+  // longo ("Colar") nunca chegava ao campo. O campo fica opaco e é o TEXTO que é transparente.
+  // Altura EXPLÍCITA (= caixa): absoluto com top+bottom pode medir 0 dentro de um Modal (Fabric).
+  overlay:  { position: 'absolute', top: 0, left: 0, right: 0, height: 44, color: 'transparent', backgroundColor: 'transparent' },
 });

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>CrewPact com as cores do SNPVAC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Caveat:wght@600&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: quadro de decisão sobre papel creme — três caminhos de cor em colunas (Hoje · Azul em tudo ·
+   Edição parceira), cada um com o login e o Início em folga; por baixo a tabela dos papéis da cor,
+   com o contraste medido. Tema único de propósito: é a pele de dia da app. FICHEIRO LOCAL (marca de terceiros). */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --ghost: #E2E1DC; --grey: #77776F;
+  --line: #ECEAE4; --soft: #F4F2ED; --board: #EFEDE7; --ok: #118A55; --red: #C6362B;
+  --yellow: #FFB800; --snp: #005EB8; --snp-tint: #C7DCEF; --snp-night: #6FAAE3; --night: #0D131C;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-hand: "Caveat", "Segoe Print", cursive;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1260px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 14px; max-width: 70ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; }
+.fact { background: var(--paper); border-radius: 14px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; }
+.fact i { width: 28px; height: 28px; border-radius: 8px; display: inline-block; border: 1px solid var(--line); }
+.fact b { display: block; font-size: 14px; }
+.fact span { font-size: 13px; color: var(--grey); }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 32px 24px; align-items: start; }
+.col { display: grid; gap: 16px; justify-items: center; }
+.col header { text-align: center; display: grid; gap: 4px; max-width: 34ch; }
+.col header b { font: 700 24px/1.05 var(--f-display); }
+.col header span { font-size: 13px; color: var(--ink-soft); }
+.verdict { font: 800 11px/1 var(--f-body); letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px; border-radius: 99px; justify-self: center; }
+.v-ok { background: #E7F3EC; color: var(--ok); }
+.v-bad { background: #F6E9E6; color: var(--red); }
+.v-rec { background: var(--ink); color: var(--paper); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 420px; }
+
+/* telemóvel desenhado a 390×844 e escalado à coluna */
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .5));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 9px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > *, .tabs > * { position: absolute; }
+.cap { text-align: center; font-size: 12px; color: var(--grey); margin-top: 6px; }
+
+.word { left: 22px; font: 700 54px/1 var(--f-display); }
+.rule { left: 22px; right: 22px; height: 1.5px; background: var(--ink); }
+.hair { left: 22px; right: 22px; height: 1px; background: var(--line); }
+.eye { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; }
+.foot { font: 500 12px/17px var(--f-body); color: var(--grey); }
+.lab { font: 700 12px/1 var(--f-body); }
+.note { left: 24px; width: 330px; font: 600 25px/1.32 var(--f-hand); color: var(--ink-soft); transform: rotate(-1.2deg); transform-origin: left top; }
+.note mark { padding: 0 8px 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.grid3 { left: 22px; right: 22px; top: 404px; display: grid; grid-template-columns: repeat(3, 1fr); }
+.grid3 > div { display: grid; gap: 7px; }
+.grid3 .t { font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); }
+.grid3 .v { font: 700 13px/1 var(--f-body); display: flex; gap: 6px; align-items: center; }
+.grid3 i { width: 7px; height: 7px; border-radius: 99px; background: var(--ok); display: inline-block; }
+.money { left: 22px; top: 466px; font: 700 44px/1 var(--f-display); }
+.money small { font-size: 28px; color: var(--grey); margin-left: 4px; }
+.meter { right: 22px; top: 470px; width: 104px; display: grid; gap: 8px; justify-items: end; }
+.bar { width: 104px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; display: block; }
+.bar b { display: block; height: 100%; width: 7%; }
+.go { left: 22px; right: 22px; top: 568px; border-radius: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--soft); }
+.go b { font: 700 13px/18px var(--f-body); display: block; }
+.tabs { left: 0; right: 0; top: 767px; height: 77px; border-top: 1px solid var(--line); background: var(--paper); }
+.tab { top: 12px; width: 78px; display: grid; justify-items: center; gap: 4px; font: 700 11px/1 var(--f-body); color: var(--grey); }
+.tab.on { color: var(--ink); }
+.tab .d { width: 4px; height: 4px; border-radius: 99px; }
+.plus { left: 173px; top: 4px; width: 44px; height: 44px; border-radius: 99px; display: grid; place-items: center; font: 800 26px/1 var(--f-body); }
+
+/* login */
+.wm-eye { left: 40px; top: 168px; font: 600 9px/1 var(--f-body); letter-spacing: 4px; color: var(--grey); text-transform: uppercase; }
+.wm-rule { left: 40px; top: 186px; width: 130px; height: 3.5px; }
+.wm-name { left: 40px; top: 202px; font: 38px/40px var(--f-display); letter-spacing: 3px; }
+.wm-name .l { font-weight: 500; } .wm-name .b { font-weight: 800; }
+.partner { left: 40px; top: 254px; display: flex; gap: 8px; align-items: center; font: 700 12px/1 var(--f-body); color: var(--ink-soft); }
+.partner i { width: 8px; height: 8px; border-radius: 99px; display: inline-block; }
+.field { left: 40px; right: 40px; height: 50px; border-radius: 99px; background: var(--soft); border: 1px solid var(--line); padding: 0 20px; display: flex; align-items: center; font: 500 15px/1 var(--f-body); color: #B4B0A8; }
+.btn { left: 40px; right: 40px; height: 52px; border-radius: 99px; display: grid; place-items: center; font: 700 15px/1 var(--f-body); }
+.link { font: 700 13px/1 var(--f-body); text-underline-offset: 4px; text-decoration-thickness: 2px; }
+
+/* tabela dos papéis */
+.measure { background: var(--paper); border-radius: 16px; padding: 6px 20px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 820px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 12px 12px 12px 0; border-top: 1px solid var(--line); vertical-align: middle; font-size: 14px; }
+tr:first-child th { border-top: 0; }
+th { font: 800 11px/1.3 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+td .sw { display: inline-flex; align-items: center; justify-content: center; min-width: 74px; height: 28px; padding: 0 10px; border-radius: 6px; font: 700 13px/1 var(--f-body); border: 1px solid var(--line); margin-right: 8px; vertical-align: middle; }
+td .r { font: 700 18px/1 var(--f-display); vertical-align: middle; }
+.ok { color: var(--ok); } .bad { color: var(--red); }
+td small { display: block; color: var(--grey); font-size: 12px; margin-top: 4px; }
+
+.list { display: grid; gap: 12px; max-width: 78ch; padding: 0; margin: 0; list-style: none; }
+.list li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.list b { display: block; margin-bottom: 4px; }
+.list span { color: var(--ink-soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · estudo de cor · 2 de novembro de 2026 · ficheiro local</p>
+    <h1>As cores do SNPVAC na CrewPact</h1>
+    <p class="lede">Três caminhos lado a lado, no login e no Início em folga, e por baixo cada papel da cor na app com o contraste medido. A cor do SNPVAC foi lida do site oficial e do logótipo, não de memória.</p>
+    <div class="facts">
+      <div class="fact"><i style="background:#005EB8"></i><div><b>#005EB8 · azul-cobalto</b><span>a cor do SNPVAC: logótipo e site (195 usos no CSS)</span></div></div>
+      <div class="fact"><i style="background:#FFFFFF"></i><div><b>Branco</b><span>o fundo de tudo</span></div></div>
+      <div class="fact"><i style="background:#8ED1FC"></i><div><b>Azul-céu claro</b><span>não é a cor do SNPVAC</span></div></div>
+    </div>
+  </header>
+
+  <div class="cols" id="cols"></div>
+
+  <section>
+    <h2>Cada papel da cor, medido</h2>
+    <div class="measure">
+      <table>
+        <tr><th>Papel na app</th><th>Hoje · amarelo</th><th>Azul do SNPVAC no lugar do amarelo</th><th>Edição parceira</th></tr>
+        <tr><td><b>Marcador do bilhete</b><small>Início em folga, férias, doença</small></td>
+          <td><span class="sw" style="background:#FFB800;color:#141414">Folga</span><span class="r ok">10,62</span></td>
+          <td><span class="sw" style="background:#005EB8;color:#141414">Folga</span><span class="r bad">2,89</span><small>ou texto branco: passa, mas vira um bloco pesado</small></td>
+          <td><span class="sw" style="background:#C7DCEF;color:#141414">Folga</span><span class="r ok">13,08</span><small>tinta clara do próprio azul</small></td></tr>
+        <tr><td><b>Botão principal</b><small>Entrar, Guardar, Ligar calendário</small></td>
+          <td><span class="sw" style="background:#141414;color:#fff">Entrar</span><span class="r ok">18,42</span></td>
+          <td><span class="sw" style="background:#005EB8;color:#fff">Entrar</span><span class="r ok">6,38</span></td>
+          <td><span class="sw" style="background:#005EB8;color:#fff">Entrar</span><span class="r ok">6,38</span><small>o azul passa a ser a cor do que se toca</small></td></tr>
+        <tr><td><b>Links e ações de texto</b><small>"ver um exemplo", "Abrir a Escala"</small></td>
+          <td><span class="sw" style="color:#141414;text-decoration:underline #FFB800 2px">ver exemplo</span><span class="r ok">18,42</span><small>tinta com sublinhado amarelo</small></td>
+          <td><span class="sw" style="color:#005EB8">ver exemplo</span><span class="r ok">6,38</span></td>
+          <td><span class="sw" style="color:#005EB8">ver exemplo</span><span class="r ok">6,38</span><small>azul = tocável, a convenção do iOS</small></td></tr>
+        <tr><td><b>Ponto da aba, barras, seleção</b><small>sinais pequenos</small></td>
+          <td><span class="sw" style="background:#fff"><span style="width:28px;height:4px;background:#FFB800;display:inline-block;border-radius:2px"></span></span><span class="r bad">1,73</span><small>passa só porque acompanha texto a tinta</small></td>
+          <td><span class="sw" style="background:#fff"><span style="width:28px;height:4px;background:#005EB8;display:inline-block;border-radius:2px"></span></span><span class="r ok">6,38</span></td>
+          <td><span class="sw" style="background:#fff"><span style="width:28px;height:4px;background:#005EB8;display:inline-block;border-radius:2px"></span></span><span class="r ok">6,38</span></td></tr>
+        <tr><td><b>Placas pretas</b><small>cartão do countdown, chip do polegar</small></td>
+          <td><span class="sw" style="background:#141414;color:#FFB800">16 H</span><span class="r ok">10,62</span></td>
+          <td><span class="sw" style="background:#141414;color:#005EB8">16 H</span><span class="r bad">2,89</span></td>
+          <td><span class="sw" style="background:#141414;color:#6FAAE3">16 H</span><span class="r ok">7,49</span><small>azul claro só no escuro</small></td></tr>
+        <tr><td><b>Tema noturno</b><small>véspera e pernoita</small></td>
+          <td><span class="sw" style="background:#0D131C;color:#FFB800;border-color:#0D131C">Amanhã</span><span class="r ok">10,74</span></td>
+          <td><span class="sw" style="background:#0D131C;color:#005EB8;border-color:#0D131C">Amanhã</span><span class="r bad">2,92</span></td>
+          <td><span class="sw" style="background:#0D131C;color:#6FAAE3;border-color:#0D131C">Amanhã</span><span class="r ok">7,57</span></td></tr>
+        <tr><td><b>Ícone da app e arranque</b><small>loja, ecrã inicial</small></td>
+          <td colspan="3">Fica o da CrewPact nos três caminhos. A marca do SNPVAC no ícone exige autorização escrita, e o ícone tem de servir quem não é sócio. A cor das notificações (<code>#F5402C</code>, um vermelho fora do tema) corrige-se em qualquer caso.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Antes de decidir</h2>
+    <ul class="list">
+      <li><b>A app não é só de cabine.</b><span>Os pilotos da easyJet e da TAP estão modelados, e o sindicato deles é o SPAC. Uma app pintada com a marca do SNPVAC fecha essa porta.</span></li>
+      <li><b>A marca muda quem responde pelos números.</b><span>Com o logótipo do SNPVAC, o salário estimado e o "estou legal" passam a ler-se como a palavra do sindicato, sobre acordos que o próprio SNPVAC negociou. Isso vai ao pacote do advogado e o SNPVAC vai querer validar.</span></li>
+      <li><b>Usar a marca precisa de autorização escrita.</b><span>Até lá, nada com o nome ou a cor do SNPVAC sai deste PC: nem loja, nem página publicada.</span></li>
+      <li><b>O código já está quase pronto para uma segunda cor.</b><span>O amarelo aparece 86 vezes em 36 ficheiros, quase sempre pelo token. Antes de uma edição parceira, cada uso passa a um papel com nome (marcador, ação, placa, noite) e as 105 cores soltas que restam vão para os tokens.</span></li>
+    </ul>
+  </section>
+
+</main>
+<script>
+// Três caminhos; cada um desenha o login e o Início em folga com os MESMOS números da escala.
+const T = {
+  hoje:   { nome: 'Hoje', sub: 'Branco, preto e amarelo: a pele da CrewPact.', veredicto: ['ok', 'Funciona hoje'],
+            marker: '#FFB800', rule: '#FFB800', btnBg: '#141414', btnFg: '#FFFFFF', link: '#141414', linkLine: '#FFB800',
+            dot: '#FFB800', plusBg: '#141414', plusFg: '#FFB800', bar: '#FFB800', partner: false },
+  azul:   { nome: 'Azul do SNPVAC em tudo', sub: 'O cobalto entra onde hoje está o amarelo.', veredicto: ['bad', 'Falha em 3 papéis'],
+            marker: '#005EB8', rule: '#005EB8', btnBg: '#005EB8', btnFg: '#FFFFFF', link: '#005EB8', linkLine: 'transparent',
+            dot: '#005EB8', plusBg: '#005EB8', plusFg: '#FFFFFF', bar: '#005EB8', partner: false },
+  parc:   { nome: 'Edição parceira', sub: 'A pele da CrewPact fica. O azul do SNPVAC marca o que se toca, e uma tinta clara dele faz de marcador.', veredicto: ['rec', 'Recomendado'],
+            marker: '#C7DCEF', rule: '#005EB8', btnBg: '#005EB8', btnFg: '#FFFFFF', link: '#005EB8', linkLine: 'transparent',
+            dot: '#005EB8', plusBg: '#005EB8', plusFg: '#FFFFFF', bar: '#005EB8', partner: true },
+};
+const tabs = (t) => `<nav class="tabs" aria-hidden="true">
+  <div class="tab on" style="left:0">Início<span class="d" style="background:${t.dot}"></span></div>
+  <div class="tab" style="left:78px">Escala</div>
+  <div class="plus" style="background:${t.plusBg};color:${t.plusFg}">+</div>
+  <div class="tab" style="left:234px">Números</div>
+  <div class="tab" style="left:312px">Perfil</div></nav>`;
+const login = (t) => `<div class="ph" role="img" aria-label="Login · ${t.nome}">
+  <p class="wm-eye">FTL · AE · Crew</p>
+  <span class="wm-rule" style="background:${t.rule}"></span>
+  <p class="wm-name"><span class="l">CREW</span><span class="b">PACT</span></p>
+  ${t.partner ? `<p class="partner"><i style="background:${t.rule}"></i>Edição SNPVAC · para associados</p>` : ''}
+  <p class="field" style="top:330px">e-mail</p>
+  <p class="field" style="top:394px">palavra-passe</p>
+  <p class="btn" style="top:474px;background:${t.btnBg};color:${t.btnFg}">Entrar</p>
+  <p class="link" style="left:40px;top:552px;color:${t.link};text-decoration:underline ${t.linkLine} 2px">Esqueci-me da palavra-passe</p>
+  <p class="link" style="left:40px;top:586px;color:${t.link};text-decoration:underline ${t.linkLine} 2px">Criar conta</p>
+</div>`;
+const inicio = (t) => `<div class="ph" role="img" aria-label="Início em folga · ${t.nome}">
+  <p class="eye" style="left:22px;top:64px">Segunda · 2 novembro</p>
+  <p class="lab" style="right:22px;top:64px">☾ 16°–17°</p>
+  <p class="foot" style="left:22px;top:80px">Boa noite, Nuno</p>
+  <p class="word" style="top:176px">Folga</p>
+  <p class="lab" style="left:22px;top:240px;font-size:15px;line-height:20px">Sem serviços marcados</p>
+  <span class="rule" style="top:300px"></span>
+  <p class="note" style="top:320px"><mark style="background:${t.marker};color:#141414">Folga a sério.</mark> Nada pendente, nada a vigiar.</p>
+  <span class="hair" style="top:394px"></span>
+  <div class="grid3"><div><span class="t">Legal</span><span class="v"><i></i>Sim</span></div><div><span class="t">Escala</span><span class="v"><i></i>Em dia</span></div><div><span class="t">Férias</span><span class="v">22 de 22</span></div></div>
+  <span class="hair" style="top:452px"></span>
+  <p class="money">1 753,66<small>€</small></p>
+  <p class="eye" style="left:22px;top:518px;color:#77776F">Novembro · estimado</p>
+  <div class="meter"><span class="lab">Dia 2 de 30</span><span class="bar"><b style="background:${t.bar}"></b></span></div>
+  <p class="eye" style="right:22px;top:518px;color:#77776F">Mês</p>
+  <p class="eye" style="left:22px;top:548px;color:#77776F">A seguir</p>
+  <div class="go"><div><b style="color:${t.partner || t === T.azul ? t.link : '#141414'}">Abrir a Escala</b><span class="foot">Sincronizar ou importar a escala</span></div><span style="color:#77776F">›</span></div>
+  ${tabs(t)}
+</div>`;
+const cols = document.getElementById('cols');
+cols.innerHTML = Object.values(T).map((t) => `<div class="col">
+  <header><b>${t.nome}</b><span>${t.sub}</span></header>
+  <span class="verdict v-${t.veredicto[0]}">${t.veredicto[1]}</span>
+  <div class="pair">
+    <div><div class="pw">${login(t)}</div><p class="cap">Login</p></div>
+    <div><div class="pw">${inicio(t)}</div><p class="cap">Início · folga</p></div>
+  </div></div>`).join('');
+const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+fit();
+if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>
+</body>
+</html>

@@ -2,9 +2,8 @@ import React, { useContext, useState, useRef, useEffect, useCallback, useMemo } 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, AppState, RefreshControl, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Rect, Defs, RadialGradient, LinearGradient, Stop } from 'react-native-svg';
-import { PELE, PELE_NIGHT, PELE_FONT } from '../data/constants';
+import { PELE, PELE_NIGHT, PELE_FONT, TXT, TYPE, SPACE, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
-import PeleSide from '../components/PeleSide';
 import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { getUpcomingFlight } from '../data/calendar';
@@ -49,20 +48,6 @@ const C = {
 // Anel a pulsar (escala 1→1.7 + desvanece, em loop) — atrás do ponto de estado e
 // do badge do report, como o mockup (@keyframes ring).
 // Donut da pele (mockup .donut, conic-gradient → SVG): anel 52 c/ furo, enche `p`%.
-function Donut({ p = 0, color = PELE.yellow, label }) {
-  const R = 19.5, CIRC = 2 * Math.PI * R;
-  const pct = Math.max(0, Math.min(100, p));
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <Svg width={52} height={52} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={26} cy={26} r={R} fill="none" stroke={PELE.line} strokeWidth={13} />
-        <Circle cx={26} cy={26} r={R} fill="none" stroke={color} strokeWidth={13}
-          strokeDasharray={`${(pct / 100) * CIRC} ${CIRC}`} />
-      </Svg>
-      {label ? <Text style={{ fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.5, color: PELE.grey, marginTop: 6 }} numberOfLines={1}>{label}</Text> : null}
-    </View>
-  );
-}
 
 // Skeleton do herói (1º carregamento do calendário) — mesma FORMA (fantasma + palavra + kick).
 function HeroSkeleton() {
@@ -156,13 +141,12 @@ const SHOW_DEMO_FLIGHT = false;
 // Voltar a null depois de ver!
 const FORCE_HOME_STATE = null;
 // ── AFINAÇÕES visuais (sessão "testar os estados") — mexer AQUI, são números do olho.
-// (Fora deste ficheiro: rótulo lateral = components/PeleSide.js `top = 344`/width 320;
+// (Fora deste ficheiro: rótulo lateral (já não no Início) = components/PeleSide.js `top = 344`/width 320;
 //  fantasma dos outros ecrãs = components/PeleHeader.js `ghost right: 14`.)
 const TUNE = {
   ghost: { s3: 190, s4: 160, s5: 140 },                    // fantasma por nº de caracteres (1-3 · 4 · ≥5)
-  wxSup: { right: 12, top: 2, size: 22 },                  // expoente do tempo no fantasma
   halo: { size: 430, right: -150, top: -100, op: 0.16, opSun: 0.2 },   // ponto AMBIENTE (sem símbolo no herói) · opSun = dose do sol motivado
-  haloMot: { size: 460, right: -196, top: -176 },          // ponto MOTIVADO: centro ≈ expoente do tempo (luz nasce do símbolo)
+  wxGlow: { size: 140, opSun: 0.42, opMoon: 0.3 },        // BRILHO DO ÍCONE do tempo (2026-11-02; substituiu o halo motivado do canto) — contraste medido c/ ícone a tinta ≥ 11:1
   veil: { h: 300, opRain: 0.1, opCloud: 0.08 },            // VÉU difuso do topo (céu coberto = luz sem fonte pontual)
   sun: { golden: '#F0A500', noon: '#FFCF4D' },             // temperatura da luz do sol pela hora (manhã/tarde âmbar · meio-dia pálido)
   lamp: { w: 360, h: 320, top: -70, op: 0.16 },            // candeeiro noturno (véspera/pernoita)
@@ -723,9 +707,9 @@ export default function HomeScreen({ navigation }) {
     if (ic === 'rain' || ic === 'thunder') return { kind: 'veil', tone: '#5A7896', op: TUNE.veil.opRain };
     if (ic === 'snow' || ic === 'fog' || ic === 'cloud') return { kind: 'veil', tone: '#7E8CA0', op: TUNE.veil.opCloud };
     const anchored = (homeState === 'folga' || homeState === 'ferias') && !!ic;   // o expoente só vive nesses heróis
-    if (hourNow >= 20 || hourNow < 7 || ic === 'moon') return { kind: 'point', tone: '#2E4E78', op: TUNE.halo.op, anchored };
+    if (hourNow >= 20 || hourNow < 7 || ic === 'moon') return { kind: 'point', tone: '#2E4E78', op: TUNE.halo.op, glowOp: TUNE.wxGlow.opMoon, anchored };
     const tone = (hourNow >= 10 && hourNow < 16) ? TUNE.sun.noon : TUNE.sun.golden;
-    return { kind: 'point', tone, op: anchored ? TUNE.halo.opSun : TUNE.halo.op, anchored };
+    return { kind: 'point', tone, op: anchored ? TUNE.halo.opSun : TUNE.halo.op, glowOp: TUNE.wxGlow.opSun, anchored };
   })();
 
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
@@ -852,21 +836,13 @@ export default function HomeScreen({ navigation }) {
   const demoOn = !!(flight && flight.demo);
   const exitDemo = () => { select(); setCalFlight(null); };
 
-  // Rótulo lateral (PeleSide) por estado. Em modo exemplo, o rótulo DIZ que é exemplo.
-  const sideL = demoOn ? [l('EXEMPLO', 'EXAMPLE'), l('VOO DE AMOSTRA', 'SAMPLE FLIGHT')]
-    : homeState === 'setup' ? [l('PRIMEIRA VEZ', 'FIRST TIME'), 'SETUP']
-    // FOLGA (decisão do user 2026-07-09, 2.ª iteração): fantasma = dia da semana CURTO
-    // ("QUI" — a língua dos rosters, 3 letras = tamanho gigante) e o rótulo dá a coordenada
-    // de calendário "9 JULHO" (o mês não aparecia em lado nenhum na folga). Dia de trabalho
-    // fala em números, dia teu fala em palavras.
-    : homeState === 'folga' ? [l('FOLGA', 'DAY OFF'), `${new Date().getDate()} ${new Date().toLocaleDateString(locale, { month: 'long' }).toUpperCase()}`]
-    : homeState === 'vespera' ? [l('VÉSPERA', 'EVE'), `REPORT ${(flight && flight.report) || ''}`.trim()]
-    : homeState === 'pernoita' ? [l('PERNOITA', 'NIGHT STOP'), l('FORA DA BASE', 'AWAY FROM BASE')]
-    : homeState === 'posvoo' ? [String(closeFno || l('HOJE', 'TODAY')).toUpperCase(), l('HOJE ✓', 'TODAY ✓')]
-    : homeState === 'ferias' ? [l('FÉRIAS', 'VACATION'), monthName.toUpperCase()]
-    : homeState === 'doenca' ? [l('DOENÇA', 'SICK LEAVE'), l('EM PAUSA', 'ON HOLD')]
-    : homeState === 'fecho' ? [l('FECHO', 'CLOSING'), monthName.toUpperCase()]
-    : [String(flightNo || kindLabel || l('HOJE', 'TODAY')).toUpperCase(), ndSectors ? `${ndSectors} ${l('SETORES', 'SECTORS')}` : (sectorLegs.length ? `${sectorLegs.length} ${l('SETORES', 'SECTORS')}` : l('HOJE', 'TODAY'))];
+  // Data do dia, LEGÍVEL no topo (substitui o rótulo lateral rodado — 2026-11-02). "SEGUNDA · 2 NOVEMBRO":
+  // o 'long' do pt-PT traz "-feira" (fora); o TXT.eyebrow põe em maiúsculas.
+  const dateLabel = (() => {
+    const d = new Date();
+    const wd = d.toLocaleDateString(locale, { weekday: 'long' }).replace(/-feira$/i, '');
+    return `${wd} · ${d.getDate()} ${d.toLocaleDateString(locale, { month: 'long' })}`;
+  })();
 
   // Documento crítico (validade expirada/bad) NÃO vai à banda — vive AO PÉ DO ESTADO (útil),
   // em vermelho, tocável (decisão do user 2026-07-09). A banda fica p/ o FTL/operacional.
@@ -915,6 +891,17 @@ export default function HomeScreen({ navigation }) {
     : `${flight.depAirport || ''}→${flight.arrAirport || ''}`) : '';
   const planeOk = !!(flightStatus && !fsDev && !inboundLate);
   const aptOk = !!(depAirport && !airportDis);
+  // FOLGA — o próximo serviço (2026-11-02, à Flighty: o herói é o tempo até ao que vem). A MESMA
+  // regra do agendaRows (que vive mais abaixo — TDZ: o herói não o pode ler). Dias de CALENDÁRIO.
+  const folgaNext = homeState === 'folga' ? (() => {
+    for (const iso of Object.keys(duties).filter((k) => k >= todayISO).sort()) {
+      const d = duties[iso]; if (!d || d.deleted || !d.report_time) continue;
+      const mf = dutyToFlight(iso, d); if (!mf || (mf.endDate && mf.endDate.getTime() < Date.now())) continue;
+      const days = Math.round((new Date(`${iso}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000);
+      return { iso, d, days };
+    }
+    return null;
+  })() : null;
   const hero = (() => {
     if (homeState === 'setup') return { icon: 'plane', word: l('Olá!', 'Hello!'), arrow: 'arrow-diag', arrowRot: 90,
       // kick = A frase do ecrã (setup-v2: funde o antigo "Porquê" + o chip "~1 MIN" — uma voz)
@@ -987,8 +974,22 @@ export default function HomeScreen({ navigation }) {
     // Intl: device "qui." · Node "quinta"); número do dia + mês no rótulo lateral.
     // SEM kick: o próximo serviço vive na agenda "A seguir" (régua abaixo) e o tempo vive
     // no EXPOENTE do fantasma (ícone + min–máx, sem a palavra "hoje" — o fantasma É hoje).
-    return { ghost: new Date().toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 3).toUpperCase(), word: l('Folga', 'Day off'), arrow: 'arrow-diag', arrowRot: 90,
-      kick: null };
+    // ↑ HISTÓRICO. 2026-11-02 (Design System 2.0, aprovado pelo Nuno sobre o esboço
+    // design/inicio-folga-v3.html): o fantasma CONTA os dias até ao próximo serviço (Flighty
+    // "4 DAYS") e o kick di-lo legível; sem nada marcado NÃO há fantasma (o Flighty vazio não
+    // decora) — fica a frase de estado e o atalho para a Escala em "A seguir".
+    if (folgaNext) {
+      const { d, days, iso } = folgaNext;
+      const dt = new Date(`${iso}T00:00:00`);
+      const wd = dt.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 3);   // 3 letras: o 'short' varia com o Intl (iPhone "qui." · Node "quinta")
+      const mon = dt.toLocaleDateString(locale, { month: 'short' }).replace('.', '');
+      const what = (!d.kind || d.kind === 'flight') ? (d.route || '') : t('duties.kind.' + d.kind, lang);
+      const when = days <= 0 ? l('hoje', 'today') : days === 1 ? l('amanhã', 'tomorrow') : l(`daqui a ${days} dias`, `in ${days} days`);
+      return { ghost: String(Math.max(0, days)), word: l('Folga', 'Day off'),
+        kick: [l('Próximo serviço ', 'Next duty '), { y: when }],
+        sub: [`${wd.charAt(0).toUpperCase()}${wd.slice(1)} ${dt.getDate()} ${mon}`, `report ${d.report_time}`, what].filter(Boolean).join(' · ') };
+    }
+    return { ghost: null, word: l('Folga', 'Day off'), kick: [{ y: l('Sem serviços marcados', 'No duties scheduled') }] };
   })();
 
   // Meio adaptativo — HORAS (voo hoje/disrupção) · linha simples (não-voo) · AGENDA (folga) · SETUP.
@@ -1055,14 +1056,18 @@ export default function HomeScreen({ navigation }) {
       // Já TERMINOU (ex.: aterrou 15h, são 21h) → não é "próximo" — mesma regra do mergeNextFlight.
       const mf = dutyToFlight(iso, d); if (!mf || (mf.endDate && mf.endDate.getTime() < Date.now())) continue;
       const isF = !d.kind || d.kind === 'flight';
-      const wd = new Date(iso + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase();
+      const dt = new Date(iso + 'T00:00:00');
+      const wd = dt.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 3);   // 3 letras: o 'short' varia com o Intl (iPhone "qui." · Node "quinta")
+      const mon = dt.toLocaleDateString(locale, { month: 'short' }).replace('.', '');
       const fno = (Array.isArray(d.legs) && d.legs[0] && (d.legs[0].flightNo || d.legs[0].flight)) ? String(d.legs[0].flightNo || d.legs[0].flight).toUpperCase() : null;
-      const moon = (d.night_stop || d.nightStop) ? ` 🌙 ${l('pernoita', 'night stop')}` : '';   // no título, como o mockup
-      // Linhas com a DATA explícita ("SEX 10" — o wd sozinho era ambíguo); o QUANDO relativo
-      // (amanhã/faltam X h) vive no TÍTULO vivo da agenda, não repetido linha a linha.
-      out.push({ iso,
-        a1: `${isF ? [fno, d.route].filter(Boolean).join(' · ') || l('Voo', 'Flight') : t('duties.kind.' + d.kind, lang)}${moon}`,
-        a2: `${wd} ${Number(iso.slice(8, 10))} · report ${d.report_time}${d.sectors ? ` · ${d.sectors} ${l('setores', 'sectors')}` : ''}` });
+      // Linhas à Flighty (2026-11-02): a CONTAGEM à esquerda (dias de calendário) · rota/tipo à
+      // direita com a data explícita por baixo. A pernoita é TEXTO (o emoji 🌙 saiu — pele sem emoji).
+      const days = Math.round((new Date(`${iso}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000);
+      out.push({ iso, days,
+        a1: isF ? [d.route, fno].filter(Boolean).join(' · ') || l('Voo', 'Flight') : t('duties.kind.' + d.kind, lang),
+        a2: [`${wd.charAt(0).toUpperCase()}${wd.slice(1)} ${dt.getDate()} ${mon}`, `report ${d.report_time}`,
+          d.sectors ? `${d.sectors} ${l('setores', 'sectors')}` : null,
+          (d.night_stop || d.nightStop) ? l('pernoita', 'night stop') : null].filter(Boolean).join(' · ') });
       if (out.length >= 3) break;
     }
     return out;
@@ -1115,13 +1120,14 @@ export default function HomeScreen({ navigation }) {
       (inDuty && psvRunning) ? `PSV ${psvRunning}${ndPsvMax ? ` / ${l('máx', 'max')} ${ndPsvMax}` : ''}` : ndPsvMax ? `PSV ${l('máx', 'max')} ${ndPsvMax}` : null,
       ndSectors ? `${l('aclimatizado', 'acclimatised')}, ${ndSectors} ${l('setores', 'sectors')}` : null,
       ndFat && (ndFat.band === 'high' || ndFat.band === 'elevated') ? `${l('fadiga', 'fatigue')} ${fatLabel(ndFat.band).toLowerCase()}` : null,
-      flight && flight.nightStop ? `🌙 ${l('pernoita', 'night stop')}` : null,
+      flight && flight.nightStop ? l('pernoita', 'night stop') : null,
       // Formação: papel pago (instrutor conta no mês pelo AE — a lei dos papéis).
       (flight && flight.kind === 'training' && ndReg && ndReg.role === 'instr') ? l('papel: instrutor — conta no mês (AE)', 'role: instructor — counts this month (AE)') : null,
       // Standby aeroporto: o alojamento muda como o tempo conta (sem artigo — wording do LI).
       (isStandbyToday && flight.kind === 'standby_airport') ? (ndReg && ndReg.accommodation ? l('com alojamento', 'with accommodation') : l('sem alojamento — conta por inteiro', 'no accommodation — counts in full')) : null,
     ].filter(Boolean).join(' · ') || l('sem mais nada a assinalar', 'nothing else to flag');
-    const bits = qChips.slice(0, 3).map((it) => it.short).filter(Boolean);
+    // Cada resposta com a sua pergunta ("Legal: Sim" — nunca um "Sim" solto; Design System 2.0).
+    const bits = qChips.slice(0, 3).filter((it) => it.short).map((it) => `${it.topic}: ${it.short}`);
     if (folgaVac) bits.push(`${l('férias: ficam', 'vacation: left')} ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`);
     return bits.length ? bits.join(' · ') : l('tudo em dia ✓', 'all in order ✓');
   })();
@@ -1135,12 +1141,14 @@ export default function HomeScreen({ navigation }) {
       // O chip da escala diz AO QUE VEM (user 2026-07-10: a secção "mais visível nas coisas
       // que contém") — "2 mud." era críptico; com alterações pendentes fala claro, e é ELE
       // a função na folga (a linha warn cala-se; o bilhete fica com o charme).
-      label: (it.id === 'roster' && it.status === 'warn' && rosterChanges && rosterChanges.counts && rosterChanges.counts.total)
-        ? `${l('escala', 'roster')} · ${rosterChanges.counts.total} ${l('por rever', 'to review')}`
+      // 2026-11-02 (Design System 2.0, à Oura/WHOOP): cada célula = RÓTULO (a pergunta) + VALOR.
+      topic: it.topic,
+      value: (it.id === 'roster' && it.status === 'warn' && rosterChanges && rosterChanges.counts && rosterChanges.counts.total)
+        ? `${rosterChanges.counts.total} ${l('por rever', 'to review')}`
         : it.short,
       tone: it.status, item: it,
     })),
-    ...(folgaVac ? [{ key: 'vac', label: `${l('férias', 'vacation')} · ${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`, tone: 'neutral' }] : []),
+    ...(folgaVac ? [{ key: 'vac', topic: l('Férias', 'Vacation'), value: `${folgaVac.left} ${l('de', 'of')} ${folgaVac.quota}`, tone: 'neutral' }] : []),
   ] : null;
   // Setup v2: o "Porquê" completo (privacidade + a dica do portal) vive ATRÁS de
   // "Saber mais" — progressive disclosure em vez de dois parágrafos no ecrã.
@@ -1166,19 +1174,21 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'ferias' || homeState === 'doenca') return null;      // afastamento/silêncio — nada de números a gritar
     // 'fecho' cai de propósito no ramo do € do mês (a manchete É o total + donut do mês)
     if (homeState === 'posvoo') {
-      if (ae && pdToday != null) return { v: eurBare(pdToday), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: closePct != null ? closePct : 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: (closeD && closeD.fdp && closeD.fdp.over) ? PELE.red : PELE.yellow };
-      if (closeD && closeD.fdp && closeD.fdp.actualFdpStr) return { v: closeD.fdp.actualFdpStr, u: `${l('PSV DE HOJE · MÁX', 'TODAY’S FDP · MAX')} ${closeD.fdp.maxFdpStr || '—'}`, p: closePct || 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: closeD.fdp.over ? PELE.red : PELE.yellow };
+      if (ae && pdToday != null) return { v: eurBare(pdToday), cur: true, u: l('PER-DIEM DE HOJE', 'TODAY’S PER-DIEM'), p: closePct != null ? closePct : 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: (closeD && closeD.fdp && closeD.fdp.over) ? PELE.red : BRAND.signal };
+      if (closeD && closeD.fdp && closeD.fdp.actualFdpStr) return { v: closeD.fdp.actualFdpStr, u: `${l('PSV DE HOJE · MÁX', 'TODAY’S FDP · MAX')} ${closeD.fdp.maxFdpStr || '—'}`, p: closePct || 0, lab: closePct != null ? `PSV ${closePct}%` : 'PSV', color: closeD.fdp.over ? PELE.red : BRAND.signal };
       return null;
     }
     if (homeState === 'disrupcao' && liveVerdict) { const p = psvPct != null ? psvPct : 0; return { v: liveVerdict.realStr, u: `${l('PSV PROJETADO · MÁX', 'PROJECTED FDP · MAX')} ${liveVerdict.maxStr}`, p, lab: `PSV ${p}%`, color: liveVerdict.verdict === 'over' ? PELE.red : PELE.warn }; }
     if (homeState === 'hoje' || homeState === 'disrupcao') {
       // Na DISRUPÇÃO o dinheiro não é manchete — a pergunta é de segurança (PSV).
-      if (homeState !== 'disrupcao' && ae && dayPerDiem != null) return { v: eurBare(dayPerDiem), u: l('EUR · PER-DIEM DE HOJE', 'EUR · TODAY’S PER-DIEM'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: PELE.yellow };
-      if (ndPsvMax) return { v: ndPsvMax, u: l('PSV MÁXIMO DE HOJE', 'TODAY’S MAX FDP'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: homeState === 'disrupcao' ? PELE.warn : PELE.yellow };
+      if (homeState !== 'disrupcao' && ae && dayPerDiem != null) return { v: eurBare(dayPerDiem), cur: true, u: l('PER-DIEM DE HOJE', 'TODAY’S PER-DIEM'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: BRAND.signal };
+      if (ndPsvMax) return { v: ndPsvMax, u: l('PSV MÁXIMO DE HOJE', 'TODAY’S MAX FDP'), p: psvPct != null ? psvPct : 0, lab: psvPct != null ? `PSV ${psvPct}%` : 'PSV', color: homeState === 'disrupcao' ? PELE.warn : BRAND.signal };
       return null;
     }
-    if (ae && monthMoney != null) return { v: eurBare(monthMoney), u: `EUROS · ${monthName.toUpperCase()} ${l('ESTIMADO', 'ESTIMATED')}`, p: monthPct, lab: `${l('MÊS', 'MONTH')} ${monthPct}%`, color: PELE.yellow };
-    if (f28 && f28.limit) { const p = Math.min(100, Math.round((f28.done / f28.limit) * 100)); return { v: `${Math.round(f28.done)}h`, u: l('VOO · ÚLTIMOS 28 DIAS', 'FLIGHT · LAST 28 DAYS'), p, lab: `28D ${p}%`, color: p >= 90 ? PELE.red : p >= 70 ? PELE.warn : PELE.yellow }; }
+    if (ae && monthMoney != null) return { v: eurBare(monthMoney), cur: true, u: `${monthName.toUpperCase()} · ${l('ESTIMADO', 'ESTIMATED')}`, p: monthPct, lab: `${l('MÊS', 'MONTH')} ${monthPct}%`, color: BRAND.signal,
+      // a barra diz o que mede (era "MÊS 7%" num anel): o dia do mês
+      meterTop: l(`Dia ${new Date().getDate()} de ${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}`, `Day ${new Date().getDate()} of ${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}`), meterBot: l('MÊS', 'MONTH') };
+    if (f28 && f28.limit) { const p = Math.min(100, Math.round((f28.done / f28.limit) * 100)); return { v: `${Math.round(f28.done)}h`, u: l('VOO · ÚLTIMOS 28 DIAS', 'FLIGHT · LAST 28 DAYS'), p, lab: `${l('28 DIAS', '28 DAYS')} ${p}%`, color: p >= 90 ? PELE.red : p >= 70 ? PELE.warn : BRAND.signal }; }
     return null;
   })();
 
@@ -1317,11 +1327,11 @@ export default function HomeScreen({ navigation }) {
             <Rect x="0" y="0" width="100%" height="100%" fill="url(#veil)" />
           </Svg>
         </View>
-      ) : atmo ? (
-        <View pointerEvents="none" style={[s.haloWrap, atmo.anchored
-          ? { right: TUNE.haloMot.right, top: TUNE.haloMot.top }
-          : { right: TUNE.halo.right, top: TUNE.halo.top }]}>
-          <Svg width={atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size} height={atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size}>
+      ) : atmo && !atmo.anchored ? (
+        /* Ponto AMBIENTE (sem símbolo no ecrã, ex.: pós-voo). Com símbolo, a luz é o BRILHO DO
+           ÍCONE na linha do topo (2026-11-02) — desenhado lá dentro, nunca se desalinha. */
+        <View pointerEvents="none" style={[s.haloWrap, { right: TUNE.halo.right, top: TUNE.halo.top }]}>
+          <Svg width={TUNE.halo.size} height={TUNE.halo.size}>
             <Defs>
               <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
                 <Stop offset="0%" stopColor={atmo.tone} stopOpacity={String(atmo.op)} />
@@ -1329,11 +1339,13 @@ export default function HomeScreen({ navigation }) {
                 <Stop offset="100%" stopColor={atmo.tone} stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Circle cx={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} cy={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} r={(atmo.anchored ? TUNE.haloMot.size : TUNE.halo.size) / 2} fill="url(#halo)" />
+            <Circle cx={TUNE.halo.size / 2} cy={TUNE.halo.size / 2} r={TUNE.halo.size / 2} fill="url(#halo)" />
           </Svg>
         </View>
       ) : null}
-      <PeleSide label={sideL[0]} accent={sideL[1]} color={night ? P.ink : undefined} />
+      {/* (Rótulo lateral SAIU do Início — 2026-11-02, Design System 2.0: nenhuma das melhores apps
+          roda texto; a data vive legível na linha do topo. O demo continua selado pela pílula
+          "Exemplo — sair" ao lado da saudação.) */}
       {/* homeScrollRef + useScrollToTop: re-tocar na aba Início volta ao topo (convenção iOS) */}
       <ScrollView ref={homeScrollRef} contentContainerStyle={[s.scroll, { paddingBottom: tabSpace }]} alwaysBounceVertical
         refreshControl={<RefreshControl refreshing={refreshing} tintColor={P.grey} colors={[P.grey]}
@@ -1350,7 +1362,36 @@ export default function HomeScreen({ navigation }) {
             (o botão de notificações à Apple: informação quando há, mobília nunca). */}
         {/* Canto da saudação por prioridade (avisos v2): pílula VERMELHA de legalidade FTL >
             pílula do exemplo > sino-pílula > nada — o herói nunca é empurrado por avisos. */}
-        <Animated.View style={[seg(0), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }]}>
+        {/* Linha do topo (2026-11-02): a DATA legível (era o rótulo rodado) + a meteorologia na
+            sua própria linha (era expoente em cima do fantasma). */}
+        <Animated.View style={[seg(0), s.topRow]}>
+          <Text style={s.dateEye} numberOfLines={1}>{dateLabel}</Text>
+          {(homeState === 'folga' || homeState === 'pernoita' || homeState === 'ferias') && wxArr && wxArr.icon ? (
+            <View style={s.wxTop} accessibilityLabel={`${l('Tempo', 'Weather')} ${(wxArr.min != null && wxArr.max != null) ? `${wxArr.min} a ${wxArr.max}` : wxArr.c} °`}>
+              {/* A LUZ NASCE DO SÍMBOLO (2026-11-02, escolha do Nuno no device): brilho pequeno e
+                  denso centrado no ícone — âmbar manhã/fim de tarde · pálido meio-dia · azul-frio
+                  noite. Estático (sem movimento); só onde há ponto motivado (folga/férias, céu limpo). */}
+              {atmo && atmo.kind === 'point' && atmo.anchored ? (
+                <View pointerEvents="none" style={[s.wxGlow, { left: 8 - TUNE.wxGlow.size / 2, top: 8 - TUNE.wxGlow.size / 2 }]}>
+                  <Svg width={TUNE.wxGlow.size} height={TUNE.wxGlow.size}>
+                    <Defs>
+                      <RadialGradient id="wxglow" cx="50%" cy="50%" r="50%">
+                        <Stop offset="0%" stopColor={atmo.tone} stopOpacity={String(atmo.glowOp)} />
+                        <Stop offset="45%" stopColor={atmo.tone} stopOpacity={String(atmo.glowOp * 0.45)} />
+                        <Stop offset="100%" stopColor={atmo.tone} stopOpacity="0" />
+                      </RadialGradient>
+                    </Defs>
+                    <Circle cx={TUNE.wxGlow.size / 2} cy={TUNE.wxGlow.size / 2} r={TUNE.wxGlow.size / 2} fill="url(#wxglow)" />
+                  </Svg>
+                </View>
+              ) : null}
+              {/* ícone a TINTA: a cinzento sobre o brilho da lua dava 2,72:1 (ícones pedem 3) */}
+              <Icon name={wxArr.icon} size={16} color={P.ink} />
+              <Text style={s.wxTopTxt} allowFontScaling={false}>{(wxArr.min != null && wxArr.max != null) ? `${wxArr.min}°–${wxArr.max}°` : `${wxArr.c}°`}</Text>
+            </View>
+          ) : null}
+        </Animated.View>
+        <Animated.View style={[seg(0), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }]}>
           <Text style={[s.greet, { marginTop: 0 }]}>{greet}</Text>
           {redPill ? (
             <TouchableOpacity style={s.redPill} onPress={redPill.onPress} hitSlop={8}
@@ -1370,28 +1411,17 @@ export default function HomeScreen({ navigation }) {
         {/* HERÓI — fantasma + palavra + kick */}
         {loadingFlight ? <HeroSkeleton /> : (
           <Animated.View style={seg(1)}>
-            <View style={s.hero}>
-              <View style={s.arrowy}><Icon name={hero.arrow} size={24} color={PELE.yellow} rot={hero.arrowRot} /></View>
+            {/* (A seta/ícone amarelo do canto saiu — 2026-11-02: decorativo, parecia botão e, a
+                amarelo sobre papel, tinha 1,73:1. A PALAVRA diz o estado.) */}
+            <View style={[s.hero, (!hero.ghost && !hero.icon) ? s.heroBare : null]}>
               {hero.icon
                 ? <View style={s.ghostIcon}><Icon name={hero.icon} size={150} color={PELE.ghost} /></View>
                 : /* SEM adjustsFontSizeToFit: no iOS um Text auto-encolhível pode ficar INVISÍVEL
                      num re-render de irmãos (ex.: a meteo a chegar) — tamanho por comprimento. */
                 <Text style={[s.ghost, ghostSize]} pointerEvents="none" numberOfLines={1} allowFontScaling={false}>{hero.ghost}</Text>}
-              {/* Tempo como EXPOENTE do fantasma (folga: base · pernoita: a estação onde
-                  dormes). Na FOLGA o expoente é o carimbo completo do dia: ícone + min–máx
-                  por baixo (o kick morreu — sem "hoje" escrito, o fantasma É hoje). */}
-              {(homeState === 'folga' || homeState === 'pernoita' || homeState === 'ferias') && wxArr && wxArr.icon ? (
-                <View style={{ position: 'absolute', right: TUNE.wxSup.right, top: TUNE.wxSup.top, alignItems: 'flex-end' }}>
-                  <Icon name={wxArr.icon} size={TUNE.wxSup.size} color={P.grey} />
-                  {homeState === 'folga' ? (
-                    <Text style={s.wxSupTxt} allowFontScaling={false}>
-                      {(wxArr.min != null && wxArr.max != null) ? `${wxArr.min}°–${wxArr.max}°` : `${wxArr.c}°`}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
               <Text style={[s.word, hero.warn ? s.wordWarn : null]} numberOfLines={1} allowFontScaling={false}>{hero.word}</Text>
               {hero.kick ? kickParts(hero.kick) : null}
+              {hero.sub ? <Text style={s.kickSub} numberOfLines={1}>{hero.sub}</Text> : null}
             </View>
             <View style={s.hr} />
           </Animated.View>
@@ -1417,6 +1447,7 @@ export default function HomeScreen({ navigation }) {
         ) : null}
 
         {/* MEIO ADAPTATIVO — horas do voo · linha do serviço · agenda da folga · setup */}
+        {homeState === 'folga' ? null : (
         <Animated.View style={[s.mid, seg(2)]}>
           {/* EM VOO: barra de progresso do setor ativo (instantes planeados; anda com o tick) */}
           {midTimes && sectorPct != null ? (
@@ -1506,28 +1537,7 @@ export default function HomeScreen({ navigation }) {
                 </TouchableOpacity>
               ) : null}
             </>
-          ) : agendaRows ? (agendaRows.length ? (
-            <>
-              {/* O CARTÃO PRETO do countdown encabeça a agenda (decisão do user 2026-07-09:
-                  era duplo-badge com o chip do polegar — o elemento forte subiu para o
-                  contexto e a linha do polegar da folga esvaziou-se de vez). */}
-              <View style={s.agChipRow}>
-                <View style={s.chip}>
-                  <Text style={s.chipV} numberOfLines={1}>{chip.v}</Text>
-                  <Text style={s.chipS} numberOfLines={1}>{chip.s}</Text>
-                </View>
-              </View>
-              {agendaRows.map((a) => (
-                <TouchableOpacity key={a.iso} style={s.ag} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)} accessibilityRole="button">
-                  <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
-                    <Text style={s.agA} numberOfLines={1}>{a.a1}</Text>
-                    <Text style={s.agB} numberOfLines={1}>{a.a2}</Text>
-                  </View>
-                  <View style={s.agTick} />
-                </TouchableOpacity>
-              ))}
-            </>
-          ) : <Text style={s.agEmpty}>{l('nada marcado — desfruta ✌️', 'nothing scheduled — enjoy ✌️')}</Text>) : homeState === 'setup' ? (
+          ) : homeState === 'setup' ? (
             <>
               {/* ZONA ÚNICA de decisão (setup-v2; "à mão" REMOVIDO 2026-07-10 — tudo vem do
                   calendário): TRÊS portas — calendário (herói) · PDF · exemplo. A motivação
@@ -1535,7 +1545,7 @@ export default function HomeScreen({ navigation }) {
                   pós-ligação (o momento em que é acionável); o passo "1" morreu (eco). */}
               <TouchableOpacity style={s.setupBtn} activeOpacity={0.85} onPress={requestAccess}
                 accessibilityRole="button" accessibilityLabel={l('Ligar ao calendário', 'Connect calendar')}>
-                <Icon name="cal" size={16} color={PELE.yellow} />
+                <Icon name="cal" size={16} color={BRAND.onDark} />
                 <Text style={s.setupBtnTxt}>{l('Ligar ao calendário', 'Connect calendar')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.setupGhost} activeOpacity={0.8}
@@ -1554,28 +1564,33 @@ export default function HomeScreen({ navigation }) {
             </>
           ) : null}
         </Animated.View>
+        )}
 
         {/* Micro-texto útil */}
         <Animated.View style={seg(3)}>
+          {estadoChips && estadoChips.length ? (
+            /* FOLGA (2026-11-02, à Oura/WHOOP): colunas RÓTULO + VALOR — cada uma abre o SEU porquê.
+               Sem o título "Estado": os rótulos já dizem o que é cada coisa. */
+            <View style={s.estGrid}>
+              {estadoChips.map((c) => (
+                <TouchableOpacity key={c.key} disabled={!c.item} hitSlop={4} activeOpacity={0.7}
+                  onPress={c.item ? () => { select(); setDetailItem(c.item); } : undefined}
+                  style={s.estCell} accessibilityRole={c.item ? 'button' : undefined} accessibilityLabel={`${c.topic}: ${c.value}`}>
+                  <Text style={s.estLab} numberOfLines={1}>{c.topic}</Text>
+                  <View style={s.estValRow}>
+                    {c.tone === 'ok' || c.tone === 'warn' ? <View style={[s.estDot, { backgroundColor: c.tone === 'ok' ? P.ok : P.warn }]} /> : null}
+                    <Text style={s.estVal} numberOfLines={1}>{c.value}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
           <TouchableOpacity style={s.util} activeOpacity={utilTap ? 0.75 : 1} onPress={utilTap ? () => { select(); setDetailItem(utilTap); } : undefined} disabled={!utilTap}
             accessibilityRole={utilTap ? 'button' : undefined}>
             <Text style={s.utilTtl} numberOfLines={1}>{utilTtl}</Text>
-            {estadoChips && estadoChips.length ? (
-              /* FOLGA: chips de estado — cada verificação é um alvo próprio (abre o SEU porquê) */
-              <View style={s.utilChips}>
-                {estadoChips.map((c) => (
-                  <TouchableOpacity key={c.key} disabled={!c.item} hitSlop={4} activeOpacity={0.7}
-                    onPress={c.item ? () => { select(); setDetailItem(c.item); } : undefined}
-                    style={s.uChip} accessibilityRole={c.item ? 'button' : undefined} accessibilityLabel={c.label}>
-                    <View style={[s.uChipDot, { backgroundColor: c.tone === 'ok' ? P.ok : c.tone === 'warn' ? P.warn : P.grey }]} />
-                    <Text style={s.uChipTxt} numberOfLines={1}>{c.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
             <Text style={s.utilP} numberOfLines={3}>{utilTxt}</Text>
-            )}
           </TouchableOpacity>
+          )}
           {/* Documento crítico — ao pé do Estado: vermelho, toca → porquê. */}
           {docAlert ? (
             <TouchableOpacity style={s.docAlert} activeOpacity={0.8} onPress={() => { select(); setDetailItem(docAlert); }}
@@ -1600,13 +1615,51 @@ export default function HomeScreen({ navigation }) {
         </Animated.View>
 
         {/* Dígitos amarelos + donut */}
+        {/* 2026-11-02 (Design System 2.0): o número a TINTA (amarelo sobre papel = 1,73:1) com o €
+            a cinzento; o anel virou uma BARRA que diz o que mede ("Dia 2 de 30" · "62%" do PSV).
+            O amarelo/âmbar/vermelho fica no preenchimento da barra — cor como sinal, não como texto. */}
         {datarow ? (
           <Animated.View style={[s.datarow, seg(4)]}>
-            <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-              <Text style={[s.bigy, String(datarow.v).length > 9 ? { fontSize: 44, lineHeight: 46 } : null]} numberOfLines={1} allowFontScaling={false}>{datarow.v}</Text>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: SPACE.md }}>
+              <Text style={s.bigy} numberOfLines={1} allowFontScaling={false}>{datarow.v}{datarow.cur ? <Text style={s.bigyCur}> €</Text> : null}</Text>
               <Text style={s.bigyU} numberOfLines={1}>{datarow.u}</Text>
             </View>
-            <Donut p={datarow.p} color={datarow.color} label={datarow.lab} />
+            <View style={s.meter} accessibilityLabel={`${datarow.meterBot || String(datarow.lab || '').replace(/\s*\d+%$/, '')} ${datarow.meterTop || ((String(datarow.lab || '').match(/(\d+%)$/) || [])[1] || '')}`}>
+              <Text style={s.meterTop} numberOfLines={1}>{datarow.meterTop || ((String(datarow.lab || '').match(/(\d+%)$/) || [])[1] || '—')}</Text>
+              <View style={s.meterTrack}><View style={[s.meterFill, { width: `${Math.max(0, Math.min(100, datarow.p || 0))}%`, backgroundColor: datarow.color || BRAND.signal }]} /></View>
+              <Text style={s.meterBot} numberOfLines={1}>{datarow.meterBot || String(datarow.lab || '').replace(/\s*\d+%$/, '')}</Text>
+            </View>
+          </Animated.View>
+        ) : null}
+
+        {/* FOLGA · "A seguir" (2026-11-02, à Flighty): a contagem à esquerda, rota/tipo + data à
+            direita; absorve o cartão preto do countdown. Sem nada marcado: UM atalho para a Escala. */}
+        {homeState === 'folga' && agendaRows ? (
+          <Animated.View style={[s.next, seg(5)]}>
+            <Text style={s.nextEye}>{l('A seguir', 'Up next')}</Text>
+            {agendaRows.length ? agendaRows.map((a, i) => (
+              <TouchableOpacity key={a.iso} style={[s.nRow, i === 0 ? s.nRowFirst : null]} activeOpacity={0.75} onPress={() => openDayDetail(a.iso)}
+                accessibilityRole="button" accessibilityLabel={`${a.days <= 0 ? l('hoje', 'today') : `${a.days} ${a.days === 1 ? l('dia', 'day') : l('dias', 'days')}`}: ${a.a1}, ${a.a2}`}>
+                <View style={s.nCd}>
+                  <Text style={s.nNum} allowFontScaling={false}>{Math.max(0, a.days)}</Text>
+                  <Text style={s.nUnit}>{a.days === 1 ? l('dia', 'day') : l('dias', 'days')}</Text>
+                </View>
+                <View style={s.nTx}>
+                  <Text style={s.nA} numberOfLines={1}>{a.a1}</Text>
+                  <Text style={s.nB} numberOfLines={1}>{a.a2}</Text>
+                </View>
+              </TouchableOpacity>
+            )) : (
+              <TouchableOpacity style={s.nEmpty} activeOpacity={0.8}
+                onPress={() => { select(); navigation.navigate('Escala'); }}
+                accessibilityRole="button" accessibilityLabel={l('Abrir a Escala', 'Open Roster')}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.nA}>{l('Abrir a Escala', 'Open Roster')}</Text>
+                  <Text style={s.nB}>{l('Sincronizar ou importar a escala', 'Sync or import your roster')}</Text>
+                </View>
+                <Icon name="chevron" size={14} color={P.grey} />
+              </TouchableOpacity>
+            )}
           </Animated.View>
         ) : null}
 
@@ -1623,7 +1676,7 @@ export default function HomeScreen({ navigation }) {
             {acts.map((a) => (
               <TouchableOpacity key={a.lbl} style={s.act} activeOpacity={0.8} onPress={a.run} onLongPress={a.longRun}
                 accessibilityRole="button" accessibilityLabel={a.lbl}>
-                <View style={[s.actC, a.hot ? s.actHot : null]}><Icon name={a.ic} size={16} color={a.hot ? (night ? PELE_NIGHT.paper : PELE.yellow) : P.ink} /></View>
+                <View style={[s.actC, a.hot ? s.actHot : null]}><Icon name={a.ic} size={16} color={a.hot ? (night ? PELE_NIGHT.paper : BRAND.onDark) : P.ink} /></View>
                 <Text style={[s.actL, a.hot ? { color: P.ink } : null]} numberOfLines={1}>{a.lbl}</Text>
               </TouchableOpacity>
             ))}
@@ -1686,7 +1739,21 @@ const makeSkin = (P, night) => StyleSheet.create({
 
   // Herói (mockup .hero/.ghostnum/.word/.kick — o Início fala mais alto: 170/56)
   hero: { position: 'relative', minHeight: 200, marginTop: 8, justifyContent: 'flex-end', paddingBottom: 4 },
-  arrowy: { position: 'absolute', left: 2, top: 6 },
+  heroBare: { minHeight: 0, marginTop: SPACE.lg },   // sem fantasma (folga sem nada marcado): o herói encolhe — nada de vazio decorativo
+  kickSub: { ...TXT.footnote, color: P.grey, marginTop: SPACE.xxs },
+  // linha do topo: data legível + tempo (2026-11-02)
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, marginTop: SPACE.md },
+  dateEye: { ...TXT.eyebrow, color: P.ink, flexShrink: 1 },
+  wxTop: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  wxGlow: { position: 'absolute' },   // brilho atrás do ícone (1.º filho = desenhado por baixo; centro = centro do ícone 16×16)
+  wxTopTxt: { ...TXT.label, color: P.ink },
+  // FOLGA · estado em colunas rótulo + valor (à Oura/WHOOP)
+  estGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: P.line, rowGap: SPACE.md },
+  estCell: { width: '33.33%', gap: SPACE.s, paddingRight: SPACE.sm },
+  estLab: { ...TXT.tag, color: P.grey },
+  estValRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  estDot: { width: 7, height: 7, borderRadius: 99 },
+  estVal: { ...TXT.bodyStrong, color: P.ink, flexShrink: 1 },
   // left:0 + right + textAlign right = largura LIMITADA — obrigatório: adjustsFontSizeToFit
   // num Text absoluto só-ancorado-à-direita não renderiza no iOS (padrão provado no FlightShareCard).
   // right 12 (era -2): o fantasma recua à esquerda p/ não pisar o rótulo rodado da margem.
@@ -1695,9 +1762,8 @@ const makeSkin = (P, night) => StyleSheet.create({
   word: { fontFamily: PELE_FONT.display, fontSize: 56, lineHeight: 58, letterSpacing: -0.5, color: P.ink },
   wordWarn: { color: P.warn },
   kick: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 6 },
-  kickY: { color: P.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  kickY: { color: P.ink, fontFamily: PELE_FONT.bodyHeavy },   // ênfase a TINTA (amarelo sobre papel = 1,73:1 — design-system §6)
   // min–máx por baixo do ícone do tempo (expoente da folga) — o carimbo do dia
-  wxSupTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: P.grey, marginTop: 2 },
   hr: { height: 1.5, backgroundColor: P.ink, marginTop: 8 },
 
   // Meio adaptativo (mockup .mid/.trow/.ag/.stp/.tip)
@@ -1720,15 +1786,9 @@ const makeSkin = (P, night) => StyleSheet.create({
   tstS: { fontSize: 10, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
   progRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 7 },
   progTrack: { flex: 1, height: 3, backgroundColor: P.line, borderRadius: 2, overflow: 'hidden' },
-  progFill: { height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  progFill: { height: 3, backgroundColor: BRAND.signal, borderRadius: 2 },
   progPct: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, color: P.grey, width: 38, textAlign: 'right' },
   // o cartão preto do countdown encabeça a agenda (alinhado à direita, como as linhas)
-  agChipRow: { alignItems: 'flex-end', paddingTop: 2, paddingBottom: 8 },
-  ag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 9, paddingVertical: 6 },
-  agA: { fontSize: 13, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
-  agB: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
-  agTick: { width: 2.5, height: 26, backgroundColor: P.ink, borderRadius: 2 },
-  agEmpty: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: P.grey, textAlign: 'right', paddingVertical: 10 },
   hotelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   hotelName: { fontSize: 14, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   hotelNote: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: P.grey, marginTop: 1 },
@@ -1743,20 +1803,16 @@ const makeSkin = (P, night) => StyleSheet.create({
   // Links da zona das portas (setup-v2): "adicionar à mão · ver um exemplo" — o
   // sublinhado amarelo dos links da casa. (stp/tip/setupManual morreram com o v2.)
   setupLinks: { flexDirection: 'row', justifyContent: 'center', gap: 22, marginTop: 16 },
-  setupLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: P.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
+  setupLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: P.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1 },
 
   // Micro-texto útil (mockup .util)
   util: { flexDirection: 'row', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: P.line },
   utilTtl: { width: 70, fontFamily: PELE_FONT.display, fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5, color: P.ink },
   utilP: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 18 },
   // Chips de estado da FOLGA — hairline + ponto de cor; cada chip abre o seu porquê.
-  utilChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
-  uChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: P.line, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 9 },
-  uChipDot: { width: 5, height: 5, borderRadius: 99 },
-  uChipTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: P.ink },
   // Pílula do MODO EXEMPLO (topo, no lugar do sino): sempre visível, sai num toque.
   demoPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: P.soft, borderWidth: 1, borderColor: P.line, borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
-  demoPillDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.yellow },
+  demoPillDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: BRAND.signal },
   demoPillTxt: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, color: P.ink },
   haloWrap: { position: 'absolute', right: -150, top: -100, zIndex: 0 },
   veilWrap: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 0 },   // véu difuso (céu coberto) — largura total, desce do topo
@@ -1767,7 +1823,7 @@ const makeSkin = (P, night) => StyleSheet.create({
   // e o desvio são LIVRES e vêm inline (noteTilt/noteShift — determinísticos pelo dia).
   voiceWrap: { paddingTop: 22, paddingBottom: 10 },   // respiro sob a régua (user: "estava muito perto")
   voiceNote: { fontFamily: PELE_FONT.hand, fontSize: 25, lineHeight: 32, color: P.grey },
-  voiceHl: { color: PELE.ink, backgroundColor: PELE.yellow },
+  voiceHl: { color: PELE.ink, backgroundColor: BRAND.marker },
   docAlert: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.line },
   docAlertTxt: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyHeavy, color: P.red, lineHeight: 16 },
   docAlertSub: { fontFamily: PELE_FONT.bodyMed, color: P.grey },
@@ -1775,13 +1831,32 @@ const makeSkin = (P, night) => StyleSheet.create({
 
   // Dígitos amarelos + donut (mockup .datarow/.bigy/.donut)
   datarow: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 12, paddingBottom: 6 },
-  bigy: { fontFamily: PELE_FONT.display, fontSize: 54, lineHeight: 56, color: P.yellow, letterSpacing: 1 },
-  bigyU: { fontSize: 10, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2, color: P.grey, marginTop: 4 },
+  bigy: { ...TXT.num, fontSize: TYPE.numXl, lineHeight: TYPE.numXl + 2, color: P.ink, fontVariant: ['tabular-nums'] },   // a tinta (era amarelo, 1,73:1)
+  bigyCur: { fontFamily: PELE_FONT.display, fontSize: TYPE.numMd, color: P.grey },
+  bigyU: { ...TXT.eyebrow, color: P.grey, marginTop: SPACE.xs },
+  // barra que diz o que mede (substitui o anel) — Design System 2.0
+  meter: { width: 104, alignItems: 'flex-end', gap: SPACE.sm },
+  meterTop: { ...TXT.label, color: P.ink },
+  meterTrack: { width: 104, height: 4, borderRadius: 2, backgroundColor: P.line, overflow: 'hidden' },
+  meterFill: { height: 4, borderRadius: 2 },
+  meterBot: { ...TXT.eyebrow, color: P.grey },
+  // FOLGA · A seguir (à Flighty)
+  next: { paddingTop: SPACE.lgPlus, paddingBottom: SPACE.sm },
+  nextEye: { ...TXT.eyebrow, color: P.grey, marginBottom: SPACE.sm },
+  nRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm, borderTopWidth: 1, borderTopColor: P.line },
+  nRowFirst: { borderTopWidth: 0, paddingTop: 0 },
+  nCd: { width: 52, gap: SPACE.xxs },
+  nNum: { fontFamily: PELE_FONT.display, fontSize: TYPE.hero, lineHeight: TYPE.hero + 2, color: P.ink },
+  nUnit: { ...TXT.tag, color: P.grey },
+  nTx: { flex: 1, minWidth: 0, gap: SPACE.xxs },
+  nA: { ...TXT.bodyStrong, color: P.ink },
+  nB: { ...TXT.footnote, color: P.grey },
+  nEmpty: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, backgroundColor: P.soft, borderRadius: 14, paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg },
 
   // Barra do polegar (mockup .thumb/.chip/.acts)
   thumb: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, paddingBottom: 10, marginTop: 'auto' },
   chip: { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 7, paddingHorizontal: 12 },
-  chipV: { fontFamily: PELE_FONT.display, fontSize: 21, lineHeight: 22, color: night ? P.paper : P.yellow, letterSpacing: 0.5 },
+  chipV: { fontFamily: PELE_FONT.display, fontSize: 21, lineHeight: 22, color: night ? P.paper : BRAND.onDark, letterSpacing: 0.5 },
   chipOld: { color: P.onInkSub, textDecorationLine: 'line-through' },
   chipS: { fontSize: 7.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.5, color: P.onInkFaint, marginTop: 3, textTransform: 'uppercase' },
   acts: { marginLeft: 'auto', flexDirection: 'row', gap: 8 },

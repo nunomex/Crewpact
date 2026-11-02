@@ -4,7 +4,7 @@
 // como irmão absoluto. Usa `transformOrigin` (RN ≥0.76) p/ rodar como o CSS do mockup.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 
 export default function PeleSide({ label, accent, color, top = 344 }) {
   // `color` opcional: tema NOTURNO da Living Interface passa o ink claro (o amarelo fica).
@@ -28,5 +28,5 @@ const s = StyleSheet.create({
     transform: [{ rotate: '90deg' }], transformOrigin: 'right top',
   },
   txt: { fontFamily: F.bodyHeavy, fontSize: 10, letterSpacing: 3, color: P.ink, textAlign: 'left' },
-  y: { color: P.yellow },
+  y: { color: BRAND.signal },
 });

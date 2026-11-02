@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Animated, PanResponder, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
@@ -511,7 +511,7 @@ const s = StyleSheet.create({
   aGhost: { position: 'absolute', right: 0, top: -6 },
   aWord: { fontFamily: PELE_FONT.display, fontSize: 40, lineHeight: 38, letterSpacing: -0.5, color: PELE.ink },
   aKick: { fontFamily: PELE_FONT.bodyBold, fontSize: 12.5, color: PELE.grey, marginTop: 8 },
-  aKickY: { color: PELE.yellow, fontFamily: PELE_FONT.bodyHeavy },
+  aKickY: { color: BRAND.signal, fontFamily: PELE_FONT.bodyHeavy },
   ahr: { height: 1.5, backgroundColor: PELE.ink, marginTop: 12, marginBottom: 2 },
   glbl: { fontSize: 9, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey, marginTop: 16, marginBottom: 8 },
   note: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, lineHeight: 17, marginTop: 18 },

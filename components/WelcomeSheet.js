@@ -7,7 +7,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 export default function WelcomeSheet({ visible, onDone, lang = 'pt' }) {
@@ -81,14 +81,14 @@ const s = StyleSheet.create({
   full: { flex: 1, backgroundColor: PELE.paper },
   scroll: { paddingHorizontal: GUTTER + 8, paddingTop: 34, paddingBottom: 16 },
   eye: { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase', textAlign: 'center' },
-  rule: { height: 3.5, width: 110, backgroundColor: PELE.yellow, alignSelf: 'center', marginTop: 9, marginBottom: 14 },
+  rule: { height: 3.5, width: 110, backgroundColor: BRAND.signal, alignSelf: 'center', marginTop: 9, marginBottom: 14 },
   title: { fontSize: 40, lineHeight: 40, letterSpacing: 0.5, color: PELE.ink, textAlign: 'center', textTransform: 'uppercase' },
   titleLt: { fontFamily: PELE_FONT.displayMed },
   titleHv: { fontFamily: PELE_FONT.displayHeavy },
   sub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', marginTop: 10 },
   rows: { marginTop: 26 },
   row: { flexDirection: 'row', gap: 14, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: PELE.line, alignItems: 'flex-start' },
-  num: { fontFamily: PELE_FONT.display, fontSize: 20, color: PELE.yellow, minWidth: 30, lineHeight: 23 },
+  num: { fontFamily: PELE_FONT.display, fontSize: 20, color: BRAND.signal, minWidth: 30, lineHeight: 23 },
   rowT: { fontSize: 13.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, lineHeight: 17 },
   rowP: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 17, marginTop: 2 },
   btn: { marginHorizontal: GUTTER + 8, marginBottom: 14, height: 56, borderRadius: 999, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center' },   // 56 = altura canónica do CTA (auditoria 2026-07-10)

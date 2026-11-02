@@ -4,6 +4,8 @@
 // (BTE 40/2023 pilotos · BTE 8/2024 cabine). Item = { v, u, name, art, f (fórmula), ex, long }.
 // `u:'·'` ou '' → valor de estilo TEXTO (fórmula, ex. "×NS"), não número.
 
+import { BRAND } from './constants';
+
 export const FTL = { groups: [
   { name: 'Voo', items: [
     { v: '900', u: 'h', name: 'Voo · ano civil', art: 'ORO.FTL.210(b)', f: 'Teto de horas de voo por ano civil (jan–dez).' },
@@ -143,7 +145,7 @@ export function domainsFor(P, { ae = null, crewCategory = null } = {}) {
   const ftl = { k: 'ftl', ic: 'shield', name: 'FTL', sub: 'A LEI · EASA', stat: '900', u: 'h', ks: 'voo / ano civil · 8 limites', word: 'A lei', accent: P.red, data: FTL };
   const fontes = (ks) => ({ k: 'fontes', ic: 'book', name: 'Fontes', sub: 'OFICIAIS', stat: '', u: '', ks, word: 'Fontes', accent: P.onInkFaint, lib: true });
   const aeId = ae && ae.AE_ID;
-  const card = (sub, stat, statKs, data) => ({ k: 'ae', ic: 'wallet', name: 'AE', sub, stat, u: '€', ks: `${statKs} · ${countItems(data)} rubricas`, word: 'O teu AE', accent: P.yellow, data });
+  const card = (sub, stat, statKs, data) => ({ k: 'ae', ic: 'wallet', name: 'AE', sub, stat, u: '€', ks: `${statKs} · ${countItems(data)} rubricas`, word: 'O teu AE', accent: BRAND.signal, data });
   if (aeId === 'easyjet-snpvac') {
     const cat = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[crewCategory] != null) ? crewCategory : 'CM';
     return [ftl, card('EASYJET · SNPVAC', eur(ae.NOMINAL_SECTOR[cat]), `setor nominal · ${cat}`, AE_CABIN), fontes('EUR-Lex · EASA · DRE')];

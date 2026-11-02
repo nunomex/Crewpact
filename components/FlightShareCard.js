@@ -5,7 +5,7 @@ import ViewShot, { captureRef } from 'react-native-view-shot';
 import Icon from './Icon';
 import SheetHeader from './SheetHeader';
 import PrimaryButton from './PrimaryButton';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
@@ -207,7 +207,7 @@ const s = StyleSheet.create({
   ghost: { position: 'absolute', fontFamily: PELE_FONT.displayHeavy, includeFontPadding: false, zIndex: 0 },
   cTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 2 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: PELE.yellow },
+  cDot: { width: 8, height: 8, borderRadius: 3, backgroundColor: BRAND.signal },
   cBrand: { fontFamily: PELE_FONT.display, fontSize: 17, letterSpacing: -0.2 },
   cDate: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 9, letterSpacing: 1.5 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', marginTop: 16, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, zIndex: 2 },

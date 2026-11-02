@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Início em Folga</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Caveat:wght@600&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: quadro de revisão sobre papel creme da casa — três telemóveis lado a lado
+   (Agora · Proposta com serviço · Proposta sem nada), notas numeradas por baixo que
+   apontam para marcas nos ecrãs. Tema único de propósito: é a pele de DIA da app
+   (o noturno da app vem do estado do dia, não do sistema). Números = escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  /* PELE (data/constants.js) */
+  --paper: #FFFFFF;
+  --ink: #141414;
+  --ink-soft: #4E4E48;
+  --ghost: #E2E1DC;
+  --grey: #77776F;
+  --line: #ECEAE4;
+  --soft: #F4F2ED;
+  --board: #EFEDE7;
+  --yellow: #FFB800;
+  --ok: #118A55;
+  /* famílias da pele */
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--board);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+.wrap { max-width: 1260px; margin: 0 auto; display: grid; gap: 56px; }
+
+/* ── cabeçalho do quadro ── */
+.top { display: grid; gap: 14px; max-width: 66ch; }
+.eyebrow { font-family: var(--f-body); font-weight: 800; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(44px, 7vw, 72px); line-height: .95; letter-spacing: -0.5px; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+.controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.toggle {
+  font: 700 13px/1 var(--f-body); color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 99px; padding: 10px 16px; cursor: pointer;
+  display: inline-flex; gap: 8px; align-items: center;
+}
+.toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.toggle .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--yellow); }
+body.notes-off .toggle .dot { background: var(--ghost); }
+
+/* ── os três telemóveis ── */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 40px 28px; align-items: start; }
+figure { margin: 0; display: grid; gap: 14px; justify-items: center; }
+figcaption { display: grid; gap: 2px; text-align: center; }
+figcaption b { font: 700 22px/1.1 var(--f-display); letter-spacing: .2px; }
+figcaption span { font-size: 13px; color: var(--grey); }
+.phone-wrap { width: min(390px, 100%); aspect-ratio: 390 / 844; position: relative; }
+.phone {
+  position: absolute; top: 0; left: 0; width: 390px; height: 844px;
+  transform-origin: top left; transform: scale(var(--s, 1));
+  background: var(--paper); border-radius: 46px; overflow: hidden;
+  box-shadow: 0 0 0 9px var(--ink), 0 22px 50px rgba(20, 20, 20, .22);
+}
+.phone * { margin: 0; }
+.phone > *, .tabs > * { position: absolute; }
+.haze { inset: 0; background: radial-gradient(circle at 100% 0%, rgba(196, 202, 214, .55), rgba(196, 202, 214, 0) 48%); }
+
+/* barra de estado */
+.sb-time { left: 44px; top: 16px; font: 700 17px/1 var(--f-body); }
+.sb-icons { right: 34px; top: 17px; display: flex; gap: 6px; align-items: center; }
+.sb-icons > * { position: static; }
+.bat { font: 800 11px/1 var(--f-body); background: var(--ink); color: var(--paper); border-radius: 4px; padding: 2px 4px; }
+
+/* rótulo lateral (PeleSide) */
+.side { right: 4px; top: 22px; writing-mode: vertical-rl; font: 800 10px/1 var(--f-body); letter-spacing: 3px; text-transform: uppercase; white-space: nowrap; }
+
+/* fantasma */
+.ghost { font: 800 182px/.8 var(--f-display); color: var(--ghost); letter-spacing: -2px; white-space: nowrap; }
+
+/* palavra de estado */
+.word { left: 16px; font: 700 54px/1 var(--f-display); letter-spacing: -.3px; }
+.rule { left: 16px; right: 16px; height: 1.5px; background: var(--ink); }
+.hair { left: 16px; right: 16px; height: 1px; background: var(--line); }
+
+/* bilhete manuscrito */
+.note { left: 18px; width: 340px; font: 600 25px/1.32 var(--f-hand); color: var(--ink-soft); transform: rotate(-1.2deg); transform-origin: left top; }
+.note mark { background: var(--yellow); color: var(--ink); padding: 0 8px 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+/* marcas das notas */
+.pin {
+  width: 22px; height: 22px; border-radius: 99px; background: var(--ink); color: var(--yellow);
+  font: 800 11px/22px var(--f-body); text-align: center; z-index: 5;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+body.notes-off .pin { display: none; }
+
+/* barra de baixo */
+.tabs { left: 0; right: 0; top: 767px; height: 77px; border-top: 1px solid var(--line); background: var(--paper); }
+.tab { top: 12px; width: 78px; display: grid; justify-items: center; gap: 3px; font: 700 11px/1 var(--f-body); color: var(--grey); }
+.tab > * { position: static; }
+.tab.on { color: var(--ink); }
+.tab.on::after { content: ""; position: static; width: 4px; height: 4px; border-radius: 99px; background: var(--yellow); margin-top: 3px; }
+.plus { left: 173px; top: 4px; width: 44px; height: 44px; border-radius: 99px; background: var(--ink); display: grid; place-items: center; }
+.plus > * { position: static; }
+
+/* AGORA — chips e dinheiro como estão */
+.chips { left: 105px; top: 470px; display: flex; gap: 6px; }
+.chip { position: static; display: inline-flex; gap: 5px; align-items: center; border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; font: 600 11.5px/1 var(--f-body); white-space: nowrap; }
+.chip i { position: static; width: 5px; height: 5px; border-radius: 99px; background: var(--ok); display: inline-block; }
+.chip i.n { background: var(--grey); }
+.money-now { left: 16px; top: 518px; font: 700 54px/1 var(--f-display); color: var(--yellow); letter-spacing: .5px; }
+.lab-wide { font: 700 10.5px/1 var(--f-body); letter-spacing: 2.6px; text-transform: uppercase; color: var(--grey); }
+.donut { right: 21px; top: 520px; width: 51px; height: 51px; border-radius: 99px; background: conic-gradient(var(--yellow) 0 7%, var(--ghost) 7% 100%); }
+.donut::after { content: ""; position: absolute; inset: 13px; border-radius: 99px; background: var(--paper); }
+
+/* PROPOSTA — escala TXT */
+.t-eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; }
+.t-tag { font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); }
+.t-foot { font: 500 12px/17px var(--f-body); color: var(--grey); }
+.t-label { font: 700 12px/1 var(--f-body); }
+.t-callout { font: 700 15px/20px var(--f-body); }
+.t-body { font: 500 13px/19px var(--f-body); }
+.t-strong { font: 700 13px/18px var(--f-body); }
+.t-num { font: 700 30px/1 var(--f-display); letter-spacing: -.2px; }
+.money { left: 16px; top: 466px; font: 700 44px/1 var(--f-display); letter-spacing: -.2px; font-variant-numeric: tabular-nums; }
+.money small { font: 700 28px/1 var(--f-display); color: var(--grey); margin-left: 4px; }
+
+.wx { right: 34px; top: 62px; display: flex; gap: 6px; align-items: center; }
+.wx > * { position: static; }
+
+.grid3 { left: 16px; right: 34px; top: 406px; display: grid; grid-template-columns: repeat(3, 1fr); }
+.grid3 > div { position: static; display: grid; gap: 7px; padding-left: 12px; border-left: 1px solid var(--line); }
+.grid3 > div:first-child { padding-left: 0; border-left: 0; }
+.grid3 .v { position: static; display: flex; gap: 6px; align-items: center; }
+.grid3 .v > * { position: static; }
+.grid3 i { width: 7px; height: 7px; border-radius: 99px; background: var(--ok); display: inline-block; }
+
+.month { right: 34px; top: 470px; width: 104px; display: grid; gap: 8px; justify-items: end; }
+.month > * { position: static; }
+.bar { width: 104px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar b { display: block; height: 100%; width: 7%; background: var(--yellow); }
+
+.rows { left: 16px; right: 34px; top: 568px; display: grid; }
+.row { position: static; display: grid; grid-template-columns: 54px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; padding-top: 0; }
+.row > * { position: static; }
+.row .cd { display: grid; gap: 4px; }
+.row .cd > * { position: static; }
+.row .tx { display: grid; gap: 2px; min-width: 0; }
+.row .tx > * { position: static; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ex { right: 34px; top: 548px; }
+
+.empty { left: 16px; right: 34px; top: 568px; background: var(--soft); border-radius: 14px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.empty > * { position: static; }
+
+/* ── notas ── */
+section { display: grid; gap: 22px; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; letter-spacing: -.2px; text-wrap: balance; }
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 14px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 18px 20px; display: grid; grid-template-columns: 26px 1fr; gap: 6px 14px; align-items: start; }
+.notes .n { width: 26px; height: 26px; border-radius: 99px; background: var(--ink); color: var(--yellow); font: 800 12px/26px var(--f-body); text-align: center; }
+.notes h3 { margin: 0; font: 700 15px/1.35 var(--f-body); grid-column: 2; }
+.notes p { margin: 0; grid-column: 2; font-size: 14px; color: var(--ink-soft); }
+.notes p b { color: var(--ink); font-weight: 700; }
+.notes a { color: var(--ink); text-underline-offset: 2px; }
+.notes a:focus-visible, .refs a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.measure { background: var(--paper); border-radius: 16px; padding: 6px 20px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 12px 10px 12px 0; border-top: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+tr:first-child th { border-top: 0; }
+th { font: 800 11px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+.sw { display: inline-flex; width: 64px; height: 26px; border-radius: 6px; align-items: center; justify-content: center; font: 700 13px/1 var(--f-body); border: 1px solid var(--line); }
+.ratio { font: 700 20px/1 var(--f-display); }
+.fail { color: #C6362B; font-weight: 700; }
+.pass { color: var(--ok); font-weight: 700; }
+
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 74ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; font-size: 15px; margin-bottom: 4px; }
+.decide span { color: var(--ink-soft); font-size: 14px; }
+
+.refs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+.refs a { display: grid; gap: 2px; background: var(--paper); border-radius: 14px; padding: 14px 16px; text-decoration: none; color: var(--ink); }
+.refs b { font: 700 18px/1.1 var(--f-display); }
+.refs span { font-size: 13px; color: var(--grey); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .toggle { transition: background .15s ease; }
+  .toggle:hover { background: var(--soft); }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · 2 de novembro de 2026</p>
+    <h1>Início em folga</h1>
+    <p class="lede">O mesmo dia em três ecrãs. À esquerda, o Início de hoje às 20:14, tal como está no iPhone. Ao centro, a proposta com um serviço marcado. À direita, a proposta sem nada marcado. As marcas numeradas ligam cada ecrã às notas mais abaixo.</p>
+    <div class="controls">
+      <button class="toggle" id="toggle-notas" type="button" aria-pressed="true"><span class="dot" aria-hidden="true"></span><span id="toggle-txt">Esconder as marcas</span></button>
+    </div>
+  </header>
+
+  <div class="phones">
+
+    <!-- ═══════════ AGORA ═══════════ -->
+    <figure>
+      <div class="phone-wrap"><div class="phone" role="img" aria-label="Ecrã atual do Início em folga">
+        <div class="haze"></div>
+        <p class="sb-time">20:14</p>
+        <div class="sb-icons" aria-hidden="true"><svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#141414"/><rect x="5" y="5" width="3" height="6" rx="1" fill="#141414"/><rect x="10" y="2.5" width="3" height="8.5" rx="1" fill="#141414"/><rect x="15" y="0" width="3" height="11" rx="1" fill="#C9C7C1"/></svg><span class="bat">79</span></div>
+        <p class="side"><span style="color:var(--ink)">Folga</span><span style="color:var(--yellow)"> · 2 novembro</span></p>
+        <p class="t-body" style="left:16px;top:74px;color:var(--grey);font-weight:600;font-size:13px">Boa noite, Nuno</p>
+        <svg style="left:22px;top:104px" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFB800" d="M6.2 19.4 4.6 17.8 14.9 7.5H8.4V5.2H18.8V15.6h-2.3V9.1L6.2 19.4z" transform="rotate(90 12 12)"/></svg>
+        <p class="ghost" style="right:30px;top:96px">SEG</p>
+        <svg style="left:334px;top:100px" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="#77776F" d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/></svg>
+        <p style="left:322px;top:125px;font:600 10px/1 var(--f-body);color:var(--grey)">16°–17°</p>
+        <p class="word" style="top:232px">Folga</p>
+        <div class="rule" style="top:300px"></div>
+        <p class="note" style="top:322px"><mark>Folga a sério.</mark> Nada pendente, nada a vigiar.</p>
+        <p style="right:26px;top:420px;font:500 13px/1 var(--f-body);color:var(--grey)">nada marcado — desfruta ✌️</p>
+        <div class="hair" style="top:458px"></div>
+        <p style="left:16px;top:474px;font:700 16px/1 var(--f-display);letter-spacing:.4px">ESTADO</p>
+        <div class="chips"><span class="chip"><i></i>Sim</span><span class="chip"><i></i>OK</span><span class="chip"><i class="n"></i>férias · 22 de 22</span></div>
+        <div class="hair" style="top:506px"></div>
+        <p class="money-now">1 753,66</p>
+        <p class="lab-wide" style="left:16px;top:584px">Euros · novembro estimado</p>
+        <div class="donut"></div>
+        <p class="lab-wide" style="right:21px;top:584px">Mês 7%</p>
+
+        <span class="pin" style="left:206px;top:150px">1</span>
+        <span class="pin" style="left:178px;top:530px">2</span>
+        <span class="pin" style="left:330px;top:476px">3</span>
+        <span class="pin" style="left:196px;top:396px">4</span>
+        <span class="pin" style="left:336px;top:206px">5</span>
+        <span class="pin" style="left:46px;top:102px">6</span>
+        <span class="pin" style="left:300px;top:104px">7</span>
+        <span class="pin" style="left:80px;top:470px">8</span>
+        <span class="pin" style="left:294px;top:530px">9</span>
+        <span class="pin" style="left:184px;top:680px">10</span>
+
+        <nav class="tabs" aria-hidden="true">
+          <div class="tab on" style="left:0"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#141414" d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/></svg>Início</div>
+          <div class="tab" style="left:78px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/></svg>Escala</div>
+          <div class="plus"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#FFB800" d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/></svg></div>
+          <div class="tab" style="left:234px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/></svg>Números</div>
+          <div class="tab" style="left:312px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/></svg>Perfil</div>
+        </nav>
+      </div></div>
+      <figcaption><b>Agora</b><span>O Início de hoje, 2 de novembro, 20:14</span></figcaption>
+    </figure>
+
+    <!-- ═══════════ PROPOSTA · com serviço ═══════════ -->
+    <figure>
+      <div class="phone-wrap"><div class="phone" role="img" aria-label="Proposta do Início em folga com o próximo serviço daqui a 3 dias">
+        <div class="haze"></div>
+        <p class="sb-time">20:14</p>
+        <div class="sb-icons" aria-hidden="true"><svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#141414"/><rect x="5" y="5" width="3" height="6" rx="1" fill="#141414"/><rect x="10" y="2.5" width="3" height="8.5" rx="1" fill="#141414"/><rect x="15" y="0" width="3" height="11" rx="1" fill="#C9C7C1"/></svg><span class="bat">79</span></div>
+        <p class="side"><span style="color:var(--grey)">Folga</span><span style="color:var(--ink)"> · 3 dias</span></p>
+        <p class="t-eyebrow" style="left:16px;top:64px">Segunda · 2 novembro</p>
+        <p class="t-foot" style="left:16px;top:80px">Boa noite, Nuno</p>
+        <div class="wx"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#77776F" d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/></svg><span class="t-label">16°–17°</span></div>
+        <p class="ghost" style="right:34px;top:104px;font-size:236px">3</p>
+        <p class="word" style="top:186px">Folga</p>
+        <p class="t-body" style="left:16px;top:248px;font-size:15px;line-height:20px">Próximo serviço daqui a <b style="font-weight:700">3 dias</b></p>
+        <p class="t-foot" style="left:16px;top:270px">Qui 5 nov · report 06:10 · LIS → FNC</p>
+        <div class="rule" style="top:300px"></div>
+        <p class="note" style="top:320px"><mark>Folga a sério.</mark> Nada pendente, nada a vigiar.</p>
+        <div class="hair" style="top:394px"></div>
+        <div class="grid3">
+          <div><span class="t-tag">Legal</span><span class="v t-strong"><i></i>Sim</span></div>
+          <div><span class="t-tag">Escala</span><span class="v t-strong"><i></i>Em dia</span></div>
+          <div><span class="t-tag">Férias</span><span class="v t-strong">22 de 22</span></div>
+        </div>
+        <div class="hair" style="top:452px"></div>
+        <p class="money">1 753,66<small>€</small></p>
+        <p class="t-eyebrow" style="left:16px;top:518px;color:var(--grey)">Novembro · estimado</p>
+        <div class="month"><span class="t-label">Dia 2 de 30</span><span class="bar"><b></b></span></div>
+        <p class="t-eyebrow" style="right:34px;top:518px;color:var(--grey)">Mês</p>
+        <p class="t-eyebrow" style="left:16px;top:548px;color:var(--grey)">A seguir</p>
+        <p class="t-tag ex" style="color:var(--grey);letter-spacing:.4px">dados de exemplo</p>
+        <div class="rows">
+          <div class="row"><div class="cd"><span class="t-num">3</span><span class="t-tag">dias</span></div><div class="tx"><span class="t-strong">LIS → FNC · U2 7621</span><span class="t-foot">Qui 5 nov · report 06:10 · 4 setores</span></div></div>
+          <div class="row"><div class="cd"><span class="t-num">4</span><span class="t-tag">dias</span></div><div class="tx"><span class="t-strong">Standby em casa</span><span class="t-foot">Sex 6 nov · 05:00–13:00</span></div></div>
+          <div class="row"><div class="cd"><span class="t-num">5</span><span class="t-tag">dias</span></div><div class="tx"><span class="t-strong">LIS → BCN · U2 7633</span><span class="t-foot">Sáb 7 nov · report 14:25 · pernoita</span></div></div>
+        </div>
+
+        <span class="pin" style="left:150px;top:150px">1</span>
+        <span class="pin" style="left:190px;top:468px">2</span>
+        <span class="pin" style="left:96px;top:398px">3</span>
+        <span class="pin" style="left:334px;top:330px">4</span>
+        <span class="pin" style="left:200px;top:60px">5</span>
+        <span class="pin" style="left:254px;top:62px">7</span>
+        <span class="pin" style="left:226px;top:486px">9</span>
+        <span class="pin" style="left:94px;top:544px">10</span>
+
+        <nav class="tabs" aria-hidden="true">
+          <div class="tab on" style="left:0"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#141414" d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/></svg>Início</div>
+          <div class="tab" style="left:78px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/></svg>Escala</div>
+          <div class="plus"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#FFB800" d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/></svg></div>
+          <div class="tab" style="left:234px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/></svg>Números</div>
+          <div class="tab" style="left:312px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/></svg>Perfil</div>
+        </nav>
+      </div></div>
+      <figcaption><b>Proposta · com serviço</b><span>Os serviços da agenda são exemplo; o resto é o teu dia de hoje</span></figcaption>
+    </figure>
+
+    <!-- ═══════════ PROPOSTA · nada marcado ═══════════ -->
+    <figure>
+      <div class="phone-wrap"><div class="phone" role="img" aria-label="Proposta do Início em folga sem serviços marcados">
+        <div class="haze"></div>
+        <p class="sb-time">20:14</p>
+        <div class="sb-icons" aria-hidden="true"><svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#141414"/><rect x="5" y="5" width="3" height="6" rx="1" fill="#141414"/><rect x="10" y="2.5" width="3" height="8.5" rx="1" fill="#141414"/><rect x="15" y="0" width="3" height="11" rx="1" fill="#C9C7C1"/></svg><span class="bat">79</span></div>
+        <p class="side"><span style="color:var(--grey)">Folga</span></p>
+        <p class="t-eyebrow" style="left:16px;top:64px">Segunda · 2 novembro</p>
+        <p class="t-foot" style="left:16px;top:80px">Boa noite, Nuno</p>
+        <div class="wx"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#77776F" d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/></svg><span class="t-label">16°–17°</span></div>
+        <p class="ghost" style="right:34px;top:104px;font-size:236px">2</p>
+        <p class="word" style="top:186px">Folga</p>
+        <p class="t-callout" style="left:16px;top:248px">Nada marcado nos próximos 30 dias</p>
+        <p class="t-foot" style="left:16px;top:270px">Se a escala mudou, sincroniza no ecrã Escala</p>
+        <div class="rule" style="top:300px"></div>
+        <p class="note" style="top:320px"><mark>Folga a sério.</mark> Nada pendente, nada a vigiar.</p>
+        <div class="hair" style="top:394px"></div>
+        <div class="grid3">
+          <div><span class="t-tag">Legal</span><span class="v t-strong"><i></i>Sim</span></div>
+          <div><span class="t-tag">Escala</span><span class="v t-strong"><i></i>Em dia</span></div>
+          <div><span class="t-tag">Férias</span><span class="v t-strong">22 de 22</span></div>
+        </div>
+        <div class="hair" style="top:452px"></div>
+        <p class="money">1 753,66<small>€</small></p>
+        <p class="t-eyebrow" style="left:16px;top:518px;color:var(--grey)">Novembro · estimado</p>
+        <div class="month"><span class="t-label">Dia 2 de 30</span><span class="bar"><b></b></span></div>
+        <p class="t-eyebrow" style="right:34px;top:518px;color:var(--grey)">Mês</p>
+        <p class="t-eyebrow" style="left:16px;top:548px;color:var(--grey)">A seguir</p>
+        <div class="empty"><div style="display:grid;gap:2px"><span class="t-strong">Abrir a Escala</span><span class="t-foot">Não há serviços depois de hoje</span></div><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="#77776F" d="M8.5 4.8 15.7 12l-7.2 7.2-2.1-2.1L11.4 12 6.4 6.9z"/></svg></div>
+
+        <span class="pin" style="left:262px;top:150px">1</span>
+        <span class="pin" style="left:214px;top:576px">10</span>
+
+        <nav class="tabs" aria-hidden="true">
+          <div class="tab on" style="left:0"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#141414" d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/></svg>Início</div>
+          <div class="tab" style="left:78px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/></svg>Escala</div>
+          <div class="plus"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#FFB800" d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/></svg></div>
+          <div class="tab" style="left:234px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/></svg>Números</div>
+          <div class="tab" style="left:312px"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#77776F" d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/></svg>Perfil</div>
+        </nav>
+      </div></div>
+      <figcaption><b>Proposta · nada marcado</b><span>O teu caso hoje: sem serviços depois de 2 de novembro</span></figcaption>
+    </figure>
+  </div>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda</h2>
+    <ol class="notes">
+      <li><span class="n">1</span><h3>O fantasma passa a contar</h3><p><b>Agora:</b> "SEG", o dia da semana que já sabes, ocupa a metade de cima.</p><p><b>Proposta:</b> os dias até ao próximo serviço, dito também em texto legível por baixo de "Folga". Sem nada marcado, fica o dia do mês, como uma folha de calendário. Nos outros estados o fantasma já é um número útil; só a folga não era. <a href="https://mobbin.com/screens/8e9997ca-3801-4836-9e35-0f9ce7059b2a">Flighty</a></p></li>
+      <li><span class="n">2</span><h3>O dinheiro a tinta</h3><p><b>Agora:</b> 1 753,66 em amarelo sobre papel, contraste 1,73.</p><p><b>Proposta:</b> número a tinta, unidade a cinzento. O amarelo fica para o marcador do bilhete, a barra do mês e o ponto da aba.</p></li>
+      <li><span class="n">3</span><h3>Cada resposta com a sua pergunta</h3><p><b>Agora:</b> pílulas "Sim" e "OK", sem dizer de quê.</p><p><b>Proposta:</b> três colunas com rótulo e valor: Legal, Escala, Férias. Continuam tocáveis e abrem o porquê. <a href="https://mobbin.com/screens/121db3f0-43f9-4642-830e-d82d26190ba9">Oura</a></p></li>
+      <li><span class="n">4</span><h3>Uma só voz</h3><p><b>Agora:</b> o bilhete e "nada marcado, desfruta ✌️" dizem o mesmo, e o emoji vai contra a pele.</p><p><b>Proposta:</b> fica só o bilhete. A agenda diz o que falta, sem emoji.</p></li>
+      <li><span class="n">5</span><h3>A data legível no topo</h3><p><b>Agora:</b> a data só existe no rótulo rodado, em amarelo.</p><p><b>Proposta:</b> "Segunda · 2 novembro" por cima da saudação. O rótulo lateral fica, a cinzento e tinta, e passa a dizer a contagem.</p></li>
+      <li><span class="n">6</span><h3>Sai a seta</h3><p><b>Agora:</b> uma seta amarela que parece botão e não faz nada.</p><p><b>Proposta:</b> sai. O estado já está dito pela palavra "Folga".</p></li>
+      <li><span class="n">7</span><h3>A meteorologia na sua linha</h3><p><b>Agora:</b> o "16°–17°" cai em cima do fantasma.</p><p><b>Proposta:</b> na linha da data, à direita, fora do fantasma.</p></li>
+      <li><span class="n">8</span><h3>Dois alinhamentos em vez de quatro</h3><p><b>Agora:</b> margem esquerda, coluna das pílulas, texto encostado à direita e rótulo lateral.</p><p><b>Proposta:</b> margem esquerda para o texto e coluna da direita para valores secundários, como o Flighty.</p></li>
+      <li><span class="n">9</span><h3>O mês diz o que mede</h3><p><b>Agora:</b> um anel com "MÊS 7%".</p><p><b>Proposta:</b> "Dia 2 de 30" com uma barra fina amarela.</p></li>
+      <li><span class="n">10</span><h3>O fundo vazio passa a "A seguir"</h3><p><b>Agora:</b> um quinto do ecrã sem nada.</p><p><b>Proposta:</b> os próximos três serviços como a lista do Flighty: contagem à esquerda, rota e report à direita. A contagem absorve o cartão preto. Sem nada marcado, um atalho para a Escala. <a href="https://mobbin.com/screens/8e9997ca-3801-4836-9e35-0f9ce7059b2a">Flighty</a></p></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-medido">
+    <h2 id="h-medido">Contraste medido</h2>
+    <div class="measure">
+      <table>
+        <tr><th>Par</th><th>Amostra</th><th>Contraste</th><th>Resultado</th></tr>
+        <tr><td>Amarelo sobre papel</td><td><span class="sw" style="background:#fff;color:#FFB800">1 753</span></td><td class="ratio">1,73</td><td class="fail">Chumba em qualquer tamanho</td></tr>
+        <tr><td>Tinta sobre amarelo</td><td><span class="sw" style="background:#FFB800;color:#141414">Folga</span></td><td class="ratio">10,62</td><td class="pass">Passa</td></tr>
+        <tr><td>Amarelo sobre placa preta</td><td><span class="sw" style="background:#141414;color:#FFB800">3</span></td><td class="ratio">10,62</td><td class="pass">Passa</td></tr>
+        <tr><td>Cinzento sobre papel</td><td><span class="sw" style="background:#fff;color:#77776F">Mês</span></td><td class="ratio">4,51</td><td class="pass">Passa à justa</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-decide">
+    <h2 id="h-decide">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas esta direção para o Início em folga?</b><span>Se sim, passo-a para o código e seguimos para os outros 14 estados com o ritual "testar os estados".</span></li>
+      <li><b>Sem nada marcado, o fantasma mostra o dia do mês?</b><span>A alternativa é não ter fantasma nesse caso, o que encurta o topo.</span></li>
+      <li><b>O rótulo lateral fica?</b><span>É identidade da pele em todos os ecrãs. Na proposta fica a cinzento e tinta, com a contagem. Também pode sair do Início, que já tem a data no topo.</span></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-refs">
+    <h2 id="h-refs">Referências escolhidas</h2>
+    <ul class="refs">
+      <li><a href="https://mobbin.com/screens/8e9997ca-3801-4836-9e35-0f9ce7059b2a"><b>Flighty · lista</b><span>A contagem é o herói e vira estado</span></a></li>
+      <li><a href="https://mobbin.com/screens/d2a15492-9519-4965-826f-649edbfc3521"><b>Flighty · faixa de estado</b><span>Cor só com significado</span></a></li>
+      <li><a href="https://mobbin.com/screens/f9bf6004-fa31-4dbe-818a-6acbd51f0cae"><b>Gentler Streak</b><span>Palavra de estado e uma frase</span></a></li>
+      <li><a href="https://mobbin.com/screens/62d556a4-d34e-4c5a-b50e-20463d8644d7"><b>The Outsiders</b><span>Número herói e explicação</span></a></li>
+      <li><a href="https://mobbin.com/screens/121db3f0-43f9-4642-830e-d82d26190ba9"><b>Oura</b><span>Contribuintes com rótulo e valor</span></a></li>
+    </ul>
+  </section>
+
+</main>
+<script>
+  // Escala os telemóveis (desenhados a 390×844 pt) à largura disponível.
+  const fit = () => document.querySelectorAll('.phone-wrap').forEach((w) => {
+    w.querySelector('.phone').style.setProperty('--s', String(w.clientWidth / 390));
+  });
+  fit();
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(fit);
+    document.querySelectorAll('.phone-wrap').forEach((w) => ro.observe(w));
+  } else {
+    window.addEventListener('resize', fit);
+  }
+  // Mostrar/esconder as marcas numeradas.
+  const btn = document.getElementById('toggle-notas');
+  btn.addEventListener('click', () => {
+    const off = document.body.classList.toggle('notes-off');
+    btn.setAttribute('aria-pressed', String(!off));
+    document.getElementById('toggle-txt').textContent = off ? 'Mostrar as marcas' : 'Esconder as marcas';
+  });
+</script>
+</body>
+</html>

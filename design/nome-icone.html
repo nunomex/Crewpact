@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Tripula, Planeio, CrewPact</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: três colunas, uma por nome; em cada uma o ícone grande, a escada de tamanhos (do 1024 ao 29) e o
+   nome em contexto real: ecrã principal claro e escuro, ficha da loja, notificação, Definições. Sistema de ícone
+   aprovado a 2026-07-15 (campo tinta · letra Barlow branca · sublinhado amarelo); só a letra muda.
+   Tema único de propósito: um quadro de produto sobre o papel suave da casa. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED; --yellow: #FFB800;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--soft); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1260px; margin: 0 auto; display: grid; gap: 44px; }
+.top { display: grid; gap: 12px; max-width: 70ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: #4E4E48; font-size: 16px; }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 28px; align-items: start; }
+.col { background: var(--paper); border-radius: 20px; padding: 24px; display: grid; gap: 22px; }
+.col header { display: grid; gap: 6px; }
+.col header b { font: 800 34px/1 var(--f-display); letter-spacing: .3px; }
+.col header span { font-size: 14px; color: #4E4E48; }
+.tag { justify-self: start; font: 800 11px/1 var(--f-body); letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px; border-radius: 99px; background: var(--ink); color: var(--paper); }
+.tag.alt { background: var(--soft); color: var(--ink); }
+.k { font: 800 11px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); margin: 0 0 10px; }
+
+/* o ícone — mesmas proporções do aprovado (letra ≈ 65% da altura · sublinhado ≈ 54% da letra · 6% do ícone) */
+.ic { border-radius: 22.4%; background: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cw { display: flex; flex-direction: column; align-items: center; transform: translateY(-2%); }
+.c { font-family: var(--f-display); font-weight: 700; color: #fff; line-height: .86; }
+.u { background: var(--yellow); border-radius: 99px; }
+.ladder { display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; }
+.ladder figure { margin: 0; display: grid; gap: 6px; justify-items: center; }
+.ladder figcaption { font: 700 10px/1 var(--f-body); color: var(--grey); letter-spacing: .4px; }
+
+/* ecrã principal simulado */
+.homes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.home { border-radius: 20px; padding: 16px 12px 12px; display: flex; gap: 10px; justify-content: space-between; }
+.home.light { background: linear-gradient(160deg, #DFE5EC, #C9D2DD); }
+.home.dark { background: linear-gradient(160deg, #20242B, #0E1116); }
+.app { display: grid; justify-items: center; gap: 5px; width: 54px; }
+.app .nm { font: 600 10px/1.1 var(--f-body); color: rgba(0,0,0,.75); max-width: 60px; text-align: center; white-space: nowrap; }
+.home.dark .app .nm { color: rgba(255,255,255,.88); }
+.dummy { width: 48px; height: 48px; border-radius: 22.4%; background: rgba(255,255,255,.55); }
+.home.dark .dummy { background: rgba(255,255,255,.14); }
+
+/* loja */
+.store { display: flex; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.store .t b { display: block; font: 700 17px/1.2 var(--f-body); }
+.store .t span { display: block; font-size: 13px; color: var(--grey); }
+.store .get { margin-left: auto; font: 800 13px/1 var(--f-body); background: var(--soft); color: #0A66D6; border-radius: 99px; padding: 8px 16px; }
+
+/* notificação + definições */
+.notif { display: flex; gap: 10px; align-items: flex-start; background: #F2F2F4; border-radius: 16px; padding: 12px; }
+.notif .t { display: grid; gap: 2px; font-size: 13px; }
+.notif .t b { font: 700 13px/1.2 var(--f-body); }
+.notif .t small { color: var(--grey); font-size: 12px; }
+.set { display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 8px 2px; font-size: 15px; }
+.set span:last-child { margin-left: auto; color: var(--grey); }
+
+.facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: #4E4E48; }
+.facts b { color: var(--ink); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <p class="eyebrow">CrewPact · nome e ícone · 2 de novembro de 2026</p>
+    <h1>Tripula, Planeio ou CrewPact</h1>
+    <p class="lede">O sistema do ícone aprovado em julho, com a letra de cada nome. O teste que conta é o pequeno: a 29 pontos, nas Definições, a letra tem de continuar nítida e o sublinhado tem de continuar a ler-se como um risco amarelo.</p>
+  </header>
+  <div class="cols" id="cols"></div>
+</main>
+<script>
+const N = [
+  { nome: 'Tripula', letra: 'T', tag: 'Recomendado', alt: false,
+    diz: 'De "tripulação": serve pilotos e cabine, porque todos são tripulantes.',
+    factos: ['<b>App Store (PT):</b> nenhuma app com este nome', '<b>Domínio:</b> .app e .com ocupados · .eu parece livre', '<b>Falta:</b> marca no INPI e no EUIPO'] },
+  { nome: 'Planeio', letra: 'P', tag: 'Alternativa', alt: true,
+    diz: 'O voo planado, e lembra "planear": o dia organizado, sem esforço.',
+    factos: ['<b>App Store (PT):</b> nenhuma app com este nome', '<b>Domínio:</b> .app parece livre', '<b>Falta:</b> marca no INPI e no EUIPO'] },
+  { nome: 'CrewPact', letra: 'C', tag: 'Manter', alt: true,
+    diz: 'O pacto, o acordo de empresa. Custa zero: domínio e documentos já existem.',
+    factos: ['<b>App Store (PT, EUA, Reino Unido):</b> nenhuma app com este nome · fica reservado quando o registares na App Store Connect', '<b>Domínio:</b> crewpact.app é teu · crewpact.com é de outra pessoa e está à venda · .pt e .eu parecem livres', '<b>Falta:</b> marca no INPI e no EUIPO · <b>Migração:</b> nenhuma'] },
+];
+// ícone de lado s px: letra 65,6% · sublinhado 6,1% de altura · margem 5,6% — as proporções do aprovado (180 → 118/11/10)
+const icon = (letra, s) => `<div class="ic" style="width:${s}px;height:${s}px"><div class="cw">
+  <div class="c" style="font-size:${(s * 0.656).toFixed(1)}px">${letra}</div>
+  <div class="u" data-k="${s}" style="height:${(s * 0.061).toFixed(1)}px;margin-top:${(s * 0.056).toFixed(1)}px;width:${(s * 0.355).toFixed(1)}px"></div></div></div>`;
+const col = (n) => `<section class="col" aria-label="${n.nome}">
+  <header><span class="tag ${n.alt ? 'alt' : ''}">${n.tag}</span><b>${n.nome}</b><span>${n.diz}</span></header>
+  <div>${icon(n.letra, 180)}</div>
+  <div><p class="k">Do grande ao pequeno</p><div class="ladder">
+    ${[120, 60, 40, 29].map((s) => `<figure>${icon(n.letra, s)}<figcaption>${s}</figcaption></figure>`).join('')}</div></div>
+  <div><p class="k">No ecrã principal</p><div class="homes">
+    <div class="home light"><div class="app"><div class="dummy"></div><span class="nm">Mail</span></div><div class="app">${icon(n.letra, 48)}<span class="nm">${n.nome}</span></div><div class="app"><div class="dummy"></div><span class="nm">Mapas</span></div></div>
+    <div class="home dark"><div class="app"><div class="dummy"></div><span class="nm">Mail</span></div><div class="app">${icon(n.letra, 48)}<span class="nm">${n.nome}</span></div><div class="app"><div class="dummy"></div><span class="nm">Mapas</span></div></div>
+  </div></div>
+  <div><p class="k">Na loja</p><div class="store">${icon(n.letra, 64)}<div class="t"><b>${n.nome}</b><span>Escala, limites de voo e salário</span></div><span class="get">OBTER</span></div></div>
+  <div><p class="k">Numa notificação</p><div class="notif">${icon(n.letra, 38)}<div class="t"><b>${n.nome}</b><span>A tua escala mudou: 2 alterações por rever.</span><small>agora</small></div></div></div>
+  <div><p class="k">Nas Definições</p><div class="set">${icon(n.letra, 29)}<span>${n.nome}</span><span>›</span></div></div>
+  <ul class="facts">${n.factos.map((f) => `<li>${f}</li>`).join('')}</ul>
+</section>`;
+document.getElementById('cols').innerHTML = N.map(col).join('');
+// O sublinhado mede 54% da largura REAL da letra (T, P e C têm larguras diferentes) — depois de a fonte carregar.
+const fitU = () => document.querySelectorAll('.cw').forEach((w) => {
+  const c = w.querySelector('.c'), u = w.querySelector('.u');
+  const r = document.createRange(); r.selectNodeContents(c);
+  const lw = r.getBoundingClientRect().width;
+  if (lw > 0) u.style.width = (lw * 0.54).toFixed(1) + 'px';
+});
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(fitU);
+</script>
+</body>
+</html>

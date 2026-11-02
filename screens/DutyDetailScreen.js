@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
@@ -369,7 +369,7 @@ export default function DutyDetailScreen({ route, navigation }) {
         ) : null}
 
         <TouchableOpacity onPress={() => { select(); setEditing(true); }} activeOpacity={0.9} style={s.editBtn} accessibilityRole="button" accessibilityLabel={l('Editar serviço', 'Edit duty')}>
-          <Icon name="edit" size={16} color={PELE.yellow} />
+          <Icon name="edit" size={16} color={BRAND.onDark} />
           <Text style={s.editTxt}>{l('Editar serviço', 'Edit duty')}</Text>
         </TouchableOpacity>
 
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
   rowK: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
   rowV: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
   rowLaw: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 2 },   // § inline da PROVA (metadado)
-  rowLawS: { color: PELE.yellow },
+  rowLawS: { color: BRAND.signal },
   rowVZ: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: 2, letterSpacing: 0.2 },
 
   fatPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },

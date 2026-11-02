@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
 import { buildImportCandidates, importSaveFields } from '../data/rosterImport';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
@@ -516,7 +516,7 @@ const s = StyleSheet.create({
   // Linha das FÉRIAS sugeridas (LVE do calendário → eventos): tick amarelo = a marca de escolha da pele.
   vacRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: PELE.soft, borderRadius: 14, padding: 12, marginBottom: 10 },
   vacTick: { width: 24, height: 24, borderRadius: 99, borderWidth: 1.5, borderColor: PELE.line, alignItems: 'center', justifyContent: 'center', backgroundColor: PELE.paper },
-  vacTickOn: { backgroundColor: PELE.yellow, borderColor: PELE.yellow },
+  vacTickOn: { backgroundColor: BRAND.marker, borderColor: BRAND.marker },
   vacT: { fontSize: 13.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   vacS: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
   // Disclosure do passado — informação calma (soft, cinza), não alarme.

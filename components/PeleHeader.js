@@ -9,7 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';
 import IconButton from './IconButton';
 import NotificationsBell from './NotificationsBell';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 
 // Estilo da PALAVRA — exportado para os ecrãs que constroem um `word` personalizado (Escala)
 // reutilizarem exatamente o mesmo tamanho (44), sem o re-duplicarem e voltar a divergir.
@@ -99,7 +99,7 @@ const s = StyleSheet.create({
   hdrRes: { minHeight: 48 },
   av: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
   avNight: { backgroundColor: 'rgba(244,242,237,0.14)' },   // disco claro-translúcido sobre o papel noturno; iniciais amarelas ficam
-  avTxt: { color: P.yellow, fontFamily: F.bodyHeavy, fontSize: 14 },
+  avTxt: { color: BRAND.onDark, fontFamily: F.bodyHeavy, fontSize: 14 },
   eyb: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: P.grey, marginTop: 8 },
   // Eyebrow NA linha de topo (abas): sem o marginTop do de baixo, encolhe antes das ações.
   eybTop: { marginTop: 0, flexShrink: 1 },

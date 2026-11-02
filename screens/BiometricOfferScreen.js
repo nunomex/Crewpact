@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 
 export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
   const [sensor, setSensor] = useState({ name: null, icon: 'finger-print' });
@@ -44,12 +44,12 @@ export default function BiometricOfferScreen({ onEnable, onSkip, lang }) {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.wrap}>
-        <View style={s.icon}><Ionicons name={sensor.icon} size={30} color={PELE.yellow} /></View>
+        <View style={s.icon}><Ionicons name={sensor.icon} size={30} color={BRAND.onDark} /></View>
         <Text style={s.title}>{t('lock.offerTitle', lang)}</Text>
         <Text style={s.sub}>{t('lock.offerSub', lang).replace('{name}', name)}</Text>
         <TouchableOpacity style={[s.btn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={enable} disabled={busy}
           accessibilityRole="button" accessibilityLabel={t('lock.offerEnable', lang).replace('{name}', name)}>
-          {busy ? <ActivityIndicator size="small" color={PELE.yellow} /> : <Ionicons name={sensor.icon} size={22} color={PELE.yellow} />}
+          {busy ? <ActivityIndicator size="small" color={BRAND.onDark} /> : <Ionicons name={sensor.icon} size={22} color={BRAND.onDark} />}
           <Text style={s.btnTxt}>{t('lock.offerEnable', lang).replace('{name}', name)}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onSkip} disabled={busy} hitSlop={8} style={s.ghost}>

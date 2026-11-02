@@ -9,6 +9,7 @@
 import { yearStats, availableYears } from './stats';
 import { esc } from './ftlRecord';
 
+import { BRAND } from './constants';
 // ── Modelo ──────────────────────────────────────────────────────────────────
 // `baseAt(cat, ym)` (opcional) = base mensal da categoria à data, vinda do AE. É o que
 // PROVA uma promoção: a ordem dos arrays CATEGORIES não é fiável (a TAP cabine ordena
@@ -192,7 +193,7 @@ export const careerHtml = (model, lang = 'pt', fontsCss = '', categoryLabel = nu
 <style>
   ${fontsCss}
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; }
+  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:${BRAND.signal}; }
   @page { margin: 34px 36px; }
   body { font-family: 'Hanken Grotesk', -apple-system, Helvetica, sans-serif; color: var(--ink); margin: 34px 36px; font-size: 11px; }
   .brand { display: flex; justify-content: space-between; align-items: baseline; }

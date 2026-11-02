@@ -8,7 +8,7 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
 import HotelSheet from '../components/HotelSheet';
@@ -167,14 +167,14 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: GUTTER, paddingBottom: 132 },   // folga p/ o CTA fixo
   secT: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2, textTransform: 'uppercase', color: PELE.grey, marginTop: 20, marginBottom: 4 },
   fieldRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: PELE.line },
-  phoneU: { borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1, alignSelf: 'flex-start', flexShrink: 1 },
+  phoneU: { borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1, alignSelf: 'flex-start', flexShrink: 1 },
   phoneTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   fieldHint: { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginLeft: 10 },
   fieldEmpty: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.placeholder },
   // Bilhete manuscrito — Caveat + marcador amarelo na 1.ª frase, pousado de leve.
   noteWrap: { marginTop: 4, transform: [{ rotate: '-1.6deg' }] },
   noteTxt: { fontFamily: PELE_FONT.hand, fontSize: 20, lineHeight: 26, color: PELE.grey },
-  noteMark: { color: PELE.ink, backgroundColor: PELE.yellow },
+  noteMark: { color: PELE.ink, backgroundColor: BRAND.marker },
   emptyLine: { fontSize: 12, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 19, paddingVertical: 8 },
   actZone: { marginTop: 28 },
   actRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: PELE.line },

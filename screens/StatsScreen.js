@@ -1,7 +1,7 @@
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, RADIUS } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -463,7 +463,7 @@ export default function StatsScreen({ navigation }) {
           <View style={s.shTt}>
             <Text style={s.shName}><Text style={s.shNameX}>{idx.seg} </Text>· {l('Segurança', 'Safety')}</Text>
             <Text style={s.shSub}>{safetyRows.length} {l('janelas FTL · a mais cheia', 'FTL windows · fullest')} <Text style={{ color: barColor(fullest ? fullest.r : 0) }}>{Math.round((fullest ? fullest.r : 0) * 100)}%</Text>
-              <Text style={s.shLaw} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }}>  ·  <Text style={{ color: PELE.yellow }}>§</Text> ORO.FTL.210</Text>
+              <Text style={s.shLaw} onPress={() => { select(); setProva(provaFor('limites', provaCtx)); }}>  ·  <Text style={{ color: BRAND.signal }}>§</Text> ORO.FTL.210</Text>
             </Text>
           </View>
           <TouchableOpacity style={s.sClose} onPress={() => setSheet(null)} hitSlop={6}><Icon name="minus" size={16} color={PELE.grey} /></TouchableOpacity>
@@ -521,7 +521,7 @@ export default function StatsScreen({ navigation }) {
             const lbl = isYear ? monthAbbr(i) : (i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '');
             return (
               <View key={i} style={s.chartCol}>
-                <View style={s.chartWrap}><MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? PELE.yellow : PELE.ink) : PELE.line} delay={120 + i * (isYear ? 30 : 12)} /></View>
+                <View style={s.chartWrap}><MonthBar ratio={r} color={m.flightMin > 0 ? (isNow ? BRAND.signal : PELE.ink) : PELE.line} delay={120 + i * (isYear ? 30 : 12)} /></View>
                 <Text style={[s.chartLbl, isNow && { color: PELE.ink, fontFamily: PELE_FONT.bodyHeavy }]} numberOfLines={1}>{lbl}</Text>
               </View>
             );
@@ -571,7 +571,7 @@ export default function StatsScreen({ navigation }) {
             <TouchableOpacity style={s.radRow} activeOpacity={0.7}
               onPress={() => { select(); setProva({ ...provaFor('radiacao', provaCtx), value: `≈ ${fmtMsv(rad.mSv)} mSv` }); }}
               accessibilityRole="button" accessibilityLabel={l('Radiação cósmica — ver a lei', 'Cosmic radiation — see the law')}>
-              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')} <Text style={{ color: PELE.yellow }}>§</Text></Text>
+              <Text style={s.radLab}>{l('Radiação cósmica · estimativa', 'Cosmic radiation · estimate')} <Text style={{ color: BRAND.signal }}>§</Text></Text>
               <Text style={[s.radVal, radTone ? { color: radTone } : null]} allowFontScaling={false}>≈ {fmtMsv(rad.mSv)}<Text style={s.radValU}> mSv</Text></Text>
             </TouchableOpacity>
             <Text style={s.radCtx}>
@@ -694,7 +694,7 @@ const s = StyleSheet.create({
   btTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
   btIc: { width: 38, height: 38, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   btIcAlarm: { backgroundColor: PELE.redSoft },
-  btIdx: { fontFamily: PELE_FONT.displaySemi, fontSize: 15, letterSpacing: 1, color: PELE.yellow },
+  btIdx: { fontFamily: PELE_FONT.displaySemi, fontSize: 15, letterSpacing: 1, color: BRAND.signal },
   btName: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginBottom: 5 },
   btNameWideRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
   btNameWide: { fontSize: 15, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
@@ -721,7 +721,7 @@ const s = StyleSheet.create({
   shIcAlarm: { backgroundColor: PELE.redSoft },
   shTt: { flex: 1, minWidth: 0 },
   shName: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.8, textTransform: 'uppercase', color: PELE.grey },
-  shNameX: { fontFamily: PELE_FONT.displaySemi, color: PELE.yellow, fontSize: 13 },
+  shNameX: { fontFamily: PELE_FONT.displaySemi, color: BRAND.signal, fontSize: 13 },
   shSub: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginTop: 2 },
   sClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
 

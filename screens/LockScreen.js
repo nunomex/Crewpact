@@ -13,7 +13,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext } from '../data/appContext';
 import { reauthenticate } from '../data/auth';
 import { t } from '../data/i18n';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { success, warning } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
@@ -113,7 +113,7 @@ export default function LockScreen() {
             {err ? <Text style={s.err}>{t('lock.failed', lang)}</Text> : null}
             <TouchableOpacity style={[s.faceBtn, busy && { opacity: 0.55 }]} activeOpacity={0.85} onPress={authenticate} disabled={busy}
               accessibilityRole="button" accessibilityLabel={unlockLabel}>
-              <Ionicons name={sensor.icon} size={24} color={PELE.yellow} />
+              <Ionicons name={sensor.icon} size={24} color={BRAND.onDark} />
               <Text style={s.faceBtnTxt}>{unlockLabel}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setShowPw(true); setErr(false); }} hitSlop={8} style={s.altBtn}>
@@ -132,7 +132,7 @@ export default function LockScreen() {
             {pwErr ? <Text style={s.err}>{pwErr}</Text> : null}
             <TouchableOpacity style={[s.faceBtn, { marginTop: 12, alignSelf: 'stretch' }, (!pw || pwBusy) && { opacity: 0.55 }]}
               activeOpacity={0.85} onPress={submitPw} disabled={!pw || pwBusy} accessibilityRole="button">
-              {pwBusy ? <ActivityIndicator size="small" color={PELE.yellow} /> : null}
+              {pwBusy ? <ActivityIndicator size="small" color={BRAND.onDark} /> : null}
               <Text style={s.faceBtnTxt}>{t('lock.unlock', lang)}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setShowPw(false); setPw(''); setPwErr(''); }} hitSlop={8} style={s.altBtn}>
@@ -154,7 +154,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   wmEye: { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
-  wmRule: { height: 3.5, width: 130, backgroundColor: PELE.yellow, marginTop: 9, marginBottom: 12 },
+  wmRule: { height: 3.5, width: 130, backgroundColor: BRAND.signal, marginTop: 9, marginBottom: 12 },
   wmName: { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
   wmNameLight: { fontFamily: PELE_FONT.displayMed },
   wmNameBold: { fontFamily: PELE_FONT.displayHeavy },
@@ -164,7 +164,7 @@ const s = StyleSheet.create({
   faceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, backgroundColor: PELE.ink, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 28, marginTop: 26, alignSelf: 'center' },
   faceBtnTxt: { fontSize: 15, fontFamily: PELE_FONT.bodyHeavy, color: PELE.paper },
   altBtn: { marginTop: 18, paddingVertical: 6 },
-  altLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1, textAlign: 'center' },
+  altLink: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1, textAlign: 'center' },
   pwBox: { alignSelf: 'stretch', marginTop: 26, alignItems: 'center' },
   pwPill: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 20, height: 54 },
   pwInput: { flex: 1, fontSize: 14.5, fontFamily: PELE_FONT.body, color: PELE.ink },

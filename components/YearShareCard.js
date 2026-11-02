@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import Icon from './Icon';
 import SheetHeader from './SheetHeader';
 import PrimaryButton from './PrimaryButton';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
@@ -229,14 +229,14 @@ const s = StyleSheet.create({
 
   // o poster (cores FIXAS)
   card: { backgroundColor: '#FFFFFF', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(20,20,20,0.08)' },
-  yband: { position: 'absolute', top: 0, bottom: 0, backgroundColor: P.yellow, zIndex: 2 },
+  yband: { position: 'absolute', top: 0, bottom: 0, backgroundColor: BRAND.signal, zIndex: 2 },
   lbl: { fontFamily: F.bodyHeavy, color: P.ink, textAlign: 'left' },
   pad: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 1 },
   t2: { fontFamily: F.bodyHeavy, color: P.grey },
   g: { fontFamily: F.displayHeavy, color: P.ghost, alignSelf: 'flex-end', includeFontPadding: false },
   hk: { fontFamily: F.bodyHeavy, color: P.grey },
   hrow: { flexDirection: 'row', alignItems: 'baseline', gap: 7 },
-  under: { position: 'absolute', backgroundColor: P.yellow, opacity: 0.95 },
+  under: { position: 'absolute', backgroundColor: BRAND.signal, opacity: 0.95 },
   word: { fontFamily: F.displayHeavy, color: P.ink, includeFontPadding: false },
   un: { fontFamily: F.displaySemi, color: P.grey },
   trans: { fontFamily: F.hand, color: 'rgba(20,20,20,0.72)', transform: [{ rotate: '-1.5deg' }] },
@@ -247,6 +247,6 @@ const s = StyleSheet.create({
   destLine: { fontFamily: F.display, color: P.ink, letterSpacing: 0.4 },
   destN: { color: P.grey, fontFamily: F.displaySemi },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  fdot: { width: 7, height: 7, borderRadius: 2.5, backgroundColor: P.yellow },
+  fdot: { width: 7, height: 7, borderRadius: 2.5, backgroundColor: BRAND.signal },
   footTxt: { fontFamily: F.bodyHeavy, color: P.grey },
 });

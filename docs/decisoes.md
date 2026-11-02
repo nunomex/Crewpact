@@ -6,6 +6,170 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## 2026-11-02 — Passo 2 das edições (papéis da cor) + revisão do login
+
+**Ícones: em pausa** (decisão do Nuno). Ficam no quadro `design/icone-direcoes.html` (preferência: Amanhecer; o gosto dele
+pende para o plano nas cores da app). Retomar depois das conversas com os sindicatos.
+
+**Passo 2 FEITO — a cor de marca tem PAPÉIS (`BRAND` em `data/constants.js`):** `signal` (50 usos) · `onDark` (28) ·
+`marker` (11) · `action` (1, fundo do botão principal). Na base todos valem o amarelo de hoje (e `action` a tinta) →
+nada visível mudou. Incluídos os 3 PDFs (careerRecord · disruption · ftlRecord) e o catálogo da Biblioteca. Valores de
+referência das edições SNPVAC/SPAC comentados ao lado. Guardião: **regra dura** — `PELE.yellow`/`#FFB800` fora do
+`constants.js` falha (screens · components · data · hooks); `amareloTexto` 7 → 5 (moeda do Perfil e avatar passaram a
+`onDark`, legítimos). Verificado: `npm test` verde · pacote iOS gera · imports todos presentes · regra provada.
+
+**Revisão do login (análise; nada mudado):** bem feito — autofill completo (porta-chaves, palavra-passe forte, código do
+Mail), código de 6 dígitos com cooldown, política NIST, sessão no SecureStore + PKCE, re-auth, apagar conta com graça.
+Falta/desatualizado: Apple e Google desenhados mas DESLIGADOS com "brevemente" (controlos mortos no 1.º ecrã) · sem
+passkeys (Supabase em beta desde 28/05/2026; `react-native-passkeys` exige dev build) · sem Associated Domains
+(`webcredentials:crewpact.app` — passkeys, palavras-passe ligadas ao site, links universais) · login e criar conta
+separados (as melhores apps: um campo de e-mail + Continuar) · proteção de palavras-passe vazadas (dashboard, plano pago).
+**Decidido (Nuno "sim avança"):** avança a parte do Expo Go. FEITO: os botões Apple/Google "brevemente" deixaram de
+aparecer (`SOCIAL_ENABLED` continua a ser o interruptor para o dev build). ESBOÇO publicado `design/login-v3.html`: um
+campo de e-mail + Continuar → código de 6 dígitos para entrar E criar conta (sem dizer se o e-mail existe — evita
+descobrir quem usa a app) · conta nova pede nome/apelido e segue para as 6 perguntas · palavra-passe como alternativa.
+**APROVADO pelo Nuno, código primeiro — FEITO no código:** `data/auth.js` ganhou `requestEmailCode` · `verifyEmailCode`
+(tipo 'email', com recurso a 'signup' para contas novas com confirmação) · `saveName`; saíram `register` · `verifySignupCode`
+· `resendSignup`. `LoginScreen` abre na vista 'entry' (e-mail → CONTINUAR) → 'emailCode' (6 dígitos, reenviar aos 60 s) →
+conta nova → 'name' → "Conta criada" → onboarding; o login com palavra-passe ficou como alternativa ('login'), e os
+links de "criar conta" passaram a "entrar com um código". Termos aceites na entrada. Mensagem nova "aguarda um minuto".
+Modelo `supabase/email-magic-link.html`. Verificado no PC: testes · pacote iOS · sintaxe · imports.
+**Falta (Nuno):** colar o modelo "Magic Link" no dashboard · confirmar limites de envio (Supabase + Resend) · testar no
+iPhone (`docs/verificacao-device.md` §0). **Pendência nova:** os 4 modelos de e-mail ainda têm o cabeçalho azul do tema
+antigo — passá-los à pele de uma vez.
+**Resolvido na mesma sessão — prova de posse por código:** apagar conta, mudar e-mail e mudar palavra-passe exigiam a
+palavra-passe atual → contas criadas só por código ficavam SEM conseguir apagar a conta (a Apple exige-o dentro da app).
+Novo `components/ProofField.js` (palavra-passe OU "Não tens palavra-passe? Confirmar com um código") + `proveOwnership`
+em `data/auth.js`, nos 3 diálogos do Perfil. Contas só com código CRIAM a palavra-passe no "Mudar palavra-passe".
+Verificado no PC: testes · pacote iOS · sintaxe · imports · guardião.
+**Limites da Supabase vistos (captura do Nuno, 2026-11-02):** e-mails 30/h (projeto todo) · intervalo por pessoa 60 s
+(= cooldown da app) · verificações 30/5 min por IP · entradas 30/5 min por IP · refresh 150/5 min. Campos editáveis →
+SMTP próprio (Resend) ligado. Público: confirmação de e-mail LIGADA, registos permitidos. **Antes do lançamento:**
+e-mails/h para centenas · entradas por IP acima de 30/5 min (salas e Wi-Fi partilhados) · Resend pago (o grátis pára
+aos 100/dia). **Modelo "Magic Link" colado no dashboard pelo Nuno (2026-11-02).** Falta só o teste no iPhone (guião §0).
+**1.º teste no iPhone:** o código não aparecia sugerido por cima do teclado e o toque longo nas caixas não dava "Colar".
+Causas: (1) o campo invisível do `OTPInput` tinha `opacity: 0` → o iOS ignora toques em vistas com alpha < 0.01 (o
+toque longo nunca chegava) — agora o campo é opaco e o TEXTO é transparente, com altura explícita; (2) teclado
+`numeric` (decimal) → `number-pad`; (3) o assunto sugerido do "Magic Link" não tinha "código"/"code" — o iPhone
+reconhece o e-mail por aí. Modelos "Magic Link" e "Confirm signup" ganharam o código também numa frase. **Nuno:**
+voltar a colar os 2 modelos + pôr o assunto "O teu código CrewPact: {{ .Token }} · Your CrewPact code".
+**Confirmado no iPhone (Nuno):** conta existente + código escrito à mão → ENTRA ✓ (o `verifyEmailCode` funciona). Por
+confirmar depois da correção: sugestão "Do Mail" e "Colar"; conta nova; apagar conta só-código.
+**2.º teste no iPhone — 2 erros meus, corrigidos:** (1) ecrã vermelho "setDelPw doesn't exist" ao tocar em Apagar conta —
+restou uma chamada antiga (a procura não apanhou o D maiúsculo); (2) "Palavra-passe é obrigatória" no Mudar
+palavra-passe em modo código — era a palavra-passe NOVA em falta; os exemplos "••••••••" pareciam já preenchidos. Agora:
+exemplos com texto ("nova palavra-passe" · "repete a nova" · "a tua palavra-passe atual") e mensagens que dizem o que falta.
+O código foi aceite (as 6 caixas encheram). **Guardião ganhou regra dura:** nenhum nome usado sem estar definido (apanha
+exatamente este tipo de ecrã vermelho, que o pacote não apanha).
+**Confirmado no iPhone (Nuno):** sugestão "Do Mail" e "Colar" no código funcionam ✓. Falta: conta nova · apagar
+conta só-código · mudar palavra-passe por código (depois das correções).
+**LOGIN FECHADO no iPhone (Nuno, 2026-11-02):** conta nova (e-mail → código → nome → "Conta criada" → 6 perguntas →
+Face ID → Início) ✓ · mudar palavra-passe por código ✓ · apagar conta só-código ✓ (sem ecrã vermelho). Ficam para a
+verificação completa (§0 do guião, não bloqueiam): reenviar aos 60 s · código errado · entrar com palavra-passe ·
+mudar e-mail por código. **Próximo: onboarding** (depois o tema por edição e a app toda, ecrã a ecrã).
+**SMTP visto (captura, 2026-11-02):** ligado · `noreply@crewpact.app` "CrewPact" · smtp.resend.com:465 · user `resend` ✓.
+DNS: DKIM do Resend ✓ · SPF em send.crewpact.app ✓ · DMARC `p=none` (apertar depois do lançamento) · MX de crewpact.app =
+encaminhamento Cloudflare (dá para criar suporte@/privacidade@ sem caixas pagas). **Para as leis:** o Resend envia da
+região **eu-west-1 (Irlanda, UE)** — preenche o placeholder da região do subcontratante na Política de Privacidade.
+
+---
+
+## 2026-11-02 — DECISÃO: uma app, licenciada ao SPAC e ao SNPVAC
+
+**Decidido pelo Nuno:** a app fica dele e **licencia-se** (não se vende) aos dois sindicatos — uma só app, edição por
+sindicato (pilotos = SPAC, cabine = SNPVAC, escolha confirmada no onboarding; "nenhum" = edição base). Razões: um só
+código/manutenção (AE já modelados por sindicato, FTL universal), os sindicatos não competem (segmentos diferentes),
+serve não-sócios, tripulação inteira na mesma app. App própria de um sindicato só como extra pago, a partir do mesmo
+código e na conta de programador DESSE sindicato (App Store 4.2.6). Ao advogado: responsável pelos dados = Nuno
+(sindicatos não veem dados individuais); contrato de licença; números com marca do sindicato.
+**Nome: FICA CrewPact** (decisão do Nuno, 2026-11-02). Verificado: nenhuma app com o nome (App Store PT/EUA/RU), nenhum
+produto/empresa na web; `crewpact.app` é teu; `crewpact.com` é de terceiros e está à venda (Afternic); `.pt`/`.eu` parecem
+livres. A fazer: pesquisa de marca INPI + EUIPO · reservar o nome na App Store Connect · registar `.pt`/`.eu`.
+**Ícone REABERTO:** o Nuno não gosta do aprovado em julho (letra C + sublinhado). Novas direções em `design/icone-direcoes.html`.
+
+---
+
+## 2026-11-02 — Cores do SNPVAC? (estudo, decisão em aberto)
+
+**Contexto (Nuno):** a app é, em princípio, para vender ao SNPVAC; pensar em usar as cores deles.
+**Medido:** a cor do SNPVAC é **`#005EB8` azul-cobalto** (logótipo monocromático + 195 usos no CSS do site oficial),
+NÃO azul-céu. Comporta-se ao contrário do nosso amarelo: texto sobre papel 6,38 ✓ · branco sobre ela 6,38 ✓ ·
+mas tinta sobre ela 2,89 ✗ (marcador) · sobre a noite 2,92 ✗ · sobre placa preta 2,89 ✗.
+**Estudo:** `design/snpvac-cores.html` (ficheiro LOCAL — marca de terceiros, não publicar). Três caminhos:
+hoje · azul em tudo (falha 3 papéis) · **edição parceira (recomendada):** a pele CrewPact fica; o cobalto marca o que
+se toca (botão, links, aba, ＋, barras); tinta clara `#C7DCEF` como marcador (13,08); `#6FAAE3` no escuro (7,57).
+**Antes de decidir:** a app serve pilotos (SPAC) · com a marca do SNPVAC os números passam a ler-se como a palavra
+do sindicato (→ advogado) · uso da marca exige autorização escrita · preparar o código: papéis de cor com nome
+(86 usos do amarelo em 36 ficheiros) + 105 cores soltas.
+**Achado à parte:** a cor das notificações no `app.json` é `#F5402C` (vermelho fora do tema) — corrigir.
+
+**Evolução (Nuno: "fazemos o SPAC e o SNPVAC"):** SPAC = **`#0097D4` celeste** (+ marinho `#19232D`; logótipo com cruz
+vermelha). Celeste: branco sobre ele 3,29 ✗ → no que se toca usa `#0077A8` (5,00); no escuro o original serve (5,66);
+marcador `#C7E8F6` (14,30). Os dois azuis entre si = 1,94 (parecem o mesmo). **Recomendação:** login NEUTRO CrewPact
+(Slack/Navan/Granola/Instacart Business não pintam o login) com uma linha "Em parceria com SNPVAC · SPAC" no fundo
+(à Air NZ "A Star Alliance member"); a edição vem do SINDICATO (pergunta no onboarding, sugerida pelo tipo, "nenhum" =
+CrewPact), não do tipo de tripulante. Esboço local `design/edicoes-sindicatos.html`. Pendente: autorização escrita dos
+dois sindicatos, advogado, prova de pertença (código/n.º de sócio).
+
+---
+
+## 2026-11-02 (madrugada) — Início em folga passado para o código
+
+**O Nuno aprovou o esboço** e entregou as três escolhas ao critério das melhores apps:
+- **Sem nada marcado → sem fantasma** (o Flighty vazio mostra só duas linhas e a ação; nada decorativo).
+- **Rótulo lateral sai do Início** (nenhuma app de referência roda texto; a data passou para o topo). Nos outros ecrãs
+  sai na migração de cada um (design-system §2); onde é selo funcional (Simulação, exemplo) vira rótulo visível.
+- **"OK" → "Em dia"** (palavra de estado concreta, como o "On Time" do Flighty) — escala e validades.
+
+**Feito no código (`screens/HomeScreen.js`, `screens/hojeItems.js`):**
+- Linha do topo: data legível + tempo (todos os estados; o tempo em folga/pernoita/férias). O brilho motivado do
+  sistema de luz passou a nascer do tempo no topo (`TUNE.haloMot`).
+- Saíram de TODOS os estados: o rótulo lateral, a seta/ícone amarelo do canto, o emoji da lua.
+- Ênfase dos kicks a tinta em todos os estados (o amarelo sobre papel falhava a 1,73).
+- Folga: fantasma = dias até ao próximo serviço + kick legível + linha com data/report/rota; sem nada = sem fantasma.
+- Folga: estado em colunas rótulo + valor; "A seguir" à Flighty depois do dinheiro (absorve o cartão preto);
+  atalho "Abrir a Escala" quando não há nada.
+- Linha do dinheiro (todos os estados que a têm): número a tinta com € cinzento; anel → barra que diz o que mede
+  ("Dia 2 de 30" no mês, "62%" no PSV).
+- Outros estados: a frase de estado passou a "Legal: Sim · Escala: Em dia" (pergunta + resposta).
+- Verificado no PC: `npm test` verde · pacote iOS gera · imports todos presentes · contagem de dias certa nas
+  mudanças de hora e na passagem de ano · guardião: dívida desceu (tipo −5, letra<11 −5, espaço −5, amarelo −1).
+
+**Por ver no iPhone (NÃO testado):** a folga sem nada marcado (o teu caso), a folga com serviço (precisa de um serviço
+importado), e os outros 14 estados — mexi no topo, no canto, nos kicks e na linha do dinheiro de todos. É a sessão
+"testar os estados".
+
+---
+
+## 2026-11-02 (fim de noite) — Revisão do Início com Flighty e as apps "do dia"
+
+**Pedido do Nuno:** corrigir o layout da app toda, guiada pelas melhores (Flighty no Mobbin + concorrência),
+mantendo a Living Interface. Análise feita sobre uma captura do Início em folga (20:14).
+
+**Medido:** amarelo `#FFB800` sobre papel = **1,73:1** (chumba em qualquer tamanho); tinta sobre amarelo 10,62;
+cinzento 4,51. 11 estilos de texto amarelo em 8 ficheiros (8 apanhados pela métrica nova).
+
+**Feito (aprovado: "faz o que propões"):**
+- **Regra nova (design-system §2 e §6):** o amarelo nunca é texto nem ícone informativo sobre papel; dinheiro e
+  números herói a tinta. Exceção legítima marcada `// sobre-tinta` (placa preta).
+- **Guardião:** métrica `amareloTexto` na roquete (chão = 8). Métrica nova não conta como subida até ao próximo
+  `--atualizar`.
+- **Referências** do Início guardadas: Flighty (lista e faixa de estado), Gentler Streak, The Outsiders, Oura —
+  coleção Mobbin + `referencias/inicio-folga/` + índice em `referencias/README.md`.
+- **Esboço** `design/inicio-folga-v3.html` (publicado como página privada): Agora · Proposta com serviço ·
+  Proposta sem nada marcado, 10 mudanças numeradas e o contraste medido.
+
+**Concorrência:** RosterBuster, CrewLog, Wingman, DutySheet, CONNECT, BeCrew, Layvr — nenhuma no Mobbin; vendem
+funções, não desenho. A referência visual certa é o Flighty + apps de saúde que mudam com o dia.
+
+**À espera do Nuno (o código do Início NÃO mudou):**
+1. Aprovar a direção do esboço para o Início em folga.
+2. Sem nada marcado: fantasma = dia do mês, ou sem fantasma.
+3. Rótulo lateral (PeleSide): fica a cinzento/tinta com a contagem, ou sai do Início.
+4. Pequena mudança de texto proposta: o valor da escala "OK" passa a "Em dia".
+
+---
+
 ## 2026-11-02 (noite) — Design System 2.0 (ramo `design-system-2`, por guardar no git)
 
 **Porquê:** o Nuno sentia problemas de layout, espaçamento, tipografia e posição dos botões. Medido:

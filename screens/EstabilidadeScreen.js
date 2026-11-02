@@ -7,7 +7,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';
-import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
   cLaw: { backgroundColor: PELE.soft, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6, marginTop: 7 },
   cLawTxt: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, lineHeight: 15 },
   cAsk: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  tick: { width: 20, height: 20, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center' },
+  tick: { width: 20, height: 20, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
   tickOff: { backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line },
   cAskTxt: { flex: 1, fontSize: 10, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, lineHeight: 15 },
   ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: PELE.paper, borderTopWidth: 1, borderTopColor: PELE.line, paddingHorizontal: GUTTER, paddingTop: 10, paddingBottom: 12 },

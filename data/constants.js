@@ -156,6 +156,24 @@ export const PELE_NIGHT = {
   placeholder: 'rgba(244,242,237,0.38)',
   onInk: '#0D131C', onInkSub: '#8F8F88', onInkFaint: '#3A4250',
 };
+// ─── Cor de MARCA por PAPÉIS (Design System 2.0 · edições por sindicato, 2026-11-02) ───────────
+// A pele (papel, tinta, ghost, estados ok/warn/red) é IGUAL para todos. Uma edição (SNPVAC · SPAC)
+// troca SÓ este objeto. Nunca escrever `PELE.yellow` nem '#FFB800' fora daqui — o guardião
+// (`npm run test:design`) falha. Valores medidos para cada edição em design/edicoes-sindicatos.html.
+//   signal — sinais SEM texto: pontos, barras, réguas, sublinhados, bordas de seleção (≥3:1 com o fundo)
+//   marker — FUNDO de marcação com TINTA por cima: bilhete, pílula Desfazer, vistos (tinta sobre ele ≥4,5)
+//   onDark — a marca SOBRE PLACA PRETA ou no tema noturno: texto, ícones, spinners (≥4,5 sobre tinta)
+//   action — cor do que se TOCA (fundo do botão principal). Na base é a TINTA; nas edições, o azul.
+export const BRAND = {
+  signal: '#FFB800',
+  marker: '#FFB800',
+  onDark: '#FFB800',
+  action: '#141414',
+};
+// Referência para as edições (só se ligam com autorização escrita de cada sindicato — docs/decisoes.md):
+// SNPVAC { signal:'#005EB8', marker:'#C7DCEF', onDark:'#6FAAE3', action:'#005EB8' }
+// SPAC   { signal:'#0097D4', marker:'#C7E8F6', onDark:'#0097D4', action:'#0077A8' }
+
 // Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
 // Hanken Grotesk (corpo/rótulos). Estáticas: a FAMÍLIA carrega o peso (não o fontWeight).
 // Carregadas no App.js via @expo-google-fonts.

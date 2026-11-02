@@ -4,7 +4,7 @@
 //
 //   <Icon name="lock" />                     (20px, ink)
 //   <Icon name="chevron" rot={90} />         (chevron ⌄)
-//   <Icon name="bell" size={18} color={C.yellow} />
+//   <Icon name="bell" size={18} color={BRAND.signal} />
 //
 // `color` alimenta o currentColor (amarelo sobre placa preta, ink sobre papel).
 // Nome inválido → quadrado laranja visível (erro que se vê, não falha silenciosa).

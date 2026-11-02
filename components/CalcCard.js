@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';
 import Eyebrow from './Eyebrow';
-import { PELE as P, PELE_NIGHT as N, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_NIGHT as N, PELE_FONT as F, BRAND } from '../data/constants';
 import { t } from '../data/i18n';
 
 // Invólucro de calculadora. Por defeito estático (eyebrow + caixa).
@@ -86,7 +86,7 @@ export function ResultBlock({ label = 'TOTAL', value, foot, lines, valueSize = 3
 
               <View style={[c.auditKv, c.auditResult]}>
                 <Text style={c.auditK}>{t('audit.result', lang)}</Text>
-                <Text style={[c.auditV, { color: P.yellow }]}>{audit.result}</Text>
+                <Text style={[c.auditV, { color: BRAND.onDark }]}>{audit.result}</Text>
               </View>
 
               {audit.why ? (
@@ -111,7 +111,7 @@ const c = StyleSheet.create({
   accBody: { marginTop: 12 },
   result: { marginTop: 12, backgroundColor: P.ink, borderRadius: 14, padding: 14 },
   resLabel: { fontSize: 10, letterSpacing: 2, color: P.onInkSub, fontFamily: F.bodyHeavy, textTransform: 'uppercase' },
-  resVal: { color: P.yellow, fontFamily: F.display, marginTop: 2, fontVariant: ['tabular-nums'] },
+  resVal: { color: BRAND.onDark, fontFamily: F.display, marginTop: 2, fontVariant: ['tabular-nums'] },
   resFoot: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: F.bodyMed, marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 8, lineHeight: 16 },
 
   validRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },

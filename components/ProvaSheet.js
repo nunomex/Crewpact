@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import PeleSheet from './PeleSheet';
 import Icon from './Icon';
-import { PELE as P, PELE_FONT as F } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
 import { openLibraryLink } from '../data/library';
 import { select } from '../data/haptics';
 
@@ -44,12 +44,12 @@ export default function ProvaSheet({ visible, onClose, prova, lang = 'pt' }) {
 
 const s = StyleSheet.create({
   eyeb: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  edot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.yellow },
+  edot: { width: 7, height: 7, borderRadius: 99, backgroundColor: BRAND.signal },
   etxt: { fontSize: 10, fontFamily: F.bodyHeavy, letterSpacing: 1.8, color: P.grey, textTransform: 'uppercase' },
   h1: { fontFamily: F.display, fontSize: 26, color: P.ink, marginTop: 8 },
   h1v: { fontSize: 17, color: P.grey },
   tag: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: P.soft, borderRadius: 99, paddingHorizontal: 11, paddingVertical: 6, marginTop: 8 },
-  tagS: { fontSize: 11, fontFamily: F.bodyHeavy, color: P.yellow },
+  tagS: { fontSize: 11, fontFamily: F.bodyHeavy, color: BRAND.signal },
   tagTxt: { fontSize: 10.5, fontFamily: F.bodyHeavy, color: P.ink },
   resumoLab: { fontSize: 8.5, fontFamily: F.bodyHeavy, letterSpacing: 1.3, color: P.placeholder, textTransform: 'uppercase', marginTop: 16 },
   resumo: { fontSize: 13, fontFamily: F.bodyMed, color: '#33322E', lineHeight: 19, marginTop: 5 },

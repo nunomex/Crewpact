@@ -16,9 +16,9 @@ import StrengthBar from '../components/StrengthBar';
 import OTPInput from '../components/OTPInput';
 import Icon from '../components/Icon';
 import AccountCreated from '../components/AccountCreated';
-import { PELE, PELE_FONT, SPACE } from '../data/constants';
+import { PELE, PELE_FONT, SPACE, BRAND, TXT } from '../data/constants';
 import {
-  login, register, verifySignupCode, resendSignup,
+  login, requestEmailCode, verifyEmailCode, saveName,
   requestPasswordReset, verifyResetCode, resetPassword,
   validateEmail, validatePassword,
   loginWithApple, loginWithGoogle, appleAvailable,
@@ -83,7 +83,7 @@ function PillButton({ label, onPress, loading, disabled }) {
     <TouchableOpacity style={[s.btn, (disabled || loading) && { opacity: 0.55 }]} activeOpacity={0.85}
       onPress={onPress} disabled={disabled || loading} accessibilityRole="button" accessibilityLabel={label}>
       <Text style={s.btnTxt}>{label}</Text>
-      {loading ? <ActivityIndicator size="small" color={PELE.yellow} /> : null}
+      {loading ? <ActivityIndicator size="small" color={BRAND.onDark} /> : null}
     </TouchableOpacity>
   );
 }
@@ -104,10 +104,15 @@ function Wordmark({ compact, left }) {
 /* ─── Main ───────────────────────────────────────────────────────────────── */
 export default function LoginScreen() {
   const { setUser, lang, suppressAuth } = useContext(AppContext);
-  // views: 'login' | 'signup' | 'signupCode' | 'forgot' | 'code' | 'reset'
-  // CRIAR CONTA vive AQUI desde 2026-07-09 (funil novo): conta PRIMEIRO (nome·email·pw →
-  // código OTP → sessão) e o onboarding de perfil aparece DEPOIS do login (gate `onboarded`).
-  const [view, setView] = useState('login');
+  // views: 'entry' | 'emailCode' | 'name' | 'login' | 'forgot' | 'code' | 'reset'
+  // 2026-11-02 (esboço design/login-v3.html, aprovado): UM caminho para entrar E criar conta —
+  // e-mail → código de 6 dígitos (sem palavra-passe, sem revelar se o e-mail tem conta) → conta
+  // nova pede o nome → "Conta criada" → onboarding (gate `onboarded`). A palavra-passe ('login')
+  // continua como alternativa. O registo antigo (nome·email·pw → código) morreu.
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const [view, setView] = useState('entry');
+  const [eEmail, setEEmail] = useState('');
+  const [eErr, setEErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
@@ -151,17 +156,15 @@ export default function LoginScreen() {
   const [newPwErr, setNewPwErr]   = useState('');
   const [newPw2Err, setNewPw2Err] = useState('');
 
-  // Signup (conta PRIMEIRO — o perfil vem no onboarding pós-login)
+  // Conta nova por código: o nome pede-se DEPOIS do código (passo 'name')
   const [suFirst, setSuFirst] = useState('');
   const [suLast, setSuLast]   = useState('');
-  const [suEmail, setSuEmail] = useState('');
-  const [suPw, setSuPw]       = useState('');
-  const [suErr, setSuErr]     = useState({});      // {first,last,email,pw}
-  const [scEmail, setScEmail] = useState('');      // email a confirmar (OTP do signup)
+  const [suErr, setSuErr]     = useState({});      // {first,last}
+  const [scEmail, setScEmail] = useState('');      // e-mail a que o código de entrada foi enviado
   const [scCode, setScCode]   = useState('');
   const [scErr, setScErr]     = useState('');
   const [scResent, setScResent] = useState(false);
-  const [scLeft, setScLeft]   = useState(0);       // cooldown do reenviar (signup)
+  const [scLeft, setScLeft]   = useState(0);       // cooldown do reenviar (o Supabase só aceita 1 código / 60 s)
   useEffect(() => {
     if (scLeft <= 0) return;
     const id = setTimeout(() => setScLeft((n) => n - 1), 1000);
@@ -173,13 +176,10 @@ export default function LoginScreen() {
     const id = setTimeout(() => setUser(created.user), 2500);   // → gate: sem perfil → onboarding
     return () => clearTimeout(id);
   }, [created]); // eslint-disable-line react-hooks/exhaustive-deps
-  const suFullName = `${suFirst.trim()} ${suLast.trim()}`.trim();
 
   const lPwRef    = useRef();
-  // Encadeamento do "seguinte" no teclado do SIGNUP (auditoria 2026-07-10: o next não saltava).
+  // Encadeamento do "seguinte" no teclado do passo do NOME.
   const suLastRef  = useRef();
-  const suEmailRef = useRef();
-  const suPwRef    = useRef();
   const newPw2Ref = useRef();
   const inFlight  = useRef(false);   // guarda anti-duplo-submit: ignora toques enquanto há pedido a decorrer
 
@@ -284,59 +284,70 @@ export default function LoginScreen() {
     } finally { inFlight.current = false; setLoading(false); }
   };
 
-  // Cria a conta MÍNIMA (nome + credenciais; o perfil vem no onboarding pós-login).
-  const handleSignup = async () => {
+
+  // ── ENTRADA POR CÓDIGO ──
+  // Envia SEMPRE o código (cria a conta se o e-mail for novo) — a UI nunca diz se o e-mail existe.
+  const handleEntry = async () => {
     if (inFlight.current) return;
-    const errs = {
-      first: suFirst.trim() ? '' : (lang === 'en' ? 'Your first name.' : 'O teu primeiro nome.'),
-      last:  suLast.trim() ? '' : (lang === 'en' ? 'Your last name.' : 'O teu apelido.'),
-      email: validateEmail(suEmail, lang) || '',
-      pw:    validatePassword(suPw, true, lang) || '',
-    };
-    setSuErr(errs);
-    if (errs.first || errs.last || errs.email || errs.pw) { doShake(); return; }
+    setEErr(''); setGlobalErr('');
+    const eE = validateEmail(eEmail, lang);
+    if (eE) { setEErr(eE); doShake(); return; }
     inFlight.current = true; setLoading(true);
     try {
-      // suppressAuth: o listener global não faz setUser antes do beat de confirmação.
-      suppressAuth.current = true;
-      const res = await register(suFullName, suEmail, suPw, lang);
-      suppressAuth.current = false;
-      if (!res.ok) { setSuErr({ email: res.error }); doShake(); return; }
-      if (res.needsConfirm) {
-        // Verificação de email LIGADA → a sessão só nasce com o código. Pede-o já.
-        setScEmail(res.email); setScCode(''); setScErr(''); setScResent(false); setScLeft(30);
-        navigateTo('signupCode');
-        return;
-      }
-      success();
-      setCreated({ user: res.user });
-    } finally { inFlight.current = false; setLoading(false); suppressAuth.current = false; }
+      const res = await requestEmailCode(eEmail, lang);
+      if (!res.ok) { setEErr(res.error); doShake(); return; }
+      setScEmail(res.email); setScCode(''); setScErr(''); setScResent(false); setScLeft(60);
+      navigateTo('emailCode');
+    } finally { inFlight.current = false; setLoading(false); }
   };
 
-  const handleVerifySignup = async () => {
+  // Código certo: conta que já tinha nome → entra (o gate decide onboarding/app); conta NOVA → nome.
+  const handleVerifyEmailCode = async () => {
     if (inFlight.current) return;
     setScErr('');
     if (scCode.length < 6) { setScErr(t('login.codeIncomplete', lang)); doShake(); return; }
     inFlight.current = true; setLoading(true);
     try {
-      const res = await verifySignupCode(scEmail, scCode, lang);
+      const res = await verifyEmailCode(scEmail, scCode, lang);
       if (!res.ok) { setScErr(res.error); doShake(); return; }
+      success();
+      if (res.needsName) { setSuFirst(''); setSuLast(''); setSuErr({}); navigateTo('name'); return; }
+      setUser(res.user);
+    } finally { inFlight.current = false; setLoading(false); }
+  };
+
+  const handleResendEmailCode = async () => {
+    if (inFlight.current || scLeft > 0) return;
+    inFlight.current = true;
+    try {
+      const res = await requestEmailCode(scEmail, lang);
+      if (res.ok) { setScResent(true); setScErr(''); setScLeft(60); success(); }
+      else { setScResent(false); setScErr(res.error); doShake(); }
+    } finally { inFlight.current = false; }
+  };
+
+  // Conta nova: guarda o nome e celebra ("Conta criada" → gate → onboarding das 6 perguntas).
+  const handleSaveName = async () => {
+    if (inFlight.current) return;
+    const errs = {
+      first: suFirst.trim() ? '' : l('O teu primeiro nome.', 'Your first name.'),
+      last:  suLast.trim() ? '' : l('O teu apelido.', 'Your last name.'),
+    };
+    setSuErr(errs);
+    if (errs.first || errs.last) { doShake(); return; }
+    inFlight.current = true; setLoading(true);
+    try {
+      const res = await saveName(suFirst, suLast, lang);
+      if (!res.ok) { setSuErr({ first: res.error }); doShake(); return; }
       success();
       setCreated({ user: res.user });
     } finally { inFlight.current = false; setLoading(false); }
   };
 
-  const handleResendSignup = async () => {
-    if (inFlight.current || scLeft > 0) return;
-    inFlight.current = true;
-    try {
-      const res = await resendSignup(scEmail, lang);
-      if (res.ok) { setScResent(true); setScErr(''); setScLeft(30); success(); }
-      else { setScResent(false); setScErr(res.error); doShake(); }
-    } finally { inFlight.current = false; }
-  };
-
-  const goSignup = () => { setSuErr({}); navigateTo('signup'); };
+  // Da palavra-passe para o código, levando o e-mail já escrito.
+  const goEntry = () => { if (lEmail && !eEmail) setEEmail(lEmail); setEErr(''); navigateTo('entry', false); };
+  // Do código para a palavra-passe, levando o e-mail.
+  const goPassword = (email) => { if (email && !lEmail) setLEmail(email); setGlobalErr(''); navigateTo('login'); };
 
   const handleResetPassword = async () => {
     if (inFlight.current) return;
@@ -357,8 +368,9 @@ export default function LoginScreen() {
   // Bloco social (divisória "ou continuar com" + CÍRCULOS G/, referência da foto do founder):
   // o social cria a conta E entra num passo (sem OTP — o email já vem verificado pelo fornecedor);
   // o gate `onboarded` manda os novos para o funil das 6 perguntas, como sempre.
-  // DESATIVADO até à dev build (decisão do founder 2026-07-10): os círculos ficam esbatidos
-  // com "brevemente" — ligar = SOCIAL_ENABLED true + config do dashboard (providers/redirects).
+  // DESATIVADO até à dev build (2026-07-10). 2026-11-02: deixou de aparecer — os botões esbatidos com
+  // "brevemente" eram controlos mortos no 1.º ecrã (as melhores apps: ou funcionam ou não existem).
+  // Ligar = SOCIAL_ENABLED true + config do dashboard (providers/redirects) + dev build.
   const SOCIAL_ENABLED = false;
   const renderSocial = () => (
     <>
@@ -401,7 +413,7 @@ export default function LoginScreen() {
 
           {/* Wordmark da pele (compacta com o teclado aberto) */}
           <Wordmark compact={keyboardOpen} left={leftView} />
-          {view === 'login' && !keyboardOpen ? (
+          {(view === 'entry' || view === 'login') && !keyboardOpen ? (
             <Text style={s.tagline}>{t('login.tagline', lang)}</Text>
           ) : null}
 
@@ -423,11 +435,93 @@ export default function LoginScreen() {
             {/* Erro de login → empurrão contextual para o registo (o motivo pode ser "sem conta"; a
                 mensagem é genérica de propósito p/ não revelar se o e-mail existe — sem enumeração). */}
             {view === 'login' && globalErr ? (
-              <TouchableOpacity style={s.errSignupRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={goSignup}>
-                <Text style={s.linkTxt}>{t('login.errSignupHint', lang)}</Text>
-                <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
+              <TouchableOpacity style={s.errSignupRow} hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }} onPress={goEntry}>
+                <Text style={s.linkTxt}>{l('Sem conta ou sem palavra-passe?', 'No account or no password?')}</Text>
+                <Text style={s.switchLink}>{l('Entrar com um código', 'Sign in with a code')}</Text>
               </TouchableOpacity>
             ) : null}
+
+            {/* ── ENTRADA (e-mail → código) — o caminho principal ── */}
+            {view === 'entry' && (
+              <Animated.View style={{ transform: [{ translateX: shake }] }}>
+                <Text style={s.entryHint}>{l('Entra ou cria conta com o teu e-mail.', 'Sign in or create an account with your email.')}</Text>
+                <Field value={eEmail} onChangeText={v => { setEEmail(v); setEErr(''); }}
+                  placeholder={t('login.email', lang)} error={eErr} icon="mail-outline"
+                  keyboardType="email-address" returnKeyType="go"
+                  textContentType="username" autoComplete="email"
+                  onSubmitEditing={handleEntry} />
+                <PillButton onPress={handleEntry} loading={loading} label={l('CONTINUAR', 'CONTINUE')} />
+                <Text style={s.entryNote}>{l('Enviamos-te um código de 6 dígitos. Não precisas de palavra-passe.', 'We send you a 6-digit code. No password needed.')}</Text>
+                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => goPassword(eEmail)}>
+                  <Text style={s.switchLink}>{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
+                </TouchableOpacity>
+                {/* TERMOS no ponto legalmente relevante: a conta pode nascer AQUI (clickwrap-lite). */}
+                <Text style={s.legal}>
+                  {l('Ao continuar aceitas os ', 'By continuing you accept the ')}
+                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{l('Termos', 'Terms')}</Text>
+                  {l(' e a ', ' and the ')}
+                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{l('Política de Privacidade', 'Privacy Policy')}</Text>.
+                </Text>
+                {SOCIAL_ENABLED ? renderSocial() : null}
+              </Animated.View>
+            )}
+
+            {/* ── CÓDIGO DE ENTRADA ── */}
+            {view === 'emailCode' && (
+              <>
+                <View style={[s.stepHeader, { alignItems: 'center' }]}>
+                  <Text style={[s.stepTitle, { textAlign: 'center' }]}>{t('login.verifyTitle', lang)}</Text>
+                  <Text style={[s.stepSub, { textAlign: 'center' }]}>{t('login.verifySub', lang)}{'\n'}<Text style={s.stepSubStrong}>{scEmail}</Text></Text>
+                </View>
+                <OTPInput value={scCode} onChange={v => { setScCode(v); setScErr(''); }} />
+                {scErr ? (
+                  <View style={[s.errBanner, { marginTop: -12 }]}>
+                    <Ionicons name="alert-circle" size={16} color={PELE.red} />
+                    <Text style={s.errBannerTxt}>{scErr}</Text>
+                  </View>
+                ) : scResent ? (
+                  <View style={[s.okBanner, { marginTop: -12 }]}>
+                    <Ionicons name="checkmark-circle" size={16} color={PELE.ok} />
+                    <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
+                  </View>
+                ) : null}
+                <PillButton onPress={handleVerifyEmailCode} disabled={scCode.length < 6} loading={loading} label={l('ENTRAR', 'SIGN IN')} />
+                <View style={s.codeLinks}>
+                  <TouchableOpacity onPress={handleResendEmailCode} disabled={scLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
+                    <Text style={[s.linkYellow, scLeft > 0 && s.linkMuted]}>
+                      {scLeft > 0 ? t('login.resendIn', lang).replace('{s}', scLeft) : t('login.resend', lang)}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setScCode(''); setScErr(''); navigateTo('entry', false); }}>
+                    <Ionicons name="arrow-back" size={13} color={PELE.grey} />
+                    <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => goPassword(scEmail)}>
+                  <Text style={s.switchLink}>{l('Entrar com palavra-passe', 'Sign in with password')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* ── CONTA NOVA: o nome (a sessão já existe; segue o "Conta criada" e o onboarding) ── */}
+            {view === 'name' && (
+              <Animated.View style={{ transform: [{ translateX: shake }] }}>
+                <View style={s.stepHeader}>
+                  <Text style={s.stepTitle}>{l('Bem-vindo à CrewPact', 'Welcome to CrewPact')}</Text>
+                  <Text style={s.stepSub}>{l('É a primeira vez que entras com este e-mail. Como te chamas?', 'This is your first time with this email. What is your name?')}</Text>
+                </View>
+                <Field value={suFirst} onChangeText={v => { setSuFirst(v); setSuErr(e => ({ ...e, first: '' })); }}
+                  placeholder={l('primeiro nome', 'first name')} error={suErr.first} icon="person-outline"
+                  autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next" autoFocus
+                  onSubmitEditing={() => suLastRef.current?.focus()} />
+                <Field value={suLast} onChangeText={v => { setSuLast(v); setSuErr(e => ({ ...e, last: '' })); }}
+                  placeholder={l('apelido', 'last name')} error={suErr.last} icon="person-outline"
+                  autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="done"
+                  inputRef={suLastRef} onSubmitEditing={handleSaveName} />
+                <PillButton onPress={handleSaveName} loading={loading} label={l('CONTINUAR', 'CONTINUE')} />
+                <Text style={s.entryNote}>{l('A seguir: 6 perguntas sobre o teu trabalho (companhia, base, categoria…).', 'Next: 6 questions about your job (airline, base, rank…).')}</Text>
+              </Animated.View>
+            )}
 
             {/* ── LOGIN ── */}
             {view === 'login' && (
@@ -446,85 +540,10 @@ export default function LoginScreen() {
                   <Text style={s.linkYellow}>{t('login.forgot', lang)}</Text>
                 </TouchableOpacity>
                 <PillButton onPress={handleLogin} loading={loading} label={t('login.btnLogin', lang)} />
-                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={goSignup}>
-                  <Text style={s.linkTxt}>{t('login.noAccount', lang)}</Text>
-                  <Text style={s.switchLink}>{t('login.createLink', lang)}</Text>
+                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={goEntry}>
+                  <Text style={s.switchLink}>{l('Receber um código em vez disso', 'Get a code instead')}</Text>
                 </TouchableOpacity>
-                {renderSocial()}
               </Animated.View>
-            )}
-
-            {/* ── CRIAR CONTA (mínima: nome + credenciais; o perfil vem no onboarding) ── */}
-            {view === 'signup' && (
-              <Animated.View style={{ transform: [{ translateX: shake }] }}>
-                {!keyboardOpen ? (
-                  <Text style={s.tagline}>{lang === 'en' ? 'Create the account in seconds — the rest is set up right after.' : 'Cria a conta em segundos — o resto configura-se a seguir.'}</Text>
-                ) : null}
-                <Field value={suFirst} onChangeText={v => { setSuFirst(v); setSuErr(e => ({ ...e, first: '' })); }}
-                  placeholder={lang === 'en' ? 'first name' : 'primeiro nome'} error={suErr.first} icon="person-outline"
-                  autoCapitalize="words" textContentType="givenName" autoComplete="given-name" returnKeyType="next"
-                  onSubmitEditing={() => suLastRef.current?.focus()} />
-                <Field value={suLast} onChangeText={v => { setSuLast(v); setSuErr(e => ({ ...e, last: '' })); }}
-                  placeholder={lang === 'en' ? 'last name' : 'apelido'} error={suErr.last} icon="person-outline"
-                  autoCapitalize="words" textContentType="familyName" autoComplete="family-name" returnKeyType="next"
-                  inputRef={suLastRef} onSubmitEditing={() => suEmailRef.current?.focus()} />
-                <Field value={suEmail} onChangeText={v => { setSuEmail(v); setSuErr(e => ({ ...e, email: '' })); }}
-                  placeholder={t('login.email', lang)} error={suErr.email} icon="mail-outline"
-                  keyboardType="email-address" textContentType="username" autoComplete="email" returnKeyType="next"
-                  inputRef={suEmailRef} onSubmitEditing={() => suPwRef.current?.focus()} />
-                <Field value={suPw} onChangeText={v => { setSuPw(v); setSuErr(e => ({ ...e, pw: '' })); }}
-                  placeholder={lang === 'en' ? 'create a password' : 'cria uma palavra-passe'} error={suErr.pw} secure icon="lock-closed-outline"
-                  textContentType="newPassword" autoComplete="new-password" returnKeyType="done"
-                  inputRef={suPwRef} onSubmitEditing={handleSignup} />
-                <StrengthBar password={suPw} lang={lang} />
-                <PillButton onPress={handleSignup} loading={loading} label={t('login.createLink', lang)} />
-                {/* TERMOS no ponto legalmente relevante: aceites AO CRIAR (clickwrap-lite; links abrem o site) — cobre email E social. */}
-                <Text style={s.legal}>
-                  {lang === 'en' ? 'By creating an account you accept the ' : 'Ao criar conta aceitas os '}
-                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/termos').catch(() => {})}>{lang === 'en' ? 'Terms' : 'Termos'}</Text>
-                  {lang === 'en' ? ' and the ' : ' e a '}
-                  <Text style={s.legalLink} onPress={() => Linking.openURL('https://crewpact.app/privacidade').catch(() => {})}>{lang === 'en' ? 'Privacy Policy' : 'Política de Privacidade'}</Text>.
-                </Text>
-                <TouchableOpacity style={s.switchRow} hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }} onPress={() => navigateTo('login', false)}>
-                  <Text style={s.linkTxt}>{lang === 'en' ? 'Already have an account?' : 'Já tens conta?'}</Text>
-                  <Text style={s.switchLink}>{t('login.btnLogin', lang)}</Text>
-                </TouchableOpacity>
-                {renderSocial()}
-              </Animated.View>
-            )}
-
-            {/* ── CONFIRMAR EMAIL DO SIGNUP (a sessão só nasce depois do código) ── */}
-            {view === 'signupCode' && (
-              <>
-                <View style={[s.stepHeader, { alignItems: 'center' }]}>
-                  <Text style={[s.stepTitle, { textAlign: 'center' }]}>{t('login.verifyTitle', lang)}</Text>
-                  <Text style={[s.stepSub, { textAlign: 'center' }]}>{t('login.verifySub', lang)}{'\n'}<Text style={s.stepSubStrong}>{scEmail}</Text></Text>
-                </View>
-                <OTPInput value={scCode} onChange={v => { setScCode(v); setScErr(''); }} />
-                {scErr ? (
-                  <View style={[s.errBanner, { marginTop: -12 }]}>
-                    <Ionicons name="alert-circle" size={16} color={PELE.red} />
-                    <Text style={s.errBannerTxt}>{scErr}</Text>
-                  </View>
-                ) : scResent ? (
-                  <View style={[s.okBanner, { marginTop: -12 }]}>
-                    <Ionicons name="checkmark-circle" size={16} color={PELE.ok} />
-                    <Text style={s.okBannerTxt}>{t('login.codeResent', lang)}</Text>
-                  </View>
-                ) : null}
-                <PillButton onPress={handleVerifySignup} disabled={scCode.length < 6} loading={loading} label={t('login.btnVerify', lang)} />
-                <View style={s.codeLinks}>
-                  <TouchableOpacity onPress={handleResendSignup} disabled={scLeft > 0} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
-                    <Text style={[s.linkYellow, scLeft > 0 && s.linkMuted]}>
-                      {scLeft > 0 ? t('login.resendIn', lang).replace('{s}', scLeft) : t('login.resend', lang)}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.backInline} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }} onPress={() => { setScCode(''); setScErr(''); navigateTo('signup', false); }}>
-                    <Ionicons name="arrow-back" size={13} color={PELE.grey} />
-                    <Text style={s.linkTxt}>{t('login.changeEmail', lang)}</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
             )}
 
 
@@ -617,7 +636,7 @@ const s = StyleSheet.create({
   // Wordmark: eyebrow · régua amarela · CREWPACT (Crew leve + Pact pesado, Barlow tracked)
   wm:           { alignItems: 'center', marginBottom: 14 },
   wmEye:        { fontSize: 9, fontFamily: PELE_FONT.body, letterSpacing: 4, color: PELE.grey, textTransform: 'uppercase' },
-  wmRule:       { height: 3.5, width: 130, backgroundColor: PELE.yellow, marginTop: 9, marginBottom: 12 },
+  wmRule:       { height: 3.5, width: 130, backgroundColor: BRAND.signal, marginTop: 9, marginBottom: 12 },
   wmName:       { fontSize: 38, lineHeight: 40, letterSpacing: 3, color: PELE.ink },
   wmNameLight:  { fontFamily: PELE_FONT.displayMed },
   wmNameBold:   { fontFamily: PELE_FONT.displayHeavy },
@@ -628,11 +647,11 @@ const s = StyleSheet.create({
   btnTxt:       { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },
 
   // Links: sublinhado AMARELO no forte; cinza no neutro
-  linkYellow:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
+  linkYellow:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1 },
   linkTxt:      { fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
   linkMuted:    { color: PELE.grey, borderBottomColor: PELE.line },
   switchRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
-  switchLink:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: PELE.yellow, paddingBottom: 1 },
+  switchLink:   { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, borderBottomWidth: 2, borderBottomColor: BRAND.signal, paddingBottom: 1 },
   errSignupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4, marginBottom: 16 },
   forgotBtn:    { alignSelf: 'flex-end', marginTop: -2, marginBottom: 22, marginRight: 4 },
 
@@ -653,6 +672,8 @@ const s = StyleSheet.create({
   backInline:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   legal:        { fontSize: 10.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, textAlign: 'center', lineHeight: 16, marginTop: 12, paddingHorizontal: 8 },
+  entryHint:    { ...TXT.body, color: PELE.grey, textAlign: 'center', marginBottom: SPACE.md },
+  entryNote:    { ...TXT.footnote, color: PELE.grey, textAlign: 'center', marginTop: SPACE.md },
   legalLink:    { color: PELE.ink, fontFamily: PELE_FONT.bodyBold, textDecorationLine: 'underline' },
   // Social (referência da foto): divisória "ou continuar com" + círculos G/ lado a lado,
   // papel + hairline (≥44pt de alvo). `socialOff` = desativado até à dev build.

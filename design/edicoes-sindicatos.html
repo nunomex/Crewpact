@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Edições SNPVAC e SPAC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Caveat:wght@600&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: quadro de decisão em dois tempos — "antes de saber quem és" (login neutro + pergunta do
+   onboarding) e "depois" (o Início em três edições: CrewPact · SNPVAC · SPAC); por baixo a tabela dos
+   papéis da cor medidos. Tema único (pele de dia). FICHEIRO LOCAL: marcas de terceiros. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --ok: #118A55; --red: #C6362B;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-hand: "Caveat", "Segoe Print", cursive;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1260px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 14px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede, .why { margin: 0; color: var(--ink-soft); font-size: 16px; max-width: 72ch; }
+section { display: grid; gap: 20px; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; }
+.fact { background: var(--paper); border-radius: 14px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; }
+.fact i { width: 28px; height: 28px; border-radius: 8px; display: inline-block; }
+.fact b { display: block; font-size: 14px; }
+.fact span { font-size: 13px; color: var(--grey); }
+
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 28px 22px; align-items: start; }
+.row.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 300px)); }
+figure { margin: 0; display: grid; gap: 10px; }
+figcaption { text-align: center; display: grid; gap: 2px; }
+figcaption b { font: 700 20px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--grey); }
+
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .5));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 9px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > *, .tabs > * { position: absolute; }
+
+.word { left: 22px; font: 700 54px/1 var(--f-display); }
+.rule { left: 22px; right: 22px; height: 1.5px; background: var(--ink); }
+.hair { left: 22px; right: 22px; height: 1px; background: var(--line); }
+.eye { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; }
+.foot { font: 500 12px/17px var(--f-body); color: var(--grey); }
+.lab { font: 700 12px/1 var(--f-body); }
+.note { left: 24px; width: 330px; font: 600 25px/1.32 var(--f-hand); color: var(--ink-soft); transform: rotate(-1.2deg); transform-origin: left top; }
+.note mark { padding: 0 8px 2px; color: var(--ink); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.grid3 { left: 22px; right: 22px; top: 404px; display: grid; grid-template-columns: repeat(3, 1fr); }
+.grid3 > div { display: grid; gap: 7px; }
+.grid3 .t { font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); }
+.grid3 .v { font: 700 13px/1 var(--f-body); display: flex; gap: 6px; align-items: center; }
+.grid3 i { width: 7px; height: 7px; border-radius: 99px; background: var(--ok); display: inline-block; }
+.money { left: 22px; top: 466px; font: 700 44px/1 var(--f-display); }
+.money small { font-size: 28px; color: var(--grey); margin-left: 4px; }
+.meter { right: 22px; top: 470px; width: 104px; display: grid; gap: 8px; justify-items: end; }
+.bar { width: 104px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; display: block; }
+.bar b { display: block; height: 100%; width: 7%; }
+.go { left: 22px; right: 22px; top: 568px; border-radius: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--soft); }
+.go b { font: 700 13px/18px var(--f-body); display: block; }
+.tabs { left: 0; right: 0; top: 767px; height: 77px; border-top: 1px solid var(--line); background: var(--paper); }
+.tab { top: 12px; width: 78px; display: grid; justify-items: center; gap: 4px; font: 700 11px/1 var(--f-body); color: var(--grey); }
+.tab.on { color: var(--ink); }
+.tab .d { width: 4px; height: 4px; border-radius: 99px; }
+.plus { left: 173px; top: 4px; width: 44px; height: 44px; border-radius: 99px; display: grid; place-items: center; font: 800 26px/1 var(--f-body); }
+.ed { left: 22px; top: 38px; display: flex; gap: 6px; align-items: center; font: 800 10px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+.ed i { width: 6px; height: 6px; border-radius: 99px; display: inline-block; }
+
+/* login + onboarding */
+.wm-eye { left: 40px; top: 168px; font: 600 9px/1 var(--f-body); letter-spacing: 4px; color: var(--grey); text-transform: uppercase; }
+.wm-rule { left: 40px; top: 186px; width: 130px; height: 3.5px; background: #FFB800; }
+.wm-name { left: 40px; top: 202px; font: 38px/40px var(--f-display); letter-spacing: 3px; }
+.wm-name .l { font-weight: 500; } .wm-name .b { font-weight: 800; }
+.field { left: 40px; right: 40px; height: 50px; border-radius: 99px; background: var(--soft); border: 1px solid var(--line); padding: 0 20px; display: flex; align-items: center; font: 500 15px/1 var(--f-body); color: #B4B0A8; }
+.btn { left: 40px; right: 40px; height: 52px; border-radius: 99px; display: grid; place-items: center; font: 700 15px/1 var(--f-body); background: var(--ink); color: #fff; }
+.link { left: 40px; font: 700 13px/1 var(--f-body); text-decoration: underline #FFB800 2px; text-underline-offset: 4px; }
+.allies { left: 0; right: 0; top: 760px; text-align: center; font: 800 10px/1 var(--f-body); letter-spacing: 2px; text-transform: uppercase; color: var(--grey); }
+.q { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); }
+.opt { left: 24px; right: 24px; height: 58px; border-radius: 14px; border: 1px solid var(--line); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font: 700 15px/1 var(--f-body); }
+.opt small { display: block; font: 500 12px/1.2 var(--f-body); color: var(--grey); margin-top: 3px; }
+.opt.on { border: 2px solid var(--ink); }
+.opt .tk { width: 22px; height: 22px; border-radius: 99px; background: var(--ink); color: #fff; display: grid; place-items: center; font: 800 12px/1 var(--f-body); }
+
+.measure { background: var(--paper); border-radius: 16px; padding: 6px 20px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 820px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 12px 12px 12px 0; border-top: 1px solid var(--line); vertical-align: middle; font-size: 14px; }
+tr:first-child th { border-top: 0; }
+th { font: 800 11px/1.3 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+.sw { display: inline-flex; align-items: center; justify-content: center; min-width: 74px; height: 28px; padding: 0 10px; border-radius: 6px; font: 700 13px/1 var(--f-body); border: 1px solid var(--line); margin-right: 8px; vertical-align: middle; }
+.r { font: 700 18px/1 var(--f-display); vertical-align: middle; }
+.ok { color: var(--ok); }
+td small { display: block; color: var(--grey); font-size: 12px; margin-top: 4px; }
+
+.list { display: grid; gap: 12px; max-width: 80ch; padding: 0; margin: 0; list-style: none; }
+.list li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.list b { display: block; margin-bottom: 4px; }
+.list span { color: var(--ink-soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · estudo de cor · 2 de novembro de 2026 · ficheiro local</p>
+    <h1>Edições SNPVAC e SPAC</h1>
+    <p class="lede">A app sabe de que sindicato és só depois do login. Por isso o login fica neutro e a cor do sindicato entra a seguir, como fazem as apps com marca de organização. As cores foram lidas dos sites e logótipos oficiais.</p>
+    <div class="facts">
+      <div class="fact"><i style="background:#005EB8"></i><div><b>SNPVAC · #005EB8</b><span>azul-cobalto · cabine</span></div></div>
+      <div class="fact"><i style="background:#0097D4"></i><div><b>SPAC · #0097D4</b><span>azul-celeste · pilotos</span></div></div>
+      <div class="fact"><i style="background:#FFB800"></i><div><b>CrewPact · #FFB800</b><span>amarelo · sem sindicato</span></div></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Antes de saber quem és</h2>
+    <p class="why">Slack, Navan, Granola e Instacart Business mostram só a marca do produto no login: ainda não sabem a que organização pertences. A Air New Zealand mostra a aliança numa linha pequena no fundo. As duas cores lado a lado teriam 1,94 de contraste entre si: pareceriam o mesmo azul em dois tons.</p>
+    <div class="row two" id="antes"></div>
+  </section>
+
+  <section>
+    <h2>Depois: o Início em três edições</h2>
+    <p class="why">A pele da CrewPact fica igual. Muda só a cor de marca: o marcador do bilhete, o que se toca, os pontos e as barras. A palavra "Edição" no topo é só para este quadro; na app, a edição vê-se no Perfil.</p>
+    <div class="row" id="depois"></div>
+  </section>
+
+  <section>
+    <h2>Cada papel da cor, medido</h2>
+    <div class="measure">
+      <table>
+        <tr><th>Papel na app</th><th>CrewPact</th><th>Edição SNPVAC</th><th>Edição SPAC</th></tr>
+        <tr><td><b>Marcador do bilhete</b><small>tinta sobre a cor</small></td>
+          <td><span class="sw" style="background:#FFB800;color:#141414">Folga</span><span class="r ok">10,62</span></td>
+          <td><span class="sw" style="background:#C7DCEF;color:#141414">Folga</span><span class="r ok">13,08</span><small>tinta clara do cobalto</small></td>
+          <td><span class="sw" style="background:#C7E8F6;color:#141414">Folga</span><span class="r ok">14,30</span><small>tinta clara do celeste</small></td></tr>
+        <tr><td><b>Botão principal</b><small>texto branco</small></td>
+          <td><span class="sw" style="background:#141414;color:#fff">Entrar</span><span class="r ok">18,42</span></td>
+          <td><span class="sw" style="background:#005EB8;color:#fff">Guardar</span><span class="r ok">6,38</span></td>
+          <td><span class="sw" style="background:#0077A8;color:#fff">Guardar</span><span class="r ok">5,00</span><small>o celeste original dava 3,29</small></td></tr>
+        <tr><td><b>Links e ações de texto</b></td>
+          <td><span class="sw" style="color:#141414;text-decoration:underline #FFB800 2px">Abrir a Escala</span><span class="r ok">18,42</span></td>
+          <td><span class="sw" style="color:#005EB8">Abrir a Escala</span><span class="r ok">6,38</span></td>
+          <td><span class="sw" style="color:#0077A8">Abrir a Escala</span><span class="r ok">5,00</span></td></tr>
+        <tr><td><b>Pontos, barras, ＋</b><small>sinais e ícones pedem 3</small></td>
+          <td><span class="sw"><span style="width:28px;height:4px;background:#FFB800;display:inline-block;border-radius:2px"></span></span><span class="r">1,73</span><small>passa só porque acompanha texto a tinta</small></td>
+          <td><span class="sw"><span style="width:28px;height:4px;background:#005EB8;display:inline-block;border-radius:2px"></span></span><span class="r ok">6,38</span></td>
+          <td><span class="sw"><span style="width:28px;height:4px;background:#0097D4;display:inline-block;border-radius:2px"></span></span><span class="r ok">3,29</span></td></tr>
+        <tr><td><b>Placas pretas</b><small>countdown, chip do polegar</small></td>
+          <td><span class="sw" style="background:#141414;color:#FFB800">16 H</span><span class="r ok">10,62</span></td>
+          <td><span class="sw" style="background:#141414;color:#6FAAE3">16 H</span><span class="r ok">7,49</span></td>
+          <td><span class="sw" style="background:#141414;color:#0097D4">16 H</span><span class="r ok">5,59</span></td></tr>
+        <tr><td><b>Tema noturno</b><small>véspera, pernoita</small></td>
+          <td><span class="sw" style="background:#0D131C;color:#FFB800;border-color:#0D131C">Amanhã</span><span class="r ok">10,74</span></td>
+          <td><span class="sw" style="background:#0D131C;color:#6FAAE3;border-color:#0D131C">Amanhã</span><span class="r ok">7,57</span></td>
+          <td><span class="sw" style="background:#0D131C;color:#0097D4;border-color:#0D131C">Amanhã</span><span class="r ok">5,66</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Antes de avançar</h2>
+    <ul class="list">
+      <li><b>A edição vem do sindicato, não do tipo de tripulante.</b><span>Nem todo o tripulante de cabine é sócio do SNPVAC, nem todo o piloto é do SPAC. O tipo sugere a resposta, mas a pessoa confirma, e quem diz "nenhum" fica com a CrewPact.</span></li>
+      <li><b>Duas autorizações escritas.</b><span>Cada sindicato autoriza o uso da sua marca. Sem isso, nenhuma das duas edições sai deste PC, e a linha de parceria no login não existe.</span></li>
+      <li><b>Os números passam a ter dono.</b><span>Com a marca de um sindicato, o salário estimado e o "estou legal" leem-se como a palavra dele, sobre acordos que ele negociou. Vai ao pacote do advogado, e cada sindicato vai querer validar.</span></li>
+      <li><b>Confirmar a pertença.</b><span>Se a edição for um benefício pago pelo sindicato, é preciso provar que a pessoa é sócia: um código do sindicato, ou o número de sócio. É uma decisão de negócio, não de desenho.</span></li>
+    </ul>
+  </section>
+
+</main>
+<script>
+const E = {
+  crewpact: { nome: 'CrewPact', sub: 'Sem sindicato, ou antes de haver acordo', marker: '#FFB800', act: '#141414', dot: '#FFB800', plusBg: '#141414', plusFg: '#FFB800', bar: '#FFB800', ed: null },
+  snpvac:   { nome: 'Edição SNPVAC', sub: 'Cabine · azul-cobalto', marker: '#C7DCEF', act: '#005EB8', dot: '#005EB8', plusBg: '#005EB8', plusFg: '#FFFFFF', bar: '#005EB8', ed: '#005EB8' },
+  spac:     { nome: 'Edição SPAC', sub: 'Pilotos · azul-celeste, mais escuro no que se toca', marker: '#C7E8F6', act: '#0077A8', dot: '#0097D4', plusBg: '#0097D4', plusFg: '#FFFFFF', bar: '#0097D4', ed: '#0097D4' },
+};
+const fig = (inner, b, s) => `<figure><div class="pw">${inner}</div><figcaption><b>${b}</b><span>${s}</span></figcaption></figure>`;
+const login = `<div class="ph" role="img" aria-label="Login neutro com a linha de parceria">
+  <p class="wm-eye">FTL · AE · Crew</p><span class="wm-rule"></span>
+  <p class="wm-name"><span class="l">CREW</span><span class="b">PACT</span></p>
+  <p class="field" style="top:300px">e-mail</p><p class="field" style="top:364px">palavra-passe</p>
+  <p class="btn" style="top:444px">Entrar</p>
+  <p class="link" style="top:522px">Esqueci-me da palavra-passe</p><p class="link" style="top:556px">Criar conta</p>
+  <p class="allies">Em parceria com SNPVAC · SPAC</p></div>`;
+const pergunta = `<div class="ph" role="img" aria-label="Pergunta do sindicato no onboarding">
+  <p class="eye" style="left:24px;top:70px;color:#77776F">Passo 3 de 7</p>
+  <p class="q" style="top:96px">És sócio de um sindicato?</p>
+  <p class="foot" style="left:24px;right:24px;top:170px">Respondeste "cabine", por isso sugerimos o SNPVAC. A app toma a cor do teu sindicato; muda-se no Perfil.</p>
+  <div class="opt on" style="top:236px"><div>SNPVAC<small>Pessoal de voo · cabine</small></div><span class="tk">✓</span></div>
+  <div class="opt" style="top:304px"><div>SPAC<small>Pilotos</small></div></div>
+  <div class="opt" style="top:372px"><div>Nenhum ou outro<small>Fica a CrewPact</small></div></div>
+  <p class="btn" style="top:470px;left:24px;right:24px">Continuar</p></div>`;
+const inicio = (e) => `<div class="ph" role="img" aria-label="Início em folga · ${e.nome}">
+  ${e.ed ? `<p class="ed"><i style="background:${e.ed}"></i>${e.nome}</p>` : `<p class="ed"><i style="background:#FFB800"></i>CrewPact</p>`}
+  <p class="eye" style="left:22px;top:64px">Segunda · 2 novembro</p>
+  <p class="lab" style="right:22px;top:64px">☾ 16°–17°</p>
+  <p class="foot" style="left:22px;top:80px">Boa noite</p>
+  <p class="word" style="top:176px">Folga</p>
+  <p class="lab" style="left:22px;top:240px;font-size:15px;line-height:20px">Sem serviços marcados</p>
+  <span class="rule" style="top:300px"></span>
+  <p class="note" style="top:320px"><mark style="background:${e.marker}">Folga a sério.</mark> Nada pendente, nada a vigiar.</p>
+  <span class="hair" style="top:394px"></span>
+  <div class="grid3"><div><span class="t">Legal</span><span class="v"><i></i>Sim</span></div><div><span class="t">Escala</span><span class="v"><i></i>Em dia</span></div><div><span class="t">Férias</span><span class="v">22 de 22</span></div></div>
+  <span class="hair" style="top:452px"></span>
+  <p class="money">1 753,66<small>€</small></p>
+  <p class="eye" style="left:22px;top:518px;color:#77776F">Novembro · estimado</p>
+  <div class="meter"><span class="lab">Dia 2 de 30</span><span class="bar"><b style="background:${e.bar}"></b></span></div>
+  <p class="eye" style="right:22px;top:518px;color:#77776F">Mês</p>
+  <p class="eye" style="left:22px;top:548px;color:#77776F">A seguir</p>
+  <div class="go"><div><b style="color:${e.act}">Abrir a Escala</b><span class="foot">Sincronizar ou importar a escala</span></div><span style="color:#77776F">›</span></div>
+  <nav class="tabs" aria-hidden="true">
+    <div class="tab on" style="left:0">Início<span class="d" style="background:${e.dot}"></span></div>
+    <div class="tab" style="left:78px">Escala</div>
+    <div class="plus" style="background:${e.plusBg};color:${e.plusFg}">+</div>
+    <div class="tab" style="left:234px">Números</div>
+    <div class="tab" style="left:312px">Perfil</div></nav></div>`;
+document.getElementById('antes').innerHTML = fig(login, 'Login', 'Neutro: só a CrewPact, e a parceria numa linha no fundo') + fig(pergunta, 'Onboarding', 'Uma pergunta, com a sugestão vinda do tipo');
+document.getElementById('depois').innerHTML = Object.values(E).map((e) => fig(inicio(e), e.nome, e.sub)).join('');
+const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+fit();
+if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>
+</body>
+</html>

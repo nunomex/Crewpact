@@ -177,9 +177,9 @@ export function buildTodayItems(ctx, lang) {
       case 'headroom':  return { topic: l('Limite', 'Limit'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
-      case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('OK', 'OK') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };
+      case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('Em dia', 'Up to date') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };
       case 'pay':       return { topic: l('Salário', 'Pay'), short: fmtEur0(r.total, lang) };
-      case 'validades': return { topic: l('Validades', 'Docs'), short: it.status === 'bad' ? l('Expirado', 'Expired') : it.status === 'warn' ? `${r.worst ? r.worst.days : ''} d` : l('OK', 'OK') };
+      case 'validades': return { topic: l('Validades', 'Docs'), short: it.status === 'bad' ? l('Expirado', 'Expired') : it.status === 'warn' ? `${r.worst ? r.worst.days : ''} d` : l('Em dia', 'Up to date') };   // palavra de estado concreta (à "On Time" do Flighty), não "OK"
       default:          return { topic: it.q, short: '' };
     }
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PELE, PELE_FONT } from '../data/constants';
+import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { listCalendars } from '../data/calendar';
 import { AppContext } from '../data/appContext';
 import { select, success } from '../data/haptics';
@@ -91,7 +91,7 @@ const s = StyleSheet.create({
   cName: { fontSize: 14.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
   cSrc: { fontSize: 11, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
   // Visto amarelo = a marca de escolha da pele (onboarding/férias/declarações).
-  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: PELE.yellow, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   tickOff: { backgroundColor: PELE.paper, borderWidth: 1.5, borderColor: PELE.line },
   foot: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1, borderTopColor: PELE.line, backgroundColor: PELE.paper },
 });

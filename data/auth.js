@@ -55,6 +55,7 @@ const M = {
     pwLower: 'Necessita de pelo menos uma minúscula.', pwSpecial: 'Necessita de um carácter especial (!@#…).',
     pwWeak: 'A palavra-passe não cumpre os requisitos.',
     nameMin: 'Nome deve ter pelo menos 2 caracteres.',
+    wait: 'Aguarda um minuto antes de pedir outro código.',
   },
   en: {
     invalidCreds: 'Incorrect email or password.', notConfirmed: 'Confirm your email before signing in.',
@@ -69,6 +70,7 @@ const M = {
     pwLower: 'Needs at least one lowercase letter.', pwSpecial: 'Needs a special character (!@#…).',
     pwWeak: 'The password does not meet the requirements.',
     nameMin: 'Name must have at least 2 characters.',
+    wait: 'Wait a minute before requesting another code.',
   },
 };
 const m = (key, lang) => (M[lang] || M.pt)[key];
@@ -107,6 +109,8 @@ const mapError = (error, lang = 'pt') => {
   if (msg.includes('token has expired') || msg.includes('expired')) return m('expired', lang);
   if (msg.includes('otp') || msg.includes('token')) return m('otp', lang);
   if (msg.includes('rate limit'))                  return m('rate', lang);
+  // "For security purposes, you can only request this after N seconds" (1 código / 60 s por e-mail)
+  if (msg.includes('security purposes') || msg.includes('only request this after')) return m('wait', lang);
   if (msg.includes('network'))                     return m('network', lang);
   return m('generic', lang);
 };
@@ -217,46 +221,51 @@ export const loginWithGoogle = async (lang = 'pt') => {
   }
 };
 
-export const register = async (name, email, password, lang = 'pt', extra = {}) => {
-  // `extra` = config completa (company, crewType, categoria, contrato, base,
-  // serviceStart). Vai TODA nos metadados do signUp → a conta nasce completa ou
-  // não nasce. Nunca fica meio-configurada.
-  const { data, error } = await supabase.auth.signUp({
-    email: email.trim().toLowerCase(),
-    password,
-    options: { data: { name: name.trim(), ...extra } },
-  });
-  if (error) return { ok: false, error: mapError(error, lang) };
-  // Anti-enumeração do Supabase: signUp com um email JÁ REGISTADO (e confirmado) NÃO dá
-  // erro — devolve um user "fantasma" com identities:[] e não envia email nenhum. Sem este
-  // check, a UI ficava no ecrã do código à espera de um email que nunca chega.
-  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-    return { ok: false, error: m('registered', lang) };
+// ─── Entrar OU criar conta com CÓDIGO, sem palavra-passe (2026-11-02, esboço design/login-v3.html) ──
+// Um só caminho: e-mail → código de 6 dígitos. `signInWithOtp` envia SEMPRE o código (e cria a conta
+// se o e-mail for novo) → a UI nunca diz se o e-mail tem conta (sem enumeração: ninguém testa os
+// e-mails dos colegas). O Supabase só aceita 1 pedido / 60 s por e-mail ("wait").
+// Dashboard: modelos "Magic Link" E "Confirm signup" com {{ .Token }} (supabase/email-magic-link.html).
+export const requestEmailCode = async (email, lang = 'pt') => {
+  const em = email.trim().toLowerCase();
+  const { error } = await supabase.auth.signInWithOtp({ email: em, options: { shouldCreateUser: true } });
+  if (error) return { ok: false, error: isNetworkError(error) ? m('loginOffline', lang) : mapError(error, lang) };
+  return { ok: true, email: em };
+};
+
+// Confirma o código e cria a sessão. Conta NOVA (sem nome nos metadados) → `needsName` → a UI pede
+// nome e apelido ANTES de entrar (o "Conta criada" cumprimenta pelo nome; depois o onboarding).
+// Tipo 'email' = o OTP unificado do Supabase; se o e-mail novo recebeu o modelo de confirmação
+// (confirmações ligadas), o mesmo código valida como 'signup' — tenta esse a seguir.
+export const verifyEmailCode = async (email, token, lang = 'pt') => {
+  const em = email.trim().toLowerCase();
+  let { data, error } = await supabase.auth.verifyOtp({ email: em, token, type: 'email' });
+  if (error && !isNetworkError(error)) {
+    const again = await supabase.auth.verifyOtp({ email: em, token, type: 'signup' });
+    if (!again.error) { data = again.data; error = null; }
   }
-  if (!data.session) {
-    // Confirmação de email LIGADA (autoconfirm OFF) → conta criada mas SEM sessão até
-    // confirmar a posse do email. Sinaliza needsConfirm → a UI pede o código (verifySignupCode).
-    return { ok: true, needsConfirm: true, email: email.trim().toLowerCase() };
+  if (error) return { ok: false, error: isNetworkError(error) ? m('network', lang) : mapError(error, lang) };
+  const meta = (data && data.user && data.user.user_metadata) || {};
+  return { ok: true, user: data.user ? mapUser(data.user) : null, needsName: !(meta.name || meta.full_name) };
+};
+
+// Prova de posse para ações sensíveis (apagar conta · mudar e-mail · mudar palavra-passe): a
+// palavra-passe atual OU um código enviado ao e-mail da conta (contas criadas por código não têm
+// palavra-passe). `proof` = { mode:'pw'|'code', pw, code } — ver components/ProofField.js.
+export const proveOwnership = async (email, proof, lang = 'pt') => {
+  if (proof && proof.mode === 'code') {
+    const r = await verifyEmailCode(email || '', String(proof.code || ''), lang);
+    return r.ok ? { ok: true } : { ok: false, error: r.error };
   }
-  // autoconfirm ON → sessão já criada. NÃO fazer signOut: o registo entra DIRETO
-  // no onboarding (fluxo contínuo registo → configuração), sem relogin.
+  return reauthenticate(email, proof ? proof.pw : '', lang);
+};
+
+// Guarda o nome de uma conta acabada de criar por código (mesma chave `name` do registo antigo).
+export const saveName = async (first, last, lang = 'pt') => {
+  const name = `${String(first || '').trim()} ${String(last || '').trim()}`.trim();
+  const { data, error } = await supabase.auth.updateUser({ data: { name } });
+  if (error) return { ok: false, error: isNetworkError(error) ? m('network', lang) : mapError(error, lang) };
   return { ok: true, user: mapUser(data.user) };
-};
-
-// Confirma o registo com o código OTP enviado por email (type:'signup'). Cria a sessão.
-export const verifySignupCode = async (email, token, lang = 'pt') => {
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: email.trim().toLowerCase(), token, type: 'signup',
-  });
-  if (error) return { ok: false, error: mapError(error, lang) };
-  return { ok: true, user: data.user ? mapUser(data.user) : null };
-};
-
-// Reenvia o email de confirmação de registo.
-export const resendSignup = async (email, lang = 'pt') => {
-  const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
-  if (error) return { ok: false, error: mapError(error, lang) };
-  return { ok: true };
 };
 
 // ─── Password reset (OTP via e-mail) ─────────────────────────────────────────

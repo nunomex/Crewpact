@@ -4,6 +4,7 @@
 // seus próprios registos: este documento é um apoio individual ao tripulante.
 import { computeDuty, computeDutyTime, computeFlightTime, minToHhmm } from '../ftl';
 
+import { BRAND } from './constants';
 // Escape de HTML — toda a entrada dinâmica passa por aqui (nome, ID, operador…).
 export const esc = (v) => String(v == null ? '' : v)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -154,7 +155,7 @@ export const recordHtml = (model, lang = 'pt', fontsCss = '') => {
 <style>
   ${fontsCss}
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:#FFB800; --red:#C6362B; }
+  :root { --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --yellow:${BRAND.signal}; --red:#C6362B; }
   @page { margin: 34px 36px; }
   body { font-family: 'Hanken Grotesk', -apple-system, Helvetica, sans-serif; color: var(--ink); margin: 34px 36px; font-size: 11px; }
   .brand { display: flex; justify-content: space-between; align-items: baseline; }
