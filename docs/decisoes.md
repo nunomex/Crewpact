@@ -20,6 +20,17 @@ React 19.3 · reanimated 4.7.1 · worklets 0.13.0 · gesture-handler 2→3.3 · 
   em pontos no iOS → a correção dos 1080 px de setembro mantém-se.
 - Os 22 pacotes atrasados do bloco A ficaram resolvidos com a atualização.
 
+**1.º arranque no iPhone → ecrã vermelho:** "InteractionManager has been removed" no `@react-navigation/stack`
+v6 (Card, em cada transição). A revisão tinha procurado só no código da app, não nas bibliotecas.
+- **Correção (sem tocar em `node_modules`):** `metro.config.js` faz o `react-native` resolver para
+  `shims/react-native-sem-interaction-manager.js` **só** dentro do `@react-navigation/stack`; a camada devolve
+  um InteractionManager vazio, igual ao que a v7 faz (`InteractionManager?.`). Provado no pacote dev: o Card
+  usa a camada, nenhum outro módulo a usa. `expo-doctor` 20/20.
+- **Pendência nova:** migrar para @react-navigation v7 (stack 7.12 já protege isto) e apagar a camada.
+  Não agora: a v7 muda o `navigate` entre abas e ecrãs empilhados (42 chamadas a rever) — fazer depois da
+  verificação, numa sessão própria.
+- Lição: numa subida de RN, procurar as APIs removidas também em `node_modules` (`grep -rl` sem o próprio RN).
+
 **Falta:** smoke no iPhone com a Expo Go 58 (arranque, navegar todas as abas, voltar atrás com o gesto,
 partilhar o "Ano de voo" e conferir 1080 px, Simulação, Relatórios PDF). Se passar, juntar ao `main`.
 A pasta `android/` gerada está desatualizada; regenera-se com `npx expo prebuild --clean` quando o
