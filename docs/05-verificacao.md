@@ -28,12 +28,12 @@ Guiões detalhados (passo a passo) que este plano aponta:
 
 ---
 
-## B0 · Smoke do SDK 58 no iPhone  ← **primeiro**
-- [ ] Arranca sem ecrã vermelho · as 5 abas abrem · gesto de voltar atrás nos ecrãs empilhados.
-- [ ] Animações (pílula da Escala, toast Desfazer, ＋ central) · partilhar "Ano de voo" sai a 1080 px.
-- [ ] Simulação · Relatórios PDF · login e sessão guardada depois de fechar a app.
+## B0 · Smoke do SDK 58 no iPhone  ✅ (Nuno, 2026-11-02)
+- [x] Arranca sem ecrã vermelho · as 5 abas abrem · gesto de voltar atrás nos ecrãs empilhados.
+- [x] Animações (pílula da Escala, toast Desfazer, ＋ central) · partilhar "Ano de voo" sai a 1080 px.
+- [x] Simulação · Relatórios PDF · login e sessão guardada depois de fechar a app.
 
-## B · Device · contas e segurança
+## B · Device · contas e segurança  ← **próximo**
 Guião: `docs/verificacao-device.md` §1–§3. Antes de começar, no dashboard Supabase: Auth → Email →
 desligar "Secure email change" + colar `supabase/email-change-address.html`.
 - [ ] §1 Reset de palavra-passe: OTP, cooldown 30 s, reenviar, código errado, mudar e-mail, entrar.
