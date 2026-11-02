@@ -31,6 +31,10 @@ v6 (Card, em cada transição). A revisão tinha procurado só no código da app
   verificação, numa sessão própria.
 - Lição: numa subida de RN, procurar as APIs removidas também em `node_modules` (`grep -rl` sem o próprio RN).
 
+**2.º arranque:** compila e carrega. Aviso do Metro: `data/auth.js` importava `expo-auth-session/build/QueryParams`,
+caminho interno que o SDK 58 fechou. A função (15 linhas) passou para dentro do `auth.js`; provada igual à
+original em 5 URLs de retorno OAuth. Sem outros imports internos na app.
+
 **Falta:** smoke no iPhone com a Expo Go 58 (arranque, navegar todas as abas, voltar atrás com o gesto,
 partilhar o "Ano de voo" e conferir 1080 px, Simulação, Relatórios PDF). Se passar, juntar ao `main`.
 A pasta `android/` gerada está desatualizada; regenera-se com `npx expo prebuild --clean` quando o

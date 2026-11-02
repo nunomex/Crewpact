@@ -4,7 +4,19 @@ import { setPendingReset, clearPendingReset } from './pendingReset';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
-import * as QueryParams from 'expo-auth-session/build/QueryParams';
+
+// Lê os parâmetros do URL de retorno do OAuth (query + #hash). Cópia local do `getQueryParams` do
+// expo-auth-session: o SDK 58 deixou de expor `expo-auth-session/build/QueryParams` nos "exports".
+export const getQueryParams = (input) => {
+  const url = new URL(input, 'https://phony.example');
+  const errorCode = url.searchParams.get('errorCode');
+  url.searchParams.delete('errorCode');
+  const params = Object.fromEntries(url.searchParams);
+  if (url.hash) {
+    new URLSearchParams(url.hash.replace(/^#/, '')).forEach((value, key) => { params[key] = value; });
+  }
+  return { errorCode, params };
+};
 
 // ─── Map Supabase user to app user shape ──────────────────────────────────────
 export const mapUser = (u) => ({
@@ -195,7 +207,7 @@ export const loginWithGoogle = async (lang = 'pt') => {
     if (error || !data?.url) return { ok: false, error: error ? mapError(error, lang) : m('generic', lang) };
     const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (res.type !== 'success' || !res.url) return { ok: false, canceled: true };
-    const { params, errorCode } = QueryParams.getQueryParams(res.url);
+    const { params, errorCode } = getQueryParams(res.url);
     if (errorCode || !params.code) return { ok: false, error: m('generic', lang) };
     const { data: sess, error: sErr } = await supabase.auth.exchangeCodeForSession(params.code);
     if (sErr || !sess?.user) return { ok: false, error: sErr ? mapError(sErr, lang) : m('generic', lang) };
