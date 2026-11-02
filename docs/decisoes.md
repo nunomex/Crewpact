@@ -6,6 +6,27 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## 2026-11-02 (tarde) — Atualização para o SDK 58
+
+**Porquê:** a Expo Go do iPhone atualizou para o SDK 58 e recusa projetos no 57 ("Project is incompatible").
+Sem isto, nenhuma verificação no device era possível.
+
+**Feito no ramo `sdk-58` (por guardar no git):** `npx expo install expo@^58.0.0 --fix`. RN 0.86→0.88.1 ·
+React 19.3 · reanimated 4.7.1 · worklets 0.13.0 · gesture-handler 2→3.3 · view-shot 5→6.1.1 · screens 4.30.
+- `expo-doctor` 20/20 ✅ · `npm test` verde (exit 0) ✅ · pacote iOS gera sem erros (`expo export`) ✅.
+- Revisto contra as mudanças do SDK 58: nenhuma API removida está em uso (InteractionManager, Modal
+  `animated`, deep imports); file-system já usa `/legacy` (continua exportado); notificações têm handler
+  explícito; o stack v6 ainda encontra o `PanGestureHandler` no gesture-handler 3; o view-shot 6 continua
+  em pontos no iOS → a correção dos 1080 px de setembro mantém-se.
+- Os 22 pacotes atrasados do bloco A ficaram resolvidos com a atualização.
+
+**Falta:** smoke no iPhone com a Expo Go 58 (arranque, navegar todas as abas, voltar atrás com o gesto,
+partilhar o "Ano de voo" e conferir 1080 px, Simulação, Relatórios PDF). Se passar, juntar ao `main`.
+A pasta `android/` gerada está desatualizada; regenera-se com `npx expo prebuild --clean` quando o
+Android entrar.
+
+---
+
 ## 2026-11-02 — Ponto de situação e plano de verificação
 
 **Estado do código:** `main` limpo, último commit 2026-09-03 (SDK 57 oficial + auditoria de segurança

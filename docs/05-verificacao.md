@@ -22,13 +22,18 @@ Guiões detalhados (passo a passo) que este plano aponta:
 | Leitura sem sessão (chave pública) em todas as tabelas | ✅ dados pessoais fechados: `profiles`, `duties`, `family_links`, `shared_days`, `flight_live`, `airport_stats`, `wx_cache`, `rest_periods`, `user_additional_roles` devolvem vazio. Catálogos `airlines`, `bases`, `countries` abertos de propósito |
 | Tabelas órfãs na BD | ⚠️ `rest_periods` e `user_additional_roles` existem na Supabase mas não aparecem no código nem no `supabase/*.sql`. Decisão do Nuno: apagar ou documentar |
 | Marcas TODO/FIXME no código | ✅ 1 real (comentário em `YearShareCard.js`), sem dívida escondida |
-| `npx expo-doctor` | ⚠️ 22 pacotes com versão atrás dentro do SDK 57 (`npx expo install --check`). **Não atualizar antes de fechar o bloco B** — o smoke do SDK 57 foi feito com estas versões |
+| `npx expo-doctor` | ✅ 20/20 depois da atualização para o SDK 58 (2026-11-02, a Expo Go do iPhone já só abre o 58) |
 
 **Não verificado do PC (precisa do telemóvel):** tudo o que está abaixo.
 
 ---
 
-## B · Device · contas e segurança  ← **próxima sessão**
+## B0 · Smoke do SDK 58 no iPhone  ← **primeiro**
+- [ ] Arranca sem ecrã vermelho · as 5 abas abrem · gesto de voltar atrás nos ecrãs empilhados.
+- [ ] Animações (pílula da Escala, toast Desfazer, ＋ central) · partilhar "Ano de voo" sai a 1080 px.
+- [ ] Simulação · Relatórios PDF · login e sessão guardada depois de fechar a app.
+
+## B · Device · contas e segurança
 Guião: `docs/verificacao-device.md` §1–§3. Antes de começar, no dashboard Supabase: Auth → Email →
 desligar "Secure email change" + colar `supabase/email-change-address.html`.
 - [ ] §1 Reset de palavra-passe: OTP, cooldown 30 s, reenviar, código errado, mudar e-mail, entrar.
@@ -82,7 +87,6 @@ Guião: `docs/verificacao-calendario.md`. Só eventos SINTÉTICOS.
 - [ ] **Cópias de segurança:** a Supabase grátis não faz backups. Decidir plano pago ou cópia própria
       agendada; testar uma reposição numa base de teste.
 - [ ] Decidir as duas tabelas órfãs (`rest_periods`, `user_additional_roles`).
-- [ ] `npx expo install --check` e novo smoke rápido no Expo Go.
 - [ ] Nome novo da app decidido → ícone PNG final → textos da loja (fica para a fase de lojas).
 - [ ] Decidir CI para o `npm test` (Constituição §9) — o `pre-push` local é contornável.
 - [ ] `docs/06-manual-cliente.md` não se aplica (produto próprio); em vez disso, `docs/dev-build.md` passa a ser a fase seguinte.

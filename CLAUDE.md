@@ -8,7 +8,7 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 
 - **Cliente:** o próprio Nuno (produto próprio, sem cliente externo). Decide tudo.
 - **Ramo:** aplicação de **telemóvel** (iOS primeiro; Android não montado neste PC).
-- **Caminho:** Expo (React Native) SDK 57 · Supabase (contas, sync, Edge Functions) · GitHub.
+- **Caminho:** Expo (React Native) SDK 58 (RN 0.88) · Supabase (contas, sync, Edge Functions) · GitHub.
 - **Teste:** Expo Go no iPhone do Nuno. Dev build (EAS) **adiado para o fim** — lista em `docs/dev-build.md`.
 - **Idioma:** português de Portugal, na app e nas respostas.
 
@@ -31,7 +31,8 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
    da Apple — "a Apple lançava isto?".
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.
-7. **Worklets fica em 0.10** (SDK 57); Expo Go não suporta Face ID (cai no código do telemóvel).
+7. **Versões nativas = as que o `npx expo install` escolhe** (SDK 58: worklets 0.13.0, reanimated 4.7.1); nunca
+   subir à mão, senão a Expo Go crasha no arranque. Expo Go não suporta Face ID (cai no código do telemóvel).
 8. **Deploy de Edge Functions só por CLI.**
 
 ## Frases-gatilho do Nuno
