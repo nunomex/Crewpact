@@ -12,3 +12,9 @@ dist
 # São específicas do utilizador/máquina, não config partilhada → não versionar.
 .claude/settings.json
 .claude/settings.local.json
+
+# Referências de design (capturas de outras apps, do Mobbin) — só neste PC, não vão para o GitHub.
+# O índice com os links (referencias/**/README.md) é versionado.
+referencias/**/*.webp
+referencias/**/*.png
+referencias/**/*.jpg

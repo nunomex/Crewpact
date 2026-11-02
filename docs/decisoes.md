@@ -38,7 +38,11 @@ mockup portado "à letra" com os seus números.
 partilha de voo, partilha do ano, Simulação e o Avançado), o ✕/‹ novos (36 redondo) em todos os ecrãs, o
 formulário de serviço (passo 1 com ✕ à direita; passos sem ‹ quando não há para onde voltar).
 
-**Decisões pendentes do Nuno (Mobbin, 2026-11-02):**
+**Decididas pelo Nuno ("está bem", 2026-11-02):** 1 → **A** (✕ à direita) · 2 → **opção 2** (Guardar largo no
+fundo; já é o padrão da app, exceto Validades e formulário de evento, que migram no bloco C). Referências em
+`referencias/README.md` e na coleção do Mobbin. Fica pendente só o ponto 3.
+
+**Opções que foram apresentadas (Mobbin, 2026-11-02):**
 1. **✕ das janelas:** A) título à esquerda, ✕ à direita — Alan, Polarsteps, Beside, pliability
    (**recomendado**, é o que a app já faz) · B) ✕ à esquerda — Tinder, ElevenLabs, Insight Timer.
 2. **Guardar nos formulários:** 1) Cancelar à esquerda e Guardar à direita no topo — Fi (iOS clássico) ·

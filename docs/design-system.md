@@ -183,7 +183,11 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
 - **Um só botão de ícone:** `IconButton` (36 redondo, toque 44, rótulo obrigatório). Remover um item
   dentro de um chip (✕ pequeno inline) não é navegação e fica fora desta regra.
 - **Abrir/expandir uma secção:** a linha inteira é tocável, com um chevron à direita que roda.
-- **Guardar num formulário:** *por decidir com o Nuno, a partir das referências do Mobbin (§13).*
+- **Guardar num formulário** (decidido 2026-11-02, opção 2 do Mobbin): **uma só ação principal, larga, no
+  fundo** (`PrimaryButton`), que sobe com o teclado; **sair é o ✕ do cabeçalho** — sem "Cancelar" a competir
+  com o Guardar. (Os "Cancelar" dos alertas nativos do iOS ficam: são do sistema.) Por migrar no bloco C:
+  Validades e formulário de evento usam um botão de Guardar feito à mão em vez do `PrimaryButton`.
+- **✕ à direita confirmado** (2026-11-02, opção A do Mobbin).
 - **Exceção registada:** o resultado da Simulação tem ✕ e um botão "Fechar" no fundo (gramática de poster,
   2026-07-15). Fica até a revisão do ecrã decidir se o botão do fundo passa a outra ação.
 
@@ -211,5 +215,6 @@ Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 m
 ## §13 · Referências (Mobbin)
 
 O Mobbin serve para ver como as melhores apps resolvem o mesmo problema; a escolha é do Nuno e a escolhida
-guarda-se em `referencias/`. Primeira pesquisa (2026-11-02): cabeçalhos de folha e formulários de edição —
-ver `docs/decisoes.md` para as opções e a escolha.
+guarda-se em `referencias/` (imagens só no PC; índice com links em `referencias/README.md`) e na coleção
+privada "CrewPact — Design System" do Mobbin. Primeira escolha (2026-11-02): ✕ à direita (Alan,
+Polarsteps, Beside, pliability) e Guardar largo no fundo (AllTrails, Mindtrip, Hypelist).
