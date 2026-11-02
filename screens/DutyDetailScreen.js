@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import DutyFormSheet from '../components/DutyFormSheet';
@@ -63,9 +64,7 @@ export default function DutyDetailScreen({ route, navigation }) {
 
   const BackBtn = () => (
     <View style={s.topbar}>
-      <TouchableOpacity style={s.bk} onPress={goBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={t('common.back', lang)}>
-        <Icon name="back" size={18} color={PELE.ink} />
-      </TouchableOpacity>
+      <IconButton icon="back" onPress={goBack} label={t('common.back', lang)} />
     </View>
   );
 
@@ -400,7 +399,6 @@ export default function DutyDetailScreen({ route, navigation }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: PELE.paper },
   topbar: { flexDirection: 'row', paddingHorizontal: GUTTER, paddingTop: 8 },
-  bk: { width: 36, height: 36, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: GUTTER, paddingTop: 2 },
 
   stbar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' },

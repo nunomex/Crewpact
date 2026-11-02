@@ -18,7 +18,10 @@ Cada animação tem de servir pelo menos um destes: **feedback · continuidade �
 ## §2 · Stack técnico (regra da casa)
 
 - **`Animated` core do React Native** com `useNativeDriver: true` sempre que a propriedade permita (transform/opacity). É o idioma de TODO o motion existente.
-- **Reanimated NÃO se usa.** Zero imports no código — o pacote existe só como dependência transitiva (e o pin `react-native-worklets` 0.5.1 no Expo Go SDK 54 é terreno sensível: mexer = crash no arranque). Introduzi-lo é **decisão estrutural** a discutir, nunca escolha de conveniência numa tarefa.
+- **Reanimated — alinhado com a skill `animacoes` do método (revisto 2026-11-02).** A proibição antiga tinha uma razão técnica (no SDK 54 mexer no `react-native-worklets` crashava a Expo Go) que **acabou no SDK 58**: o Reanimated 4.7 vem na Expo Go e as versões são as do `npx expo install`, nunca à mão. Regra nova:
+  - **O `Animated` core continua a base** — é o idioma de todo o motion existente, funciona e é disciplinado. Não se reescreve o que funciona.
+  - **O Reanimated entra só onde o `Animated` não chega**, e o motivo fica escrito: (1) animações de **layout** (entradas, saídas, mudanças de altura) — substitui a `LayoutAnimation`, que anima alturas no thread JS e não tem ramo de movimentos reduzidos próprio; (2) gestos que precisam do thread de UI. Usa sempre `ReduceMotion.System` / `useReducedMotion`.
+  - Peso: zero (já é dependência e já vem na Expo Go). A troca faz-se ecrã a ecrã, na revisão do bloco C, nunca de rajada.
 - Gestos: `PanResponder` (PeleSheet, carteira das Validades).
 - `useNativeDriver: false` aceita-se só quando a propriedade obriga (largura de barras, teclado) — transform/opacity primeiro.
 
@@ -54,6 +57,8 @@ Só para **chegada física** de superfícies (folha, toast): sem overshoot exage
 ## §5 · Reduce-motion = contrato
 
 `hooks/useReduceMotion.js` (lê `AccessibilityInfo`). **Toda** a animação de entrada, loop ou contagem salta para o valor final quando ativo; superfícies (folhas) degradam para **fade sem deslocação**. **Auditoria 2026-07-10: a app inteira cumpre** — useEnter · useCountUp · Toast · barras do Stats · TabBar · PeleSheet · Skeleton · DutyFormSheet · carteira das Validades · Login · Onboarding · AccountCreated · Lock. Exceção deliberada: **gesto direto persiste** (arrasto da folha/carteira, swipe-kick da Escala, shake de erro) — é manipulação/feedback, não animação decorativa. **Animação nova sem este ramo = bug**, não detalhe.
+- **`LayoutAnimation` também (2026-11-02):** cada `configureNext` vive atrás de `if (!reduce…)`. Estavam 6 fora: 5 no `DutyFormSheet` (agora `layoutAnim()`) e o atalho `anim()` do `FtlCalcs` (35 chamadas, agora lê `reduceMotionNow()`). Código fora de componentes usa `reduceMotionNow()` de `hooks/useReduceMotion.js` (um ouvinte para a app toda).
+- **Imposto por teste:** `npm run test:design` falha numa `LayoutAnimation` sem ramo de movimentos reduzidos ou num ficheiro que anima com `Animated` sem ler o reduce-motion (design-system §12).
 
 ---
 

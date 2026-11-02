@@ -9,6 +9,7 @@ import { eventCounts } from '../data/aeEvents';
 import { t } from '../data/i18n';
 import { AppContext } from '../data/appContext';
 import Icon from './Icon';
+import SheetHeader from './SheetHeader';
 
 // Sino do cabeçalho + central de notificações em PÁGINA INTEIRA (Modal slide-up, no
 // estilo das páginas de duty/import). Partilhado pelo cabeçalho da pele (PeleHeader).
@@ -101,15 +102,8 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
       {/* pageSheet no iOS (superfície LEVE, com gesto de arrasto do sistema); fullScreen só Android. */}
       <Modal visible={open} animationType="slide" onRequestClose={close} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
         <View style={[s.page, { paddingTop: Platform.OS === 'ios' ? 16 : Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-          <View style={s.head}>
-            <View style={{ flex: 1 }}>
-              <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Text style={s.eyebrow}>{t('home.notifsEyebrow', lang)}</Text></View>
-              <Text style={s.h1}>{t('home.notifsTitle', lang)}</Text>
-            </View>
-            <TouchableOpacity onPress={close} hitSlop={8} style={s.close} accessibilityLabel={t('common.close', lang)}>
-              <Icon name="close" size={18} color={PELE.ink} />
-            </TouchableOpacity>
-          </View>
+          <SheetHeader eyebrow={t('home.notifsEyebrow', lang)} title={t('home.notifsTitle', lang)}
+            onClose={close} closeLabel={t('common.close', lang)} />
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
             {notifs.map((n, i) => {
@@ -173,12 +167,6 @@ const s = StyleSheet.create({
 
   // Central de notificações — página inteira (igual às de duty/import)
   page: { flex: 1, backgroundColor: PELE.paper },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.red },
-  eyebrow: { fontSize: 11, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: PELE.grey },
-  h1: { fontSize: TYPE.hero, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, letterSpacing: -0.6 },
-  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   body: { paddingHorizontal: 24, paddingBottom: 24 },
 
   notifItem: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md + 5 },

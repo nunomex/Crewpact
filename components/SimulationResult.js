@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import Eyebrow from './Eyebrow';
+import SheetHeader from './SheetHeader';
 import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
@@ -126,10 +127,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
         {/* Selo anti-confusão nº1 (lição do modo Exemplo): o rótulo lateral diz SEMPRE o que isto é. */}
         <PeleSide label={l('SIMULAÇÃO', 'SIMULATION')} accent={l('E-SE', 'WHAT-IF')} />
-        <View style={s.head}>
-          <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Simulação · resultado', 'Simulation · result')}</Eyebrow></View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close} accessibilityRole="button" accessibilityLabel={l('Fechar', 'Close')}><Icon name="close" size={16} color={P.ink} /></TouchableOpacity>
-        </View>
+        <SheetHeader eyebrow={l('Simulação · resultado', 'Simulation · result')} onClose={onClose} closeLabel={l('Fechar', 'Close')} />
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
           {/* HERÓI de poster — a palavra É o veredicto; lê-se como UMA frase no VoiceOver. */}
@@ -190,13 +188,8 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
             com o serviço simulado. Sem onRegister → puro cálculo, nada é guardado. ── */}
         <Modal visible={advOpen} animationType="slide" onRequestClose={() => setAdvOpen(false)} transparent>
           <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-            <View style={s.head}>
-              <View style={{ flex: 1 }}>
-                <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Avançado · FTL', 'Advanced · FTL')}</Eyebrow></View>
-                <Text style={s.h1} allowFontScaling={false}>{l('Casos especiais', 'Special cases')}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setAdvOpen(false)} hitSlop={8} style={s.close}><Icon name="close" size={16} color={P.ink} /></TouchableOpacity>
-            </View>
+            <SheetHeader eyebrow={l('Avançado · FTL', 'Advanced · FTL')} title={l('Casos especiais', 'Special cases')}
+              onClose={() => setAdvOpen(false)} closeLabel={l('Fechar', 'Close')} />
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={s.advIntro}>{l('Calculadoras da lei que modificam o serviço básico. Arrancam pré-preenchidas com o serviço simulado. Iguais para piloto e cabine — nada é guardado.', 'Law calculators that modify the basic duty. They start pre-filled with the simulated duty. Same for pilot and cabin — nothing is saved.')}</Text>
               <DutyCalc lang={lang} dayLog={dayLog} refISO={duty.duty_date} isPilot={isPilot}
@@ -216,11 +209,6 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: P.paper },   // SEMPRE paper — a simulação é ferramenta, nunca herda o noturno
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 2 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.yellow },
-  close: { width: 36, height: 36, borderRadius: 99, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
-  h1: { fontSize: 32, fontFamily: F.display, color: P.ink, letterSpacing: -0.4, marginTop: 4 },   // só o modal Avançado (o herói tomou o lugar no principal)
   body: { paddingHorizontal: 24, paddingTop: 2, paddingBottom: 24 },
 
   // Herói de poster (a língua do Início): fantasma absoluto à direita + palavra-veredicto + kick.

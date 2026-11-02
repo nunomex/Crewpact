@@ -4,6 +4,7 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, Dimensions
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import Icon from './Icon';
+import SheetHeader from './SheetHeader';
 import PrimaryButton from './PrimaryButton';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { t } from '../data/i18n';
@@ -113,16 +114,8 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={s.page}>
         {/* topo = a anatomia de página modal da casa (eyebrow + ponto amarelo + título Barlow) */}
-        <View style={s.top}>
-          <View style={{ flex: 1 }}>
-            <View style={s.eyeRow}><View style={s.eyeDot} /><Text style={s.eye} allowFontScaling={false}>{l('PARTILHAR', 'SHARE')} · {String(year)}</Text></View>
-            <Text style={s.h1} allowFontScaling={false}>{l('O teu ano', 'Your year')}</Text>
-          </View>
-          <TouchableOpacity onPress={() => { select(); onClose && onClose(); }} style={s.close} hitSlop={8}
-            accessibilityRole="button" accessibilityLabel={t('common.close', lang)}>
-            <Icon name="close" size={16} color={P.ink} />
-          </TouchableOpacity>
-        </View>
+        <SheetHeader style={s.top} eyebrow={`${l('PARTILHAR', 'SHARE')} · ${String(year)}`} title={l('O teu ano', 'Your year')}
+          onClose={() => { select(); onClose && onClose(); }} closeLabel={t('common.close', lang)} />
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
           {/* Formato — a receita do segmento dos Números (calha soft + polegar ink) */}
           <View style={s.seg}>
@@ -224,12 +217,7 @@ export default function YearShareCard({ visible, onClose, st, year, companyName 
 const s = StyleSheet.create({
   // cromo (pele)
   page: { flex: 1, backgroundColor: P.paper },
-  top: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 58, paddingBottom: 8 },
-  eyeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyeDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: P.yellow },
-  eye: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 1.4, color: P.grey },
-  h1: { fontSize: 30, fontFamily: F.display, letterSpacing: -0.4, color: P.ink },
-  close: { width: 36, height: 36, borderRadius: 999, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  top: { paddingHorizontal: 20, paddingTop: 58, paddingBottom: 8 },   // margens alinhadas com o cartão (SheetHeader faz o resto)
   scroll: { padding: 20, paddingBottom: 40, alignItems: 'center' },
   seg: { flexDirection: 'row', alignSelf: 'stretch', backgroundColor: P.soft, borderRadius: 999, padding: 3, gap: 2, marginBottom: 8 },
   segB: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 999 },

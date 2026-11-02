@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getLocales } from 'expo-localization';
 import AsyncStorage from '../data/secureStorage';
 import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { countryName as countryNameOf, countryFlag } from '../data/countries';
 import { AppContext } from '../data/appContext';
@@ -193,10 +194,7 @@ export default function OnboardingScreen() {
       {/* Topo: ‹ voltar (passo > 0) · pontinhos (ativo alonga a amarelo) · Sair (logout) */}
       <View style={o.top}>
         {idx > 0 ? (
-          <TouchableOpacity style={o.back} onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} hitSlop={8}
-            accessibilityRole="button" accessibilityLabel={l('Voltar', 'Back')}>
-            <Icon name="back" size={16} color={PELE.ink} />
-          </TouchableOpacity>
+          <IconButton icon="back" onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} label={l('Voltar', 'Back')} />
         ) : <View style={o.back} />}
         <View style={o.dots}>
           {flow.map((_, i) => <View key={i} style={[o.dot, i === idx && o.dotOn]} />)}

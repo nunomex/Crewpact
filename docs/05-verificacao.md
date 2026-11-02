@@ -51,9 +51,17 @@ desligar "Secure email change" + colar `supabase/email-change-address.html`.
 - [ ] **Permissões do telemóvel:** calendário, notificações e localização — pedir na hora certa, com texto
       em português; recusar cada uma não parte a app e diz como ligar depois nas Definições.
 
-## C · Device · o que foi construído sem ser visto (julho–setembro)
-Uma secção por sessão; para cada uma, o teste "a Apple lançava isto?" e a régua: 390 px, sem cortes, sem
-texto truncado, noturno célula a célula, movimentos reduzidos ligados e desligados.
+## C · Device · verificação + revisão + migração para a escala (Design System 2.0)
+Uma secção por sessão (Opus 5.5 Alto), na ordem Início · Escala · ＋/Simulação · Números · Perfil. Para cada ecrã:
+1. **Verificar** no iPhone: funciona, 390 px, sem cortes nem texto truncado, noturno célula a célula,
+   movimentos reduzidos ligados e desligados.
+2. **Rever** com 3 a 5 referências do Mobbin das melhores apps para o mesmo problema; achados ordenados;
+   o Nuno escolhe o que entra. A escolhida vai para `referencias/`.
+3. **Migrar para a escala** (`docs/design-system.md` §9 e §10): texto em `TXT`, espaço em `SPACE`,
+   botões `IconButton`, cabeçalhos `SheetHeader`, `LayoutAnimation` → Reanimated onde fizer sentido.
+4. **Ver de novo no iPhone** e baixar o chão do guardião: `node scripts/design.test.js --atualizar`.
+Dívida de partida (2026-11-02): tipo fora 325 · letra < 11 155 · espaço fora 657 · raio fora 91 ·
+cores soltas 105 · Ionicons 14. Ficheiros com mais: Escala, formulário de serviço, Perfil, Estatísticas, Início.
 - [ ] **Início** — sistema de luz (ponto, véu, temperatura horária); folga v2 (fantasma "QUI", bilhete
       manuscrito Caveat, cartão preto do countdown); marcos na voz + primeiro alerta explicado.
 - [ ] **Escala** — morph pílula→cartão da legenda; família cheia >4 (stack "+N" → grelha); pontinho âmbar;

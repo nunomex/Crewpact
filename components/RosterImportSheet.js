@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync 
 import { airportCoord, sectorDistanceNM } from '../data/airports';
 import DutyFormSheet from './DutyFormSheet';
 import Eyebrow from './Eyebrow';
+import SheetHeader from './SheetHeader';
 import PrimaryButton from './PrimaryButton';
 import { AppContext, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
@@ -283,13 +284,8 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     // Transparente (página opaca) — fullScreen abortava no iOS 26 (transição UIKit c/ teclado).
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
       <View style={[s.page, { paddingTop: Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-        <View style={s.head}>
-          <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Importar', 'Roster · Import')}</Eyebrow></View>
-            <Text style={s.h1}>{l('Confirmar import', 'Confirm import')}</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={PELE.ink} /></TouchableOpacity>
-        </View>
+        <SheetHeader eyebrow={l('Escala · Importar', 'Roster · Import')} title={l('Confirmar import', 'Confirm import')}
+          onClose={onClose} closeLabel={t('common.close', lang)} />
 
         {/* Fonte da escala: calendário do telemóvel ou texto colado do PDF */}
         <View style={s.ranges}>
@@ -472,11 +468,6 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 // com as bordas soft (nada de bordas puras a gritar). RE-SKIN: a lógica não mudou.
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: PELE.paper },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.red },
-  h1: { fontSize: 28, fontFamily: PELE_FONT.display, color: PELE.ink, letterSpacing: -0.4 },
-  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   ranges: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 12 },
   rChip: { flex: 1, borderWidth: 1, borderColor: PELE.line, borderRadius: 999, paddingVertical: 10, alignItems: 'center', backgroundColor: PELE.paper },
   srcChip: { flexDirection: 'row', gap: 6, justifyContent: 'center' },

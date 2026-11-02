@@ -5,6 +5,7 @@ import { Stepper } from './Stepper';
 import AirportRoute from './AirportRoute';
 import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
+import IconButton from './IconButton';
 import PeleSide from './PeleSide';
 import { RADIUS, GUTTER, PELE, PELE_FONT } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
@@ -279,6 +280,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // Revelação em cascata das secções (uma Animated.Value 0→1 mapeada por índice).
   // Reduce-motion: salta para o estado final (contrato do motion doc §5).
   const reduceMotion = useReduceMotion();
+  const layoutAnim = () => { if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); };   // motion §5: reduce = troca seca
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) { enter.setValue(0); return; }
@@ -293,7 +295,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       transform: [{ translateY: enter.interpolate({ inputRange: [start, start + 0.42], outputRange: [16, 0], extrapolate: 'clamp' }) }],
     };
   };
-  const pickKind = (k) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setForm((f) => ({ ...f, kind: k, nightStop: NIGHTSTOP_KINDS.includes(k) ? f.nightStop : false })); };
+  const pickKind = (k) => { select(); layoutAnim(); setForm((f) => ({ ...f, kind: k, nightStop: NIGHTSTOP_KINDS.includes(k) ? f.nightStop : false })); };
   const pickType = (k) => { pickKind(k); setPhase('form'); setStep(0); };   // índice → escolhe tipo → abre o stepper
 
   const isFlight = form.kind === 'flight';
@@ -773,7 +775,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       {isFlight ? (
         <View style={{ marginTop: 16 }}>
           <TouchableOpacity style={s.advHead} activeOpacity={0.7}
-            onPress={() => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAdvOpen((o) => !o); }}>
+            onPress={() => { select(); layoutAnim(); setAdvOpen((o) => !o); }}>
             <Icon name="gauge" size={15} color={C.sub} />
             <Text style={s.advHeadTxt}>{l('Casos especiais (FTL)', 'Special cases (FTL)')}</Text>
             {(special || accOn) ? <View style={s.advDot} /> : null}
@@ -786,7 +788,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Tripulação aumentada / repouso a bordo', 'Augmented crew / in-flight rest')}</Text>
                   <Text style={s.advSub}>205(c)</Text>
                 </View>
-                <Switch value={augOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAugOn(v); }}
+                <Switch value={augOn} onValueChange={(v) => { select(); layoutAnim(); setAugOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {augOn ? (
@@ -813,7 +815,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Apresentação adiada', 'Delayed reporting')}</Text>
                   <Text style={s.advSub}>205(g)</Text>
                 </View>
-                <Switch value={delOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setDelOn(v); }}
+                <Switch value={delOn} onValueChange={(v) => { select(); layoutAnim(); setDelOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {delOn ? (
@@ -827,7 +829,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Standby antes deste serviço', 'Standby before this duty')}</Text>
                   <Text style={s.advSub}>225</Text>
                 </View>
-                <Switch value={sbOn} onValueChange={(v) => { select(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSbOn(v); }}
+                <Switch value={sbOn} onValueChange={(v) => { select(); layoutAnim(); setSbOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {sbOn ? (
@@ -914,7 +916,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         {phase === 'type' ? (
           <>
             <View style={s.hdr}>
-              <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.bk} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Icon name="back" size={18} color={PELE.ink} /></TouchableOpacity>
+              <IconButton icon="close" onPress={requestClose} label={t('common.close', lang)} style={s.cl} />
             </View>
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={l('SERVIÇOS', 'SERVICES')} />
             <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -942,8 +944,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         ) : (
           <>
             <View style={s.hdr}>
-              <TouchableOpacity onPress={() => { if (canBackToIndex) { setPhase('type'); setStep(0); } else { requestClose(); } }} hitSlop={8} style={s.bk} accessibilityRole="button" accessibilityLabel={canBackToIndex ? l('Mudar tipo', 'Change type') : t('common.close', lang)}><Icon name="back" size={18} color={PELE.ink} /></TouchableOpacity>
-              <TouchableOpacity onPress={requestClose} hitSlop={8} style={s.cl} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Icon name="close" size={18} color={PELE.ink} /></TouchableOpacity>
+              {canBackToIndex ? <IconButton icon="back" onPress={() => { setPhase('type'); setStep(0); }} label={l('Mudar tipo', 'Change type')} /> : null}
+              <IconButton icon="close" onPress={requestClose} label={t('common.close', lang)} style={s.cl} />
             </View>
             <PeleSide label={simulate ? l('SIMULAÇÃO', 'SIMULATION') : l('NOVO', 'NEW')} accent={kindLabel.toUpperCase()} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -1003,8 +1005,7 @@ const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: PELE.paper },
   // Cabeçalho pele (‹ back + ✕ close)
   hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GUTTER, paddingTop: 8 },
-  bk: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  cl: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  cl: { marginLeft: 'auto' },   // ✕ sempre à direita (IconButton faz o resto)
   body: { paddingHorizontal: GUTTER, paddingTop: 4, paddingBottom: 28 },
   // Herói
   eyb: { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: PELE.grey, marginTop: 8 },

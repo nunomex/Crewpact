@@ -22,12 +22,15 @@ fadiga (FTL — Reg. UE 83/2014 · CS-FTL.1) e a remuneração prevista pelos ac
 - **Guiões de verificação no device:** `docs/verificacao-device.md` · `docs/verificacao-calendario.md`.
 
 ## Regras do projeto (resumo; detalhe na Constituição)
-1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 24 suites;
+1. **Golden-first.** Nenhum número FTL/AE muda sem o teste golden mudar antes. `npm test` corre 25 suites (a última é o guardião do design);
    o `pre-push` bloqueia se falhar.
 2. **Citar a lei.** Onde é lei, o artigo; onde é convenção, dizê-lo e escolher o conservador.
 3. **Dinheiro sem arredondar.** Todo o € mostra cêntimos.
 4. **Calendário é a fonte.** Criar serviços à mão morreu; editar é só corrigir importados.
-5. **Mockups à letra.** Ler `design/*.html` antes de tocar num ecrã. Papel permanente: designer sénior
+5. **Mockups mandam na hierarquia; os números vêm da escala** (Design System 2.0, 2026-11-02). Ler o mockup
+   em `design/` antes de tocar num ecrã (os de `design/arquivo/` não se seguem). Texto em `TXT`, espaço em
+   `SPACE`, fechar/voltar com `IconButton`, cabeçalhos de janela com `SheetHeader` — regras em
+   `docs/design-system.md` §9–§12. O `npm run test:design` tranca-as (a dívida só pode descer). Papel permanente: designer sénior
    da Apple — "a Apple lançava isto?".
 6. **Dados de teste só.** Nunca dados reais de tripulantes durante a construção. RGPD: sem ficheiros,
    fotos nem saúde; dose de radiação nunca guardada.

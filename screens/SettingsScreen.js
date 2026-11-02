@@ -9,6 +9,7 @@ import OTPInput from '../components/OTPInput';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import PrimaryButton from '../components/PrimaryButton';
 import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import useEnter from '../hooks/useEnter';
@@ -510,10 +511,7 @@ export default function SettingsScreen({ navigation }) {
             <View style={s.famCard}>
               <View style={s.famCardHead}>
                 <Text style={s.famCount} allowFontScaling={false}>{family.length} {l('pessoas', 'people')}</Text>
-                <TouchableOpacity onPress={toggleFam} hitSlop={8} style={s.famX}
-                  accessibilityRole="button" accessibilityLabel={l('Fechar', 'Close')}>
-                  <Icon name="close" size={12} color={PELE.ink} />
-                </TouchableOpacity>
+                <IconButton icon="close" onPress={toggleFam} label={l('Fechar', 'Close')} />
               </View>
               <View style={s.famGrid}>
                 {family.map((lk) => (
@@ -1045,7 +1043,6 @@ const s = StyleSheet.create({
   famCard: { borderWidth: 1, borderColor: PELE.line, borderRadius: 18, padding: 14, marginTop: 2, backgroundColor: PELE.paper },
   famCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   famCount: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.2, textTransform: 'uppercase', color: PELE.placeholder },
-  famX: { width: 26, height: 26, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   famGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   famP: { width: '25%', alignItems: 'center', gap: 5, marginTop: 12 },
   favBig: { width: 44, height: 44, borderRadius: 22 },

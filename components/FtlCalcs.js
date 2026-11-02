@@ -13,6 +13,7 @@ import {
   QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 } from '../ftl';
 import { t } from '../data/i18n';
+import { reduceMotionNow } from '../hooks/useReduceMotion';
 
 // PELE-FICADO por dentro (2026-07-10), API intacta. Mapa de tokens locais → PELE:
 // os componentes referem C.* inline (herança do tema antigo); a pele não tem useTheme.
@@ -23,7 +24,8 @@ const C = { ink: P.ink, soft: P.soft, sub: P.grey, text: P.ink, line: P.line, re
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-const anim = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+// Movimentos reduzidos ligados → troca seca (motion §5). Lido no momento: o atalho vive fora dos componentes.
+const anim = () => { if (!reduceMotionNow()) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); };
 
 // Botão "Confirmar e registar" — grava o cálculo no dia-alvo (hoje ou dia do Calendário).
 function RegisterBtn({ lang, disabled, onPress }) {

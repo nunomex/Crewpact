@@ -1,0 +1,482 @@
+{
+ "gerado": "2026-11-02",
+ "total": {
+  "tipoFora": 325,
+  "tipoMenor11": 155,
+  "espacoFora": 657,
+  "raioFora": 91,
+  "corSolta": 105,
+  "ionicons": 14,
+  "iconeNavSolto": 3
+ },
+ "ficheiros": {
+  "App.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 1,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/BiometricOfferScreen.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 6,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/DisrupcaoScreen.js": {
+   "tipoFora": 11,
+   "tipoMenor11": 5,
+   "espacoFora": 14,
+   "raioFora": 1,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/DutyDetailScreen.js": {
+   "tipoFora": 14,
+   "tipoMenor11": 10,
+   "espacoFora": 23,
+   "raioFora": 1,
+   "corSolta": 2,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/EscalaScreen.js": {
+   "tipoFora": 37,
+   "tipoMenor11": 18,
+   "espacoFora": 89,
+   "raioFora": 17,
+   "corSolta": 20,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/EstabilidadeScreen.js": {
+   "tipoFora": 10,
+   "tipoMenor11": 5,
+   "espacoFora": 14,
+   "raioFora": 1,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/FtlDetailScreen.js": {
+   "tipoFora": 5,
+   "tipoMenor11": 4,
+   "espacoFora": 12,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/HomeScreen.js": {
+   "tipoFora": 25,
+   "tipoMenor11": 14,
+   "espacoFora": 34,
+   "raioFora": 4,
+   "corSolta": 11,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/HoteisScreen.js": {
+   "tipoFora": 7,
+   "tipoMenor11": 3,
+   "espacoFora": 8,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/HotelDetailScreen.js": {
+   "tipoFora": 5,
+   "tipoMenor11": 4,
+   "espacoFora": 6,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/HotelStationScreen.js": {
+   "tipoFora": 9,
+   "tipoMenor11": 5,
+   "espacoFora": 6,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/InfoScreen.js": {
+   "tipoFora": 16,
+   "tipoMenor11": 9,
+   "espacoFora": 31,
+   "raioFora": 5,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 1
+  },
+  "screens/LockScreen.js": {
+   "tipoFora": 5,
+   "tipoMenor11": 1,
+   "espacoFora": 10,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/LoginScreen.js": {
+   "tipoFora": 11,
+   "tipoMenor11": 4,
+   "espacoFora": 19,
+   "raioFora": 3,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/OnboardingScreen.js": {
+   "tipoFora": 11,
+   "tipoMenor11": 2,
+   "espacoFora": 12,
+   "raioFora": 2,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/ReactivateScreen.js": {
+   "tipoFora": 3,
+   "tipoMenor11": 0,
+   "espacoFora": 6,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "screens/RelatoriosScreen.js": {
+   "tipoFora": 8,
+   "tipoMenor11": 4,
+   "espacoFora": 11,
+   "raioFora": 2,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/SettingsScreen.js": {
+   "tipoFora": 12,
+   "tipoMenor11": 8,
+   "espacoFora": 49,
+   "raioFora": 9,
+   "corSolta": 10,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/StatsScreen.js": {
+   "tipoFora": 27,
+   "tipoMenor11": 12,
+   "espacoFora": 49,
+   "raioFora": 6,
+   "corSolta": 5,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "screens/ValidadesScreen.js": {
+   "tipoFora": 11,
+   "tipoMenor11": 3,
+   "espacoFora": 25,
+   "raioFora": 3,
+   "corSolta": 12,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/AccountCreated.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 2,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/AirportRoute.js": {
+   "tipoFora": 2,
+   "tipoMenor11": 1,
+   "espacoFora": 11,
+   "raioFora": 2,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 1
+  },
+  "components/AuditSheet.js": {
+   "tipoFora": 8,
+   "tipoMenor11": 7,
+   "espacoFora": 5,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/Banner.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 3,
+   "raioFora": 1,
+   "corSolta": 2,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/CalcCard.js": {
+   "tipoFora": 3,
+   "tipoMenor11": 3,
+   "espacoFora": 12,
+   "raioFora": 0,
+   "corSolta": 3,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/CalendarPickerSheet.js": {
+   "tipoFora": 2,
+   "tipoMenor11": 0,
+   "espacoFora": 6,
+   "raioFora": 1,
+   "corSolta": 1,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/ConfirmDialog.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 5,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/DutyFormSheet.js": {
+   "tipoFora": 20,
+   "tipoMenor11": 8,
+   "espacoFora": 57,
+   "raioFora": 11,
+   "corSolta": 10,
+   "ionicons": 0,
+   "iconeNavSolto": 1
+  },
+  "components/ExtraEventSheet.js": {
+   "tipoFora": 5,
+   "tipoMenor11": 0,
+   "espacoFora": 4,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/ExtrasManager.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 5,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/FlightShareCard.js": {
+   "tipoFora": 4,
+   "tipoMenor11": 4,
+   "espacoFora": 7,
+   "raioFora": 1,
+   "corSolta": 11,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/FtlCalcs.js": {
+   "tipoFora": 3,
+   "tipoMenor11": 0,
+   "espacoFora": 17,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/GhostButton.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 1,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/HotelSheet.js": {
+   "tipoFora": 6,
+   "tipoMenor11": 2,
+   "espacoFora": 7,
+   "raioFora": 3,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/Icon.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 0,
+   "raioFora": 0,
+   "corSolta": 3,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/NotificationsBell.js": {
+   "tipoFora": 3,
+   "tipoMenor11": 2,
+   "espacoFora": 6,
+   "raioFora": 0,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/OTPInput.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 1,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/PeleHeader.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 2,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/PeleSheet.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 5,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/PeleSide.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 1,
+   "espacoFora": 0,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/PrimaryButton.js": {
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 1,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/ProvaSheet.js": {
+   "tipoFora": 6,
+   "tipoMenor11": 5,
+   "espacoFora": 5,
+   "raioFora": 1,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/QuestionDetailSheet.js": {
+   "tipoFora": 9,
+   "tipoMenor11": 3,
+   "espacoFora": 10,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/RosterImportSheet.js": {
+   "tipoFora": 4,
+   "tipoMenor11": 2,
+   "espacoFora": 19,
+   "raioFora": 5,
+   "corSolta": 4,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/SimulationResult.js": {
+   "tipoFora": 2,
+   "tipoMenor11": 0,
+   "espacoFora": 10,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/Stepper.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 0,
+   "espacoFora": 2,
+   "raioFora": 1,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/StrengthBar.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 1,
+   "espacoFora": 3,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 1,
+   "iconeNavSolto": 0
+  },
+  "components/TabBar.js": {
+   "tipoFora": 1,
+   "tipoMenor11": 1,
+   "espacoFora": 5,
+   "raioFora": 1,
+   "corSolta": 3,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/Tip.js": {
+   "tipoFora": 2,
+   "tipoMenor11": 1,
+   "espacoFora": 3,
+   "raioFora": 0,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/Toast.js": {
+   "tipoFora": 3,
+   "tipoMenor11": 1,
+   "espacoFora": 3,
+   "raioFora": 0,
+   "corSolta": 2,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/WelcomeSheet.js": {
+   "tipoFora": 5,
+   "tipoMenor11": 1,
+   "espacoFora": 8,
+   "raioFora": 0,
+   "corSolta": 0,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  },
+  "components/YearShareCard.js": {
+   "tipoFora": 2,
+   "tipoMenor11": 1,
+   "espacoFora": 7,
+   "raioFora": 1,
+   "corSolta": 1,
+   "ionicons": 0,
+   "iconeNavSolto": 0
+  }
+ }
+}

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { View, Text, Modal, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import Icon from './Icon';
+import IconButton from './IconButton';
 import Eyebrow from './Eyebrow';
 import { PELE as P, PELE_FONT as F, SHADOW } from '../data/constants';
 
@@ -27,9 +28,7 @@ export default function CenterDialog({ visible, onClose, title, eyebrow, closeLa
               {hasEye ? <Eyebrow>{eyebrow}</Eyebrow> : null}
               <Text style={[s.title, { fontSize: hasEye ? 22 : 24, marginTop: hasEye ? 2 : 0 }]} allowFontScaling={false}>{title}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={s.close} hitSlop={8} accessibilityRole="button" accessibilityLabel={closeLabel}>
-              <Icon name="close" size={16} color={P.ink} />
-            </TouchableOpacity>
+            <IconButton icon="close" onPress={onClose} label={closeLabel} />
           </View>
           <ScrollView style={s.body} bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {children}
@@ -48,5 +47,4 @@ const s = StyleSheet.create({
   body: { flexShrink: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: P.line },
   title: { fontFamily: F.display, color: P.ink, letterSpacing: -0.3 },
-  close: { width: 36, height: 36, borderRadius: 999, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
 });

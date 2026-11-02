@@ -8,7 +8,7 @@
 
 ## §1 · Fontes de verdade (por ordem — a de cima ganha)
 
-1. **Mockups `design/*.html`** — seguem-se **à letra** em todos os ecrãs (decisão 2026-07-05, depois de um § da lei inventado na Escala). O mockup manda em tudo o que cobre. **Ler o mockup ANTES de codificar.**
+1. **Mockups `design/*.html`** — mandam na **hierarquia e na disposição** (o que existe, a ordem, o que pesa mais) e no conteúdo (decisão 2026-07-05, depois de um § da lei inventado na Escala). **Os números NÃO vêm do mockup: vêm da escala (§9).** Mudado a 2026-11-02 (Design System 2.0, decisão do Nuno): portar os píxeis "à letra" deu 206 combinações de letra e 924 espaçamentos fora da escala. **Ler o mockup ANTES de codificar.** Explorações recusadas vivem em `design/arquivo/` e não se seguem (`design/README.md`).
 2. **Este documento** — a gramática para o que o mockup não cobre (funções, estados de erro, casos que o HTML não desenha). "O resto adaptas" — mas adapta-se COM esta gramática.
 3. **Os olhos no device** — afinações finais são números vistos, não teorizados. Todas as do Início vivem no bloco `TUNE` (topo de `screens/HomeScreen.js`); fora dele só 2: rótulo lateral (`components/PeleSide.js` top=344/width=320) e fantasma dos outros ecrãs (`components/PeleHeader.js` ghost right:14). Sessão ritual: **"testar os estados"** ([verificacao-device.md](verificacao-device.md)).
 
@@ -29,6 +29,7 @@
 - `PELE_NIGHT` — a MESMA gramática sobre azul-quase-preto (`#0D131C`); amarelo mantém-se; estados sobem de luminosidade para contraste.
 - `PELE_FONT` — **Barlow Condensed** (display: fantasma, números grandes, palavra condensada) + **Hanken Grotesk** (corpo, rótulos) + **Caveat** (`hand` — manuscrita, USO ÚNICO: a voz do Início, o bilhete pessoal com marcador amarelo). **NUNCA `fontWeight`** — as fontes são estáticas, a FAMÍLIA carrega o peso.
 - Partilhados com o tema antigo: `RADIUS` (cartão de conteúdo = `lg` 16; folhas/diálogos xl/xxl) · `SPACE` · `SHADOW` (só folhas/diálogos/toasts elevam — **cartões são planos**, borda hairline) · `GUTTER` 16.
+- **Design System 2.0 (2026-11-02):** `TXT` (estilos de texto com nome — §9) · `SPACE` alargado à grelha 2/4 · `TYPE` com os números condensados (24/28/34/44) · `ICON_BTN` (36 · ícone 16 · toque 44) · `SCALE` (as escalas permitidas, lidas pelo guardião §12).
 
 **Gramática da pele:**
 - **Fantasma** — numeral/sigla gigante em `PELE.ghost` atrás do herói. Tamanhos **determinísticos por comprimento** (TUNE.ghost s3/s4/s5). ⚠️ **Nunca `adjustsFontSizeToFit` em `Text` absoluto** — bug iOS: fica invisível quando um irmão re-renderiza.
@@ -58,7 +59,8 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 | `PeleSide` | rótulo lateral rodado | label muda com o estado/ecrã |
 | `PeleSheet` | folha modal da pele | gesto de arrasto + teclado já resolvidos |
 | `Icon` + `design/icons.js` | pictogramas SVG próprios | emoji proibido |
-| `HeaderActions` | sino + avatar (ecrãs-aba) | avatar navega ao Perfil |
+| `IconButton` | ✕ fechar · ‹ voltar · ações de cabeçalho | **único** botão de ícone: 36 redondo, ícone 16 (‹ 18), toque 44, `label` obrigatório, `night` para o tema noturno (§10) |
+| `SheetHeader` | cabeçalho de folhas e páginas modais | rótulo (ponto amarelo) + título `TXT.titleLg` + ✕ à direita; ‹ opcional à esquerda. Não recriar à mão |
 | `Toast` | `notify(title, sub, kind, action?)` global | toasts locais proibidos; `action={label,onPress}` = pílula "Desfazer" (5 s, kind `del`) — ver motion §7 |
 | `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora. **Fronteira do desfazer (2026-07-15): local = apaga-já + toast "Desfazer" (5 s); servidor-irreversível (conta·link família·sessão) = confirmação honesta.** |
 | `Skeleton`, `CountUp`, `useEnter` | loading / números / entrada | todos respeitam reduce-motion |
@@ -97,7 +99,7 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 
 Decidir pela **utilidade de relance** — sem ruído, sem duplo-badge, sem erros silenciosos — não pela estética. Menos carga mental (Constituição §2.3): cada mudança **remove/esconde pelo menos um elemento, ou justifica por escrito porque adiciona**.
 
-## Overlays tocáveis (regra técnica, RN 0.86 / Fabric — 2026-09-03)
+## Overlays tocáveis (regra técnica, RN 0.86+ / Fabric — 2026-09-03; mantém-se no RN 0.88, por reconfirmar no device)
 
 Um fundo que fecha ao toque (scrim de folha, overlay de diálogo, scrim da speed-dial) **nunca
 usa `StyleSheet.absoluteFill`**: sob a arquitetura nova, dentro de um `Modal`, um filho com
@@ -115,3 +117,99 @@ baixo) mas não recebe toques. Provado no device com `onLayout` (`width 402, hei
 - **Fantasmas e texto decorativo absoluto: sempre `pointerEvents="none"`.** O fantasma do PeleHeader
   (`top:-29`) sobrepõe a fila das ações; sob Fabric o hit-test nativo entrega o toque ao Text e o
   botão irmão (↻ da Escala) morre. Nunca deixar um Text absoluto "apanhar" toques que não são dele.
+
+---
+
+# Design System 2.0 (2026-11-02)
+
+Nasceu de uma medição, não de gosto: em 58 ficheiros havia **675 tamanhos de letra escritos à mão (só 29
+pela escala)**, 38 tamanhos fora dela, **149 estilos abaixo do mínimo de 11**, **924 espaçamentos fora da
+escala**, 105 cores soltas, o botão de fechar em 4 tamanhos e 2 formas, e o cabeçalho de folha copiado à
+mão em 6 janelas. Causa: cada mockup tinha os seus números e foi portado "à letra" (§1 mudou por isso).
+
+## §9 · A escala e a tabela de migração
+
+**Texto = um estilo com nome (`TXT`), nunca um número solto.** `{ ...TXT.body, color: P.ink }`.
+Densidade da casa mantida (corpo 13, não o 17 da Apple). **Mínimo 11 em todo o texto informativo.**
+
+| Estilo | Família · tamanho | Para |
+|---|---|---|
+| `TXT.tag` | Hanken 800 · 11 · maiúsculas · ls 0.6 | selos, chips |
+| `TXT.eyebrow` | Hanken 800 · 11 · maiúsculas · ls 1.4 | rótulo de secção (= `Eyebrow`) |
+| `TXT.caption` | Hanken 500 · 11 / 15 | notas, fontes, meta |
+| `TXT.footnote` | Hanken 500 · 12 / 17 | linha secundária |
+| `TXT.label` | Hanken 700 · 12 | rótulo/valor pequeno forte |
+| `TXT.body` | Hanken 500 · 13 / 19 | corpo |
+| `TXT.bodyStrong` | Hanken 700 · 13 | título de linha |
+| `TXT.callout` | Hanken 700 · 15 / 20 | destaque, botões |
+| `TXT.headline` | Hanken 800 · 17 / 22 | título de diálogo |
+| `TXT.title` | Barlow 700 · 22 | título de cartão |
+| `TXT.titleLg` | Barlow 700 · 30 | título de folha/página |
+| `TXT.num` / `TXT.numLg` | Barlow 700 · 24 / 34 | números |
+
+Tamanhos permitidos (`SCALE.type`): 11 · 12 · 13 · 14 · 15 · 16 · 17 · 20 · 22 · 24 · 26 · 28 · 30 · 34 · 44.
+**≥ 48 = fantasma/decorativo**, dimensionado no `TUNE` (fora da escala por desenho).
+
+**Migração do texto** (valor antigo → destino):
+
+| Antigo | Destino |
+|---|---|
+| 8 – 10,5 em maiúsculas pesadas | `TXT.tag` (11) |
+| 9,5 – 11 corpo/nota | `TXT.caption` (11) |
+| 11,5 – 12 | `TXT.footnote` (500) ou `TXT.label` (700) |
+| 12,5 – 13,5 | `TXT.body` (500) ou `TXT.bodyStrong` (700) |
+| 14 – 14,5 | 14 (`TYPE.sub`) |
+| 15 – 15,5 | `TXT.callout` |
+| 16 – 17 | 16 (`TYPE.value`) ou `TXT.headline` |
+| 18 – 21 | 20 (`TYPE.title`) |
+| 22 – 23 | `TXT.title` |
+| 24 – 25 | `TXT.num` |
+| 28 – 29 | 28 · 30 – 33 → `TXT.titleLg` (título) ou 34 (número) · 36 – 46 → 34 ou 44 |
+
+**Exceção a decidir no device:** a grelha do calendário da Escala usa 8 – 9,5 nas etiquetas das células.
+Fica na roquete até a migração da Escala; se 11 não couber, documenta-se aqui a exceção com a medida.
+
+**Espaço** (`SPACE`): 2 · 4 · 6 · 8 · 12 · 16 · 20 · 24 · 32 · 40 (+ 1 hairline). Migração: vai para o
+**mais próximo**; empate → o que mantém o ritmo dos irmãos (ex.: 10 → 8 ou 12; 14 → 12 ou 16).
+Cada ecrã migrado vê-se no iPhone antes de fechar — passar de 12,5 para 13 mexe em píxeis.
+
+## §10 · Posição dos controlos (a regra, igual em toda a app)
+
+- **✕ fechar** — canto superior **direito** de folhas e páginas modais (`SheetHeader`). Uma página que
+  sobe de baixo **fecha**, não "volta": nunca ‹ para fechar uma janela.
+- **‹ voltar** — canto superior **esquerdo** de ecrãs empilhados (`PeleHeader onBack`) e de passos
+  dentro de uma janela. **Só aparece quando há para onde voltar.**
+- **Nunca dois fechos no mesmo ecrã** (era o caso do formulário de serviço: ‹ e ✕ faziam o mesmo).
+- **Um só botão de ícone:** `IconButton` (36 redondo, toque 44, rótulo obrigatório). Remover um item
+  dentro de um chip (✕ pequeno inline) não é navegação e fica fora desta regra.
+- **Abrir/expandir uma secção:** a linha inteira é tocável, com um chevron à direita que roda.
+- **Guardar num formulário:** *por decidir com o Nuno, a partir das referências do Mobbin (§13).*
+- **Exceção registada:** o resultado da Simulação tem ✕ e um botão "Fechar" no fundo (gramática de poster,
+  2026-07-15). Fica até a revisão do ecrã decidir se o botão do fundo passa a outra ação.
+
+## §11 · Folha ou página modal
+
+- **Folha (`PeleSheet`)** — consultar ou uma ação curta (Prova, hotel, auditoria, um evento). Sobe até
+  onde o conteúdo pede, fecha com arrasto, toque fora (o fundo tem rótulo "Fechar" para o VoiceOver) ou
+  back do Android. **Sem ✕** (a pega e o fundo chegam).
+- **Página modal (`Modal` a deslizar + `SheetHeader`)** — fluxo com vários passos, formulário longo,
+  lista grande ou ecrã de partilha (formulário de serviço, importar, calendário, notificações, partilhas,
+  Simulação). Ocupa o ecrã, **fecha com ✕ à direita**.
+- Ecrã empilhado (navegação) — detalhe que pertence a uma aba (DutyDetail, Validades, Hotéis): ‹ à esquerda.
+
+## §12 · O guardião (`npm run test:design`, no `npm test` e no pre-push)
+
+- **Regras duras (zero tolerância):** nenhum `fontWeight` · toda a `LayoutAnimation` respeita os
+  movimentos reduzidos · todo o ficheiro que anima com `Animated` lê o reduce-motion · todo o componente
+  usado em JSX está importado (o pacote gera sem ele, mas a app rebenta ao abrir o ecrã — apanhou 2
+  casos reais na migração).
+- **Roquete (dívida antiga):** por ficheiro conta tipo fora da escala, letra < 11, espaço fora, raio fora,
+  cores soltas, Ionicons e ✕/‹ soltos. **Só pode descer.** Ao migrar um ecrã:
+  `node scripts/design.test.js --atualizar` grava o novo chão (recusa se algo subiu).
+- Linha de base a 2026-11-02 em `scripts/design-baseline.json`.
+
+## §13 · Referências (Mobbin)
+
+O Mobbin serve para ver como as melhores apps resolvem o mesmo problema; a escolha é do Nuno e a escolhida
+guarda-se em `referencias/`. Primeira pesquisa (2026-11-02): cabeçalhos de folha e formulários de edição —
+ver `docs/decisoes.md` para as opções e a escolha.

@@ -7,7 +7,7 @@ import { listCalendars } from '../data/calendar';
 import { AppContext } from '../data/appContext';
 import { select, success } from '../data/haptics';
 import PrimaryButton from './PrimaryButton';
-import Eyebrow from './Eyebrow';
+import SheetHeader from './SheetHeader';
 
 // Folha de seleção do calendário do TELEMÓVEL: lista os calendários (listCalendars) e o
 // utilizador escolhe qual tem a escala. O id escolhido é guardado no App e passamos a ler
@@ -32,13 +32,8 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
     // Superfície LEVE (uma escolha): pageSheet no iOS (gesto de arrasto do sistema).
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}>
       <View style={[s.page, { paddingTop: Platform.OS === 'ios' ? 16 : Math.max(insets.top, 12), paddingBottom: insets.bottom }]}>
-        <View style={s.head}>
-          <View style={{ flex: 1 }}>
-            <View style={s.eyebrowRow}><View style={s.eyebrowDot} /><Eyebrow>{l('Escala · Calendário', 'Roster · Calendar')}</Eyebrow></View>
-            <Text style={s.h1}>{l('Escolher', 'Choose')}</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={8} style={s.close}><Ionicons name="close" size={20} color={PELE.ink} /></TouchableOpacity>
-        </View>
+        <SheetHeader eyebrow={l('Escala · Calendário', 'Roster · Calendar')} title={l('Escolher', 'Choose')}
+          onClose={onClose} closeLabel={l('Fechar', 'Close')} />
 
         <Text style={s.note}>{l('Escolhe o calendário do telemóvel onde tens a tua escala. A app passa a ler só esse — os outros calendários ficam de fora.', 'Choose the phone calendar that holds your roster. The app reads only that one — other calendars are left out.')}</Text>
 
@@ -84,11 +79,6 @@ export default function CalendarPickerSheet({ visible, onClose, onSelect, curren
 // título, Hanken no corpo, hairlines, visto AMARELO na seleção. RE-SKIN: lógica intacta.
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: PELE.paper },
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6, paddingBottom: 10 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  eyebrowDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.red },
-  h1: { fontSize: 28, fontFamily: PELE_FONT.display, color: PELE.ink, letterSpacing: -0.4 },
-  close: { width: 34, height: 34, borderRadius: 99, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   note: { fontSize: 12.5, lineHeight: 18, color: PELE.grey, fontFamily: PELE_FONT.bodyMed, paddingHorizontal: 24, paddingBottom: 8 },
   tip: { flexDirection: 'row', gap: 9, marginHorizontal: 24, marginBottom: 6, padding: 12, borderRadius: 12, backgroundColor: PELE.warnSoft, borderWidth: 1, borderColor: PELE.warnSoftLine },
   tipTxt: { flex: 1, fontSize: 12, lineHeight: 17, color: PELE.ink, fontFamily: PELE_FONT.bodyMed },

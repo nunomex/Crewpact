@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput,
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER } from '../data/constants';
 import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
 import PeleHeader from '../components/PeleHeader';
 import { t } from '../data/i18n';
@@ -333,11 +334,11 @@ export default function ValidadesScreen({ navigation }) {
               <View style={s.sheetHead}>
                 <View style={s.sheetHeadL}>
                   {(!isPicking && !editing?.id) ? (
-                    <TouchableOpacity onPress={backToPicker} hitSlop={8} style={s.sheetBack} accessibilityRole="button" accessibilityLabel={l('Mudar tipo', 'Change type')}><Icon name="back" size={16} color={PELE.ink} /></TouchableOpacity>
+                    <IconButton icon="back" onPress={backToPicker} label={l('Mudar tipo', 'Change type')} style={s.sheetBack} />
                   ) : null}
                   <Text style={s.sheetTitle} numberOfLines={1}>{isPicking ? l('Adicionar', 'Add') : editing?.id ? l('Editar validade', 'Edit item') : validityLabel(editing?.type, isPilot, lang)}</Text>
                 </View>
-                <TouchableOpacity onPress={requestCloseEditing} hitSlop={8} style={s.sheetClose} accessibilityRole="button" accessibilityLabel={t('common.close', lang)}><Icon name="close" size={18} color={PELE.ink} /></TouchableOpacity>
+                <IconButton icon="close" onPress={requestCloseEditing} label={t('common.close', lang)} />
               </View>
 
               {isPicking ? (
@@ -503,9 +504,8 @@ const s = StyleSheet.create({
   grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: PELE.line, alignSelf: 'center', marginBottom: 12 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   sheetTitle: { fontSize: 22, fontFamily: PELE_FONT.display, letterSpacing: -0.3, color: PELE.ink },
-  sheetClose: { width: 34, height: 34, borderRadius: 11, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
   sheetHeadL: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
-  sheetBack: { width: 30, height: 30, borderRadius: 10, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  sheetBack: { marginRight: 10 },
   // Passo 1 "Adicionar" (mockup ecrã 2): herói + grupos + nota
   aHero: { position: 'relative', minHeight: 118, justifyContent: 'flex-end', marginTop: 2, marginBottom: 2 },
   aGhost: { position: 'absolute', right: 0, top: -6 },

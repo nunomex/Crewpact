@@ -7,6 +7,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';
+import IconButton from './IconButton';
 import NotificationsBell from './NotificationsBell';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 
@@ -18,6 +19,7 @@ export default function PeleHeader({
   eyebrow, ghost, word, wordTrailing, kick,
   initials = '?', onAvatar,
   onBack,                    // se dado → botão ‹voltar em vez do avatar (ecrãs empurrados, ex.: Validades)
+  backLabel = 'Voltar',     // rótulo VoiceOver do ‹ (o ecrã passa o seu idioma)
   left,                      // nó à ESQUERDA quando não há voltar/avatar (ex.: o sino do Perfil-aba)
   actions,                   // nó à direita, ANTES do sino (ex.: sincronizar/importar da Escala)
   bell = false,              // renderiza o sino real (NotificationsBell) — abre a central de notificações
@@ -49,7 +51,7 @@ export default function PeleHeader({
             morto "?" quando ninguém o pedia) > nó `left` (ex.: sincronizar da Escala) >
             eyebrow-no-topo (abas) > nada. */}
         {onBack
-          ? <TouchableOpacity style={s.bk} onPress={onBack} hitSlop={6} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Voltar"><Icon name="back" size={18} color={P.ink} /></TouchableOpacity>
+          ? <IconButton icon="back" onPress={onBack} label={backLabel} night={night} />
           : onAvatar
             ? <TouchableOpacity style={[s.av, night ? s.avNight : null]} onPress={onAvatar} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Perfil"><Text style={s.avTxt}>{initials}</Text></TouchableOpacity>
             : left || null}
@@ -98,7 +100,6 @@ const s = StyleSheet.create({
   av: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
   avNight: { backgroundColor: 'rgba(244,242,237,0.14)' },   // disco claro-translúcido sobre o papel noturno; iniciais amarelas ficam
   avTxt: { color: P.yellow, fontFamily: F.bodyHeavy, fontSize: 14 },
-  bk: { width: 34, height: 34, borderRadius: 11, backgroundColor: P.soft, alignItems: 'center', justifyContent: 'center' },
   eyb: { fontSize: 11, fontFamily: F.bodyHeavy, letterSpacing: 1.4, textTransform: 'uppercase', color: P.grey, marginTop: 8 },
   // Eyebrow NA linha de topo (abas): sem o marginTop do de baixo, encolhe antes das ações.
   eybTop: { marginTop: 0, flexShrink: 1 },

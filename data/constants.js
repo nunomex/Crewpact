@@ -76,7 +76,10 @@ void PALETTE_LIGHT; void PALETTE_DARK;
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 export const RADIUS = { xs: 8, sm: 10, md: 14, lg: 16, xl: 22, xxl: 24, pill: 99 };
-export const SPACE  = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
+// Espaço (Design System 2.0, 2026-11-02): grelha de 4 com dois meios-passos (2 e 6) para o miúdo.
+// As chaves antigas (xs/sm/md/lg/xl) mantêm o valor — nada do que já existe muda.
+// Fora da escala: 1 (hairline) e valores negativos de sobreposição deliberada.
+export const SPACE  = { xxs: 2, xs: 4, s: 6, sm: 8, md: 12, lg: 16, lgPlus: 20, xl: 24, xxl: 32, xxxl: 40 };
 // Escala de elevação (sombra). Cor ink-azulada para profundidade; usa-se por
 // spread no estilo: ...SHADOW.md. As sombras de marca (glow vermelho do FAB/roda/
 // cartões) e a do dock são próprias (afinadas à mão) e ficam FORA desta escala.
@@ -101,7 +104,14 @@ export const TYPE = {
   heading: 22,   // título de cartão/ecrã
   display: 26,   // números grandes
   hero: 30,      // título de onboarding
+  // números e títulos condensados (Barlow) — Design System 2.0
+  num: 24,       // número em linha / cartão
+  numMd: 28,
+  numLg: 34,     // número herói
+  numXl: 44,
 };
+// Acima de 48 é FANTASMA/decorativo (tamanho determinístico no TUNE, fora da escala por desenho).
+export const TYPE_DECORATIVE_MIN = 48;
 
 // Pesos tipográficos. O mockup usa a fonte de sistema (SF Pro Display no iOS /
 // Roboto no Android) com peso 600 nos títulos/números grandes ("display") e
@@ -159,4 +169,38 @@ export const PELE_FONT = {
   bodyBold:    'HankenGrotesk_700Bold',
   bodyHeavy:   'HankenGrotesk_800ExtraBold',     // eyebrows/rótulos densos (maiúsculas)
   hand:        'Caveat_600SemiBold',             // MANUSCRITA — só a voz do Início (o bilhete pessoal)
+};
+
+// ─── Design System 2.0 (2026-11-02) — estilos de texto com nome ──────────────
+// Um estilo = família + tamanho + (altura de linha) + (espaço entre letras). Usa-se por spread:
+// `{ ...TXT.body, color: P.ink }`. Substitui as 206 combinações soltas medidas a 2026-11-02.
+// Densidade da casa mantida (corpo 13, não o 17 da Apple). Mínimo 11 em TODO o texto informativo.
+// Tabela de migração (valor antigo → estilo) em docs/design-system.md §9.
+export const TXT = {
+  // Hanken Grotesk — corpo e rótulos
+  tag:        { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' }, // selos/chips em maiúsculas
+  eyebrow:    { fontFamily: PELE_FONT.bodyHeavy, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase' }, // rótulo de secção (= Eyebrow)
+  caption:    { fontFamily: PELE_FONT.bodyMed,   fontSize: 11, lineHeight: 15 },  // notas, fontes, meta
+  footnote:   { fontFamily: PELE_FONT.bodyMed,   fontSize: 12, lineHeight: 17 },  // linha secundária
+  label:      { fontFamily: PELE_FONT.bodyBold,  fontSize: 12 },                  // rótulo/valor pequeno forte
+  body:       { fontFamily: PELE_FONT.bodyMed,   fontSize: 13, lineHeight: 19 },  // corpo
+  bodyStrong: { fontFamily: PELE_FONT.bodyBold,  fontSize: 13 },                  // título de linha
+  callout:    { fontFamily: PELE_FONT.bodyBold,  fontSize: 15, lineHeight: 20 },  // destaque · botões
+  headline:   { fontFamily: PELE_FONT.bodyHeavy, fontSize: 17, lineHeight: 22 },  // título de diálogo
+  // Barlow Condensed — títulos e números
+  title:      { fontFamily: PELE_FONT.display, fontSize: 22, letterSpacing: -0.2 },  // título de cartão
+  titleLg:    { fontFamily: PELE_FONT.display, fontSize: 30, letterSpacing: -0.4 },  // título de folha/página
+  num:        { fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: -0.2 },  // número em linha
+  numLg:      { fontFamily: PELE_FONT.display, fontSize: 34, letterSpacing: -0.5 },  // número herói
+};
+
+// Botão de ícone (fechar · voltar · ações de cabeçalho) — UM tamanho na app toda.
+// 36 visível, redondo, ícone 16; hitSlop completa os 44 pt de toque (HIG).
+export const ICON_BTN = { size: 36, icon: 16, hit: 44 };
+
+// Escalas permitidas — lidas pelo guardião `scripts/design.test.js` (fonte única).
+export const SCALE = {
+  type:   [...new Set(Object.values(TYPE))].sort((a, b) => a - b),
+  space:  [0, 1, ...Object.values(SPACE)].sort((a, b) => a - b),
+  radius: [0, 2, 4, 6, ...Object.values(RADIUS), 999].sort((a, b) => a - b),
 };

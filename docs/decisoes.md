@@ -6,6 +6,51 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## 2026-11-02 (noite) — Design System 2.0 (ramo `design-system-2`, por guardar no git)
+
+**Porquê:** o Nuno sentia problemas de layout, espaçamento, tipografia e posição dos botões. Medido:
+675 tamanhos de letra à mão (29 pela escala), 149 estilos abaixo de 11, 924 espaçamentos fora da escala,
+105 cores soltas, ✕ em 4 tamanhos e 2 formas, cabeçalho de janela copiado à mão em 6 sítios. Causa: cada
+mockup portado "à letra" com os seus números.
+
+**Decisões (aprovadas pelo Nuno: "faz o que recomendas"):**
+- **Regra dos mockups mudou:** o mockup manda na hierarquia e na disposição; os números vêm da escala.
+- **Escala fechada** em `data/constants.js`: `TXT` (13 estilos de texto com nome), `SPACE` em grelha 2/4,
+  `TYPE` com os números condensados, `ICON_BTN`, `SCALE`. Densidade da casa mantida (corpo 13).
+- **Componentes canónicos:** `IconButton` (36 redondo, toque 44, rótulo obrigatório) e `SheetHeader`.
+- **Regras de posição** escritas (design-system §10) e **folha contra página modal** (§11).
+- **Reanimated** alinhado com a skill `animacoes`: o `Animated` core fica; o Reanimated entra para
+  animações de layout e gestos, ecrã a ecrã (motion §2). A razão antiga (SDK 54) acabou.
+- **Guardião** `npm run test:design` no `npm test` e no pre-push: regras duras + roquete da dívida.
+- **Mobbin** como referência em cada ecrã do bloco C (escolha do Nuno, guardada em `referencias/`).
+
+**Feito e verificado no PC:**
+- 13 ficheiros migrados para `IconButton`/`SheetHeader` (todas as janelas e ecrãs com ✕ ou ‹ de navegação).
+  O ‹ do `PeleHeader` passa a seguir o tema noturno. O ponto do rótulo passa a amarelo (o vermelho era
+  decoração, contra §2). Formulário de serviço: o ‹ que fechava a janela passou a ✕; o ‹ dos passos só
+  aparece quando há para onde voltar (antes havia dois fechos).
+- 6 animações de layout passaram a respeitar os movimentos reduzidos (formulário de serviço, calculadora FTL).
+- 23 mockups recusados movidos para `design/arquivo/` (índice em `design/README.md`).
+- `npm test` verde (25 suites) · pacote iOS gera · verificador de imports apanhou 2 erros reais
+  (`SheetHeader` em falta nos cartões de partilha) — corrigidos e a regra entrou no guardião.
+
+**Por ver no iPhone (não testado):** os cabeçalhos das 6 janelas (calendário, importar, notificações,
+partilha de voo, partilha do ano, Simulação e o Avançado), o ✕/‹ novos (36 redondo) em todos os ecrãs, o
+formulário de serviço (passo 1 com ✕ à direita; passos sem ‹ quando não há para onde voltar).
+
+**Decisões pendentes do Nuno (Mobbin, 2026-11-02):**
+1. **✕ das janelas:** A) título à esquerda, ✕ à direita — Alan, Polarsteps, Beside, pliability
+   (**recomendado**, é o que a app já faz) · B) ✕ à esquerda — Tinder, ElevenLabs, Insight Timer.
+2. **Guardar nos formulários:** 1) Cancelar à esquerda e Guardar à direita no topo — Fi (iOS clássico) ·
+   2) ✕ em cima e Guardar largo no fundo, acima do teclado — AllTrails, Mindtrip, Hypelist
+   (**recomendado**: ao alcance do polegar e igual ao `PrimaryButton`) · 3) Cancelar e Guardar lado a lado
+   no fundo — Perplexity · 4) Guardar e Cancelar empilhados — Expedia, X.
+3. **Exceção da grelha da Escala** (etiquetas a 8–9,5): decidir no device na migração da Escala.
+
+**Próximo:** bloco B (contas) continua primeiro. Depois o bloco C já com a revisão e a migração por ecrã.
+
+---
+
 ## 2026-11-02 (tarde) — Atualização para o SDK 58
 
 **Porquê:** a Expo Go do iPhone atualizou para o SDK 58 e recusa projetos no 57 ("Project is incompatible").
