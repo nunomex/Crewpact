@@ -18,6 +18,14 @@ pálido, o chip das horas e a barra de ações. Tokens novos: `PELE.greyOnSoft`,
 fundos das pílulas. Movimento com a skill `animacoes`. Golden e guardião verdes; ver no iPhone ("testar os estados").
 **Gravado nesta sessão:** `63726c9` (versões do Expo que o `expo start` propôs) · `ed2fd87` (Escala v2 + esboços).
 **Depois:** a Escala segue a linguagem do Início (a escolha A/B/C da `escala-v3` fica para lá).
+**Edições SPAC/SNPVAC no Início v6 (Nuno: "vamos usar as cores deles?") — estudo LOCAL `design/edicoes-inicio.html`
+(não publicar):** Opção 1 = a cor deles em tudo (a hora fica azul: SNPVAC 7,5/6,6 noite · SPAC 5,6/**4,9** noite) ·
+**Opção 2 (recomendada) = a hora do painel fica AMARELA em todas** (convenção do aeroporto, 10,6) e a cor deles vai para
+o que se toca (1.ª tecla 6,4/5,0 · ＋ · aba) e para o ponto "ao vivo" (SNPVAC usa o tom do escuro #6FAAE3: o cobalto dá
+2,9 na placa). Pede um papel novo em `BRAND` (cor do painel, separada de `onDark`). **✅ DECIDIDO: Opção 2 (Nuno,
+2026-11-03).** Na construção do Início: criar o papel do painel (fixo no amarelo em todas as edições) e usar `action`
+na 1.ª tecla e no ＋, `signal` na aba, `onDark` no ponto "ao vivo".
+Continua a valer: só com autorização escrita de cada sindicato; advogado.
 
 ---
 

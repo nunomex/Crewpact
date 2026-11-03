@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewPact Início · edições</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@500;700;800&display=swap">
+<style>
+/* ESTUDO LOCAL — NÃO PUBLICAR (cores de marcas de terceiros; ver docs/decisoes.md 2026-11-02).
+   O Início v6 aprovado nas três edições: CrewPact (base) · SNPVAC (cabine) · SPAC (pilotos).
+   Opção 1: a cor do sindicato em tudo, também na hora do painel. Opção 2 (recomendada): a hora do painel fica amarela
+   em todas as edições (convenção do aeroporto, a mais legível às 4h) e a cor do sindicato vai para o que se toca.
+   Valores das edições = os de data/constants.js (BRAND por papéis). Medidos em docs/decisoes.md. */
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED;
+  --yellow:#FFB800; --okNight:#46C98A; --plate:#141414; --onInk:#FFFFFF; --onInkSub:#A3A39B; --greyOnSoft:#5E5E57; --okText:#0B6E43;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif; --body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+  /* papéis da marca (BRAND) — base CrewPact */
+  --board:var(--yellow); --action:var(--ink); --actionText:var(--paper); --signal:var(--yellow); --onDark:var(--yellow);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding:32px 16px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1{font-family:var(--display);font-size:34px;letter-spacing:-.5px}
+.lead{font-size:14px;line-height:1.55;color:var(--muted);max-width:860px}
+.lead b{color:var(--fg)}
+.warn{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C6362B}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:1320px){ .grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))} }
+.colH h2{font-family:var(--display);font-size:24px}
+.colH p{font-size:13px;color:var(--muted);line-height:1.5}
+.rowLbl{grid-column:1/-1;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:12px}
+.rowLbl span{font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+.fit{width:100%;position:relative}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;transform-origin:top left;position:absolute;left:0;top:0}
+/* edições */
+.snpvac{--action:#005EB8; --actionText:#FFFFFF; --signal:#005EB8; --onDark:#6FAAE3}
+.spac{--action:#0077A8; --actionText:#FFFFFF; --signal:#0097D4; --onDark:#0097D4}
+.opt1.snpvac, .opt1.spac{--board:var(--onDark)}
+/* TXT */
+.tag{font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-weight:500;font-size:11px;line-height:15px}
+.label{font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-weight:700;font-size:13px;line-height:17px}
+.headline{font-weight:800;font-size:17px;line-height:22px}
+.ic{display:inline-block;flex:none;fill:currentColor;vertical-align:middle}
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.live .status{background:var(--plate);color:var(--onInk)}
+.scr{flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:16px}
+.scr > *{flex-shrink:0}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--action);color:var(--actionText);display:flex;align-items:center;justify-content:center}
+.board{margin:0 -16px;padding:4px 16px 12px;display:flex;flex-direction:column}
+.live .board{background:var(--plate);color:var(--onInk)}
+.bHead{display:flex;justify-content:space-between;align-items:center;padding:12px 0 10px}
+.live .bHead{border-bottom:1px solid rgba(255,255,255,.14);color:var(--onInkSub)}
+.calm .bHead{border-bottom:1px solid var(--line)}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--onDark);margin-right:6px;vertical-align:1px}
+.hero{display:flex;flex-direction:column;gap:6px;padding:10px 0 14px}
+.live .hero{border-bottom:1px solid rgba(255,255,255,.14)}
+.hero .lbl{color:var(--grey)} .live .hero .lbl{color:var(--onInkSub)}
+.digits{font-family:var(--display);font-weight:700;letter-spacing:-3px;font-variant-numeric:tabular-nums}
+.live .digits{font-size:104px;line-height:90px;color:var(--board)}
+.calm .digits{font-size:150px;line-height:126px;color:var(--ink)}
+.digits .u{font-size:44px;letter-spacing:-1px;margin-left:8px}
+.dest{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dest b{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px}
+.pill{font-weight:800;font-size:12px;letter-spacing:.8px;text-transform:uppercase;padding:5px 9px;border-radius:5px;white-space:nowrap}
+.pill.ok{background:rgba(70,201,138,.18);color:var(--okNight)}
+.pill.calm{background:var(--soft);color:var(--okText)}
+.sub{color:var(--onInkSub)}
+.cols{display:grid;grid-template-columns:76px 1fr 72px;gap:8px;padding:8px 0 2px}
+.live .cols{color:var(--onInkSub)} .calm .cols{color:var(--grey)}
+.row{display:grid;grid-template-columns:76px 1fr 72px;gap:8px;align-items:center;min-height:44px}
+.live .row{border-bottom:1px solid rgba(255,255,255,.08)} .calm .row{border-bottom:1px solid var(--line)}
+.row .tm,.row .ds{font-family:var(--display);font-weight:700;font-size:26px;line-height:28px}
+.live .row .tm{color:var(--board)}
+.row .dy{text-align:right}
+.live .row .dy{color:var(--onInkSub)} .calm .row .dy{color:var(--grey)}
+.say{color:var(--grey)} .say b{color:var(--ink);font-weight:700}
+.secs{display:flex;flex-direction:column;gap:8px}
+.sec2{border-radius:16px;background:var(--soft);padding:12px 14px;display:flex;align-items:center;gap:12px;min-height:60px}
+.sec2 .ci{width:32px;height:32px;border-radius:16px;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none}
+.sec2 .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sec2 .grey{color:var(--greyOnSoft)}
+.sec2 .vv{font-family:var(--display);font-weight:700;font-size:24px;white-space:nowrap}
+.sec2 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:4px}
+.sec2 .bar i{display:block;height:100%;background:var(--ink)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:auto;margin-bottom:12px}
+.key{border-radius:18px;background:var(--soft);min-height:88px;padding:12px;display:flex;flex-direction:column;justify-content:space-between}
+.key.pri{background:var(--action);color:var(--actionText)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.note h3{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.note ul{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+</style></head><body>
+<div class="page">
+  <p class="warn">Estudo local · não publicar (cores de marcas de terceiros)</p>
+  <h1>Início v6 nas três edições</h1>
+  <p class="lead"><b>Opção 1:</b> a cor do sindicato em tudo, também na hora do painel. <b>Opção 2 (recomendada):</b> a hora do painel fica amarela em todas as edições, porque é a convenção dos painéis de aeroporto e a mais legível às 4h; a cor do sindicato vai para o que se toca (a 1.ª tecla, o ＋, a aba ativa) e para o ponto "ao vivo". Igual nas três: o papel, a tinta, a letra, os estados (verde, laranja).</p>
+  <section class="grid3">
+    <div class="colH"><h2>CrewPact (base)</h2><p>Quem não escolhe sindicato.</p></div>
+    <div class="colH"><h2>Edição SNPVAC</h2><p>Cabine. Cobalto #005EB8; no escuro #6FAAE3.</p></div>
+    <div class="colH"><h2>Edição SPAC</h2><p>Pilotos. Celeste #0097D4; no que se toca #0077A8.</p></div>
+    <div class="rowLbl">Opção 1 · a cor deles em tudo <span>— a hora fica azul (7,5 e 5,6 de dia · 6,6 e 4,9 à noite)</span></div>
+    <div class="fit"><div class="ph live opt1" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph live opt1 snpvac" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph live opt1 spac" data-s="hoje"></div></div>
+    <div class="rowLbl">Opção 2 · a hora fica amarela, a cor deles no que se toca <span>— recomendada (10,6 em todas)</span></div>
+    <div class="fit"><div class="ph live" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph live snpvac" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph live spac" data-s="hoje"></div></div>
+    <div class="rowLbl">Opção 2 · num dia calmo <span>— a cor do sindicato só na 1.ª tecla, no ＋ e na aba</span></div>
+    <div class="fit"><div class="ph calm" data-s="folga"></div></div>
+    <div class="fit"><div class="ph calm snpvac" data-s="folga"></div></div>
+    <div class="fit"><div class="ph calm spac" data-s="folga"></div></div>
+  </section>
+  <section class="notes">
+    <div class="note"><h3>Medido</h3><ul>
+      <li>Hora no painel: amarelo 10,6 (noite 9,4) · azul SNPVAC 7,5 (6,6) · celeste SPAC 5,6 (<b>4,9</b> à noite).</li>
+      <li>1.ª tecla: branco sobre #005EB8 = 6,4 · sobre #0077A8 = 5,0.</li>
+      <li>Ponto "ao vivo" sobre a placa: o cobalto #005EB8 dá 2,9 (falha) → usa o tom do escuro #6FAAE3 (7,5).</li>
+      <li>Ponto da aba sobre o papel: #005EB8 6,4 · #0097D4 3,3 (passa, é um sinal sem texto).</li>
+    </ul></div>
+    <div class="note"><h3>Para o código</h3><ul>
+      <li>A Opção 2 pede um papel novo em <code>BRAND</code>: a cor do painel (hora e linhas) fica fixa no amarelo, separada de <code>onDark</code>.</li>
+      <li>O resto já existe: <code>action</code> (tecla, ＋), <code>signal</code> (aba), <code>onDark</code> (ponto ao vivo).</li>
+      <li>Liga-se só com autorização escrita de cada sindicato (docs/decisoes.md, 2026-11-02).</li>
+    </ul></div>
+  </section>
+</div>
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    wallet:'<path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h12A2.5 2.5 0 0 1 20 6.5V8h1v8h-1v1.5A2.5 2.5 0 0 1 17.5 20h-12A2.5 2.5 0 0 1 3 17.5v-11zM15 10.4a1.6 1.6 0 0 0 0 3.2h6v-3.2h-6z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2l-4.2-4.2zM7.4 12h9.2v1.9H7.4V12zm0 4h7v1.9h-7V16z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>'
+  };
+  function ic(n, s){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>'; }
+  function row(tm, ds, dy){ return '<div class="row"><span class="tm">'+tm+'</span><span class="ds">'+ds+'</span><span class="dy label">'+dy+'</span></div>'; }
+  function cols(){ return '<div class="cols tag"><span>Hora</span><span>Destino</span><span style="text-align:right">Dia</span></div>'; }
+  function key(icon, txt, pri){ return '<span class="key'+(pri?' pri':'')+'">'+ic(icon,20)+'<span class="bodyStrong" style="color:inherit">'+txt+'</span></span>'; }
+  function sec(icon, lbl, txt, val, bar){ return '<div class="sec2"><span class="ci">'+ic(icon,16)+'</span><div class="tx"><span class="tag grey">'+lbl+'</span><span class="bodyStrong">'+txt+'</span>'+(bar != null ? '<div class="bar"><i style="width:'+bar+'%"></i></div>' : '')+'</div>'+(val ? '<span class="vv">'+val+'</span>' : '')+'</div>'; }
+  var S = {
+    hoje: { board:'<div class="bHead"><span class="eyebrow"><i class="pulse"></i>Partidas · hoje</span><span class="eyebrow">'+ic('cloud',14)+' 9° · LIS</span></div>'+
+        '<div class="hero"><span class="tag lbl">Report daqui a 1:40</span><div class="digits">06:20</div>'+
+        '<div class="dest"><b>LIS → LGW</b><span class="pill ok">A horas</span></div><span class="label sub">EZY8351 · parte 07:05 · avião em LIS · PSV até 15:20</span></div>'+
+        cols()+row('11:15','LIS','QUA 4')+row('05:00','SBY','SÁB 7'),
+      say:'<p class="bodyT say"><b>Tudo pronto.</b> Leva casaco: 7° em Gatwick à chegada.</p>',
+      secs: sec('cloud','O teu avião','G-UZHB já está em LIS desde as 22:10')+sec('wallet','Ganhos de hoje','per-diem 41,20 € · pernoita 48,00 €','+89,20 €'),
+      keys: key('share','Família',true)+key('shield','Limites')+key('bed','Hotel') },
+    folga: { board:'<div class="bHead"><span class="eyebrow">Quinta · 5 novembro</span><span class="eyebrow">'+ic('sun',14)+' 19°</span></div>'+
+        '<div class="hero"><span class="tag lbl">Próximo serviço daqui a</span><div class="digits">2<span class="u">dias</span></div>'+
+        '<div class="dest"><span class="headline">Sábado 7 · Standby aeroporto</span><span class="pill calm">Em dia</span></div></div>'+
+        cols()+row('05:00','SBY','SÁB 7')+row('06:40','AMS','DOM 8'),
+      say:'<p class="bodyT say"><b>Descansa, está tudo em dia.</b> Sol e 19° até ao fim da tarde.</p>',
+      secs: sec('wallet','Novembro · estimado','Dia 5 de 30','418,60 €',17)+sec('doc','Documentos','Certificado médico expira em 24 dias'),
+      keys: key('cal','Ver a escala',true)+key('shield','Limites')+key('gauge','Simular') }
+  };
+  document.querySelectorAll('.ph').forEach(function(el){
+    var s = S[el.dataset.s];
+    el.innerHTML = '<div class="status"><span>9:41</span><span style="font-size:13px">100%</span></div>'+
+      '<div class="scr"><div class="board">'+s.board+'</div>'+s.say+'<div class="secs">'+s.secs+'</div><div class="keys">'+s.keys+'</div></div>'+
+      '<nav class="tabbar"><div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div><div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div><div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div><div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div><div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div></nav>';
+  });
+  function fit(){ document.querySelectorAll('.fit').forEach(function(w){ var k = Math.min(1, w.clientWidth / 406), ph = w.querySelector('.ph'); ph.style.transform = k < 1 ? 'scale('+k+')' : ''; w.style.height = (860 * k) + 'px'; }); }
+  fit(); window.addEventListener('resize', fit);
+})();
+</script>
+</body></html>
