@@ -181,5 +181,38 @@ const vMEn = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 
 check('marco EN', vMEn && /500/.test(vMEn.bold) && /hours/.test(vMEn.bold));
 eq('determinismo do marco', vM500, stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: SUN, hour: 15, ctx: { yearHours: 507 } }));
 
+// ═══ HOJE — a frase do dia de serviço (Início v6, esboço design/inicio-v6.html; Nuno "sim", 2026-11-03) ═══
+// Só diz o que os dados sustentam: "Tudo pronto." SÓ com o voo ao vivo sem atraso (liveOk) E os limites
+// cumpridos (legalOk). O tempo é o de AGORA no destino (destC) — nunca uma previsão inventada para a chegada.
+// Casaco a ≤ 10° · chuva = ícone de chuva/trovoada. Sem nada sustentado → null (os secundários falam).
+const H = (ctx, extra = {}) => stateVoice({ state: 'hoje', dateISO: '2026-11-03', ctx, ...extra });
+eq('hoje: tudo pronto (live + limites, tempo ameno)', H({ phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 14 }),
+  { bold: 'Tudo pronto.', tail: 'Avião a horas e dentro dos limites.', to: 'hoje' });
+eq('hoje: tudo pronto + casaco (7° agora no destino)', H({ phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 }),
+  { bold: 'Tudo pronto.', tail: 'Leva o casaco: 7° agora em LGW.', to: 'hoje' });
+eq('hoje: tudo pronto + chuva (chuva ganha ao frio)', H({ phase: 'duty', liveOk: true, legalOk: true, dest: 'LGW', destC: 6, destRain: true }),
+  { bold: 'Tudo pronto.', tail: 'Chove em LGW — 6° agora.', to: 'hoje' });
+eq('hoje SEM voo ao vivo + frio: casaco, nunca "tudo pronto"', H({ phase: 'pre', legalOk: true, dest: 'LGW', destC: 7 }),
+  { bold: 'Leva o casaco.', tail: '7° agora em LGW.' });
+eq('hoje SEM voo ao vivo + chuva', H({ phase: 'pre', dest: 'LGW', destC: 12, destRain: true }),
+  { bold: 'Chove em LGW.', tail: '12° agora — conta com isso à chegada.' });
+eq('hoje SEM voo ao vivo, tempo ameno → null', H({ phase: 'pre', legalOk: true, dest: 'LGW', destC: 15 }), null);
+eq('hoje: live mas limites por confirmar → sem "tudo pronto" (ameno → null)', H({ phase: 'pre', liveOk: true, legalOk: false, dest: 'LGW', destC: 15 }), null);
+eq('hoje: casaco no limiar (10°)', H({ phase: 'pre', dest: 'FNC', destC: 10 }) && H({ phase: 'pre', dest: 'FNC', destC: 10 }).bold, 'Leva o casaco.');
+eq('hoje: 11° já não pede casaco', H({ phase: 'pre', dest: 'FNC', destC: 11 }), null);
+eq('hoje: sem temperatura do destino → null (nunca se inventa)', H({ phase: 'pre', dest: 'LGW' }), null);
+eq('em voo + live: a correr como previsto', H({ phase: 'air', liveOk: true, legalOk: true }), { bold: 'Está a correr como previsto.', tail: '' });
+eq('em voo SEM live → null', H({ phase: 'air', legalOk: true }), null);
+eq('aterrado → null', H({ phase: 'landed', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 }), null);
+eq('serviço que não é voo (sem fase) → null', H({ liveOk: true, legalOk: true }), null);
+check('hoje: "a horas" nunca sem voo ao vivo', [7, 12, 15].every((c) => [true, false].every((r) => {
+  const v = H({ phase: 'pre', legalOk: true, dest: 'LGW', destC: c, destRain: r });
+  return !v || !/a horas|pronto|previsto/i.test(v.bold + ' ' + v.tail);
+})));
+eq('hoje EN', H({ phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 }, { lang: 'en' }),
+  { bold: 'All set.', tail: 'Take the coat: 7° now in LGW.', to: 'hoje' });
+eq('hoje: determinismo', H({ phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 }), H({ phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 }));
+eq('disrupção continua sem voz (mesmo com tudo)', stateVoice({ state: 'disrupcao', dateISO: '2026-11-03', ctx: { phase: 'pre', liveOk: true, legalOk: true, dest: 'LGW', destC: 7 } }), null);
+
 console.log(`\nvoz do estado — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

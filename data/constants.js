@@ -142,6 +142,20 @@ export const PELE = {
   placeholder: '#B4B0A8',
   // sobre placa PRETA (cartões escuros da carteira · dock · FAB)
   onInk: '#FFFFFF', onInkSub: '#8F8F88', onInkFaint: '#DDDBD3',
+  // Início v6 (2026-11-03, medidos no esboço design/inicio-v6.html): o cinzento sobre o `soft` dava 4,03
+  // e o verde 3,92 → tons de TEXTO próprios para os secundários e as pílulas calmas (5,84 · 5,64).
+  greyOnSoft: '#5E5E57', okText: '#0B6E43',
+  plate: '#141414',   // a placa do painel de partidas (ao vivo) — de dia é a tinta
+};
+// A PLACA do painel de partidas (Início v6, estados ao vivo): é sempre escura, de dia e de noite, por isso
+// os tons por cima dela são os do escuro. Medidos (2026-11-03, dia · noite): rótulos 7,25 · 6,37 · hora amarela
+// 10,62 · 9,36 · pílula verde 6,29 · 5,40 · laranja 5,29 · 4,64 · vermelha 5,78 · 5,07 (o #E57368 dava 4,04 à noite).
+export const PLATE = {
+  day:   { bg: '#141414', fg: '#FFFFFF', sub: '#A3A39B', rule: 'rgba(255,255,255,0.14)', ruleFaint: 'rgba(255,255,255,0.08)', track: 'rgba(255,255,255,0.16)' },
+  night: { bg: '#18212D', fg: '#F4F2ED', sub: 'rgba(244,242,237,0.62)', rule: 'rgba(255,255,255,0.14)', ruleFaint: 'rgba(255,255,255,0.08)', track: 'rgba(255,255,255,0.16)' },
+  ok: '#46C98A', okBg: 'rgba(70,201,138,0.18)',
+  warn: '#F08A3C', warnBg: 'rgba(240,138,60,0.20)',
+  red: '#EC857B', redBg: 'rgba(229,115,104,0.16)',
 };
 // Tema NOTURNO da Living Interface (véspera/pernoita — "a app sabe que é noite").
 // A MESMA gramática da pele sobre azul-quase-preto: tipografia manda, amarelo-marca
@@ -155,6 +169,8 @@ export const PELE_NIGHT = {
   okSoftLine: 'rgba(70,201,138,0.35)', warnSoftLine: 'rgba(240,138,60,0.35)', redSoftLine: 'rgba(229,115,104,0.35)',
   placeholder: 'rgba(244,242,237,0.38)',
   onInk: '#0D131C', onInkSub: '#8F8F88', onInkFaint: '#3A4250',
+  greyOnSoft: 'rgba(244,242,237,0.62)', okText: '#46C98A',
+  plate: '#18212D',
 };
 // ─── Cor de MARCA por PAPÉIS (Design System 2.0 · edições por sindicato, 2026-11-02) ───────────
 // A pele (papel, tinta, ghost, estados ok/warn/red) é IGUAL para todos. Uma edição (SNPVAC · SPAC)
@@ -164,15 +180,19 @@ export const PELE_NIGHT = {
 //   marker — FUNDO de marcação com TINTA por cima: bilhete, pílula Desfazer, vistos (tinta sobre ele ≥4,5)
 //   onDark — a marca SOBRE PLACA PRETA ou no tema noturno: texto, ícones, spinners (≥4,5 sobre tinta)
 //   action — cor do que se TOCA (fundo do botão principal). Na base é a TINTA; nas edições, o azul.
+//   panel  — a HORA e as linhas do painel de partidas do Início (v6). FIXA no amarelo em TODAS as edições
+//            (convenção dos painéis de aeroporto, 10,6:1 sobre a placa · 9,4 à noite) — decisão do Nuno,
+//            opção 2, 2026-11-03. Só se usa sobre a placa escura.
 export const BRAND = {
   signal: '#FFB800',
   marker: '#FFB800',
   onDark: '#FFB800',
   action: '#141414',
+  panel: '#FFB800',
 };
 // Referência para as edições (só se ligam com autorização escrita de cada sindicato — docs/decisoes.md):
-// SNPVAC { signal:'#005EB8', marker:'#C7DCEF', onDark:'#6FAAE3', action:'#005EB8' }
-// SPAC   { signal:'#0097D4', marker:'#C7E8F6', onDark:'#0097D4', action:'#0077A8' }
+// SNPVAC { signal:'#005EB8', marker:'#C7DCEF', onDark:'#6FAAE3', action:'#005EB8', panel:'#FFB800' }
+// SPAC   { signal:'#0097D4', marker:'#C7E8F6', onDark:'#0097D4', action:'#0077A8', panel:'#FFB800' }
 
 // Famílias da pele — Barlow Condensed (display/números/fantasma/palavra condensada) +
 // Hanken Grotesk (corpo/rótulos). Estáticas: a FAMÍLIA carrega o peso (não o fontWeight).

@@ -9,6 +9,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { validityLabel } from './validities';
+import AsyncStorage from './secureStorage';
 
 // Expo Go (SDK 53+): o expo-notifications está AMPUTADO e imprime avisos logo no require —
 // aqui os lembretes ficam no-op TOTAL (nem se carrega o módulo). Só no dev build há nativo.
@@ -75,11 +76,75 @@ async function schedule(when, title, body, data) {
   } catch { /* dev-build: ajustar a API do trigger se necessário */ }
 }
 
+// ── Lembrete para ACORDAR (Início v6, 1.ª tecla da véspera — 2026-11-03) ──
+// Uma notificação local à hora escolhida, pedida EXPLICITAMENTE pelo tripulante — por isso vive à parte
+// dos lembretes automáticos (o interruptor do Perfil): desligá-los, ou o arranque a frio sem sessão, não
+// a apagam. Fica guardada (WAKE_KEY) com o DIA e o REPORT a que pertence: se a escala mudar o report
+// ou apagar o serviço, cai (validateWakeUp) — nunca toca à hora velha. Sair da conta apaga-a (clearWakeUp).
+// Devolve o que aconteceu — a UI di-lo sempre (nunca um toque que falha calado):
+//   'ok' · 'expo-go' (sem módulo nativo) · 'denied' (sem permissão) · 'past' (hora já passou) · 'fail'
+const WAKE_KEY = 'cp_wake_reminder';
+const WAKE_ID = 'cp-wake';
+async function placeWake(n, item) {
+  await n.cancelScheduledNotificationAsync(WAKE_ID).catch(() => {});
+  await n.scheduleNotificationAsync({ identifier: WAKE_ID,
+    content: { title: item.title, body: item.body, data: { kind: 'wake', iso: item.iso }, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
+    trigger: { type: 'date', date: new Date(item.at) } });
+}
+export async function scheduleWakeUp(when, { iso = null, report = null, lang = 'pt' } = {}) {
+  if (IN_EXPO_GO) return 'expo-go';
+  if (!when || !(when instanceof Date) || isNaN(when.getTime()) || when.getTime() <= Date.now()) return 'past';
+  const n = N();
+  if (!n) return 'fail';
+  const granted = await requestRemindersPermission();
+  if (!granted) return 'denied';
+  const l = (pt, en) => (lang === 'en' ? en : pt);
+  const item = { at: when.getTime(), iso, report, title: l('Hora de acordar', 'Time to wake up'),
+    body: report ? `${l('Report às', 'Report at')} ${report}.` : l('Tens serviço hoje.', 'You have a duty today.') };
+  try {
+    await placeWake(n, item);
+    await AsyncStorage.setItem(WAKE_KEY, JSON.stringify(item)).catch(() => {});
+    return 'ok';
+  } catch { return 'fail'; }
+}
+// O lembrete guardado ainda vale? Futuro, o serviço não foi apagado e o report é o mesmo. Um dia que não está
+// na escala gravada (voo só do calendário) não o derruba — só a hora conta. Sem `duties`, só a hora conta.
+const wakeStillValid = (item, duties) => {
+  if (!item || !item.at || item.at <= Date.now()) return false;
+  if (!duties || !item.iso || !duties[item.iso]) return true;
+  const d = duties[item.iso];
+  return !d.deleted && (!item.report || !d.report_time || d.report_time === item.report);
+};
+export async function clearWakeUp() {
+  await AsyncStorage.removeItem(WAKE_KEY).catch(() => {});
+  const n = N();
+  if (n) await n.cancelScheduledNotificationAsync(WAKE_ID).catch(() => {});
+}
+// Chamar quando a escala muda: um lembrete de um report que mudou ou desapareceu cai (nunca toca à hora velha).
+export async function validateWakeUp(duties) {
+  try {
+    const raw = await AsyncStorage.getItem(WAKE_KEY);
+    if (!raw) return;
+    if (!wakeStillValid(JSON.parse(raw), duties)) await clearWakeUp();
+  } catch { /* noop */ }
+}
+// Depois de o syncReminders cancelar tudo: volta a pôr o lembrete (o MESMO id — nunca em duplicado).
+async function rescheduleWakeUp(n, duties) {
+  try {
+    const raw = await AsyncStorage.getItem(WAKE_KEY);
+    const item = raw ? JSON.parse(raw) : null;
+    if (!item) return;
+    if (!wakeStillValid(item, duties)) { await clearWakeUp(); return; }
+    await placeWake(n, item);
+  } catch { /* noop */ }
+}
+
 // Reagenda TODOS os lembretes (validades + report). Cancela os antigos primeiro.
 export async function syncReminders({ validities = [], isPilot, duties = {}, todayISO, lang = 'pt' } = {}) {
   const n = N();
   if (!n) return;
   try { await ensureChannel(); await n.cancelAllScheduledNotificationsAsync(); } catch { /* noop */ }
+  await rescheduleWakeUp(n, duties);   // o lembrete para acordar sobrevive à limpeza (se o report não mudou)
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   // ── Validades: 30 d e 7 d antes (09:00) + no dia (09:00) ──
@@ -156,8 +221,16 @@ export async function notifyLiveSync(count = 1, lang = 'pt') {
   } catch { /* noop */ }
 }
 
+// Cancela os lembretes AUTOMÁTICOS (interruptor desligado, ou arranque sem sessão). O lembrete para
+// acordar foi pedido à mão e fica — só o clearWakeUp (sair da conta) ou a validação o tiram.
 export async function cancelAllReminders() {
   const n = N();
   if (!n) return;
-  try { await n.cancelAllScheduledNotificationsAsync(); } catch { /* noop */ }
+  try {
+    const all = await n.getAllScheduledNotificationsAsync();
+    await Promise.all((all || []).filter((x) => x && x.identifier !== WAKE_ID).map((x) => n.cancelScheduledNotificationAsync(x.identifier).catch(() => {})));
+  } catch {
+    // Sem listagem → não se arrisca apagar o lembrete para acordar: cancela tudo e volta a pô-lo.
+    try { await n.cancelAllScheduledNotificationsAsync(); await rescheduleWakeUp(n, null); } catch { /* noop */ }
+  }
 }

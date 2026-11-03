@@ -24,6 +24,8 @@ const META = {
   imported: { icon: 'check', tint: N.ok },  // import concluído (verde)
   changes:  { icon: 'sync',  tint: N.warn }, // mudanças por rever (âmbar)
   del:      { icon: 'trash', tint: P.red },  // remoção (com Desfazer)
+  bell:     { icon: 'bell',  tint: BRAND.marker, fg: P.ink }, // lembrete marcado (Início v6, véspera)
+  alert:    { icon: 'alert', tint: N.warn },  // não deu — o texto diz porquê (nunca um toque calado)
 };
 
 const ACTION_HOLD_MS = 5000;   // janela do Desfazer — fixa, previsível

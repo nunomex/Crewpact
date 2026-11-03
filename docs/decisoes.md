@@ -6,7 +6,92 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO — CONSTRUIR O INÍCIO v6 (ler isto primeiro)
+## PRÓXIMA SESSÃO — VER O INÍCIO v6 NO IPHONE (ler isto primeiro)
+
+**Modelo:** Opus 5.5 **Alto** (verificação de uma mudança). O Nuno escreve **"testar os estados"** → o guião
+`docs/verificacao-device.md` (reescrito hoje para a v6), estado a estado, com `FORCE_HOME_STATE`.
+**Depois:** afinações no `TUNE` do `screens/HomeScreen.js`; e a Escala passa a seguir esta linguagem (a escolha
+A/B/C da `escala-v3` fica para essa sessão).
+
+---
+
+## 2026-11-03 (noite, construção) — INÍCIO v6 NO CÓDIGO (Opus 5.5 Extra)
+
+**Feito:** `screens/HomeScreen.js` reescrito pela anatomia aprovada (`design/inicio-v6.html`). Ficaram intactos o motor
+(`data/crewState.js`), as frases (`data/stateVoice.js`), os cálculos (PSV, repouso 235, per-diem, pernoita, mês) e as
+folhas (porquê, hotel, partilha, auditoria, boas-vindas, dica do ＋).
+- **A placa:** ao vivo (véspera · hoje · disrupção · pernoita) escura, com a hora do próximo marco a amarelo (104) e a
+  contagem no rótulo; calmo (folga · pós-voo · férias · doença · fecho · configuração) no papel, com o número a tinta (até
+  150, encolhe pelo comprimento: "1 284,50 €" cabe). Fases do dia de voo: antes do report → hora do report; em serviço em
+  terra → hora de partida; no ar → hora de chegada + barra do setor; aterrado → "falta o sign-off".
+- **Linhas do painel:** hora do report · destino (ida-volta = a estação de fora; standby = SBY) · dia. No fecho do mês,
+  as parcelas ocupam esse lugar.
+- **Frase:** em letra normal; agora também na véspera, no pós-voo e na pernoita (as frases já existiam no motor, só
+  estavam caladas). A disrupção não tem frase; as do "hoje" foram feitas a seguir (ver "Decidido a seguir").
+- **Secundários (máx. 2):** fila de prioridade — calendário ilegível · alerta de lei (vermelho) · documento expirado ·
+  limites com o atraso · voo desviado/atrasado · registo atrás do real · escala mudou (cala-se quando a frase já fala
+  disso) · aeroporto com atrasos · documento a expirar · o que o momento pede (avião, tempo no destino, ganhos do dia,
+  pernoita, semana de 7 dias, auditoria) · e nunca vazio: o mês estimado (sem acordo: voo em 28 dias).
+- **3 teclas** (tabela da v4): folga Ver a escala · Limites · Simular | véspera **Lembrete 05:05** · Limites · Partilhar o
+  voo | hoje Família · Limites · Hotel/Simular | em voo Partilhar a chegada | disrupção Avisar a família · Limites com o
+  atraso · Simular | pernoita Hotel · mapas · Serviço de amanhã · Partilhar | pós-voo Registar o sign-off · **+€ hoje** ·
+  Amanhã | fecho Registar um extra · Ver nos Números · Auditoria/Simular | configuração Ligar o calendário · Importar o
+  PDF · Ver um exemplo | férias e doença: nenhuma. "Limites" abre o porquê de hoje (ou a margem, ou os Números).
+- **Saíram:** halo/véu/candeeiro (sistema de luz), bilhete manuscrito, fantasma pálido, saudação, chip das horas, barra
+  de ações, colunas de estado da folga (o saldo de férias deixou de aparecer na folga).
+- **Tokens novos (`data/constants.js`):** `PLATE` (placa dia/noite e as pílulas sobre ela) · `PELE.greyOnSoft` ·
+  `PELE.okText` · `PELE.plate` · **`BRAND.panel`** (a hora do painel, fixa no amarelo em todas as edições — opção 2).
+  A 1.ª tecla usa `BRAND.action` (à noite, a tinta clara); o ponto "ao vivo" usa `BRAND.onDark`.
+- **Movimento:** dígitos Solari (rotateX, 460 ms, cascata de 70 ms, native driver) ao entrar e quando um dígito muda;
+  ponto "ao vivo" a pulsar só com o ecrã à vista; movimentos reduzidos = seco. A passagem calmo ↔ ao vivo com o
+  ecrã aberto é uma troca seca (a "placa a escurecer do topo" do esboço **não foi feita**: rara, e a letra mudava de
+  cor a meio).
+- **Barra de estado do iPhone:** clara sobre a placa e à noite (corrige também a noite antiga, que tinha letra escura
+  sobre fundo escuro).
+- **Lembrete para acordar:** `scheduleWakeUp` em `data/reminders.js` (sobrevive ao `syncReminders`; sair da conta
+  apaga). Na Expo Go diz, num aviso âmbar, que só funciona na app instalada → entra na lista do dev build. Dois tipos
+  novos de aviso no `Toast` ('bell', 'alert').
+**Medido no PC:** `npm test` verde (25 suites) · pacote iOS gera · guardião: Início 73 → 0 (chão gravado; total tipo
+238→218 · <11 118→109 · espaço 463→434 · raio 61→57 · cores 76→65) · **contraste calculado** em 26 pares novos: falhavam
+a pílula vermelha calma (4,47 → vermelha cheia com letra branca, 5,30) e a vermelha na placa noturna (4,04 → `#EC857B`
+com fundo a 16 %, 5,07); a mais baixa que fica: pílula laranja na placa noturna 4,64 · **altura calculada** com as
+métricas lidas das fontes (Barlow 1,2 em de linha e dígitos de 0,7 em; Hanken 1,30 em): o estado mais alto (pós-voo com
+frase, 2 secundários com barra e 2 linhas) dá 703 pt nos 714 úteis a 390 × 844 (com 16 pt entre blocos dava 715 → 12).
+**Não verificado:** nada no iPhone. iPhone pequeno (SE) vai deslizar · letra dinâmica grande · VoiceOver · o lembrete
+(dev build). A posição dos dígitos dentro da caixa depende de como o iOS assenta a Barlow: o `TUNE.trim` (0,08) afina.
+**Decidido a seguir (Nuno: "sim" às minhas recomendações, mesma sessão):**
+- **Lembrete para acordar:** fica a tecla; o aviso de sucesso diz "Não substitui o despertador" (uma notificação pode
+  não tocar em silêncio/modo Dormir). No dev build passa a **alarme a sério com o AlarmKit (iOS 26)** — `docs/dev-build.md`.
+- **Placa a escurecer do topo:** não se faz (rara; os dígitos que mudam já viram). Revê-se só se no iPhone parecer brusco.
+- **Saldo de férias:** vive nos Números (cartão "Férias 2026", já existia). No Início volta só na folga, **de outubro a
+  dezembro, se sobram dias** ("Ficam 9 de 22 dias · gozam-se no ano (CT 240.º)" → Números), só com acordo que regista férias.
+- **Frases do dia de serviço — FEITAS, golden primeiro** (`test:voice` 60 → 68): "Tudo pronto." só com o voo ao vivo sem
+  atraso E os limites cumpridos; casaco a ≤ 10° e chuva com o tempo de AGORA no destino (nunca previsão inventada);
+  em voo "Está a correr como previsto." só com o feed; aterrado/não-voo/tempo ameno sem feed = sem frase. A
+  disrupção continua sem voz. O secundário do tempo no destino cala-se quando a frase já falou dele.
+**Revisão independente do código (um agente à parte, só erros reais) — 0 que rebentem; corrigidos depois de os
+confirmar no código:** o lembrete para acordar era apagado em cada arranque a frio (`cancelAllReminders` com o
+utilizador ainda vazio) e ao desligar os lembretes → agora vive à parte (só sair da conta o apaga, `clearWakeUp`), com o
+mesmo id (nunca duplicado) e ligado ao dia + report (`validateWakeUp` a cada mudança da escala: report mudado ou
+serviço apagado → cai) · véspera sem hora de report mostrava a partida como "Report amanhã" → "Partida amanhã · sem hora
+de report" · pernoita de 2 noites dizia "Report amanhã" → diz o dia · o cartão partilhado na véspera dizia "Hoje às" →
+sem pílula para outro dia · as parcelas do fecho não somavam (faltava o abono para falhas) → entra nos Extras, como nos
+Números · "Atraso +0" e hora riscada igual à nova → "Atrasado" e sem riscado · "rotação sem atraso" sem dados do inbound →
+só a matrícula · o standby dizia "tempo de standby descontado (225)" sem o motor o aplicar → "Estimativa: PSV a 1 setor
+desde o início do standby (225). Confirma na Simulação." · "Ver um exemplo" antes das 18h mostrava "Sem serviços
+marcados" → a folga lê o voo de exemplo · VoiceOver: o herói e os secundários sem toque eram botões "esbatidos" (e o link
+da privacidade ficava inalcançável) → blocos normais · em voo, "A seguir" repetia a 1.ª linha → só a pernoita · a tecla
+"Registar o sign-off" abria o detalhe só de leitura → abre logo o formulário (`DutyDetail` aceita `edit`); com o sign-off já
+registado diz "Ver o dia" · as interpolações do Solari passaram a ser criadas uma vez (sem saltos a meio).
+**Ficou como está (decidido):** a tecla "Amanhã" do pós-voo repete a 1.ª linha do painel, mas está no esboço aprovado.
+**Pendente:** a Caveat continua no arranque (o detalhe do hotel usa-a) · a Escala na linguagem do Início · **(antigo,
+achado na revisão)** o voo ao vivo segue o número do 1.º setor o dia todo: num dia de vários setores, um atraso do 1.º
+mete o dia em disrupção nos seguintes → corrigir quando se mexer no voo ao vivo · confirmar no iPhone que
+`alignItems: 'baseline'` alinha a unidade com os dígitos animados.
+
+---
+
+## (feito acima) CONSTRUIR O INÍCIO v6 — o plano que esta sessão seguiu
 
 **Modelo:** sessão nova em **Opus 5.5 Extra** (base nova de um ecrã — tabela do método).
 **O que está aprovado:** `design/inicio-v6.html` (https://claude.ai/artifact/UBfuuAehZRYjjSbfR2TPJh, versão 3) — o

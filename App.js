@@ -43,7 +43,7 @@ import { dutyToFtlDay, dayFtlFromDuties, reconcileDayLog } from './ftl';
 import { countersToEvents } from './data/aeEvents';
 import ExtraEventSheet from './components/ExtraEventSheet';
 import ExtrasManager from './components/ExtrasManager';   // PORT pele: gestão de extras (ver/apagar) no mini-FAB
-import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason } from './data/reminders';
+import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, requestRemindersPermission, remindersUnavailableReason, clearWakeUp, validateWakeUp } from './data/reminders';
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
@@ -507,6 +507,7 @@ export default function App() {
     setOnboarded(false);
     setProfile({ company: null });
     setLocked(false); // sai do estado trancado — o próximo login começa destrancado
+    clearWakeUp();    // o lembrete para acordar (Início, véspera) é da pessoa que sai — vai com ela
     // Termina a sessão no servidor em segundo plano (não bloqueia a navegação).
     supabase.auth.signOut().catch(() => {});
     // Os favoritos/notificações ficam guardados por utilizador no telemóvel;
@@ -1043,6 +1044,9 @@ export default function App() {
   useEffect(() => {
     if (remindersOn) syncReminders({ validities, isPilot, duties, todayISO: isoDay(), lang });
   }, [remindersOn, validities, duties]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Lembrete para acordar (Início v6): se a escala mudou o report ou apagou o serviço, o lembrete cai —
+  // com ou sem o interruptor dos lembretes ligado (foi pedido à mão). Só depois de os dados carregarem.
+  useEffect(() => { if (loadedUserId && user?.id && loadedUserId === user.id) validateWakeUp(duties); }, [duties, loadedUserId, user?.id]);
   useEffect(() => {
     if (!remindersOn) return;
     const rc = rosterChanges;

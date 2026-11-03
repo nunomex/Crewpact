@@ -51,7 +51,17 @@
 
 ## §3 · Living Interface
 
-O Início muda automaticamente conforme o dia de trabalho — **o coração da app**. 15 estados, motor puro `data/crewState.js` (golden `test:crewstate`), voz curada determinística `data/stateVoice.js` (golden `test:voice`), atmosfera = halo/candeeiro subtis + tema noturno. Doc próprio: [living-interface.md](living-interface.md). Regra transversal: **uma banda de alerta única, priorizada** — nunca empilhar avisos.
+O Início muda automaticamente conforme o dia de trabalho — **o coração da app**. 15 estados, motor puro `data/crewState.js` (golden `test:crewstate`), voz curada determinística `data/stateVoice.js` (golden `test:voice`). Doc próprio: [living-interface.md](living-interface.md).
+
+**Início v6 (2026-11-03, esboço `design/inicio-v6.html`, construído no mesmo dia):** um sistema com duas intensidades.
+**Ao vivo** (véspera · hoje · disrupção · pernoita) = a **placa** escura do painel de partidas (`PLATE`), a hora do próximo
+marco a amarelo (`BRAND.panel`, 104 pt, fixo em todas as edições) e o estado numa pílula. **Calmo** (folga · pós-voo ·
+férias · doença · fecho · configuração) = papel e o número enorme a tinta (até 150 pt). Sempre: linhas do painel
+(hora · destino · dia), a frase em letra normal, **no máximo 2 secundários** pela fila de prioridades (o urgente sobe;
+nunca vazio → o dinheiro do mês) e **3 teclas** no mesmo sítio, ao polegar (a 1.ª em `BRAND.action`). Saíram o halo/véu/
+candeeiro, o bilhete manuscrito, o fantasma pálido e a barra de ações. Movimento: dígitos Solari (460 ms, cascata de 70)
+e o ponto "ao vivo" (`BRAND.onDark`); reduzido = seco. A regra antiga da banda única continua: os avisos são
+secundários, nunca se empilham mais de 2.
 
 ---
 

@@ -302,113 +302,114 @@ _Isto liga a cifra a sério. Testa com calma; se falhar, recua sem perda._
 
 ---
 
-# Guião · TESTAR OS ESTADOS da Living Interface (2026-07-09)
+# Guião · TESTAR OS ESTADOS do Início v6 (reescrito 2026-11-03)
 
 _Quando disseres **"testar os estados"**, percorremos isto juntos, um estado de cada vez._
-_Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'folga' | 'hoje' |
-'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' | null=real). O Fast Refresh aplica ao guardar.
-**No fim, voltar a `null`.** Para conteúdo realista, melhor combinar a alavanca com dados reais._
+_Alavanca: `FORCE_HOME_STATE` no topo do `screens/HomeScreen.js` ('setup' | 'folga' | 'hoje' | 'disrupcao' |
+'vespera' | 'posvoo' | 'pernoita' | 'ferias' | 'doenca' | 'fecho' | null = real). O Fast Refresh aplica ao guardar.
+**No fim, voltar a `null`.** O conteúdo só é realista com dados: a alavanca força o estado, não inventa o serviço.
+Afinações no bloco `TUNE` do mesmo ficheiro (tamanhos 104/150, `trim` 0,08, Solari 460/70 ms, lembrete −75 min)._
 
-> **Revisto a 2026-11-02 (Design System 2.0).** Em TODOS os estados do Início: data legível + tempo na linha do
-> topo · SEM rótulo rodado · SEM seta/ícone amarelo no canto · destaques do kick a TINTA (nunca texto amarelo
-> sobre papel) · linha do € a tinta com barra que diz o que mede (era anel). Onde um item abaixo ainda diga
-> "amarelo", "donut" ou "rótulo", vale isto; cada estado é reescrito quando chega a sua vez.
+> **O que mudou (esboço aprovado `design/inicio-v6.html`):** saíram o fantasma pálido, o halo/véu/candeeiro, o
+> bilhete manuscrito, a saudação, o chip preto e a barra de ações. Agora há: a **placa** (escura = ao vivo; papel =
+> calmo) com o número enorme, as **linhas do painel** (hora · destino · dia), a **frase** em letra normal, **2 secundários**
+> e **3 teclas** grandes ao fundo, sempre no mesmo sítio.
 
-## 0 · Setup (primeira vez)
-_Dados reais: conta sem calendário ligado. Ou `FORCE='setup'`._
-- [ ] "Bem-vindo, <nome>" + fantasma = AVIÃO + "Olá!" + kick amarelo do calendário.
-- [ ] Passo "1 Ligar o calendário" (toca → fluxo de ligar na Escala) + placa amarela da dica eCrew.
-- [ ] Donut 15% SETUP · chip "PASSO 1" · ações **Ligar calendário** (preta) / **Ver exemplo**.
-- [ ] "Ver exemplo" mostra um dia demo (desaparece ao trocar de app — é espreitadela).
+## Transversais (ver em todos)
+- [ ] **Cabe sem deslizar** num iPhone de 6,1 polegadas (as contas dão ≤ 703 pt nos 714 úteis): as 3 teclas inteiras acima da barra de abas.
+- [ ] **Dígitos Solari:** viram em cascata ao entrar no Início (e ao voltar de outra aba). Com **Reduzir movimento** ligado
+      (Definições → Acessibilidade → Movimento): aparecem secos, sem virar. O ponto "ao vivo" deixa de pulsar.
+- [ ] **Os dígitos não são cortados** em cima nem em baixo (104 ao vivo · até 150 no calmo) e não tocam no rótulo nem no destino.
+      Se tocarem: baixar `TUNE.trim` (0,08 → 0,05). Se sobrar ar: subir.
+- [ ] A unidade ("dias", "€") e a hora riscada assentam na **mesma linha de base** dos dígitos.
+- [ ] **Placa escura:** a barra de estado do iPhone (hora, bateria) fica **clara**; ao puxar para baixo (atualizar) o topo
+      mostra a placa, não branco; ao ressaltar no fundo mostra papel. Ao mudar de aba, a barra de estado volta a escura.
+- [ ] Tocar no herói (o número) abre o detalhe do serviço, quando há serviço registado.
+- [ ] Linhas do painel: tocar abre o dia · o destino de uma ida-volta é a estação de fora (LIS-CDG-LIS → CDG) · standby = SBY.
+- [ ] Secundários: nunca mais de 2 · o urgente sobe (lei a vermelho, documento expirado, escala mudou, voo atrasado) ·
+      sem nada urgente aparece o dinheiro do mês (cêntimos sempre). Os que têm toque mostram › ou um valor.
+- [ ] Teclas: a 1.ª a tinta, as outras no suave · ≥ 88 pt de altura · toque longo no Hotel = editar.
+- [ ] Com novidades por ler: a pílula "N novidades" aparece no topo da placa, à esquerda do tempo.
+- [ ] Pull-to-refresh relê o calendário · trocar de aba e voltar não parte nada.
 
-## 1 · Folga  (Design System 2.0 — esboço `design/inicio-folga-v3.html`)
-_Dados reais: hoje sem serviço. Primeiro SEM nada marcado (o caso de 2026-11-02), depois COM serviço futuro._
+## 0 · Configuração (primeira vez)
+_Conta sem calendário ligado. Ou `FORCE='setup'`._
+- [ ] Calmo: "COMEÇAR" · **"Liga a tua escala"** grande · a frase do só-leitura · "Privacidade · saber mais" (sublinhado amarelo) abre a folha.
+- [ ] Teclas: **Ligar o calendário** (tinta) → fluxo de ligar na Escala · Importar o PDF · Ver um exemplo.
+- [ ] "Ver um exemplo" → a placa mostra "Exemplo · sair" no topo e o voo LIS → FNC de amanhã (antes das 18h como folga,
+      "1 dia"; depois das 18h como véspera); tocar em "Exemplo · sair" sai.
+- [ ] VoiceOver: o bloco grande lê-se de uma vez (sem dizer "esbatido") e o link da privacidade é alcançável.
 
-**Sem nada marcado**
-- [ ] Topo: "SEGUNDA · 2 NOVEMBRO" à esquerda (tinta) + tempo à direita (ícone + min–máx); por baixo a saudação.
-- [ ] Sem rótulo rodado na margem direita · sem seta amarela no canto.
-- [ ] SEM fantasma · "Folga" grande + "Sem serviços marcados" a tinta · o topo não deixa um buraco.
-- [ ] Bilhete manuscrito com o marcador amarelo (como antes).
-- [ ] Estado em colunas: LEGAL · Sim / ESCALA · Em dia / FÉRIAS · 22 de 22 — cada coluna abre o seu porquê.
-- [ ] € do mês a tinta com "€" cinzento + "NOVEMBRO · ESTIMADO"; à direita "Dia 2 de 30", barra amarela fina, "MÊS".
-- [ ] "A SEGUIR" + atalho "Abrir a Escala · Sincronizar ou importar a escala" → abre a Escala.
-- [ ] Brilho do sistema de luz centrado à volta do tempo no canto superior direito.
+## 1 · Folga (calmo)
+_Hoje sem serviço; primeiro SEM nada marcado, depois COM serviço futuro._
+- [ ] Topo: "QUINTA · 5 NOVEMBRO" + ícone do tempo e graus da base.
+- [ ] Com serviço: "PRÓXIMO SERVIÇO DAQUI A" · **2 dias** (150 pt) · "Sábado 7 · Standby Aeroporto" + pílula **EM DIA**
+      (só quando não há nada por ver) · 2 linhas do painel (a 1.ª é o próprio serviço, com a hora do report).
+- [ ] Sem nada marcado: sem número; "Sem serviços marcados".
+- [ ] Frase do dia em letra normal (negrito + resto a cinzento); se a escala mudou, a frase fala disso e toca → rever.
+- [ ] Secundários: o mês estimado (€ com cêntimos, "Dia 5 de 30", barra) + o que houver (documento a expirar…).
+- [ ] **De outubro a dezembro**, com dias de férias por gozar: secundário "Férias 2026 · Ficam 9 de 22 dias · gozam-se no
+      ano (CT 240.º)" → abre os Números. Antes de outubro, ou sem dias a sobrar, não aparece.
+- [ ] Teclas: **Ver a escala** · Limites (abre o porquê, ou os Números) · Simular.
 
-**Com serviço futuro**
-- [ ] Fantasma = dias até ao próximo serviço · kick "Próximo serviço daqui a N dias" (N a tinta) + "Qui 5 nov · report 06:10 · LIS-FNC".
-- [ ] "A SEGUIR": até 3 linhas, contagem à esquerda (N / dias), rota · voo + data · report · setores · pernoita à
-      direita; tocar abre o detalhe do dia.
+## 2 · Véspera 🌙 (ao vivo, noturno)
+_Serviço amanhã com report a ≤ 14 h e serem ≥ 18h. Ou `FORCE='vespera'` com o serviço criado._
+- [ ] Ecrã azul-noite, placa um tom acima (#18212D) · "● REPORT AMANHÃ" (ponto a pulsar) + tempo · base.
+- [ ] "DAQUI A 8 H 40 · TERÇA, 3" · **06:20** amarelo (104) · "LIS → LGW" + pílula **REPOUSO ✓** (ou REPOUSO CURTO a vermelho).
+- [ ] Linha de baixo: voo · "parte 07:05" · setores · "pernoita em LGW".
+- [ ] Voo do calendário SEM hora de report: o topo diz "PARTIDA AMANHÃ", o rótulo "· sem hora de report" e não aparece a tecla do lembrete.
+- [ ] "Partilhar o voo" (de amanhã): o cartão NÃO diz "Hoje às".
+- [ ] Frase: "Está tudo verificado — dorme. Report às 06:20."
+- [ ] Secundários: tempo amanhã no destino · ganhos de amanhã (per-diem + pernoita).
+- [ ] Teclas: **Lembrete 05:05** · Limites · Partilhar o voo. **Na Expo Go o lembrete diz que só funciona na app
+      instalada** (aviso âmbar) — é esperado; no dev build marca a notificação e o aviso diz "Não substitui o
+      despertador" (o alarme a sério, com o AlarmKit, está na lista em `docs/dev-build.md`).
 
-## 2 · Véspera 🌙 (NOTURNO)
-_Dados reais: serviço amanhã com report cedo + serem ≥18h. Ou `FORCE='vespera'` (com o serviço criado)._
-- [ ] Ecrã ESCURO (azul-noite) + **glow de candeeiro** no topo · avatar visível · rótulo claro.
-- [ ] Fantasma = countdown H:MM · "Amanhã" · kick "report às 05:30 · Z · repouso mínimo ✓ · acordar ~04:15".
-- [ ] Horas de amanhã em neutro · útil "Amanhã" · **chip INVERTIDO** (placa clara, dígitos escuros).
-- [ ] SEM € do mês (noite calma) · voz "está tudo verificado — dorme."
-- [ ] Legibilidade geral no escuro (o teste das 22h no sofá).
+## 3 · Hoje — pré-report (ao vivo)
+- [ ] "● PARTIDAS · HOJE" · "REPORT DAQUI A 1 H 40" (+ Zulu só se for diferente da hora local) · **hora do report** amarela.
+- [ ] Destino "LIS → LGW" + pílula **A HORAS** (com o voo ao vivo) ou **NOS LIMITES** (sem voo ao vivo) · linha: voo · parte ·
+      avião · "PSV até 15:20" (com o serviço registado) · pernoita.
+- [ ] Depois do report, antes da partida: "PARTIDA DAQUI A …" e o número passa a ser a hora de partida.
+- [ ] **Frase** (só o que os dados sustentam): com o voo ao vivo sem atraso e os limites cumpridos → "**Tudo pronto.**
+      Avião a horas e dentro dos limites." (ou "Leva o casaco: 7° agora em LGW." a ≤ 10° · "Chove em LGW — 9° agora.").
+      Sem voo ao vivo: só "Leva o casaco." / "Chove em LGW." quando é verdade; tempo ameno = sem frase. Tocar abre o dia.
+- [ ] Secundários: o teu avião (matrícula) · tempo no destino (some quando a frase já falou do tempo) · ganhos de hoje.
+- [ ] Teclas: **Família** (cartão de partilha) · Limites · Hotel (se pernoita) ou Simular.
 
-## 3 · Pré-report (hoje)
-_Dados reais: serviço HOJE ainda por começar._
-- [ ] Fantasma = countdown ao report · "Report" · kick "às HH:MM · Z" (+ "avião ✓ · aeroporto ✓" se live limpo).
-- [ ] Horas PARTIDA/CHEGADA grandes (verdes com live ok) + **tempo do destino** na célula da chegada (ícone desenhado).
-- [ ] Per-diem de hoje + donut PSV · chip report·Z · ações **Partilhar**/Hotel(se 🌙)/Simular.
-- [ ] Partilhar abre o cartão editorial + envia imagem+link.
+## 3b · Em voo (ao vivo)
+- [ ] "● EM VOO · EZY8351" + tempo no destino · "ATERRAS DAQUI A 1 H 05" · **hora de chegada** amarela.
+- [ ] Barra amarela do setor com "07:05 LIS · PSV 2:25 de 13:00 · 09:50 LGW"; anda com o relógio.
+- [ ] Frase "**Está a correr como previsto.**" só com o voo ao vivo a confirmar; sem feed, sem frase.
+- [ ] Secundário "Depois": pernoita (+ hotel) ou o próximo serviço. Tecla **Partilhar a chegada**.
 
-## 3b · Disrupção
-_Difícil de forçar com dados reais (precisa de atraso ao vivo) — `FORCE='disrupcao'` mostra o esqueleto; o teste verdadeiro é num dia de atraso a sério._
-- [ ] Banda laranja com a CAUSA · fantasma "+N" · "Atenção" laranja.
-- [ ] Horas com a planeada **rasurada** → ~nova · "derrapa/projeção" · chip "0̶6̶:̶4̶0̶ ~07:05".
-- [ ] NUNCA aparece "a tempo ✓" em lado nenhum.
+## 3c · Disrupção (ao vivo)
+_Precisa de atraso a sério; `FORCE='disrupcao'` só mostra o esqueleto._
+- [ ] "PARTIDA PREVISTA · REPORT 06:20" · **nova hora** amarela + a antiga **riscada** ao lado · pílula **ATRASO +25** laranja.
+- [ ] Linha: "O avião ainda vem a caminho (…) · chega ~06:55Z". Sem frase. Nunca aparece "a horas".
+- [ ] Secundário: "Limites com o atraso — PSV projetado 12:40 de 13:00" com barra. Teclas: **Avisar a família** · Limites com o atraso · Simular.
+- [ ] Cancelado/desviado: pílula vermelha e o rótulo diz para confirmar com o crewing.
 
-## 4 · Standby (hoje)
-_Dados reais: serviço standby/reserva HOJE._
-- [ ] Linha do serviço (tipo + janela) + linha **"SE CHAMADO → PSV até HH:MM"** com o máx por baixo.
+## 4 · Standby / formação hoje (ao vivo)
+- [ ] Standby a decorrer: "A JANELA FECHA DAQUI A …" · **hora do fim** · "Se te chamarem agora: PSV até 19:40" (ORO.FTL.225).
+- [ ] Antes de começar: "COMEÇA DAQUI A …" · hora do início · tipo + "até às …". Teclas: Simular · Limites · Ver a escala.
 
-## 5 · Pós-voo
-_Dados reais: serviço de HOJE já terminado (report 06:00, fim 10:00). Na BASE (sem 🌙)._
-- [ ] Fantasma = duty total · "Fechado" · kick = veredicto legal (PSV real/máx · dentro ✓).
-- [ ] DUTY · BLOCK · SETORES (toque → detalhe do dia) · per-diem hoje + donut PSV.
-- [ ] Útil "Fecho": repouso + próximo serviço + nudge do sign-off · ações **Sign-off**/Simular.
-- [ ] Multi-serviço (2 serviços no dia): só fecha quando os DOIS acabam; fechado NÃO mostra números de 1 só.
+## 5 · Pós-voo (calmo)
+- [ ] "DIA FECHADO · DE SERVIÇO" · **7:45** (150) · "LIS → CDG → LIS · 2 setores" + pílula **NOS LIMITES** (ou ACIMA DO LIMITE, vermelha cheia).
+- [ ] Linha: "5:10 de voo · repouso até amanhã 02:05 · PSV máx 13:00" (confere com o motor 235).
+- [ ] Frase "Dia fechado. …" · secundários: Serviço · 7 dias (barra) + o mês.
+- [ ] Teclas: **Registar o sign-off** (abre logo o FORMULÁRIO do dia; com o sign-off já registado a tecla diz "Ver o dia") ·
+      **+62,40 € hoje** (abre os Números) · Amanhã.
+- [ ] Dois serviços no dia: só fecha quando os dois acabam; mostra "2 serviços" e manda ver o detalhe.
 
-## 6 · Pernoita 🌙 (NOTURNO)
-_Dados reais: serviço de hoje terminado com 🌙 fora da base. Ou `FORCE='pernoita'`._
-- [ ] Escuro com candeeiro · fantasma = **ESTAÇÃO** (FNC) + tempo de lá no expoente.
-- [ ] Kick: hotel a amarelo + "amanhã report HH:MM" · meio = cartão do hotel (toque→mapas · longo→editar; sem hotel → convite).
-- [ ] Útil "Fora": repouso 10h (235) · pernoita +€ (cêntimos) · temperatura na estação.
-- [ ] Ações **Hotel**(preta)/**Partilhar**(o voo que aterrou — o link diz "Aterrou ✓")/Simular.
+## 6 · Pernoita 🌙 (ao vivo, noturno, sem ponto)
+- [ ] "PERNOITA · LGW" + tempo de lá · "REPORT AMANHÃ · DAQUI A …" · **hora do report** · rota de amanhã + REPOUSO ✓.
+      Pernoita de 2 noites: diz o dia ("REPORT QUINTA 5 · …") e a tecla diz "Próximo serviço".
+- [ ] Linha: nome do hotel (ou "sem hotel guardado") · "repouso até … (235)".
+- [ ] Secundários: esta noite +€ (pernoita) · o tempo amanhã. Teclas: **Hotel · mapas** (longo = editar; sem hotel = Guardar o hotel) ·
+      Serviço de amanhã · Partilhar (o voo que aterrou — a família vê "Aterrou ✓").
 
-## Transversais (em todos)
-- [ ] Início sem rótulo rodado em nenhum estado; nos outros ecrãs o rótulo ainda existe até à migração de cada um (bloco C).
-- [ ] Fantasma nunca pisa o rótulo · nunca desaparece após uns segundos (o bug do re-render morreu).
-- [ ] Banda de alerta só quando há motivo; aviso de documento crítico vive AO PÉ do Estado (vermelho).
-- [ ] Pull-to-refresh funciona · trocar de aba e voltar não parte nada.
-- **Afinações prováveis (diz o número):** posição do expoente do tempo · força do halo · `top` do rótulo (344) · tamanhos do fantasma (190/160/140).
-
-## 4b · Em voo (upgrade)
-_Dados reais: serviço HOJE com o report ja passado (setor a decorrer)._
-- [ ] Barra de PROGRESSO do setor (amarela, anda com o relogio; com live 1-setor usa partida real→ETA).
-- [ ] Util: "PSV 05:12 / max 13:00" a ACUMULAR ao vivo.
-- [ ] Standby aeroporto: util diz com/sem alojamento.
-- [ ] Formacao com papel instrutor: util diz "papel: instrutor — conta no mes (AE)".
-
-## 7b · Ferias
-_Dados reais: evento de ferias HOJE (mini-+ → Extra → Ferias, bloco com hoje dentro). Ou FORCE='ferias'._
-- [ ] Fantasma = dias que RESTAM no ano + tempo no expoente; "Ferias"; kick "ficam 9 de 22 · regressas sexta 18".
-- [ ] Halo + voz "ferias a serio." · SEM acoes · chip = dias restantes.
-
-## 7c · Doenca
-_Dados reais: evento de doenca HOJE. Ou FORCE='doenca'._
-- [ ] Fantasma = dia N do episodio; "As melhoras" (coracao amarelo); kick Art. 48 (piloto: 1-3 pago).
-- [ ] Tom baixo: sem halo, sem numeros a gritar; acao unica Extra (estender); voz "cuida de ti."
-
-## 7d · Fecho do mes
-_Dados reais: ultimos 3 dias do mes com AE. Ou FORCE='fecho'._
-- [ ] Fantasma = dias p/ fechar; "Fecho do mes"; kick "estimado ate agora **N NNN,NN €**" (amarelo, centimos).
-- [ ] Meio = PARCELAS (BASE·PER-DIEM·PERNOITAS·EXTRAS — somam; toque → Estatisticas).
-- [ ] Datarow = total € + donut do mes · util nudge "faltam extras? regista no +".
-- [ ] Acoes Extra (preta) / Numeros.
-
-## 8b · Repouso-ate + escala-mudou
-- [ ] Pos-voo/pernoita: util e chip dizem "repouso ate HH:MM (+1 se vira o dia) (235)" — confere com o motor.
-- [ ] Com alteracoes de escala por rever: banda "A tua escala mudou — N por rever" (toca → Escala).
+## 7 · Férias · Doença · Fecho (calmos)
+- [ ] Férias: "FÉRIAS · FICAM NO ANO" · **9** de 22 dias · "Regressas sexta, 27 de novembro" (+ report desse dia) · frase · **sem teclas**.
+- [ ] Doença: "BAIXA · DIA DO EPISÓDIO" · **2.º** dia · regra de pagamento (Art. 48 pilotos / Art. 61 cabine) · próximo serviço · **sem teclas**.
+- [ ] Fecho: "NOVEMBRO FECHA EM 3 DIAS · ESTIMADO" · **1 284,50 €** (o tamanho encolhe para caber) · as parcelas no lugar
+      das linhas (somam o total; tocar → Números) · secundário da Auditoria se houver itens · Teclas: **Registar um extra** · Ver nos Números · Simular.

@@ -102,7 +102,32 @@ const POOLS = {
   doenca: [
     ['Cuida de ti.', 'A escala pode esperar — as melhoras.', 'Take care of you.', 'The roster can wait — get well soon.'],
   ],
+  // ── HOJE (Início v6, 2026-11-03): a frase do dia de serviço. SÓ diz o que os dados sustentam:
+  // "Tudo pronto." exige o voo AO VIVO sem atraso E os limites cumpridos; o tempo é o de AGORA no
+  // destino (nunca uma previsão inventada para a hora da chegada). Sem pool base 'hoje' de propósito:
+  // sem nada sustentado, não há frase (os secundários falam). A disrupção continua sem voz.
+  'hoje.ready': [
+    ['Tudo pronto.', 'Avião a horas e dentro dos limites.', 'All set.', 'Aircraft on time and within limits.', 'hoje'],
+  ],
+  'hoje.readyCold': [
+    ['Tudo pronto.', 'Leva o casaco: {destC}° agora em {dest}.', 'All set.', 'Take the coat: {destC}° now in {dest}.', 'hoje'],
+  ],
+  'hoje.readyRain': [
+    ['Tudo pronto.', 'Chove em {dest} — {destC}° agora.', 'All set.', 'Raining in {dest} — {destC}° now.', 'hoje'],
+  ],
+  'hoje.cold': [
+    ['Leva o casaco.', '{destC}° agora em {dest}.', 'Take the coat.', '{destC}° now in {dest}.'],
+  ],
+  'hoje.rain': [
+    ['Chove em {dest}.', '{destC}° agora — conta com isso à chegada.', 'Raining in {dest}.', '{destC}° now — expect it on arrival.'],
+  ],
+  // Em voo: só com o feed ao vivo a confirmar. Sem cauda — a hora de chegada já está em grande na placa.
+  'hoje.air': [
+    ['Está a correr como previsto.', '', 'Running as planned.', ''],
+  ],
 };
+// Casaco no destino: temperatura de AGORA ≤ 10° (a folga usa a mínima de amanhã ≤ 6°, que é de madrugada).
+const HOJE_COLD_C = 10;
 
 const fill = (s, ctx) => s.replace(/\{(\w+)\}/g, (_, k) => String(ctx[k]));
 const eligible = (s, ctx) => ![...s.matchAll(/\{(\w+)\}/g)].some((m) => ctx[m[1]] == null || ctx[m[1]] === '');
@@ -146,6 +171,19 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
     else if (wx && wx.wind != null && wx.wind >= 25) key = 'folga.wind';
     else if (ic === 'sun' || ic === 'cloud-sun') key = 'folga.sun';
     else if (ic === 'cloud' || ic === 'fog') key = 'folga.cloud';
+  }
+  // HOJE: ctx.phase ('pre' antes do report · 'duty' em terra antes da partida · 'air' no ar · 'landed') ·
+  // ctx.liveOk (voo ao vivo sem atraso nem rotação atrasada) · ctx.legalOk · ctx.dest/destC/destRain (agora).
+  if (state === 'hoje') {
+    const ph = ctx.phase;
+    const cold = ctx.destC != null && ctx.destC <= HOJE_COLD_C;
+    const rain = ctx.destRain === true;
+    if (ph === 'air') key = ctx.liveOk ? 'hoje.air' : null;
+    else if (ph === 'pre' || ph === 'duty') {
+      if (ctx.liveOk && ctx.legalOk) key = rain ? 'hoje.readyRain' : cold ? 'hoje.readyCold' : 'hoje.ready';
+      else key = rain ? 'hoje.rain' : cold ? 'hoje.cold' : null;
+    } else key = null;   // aterrado, ou serviço que não é voo
+    if (!key) return null;
   }
   if (state === 'ferias' && key === state) {   // key !== state = o aviso já falou (não se atropela)
     const ic = wx && wx.icon;

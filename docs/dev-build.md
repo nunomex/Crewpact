@@ -23,6 +23,16 @@
    toggle honesto, não liga). No dev build volta tudo sem mexer em nada: agendamento
    por-dia do report, deduped. Validar: ativar o toggle no Perfil e receber a
    notificação de teste.
+   **+ Lembrete para acordar (Início v6, 2026-11-03):** a 1.ª tecla da véspera ("Lembrete
+   05:05" = report − 75 min) chama `scheduleWakeUp` (`data/reminders.js`). Na Expo Go diz,
+   num aviso âmbar, que só funciona na app instalada. No dev build: pede autorização, marca a
+   notificação `cp-wake` e guarda-a (`cp_wake_reminder`) para o `syncReminders` não a apagar.
+   Validar: tocar a tecla numa véspera → aviso "Lembrete às 05:05" → a notificação chega à hora;
+   reabrir a app (sincroniza os lembretes) e confirmar que continua marcada; sair da conta apaga-a.
+   **⚠️ Uma notificação NÃO é um despertador** (em silêncio ou no modo Dormir pode não tocar — às 4h é
+   o tripulante atrasado). O aviso já diz "Não substitui o despertador". **Decidido (Nuno, 2026-11-03):**
+   no dev build, trocar por um ALARME a sério com o **AlarmKit (iOS 26)**, que toca em silêncio e no
+   modo Foco — confirmar primeiro que há módulo Expo/config plugin que o suporte e a permissão que pede.
 
 2. **Voo ao vivo — superfície nativa (Dynamic Island / Live Activities)**
    O motor JÁ está na app (reconcile AirLabs, `liveFdpVerdict` crew-aware, card no

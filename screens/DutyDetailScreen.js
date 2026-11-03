@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
@@ -41,6 +41,9 @@ export default function DutyDetailScreen({ route, navigation }) {
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
 
   const date = route.params?.date;
+  // `edit` (Início v6, tecla "Registar o sign-off"): abre logo o formulário — sem obrigar a procurar o "Editar".
+  const editReq = route.params?.edit;
+  useEffect(() => { if (editReq) setEditing(true); }, [editReq]);
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): o acordo, a companhia (a Prova cita o AE dela) e a base
   // DESTE dia — um serviço antigo noutra companhia mostra o dinheiro e a lei dessa companhia.
   const ae = date ? ctxAll.aeAt(date) : ctxAll.ae;

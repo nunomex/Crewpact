@@ -62,8 +62,14 @@ Uma secção por sessão (Opus 5.5 Alto), na ordem Início · Escala · ＋/Simu
 4. **Ver de novo no iPhone** e baixar o chão do guardião: `node scripts/design.test.js --atualizar`.
 Dívida de partida (2026-11-02): tipo fora 325 · letra < 11 155 · espaço fora 657 · raio fora 91 ·
 cores soltas 105 · Ionicons 14. Ficheiros com mais: Escala, formulário de serviço, Perfil, Estatísticas, Início.
-- [ ] **Início** — sistema de luz (ponto, véu, temperatura horária); folga v2 (fantasma "QUI", bilhete
-      manuscrito Caveat, cartão preto do countdown); marcos na voz + primeiro alerta explicado.
+- [ ] **Início** — **v6 CONSTRUÍDO no código a 2026-11-03** (esboço `design/inicio-v6.html`; dívida do guardião 73 → 0).
+      Saíram o sistema de luz, o bilhete manuscrito, o fantasma e a barra de ações. Verificado no PC: `npm test` verde ·
+      pacote iOS gera · contraste calculado em todas as combinações novas (a mais baixa: pílula laranja na placa noturna
+      4,64) · altura calculada com as métricas das fontes (o estado mais alto: 703 pt nos 714 úteis a 390 × 844).
+      **Por ver no iPhone:** o guião "testar os estados" (`docs/verificacao-device.md`, reescrito para a v6) — os dígitos
+      Solari, cortes no número, a barra de estado clara sobre a placa, os 10 estados, movimentos reduzidos, VoiceOver.
+      **Não testado em lado nenhum:** iPhone pequeno (SE, 375 × 667: vai deslizar), letra dinâmica grande, o lembrete
+      para acordar (só dev build).
 - [ ] **Escala** — FUNCIONA no iPhone (Nuno, 2026-11-03: grupos A, B e C, 16/16 ✅, incluindo a pega e os movimentos
       reduzidos) mas o LAYOUT NÃO o convence ("não estou a gostar do UI e UX") → nova ronda de design antes de fechar.
       MIGRADA no código a 2026-11-03 (esboço `design/escala-v2.html`, dívida do guardião 181 → 0). O que se testou: o mês compacto (‹ › · "Hoje" fora do mês corrente · toque no título abre o seletor · deslizar
