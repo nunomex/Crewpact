@@ -6,7 +6,26 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## Sessão seguinte (dia 4, continuação) — LIMITES DA TAP, motor v2: LONGO CURSO (por guardar no git)
+## PRÓXIMA SESSÃO — LAYOUT: a ESCALA (Nuno: "vamos ao layout", 2026-11-03) — ler isto primeiro
+
+**Modelo:** sessão nova em **Opus 5.5 Extra** (ecrã com referências e esboço — tabela do método). O Nuno escreve
+"vamos à Escala".
+**Onde ficou o layout (bloco C, `docs/05-verificacao.md`):** feitos a entrada (Porta), a configuração (+ "Liga a tua
+escala"), o Perfil em índice + Família e o Início em folga (no código, por ver no iPhone). Próximo ecrã: **Escala** —
+a maior dívida do guardião (181: tipo 37 · espaço 89 · letra < 11 18), depois formulário de serviço (107), Números
+(101) e Início (73).
+**Passos (método, fase 4):**
+1. Medir o ecrã (`screens/EscalaScreen.js`): tamanhos, espaços, contraste, 390 px, noturno.
+2. Mobbin: 3 a 5 referências de calendários/escalas das melhores apps → o Nuno escolhe → `referencias/escala/`.
+3. Esboço em `design/` (o mockup manda na hierarquia; os números vêm de `TXT`/`SPACE`).
+4. Aprovado → código; baixar o chão do guardião (`node scripts/design.test.js --atualizar`).
+**Decisão pendente que entra aqui:** a exceção da grelha da Escala (etiquetas a 8–9,5 pt, abaixo da escala) —
+decidir no iPhone.
+**Ainda por ver no iPhone (não bloqueia):** §0b–§0i do `docs/verificacao-device.md` (o §0i com o kit de longo curso).
+
+---
+
+## Sessão seguinte (dia 4, continuação) — LIMITES DA TAP, motor v2: LONGO CURSO (gravado: `602e004`)
 
 **Pedido do Nuno:** "continua e fazemos só o longo curso por agora". Mesma regra: tudo do texto oficial; "Excede" só
 quando viola o texto em qualquer leitura.
