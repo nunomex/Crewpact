@@ -54,7 +54,22 @@ O SPAC e o SNPVAC não têm calculadora. Nenhuma app tem o AE da easyJet, da Rya
    (OM-A, cap. 7). A radiação e as provas do AE não. Testado no `prova.test` (+6 asserções).
 
 Verificado no PC: `npm test` verde · pacote iOS gera · guardião sem dívida nova. **Falta:** iPhone (guião §0d).
-**Próximo da lista:** limites de escala do AE (TAP primeiro), numa sessão própria.
+**Commit `1033b8a`.** **Próximo da lista:** limites de escala do AE (TAP primeiro). Em curso: um agente extrai as
+cláusulas dos 2 AE da TAP (SPAC 2023, SNPVAC 2024); cada cláusula é conferida no texto oficial antes de entrar.
+
+**Boas-vindas na Porta (Nuno, captura do iPhone):**
+- O ecrã de boas-vindas ainda tinha o desenho antigo:
+  - a marca ficava por baixo do relógio;
+  - título em maiúsculas de 40 e botão feito à mão;
+  - números 01–04 a amarelo sobre papel (1,7:1);
+  - "ao CrewPact" e "Per-diems".
+- Passou para a `Porta`, com o mesmo conteúdo aprovado:
+  - "Bem-vindo, <nome>";
+  - 4 linhas com ícones da casa;
+  - `PrimaryButton` "Começar";
+  - fade pelo driver JS.
+- Dívida a zero no ficheiro. A captura mostrava também o texto antigo ("A legalidade, calculada"): o iPhone tinha um
+  pacote antigo, por isso é preciso fazer Reload no Expo Go antes de testar.
 
 ---
 

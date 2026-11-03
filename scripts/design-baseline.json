@@ -1,14 +1,14 @@
 {
  "gerado": "2026-11-03",
  "total": {
-  "tipoFora": 289,
-  "tipoMenor11": 143,
-  "espacoFora": 598,
+  "tipoFora": 284,
+  "tipoMenor11": 142,
+  "espacoFora": 590,
   "raioFora": 86,
   "corSolta": 105,
   "ionicons": 10,
   "iconeNavSolto": 3,
-  "amareloTexto": 5
+  "amareloTexto": 4
  },
  "ficheiros": {
   "App.js": {
@@ -460,16 +460,6 @@
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
-  },
-  "components/WelcomeSheet.js": {
-   "tipoFora": 5,
-   "tipoMenor11": 1,
-   "espacoFora": 8,
-   "raioFora": 0,
-   "corSolta": 0,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 1
   },
   "components/YearShareCard.js": {
    "tipoFora": 2,

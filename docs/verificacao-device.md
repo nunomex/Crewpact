@@ -65,6 +65,8 @@ _Precisa de uma conta NOVA (e-mail de teste que nunca entrou): e-mail → códig
 - [ ] **Antiguidade:** roda de mês e ano. O "Entrar" só acende depois de rodares ou tocares; não deixa meses no
       futuro (no ano atual, o mês fica preso ao mês atual).
 - [ ] **Entrar** grava e segue para a oferta do Face ID e o Início, com as boas-vindas.
+- [ ] **Boas-vindas** (1× no Início, 2026-11-03): na Porta — placa com a marca (sem ficar por baixo do relógio),
+      "Bem-vindo, <nome>", 4 linhas com ícones (sem números amarelos), botão "Começar". Começar fecha e não volta.
 - [ ] Ryanair (sem AE modelado): só companhia → tipo → base, e tocar na base grava e entra.
 - [ ] Com **Reduzir movimento** ligado, as perguntas trocam sem deslizar e a barra salta.
 
