@@ -17,13 +17,17 @@ const MONTHS = {
 };
 const parse = (v) => { const m = /^(\d{4})-(\d{2})$/.exec(v || ''); return m ? { y: +m[1], m: +m[2] } : null; };
 
-export default function MonthYearWheel({ value, onChange, lang = 'pt', yearsBack = 50 }) {
+// monthsAhead (2026-11-03): quantos meses À FRENTE se aceitam (0 = nunca no futuro, a antiguidade;
+// 12 = uma promoção ou mudança de contrato já marcada).
+export default function MonthYearWheel({ value, onChange, lang = 'pt', yearsBack = 50, monthsAhead = 0 }) {
   const names = MONTHS[lang] || MONTHS.pt;
   const now = new Date();
-  const maxY = now.getFullYear();
-  const maxM = now.getMonth() + 1;
-  const years = Array.from({ length: yearsBack + 1 }, (_, i) => maxY - yearsBack + i);
-  const [sel, setSel] = useState(() => parse(value) || { y: maxY - 5, m: 1 });
+  const lim = new Date(now.getFullYear(), now.getMonth() + Math.max(0, monthsAhead), 1);
+  const maxY = lim.getFullYear();
+  const maxM = lim.getMonth() + 1;
+  const firstY = now.getFullYear() - yearsBack;
+  const years = Array.from({ length: maxY - firstY + 1 }, (_, i) => firstY + i);
+  const [sel, setSel] = useState(() => parse(value) || { y: now.getFullYear() - 5, m: 1 });
   const selRef = useRef(sel);
   const mRef = useRef(null);
   const yRef = useRef(null);

@@ -1,0 +1,279 @@
+<title>Perfil da CrewPact v3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: o Perfil como índice em grupos (opção 1 do Nuno), em quatro telemóveis — o topo, o fim, e duas
+   páginas de definição à Flighty. Tema único de propósito: a pele de dia da app, escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --ok: #118A55; --warn: #E86A10; --red: #C6362B;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 40px 34px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+figcaption .step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* cabeçalho da aba (identidade) */
+.p-eye { left: 24px; top: 66px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.bell { right: 16px; top: 56px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; color: var(--ink); font-size: 16px; }
+.ghost { right: 18px; top: 74px; font: 800 150px/1 var(--f-display); color: var(--line); letter-spacing: -2px; }
+.name { left: 24px; top: 92px; font: 700 44px/1 var(--f-display); letter-spacing: -.5px; }
+.role { left: 24px; top: 144px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.chips { left: 24px; right: 24px; top: 176px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { background: var(--soft); border-radius: 99px; padding: 6px 10px; font: 700 12px/1 var(--f-body); color: var(--ink); }
+.chips i { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--ok); margin-right: 5px; vertical-align: 1px; }
+
+/* barra colapsada (ao deslizar) */
+.bar { left: 0; right: 0; top: 0; height: 98px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.bar-t { left: 0; right: 0; top: 66px; text-align: center; font: 800 17px/1 var(--f-body); }
+
+/* grupos de linhas */
+.glab { left: 28px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.card { left: 20px; right: 20px; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--paper); }
+.row { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row .ic { width: 28px; height: 28px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font-size: 15px; color: var(--ink); flex: none; }
+.row b { flex: 1; font: 700 15px/1 var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row em { font: 500 13px/1 var(--f-body); font-style: normal; color: var(--grey); white-space: nowrap; }
+.row em.ok { color: var(--ok); } .row em.warn { color: var(--warn); }
+.row em .dot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--warn); margin-right: 5px; vertical-align: 1px; }
+.row .ch { color: var(--placeholder); font: 700 16px/1 var(--f-body); }
+.row.danger b, .row.danger .ic { color: var(--red); }
+.row .av { display: flex; }
+.row .av span { width: 24px; height: 24px; border-radius: 99px; background: var(--ink); color: var(--paper); font: 800 10px/24px var(--f-body); text-align: center; margin-left: -6px; border: 2px solid var(--paper); }
+.row .av span:first-child { margin-left: 0; }
+.legal { left: 0; right: 0; text-align: center; font: 500 12px/1 var(--f-body); color: var(--grey); }
+.legal u { color: var(--ink); }
+
+/* barra de abas */
+.tabs { left: 0; right: 0; bottom: 0; height: 83px; background: var(--paper); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr); padding-top: 12px; }
+.tabs span { text-align: center; font: 700 11px/1 var(--f-body); color: var(--grey); }
+.tabs span.on { color: var(--ink); }
+.tabs span.on::after { content: ""; display: block; width: 5px; height: 5px; border-radius: 99px; background: var(--yellow); margin: 6px auto 0; }
+.tabs span.plus { font: 700 22px/1 var(--f-body); color: var(--ink); }
+
+/* páginas de definição */
+.back { left: 16px; top: 58px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 22px/1 var(--f-body); color: var(--ink); }
+.title { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.body { left: 24px; right: 24px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.foot { left: 24px; right: 24px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.lab { left: 28px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.opt { left: 24px; right: 24px; height: 56px; border: 2px solid var(--line); border-radius: 14px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.opt.sel { border-color: var(--ink); }
+.opt .code { width: 46px; font: 700 22px/1 var(--f-display); color: var(--grey); }
+.opt.sel .code { color: var(--ink); }
+.opt b { flex: 1; font: 700 15px/1.2 var(--f-body); }
+.opt small { display: block; font: 500 12px/1.2 var(--f-body); color: var(--grey); margin-top: 2px; }
+.radio { width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line); flex: none; }
+.tick { width: 22px; height: 22px; border-radius: 99px; background: var(--yellow); flex: none; display: grid; place-items: center; font-size: 12px; color: var(--ink); }
+.tick .ico { stroke-width: 2.6; }
+.now { background: var(--soft); border-radius: 99px; padding: 4px 8px; font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); }
+.wheel { left: 24px; right: 24px; height: 120px; }
+.wheel .hl { position: absolute; left: 0; right: 0; top: 40px; height: 40px; border-radius: 10px; background: var(--soft); }
+.wheel p { position: absolute; font: 500 17px/40px var(--f-body); color: var(--grey); }
+.wheel p.on { font: 700 20px/40px var(--f-body); color: var(--ink); }
+.wheel .m { left: 20px; } .wheel .y { right: 20px; text-align: right; }
+.wheel .f { opacity: .5; }
+.seg { left: 24px; right: 24px; height: 40px; border-radius: 99px; background: var(--soft); display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; }
+.seg span { display: grid; place-items: center; border-radius: 99px; font: 700 14px/1 var(--f-body); color: var(--ink-soft); }
+.seg span.on { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(20,20,20,.12); }
+.src { left: 24px; right: 24px; border-radius: 12px; background: var(--soft); padding: 12px 14px; font: 500 12px/17px var(--f-body); color: var(--ink-soft); }
+.src b { color: var(--ink); }
+.src i { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--warn); margin-right: 6px; vertical-align: 1px; }
+.btn { left: 24px; right: 24px; top: 750px; height: 50px; border-radius: 99px; display: grid; place-items: center; font: 800 14px/1 var(--f-body); letter-spacing: .3px; background: var(--ink); color: var(--paper); }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-rank" viewBox="0 0 24 24"><path d="M5 9l7-4 7 4M5 14l7-4 7 4M5 19l7-4 7 4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h5M9.5 16h5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V5h6v2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/></symbol>
+  <symbol id="i-pass" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M9 16h6"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M3 18V7M3 13h18v5M21 13a3 3 0 0 0-3-3h-7v3"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="14" r="4"/><path d="M11 11l8-8M16 6l2 2"/></symbol>
+  <symbol id="i-face" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M9 15.5c1.8 1.4 4.2 1.4 6 0"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 5H6v14h4M14 8l4 4-4 4M18 12H9"/></symbol>
+  <symbol id="i-fam" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 19c0-2.4 1-4 3-4 1.6 0 3 1.3 3 4"/></symbol>
+</svg>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · Perfil · 3 de novembro de 2026</p>
+    <h1>Perfil da CrewPact v3</h1>
+    <p class="lede">O Perfil passa a ser um índice em grupos: a identidade em cima, e por baixo os grupos em cartões com uma linha por definição. Cada linha abre uma página própria, à Flighty: título, explicação e os mesmos cartões da configuração. Exemplo: tripulante de cabine da easyJet em Lisboa.</p>
+  </header>
+
+  <section aria-labelledby="h-p">
+    <h2 id="h-p">Os ecrãs</h2>
+    <div class="phones">
+
+      <!-- 1 · ÍNDICE, TOPO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Perfil, topo: identidade e os dois primeiros grupos">
+          <p class="ghost">FA</p>
+          <p class="p-eye">Tripulante de cabine</p>
+          <span class="bell"><svg class="ico"><use href="#i-bell"/></svg></span>
+          <p class="name">Nuno</p>
+          <p class="role">Tripulante de Cabine · easyJet</p>
+          <p class="chips"><span>LIS · Lisboa</span><span>Desde mar. 2018</span><span><i></i>AE abrangido</span></p>
+          <p class="glab" style="top:232px">O teu trabalho</p>
+          <div class="card" style="top:250px">
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-rank"/></svg></span><b>Categoria</b><em>FA · Tripulante</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-doc"/></svg></span><b>Contrato</b><em>12/12 · Tempo inteiro</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-pin"/></svg></span><b>Base</b><em>LIS · Lisboa</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-cal"/></svg></span><b>Na companhia desde</b><em>março 2018</em><span class="ch">›</span></div>
+          </div>
+          <p class="glab" style="top:456px">Acordo e serviço</p>
+          <div class="card" style="top:474px">
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-clock"/></svg></span><b>Serviço pós-voo</b><em class="warn"><span class="dot"></span>30 min</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-sun"/></svg></span><b>Férias por ano</b><em>25 dias</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><b>Vínculo</b><em>Empresa</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-shield"/></svg></span><b>Abrangido pelo AE</b><em class="ok">Sim</em><span class="ch">›</span></div>
+          </div>
+          <p class="glab" style="top:680px">Família</p>
+          <div class="card" style="top:698px">
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-fam"/></svg></span><b>Chegada ao vivo</b><span class="av"><span>AM</span><span>JS</span></span><span class="ch">›</span></div>
+          </div>
+          <div class="tabs"><span>Início</span><span>Escala</span><span class="plus">+</span><span>Números</span><span class="on">Perfil</span></div>
+        </div></div>
+        <figcaption><span class="step">Índice · topo</span><b>Quem és, e o teu trabalho</b><span>A identidade fica em cima (o fantasma é o código da categoria, como hoje). Cada linha mostra o valor atual e abre a sua página. O ponto laranja no pós-voo quer dizer "assumido, confirma".</span></figcaption>
+      </figure>
+
+      <!-- 2 · ÍNDICE, FIM -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Perfil deslizado até ao fim: ferramentas, conta e segurança, terminar sessão">
+          <div class="bar"></div><p class="bar-t">Perfil</p>
+          <div class="card" style="top:112px">
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-pass"/></svg></span><b>Validades</b><em class="warn">médico em 40 d</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-bed"/></svg></span><b>Hotéis</b><em>12 estações</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-book"/></svg></span><b>Biblioteca</b><em>lei e acordos</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-doc"/></svg></span><b>Relatórios</b><em>PDF · CSV</em><span class="ch">›</span></div>
+          </div>
+          <p class="glab" style="top:314px">Conta e segurança</p>
+          <div class="card" style="top:332px">
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-mail"/></svg></span><b>E-mail</b><em>nuno@exemplo.pt</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-key"/></svg></span><b>Palavra-passe</b><em>Criar</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-face"/></svg></span><b>Bloqueio com Face ID</b><em class="ok">Ligado</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-globe"/></svg></span><b>Idioma</b><em>Português</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-bell"/></svg></span><b>Lembretes</b><em>Ligados</em><span class="ch">›</span></div>
+            <div class="row"><span class="ic"><svg class="ico"><use href="#i-dl"/></svg></span><b>Exportar os meus dados</b><em>RGPD</em><span class="ch">›</span></div>
+            <div class="row danger"><span class="ic"><svg class="ico"><use href="#i-trash"/></svg></span><b>Apagar conta</b><span class="ch">›</span></div>
+          </div>
+          <div class="card" style="top:668px">
+            <div class="row danger"><span class="ic"><svg class="ico"><use href="#i-out"/></svg></span><b>Terminar sessão</b></div>
+          </div>
+          <p class="legal" style="top:728px"><u>Termos</u> · <u>Privacidade</u> · v1.0</p>
+          <div class="tabs"><span>Início</span><span>Escala</span><span class="plus">+</span><span>Números</span><span class="on">Perfil</span></div>
+        </div></div>
+        <figcaption><span class="step">Índice · fim</span><b>Ferramentas, conta e segurança</b><span>Os dois diálogos escondidos de hoje ("Segurança" e "Idioma & avisos") viram linhas à vista. "Palavra-passe: Criar" para quem entrou só com código. Apagar conta a vermelho, no fim do grupo.</span></figcaption>
+      </figure>
+
+      <!-- 3 · PÁGINA: CATEGORIA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Página da categoria: cartões, mês da promoção e Guardar">
+          <span class="back">‹</span>
+          <p class="title" style="top:112px">A tua categoria</p>
+          <p class="body" style="top:152px">O AE paga por categoria. Uma promoção conta a partir do mês em que aconteceu: os meses antes ficam como estavam.</p>
+          <div class="opt sel" style="top:226px"><span class="code">CM</span><b>Chefe de Cabine</b><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:290px"><span class="code">CMP</span><b>Chefe de Cabine (exp.)</b><span class="radio"></span></div>
+          <div class="opt" style="top:354px"><span class="code">FA</span><b>Tripulante de Cabine</b><span class="now">atual</span></div>
+          <div class="opt" style="top:418px"><span class="code">FA1</span><b>Tripulante 1.º ano</b><span class="radio"></span></div>
+          <p class="lab" style="top:500px">A partir de que mês?</p>
+          <div class="wheel" style="top:520px"><span class="hl"></span>
+            <p class="m f" style="top:0">Outubro</p><p class="y f" style="top:0">2025</p>
+            <p class="m on" style="top:40px">Novembro</p><p class="y on" style="top:40px">2026</p>
+            <p class="m f" style="top:80px">Dezembro</p><p class="y f" style="top:80px">2027</p>
+          </div>
+          <p class="foot" style="top:656px">Histórico: FA desde mar. 2018.</p>
+          <p class="btn">Guardar a promoção</p>
+        </div></div>
+        <figcaption><span class="step">Página · com mês</span><b>A categoria</b><span>Os mesmos cartões da configuração; a atual tem a etiqueta "atual". Como há duas escolhas (categoria e mês), aqui há botão: "Guardar a promoção". O contrato funciona igual.</span></figcaption>
+      </figure>
+
+      <!-- 4 · PÁGINA: PÓS-VOO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Página do serviço pós-voo com escolha 0, 15, 30 ou 45 minutos">
+          <span class="back">‹</span>
+          <p class="title" style="top:112px">Serviço pós-voo</p>
+          <p class="body" style="top:152px">O tempo de serviço depois dos calços: relatórios, desembarque, briefing final. Conta para o repouso e para os limites de 7, 14 e 28 dias. Não conta para o PSV.</p>
+          <p class="seg" style="top:246px"><span>0</span><span>15</span><span class="on">30</span><span>45</span></p>
+          <p class="foot" style="top:296px">minutos, só nos serviços de voo</p>
+          <p class="src" style="top:336px"><i></i><b>Assumido.</b> A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.</p>
+        </div></div>
+        <figcaption><span class="step">Página · escolha rápida</span><b>O serviço pós-voo</b><span>À Flighty (Unidades): a escolha grava logo, sem botão. A fonte fica à vista: assumido, do Manual de Operações, ou definido por ti.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>Um só formato</b><span>Hoje há mosaicos, linhas com interruptores e mais mosaicos. Passa a haver só grupos de linhas, cada uma com o valor atual à direita.</span></li>
+      <li><b>Uma página por definição</b><span>Com título, explicação e a lei, como na configuração. A categoria, o contrato e a base usam os mesmos cartões: uma coisa a aprender.</span></li>
+      <li><b>Nada escondido em diálogos</b><span>"Segurança" e "Idioma & avisos" eram diálogos com várias coisas dentro. Cada coisa passa a ter a sua linha.</span></li>
+      <li><b>Família num só sítio</b><span>A tira de cartões dá lugar a uma linha com as iniciais. A página da família fica igual por dentro.</span></li>
+      <li><b>Palavra-passe para quem só usa código</b><span>A linha diz "Criar" em vez de "Mudar" quando a conta não tem palavra-passe.</span></li>
+      <li><b>Letra, espaço e cores da escala</b><span>Saem os 49 espaços fora da grelha, as 10 cores soltas e os 12 tamanhos de letra fora da escala do Perfil.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas o índice e as duas páginas-modelo?</b><span>Se sim, as outras páginas seguem estes dois modelos: cartões (categoria, contrato, base, frota, vínculo) ou escolha rápida (pós-voo, férias, idioma, lembretes, bloqueio).</span></li>
+      <li><b>A companhia e o tipo (piloto/cabine) mudam-se no Perfil?</b><span>Hoje não se mudam. Recomendo uma linha "Mudar de companhia" que volta a abrir a configuração: é raro, mas acontece, e a categoria e a base dependem da companhia.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

@@ -84,6 +84,26 @@ _Da análise da concorrência (`docs/concorrencia-calculos.md`)._
 - [ ] Em lado nenhum a app diz "Legal", "Ilegal" ou "Não legal" como veredicto (os termos da lei ficam: "mínimo
       legal", "registo legal", "limite legal" da radiação).
 
+### 0e · Perfil como índice em grupos (2026-11-03, esboço `design/perfil-v3.html`)
+- [ ] O Perfil mostra grupos com uma linha por definição e o valor atual à direita: **O teu trabalho** · **Acordo e
+      serviço** · **Família** · **Ferramentas** · **Conta e segurança** · **Terminar sessão** (sem mosaicos).
+- [ ] **Categoria:** abre a página com os cartões (a atual com a etiqueta "atual"), a roda "A partir de que mês?" e
+      "Guardar a promoção" (só acende ao escolher outra). Guardar volta ao índice com a categoria nova; o histórico
+      aparece na página. O **Contrato** funciona igual.
+- [ ] **Base:** pesquisa, Portugal primeiro, nomes em português; tocar grava e volta sozinho.
+- [ ] **Na companhia desde:** a roda; "Guardar" só acende quando mudas. O título diz o nome da TUA companhia
+      (antes dizia "na easyJet" a toda a gente).
+- [ ] **Serviço pós-voo:** 0 / 15 / 30 / 45 grava logo; a caixa diz "Assumido", "Definido por ti" ou "Do Manual".
+- [ ] **Férias por ano** (easyJet): − / + grava a cada toque. **Vínculo**, **Abrangido pelo AE**, **Idioma**,
+      **Lembretes**, **Bloqueio com Face ID**: cartões; tocar grava (o bloqueio pede o Face ID para ligar).
+- [ ] **Conta e segurança:** E-mail, Palavra-passe ("Definir"), Exportar e Apagar conta abrem as janelas de sempre.
+- [ ] **Família** (página própria, 2026-11-03): no Perfil, a linha "Chegada ao vivo" diz quantas pessoas há e abre a
+      página — uma pessoa por linha com a última partilha, "Adicionar pessoa" no fundo. Tocar numa pessoa abre a janela
+      de sempre (Partilhar um voo · Partilhas · Remover). Num dia de voo aparece "Hoje tens voo…".
+- [ ] **Mudar de companhia** → "Mudar de companhia?" → **Mudar** abre a configuração com **"Cancelar"** no canto
+      (não "Sair"). Cancelar volta ao Perfil sem mudar nada. Ir até ao fim grava a companhia nova, a categoria
+      certa (o histórico antigo não manda) e NÃO mostra as boas-vindas outra vez.
+
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._
 - [ ] Escreves o email → **Verificar** → passa ao ecrã de **inserir código**.

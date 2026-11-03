@@ -66,7 +66,9 @@ O Início muda automaticamente conforme o dia de trabalho — **o coração da a
 | `IconButton` | ✕ fechar · ‹ voltar · ações de cabeçalho | **único** botão de ícone: 36 redondo, ícone 16 (‹ 18), toque 44, `label` obrigatório, `night` para o tema noturno (§10) |
 | `SheetHeader` | cabeçalho de folhas e páginas modais | rótulo (ponto amarelo) + título `TXT.titleLg` + ✕ à direita; ‹ opcional à esquerda. Não recriar à mão |
 | `Porta` | ecrãs **antes da app** (entrada, código, nome, palavra-passe, Face ID, bloqueio, reativar, configuração) | placa de tinta com a marca + folha de papel com o passo; ‹ e `footer` (ação larga) como no §10; a placa encolhe para faixa com o teclado; `progress` = "Configuração · 2 de 6" + barra amarela na faixa. **Nunca** num ecrã com barra de abas (§11) |
-| `MonthYearWheel` | escolher mês e ano (antiguidade) | roda de 2 colunas, nunca no futuro; o valor só nasce quando a pessoa mexe; ajustável no VoiceOver |
+| `MonthYearWheel` | escolher mês e ano (antiguidade, promoção) | roda de 2 colunas; `monthsAhead` (0 = nunca no futuro); o valor só nasce quando a pessoa mexe; ajustável no VoiceOver |
+| `OptCard` | escolher uma opção (configuração, páginas do Perfil) | o MESMO cartão em todo o lado: código · nome · apoio · círculo vazio ou visto amarelo (ou etiqueta "atual") |
+| `Pagina` | página de definição empilhada (Perfil) | ‹ em cima à esquerda · título · explicação · conteúdo · UMA ação no fundo (quando há) — à Flighty |
 | `Toast` | `notify(title, sub, kind, action?)` global | toasts locais proibidos; `action={label,onPress}` = pílula "Desfazer" (5 s, kind `del`) — ver motion §7 |
 | `ConfirmDialog` / `CenterDialog` | confirmação / conteúdo centrado | convenção: `Alert` nativo DENTRO de Modal; `ConfirmDialog` fora. **Fronteira do desfazer (2026-07-15): local = apaga-já + toast "Desfazer" (5 s); servidor-irreversível (conta·link família·sessão) = confirmação honesta.** |
 | `Skeleton`, `CountUp`, `useEnter` | loading / números / entrada | todos respeitam reduce-motion |

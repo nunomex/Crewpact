@@ -76,6 +76,8 @@ import InfoScreen         from './screens/InfoScreen';   // PORT pele: aba FTL/A
 import FtlDetailScreen    from './screens/FtlDetailScreen';
 import StatsScreen        from './screens/StatsScreen';
 import SettingsScreen     from './screens/SettingsScreen';
+import PerfilPaginaScreen from './screens/PerfilPaginaScreen';
+import FamiliaScreen      from './screens/FamiliaScreen';
 import ValidadesScreen    from './screens/ValidadesScreen';
 import HoteisScreen       from './screens/HoteisScreen';
 import HotelStationScreen from './screens/HotelStationScreen';
@@ -161,6 +163,8 @@ function PerfilStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PerfilMain" component={SettingsScreen} />
+      <Stack.Screen name="PerfilPagina" component={PerfilPaginaScreen} />
+      <Stack.Screen name="Familia" component={FamiliaScreen} />
       <Stack.Screen name="Validades"  component={ValidadesScreen} />
       <Stack.Screen name="Hoteis"     component={HoteisScreen} />
       <Stack.Screen name="HotelStation" component={HotelStationScreen} />

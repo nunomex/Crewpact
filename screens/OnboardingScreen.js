@@ -20,6 +20,7 @@ import Icon from '../components/Icon';
 import Porta, { portaTxt as P } from '../components/Porta';
 import PrimaryButton from '../components/PrimaryButton';
 import MonthYearWheel from '../components/MonthYearWheel';
+import Opt, { SelTick, itemsOf, norm, optStyles } from '../components/OptCard';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { countryName as countryNameOf, baseCityName } from '../data/countries';
 import { AppContext } from '../data/appContext';
@@ -32,47 +33,13 @@ import { PELE, PELE_NIGHT, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/
 
 const ADVANCE_MS = 280;   // o visto aparece e, só depois, passa à pergunta seguinte
 
-// VISTO de seleção: disco amarelo (papel `marker`) + check a tinta, com um pop ao aparecer.
-// Driver JS de propósito (lição do login, device 2026-11-02): um valor nativo preso deixava-o invisível.
-function SelTick({ reduce, style }) {
-  const v = useRef(new Animated.Value(reduce ? 1 : 0)).current;
-  useEffect(() => {
-    if (reduce) { v.setValue(1); return; }
-    Animated.spring(v, { toValue: 1, friction: 6, tension: 280, useNativeDriver: false }).start();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <Animated.View style={[o.tick, style, { transform: [{ scale: v }] }]}>
-      <Icon name="check" size={12} color={PELE.ink} />
-    </Animated.View>
-  );
-}
-
-// Cartão de opção: código (Barlow) · nome · linha de apoio · círculo vazio OU visto amarelo.
-function Opt({ code, label, sub, sel, onPress, reduce }) {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[o.opt, sel && o.optSel]}
-      accessibilityRole="button" accessibilityState={{ selected: !!sel }} accessibilityLabel={[code, label, sub].filter(Boolean).join(', ')}>
-      {code ? <Text style={[o.code, sel && o.codeSel]} allowFontScaling={false}>{code}</Text> : null}
-      <View style={o.optTxt}>
-        <Text style={o.lbl} numberOfLines={1}>{label}</Text>
-        {sub ? <Text style={o.sub} numberOfLines={1}>{sub}</Text> : null}
-      </View>
-      {sel ? <SelTick reduce={reduce} /> : <View style={o.radio} />}
-    </TouchableOpacity>
-  );
-}
-
-// Códigos curtos ficam na coluna; os compridos ("PPY 9/12", "sazonal-50") já vão no nome.
-const shortCode = (code) => (code && String(code).length <= 5 ? String(code) : null);
-// O código não se repete no nome: "Tempo inteiro (12/12)" → "Tempo inteiro".
-const cleanLabel = (label, code) => {
-  if (!code || !label || !label.includes(code)) return label;
-  return label.replace(`(${code})`, '').replace(code, '').replace(/\s{2,}/g, ' ').trim() || label;
-};
-const norm = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function OnboardingScreen() {
-  const { user, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang } = useContext(AppContext);
+  const { user, profile, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang } = useContext(AppContext);
+  // MUDAR DE COMPANHIA (2026-11-03, Perfil): a configuração reabre para quem JÁ tem companhia. Nesse modo
+  // o canto diz "Cancelar" (volta à app sem mudar nada), as boas-vindas não voltam, e as respostas
+  // JUNTAM-SE ao perfil (não o substituem: pós-voo, vínculo, férias… ficam).
+  const isChange = useRef(!!profile?.company).current;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
@@ -130,10 +97,9 @@ export default function OnboardingScreen() {
     const any = getAe(a, 'pilot') || getAe(a, 'cabin');
     return any ? l('AE modelado · piloto e cabine', 'CLA modelled · pilots and cabin') : l('FTL · acordo por modelar', 'FTL · agreement not modelled yet');
   };
-  const itemsOf = (ids, labelFn) => ids.map((id) => ({ id, code: shortCode(id), label: cleanLabel(labelFn(id, lang), id) }));
-  const CATEGORIES = ae ? itemsOf(ae.CATEGORIES, ae.categoryLabel) : [];
-  const CONTRACTS = ae ? itemsOf(ae.CONTRACTS, ae.contractLabel) : [];
-  const FLEET_ITEMS = D.companyHasFleet ? itemsOf(ae.FLEETS, ae.fleetLabel) : [];
+  const CATEGORIES = ae ? itemsOf(ae.CATEGORIES, ae.categoryLabel, lang) : [];
+  const CONTRACTS = ae ? itemsOf(ae.CONTRACTS, ae.contractLabel, lang) : [];
+  const FLEET_ITEMS = D.companyHasFleet ? itemsOf(ae.FLEETS, ae.fleetLabel, lang) : [];
 
   // Bases da companhia por país (o do telemóvel primeiro), filtradas pela pesquisa.
   const q = norm(query.trim());
@@ -188,14 +154,20 @@ export default function OnboardingScreen() {
       // Mês/ano → dia 01 por convenção (o prémio salta por ANOS; o dia é irrelevante).
       serviceStart: isRealMonth(d.serviceStart) ? `${d.serviceStart}-01` : null,
     };
+    // Histórico de categoria NOVO (2026-11-03): sem isto, numa mudança de companhia o histórico da
+    // antiga ("FA desde 2018") continuava a mandar na categoria atual. Mesmo início que o migrateCrew.
+    payload.crewHistory = payload.crewCategory
+      ? [{ category: payload.crewCategory, contract: payload.crewContract || '12/12', from: payload.serviceStart ? payload.serviceStart.slice(0, 7) : '2000-01' }]
+      : [];
     const result = await updateProfile(payload, lang);
     if (!result.ok) { setSaving(false); setSaveError(l('Não foi possível gravar. Tenta outra vez.', 'Couldn’t save. Please try again.')); return; }
     await upsertProfile(user?.id, payload);
     setSaving(false);
     if (result.user) setUser(result.user);
-    setProfile(payload);
-    // A folha de BOAS-VINDAS só nasce do funil: arma-se aqui, o Início mostra-a 1× e marca 'seen'.
-    if (user?.id) await AsyncStorage.setItem(`cp_welcome_${user.id}`, 'pending').catch(() => {});
+    if (isChange) setProfile((p) => ({ ...p, ...payload }));
+    else setProfile(payload);
+    // A folha de BOAS-VINDAS só nasce do funil (1.ª vez): arma-se aqui, o Início mostra-a 1× e marca 'seen'.
+    if (user?.id && !isChange) await AsyncStorage.setItem(`cp_welcome_${user.id}`, 'pending').catch(() => {});
     success();
     setOnboarded(true);
   };
@@ -231,8 +203,8 @@ export default function OnboardingScreen() {
         : null;
 
   const corner = (
-    <TouchableOpacity onPress={logout} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
-      <Text style={o.exit}>{l('Sair', 'Sign out')}</Text>
+    <TouchableOpacity onPress={isChange ? () => setOnboarded(true) : logout} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
+      <Text style={o.exit}>{isChange ? l('Cancelar', 'Cancel') : l('Sair', 'Sign out')}</Text>
     </TouchableOpacity>
   );
 
@@ -240,12 +212,12 @@ export default function OnboardingScreen() {
     const sel = draft.crewType === id;
     const dim = !sel && !!draft.crewType;   // há escolha e não é este → esbate
     return (
-      <TouchableOpacity key={id} style={[o.big, sel && o.optSel]} activeOpacity={0.8}
+      <TouchableOpacity key={id} style={[o.big, sel && optStyles.optSel]} activeOpacity={0.8}
         onPress={() => choose('crewType', id, id === draft.crewType ? {} : { crewCategory: null, crewContract: null, crewFleet: null })}
         accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityLabel={`${title}, ${sub}`}>
         {sel ? <SelTick reduce={reduce} style={o.bigTick} /> : null}
         <Text style={[o.bigT, dim && o.dim]}>{title}</Text>
-        <Text style={o.sub}>{sub}</Text>
+        <Text style={optStyles.sub}>{sub}</Text>
       </TouchableOpacity>
     );
   };
@@ -321,17 +293,6 @@ const o = StyleSheet.create({
   lead:    { marginBottom: SPACE.xl },
   after:   { marginTop: SPACE.lg },
   exit:    { ...TXT.label, color: PELE_NIGHT.grey },
-
-  // Cartão de opção (MyFitnessPal/Substack): borda 2 sempre (escolher não mexe no tamanho), raio 14.
-  opt:     { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, backgroundColor: PELE.paper, marginBottom: SPACE.sm },
-  optSel:  { borderColor: PELE.ink },
-  code:    { ...TXT.title, color: PELE.grey, minWidth: 46 },
-  codeSel: { color: PELE.ink },
-  optTxt:  { flex: 1, minWidth: 0 },
-  lbl:     { ...TXT.callout, color: PELE.ink },
-  sub:     { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.xxs },
-  radio:   { width: 22, height: 22, borderRadius: 999, borderWidth: 1.5, borderColor: PELE.line },
-  tick:    { width: 22, height: 22, borderRadius: 999, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
 
   // Piloto / cabine: os dois cartões grandes, em Barlow (a decisão maior do funil).
   big:     { borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: SPACE.xl, paddingHorizontal: SPACE.lgPlus, marginBottom: SPACE.md, backgroundColor: PELE.paper },

@@ -6,6 +6,102 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## PRÓXIMA SESSÃO (Nuno: "amanhã, junto com a TAP") — ler isto primeiro
+
+**1. Linha do tempo do contrato (effective-dating da companhia e da base) — proposta, por aprovar.**
+- **Problema:** só a categoria e o contrato têm linha do tempo (`crewHistory`, `crewAt(ym)`, 7 sítios). A companhia e a
+  base valem o valor de hoje para todos os meses. Mudar de companhia faz os meses antigos serem calculados com o AE
+  novo, e uma transferência de base mexe nas ajudas de custo, na Auditoria e no "fora da base" dos meses antigos. As
+  pernoitas já gravadas por serviço estão a salvo.
+- **Proposta:**
+  - cada período de `crewHistory` passa a ter também `company`, `crewType` e `base` (os antigos herdam os atuais);
+  - `aeAt(ym)` e `baseAt(ym)`; ~12 ficheiros que calculam dinheiro passam de `ae` para "o AE do mês".
+- **Ecrãs:**
+  - "Mudar de companhia" pergunta primeiro "Mudaste ou é correção?". Mudei = período novo a partir da data de entrada
+    na nova companhia; correção = substitui tudo.
+  - A base ganha "a partir de que mês?", com "sempre foi esta".
+- **Golden-first:**
+  - maio/2025 easyJet + maio/2026 TAP → o AE certo em cada mês;
+  - transferência LIS→OPO em março não mexe em fevereiro.
+- **Decisões do Nuno:** (1) o modelo; (2) a pergunta mudança/correção e a base com mês.
+
+**2. Limites de escala do AE da TAP** — `docs/ae-tap-limites.md`: 69 regras de pilotos e 61 de cabine; as 12 decisões
+D1–D12 estão resumidas no chat de 2026-11-03, com as minhas recomendações. Construir por cima da linha do tempo (os
+limites dependem da companhia de cada mês).
+
+**Ordem proposta:** linha do tempo (golden) → TAP v1 (as ~23 regras com os dados que já temos). Modelo: é arquitetura
+de dados — o método pede Fable 5.1 Alto para arquitetura, ou Opus 5.5 Extra se for tratado como construção; dizer ao
+Nuno ao abrir a sessão.
+
+**Por ver no iPhone (de 2026-11-03):** §0c configuração · §0d hora-limite de calços e palavras · §0e Perfil e Família.
+
+---
+
+## 2026-11-03 — Perfil (índice em grupos) + limites de escala do AE da TAP (levantamento)
+
+**Perfil — escolhida a opção 1 (Nuno): índice em grupos.**
+- Identidade em cima.
+- Grupos de linhas, cada uma com o valor atual: O teu trabalho · Acordo e serviço · Família · Ferramentas · Conta e
+  segurança · Terminar sessão.
+- Cada linha abre uma página à Flighty: título, explicação e os cartões da configuração, ou uma escolha rápida.
+- Os diálogos "Segurança" e "Idioma & avisos" passam a linhas à vista.
+
+Referências em `referencias/perfil/` e no Mobbin. **Esboço:** `design/perfil-v3.html`
+(https://claude.ai/artifact/BrG9V5yDBHXccp8gyiYZxL).
+**APROVADO (Nuno):** o índice, as 2 páginas-modelo e "Mudar de companhia" (reabre a configuração).
+
+**FEITO no código:**
+- **`SettingsScreen` = índice:**
+  - `Linha`: ícone · rótulo · valor · ›;
+  - saíram os mosaicos, as linhas com interruptores e os diálogos de categoria, contrato, base, data, "Segurança" e
+    "Idioma & avisos";
+  - ficaram as janelas de conta, que funcionam: e-mail, palavra-passe, apagar, terminar sessão e família.
+- **`PerfilPaginaScreen` (rota `PerfilPagina`, 13 páginas):**
+  - categoria e contrato: cartões + mês da promoção + Guardar;
+  - antiguidade: roda + Guardar (o título deixou de dizer "na easyJet" a toda a gente);
+  - base com pesquisa;
+  - pós-voo em escolha rápida, com a fonte à vista;
+  - férias com contador;
+  - frota, PPY, instrutor, vínculo, abrangido, idioma, lembretes e bloqueio em cartões que gravam.
+- **`hooks/usePerfilActions`:** as gravações de sempre, partilhadas.
+- **`components/OptCard`:** o cartão da configuração, agora partilhado.
+- **`components/Pagina`.**
+- **`MonthYearWheel`:** `monthsAhead` (uma promoção pode estar marcada até 12 meses à frente).
+- **Mudar de companhia:**
+  - a configuração em modo mudança, com "Cancelar" no canto;
+  - as respostas juntam-se ao perfil;
+  - sem boas-vindas repetidas;
+  - histórico de categoria NOVO — sem isto, o histórico da companhia antiga continuava a mandar.
+
+**Verificado no PC:** testes · pacote iOS · guardião: dívida 284→278 tipo, 590→569 espaço, 105→100 cores; páginas,
+hook e componentes a zero; o Perfil desceu (espaço 49→28).
+**Fase 2 FEITA (Nuno, mesmo dia): página da Família** (`screens/FamiliaScreen`, rota `Familia`):
+- uma pessoa por linha, com a última partilha;
+- "Adicionar pessoa" no fundo;
+- aviso no dia de voo;
+- as janelas (partilhar um voo, registo, remover) e o cartão de envio vieram do Perfil com a lógica intacta;
+- "Partilhar um voo" passou a ser o botão principal da app;
+- no Perfil fica a linha "Chegada ao vivo", com o número de pessoas.
+
+O Perfil passou de 1068 para 499 linhas. Dívida 278→275 tipo, 569→552 espaço, 100→96 cores; Família a zero.
+**Falta:** iPhone (guião §0e). **A seguir (Nuno):** datas da companhia (effective-dating); TAP amanhã.
+**Limitação conhecida (para depois):** a companhia não é effective-dated — ao mudar de companhia, os meses antigos
+passam a ser calculados com o AE da companhia nova.
+
+**Limites de escala do AE da TAP — levantamento FEITO:** `docs/ae-tap-limites.md`.
+- 69 regras de pilotos e 61 de cabine, cada uma com a cláusula, a citação, o valor, a comparação com a EASA e um caso
+  para teste golden. Quase tudo está no RUPT.
+- Conferido por mim no texto oficial: pilotos 111 folgas/ano e 90/270/850 h de voo; cabine 13 h de repouso na base e
+  285/900 h.
+- O AE é mais restritivo que a EASA em quase tudo, mas mais permissivo em algumas tabelas de PSV (longo curso), por
+  isso o motor tem de aplicar o mais apertado dos dois.
+- O texto oficial tem gralhas e contradições (D5). Os dois AE vigoram até 31/12/2026.
+- 12 pontos de decisão, D1–D12, no fim do documento.
+
+**Próximo:** o Nuno decide os D1–D12 (resumo no chat). A construção (golden-first) fica para uma sessão própria.
+
+---
+
 ## 2026-11-03 — Análise da concorrência (cálculos e apresentação)
 
 **Análise em `docs/concorrencia-calculos.md`**, com fontes.
