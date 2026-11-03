@@ -119,11 +119,16 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, ae, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, base, notify, isPilot, instructorRated } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, instructorRated } = useContext(AppContext);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [form, setForm] = useState(EMPTY);
+  // O acordo e a base DO DIA do serviço (linha do tempo do contrato, 2026-11-03): corrigir um serviço
+  // antigo de outra companhia ou de antes de uma transferência usa os valores de então.
+  const formDate = form.date || isoDay();
+  const ae = aeAt(formDate);
+  const base = homeBaseAt(formDate);
   const [phase, setPhase] = useState('type');   // 'type' = índice dos tipos · 'form' = stepper
   const [step, setStep] = useState(0);          // passo aberto no stepper
 
@@ -405,8 +410,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     if (!ae || !catForm || !r) return null;
     const dists = routeDistancesNM(r);
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
-    return { ok: true, eur: ae.perDiem(catForm, dists, 1, crewFleet) };
-  }, [ae, catForm, form.route, crewFleet]);
+    return { ok: true, eur: ae.perDiem(catForm, dists, 1, crewAt(formDate).fleet, formDate) };
+  }, [ae, catForm, form.route, crewFleet, formDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmtPd = (n) => {
     const [int, dec] = Number(n).toFixed(2).split('.');

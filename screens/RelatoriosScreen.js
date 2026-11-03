@@ -8,6 +8,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '../data/secureStorage';
 import { GUTTER, PELE, PELE_FONT } from '../data/constants';
+import { baseCityName } from '../data/countries';
 import PeleHeader from '../components/PeleHeader';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -50,7 +51,7 @@ const MONS = {
 };
 
 export default function RelatoriosScreen({ navigation }) {
-  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, crewCategory, crewHistory, serviceStart, base, postFlightMin } = useContext(AppContext);
+  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, aeAt, crewAt, crewCategory, crewHistory, companyHistory, baseHistory, airlines, bases, serviceStart, base, postFlightMin } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -99,11 +100,14 @@ export default function RelatoriosScreen({ navigation }) {
       return d >= period.start && d < period.end;
     });
   }, [hasDisruption, rosterLog, isPilot, period.start, period.end]);
+  // Cada caso pelo acordo e pela categoria DO SEU mês (linha do tempo do contrato, 2026-11-03).
   const disEur = useMemo(() => disCands.reduce((a, c) => {
     const ym = String(c.dutyDate).slice(0, 7);
-    if (c.type === 'snc') return a + ((ae.snc ? ae.snc(ym) : ae.SNC_EUR) || 0);
-    return a + (ae.rdp ? ae.rdp(crewCategory, ym) : 0);
-  }, 0), [disCands, ae, crewCategory]);
+    const aeM = aeAt(ym);
+    if (!aeM) return a;
+    if (c.type === 'snc') return a + ((aeM.snc ? aeM.snc(ym) : aeM.SNC_EUR) || 0);
+    return a + (aeM.rdp ? aeM.rdp(crewAt(ym).category || crewCategory, ym) : 0);
+  }, 0), [disCands, ae, crewCategory]); // eslint-disable-line react-hooks/exhaustive-deps
   // Guardião da estabilidade (TAP): a mesma fundação, outra lei — conformidade, não €.
   const hasStability = !!(ae && /^tap/.test(String(ae.AE_ID || '')));
   const staCands = useMemo(() => {
@@ -174,15 +178,21 @@ export default function RelatoriosScreen({ navigation }) {
       try {
         if (recFor === 'career') {
           // Carreira COMPLETA (ignora o período de propósito) — a mesma identidade do 245.
+          // Linha do tempo do contrato (2026-11-03): entradas em companhias, transferências de base e
+          // vínculo entram no Percurso, com os nomes do catálogo.
+          const coNameOf = (id) => { const a = (airlines || []).find((x) => x.id === id || x.slug === id); return a ? a.name : null; };
+          const baseNameOf = (code) => { const b = (bases || []).find((x) => x.code === code); return b ? baseCityName(code, b.city, lg) : code; };
           const model = buildCareerModel({
-            duties, crewHistory, serviceStart, postFlightMin,
+            duties, crewHistory, companyHistory, baseHistory, companyName: coNameOf, baseName: baseNameOf, serviceStart, postFlightMin,
             name: recForm.name, crewId: recForm.crewId,
             operator: company?.name || '', base: base || '', categoryNow: crewCategory || '',
             generatedAt: new Date().toLocaleDateString(locale),
             // A tabela salarial do AE PROVA a promoção (base superior à data da mudança).
-            baseAt: ae && ae.monthlyBase ? (cat, ym) => ae.monthlyBase(cat, { ym }) : null,
+            // …com o acordo da companhia DESSE mês (linha do tempo do contrato).
+            baseAt: ae && ae.monthlyBase ? (cat, ym) => { const a = aeAt(ym); return a && a.monthlyBase ? a.monthlyBase(cat, { ym }) : null; } : null,
           });
-          const catLbl = ae && ae.categoryLabel ? (id) => ae.categoryLabel(id, lg) : null;
+          // O nome de cada categoria pelo acordo da companhia DESSE mês (sem mês = o atual).
+          const catLbl = (id, ym) => { const a = ym ? aeAt(ym) : ae; return a && a.categoryLabel ? a.categoryLabel(id, lg) : null; };
           await printToPdfAndShare(careerHtml(model, lg, fontsCssNow(), catLbl), l('CrewPact · Carreira', 'CrewPact · Career'));
           success();
           notify && notify(l('Processo gerado', 'Record generated'));

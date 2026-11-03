@@ -19,7 +19,7 @@ import SheetHeader from './SheetHeader';
 // "N novidades" que SÓ EXISTE quando há por ler — o botão desaparece quando não tem nada
 // para dizer, à Apple/Living Interface). `night` = tema noturno do Início.
 export default function NotificationsBell({ variant = 'bell', night = false }) {
-  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, crewAt, crewFleet, aeEvents } = useContext(AppContext);
+  const { profile, lang, readNotifIds, setReadNotifIds, rosterChanges, validities, isPilot, dayLog, duties, ae, aeAt, crewAt, crewFleet, aeEvents } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
@@ -42,15 +42,16 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     if (!flightMin) return null;   // mês sem voo (ex.: conta nova) → sem resumo
     const flightHm = `${Math.floor(flightMin / 60)}:${String(flightMin % 60).padStart(2, '0')}`;
     let totalEur = null;
-    if (ae && crewAt) {
+    const aeM = aeAt ? aeAt(ym) : ae;   // o acordo da companhia desse mês (linha do tempo do contrato)
+    if (aeM && crewAt) {
       const at = crewAt(ym);
-      const index = ae.indexFactor ? ae.indexFactor(+ym.slice(0, 4)) : 1;
-      const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), fleet: crewFleet }) : null;
+      const index = aeM.indexFactor ? aeM.indexFactor(+ym.slice(0, 4)) : 1;
+      const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', aeM, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, aeM.SICK_FIRST3 !== false), fleet: at.fleet || crewFleet }) : null;
       if (tot != null) totalEur = `${tot.toFixed(2).replace('.', ',')} €`;
     }
     const label = (() => { const m = new Date(`${ym}-15T12:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return m.charAt(0).toUpperCase() + m.slice(1); })();
     return { ym, label, flightHm, totalEur };
-  }, [duties, ae, crewAt, crewFleet, aeEvents, locale]);
+  }, [duties, ae, crewAt, crewFleet, aeEvents, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Linha do tempo das tabelas do AE → evento "acordo atualizado" (só se recente).
   const aeInfo = (ae && Array.isArray(ae.TABLE_VERSIONS) && ae.TABLE_VERSIONS.length)

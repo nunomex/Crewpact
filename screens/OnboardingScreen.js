@@ -32,6 +32,7 @@ import { requestCalendarAccess, listCalendars } from '../data/calendar';
 import { readCalendarRoster, countUpcomingDuties, importWindow } from '../data/rosterRead';
 import { candidateKind, importSaveFields } from '../data/rosterImport';
 import { getAe } from '../ae';
+import { startEmployment, companyStartYm } from '../data/crewHistory';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { PELE, PELE_NIGHT, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
@@ -41,14 +42,24 @@ const ADVANCE_MS = 280;   // o visto aparece e, só depois, passa à pergunta se
 
 export default function OnboardingScreen() {
   const { user, profile, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang,
-    calendarId, setCalendarId, setCalendarName, duties, dayLog, aeEvents, saveDuty, addAeEvents } = useContext(AppContext);
+    calendarId, setCalendarId, setCalendarName, duties, dayLog, aeEvents, saveDuty, addAeEvents, homeBaseAt } = useContext(AppContext);
   // MUDAR DE COMPANHIA (2026-11-03, Perfil): a configuração reabre para quem JÁ tem companhia. Nesse modo
   // o canto diz "Cancelar" (volta à app sem mudar nada), as boas-vindas não voltam, e as respostas
   // JUNTAM-SE ao perfil (não o substituem: pós-voo, vínculo, férias… ficam).
   const isChange = useRef(!!profile?.company).current;
+  // LINHA DO TEMPO DO CONTRATO (2026-11-03, esboço design/linha-do-tempo.html, aprovado): no modo mudança a
+  // 1.ª pergunta é "O que aconteceu?" — 'moved' (mudei: os meses antigos ficam com a companhia antiga e
+  // a última pergunta passa a ser a data de entrada na nova) ou 'fix' (corrijo: substitui tudo). O perfil
+  // de ANTES fica guardado aqui, para gravar sempre a partir dele (gravar duas vezes dá o mesmo).
+  const before = useRef({
+    company: profile?.company || null, crewType: profile?.crewType || 'cabin', employment: profile?.employment || null,
+    crewHistory: profile?.crewHistory || [], companyHistory: profile?.companyHistory || [], baseHistory: profile?.baseHistory || [],
+  }).current;
+  const beforeCo = airlines.find((a) => a.id === before.company || a.slug === before.company) || null;
+  const beforeStart = companyStartYm(before.companyHistory);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
+  const [draft, setDraft] = useState({ changeKind: null, company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [query, setQuery] = useState('');   // pesquisa de base
@@ -98,13 +109,15 @@ export default function OnboardingScreen() {
     const requiresCategory = selAirline?.requires_category ?? !!ae;
     const requiresContract = selAirline?.requires_contract ?? false;
     const companyHasFleet = !!ae && Array.isArray(ae.FLEETS) && ae.FLEETS.length > 1;
+    const moved = isChange && d.changeKind === 'moved';
     const flow = [
+      ...(isChange ? ['changeKind'] : []),
       'company', 'crewType',
       ...(requiresCategory ? ['crewCategory'] : []),
       ...(requiresContract ? ['crewContract'] : []),
       ...(companyHasFleet ? ['fleet'] : []),
       ...(companyBases.length ? ['base'] : []),
-      ...(requiresCategory ? ['serviceStart'] : []),
+      ...((requiresCategory || moved) ? ['serviceStart'] : []),   // mudei → a data de entrada, com ou sem AE
     ];
     return { selAirline, ae, companyBases, companyHasAe: !!ae && requiresCategory, companyHasContract: !!ae && requiresContract, companyHasFleet, flow };
   };
@@ -144,14 +157,31 @@ export default function OnboardingScreen() {
   };
 
   // As PERGUNTAS — copy do esboço aprovado (a explicação cita a lei: é o que nos distingue).
+  const ymLabel = (v) => {
+    const m = /^(\d{4})-(\d{2})/.exec(String(v || ''));
+    return m ? new Date(+m[1], +m[2] - 1, 1).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' }) : '';
+  };
+  const beforeName = beforeCo?.name || l('companhia anterior', 'previous airline');
+  const newName = D.selAirline?.name || l('nova companhia', 'new airline');
+  const beforeHasAe = !!(beforeCo && getAe(beforeCo, before.crewType));
+  const movedNow = isChange && draft.changeKind === 'moved';
+  const sinceTxt = beforeStart !== '2000-01' ? ymLabel(beforeStart) : '';
   const STEP_DEFS = {
+    changeKind:   { q: l('O que aconteceu?', 'What happened?'),
+      sub: l(`Hoje estás na ${beforeName}, ${before.crewType === 'pilot' ? 'piloto' : 'cabine'}${sinceTxt ? `, desde ${sinceTxt}` : ''}.`,
+        `Today you are with ${beforeName}, ${before.crewType === 'pilot' ? 'pilot' : 'cabin crew'}${sinceTxt ? `, since ${sinceTxt}` : ''}.`) },
     company:      { q: l('Voas para quem?', 'Who do you fly for?'), sub: l('A companhia decide o acordo de empresa (AE) e as tuas bases. O FTL é igual para todos: é lei europeia.', 'Your airline sets the company agreement (CLA) and your bases. FTL is the same for everyone: it is EU law.') },
     crewType:     { q: l('Piloto ou cabine?', 'Pilot or cabin?'), sub: l('O acordo de empresa é diferente para cada um: o teu salário e os extras dependem disto.', 'The company agreement differs for each: your pay and extras depend on this.') },
     crewCategory: { q: l('A tua categoria?', 'Your category?'), sub: l('O AE paga por categoria. As promoções registam-se no Perfil, sem reescrever o passado.', 'The CLA pays by category. Promotions are logged in Profile, without rewriting the past.') },
     crewContract: { q: l('O teu contrato?', 'Your contract?'), sub: l('Meses de trabalho por ano: o AE escala o salário com isto.', 'Working months per year: the CLA scales your pay with this.') },
     fleet:        { q: l('A tua frota?', 'Your fleet?'), sub: l('Wide-body ou narrow-body: muda o per-diem.', 'Wide-body or narrow-body: it changes the per-diem.') },
     base:         { q: l('A tua base?', 'Your base?'), sub: l('O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). O teu país aparece primeiro.', 'Legal rest depends on it: 12 h at base and 10 h away (ORO.FTL.235). Your country comes first.') },
-    serviceStart: { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus: without it, your pay is incomplete. Month and year are enough.') },
+    serviceStart: movedNow
+      ? { q: l(`Na ${newName} desde?`, `With ${newName} since?`),
+        sub: beforeHasAe && ae
+          ? l(`Até aí, a app calcula com o acordo da ${beforeName}. A partir daí, com o da ${newName}. A antiguidade também conta deste mês.`, `Until then, the app uses the ${beforeName} agreement. From then on, the ${newName} one. Seniority also counts from this month.`)
+          : l(`Até aí, os meses ficam com a ${beforeName}. A partir daí, contam com a ${newName}.`, `Until then, months stay with ${beforeName}. From then on, they count with ${newName}.`) }
+      : { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus: without it, your pay is incomplete. Month and year are enough.') },
   };
   const idx = Math.min(step, flow.length - 1);
   const field = flow[idx];
@@ -176,11 +206,24 @@ export default function OnboardingScreen() {
       // Mês/ano → dia 01 por convenção (o prémio salta por ANOS; o dia é irrelevante).
       serviceStart: isRealMonth(d.serviceStart) ? `${d.serviceStart}-01` : null,
     };
-    // Histórico de categoria NOVO (2026-11-03): sem isto, numa mudança de companhia o histórico da
-    // antiga ("FA desde 2018") continuava a mandar na categoria atual. Mesmo início que o migrateCrew.
-    payload.crewHistory = payload.crewCategory
-      ? [{ category: payload.crewCategory, contract: payload.crewContract || '12/12', from: payload.serviceStart ? payload.serviceStart.slice(0, 7) : '2000-01' }]
-      : [];
+    // LINHA DO TEMPO DO CONTRATO (2026-11-03): categoria/contrato · companhia+tipo · base.
+    // · "MUDEI" (mudança de companhia a sério): períodos novos a partir do mês de entrada na nova
+    //   ("Na companhia desde") — os meses antigos ficam com a companhia, o AE e a base antigos.
+    // · Configuração inicial ou "CORRIGI": linhas NOVAS com um só período — sem isto, o histórico da
+    //   antiga ("FA desde 2018") continuava a mandar. Mesmo início que o migrateCrew.
+    const startYm = payload.serviceStart ? payload.serviceStart.slice(0, 7) : null;
+    if (isChange && d.changeKind === 'moved' && startYm) {
+      Object.assign(payload, startEmployment(
+        { crewHistory: before.crewHistory, companyHistory: before.companyHistory, baseHistory: before.baseHistory },
+        // O vínculo continua o de antes (muda-se no Perfil, com data); a frota é a respondida agora.
+        { company: d.company, crewType: d.crewType, category: payload.crewCategory, contract: payload.crewContract, fleet: payload.crewFleet, employment: before.employment, base: payload.base, from: startYm },
+      ));
+    } else {
+      const from = startYm || '2000-01';
+      payload.crewHistory = payload.crewCategory ? [{ category: payload.crewCategory, contract: payload.crewContract || '12/12', ...(payload.crewFleet ? { fleet: payload.crewFleet } : {}), from }] : [];
+      payload.companyHistory = [{ company: d.company, crewType: d.crewType === 'pilot' ? 'pilot' : 'cabin', ...(isChange && before.employment ? { employment: before.employment } : {}), from }];
+      payload.baseHistory = payload.base ? [{ base: payload.base, from }] : [];
+    }
     const result = await updateProfile(payload, lang);
     if (!result.ok) { setSaving(false); setSaveError(l('Não foi possível gravar. Tenta outra vez.', 'Couldn’t save. Please try again.')); return false; }
     await upsertProfile(user?.id, payload);
@@ -234,7 +277,7 @@ export default function OnboardingScreen() {
     select(); setRBusy(true);
     setCalendarId(selCal.id); if (setCalendarName) setCalendarName(selCal.title || null);
     try {
-      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, aeEvents });
+      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, baseAt: homeBaseAt, aeEvents });
       setRRes(r);
       swap(() => setRStep('review'));
     } finally { setRBusy(false); }
@@ -421,7 +464,7 @@ export default function OnboardingScreen() {
   return (
     <>
     <Porta plate="band" stepKey={inRoster ? `r-${rStep}` : idx} corner={corner} footer={footer}
-      progress={{ label: l('Configuração', 'Setup'), now: inRoster ? total : idx + 1, total, of: l('de', 'of') }}
+      progress={{ label: isChange ? l('Mudar de companhia', 'Change airline') : l('Configuração', 'Setup'), now: inRoster ? total : idx + 1, total, of: l('de', 'of') }}
       onBack={inRoster ? rosterBack : idx > 0 ? () => { select(); setSaveError(null); goStep(idx - 1, false); } : undefined} backLabel={l('Voltar', 'Back')}>
       <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
         {inRoster ? renderRoster() : (<>
@@ -430,7 +473,17 @@ export default function OnboardingScreen() {
 
         {/* key={idx} → conteúdo fresco por pergunta (vistos e campos não passam de uma para a outra). */}
         <View key={idx}>
-          {field === 'company' ? (
+          {field === 'changeKind' ? (
+            <>
+              <Opt label={l('Mudei de companhia', 'I changed airline')} reduce={reduce} sel={draft.changeKind === 'moved'}
+                sub={l(`A ${beforeName} fica nos meses antigos. A seguir escolhes a nova e o mês em que entraste.`, `${beforeName} stays in the earlier months. Next you pick the new one and the month you joined.`)}
+                onPress={() => choose('changeKind', 'moved')} />
+              <Opt label={l('Estou a corrigir', 'I am correcting')} reduce={reduce} sel={draft.changeKind === 'fix'}
+                sub={l('A companhia ou o tipo estavam errados. Muda tudo, também os meses antigos.', 'The airline or crew type was wrong. Everything changes, earlier months too.')}
+                onPress={() => choose('changeKind', 'fix')} />
+              <Text style={[P.foot, o.after]}>{l('A tua escala e os teus registos ficam como estão.', 'Your roster and records stay as they are.')}</Text>
+            </>
+          ) : field === 'company' ? (
             <>
               {airlines.map((a) => (
                 <Opt key={a.id} label={a.name} sub={aeStatusOf(a)} sel={draft.company === a.id} reduce={reduce}
@@ -469,9 +522,13 @@ export default function OnboardingScreen() {
               <MonthYearWheel value={draft.serviceStart} lang={lang}
                 onChange={(v) => { setSaveError(null); setDraft((d) => ({ ...d, serviceStart: v })); }} />
               <Text style={[P.foot, o.after]}>
-                {isRealMonth(draft.serviceStart)
-                  ? l('Podes mudar depois, no Perfil.', 'You can change this later, in Profile.')
-                  : l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')}
+                {!isRealMonth(draft.serviceStart)
+                  ? l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')
+                  : movedNow && sinceTxt && draft.serviceStart <= beforeStart
+                    ? l(`Isto é antes de entrares na ${beforeName}: os meses antigos também mudam, como numa correção.`, `That is before you joined ${beforeName}: earlier months change too, like a correction.`)
+                    : movedNow && beforeHasAe
+                      ? l(`Os serviços de antes continuam a mostrar o dinheiro da ${beforeName}.`, `Earlier duties keep showing ${beforeName} pay.`)
+                      : l('Podes mudar depois, no Perfil.', 'You can change this later, in Profile.')}
               </Text>
             </>
           ) : (

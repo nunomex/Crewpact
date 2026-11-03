@@ -141,6 +141,11 @@ ok('2 FDP/dia: a 2.ª atividade vira extra (CDG-LGW)', sameDay[0].duty.extra[0].
 ok('2 FDP/dia: a 1.ª fica primária (LGW-CDG)', sameDay[0].duty.route === 'LGW-CDG');
 // Dias diferentes → NÃO funde (2 candidatos, sem multi).
 const diffDay = buildImportCandidates({ activities: [mkAct('2026-06-16', 'LGW', 'CDG', '06:15', '07:45', '05:45'), mkAct('2026-06-17', 'CDG', 'LGW', '19:15', '20:45', '18:45')], nonflights: [], duties: {}, dayLog: {} });
+// BASE COM DATAS (2026-11-03): a importação lê 12 meses para trás. Com transferência LIS→OPO em março,
+// um voo LIS-OPO em fevereiro acaba FORA da base (pernoita) e em março acaba NA base (sem pernoita).
+const trBase = buildImportCandidates({ activities: [mkAct('2026-02-10', 'LIS', 'OPO', '06:15', '07:15', '05:30'), mkAct('2026-03-10', 'LIS', 'OPO', '06:15', '07:15', '05:30')], nonflights: [], duties: {}, dayLog: {}, base: 'OPO', baseAt: (d) => (String(d).slice(0, 7) >= '2026-03' ? 'OPO' : 'LIS') });
+ok('base datada: fevereiro LIS-OPO = pernoita', trBase.find((c) => c.duty.duty_date === '2026-02-10').duty.nightStop === true);
+ok('base datada: março LIS-OPO = em casa', trBase.find((c) => c.duty.duty_date === '2026-03-10').duty.nightStop === false);
 ok('dias diferentes → 2 candidatos, sem merge', diffDay.length === 2 && !diffDay[0].multi && !diffDay[1].multi);
 
 // Cancelado por AUSÊNCIA vem POR MARCAR (selected:false) — apagar é opt-in (ausência = sinal fraco).

@@ -128,7 +128,10 @@ export const dutyFromNonFlight = (it) => {
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
 // e selected=false (MANTÉM o manual). O utilizador marca para o calendário substituir
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, isPilot = false } = {}) => {
+// `baseAt(date)` (linha do tempo do contrato, 2026-11-03): a leitura vai 12 meses para trás — cada
+// serviço usa a base EM VIGOR no seu dia (pernoita e repouso 12 h/10 h). Sem ela, vale `base`.
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, baseAt = null, isPilot = false } = {}) => {
+  const bAt = (date) => (typeof baseAt === 'function' ? baseAt(date) : base);
   const out = [];
   const inDates = new Set();
   const byDate = new Map();   // dia → candidato primário (p/ empilhar 2.º+ FDP do mesmo dia)
@@ -142,7 +145,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     const prev = byDate.get(date);
     if (prev) {
       prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
-      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, base);
+      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, bAt(date));
       prev.multi = (prev.duty.extra.length + 1);
       // Re-classifica o DIA COMPLETO (primária + extra) face ao guardado: um serviço a mais/menos
       // face ao guardado é uma mudança (o classify agora é multi-serviço). Novo dia → só legalidade.
@@ -152,7 +155,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     }
     const ex = duties[date];
     const exists = !!(ex && !ex.deleted);
-    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, base);
+    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, bAt(date));
     // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
     let status = 'ok', diff = [];
     if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }
@@ -162,7 +165,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     byDate.set(date, cand);
     return cand;
   };
-  for (const act of activities) { const c = make(dutyFromActivity(act, base), 'flight'); if (c) out.push(c); }
+  for (const act of activities) { const c = make(dutyFromActivity(act, bAt(act && act.dateISO)), 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
   // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
   // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)

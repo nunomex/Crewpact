@@ -22,7 +22,7 @@ const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); re
 // + as CONSCIENTES DO PERFIL (per-diem por tipo/categoria/contrato; validades por piloto/cabine).
 // Pele nova (2026-07-10): página paper + Barlow; crew-aware marcado a AMARELO-soft (a marca).
 export default function SimulationResult({ visible, duty, onEdit, onClose }) {
-  const { lang, dayLog, ae, crewAt, crewContract, crewFleet, postFlightMin, isPilot, base, validities } = useContext(AppContext);
+  const { lang, dayLog, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, base: baseNow, validities } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -33,6 +33,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const kind = duty.kind || 'flight';
   const isFlight = kind === 'flight';
   const cat = crewAt(duty.duty_date).category;
+  // O acordo e a base DESSE dia (linha do tempo do contrato) — uma simulação num mês antigo usa os de então.
+  const ae = duty.duty_date ? aeAt(duty.duty_date) : aeNow;
+  const base = duty.duty_date ? homeBaseAt(duty.duty_date) : baseNow;
 
   // Serviço pós-voo (débrief) — sign-off real ou default do perfil. SÓ voo (235c).
   const onM = clk(duty.block_on), soM = clk(duty.signOff);
@@ -47,7 +50,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   let perDiem = null, nsEur = null;
   if (ae && cat && isFlight && duty.route) {
     const dists = routeDistancesNM(duty.route);
-    if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(cat, dists, 1, crewFleet);
+    if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(cat, dists, 1, crewAt(duty.duty_date).fleet || crewFleet);
   }
   if (duty.nightStop && ae && ae.nightStop && cat) nsEur = ae.nightStop(cat);
 

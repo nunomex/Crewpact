@@ -29,16 +29,25 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // "Editar" abre o DutyFormSheet partilhado; apagar SÓ nos manuais (a fonte manda nos importados).
 export default function DutyDetailScreen({ route, navigation }) {
   const ctxAll = useContext(AppContext);
-  const { lang, duties, ae, crewAt, removeDuty, saveDuty, notify } = ctxAll;
+  const { lang, duties, crewAt, removeDuty, saveDuty, notify } = ctxAll;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(false);
   const [hotelOpen, setHotelOpen] = useState(false);   // folha "Hotel da pernoita" (registar/editar)
   const [prova, setProva] = useState(null);            // folha da PROVA ("a lei deste número")
-  const provaCtx = { companySlug: ctxAll.company && ctxAll.company.slug, companyName: ctxAll.company && ctxAll.company.name, isPilot: ctxAll.isPilot, lang };
 
   const date = route.params?.date;
+  // LINHA DO TEMPO DO CONTRATO (2026-11-03): o acordo, a companhia (a Prova cita o AE dela) e a base
+  // DESTE dia — um serviço antigo noutra companhia mostra o dinheiro e a lei dessa companhia.
+  const ae = date ? ctxAll.aeAt(date) : ctxAll.ae;
+  const coD = (() => {
+    const c = date ? ctxAll.companyAt(date) : null;
+    return (c && c.company && (ctxAll.airlines || []).find((a) => a.id === c.company || a.slug === c.company)) || ctxAll.company;
+  })();
+  const isPilotD = date ? ctxAll.companyAt(date).crewType === 'pilot' : ctxAll.isPilot;
+  const baseD = date ? ctxAll.homeBaseAt(date) : ctxAll.base;
+  const provaCtx = { companySlug: coD && coD.slug, companyName: coD && coD.name, isPilot: isPilotD, lang };
   const duty = date ? duties[date] : null;
   const goBack = () => {
     if (edited) navigation.navigate('EscalaMain', { flashDuty: date, flashTs: Date.now() });
@@ -109,7 +118,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       if (nm == null) { ok = false; break; }
       dists.push(nm);
     }
-    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, ctxAll.crewFleet, date);
+    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, crewAt(date).fleet, date);
   }
   const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, date) : null;
   // € do dia NÃO-VOO (auditoria 2026-07-11) — as MESMAS regras do motor mensal: treino
@@ -302,7 +311,7 @@ export default function DutyDetailScreen({ route, navigation }) {
 
         {/* Pernoita — hotel da estação (catálogo pessoal, por IATA) — mapas + ligar. */}
         {duty.nightStop ? (() => {
-          const st = nightStopStation(duty, ctxAll.base);
+          const st = nightStopStation(duty, baseD);
           const h = st ? (ctxAll.hotels || {})[st] : null;
           return (
             <>
@@ -393,7 +402,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       {/* Edição (opção autossuficiente) — o form partilhado; ao guardar, o context atualiza-se e o ecrã reflete. */}
       <DutyFormSheet visible={!!editing} date={date} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setEdited(true); }} />
       {/* Hotel da pernoita — registar/editar o hotel desta estação (catálogo pessoal). */}
-      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, ctxAll.base) : null} />
+      <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={duty && duty.nightStop ? nightStopStation(duty, baseD) : null} />
       <ProvaSheet visible={!!prova} onClose={() => setProva(null)} prova={prova} lang={lang} />
     </SafeAreaView>
   );

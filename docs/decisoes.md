@@ -6,6 +6,93 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## Sessão seguinte (dia 3) — LINHA DO TEMPO DO CONTRATO (companhia e base com datas) — FEITA
+
+**Decisões do Nuno:**
+- **3 linhas separadas** em vez de 1: categoria/contrato (a de sempre) · companhia+tipo · base. Cada mudança mexe só
+  na sua linha, por isso uma transferência de base não estraga uma promoção posterior. Mudança em relação à proposta
+  de ontem (1 linha com tudo), por esse motivo.
+- **"Mudei ou corrigi"**, com o motor e os testes golden primeiro e o esboço depois.
+- **Esboço** `design/linha-do-tempo.html` (https://claude.ai/artifact/5xJZWax4RgoDTuyxEmeCtL) **APROVADO** (5 ecrãs).
+- **A janela "Mudar de companhia?" saiu:** a pergunta "O que aconteceu?" e o "Cancelar" do canto fazem esse papel.
+
+**FEITO — motor (golden-first):**
+- **`data/crewHistory.js`:** funções `resolveCompany`, `migrateCompany`, `companyStartYm`, `resolveBase`,
+  `migrateBase`, `addBaseChange` (com `correct`, que corrige só desde a entrada na companhia atual),
+  `startEmployment` ("mudei": períodos novos no mês de entrada; o que a antiga tinha marcado depois cai) e
+  `moveEmploymentStart` (corrigir depois a data de entrada mexe na fronteira; com uma só companhia não muda nada).
+- **`yearStats` aceita `aeAt`:** cada mês é somado com o seu acordo.
+- **`reconcileDayLog` e `buildImportCandidates` aceitam `baseAt`:** a base em vigor em cada dia decide o repouso
+  (12 h ou 10 h, ORO.FTL.235) e a pernoita.
+- **Testes golden:**
+  - stats 134 → 141;
+  - FTL +3 (316);
+  - importação +2 (67);
+  - caso de referência: ano 2026 com jan–abr na easyJet FA e mai–dez na TAP CAB2. Dá 18 716,64 €
+    (base 4×1346,57 + 8×1627,02, mais o abono só nos meses da easyJet). O cálculo antigo dava 19 524,24 €.
+- **Migração suave:** sem linha guardada, fica 1 período com o valor atual, e os perfis antigos calculam como antes.
+  As linhas vivem nos metadados da conta, como a `crewHistory`, e entram na exportação RGPD.
+
+**FEITO — app:**
+- **`App.js`:** `companyHistory`, `baseHistory`, `companyAt`, `aeAt` e `homeBaseAt` no contexto. `base` passa a
+  ser a base em vigor hoje. O repouso de cada serviço gravado usa a base desse dia.
+- **Cada ecrã usa o acordo, a companhia e a base do mês ou dia que mostra:**
+  - Estatísticas (mês, ano, Auditoria e o nome da companhia no topo);
+  - Escala (resumo, dia, códigos da grelha, hotel);
+  - detalhe do serviço (€, Prova e hotel);
+  - Extras;
+  - folha do evento;
+  - sino (resumo do mês);
+  - Relatórios (disrupção e prova da promoção);
+  - Disrupção;
+  - formulário do serviço;
+  - Simulação;
+  - importação (base e € de cada dia);
+  - hotéis.
+- **Ecrãs:**
+  - configuração em modo mudança com a pergunta "O que aconteceu?" e a data de entrada "Na TAP desde?" (com
+    explicação easyJet/TAP e aviso se a data for antes da entrada na antiga);
+  - Base no Perfil em 2 passos: a lista, com a atual marcada "atual", e "Porto, desde quando?" com "Mudei de base"
+    (roda até ao mês atual, "Até … fica Lisboa", histórico) ou "Sempre foi esta";
+  - o histórico da Categoria mostra só a companhia atual, por extenso;
+  - "Na TAP desde" no Perfil mexe na fronteira das linhas.
+
+**Verificado no PC:** 25 suites verdes · guardião sem dívida nova · pacote iOS.
+
+**Fase 2, no mesmo dia (Nuno: "os três sim") — os limites que tinham ficado, também FEITOS:**
+- **Frota com datas.** Vive no período da linha da categoria, como parte do posto:
+  - `fleet` opcional;
+  - uma promoção mantém a frota em vigor;
+  - `yearStats`/`monthStats` usam a frota de cada mês;
+  - os ecrãs usam `crewAt(data).fleet`;
+  - Perfil → Frota no modelo da Categoria: cartões, "A partir de que mês?" e histórico.
+  - Golden: piloto TAP OP3C, maio NB 202,50 + junho WB 225,00 = 427,50 (sem datas dava 450,00).
+- **Vínculo com datas.** Vive no período da linha da companhia, porque faz parte da relação de trabalho:
+  - `employment` opcional, `addEmploymentChange` e `coveredBy` (a regra do art. 496.º CT num só sítio);
+  - o `aeAt` usa o vínculo de cada mês;
+  - Perfil → Vínculo em 2 passos, como a Base: "Mudei de vínculo" ou "Sempre foi assim".
+  - Golden: agência até 12/2024 → 2024 sem salário do AE; 2025 = 12×1346,57.
+- **"Abrangido pelo AE" fica SEM datas.** Datar a filiação sindical é dado sensível (RGPD art. 9.º); vai para o
+  pacote do advogado.
+- **PDF da carreira.** O Percurso ganha três momentos novos:
+  - "Entrada na TAP · categoria · Base Porto";
+  - "Base Faro · transferência";
+  - "Vínculo · contrato com a companhia".
+
+  Também muda:
+  - o "Início de serviço" mostra a companhia de então;
+  - o fantasma do cabeçalho cobre a carreira toda;
+  - o cabeçalho diz "Na companhia desde" depois de uma mudança;
+  - a mudança de categoria do mês da entrada não aparece como promoção;
+  - os nomes das categorias vêm do acordo de cada mês.
+
+  Golden da carreira 45 → 60.
+- **Verificado no PC:** 25 suites verdes (stats 161, FTL 316, AE 453, carreira 60) · guardião · pacote iOS.
+
+**Falta:** iPhone (guião §0g). Não está no git (o Nuno pede quando quiser gravar).
+
+---
+
 ## Sessão seguinte (dia 2) — a escala entra na configuração (ANTES da linha do tempo e da TAP, decisão do Nuno)
 
 **Nuno (captura do Início vazio):** "falta esta parte da configuração". Ligar a escala acontecia depois das 6
@@ -53,7 +140,7 @@ telemóvel e os cálculos são feitos lá.
 
 ## PRÓXIMA SESSÃO (Nuno: "amanhã, junto com a TAP") — ler isto primeiro
 
-**1. Linha do tempo do contrato (effective-dating da companhia e da base) — proposta, por aprovar.**
+**1. Linha do tempo do contrato — ✅ FEITA (ver "dia 3", em cima). Fica aqui a proposta original, como registo.**
 - **Problema:** só a categoria e o contrato têm linha do tempo (`crewHistory`, `crewAt(ym)`, 7 sítios). A companhia e a
   base valem o valor de hoje para todos os meses. Mudar de companhia faz os meses antigos serem calculados com o AE
   novo, e uma transferência de base mexe nas ajudas de custo, na Auditoria e no "fora da base" dos meses antigos. As
@@ -78,7 +165,9 @@ limites dependem da companhia de cada mês).
 de dados — o método pede Fable 5.1 Alto para arquitetura, ou Opus 5.5 Extra se for tratado como construção; dizer ao
 Nuno ao abrir a sessão.
 
-**Por ver no iPhone (de 2026-11-03):** §0c configuração · §0d hora-limite de calços e palavras · §0e Perfil e Família.
+**Por ver no iPhone (de 2026-11-03):** §0c configuração · §0d hora-limite de calços e palavras · §0e Perfil e Família ·
+§0f escala na configuração · §0g linha do tempo do contrato.
+**A seguir:** limites de escala da TAP (D1–D12 por decidir), construídos com o `aeAt(mês)` da linha do tempo.
 
 ---
 

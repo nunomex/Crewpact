@@ -130,6 +130,52 @@ ok('descida fica neutra ("mudança de categoria", nunca "despromoção")',
 const mErr = buildCareerModel({ duties, crewHistory: HIST_UP, serviceStart: '2018-05-14', now: NOW, baseAt: () => { throw new Error('x'); } });
 eq('baseAt com erro → up null (neutro)', chg(mErr).up, null);
 
+// ── LINHA DO TEMPO DO CONTRATO (2026-11-03): mudança de companhia, transferências de base e vínculo
+// entram no Percurso como momentos próprios. easyJet FA (LIS, maio/2018) → base Faro em março/2022 →
+// promoção a CM em fevereiro/2025 → entrada na TAP como CAB2, base Porto, em maio/2026. ──
+const HIST_TL = [
+  { category: 'FA', contract: '12/12', from: '2018-05' },
+  { category: 'CM', contract: '12/12', from: '2025-02' },
+  { category: 'CAB2', contract: '12/12', from: '2026-05' },
+];
+const COMP_TL = [{ company: 'ezy-id', crewType: 'cabin', from: '2018-05' }, { company: 'tap-id', crewType: 'cabin', from: '2026-05' }];
+const BASE_TL = [{ base: 'LIS', from: '2018-05' }, { base: 'FAO', from: '2022-03' }, { base: 'OPO', from: '2026-05' }];
+const coName = (id) => ({ 'ezy-id': 'easyJet', 'tap-id': 'TAP' }[id] || id);
+const bName = (c) => ({ LIS: 'Lisboa', FAO: 'Faro', OPO: 'Porto' }[c] || c);
+// baseAt pelo acordo DE CADA MÊS (como a app faz com o aeAt): easyJet até abril/2026, TAP depois.
+const tapCab = require(path.resolve('ae/tapSnpvac.js'));
+const baseAtTl = (cat, ym) => (ym < '2026-05' ? monthlyBase(cat, { ym }) : tapCab.monthlyBase(cat, { ym }));
+const mTl = buildCareerModel({
+  duties, crewHistory: HIST_TL, companyHistory: COMP_TL, baseHistory: BASE_TL, companyName: coName, baseName: bName,
+  serviceStart: '2026-05-01', operator: 'TAP', base: 'Porto', categoryNow: 'CAB2', now: NOW, baseAt: baseAtTl,
+});
+eq('percurso com mudança: início → base → promoção → cobertura → entrada na TAP',
+  mTl.timeline.map((e) => e.kind), ['start', 'base', 'change', 'coverage', 'company']);
+eq('início com a companhia de ENTÃO (easyJet), não a de hoje', [mTl.timeline[0].ym, mTl.timeline[0].operator, mTl.timeline[0].category], ['2018-05', 'easyJet', 'FA']);
+eq('transferência para Faro em março/2022', [mTl.timeline[1].ym, mTl.timeline[1].base], ['2022-03', 'Faro']);
+eq('promoção a CM provada pelo acordo da easyJet', [mTl.timeline[2].category, mTl.timeline[2].up], ['CM', true]);
+const evCo = mTl.timeline[4];
+eq('entrada na TAP: mês, companhia, categoria e base nova', [evCo.ym, evCo.operator, evCo.category, evCo.base], ['2026-05', 'TAP', 'CAB2', 'Porto']);
+ok('a mudança CM→CAB2 NÃO aparece como "mudança de categoria"', !mTl.timeline.some((e) => e.kind === 'change' && e.ym === '2026-05'));
+eq('fantasma = a carreira toda (’18–’26), não só a TAP', mTl.header.ghost, '’18–’26');
+const htmlTl = careerHtml(mTl, 'pt', '', (id, ym) => (ym && ym < '2026-05' ? { FA: 'Tripulante de Cabine', CM: 'Chefe de Cabine' } : { CAB2: 'CAB 2' })[id]);
+ok('documento: "Entrada na TAP"', htmlTl.includes('Entrada na TAP'));
+ok('documento: transferência de base', htmlTl.includes('Base Faro') && htmlTl.includes('transferência'));
+ok('documento: "Início de serviço · easyJet"', htmlTl.includes('Início de serviço · easyJet'));
+ok('documento: categorias com o nome do acordo de cada companhia', htmlTl.includes('Tripulante de Cabine') && htmlTl.includes('CAB 2'));
+ok('documento: no cabeçalho, "Na companhia desde" (a data é da TAP)', htmlTl.includes('Na companhia desde'));
+// Vínculo: agência → contrato com a companhia, na mesma companhia → momento próprio.
+const mV = buildCareerModel({
+  duties, crewHistory: [{ category: 'FA', contract: '12/12', from: '2018-05' }], serviceStart: '2018-05-14', now: NOW, companyName: coName,
+  companyHistory: [{ company: 'ezy-id', crewType: 'cabin', employment: 'agency', from: '2018-05' }, { company: 'ezy-id', crewType: 'cabin', employment: 'employee', from: '2020-01' }],
+});
+const evV = mV.timeline.find((e) => e.kind === 'employment');
+eq('vínculo: momento próprio em janeiro/2020', [evV && evV.ym, evV && evV.employment], ['2020-01', 'employee']);
+ok('documento: "Vínculo · contrato com a companhia"', careerHtml(mV, 'pt').includes('Vínculo · contrato com a companhia'));
+// Uma só companhia e base fixa: o percurso de sempre (sem momentos novos).
+const mOne = buildCareerModel({ duties, crewHistory, serviceStart: '2018-05-14', now: NOW, companyHistory: [{ company: 'ezy-id', crewType: 'cabin', from: '2018-05' }], baseHistory: [{ base: 'LIS', from: '2018-05' }], companyName: coName });
+eq('uma companhia: percurso igual ao de sempre', mOne.timeline.map((e) => e.kind), ['start', 'change', 'coverage']);
+
 // ── O documento ──
 const html = careerHtml(model, 'pt', '', (id) => ({ CM: 'Cabin Manager', FA: 'Flight Attendant' }[id]));
 ok('título no documento', html.includes('Processo de carreira'));

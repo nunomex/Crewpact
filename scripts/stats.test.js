@@ -134,6 +134,129 @@ eq('YTD effective-dated (Jan+Fev FO 3000 · Mar+Abr SFO 5000)', rEff.aeYtd.base,
 const rNaive = yearStats({}, { year: 2026, ae: aeCat, category: 'SFO', now: new Date('2026-04-15T12:00:00') });
 eq('YTD ingénuo (4× SFO 5000) — confirma a diferença', rNaive.aeYtd.base, 20000);
 
+// ── LINHA DO TEMPO DO CONTRATO (2026-11-03, aprovada pelo Nuno): a companhia e a base também têm
+// datas. Três linhas SEPARADAS: categoria/contrato · companhia+tipo · base. Mudar de companhia
+// ("mudei") começa períodos novos na data de entrada; os meses antigos ficam com o AE antigo.
+const { resolveCompany, migrateCompany, resolveBase, migrateBase, addBaseChange, startEmployment } = require(path.resolve('data/crewHistory.js'));
+const { getAe } = require(path.resolve('ae/index.js'));
+
+eq('migrateCompany do escalar → 1 período no mês do serviceStart', migrateCompany({ company: 'easyjet', crewType: 'cabin', serviceStart: '2018-05-01' }), [{ company: 'easyjet', crewType: 'cabin', from: '2018-05' }]);
+eq('migrateCompany sem companhia → vazio', migrateCompany({}), []);
+eq('migrateCompany preserva a linha existente', migrateCompany({ companyHistory: [{ company: 'tap', crewType: 'pilot', from: '2020-01' }], company: 'easyjet' }), [{ company: 'tap', crewType: 'pilot', from: '2020-01' }]);
+eq('migrateBase do escalar (código em maiúsculas)', migrateBase({ base: 'lis', serviceStart: '2018-05-01' }), [{ base: 'LIS', from: '2018-05' }]);
+eq('migrateBase sem serviceStart → 2000-01', migrateBase({ base: 'OPO' }), [{ base: 'OPO', from: '2000-01' }]);
+eq('resolveCompany linha vazia', resolveCompany([], '2026-01'), { company: null, crewType: null });
+eq('resolveBase linha vazia', resolveBase([], '2026-01'), null);
+
+// MUDEI: easyJet cabine FA (LIS) desde maio/2018 → TAP cabine CAB2 (LIS) desde maio/2026.
+const L0 = {
+  crewHistory: [{ category: 'FA', contract: '12/12', from: '2018-05' }],
+  companyHistory: migrateCompany({ company: 'easyjet', crewType: 'cabin', serviceStart: '2018-05-01' }),
+  baseHistory: migrateBase({ base: 'LIS', serviceStart: '2018-05-01' }),
+};
+const L1 = startEmployment(L0, { company: 'tap', crewType: 'cabin', category: 'CAB2', contract: '12/12', base: 'LIS', from: '2026-05' });
+eq('mudei: abril/2026 ainda é easyJet', resolveCompany(L1.companyHistory, '2026-04'), { company: 'easyjet', crewType: 'cabin' });
+eq('mudei: maio/2026 já é TAP', resolveCompany(L1.companyHistory, '2026-05-20'), { company: 'tap', crewType: 'cabin' });
+eq('mudei: maio/2025 é easyJet', resolveCompany(L1.companyHistory, '2025-05'), { company: 'easyjet', crewType: 'cabin' });
+eq('mudei: categoria em abril = FA', resolveCrew(L1.crewHistory, '2026-04').category, 'FA');
+eq('mudei: categoria em maio = CAB2', resolveCrew(L1.crewHistory, '2026-05').category, 'CAB2');
+eq('mudei: mesma base nas duas → a linha não cria período', L1.baseHistory, [{ base: 'LIS', from: '2018-05' }]);
+// Uma promoção da companhia ANTIGA marcada para depois da saída deixa de valer.
+const L0p = { ...L0, crewHistory: [...L0.crewHistory, { category: 'CM', contract: '12/12', from: '2026-07' }] };
+eq('mudei: promoção da antiga depois da saída cai', resolveCrew(startEmployment(L0p, { company: 'tap', crewType: 'cabin', category: 'CAB2', base: 'LIS', from: '2026-05' }).crewHistory, '2026-08').category, 'CAB2');
+// Mudar também de base: OPO a partir do mês de entrada.
+const L1o = startEmployment(L0, { company: 'tap', crewType: 'cabin', category: 'CAB2', base: 'OPO', from: '2026-05' });
+eq('mudei com base nova: abril LIS · maio OPO', [resolveBase(L1o.baseHistory, '2026-04'), resolveBase(L1o.baseHistory, '2026-05')], ['LIS', 'OPO']);
+
+// O AE CERTO EM CADA MÊS (golden do plano): maio/2025 easyJet + maio/2026 TAP.
+const aeAtL1 = (ym) => { const r = resolveCompany(L1.companyHistory, ym); return getAe(r.company, r.crewType); };
+eq('aeAt maio/2025 = easyJet cabine', aeAtL1('2025-05').AE_ID, 'easyjet-snpvac');
+eq('aeAt maio/2026 = TAP cabine', aeAtL1('2026-05').AE_ID, 'tap-snpvac');
+// Ano de 2026 somado MÊS A MÊS: jan–abr easyJet FA (base 1346,57 + abono 78,55) · mai–dez TAP CAB2 (1627,02).
+const NOW_DEC = new Date('2026-12-15T12:00:00');
+const ySplit = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC });
+eq('ano 2026 com mudança: base = 4×1346,57 + 8×1627,02', ySplit.aeYtd.base, 18402.44);
+eq('ano 2026 com mudança: abono só nos meses easyJet (4×78,55)', ySplit.aeYtd.cash, 314.2);
+eq('ano 2026 com mudança: total', ySplit.aeYtd.total, 18716.64);
+// Sem a linha do tempo (o comportamento antigo): o ano inteiro calculado com a TAP.
+const yOld = yearStats({}, { year: 2026, ae: getAe('tap', 'cabin'), crewHistory: [{ category: 'CAB2', contract: '12/12', from: '2026-05' }], now: NOW_DEC });
+eq('sem linha do tempo: 12×1627,02 (o erro que a linha corrige)', yOld.aeYtd.base, 19524.24);
+// O Ano bate com a soma dos Meses (cada mês com o SEU acordo).
+let sumMonths = 0;
+for (let mo = 1; mo <= 12; mo++) { const ym = `2026-${String(mo).padStart(2, '0')}`; sumMonths += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC }).aeMonth.total; }
+eq('ano = soma dos meses (com mudança de companhia)', +sumMonths.toFixed(2), ySplit.aeYtd.total);
+// Mudar para uma companhia SEM AE modelado: os meses novos ficam sem dinheiro, os antigos mantêm-se.
+const L2 = startEmployment(L0, { company: 'hifly', crewType: 'cabin', category: null, base: 'LIS', from: '2026-05' });
+const aeAtL2 = (ym) => { const r = resolveCompany(L2.companyHistory, ym); return getAe(r.company, r.crewType); };
+eq('mudei para FTL-only: maio sem AE', aeAtL2('2026-05'), null);
+eq('mudei para FTL-only: ano só com jan–abr easyJet', yearStats({}, { year: 2026, aeAt: aeAtL2, crewHistory: L2.crewHistory, now: NOW_DEC }).aeYtd.base, 5386.28);
+
+// Corrigir depois a DATA DE ENTRADA ("Na TAP desde", no Perfil): a fronteira das três linhas acompanha.
+const { moveEmploymentStart } = require(path.resolve('data/crewHistory.js'));
+const Mv4 = moveEmploymentStart(L1o, '2026-04');
+eq('entrada antecipada para abril: abril já é TAP', resolveCompany(Mv4.companyHistory, '2026-04').company, 'tap');
+eq('entrada antecipada para abril: categoria e base acompanham', [resolveCrew(Mv4.crewHistory, '2026-04').category, resolveBase(Mv4.baseHistory, '2026-04')], ['CAB2', 'OPO']);
+eq('entrada antecipada para abril: março continua easyJet/FA/LIS', [resolveCompany(Mv4.companyHistory, '2026-03').company, resolveCrew(Mv4.crewHistory, '2026-03').category, resolveBase(Mv4.baseHistory, '2026-03')], ['easyjet', 'FA', 'LIS']);
+const Mv7 = moveEmploymentStart(L1o, '2026-07');
+eq('entrada adiada para julho: junho ainda easyJet/FA/LIS', [resolveCompany(Mv7.companyHistory, '2026-06').company, resolveCrew(Mv7.crewHistory, '2026-06').category, resolveBase(Mv7.baseHistory, '2026-06')], ['easyjet', 'FA', 'LIS']);
+eq('entrada adiada para julho: julho TAP/CAB2/OPO', [resolveCompany(Mv7.companyHistory, '2026-07').company, resolveCrew(Mv7.crewHistory, '2026-07').category, resolveBase(Mv7.baseHistory, '2026-07')], ['tap', 'CAB2', 'OPO']);
+// Uma promoção na companhia antiga DEPOIS da nova data de entrada deixa de valer.
+const L1cm = startEmployment({ ...L0, crewHistory: [...L0.crewHistory, { category: 'CM', contract: '12/12', from: '2026-03' }] }, { company: 'tap', crewType: 'cabin', category: 'CAB2', base: 'LIS', from: '2026-05' });
+eq('entrada antecipada para fevereiro: a promoção de março na easyJet cai', resolveCrew(moveEmploymentStart(L1cm, '2026-02').crewHistory, '2026-03').category, 'CAB2');
+// Uma só companhia: nada muda (a antiguidade não reescreve a categoria nem a base).
+eq('uma só companhia: as linhas ficam iguais', moveEmploymentStart(L0, '2019-01'), { crewHistory: L0.crewHistory, companyHistory: L0.companyHistory, baseHistory: L0.baseHistory });
+
+// ── FROTA com datas (pilotos TAP, 2026-11-03): a frota faz parte do posto, como a categoria (linha da
+// categoria). Passar de NB a WB em junho não muda as ajudas de custo de maio.
+const HF = addCrewChange([{ category: 'OP3C', contract: '12/12', fleet: 'NB', from: '2020-01' }], { category: 'OP3C', contract: '12/12', fleet: 'WB', from: '2026-06' });
+eq('frota: maio NB', resolveCrew(HF, '2026-05').fleet, 'NB');
+eq('frota: junho WB', resolveCrew(HF, '2026-06').fleet, 'WB');
+eq('frota igual não cria período', addCrewChange(HF, { category: 'OP3C', contract: '12/12', fleet: 'WB', from: '2026-09' }).length, 2);
+eq('promoção sem frota indicada mantém a frota em vigor', resolveCrew(addCrewChange(HF, { category: 'OP2', contract: '12/12', from: '2026-09' }), '2026-10'), { category: 'OP2', contract: '12/12', fleet: 'WB' });
+eq('migrateCrew guarda a frota', migrateCrew({ crewCategory: 'OP3C', crewFleet: 'NB', serviceStart: '2020-01-01' }), [{ category: 'OP3C', contract: '12/12', fleet: 'NB', from: '2020-01' }]);
+const tapP = getAe('tap', 'pilot');
+const DF = {
+  '2026-05-10': { report_time: '06:00', block_on: '09:00', sectors: 2, flight_minutes: 100, route: 'LIS-OPO-LIS', kind: 'flight' },
+  '2026-06-10': { report_time: '06:00', block_on: '09:00', sectors: 2, flight_minutes: 100, route: 'LIS-OPO-LIS', kind: 'flight' },
+};
+eq('frota datada: ano 2026 = maio NB 202,50 + junho WB 225,00', yearStats(DF, { year: 2026, ae: tapP, crewHistory: HF, fleet: 'WB', now: NOW_DEC }).aeYtd.perDiem, 427.5);
+eq('sem datas (WB o ano todo): 450,00 (o erro que a frota datada corrige)', yearStats(DF, { year: 2026, ae: tapP, category: 'OP3C', fleet: 'WB', now: NOW_DEC }).aeYtd.perDiem, 450);
+eq('frota datada: mês de maio pela NB', monthStats(DF, { ym: '2026-05', ae: tapP, crewHistory: HF, fleet: 'WB', now: NOW_DEC }).aeMonth.perDiem, 202.5);
+
+// ── VÍNCULO com datas (2026-11-03): faz parte da relação de trabalho → linha da companhia. Agência até
+// dezembro de 2024, contrato com a companhia desde janeiro de 2025: 2024 sem salário do AE, 2025 com.
+// ("Abrangido pelo AE" fica SEM datas: datar a filiação sindical é dado sensível — RGPD art. 9.º.)
+const { addEmploymentChange, coveredBy } = require(path.resolve('data/crewHistory.js'));
+const CH = migrateCompany({ company: 'easyjet', crewType: 'cabin', employment: 'agency', serviceStart: '2018-05-01' });
+eq('migrateCompany guarda o vínculo', CH, [{ company: 'easyjet', crewType: 'cabin', employment: 'agency', from: '2018-05' }]);
+const CH2 = addEmploymentChange(CH, { employment: 'employee', from: '2025-01' });
+eq('vínculo: dezembro/2024 agência', resolveCompany(CH2, '2024-12').employment, 'agency');
+eq('vínculo: janeiro/2025 empresa, mesma companhia', [resolveCompany(CH2, '2025-01').employment, resolveCompany(CH2, '2025-01').company], ['employee', 'easyjet']);
+eq('vínculo igual não cria período', addEmploymentChange(CH2, { employment: 'employee', from: '2026-01' }).length, 2);
+eq('vínculo "sempre foi assim" desde a entrada: um só período', addEmploymentChange(CH2, { employment: 'employee', from: '2018-05', correct: true }), [{ company: 'easyjet', crewType: 'cabin', employment: 'employee', from: '2018-05' }]);
+eq('coveredBy: agência nunca', coveredBy('agency', true), false);
+eq('coveredBy: empresa por defeito', coveredBy('employee', undefined), true);
+eq('coveredBy: empresa não abrangida', coveredBy('employee', false), false);
+const aeAtV = (ym) => { const r = resolveCompany(CH2, ym); return coveredBy(r.employment, true) ? getAe(r.company, r.crewType) : null; };
+const FA = [{ category: 'FA', contract: '12/12', from: '2018-05' }];
+eq('vínculo datado: 2024 (agência) sem salário do AE', yearStats({}, { year: 2024, aeAt: aeAtV, crewHistory: FA, now: NOW_DEC }).aeYtd, null);
+eq('vínculo datado: 2025 (empresa) 12×1346,57', yearStats({}, { year: 2025, aeAt: aeAtV, crewHistory: FA, now: NOW_DEC }).aeYtd.base, 16158.84);
+// Mudar de companhia mantém o vínculo indicado; correção do vínculo só na companhia atual.
+const LV = startEmployment({ crewHistory: FA, companyHistory: CH2, baseHistory: [] }, { company: 'tap', crewType: 'cabin', category: 'CAB2', employment: 'agency', base: 'LIS', from: '2026-05' });
+eq('mudei com vínculo: maio/2026 TAP por agência', resolveCompany(LV.companyHistory, '2026-05').employment, 'agency');
+eq('correção do vínculo desde a entrada na TAP não toca na easyJet', addEmploymentChange(LV.companyHistory, { employment: 'employee', from: '2026-05', correct: true }).map((p) => `${p.company}:${p.employment}:${p.from}`), ['easyjet:agency:2018-05', 'easyjet:employee:2025-01', 'tap:employee:2026-05']);
+
+// BASE: transferência LIS→OPO em março não mexe em fevereiro.
+const BH = addBaseChange(migrateBase({ base: 'LIS', serviceStart: '2018-05-01' }), { base: 'OPO', from: '2026-03' });
+eq('transferência: fevereiro LIS', resolveBase(BH, '2026-02-27'), 'LIS');
+eq('transferência: março OPO', resolveBase(BH, '2026-03-01'), 'OPO');
+eq('transferência repetida no mesmo mês substitui', addBaseChange(BH, { base: 'FAO', from: '2026-03' }), [{ base: 'LIS', from: '2018-05' }, { base: 'FAO', from: '2026-03' }]);
+eq('transferência para a mesma base não cria período', addBaseChange(BH, { base: 'OPO', from: '2026-06' }).length, 2);
+// "Sempre foi esta" (correção) apaga a linha DESDE o início indicado e põe esta base aí.
+eq('correção desde 2018-05: uma só base', addBaseChange(BH, { base: 'FAO', from: '2018-05', correct: true }), [{ base: 'FAO', from: '2018-05' }]);
+// Correção só na companhia atual (desde maio/2026) mantém a base da companhia antiga.
+eq('correção desde a entrada na atual mantém a antiga', addBaseChange(L1o.baseHistory, { base: 'FAO', from: '2026-05', correct: true }), [{ base: 'LIS', from: '2018-05' }, { base: 'FAO', from: '2026-05' }]);
+
 // ── monthStats — vista de Mês ──
 const jm = monthStats(DUTIES, { ym: '2026-01', now: new Date('2026-04-15T12:00:00') });
 eq('mês jan: scope', jm.scope, 'month');

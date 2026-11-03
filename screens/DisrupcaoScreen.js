@@ -30,7 +30,7 @@ const WD3 = { pt: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'], en: ['SUN'
 const fmtEur = (n, lang) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
 
 export default function DisrupcaoScreen({ navigation }) {
-  const { lang, rosterLog, isPilot, ae, crewCategory, user, company, notify, aeEvents, addAeEvents } = useContext(AppContext);
+  const { lang, rosterLog, isPilot, aeAt, crewAt, crewCategory, user, company, notify, aeEvents, addAeEvents } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -51,9 +51,12 @@ export default function DisrupcaoScreen({ navigation }) {
   const archivedMonth = useMemo(() => (rosterLog || []).filter((e) => String(e.dutyDate).slice(0, 7) === ym).length, [rosterLog, ym]);
   // Valores do Anexo I já MODELADOS no AE (effective-dated): snc(ym) · rdp(cat, ym) =
   // max(setor nominal, piso 18/23) — a mesma fonte dos extras (golden test:ae).
+  // O acordo e a categoria DESSE mês (linha do tempo do contrato, 2026-11-03).
+  const ae = aeAt(ym);
+  const catYm = crewAt(ym).category || crewCategory;
   const valueOf = (c) => {
     if (c.type === 'snc') return { eur: ae && ae.snc ? ae.snc(ym) : (ae && ae.SNC_EUR) || null, label: null };
-    const eur = ae && ae.rdp ? ae.rdp(crewCategory, ym) : null;
+    const eur = ae && ae.rdp ? ae.rdp(catYm, ym) : null;
     return { eur, label: l('1 setor nominal ou o mínimo do Anexo I — o maior', '1 nominal sector or the Annex I floor — whichever is higher') };
   };
   const totalEur = cands.reduce((a, c) => a + (valueOf(c).eur || 0), 0);

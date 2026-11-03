@@ -16,10 +16,17 @@ import { BRAND } from './constants';
 // júnior→sénior, as outras ao contrário), mas a tabela salarial do próprio AE é monótona
 // com a senioridade — "promoção" = base superior à data da mudança, com fonte. Sem
 // baseAt (perfis FTL-only), a mudança fica com o rótulo neutro.
+// LINHA DO TEMPO DO CONTRATO (2026-11-03): `companyHistory` e `baseHistory` (as linhas do perfil) dão ao
+// Percurso a ENTRADA numa companhia nova, as TRANSFERÊNCIAS de base e as mudanças de VÍNCULO como
+// momentos próprios. `companyName(id)` e `baseName(código)` dão os nomes. A mudança de categoria no
+// mês da entrada fica dentro desse momento (não é promoção: são acordos diferentes).
+const byFromC = (a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0);
+const lineOf = (h, keep) => (Array.isArray(h) ? h : []).filter(keep).map((p) => ({ ...p, from: String(p.from).slice(0, 7) })).sort(byFromC);
 export const buildCareerModel = ({
   duties = {}, crewHistory = [], serviceStart = null,
   name = '', crewId = '', operator = '', base = '', categoryNow = '',
   postFlightMin = 0, generatedAt = null, now = new Date(), baseAt = null,
+  companyHistory = [], baseHistory = [], companyName = null, baseName = null,
 } = {}) => {
   const dates = Object.keys(duties)
     .filter((d) => duties[d] && !duties[d].deleted)
@@ -64,14 +71,40 @@ export const buildCareerModel = ({
   };
 
   // Percurso: início de serviço + início da COBERTURA da app (o ponto amarelo — a linha
-  // do tempo nunca mente) + mudanças do crewHistory (categoria; só-contrato marca-se à parte).
+  // do tempo nunca mente) + mudanças do crewHistory (categoria; só-contrato marca-se à parte)
+  // + entradas em companhias, transferências de base e mudanças de vínculo (linha do tempo do contrato).
   const hist = (Array.isArray(crewHistory) ? crewHistory : []).filter((p) => p && p.category && p.from);
+  const comp = lineOf(companyHistory, (p) => p && p.company && p.from);
+  const bLine = lineOf(baseHistory, (p) => p && p.from);
+  const nameOf = (id) => (typeof companyName === 'function' ? (companyName(id) || id) : id);
+  const placeOf = (c) => (typeof baseName === 'function' ? (baseName(c) || c) : c);
+  // O início da CARREIRA é o da 1.ª companhia (o serviceStart, depois de uma mudança, é o da atual).
+  const careerStart = comp.length && comp[0].from !== '2000-01' ? comp[0].from : (serviceStart ? String(serviceStart).slice(0, 7) : null);
   const timeline = [];
-  if (serviceStart) timeline.push({ kind: 'start', ym: String(serviceStart).slice(0, 7), category: hist.length ? hist[0].category : null });
+  if (careerStart) timeline.push({ kind: 'start', ym: careerStart, category: hist.length ? hist[0].category : null, operator: comp.length ? nameOf(comp[0].company) : null });
   if (coverage) timeline.push({ kind: 'coverage', ym: coverage.first.slice(0, 7) });
+  const coYms = new Set();
+  for (let i = 1; i < comp.length; i++) {
+    const ym = comp[i].from;
+    if (comp[i].company !== comp[i - 1].company || comp[i].crewType !== comp[i - 1].crewType) {
+      coYms.add(ym);
+      const crewHere = hist.find((p) => String(p.from).slice(0, 7) === ym);
+      const bIdx = bLine.findIndex((p) => p.from === ym);
+      const bHere = bIdx > 0 && bLine[bIdx].base && bLine[bIdx].base !== bLine[bIdx - 1].base ? placeOf(bLine[bIdx].base) : null;
+      timeline.push({ kind: 'company', ym, operator: nameOf(comp[i].company), category: crewHere ? crewHere.category : null, base: bHere });
+    } else if ((comp[i].employment || 'employee') !== (comp[i - 1].employment || 'employee')) {
+      timeline.push({ kind: 'employment', ym, employment: comp[i].employment || 'employee' });
+    }
+  }
+  for (let i = 1; i < bLine.length; i++) {
+    const ym = bLine[i].from;
+    if (!bLine[i].base || bLine[i].base === bLine[i - 1].base || coYms.has(ym)) continue;
+    timeline.push({ kind: 'base', ym, base: placeOf(bLine[i].base) });
+  }
   for (let i = 1; i < hist.length; i++) {
     const kind = hist[i].category !== hist[i - 1].category ? 'change' : 'contract';
     const ym = String(hist[i].from).slice(0, 7);
+    if (coYms.has(ym)) continue;   // a mudança de categoria da ENTRADA vive no momento da companhia
     // Promoção PROVADA pela tabela do AE (base superior à data da mudança); qualquer
     // dúvida (sem AE, base igual, erro) → null → rótulo neutro. Descida também fica
     // neutra: num documento assinável nunca se escreve "despromoção".
@@ -89,11 +122,13 @@ export const buildCareerModel = ({
   const serviceYears = serviceStart
     ? Math.max(0, Math.floor((now - new Date(`${String(serviceStart).slice(0, 10)}T00:00:00`)) / (365.25 * 86400000)))
     : null;
-  const startY = serviceStart ? String(serviceStart).slice(0, 4) : (coverage ? coverage.first.slice(0, 4) : nowY);
+  const startY = careerStart ? careerStart.slice(0, 4) : (coverage ? coverage.first.slice(0, 4) : nowY);
   const ghost = startY === nowY ? nowY : `’${startY.slice(2)}–’${nowY.slice(2)}`;
+  // Depois de uma mudança de companhia, a data do cabeçalho é a da ATUAL ("Na companhia desde").
+  const multiCompany = coYms.size > 0;
 
   return {
-    header: { name, crewId, operator, base, categoryNow, serviceStart, serviceYears, generatedAt, ghost },
+    header: { name, crewId, operator, base, categoryNow, serviceStart, serviceYears, generatedAt, ghost, multiCompany },
     years, totals, destinations, timeline, coverage,
   };
 };
@@ -111,6 +146,8 @@ const LBL = {
     flightH: 'horas de voo', sectors: 'setores', dutyDays: 'dias de serviço', airports: 'aeroportos',
     path: 'Percurso', startEvt: 'Início de serviço', covEvt: 'Início dos registos nesta aplicação',
     catChange: 'mudança de categoria', promo: 'promoção', contract: 'Contrato',
+    joined: 'Entrada na', transfer: 'transferência', employment: 'Vínculo', startedCo: 'Na companhia desde',
+    emp: { employee: 'contrato com a companhia', agency: 'agência', independent: 'independente' },
     perYear: 'Por ano · registos na app', year: 'Ano', days: 'Dias de serviço', flight: 'Voo',
     duty: 'Serviço', nights: 'Pernoitas', totals: 'Totais', from: 'desde', to: 'até',
     destT: (n) => `Destinos · ${n} ${n === 1 ? 'aeroporto distinto' : 'aeroportos distintos'}`,
@@ -128,6 +165,8 @@ const LBL = {
     flightH: 'flight hours', sectors: 'sectors', dutyDays: 'duty days', airports: 'airports',
     path: 'Path', startEvt: 'Service start', covEvt: 'First records in this app',
     catChange: 'category change', promo: 'promotion', contract: 'Contract',
+    joined: 'Joined', transfer: 'transfer', employment: 'Employment', startedCo: 'With the airline since',
+    emp: { employee: 'direct contract', agency: 'agency', independent: 'self-employed' },
     perYear: 'Per year · records in the app', year: 'Year', days: 'Duty days', flight: 'Flight',
     duty: 'Duty', nights: 'Night stops', totals: 'Totals', from: 'from', to: 'to',
     destT: (n) => `Destinations · ${n} distinct ${n === 1 ? 'airport' : 'airports'}`,
@@ -160,15 +199,20 @@ export const careerHtml = (model, lang = 'pt', fontsCss = '', categoryLabel = nu
   const L = LBL[lang] || LBL.pt;
   const M = MON3[lang] || MON3.pt;
   const { header: hd, years, totals, destinations, timeline, coverage } = model;
-  const catTxt = (id) => esc(categoryLabel ? (categoryLabel(id) || id) : id);
+  // `categoryLabel(id, ym)`: o nome da categoria pelo acordo da companhia DESSE mês (sem ym = o atual).
+  const catTxt = (id, ym) => esc(categoryLabel ? (categoryLabel(id, ym) || id) : id);
   const metaCell = (k, v) => (v ? `<div class="mi"><div class="mk">${esc(L[k])}</div><div class="mv">${esc(v)}</div></div>` : '');
 
   // Percurso — o ponto AMARELO marca onde a cobertura da app começa (a linha nunca mente).
   const tlRow = (e) => {
-    const body = e.kind === 'start' ? `${esc(L.startEvt)}${hd.operator ? ` · ${esc(hd.operator)}` : ''}${e.category ? ` <small>· ${catTxt(e.category)}</small>` : ''}`
+    const op = e.operator || hd.operator;
+    const body = e.kind === 'start' ? `${esc(L.startEvt)}${op ? ` · ${esc(op)}` : ''}${e.category ? ` <small>· ${catTxt(e.category, e.ym)}</small>` : ''}`
       : e.kind === 'coverage' ? `<small>${esc(L.covEvt)}</small>`
       : e.kind === 'contract' ? `${esc(L.contract)} ${esc(e.contract)}`
-      : `${catTxt(e.category)} <small>· ${esc(e.up === true ? L.promo : L.catChange)}</small>`;
+      : e.kind === 'company' ? `${esc(L.joined)} ${esc(e.operator)}${e.category ? ` <small>· ${catTxt(e.category, e.ym)}</small>` : ''}${e.base ? ` <small>· ${esc(L.base)} ${esc(e.base)}</small>` : ''}`
+      : e.kind === 'base' ? `${esc(L.base)} ${esc(e.base)} <small>· ${esc(L.transfer)}</small>`
+      : e.kind === 'employment' ? `${esc(L.employment)} · ${esc((L.emp && L.emp[e.employment]) || e.employment)}`
+      : `${catTxt(e.category, e.ym)} <small>· ${esc(e.up === true ? L.promo : L.catChange)}</small>`;
     return `<div class="tlR${e.kind === 'coverage' ? ' cov' : ''}"><div class="m">${esc(fmtYm(e.ym, lang))}</div><div class="e">${body}</div></div>`;
   };
 
@@ -250,7 +294,7 @@ export const careerHtml = (model, lang = 'pt', fontsCss = '', categoryLabel = nu
   <div class="meta">
     ${metaCell('crew', hd.name)}${metaCell('crewId', hd.crewId)}${metaCell('operator', hd.operator)}
     ${metaCell('category', hd.categoryNow ? (categoryLabel ? (categoryLabel(hd.categoryNow) || hd.categoryNow) : hd.categoryNow) : '')}
-    ${metaCell('base', hd.base)}${metaCell('started', startedTxt)}${metaCell('generated', hd.generatedAt)}
+    ${metaCell('base', hd.base)}${metaCell(hd.multiCompany ? 'startedCo' : 'started', startedTxt)}${metaCell('generated', hd.generatedAt)}
   </div>
   <div class="rule"></div>
 

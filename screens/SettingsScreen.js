@@ -43,7 +43,7 @@ function Linha({ icon, label, value, valueColor, dot, onPress, last, danger }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -166,7 +166,6 @@ export default function SettingsScreen({ navigation }) {
   // Gravações e condições das definições: hooks/usePerfilActions (partilhado com as páginas).
   const A = usePerfilActions();
   const page = (kind) => { select(); navigation.navigate('PerfilPagina', { kind }); };
-  const [coOpen, setCoOpen] = useState(false);   // "Mudar de companhia?" → reabre a configuração
   const companyBases = bases.filter((b) => b.airline_id === company?.id);
   const contractTxt = (() => {
     const c = crewContract || '12/12';
@@ -184,7 +183,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered },
         duties, dayLog, aeExtras, aeEvents,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -266,7 +265,7 @@ export default function SettingsScreen({ navigation }) {
             {A.showFleet ? <Linha icon="plane" label={l('Frota', 'Fleet')} value={crewFleet || 'NB'} onPress={() => page('frota')} /> : null}
             {companyBases.length ? <Linha icon="pin" label={l('Base', 'Base')} value={base ? `${base} · ${baseCityName(base, baseObj?.city, lang)}` : l('Por definir', 'Not set')} onPress={() => page('base')} /> : null}
             {ae ? <Linha icon="cal" label={l('Na companhia desde', 'With the airline since')} value={startTxt} onPress={() => page('inicio')} /> : null}
-            <Linha icon="sync" label={l('Mudar de companhia', 'Change airline')} value={company?.name || ''} onPress={() => setCoOpen(true)} last />
+            <Linha icon="sync" label={l('Mudar de companhia', 'Change airline')} value={company?.name || ''} onPress={() => { select(); setOnboarded(false); }} last />
           </View>
         </Animated.View>
 
@@ -441,14 +440,8 @@ export default function SettingsScreen({ navigation }) {
         </View>
       </CenterDialog>
 
-      {/* Mudar de companhia (2026-11-03): reabre a configuração em modo mudança ("Cancelar" volta). */}
-      <ConfirmDialog visible={coOpen} icon="airplane-outline"
-        title={l('Mudar de companhia?', 'Change airline?')}
-        message={l('Vais responder outra vez às perguntas da configuração: companhia, tipo, categoria, contrato, base e antiguidade. A tua escala e os teus registos ficam.',
-          'You will answer the setup questions again: airline, crew type, rank, contract, base and seniority. Your roster and records stay.')}
-        cancelLabel={l('Agora não', 'Not now')} confirmLabel={l('Mudar', 'Change')}
-        onCancel={() => setCoOpen(false)}
-        onConfirm={() => { setCoOpen(false); setOnboarded(false); }} />
+      {/* Mudar de companhia (2026-11-03): abre a configuração em modo mudança; a 1.ª pergunta ("O que
+          aconteceu?") e o "Cancelar" do canto substituem a janela de confirmação (Nuno, linha do tempo). */}
 
     </SafeAreaView>
   );

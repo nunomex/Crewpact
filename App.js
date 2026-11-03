@@ -34,7 +34,7 @@ import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
 import { capabilitiesFor, resolvePostFlight, resolveVacationDays } from './data/capabilities';
-import { migrateCrew, resolveCrew } from './data/crewHistory';
+import { migrateCrew, resolveCrew, migrateCompany, resolveCompany, migrateBase, resolveBase, coveredBy } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming } from './data/rosterImport';
@@ -406,7 +406,7 @@ export default function App() {
     };
     const effExtra = ('extra' in fields) ? fields.extra : (dutiesRef.current?.[date]?.extra || null);
     const entry = dayFtlFromDuties([primary, ...((effExtra && effExtra.length) ? effExtra : [])],
-      { postFlightMin, isPilot, base });   // pós-voo EFETIVO (user>OM>assumido) + base p/ 12h/10h (235)
+      { postFlightMin, isPilot, base: homeBaseAt(date) });   // pós-voo EFETIVO (user>OM>assumido) + base DESSE dia p/ 12h/10h (235)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -432,7 +432,7 @@ export default function App() {
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
   // Recalcula o FTL do dia (primária + extra) e grava no dayLog.
   const recomputeDay = (date, cur, extra) => {
-    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base });
+    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base: homeBaseAt(date) });
     setDayLog(prev => (entry ? { ...prev, [date]: entry } : prev));
   };
   // Adicionar um SERVIÇO ao dia (2.º+ período) — a EASA conta por SERVIÇO, não por dia (210).
@@ -749,8 +749,12 @@ export default function App() {
           const aeCovered = resolved.aeCovered ?? localProfile?.aeCovered ?? user.aeCovered ?? true;
           // Categoria/contrato EFFECTIVE-DATED: linha do tempo (metadados). Migração suave do
           // modelo antigo (escalar) → 1 período = valor atual cobre o passado (sem disrupção).
-          const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
+          const crewHistory = migrateCrew({ crewHistory: resolved.crewHistory || localProfile?.crewHistory || user.crewHistory, crewCategory, crewContract, crewFleet, serviceStart });
+          // Companhia e base também com datas (linha do tempo do contrato, 2026-11-03). Mesma migração
+          // suave: sem linha guardada → 1 período com o valor atual → todos os meses como antes.
+          const companyHistory = migrateCompany({ companyHistory: resolved.companyHistory || localProfile?.companyHistory || user.companyHistory, company: resolved.company, crewType: resolved.crewType || 'cabin', employment, serviceStart });
+          const baseHistory = migrateBase({ baseHistory: resolved.baseHistory || localProfile?.baseHistory || user.baseHistory, base, serviceStart });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -863,7 +867,7 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base }));
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base, baseAt: homeBaseAt }));
     // deps em profile.* (não na const postFlightMin, declarada ABAIXO — a dep array avalia
     // no render = TDZ); company muda a resolução OM/assumido → também é dep.
   }, [duties, loadedUserId, profile?.postFlightMin, profile?.company]); // isPilot/postFlightMin lidos por closure
@@ -911,11 +915,19 @@ export default function App() {
   // crewContract (acima) = o ATUAL (último período); crewAt(ym) dá o que valia nesse mês — a
   // categoria escala o AE inteiro (base+per-diem+pernoita), por isso o passado fica congelado.
   const crewHistory = profile?.crewHistory || [];
-  const crewAt = (ym) => resolveCrew(crewHistory, ym);
+  // A frota também tem datas (vive no mesmo período); sem frota no período → a do perfil.
+  const crewAt = (ym) => { const r = resolveCrew(crewHistory, ym); return { ...r, fleet: r.fleet || crewFleet }; };
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
-  const base = profile?.base || null;                  // base = CÓDIGO IATA (ex. LIS), vem dos metadados
+  // LINHA DO TEMPO DO CONTRATO (2026-11-03): a companhia e a base também têm datas — três linhas
+  // separadas (categoria/contrato · companhia+tipo · base). `base` = a base EM VIGOR hoje;
+  // `homeBaseAt(dia|mês)` = a de outro mês (repouso 12 h/10 h, pernoitas, Auditoria).
+  const companyHistory = profile?.companyHistory || [];
+  const baseHistory = profile?.baseHistory || [];
+  const nowYm = isoDay().slice(0, 7);
+  const base = (baseHistory.length ? resolveBase(baseHistory, nowYm) : null) || profile?.base || null;   // CÓDIGO IATA (ex. LIS)
+  const homeBaseAt = (when) => (baseHistory.length ? resolveBase(baseHistory, when || nowYm) : base);
   // Base completa resolvida do catálogo (cidade/país) por (companhia, código). null se
   // não houver base ou o catálogo ainda não tiver carregado — os consumidores usam `base`
   // (o código) como fallback, por isso nada parte sem o catálogo.
@@ -937,11 +949,26 @@ export default function App() {
   // empregado não filiado). Default tudo coberto → ZERO disrupção p/ quem já existe.
   const employment = profile?.employment || 'employee';      // vínculo: 'employee' | 'agency' | 'independent'
   const aeCoveredOverride = profile?.aeCovered;              // override (raro: empregado não filiado). Default ON.
-  const covered = employment === 'employee' ? (aeCoveredOverride !== false) : false;  // cobertura EFETIVA
+  const covered = coveredBy(employment, aeCoveredOverride);  // cobertura EFETIVA (hoje; cada mês usa o vínculo desse mês — aeAt)
   // AE (Acordo de Empresa) da companhia, por crewType — SPAC piloto / SNPVAC cabine. Companhia FTL
   // → null. SE não-coberto → ae = null também (degrada o PAGAMENTO em toda a app; FTL fica intacto).
   const companyAe = getAeForProfile({ company: company || profile?.company, crewType });
   const ae = covered ? companyAe : null;
+  // O AE de OUTRO mês: a companhia e o tipo desse mês (uma mudança de companhia não reescreve os
+  // meses antigos). Mesmo mês/companhia de hoje → o `ae` de sempre (o mesmo objeto).
+  const companyAt = (when) => {
+    const r = companyHistory.length ? resolveCompany(companyHistory, when || nowYm) : { company: null };
+    return r.company ? r : { company: profile?.company || null, crewType };
+  };
+  // O VÍNCULO desse mês decide se o AE conta (agência/independente → não); "abrangido" não tem datas.
+  const aeAt = (when) => {
+    const r = companyAt(when);
+    if (!coveredBy(r.employment || employment, aeCoveredOverride)) return null;
+    const sameCo = r.company === profile?.company || (company && (r.company === company.id || r.company === company.slug));
+    if (sameCo && r.crewType === crewType) return companyAe;
+    const co = airlines.find((a) => a.id === r.company || a.slug === r.company) || r.company;
+    return getAeForProfile({ company: co, crewType: r.crewType });
+  };
   // Matriz de capacidades — fonte única do que cada ecrã mostra/pede (AE↔FTL, piloto↔cabine).
   const caps = capabilitiesFor({ company: company || profile?.company, crewType, contract: crewContract || '12/12', lifestyle, aeCovered: covered });
   // Estado do AE (honesto): modeled (motor AE) / uncovered (companhia tem AE mas TU não estás
@@ -1038,7 +1065,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

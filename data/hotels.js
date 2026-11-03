@@ -39,6 +39,7 @@ export const hotelDirectionsUrl = (name, station, os = 'ios', city = '') => {
 // Estadias por estação, derivadas da ESCALA (a fonte): dias não apagados com pernoita
 // (serviço principal ou extra do split-duty) cuja estação deriva da rota/legs.
 // → { [IATA]: [{ date:'YYYY-MM-DD', flightNo }] } ordenado por data ascendente.
+// `base` = código, ou função (dia → código) com a base EM VIGOR nesse dia (linha do tempo do contrato).
 export const staysByStation = (duties, base) => {
   const out = {};
   for (const date in (duties || {})) {
@@ -47,7 +48,7 @@ export const staysByStation = (duties, base) => {
     const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
     const ns = svcs.find((sv) => sv && sv.nightStop);
     if (!ns) continue;
-    const st = nightStopStation(ns, base);
+    const st = nightStopStation(ns, typeof base === 'function' ? base(date) : base);
     if (!st) continue;
     const legs = Array.isArray(ns.legs) ? ns.legs : [];
     const flightNo = legs.length ? (legs[legs.length - 1].flightNo || null) : null;

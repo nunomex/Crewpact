@@ -40,7 +40,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, crewCategory, crewFleet, base, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -63,7 +63,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
   const load = async () => {
     setLoading(true); setDenied(false);
-    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, aeEvents });
+    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents });
     let next = r.cands;
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!r.ok) setDenied(true);
@@ -98,7 +98,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const text = await pdf.extractText(uri);
       try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
       const r = parseEasyjetRoster(text, company?.slug);
-      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base }));
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt }));
       setPasteDiag(r.diag);
       // Guarda SUAVE (não bloqueia): reconheci poucos serviços → provável PDF de outra
       // companhia OU perfil errado. Avisa e deixa o utilizador decidir (§1/§2).
@@ -149,9 +149,13 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     if (kind !== 'ready') return { kind, perDiem: null, badAp, nsEur: null };
     const aps = routeAirports(c.duty.route);
     let perDiem = null;
-    if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds, 1, crewFleet); }
+    // O acordo, a categoria e a tabela DESSE dia (linha do tempo do contrato): a leitura vai 12 meses atrás.
+    const dt = c.duty.duty_date;
+    const aeD = dt ? aeAt(dt) : ae;
+    const catD = dt ? crewAt(dt).category : crewCategory;
+    if (aeD && catD) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = aeD.perDiem(catD, ds, 1, dt ? crewAt(dt).fleet : crewFleet, dt); }
     // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
-    const nsEur = (c.duty.nightStop && ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+    const nsEur = (c.duty.nightStop && aeD && aeD.nightStop && catD) ? aeD.nightStop(catD, 1, dt) : null;
     return { kind: 'ready', perDiem, badAp: null, nsEur };
   };
   // "Substitui o teu manual": uma alteração/conflito cujo dia já tinha um serviço MANUAL

@@ -18,6 +18,7 @@ import usePerfilActions, { currentYmNow } from '../hooks/usePerfilActions';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { AppContext } from '../data/appContext';
 import { countryName as countryNameOf, baseCityName } from '../data/countries';
+import { companyStartYm } from '../data/crewHistory';
 import { select } from '../data/haptics';
 import { PELE, PELE_FONT, TXT, SPACE, RADIUS } from '../data/constants';
 
@@ -28,7 +29,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const ctx = useContext(AppContext);
   const { lang, ae, company, crewCategory, crewContract, crewFleet, crewHistory, postFlightMin, postFlightSource,
     vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, base, bases, countries, lifestyle,
-    instructorRated, lockEnabled, remindersOn, toggleReminders, setLang } = ctx;
+    instructorRated, lockEnabled, remindersOn, toggleReminders, setLang, baseHistory, companyHistory, homeBaseAt, companyAt } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const A = usePerfilActions();
   const reduce = useReduceMotion();
@@ -38,10 +39,22 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const pick = (fn, stay = false) => { select(); fn(); if (!stay) setTimeout(goBack, reduce ? 120 : BACK_MS); };
   // Estado das páginas com mais de uma escolha (todos os hooks no topo — regra do React).
   const startYm = serviceStart ? String(serviceStart).slice(0, 7) : '';
-  const [selCrew, setSelCrew] = useState(kind === 'contrato' ? (crewContract || '12/12') : crewCategory);
+  const [selCrew, setSelCrew] = useState(kind === 'contrato' ? (crewContract || '12/12') : kind === 'frota' ? (crewFleet || 'NB') : crewCategory);
   const [from, setFrom] = useState(currentYmNow());
   const [ym, setYm] = useState(startYm);
   const [query, setQuery] = useState('');
+  // Base e vínculo em dois passos (linha do tempo do contrato, esboço design/linha-do-tempo.html, aprovado):
+  // a lista → "desde quando?" (mudei a partir de um mês · sempre foi assim).
+  const [pickedVal, setPickedVal] = useState(null);   // tocado na lista (mostra o visto)
+  const [nextVal, setNextVal] = useState(null);       // o do 2.º passo
+  const [chgMode, setChgMode] = useState('moved');    // 'moved' | 'fix'
+  const [chgFrom, setChgFrom] = useState(currentYmNow());
+  const ymLabel = (v) => {
+    const m = /^(\d{4})-(\d{2})$/.exec(String(v || '').slice(0, 7));
+    return m ? new Date(+m[1], +m[2] - 1, 1).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' }) : '';
+  };
+  const prevYm = (v) => { const [y, mo] = String(v).split('-').map(Number); return mo === 1 ? `${y - 1}-12` : `${y}-${String(mo - 1).padStart(2, '0')}`; };
+  const baseName = (code) => { const b = (bases || []).find((x) => x.code === code); return b ? baseCityName(code, b.city, lang) : code; };
 
   // ── Categoria / contrato — effective-dated: cartões + mês + Guardar ──
   if (kind === 'categoria' || kind === 'contrato') {
@@ -49,7 +62,10 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     const isCat = kind === 'categoria';
     const current = isCat ? crewCategory : (crewContract || '12/12');
     const items = isCat ? itemsOf(ae.CATEGORIES, ae.categoryLabel, lang) : itemsOf(ae.CONTRACTS, ae.contractLabel, lang);
-    const hist = (crewHistory || []).map((p) => `${isCat ? p.category : p.contract} ${l('desde', 'since')} ${p.from}`).join(' · ');
+    // Só os períodos da companhia ATUAL (depois de uma mudança, as categorias da antiga não são destas).
+    const coStartC = companyStartYm(companyHistory);
+    const hist = (crewHistory || []).filter((p, i, a) => p.from >= coStartC || !a.some((x) => x.from > p.from && x.from <= coStartC))
+      .map((p) => `${isCat ? (ae.categoryLabel ? ae.categoryLabel(p.category, lang) : p.category) : (ae.contractLabel ? ae.contractLabel(p.contract, lang) : p.contract)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · ');
     const save = () => {
       const ok = A.applyCrew(isCat ? selCrew : crewCategory, isCat ? (crewContract || '12/12') : selCrew, from);
       if (ok) goBack();
@@ -73,6 +89,33 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     );
   }
 
+  // ── Frota — com datas (linha da categoria, 2026-11-03): o modelo da categoria (cartões + mês + Guardar) ──
+  if (kind === 'frota') {
+    if (!ae || !Array.isArray(ae.FLEETS)) return <Pagina {...back} title={l('A tua frota', 'Your fleet')} lead={l('O acordo da tua companhia não distingue frotas.', 'Your airline’s agreement does not distinguish fleets.')} />;
+    const current = crewFleet || 'NB';
+    const items = itemsOf(ae.FLEETS, ae.fleetLabel, lang);
+    const fLbl = (f) => (ae.fleetLabel ? ae.fleetLabel(f, lang) : f);
+    const coStartF = companyStartYm(companyHistory);
+    const hist = (crewHistory || []).filter((p, i, a) => p.from >= coStartF || !a.some((x) => x.from > p.from && x.from <= coStartF))
+      .filter((p, i, a) => i === 0 || (p.fleet || null) !== (a[i - 1].fleet || null))
+      .map((p) => `${fLbl(p.fleet || current)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · ');
+    const save = () => { A.saveFleet(selCrew, from); goBack(); };
+    return (
+      <Pagina {...back} title={l('A tua frota', 'Your fleet')}
+        lead={l('Wide-body ou narrow-body: muda o per-diem (no AE da TAP, quem é wide-body recebe sempre a tarifa WB). A mudança conta a partir do mês que escolheres.', 'Wide-body or narrow-body: it changes the per diem (in the TAP agreement, wide-body always gets the WB rate). The change counts from the month you pick.')}
+        footer={<PrimaryButton label={l('Guardar a frota', 'Save the fleet')} onPress={save} disabled={!selCrew || selCrew === current} />}>
+        {items.map((it) => (
+          <OptCard key={it.id} code={it.code} label={it.label} reduce={reduce}
+            sel={selCrew === it.id && it.id !== current} tag={it.id === current ? l('atual', 'current') : null}
+            onPress={() => { select(); setSelCrew(it.id); }} />
+        ))}
+        <Text style={[P.label, s.gap]}>{l('A partir de que mês?', 'From which month?')}</Text>
+        <MonthYearWheel value={from} onChange={setFrom} lang={lang} monthsAhead={12} />
+        {hist ? <Text style={[P.foot, s.gap]}>{l('Histórico: ', 'History: ')}{hist}.</Text> : null}
+      </Pagina>
+    );
+  }
+
   // ── Antiguidade — roda de mês e ano + Guardar ──
   if (kind === 'inicio') {
     const coName = company?.name || l('companhia', 'airline');
@@ -92,6 +135,104 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     );
   }
 
+  // ── 2.º passo, partilhado pela base e pelo vínculo — "desde quando?" (mudei · sempre foi assim) ──
+  // cfg: { name, lead, segMoved, segFix, beforeLbl, beforeName, hist, fixWhat, fixCount, saveLabel, onSave }
+  const renderDesde = (cfg) => {
+    const moved = chgMode === 'moved';
+    const coStart = companyStartYm(companyHistory);
+    const save = () => { cfg.onSave(moved ? { from: chgFrom } : {}); goBack(); };
+    const backToList = () => { setNextVal(null); setPickedVal(null); };
+    return (
+      <Pagina key="desde" onBack={backToList} backLabel={l('Voltar à lista', 'Back to the list')}
+        title={l(`${cfg.name}, desde quando?`, `${cfg.name}, since when?`)} lead={cfg.lead}
+        footer={<PrimaryButton label={cfg.saveLabel} onPress={save} disabled={moved && !/^\d{4}-\d{2}$/.test(chgFrom)} />}>
+        <View style={s.seg} accessibilityRole="radiogroup">
+          {[['moved', cfg.segMoved], ['fix', cfg.segFix]].map(([id, lbl]) => {
+            const on = chgMode === id;
+            return (
+              <TouchableOpacity key={id} style={[s.segItem, on && s.segOn]} onPress={() => { select(); setChgMode(id); }}
+                accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={lbl}>
+                <Text style={[s.segTxt, on && s.segTxtOn]}>{lbl}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {moved ? (
+          <>
+            <Text style={[P.label, s.gap]}>{l('A partir de que mês?', 'From which month?')}</Text>
+            <MonthYearWheel value={chgFrom} onChange={setChgFrom} lang={lang} monthsAhead={0} />
+            {cfg.beforeName && cfg.beforeName !== cfg.name ? (
+              <Text style={[P.foot, s.gap]}>{l('Até ', 'Until ')}{ymLabel(prevYm(chgFrom))}{cfg.beforeLbl}<Text style={P.strong}>{cfg.beforeName}</Text>.</Text>
+            ) : null}
+            {cfg.hist ? <Text style={[P.foot, s.small]}>{l('Histórico: ', 'History: ')}{cfg.hist}.</Text> : null}
+          </>
+        ) : (
+          <View style={s.src}>
+            <Icon name="clock" size={16} color={PELE.ink} />
+            <Text style={s.srcTxt}>
+              {coStart === '2000-01'
+                ? l(`Corrige ${cfg.fixWhat} de todos os meses. ${cfg.fixCount}`, `Fixes ${cfg.fixWhat} for every month. ${cfg.fixCount}`)
+                : <>{l(`Corrige ${cfg.fixWhat} desde que entraste na ${company?.name || 'companhia'}, em `, `Fixes ${cfg.fixWhat} since you joined ${company?.name || 'the airline'}, in `)}<Text style={P.strong}>{ymLabel(coStart)}</Text>. {cfg.fixCount}</>}
+            </Text>
+          </View>
+        )}
+      </Pagina>
+    );
+  };
+  // Tocar noutro valor da lista: o visto e, um instante depois, o 2.º passo. O atual volta ao Perfil.
+  const pickNext = (val, current) => {
+    if (val === current) { goBack(); return; }
+    select(); setPickedVal(val);
+    setTimeout(() => { setChgMode('moved'); setChgFrom(currentYmNow()); setNextVal(val); }, reduce ? 120 : BACK_MS);
+  };
+
+  // ── Base, 2.º passo ──
+  if (kind === 'base' && nextVal) {
+    const name = baseName(nextVal);
+    return renderDesde({
+      name, lead: l('O repouso, as pernoitas e a Auditoria usam a base de cada mês.', 'Rest, night stops and the Audit use the base of each month.'),
+      segMoved: l('Mudei de base', 'I moved base'), segFix: l('Sempre foi esta', 'It always was'),
+      beforeLbl: l(' a tua base fica ', ' your base stays '), beforeName: (() => { const b = homeBaseAt(prevYm(chgFrom)); return b ? baseName(b) : null; })(),
+      hist: (baseHistory || []).filter((p) => p && p.base).map((p) => `${baseName(p.base)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · '),
+      fixWhat: l('a base', 'the base'), fixCount: l('Os meses antigos também passam a contar com esta base.', 'Earlier months also count with this base.'),
+      saveLabel: l('Guardar a base', 'Save the base'), onSave: (opt) => A.saveBase(nextVal, opt),
+    });
+  }
+
+  // ── Vínculo — com datas (linha da companhia, 2026-11-03): a lista → "desde quando?" ──
+  const EMP = [
+    { id: 'employee', label: l('Empresa', 'Employee'), sub: l('contrato direto com a companhia', 'direct contract with the airline') },
+    { id: 'agency', label: l('Agência', 'Agency'), sub: l('contratado por uma agência', 'hired through an agency') },
+    { id: 'independent', label: l('Independente', 'Independent'), sub: l('por conta própria', 'self-employed') },
+  ];
+  const empLabel = (id) => (EMP.find((x) => x.id === id) || EMP[0]).label;
+  if (kind === 'vinculo' && nextVal) {
+    const name = empLabel(nextVal);
+    const coStartV = companyStartYm(companyHistory);
+    return renderDesde({
+      name, lead: l('O vínculo decide se o acordo de empresa conta no salário de cada mês. Os limites FTL aplicam-se sempre.', 'Your employment decides whether the company agreement counts in each month’s pay. FTL limits always apply.'),
+      segMoved: l('Mudei de vínculo', 'It changed'), segFix: l('Sempre foi assim', 'It always was'),
+      beforeLbl: l(' o teu vínculo fica ', ' your employment stays '), beforeName: empLabel(companyAt(prevYm(chgFrom)).employment || employment),
+      hist: (companyHistory || []).filter((p) => p && p.from >= coStartV)
+        .map((p) => `${empLabel(p.employment || employment)} ${l('desde', 'since')} ${ymLabel(p.from)}`).join(' · '),
+      fixWhat: l('o vínculo', 'your employment'), fixCount: l('Os meses antigos também passam a contar assim.', 'Earlier months also count this way.'),
+      saveLabel: l('Guardar o vínculo', 'Save'), onSave: (opt) => A.saveEmployment(nextVal, opt),
+    });
+  }
+  if (kind === 'vinculo') {
+    const current = employment || 'employee';
+    return (
+      <Pagina key="lista" {...back} title={l('Vínculo', 'Employment')}
+        lead={l('Decide se o acordo de empresa te abrange no pagamento. Os limites FTL aplicam-se sempre.', 'Decides whether the company agreement covers your pay. FTL limits always apply.')}>
+        {EMP.map((it) => (
+          <OptCard key={it.id} label={it.label} sub={it.sub} reduce={reduce}
+            sel={pickedVal === it.id && it.id !== current} tag={it.id === current ? l('atual', 'current') : null}
+            onPress={() => pickNext(it.id, current)} />
+        ))}
+      </Pagina>
+    );
+  }
+
   // ── Base — pesquisa + o país do telemóvel primeiro + nomes em português ──
   if (kind === 'base') {
     const deviceCC = getLocales?.()[0]?.regionCode || null;
@@ -107,7 +248,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       .sort((a, z) => (a === deviceCC ? -1 : z === deviceCC ? 1 : cName(a).localeCompare(cName(z))))
       .map((cc) => ({ cc, items: by[cc].sort((x, y) => x.name.localeCompare(y.name)) }));
     return (
-      <Pagina {...back} title={l('A tua base', 'Your base')}
+      <Pagina key="lista" {...back} title={l('A tua base', 'Your base')}
         lead={l('O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). As ajudas de custo e as pernoitas contam fora dela.', 'Legal rest depends on it: 12 h at base and 10 h away (ORO.FTL.235). Per diems and night stops count away from it.')}>
         <View style={s.search}>
           <Icon name="search" size={16} color={PELE.grey} />
@@ -121,7 +262,8 @@ export default function PerfilPaginaScreen({ route, navigation }) {
             <Text style={[P.label, s.grp]}>{cName(g.cc)}</Text>
             {g.items.map((b) => (
               <OptCard key={b.code} code={b.code} label={b.name} sub={b.seasonal ? l('base sazonal', 'seasonal base') : null}
-                sel={base === b.code} reduce={reduce} onPress={() => pick(() => A.saveBase(b.code))} />
+                sel={pickedVal === b.code && b.code !== base} tag={b.code === base ? l('atual', 'current') : null} reduce={reduce}
+                onPress={() => pickNext(b.code, base)} />
             ))}
           </View>
         ))}
@@ -193,12 +335,6 @@ export default function PerfilPaginaScreen({ route, navigation }) {
 
   // ── Escolhas em cartões que gravam ao tocar ──
   const CHOICE = {
-    frota: () => ({
-      title: l('A tua frota', 'Your fleet'),
-      lead: l('Wide-body ou narrow-body: muda o per-diem (no AE da TAP, quem é wide-body recebe sempre a tarifa WB).', 'Wide-body or narrow-body: it changes the per diem (in the TAP agreement, wide-body always gets the WB rate).'),
-      items: ae && ae.FLEETS ? itemsOf(ae.FLEETS, ae.fleetLabel, lang) : [],
-      value: crewFleet || 'NB', save: A.saveFleet,
-    }),
     ppy: () => ({
       title: l('Tipo de PPY', 'PPY type'),
       lead: l('Nos contratos sazonais (PPY), o PPY sazonal recebe a retenção e o de estilo de vida não (art. 66.9 do AE).', 'On seasonal (PPY) contracts, seasonal PPY gets the retention and lifestyle PPY does not (art. 66.9).'),
@@ -210,14 +346,6 @@ export default function PerfilPaginaScreen({ route, navigation }) {
       lead: l('Destrava o papel de instrutor nos serviços, para qualquer categoria (art. 42.º do AE).', 'Unlocks the instructor role on duties, for any rank (art. 42).'),
       items: [{ id: true, label: l('Sim', 'Yes') }, { id: false, label: l('Não', 'No') }],
       value: !!instructorRated, save: A.saveInstructor,
-    }),
-    vinculo: () => ({
-      title: l('Vínculo', 'Employment'),
-      lead: l('Decide se o acordo de empresa te abrange no pagamento. Os limites FTL aplicam-se sempre.', 'Decides whether the company agreement covers your pay. FTL limits always apply.'),
-      items: [{ id: 'employee', label: l('Empresa', 'Employee'), sub: l('contrato direto com a companhia', 'direct contract with the airline') },
-        { id: 'agency', label: l('Agência', 'Agency'), sub: l('contratado por uma agência', 'hired through an agency') },
-        { id: 'independent', label: l('Independente', 'Independent'), sub: l('por conta própria', 'self-employed') }],
-      value: employment || 'employee', save: A.saveEmployment,
     }),
     abrangido: () => ({
       title: l('Abrangido pelo AE', 'Covered by the agreement'),

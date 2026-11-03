@@ -40,7 +40,7 @@ const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); ret
 // ae.nightStop); a duty NÃO guarda €. No topo, o selo do calendário ligado + banner de
 // alterações (azul, informativo). Export CSV/PDF (ORO.FTL.245) nos ícones do cabeçalho.
 export default function EscalaScreen({ navigation, route }) {
-  const { lang, duties, dayLog, user, company, ae, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
+  const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewCategory, crewFleet, crewAt, base, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
     calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, vacationDaysYear } = useContext(AppContext);
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -197,6 +197,9 @@ export default function EscalaScreen({ navigation, route }) {
   // ── Mês visível: rótulo, dias, e a lista (começa em hoje no mês atual) ──
   const y = monthDate.getFullYear(), m0 = monthDate.getMonth();
   const ym = `${y}-${String(m0 + 1).padStart(2, '0')}`;
+  // O AE do mês MOSTRADO (linha do tempo do contrato, 2026-11-03): um mês antigo noutra companhia
+  // mostra o dinheiro pelo acordo dessa companhia.
+  const ae = aeAt(ym);
   const daysInMonth = new Date(y, m0 + 1, 0).getDate();
   const isCurrentMonth = today.startsWith(ym);
   // Mudar de mês → reativa o scroll-até-hoje (reset síncrono, antes de os cards renderizarem).
@@ -259,7 +262,7 @@ export default function EscalaScreen({ navigation, route }) {
   const vacQuota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
   const vacTaken = hasVac ? yearCount(aeEvents || [], String(y), 'vacDays', duties) : 0;
   const catYm = crewAt(ym).category;   // categoria em vigor no mês mostrado (effective-dated)
-  const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewFleet }) : null;
+  const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewAt(ym).fleet }) : null;
   const perDiemTotal = pd ? pd.total : null;
   const nightCount = Object.keys(duties).reduce((n, iso) => { const d = duties[iso]; return n + (d && !d.deleted && d.nightStop && iso.startsWith(ym) ? 1 : 0); }, 0);   // pernoitas do mês
 
@@ -281,7 +284,7 @@ export default function EscalaScreen({ navigation, route }) {
     const k = d.kind || 'flight';
     if (k === 'flight') {
       const aps = String(d.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
-      const b = String(base || '').toUpperCase();
+      const b = String(homeBaseAt(ym) || '').toUpperCase();   // a base do mês mostrado (linha do tempo)
       return aps.find((a) => a !== b) || aps[aps.length - 1] || aps[0] || '✈';
     }
     return (k === 'standby_airport' || k === 'standby_home') ? 'SBY' : k === 'positioning' ? 'POS' : k === 'office' ? 'OFC' : k === 'training' ? 'FRM' : k === 'reserve' ? 'RES' : '•';
@@ -508,7 +511,7 @@ export default function EscalaScreen({ navigation, route }) {
           // Extras do mês do serviço (o AE paga por alteração de curto prazo). Nunca soma
           // sozinho. DDO/IDO não são verificáveis (a app não regista folgas publicadas) →
           // vão como lembrete no mesmo diálogo.
-          const hasSnc = !!(ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'snc'));
+          const hasSnc = !!(aeNow && Array.isArray(aeNow.EXTRA_KINDS) && aeNow.EXTRA_KINDS.some((k) => k.id === 'snc'));
           if (!hasSnc || !addAeEvents) return;
           const cand = shortNoticeCandidates(rosterChanges, today);
           if (!cand.total) return;
@@ -564,6 +567,7 @@ export default function EscalaScreen({ navigation, route }) {
         })() : null}
         {dayDuty ? (() => {
           const prim = dayDuty;
+          const ae = aeAt(dayIso);   // o acordo DESTE dia (linha do tempo do contrato)
           const services = [prim, ...(Array.isArray(prim.extra) ? prim.extra : [])];
           const between = (dayLog[dayIso] && Array.isArray(dayLog[dayIso].between)) ? dayLog[dayIso].between : [];
           const multi = services.length > 1;
@@ -580,7 +584,7 @@ export default function EscalaScreen({ navigation, route }) {
             const collapsed = legs.length > 3 && !(secExpand && canExpand);
             const shown = collapsed ? legs.slice(0, 3) : legs;
             let perDiem = null;
-            if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewFleet, dayIso); }
+            if (ae && catD && isFlight) { const dists = routeDistancesNM(d.route); if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(catD, dists, 1, crewAt(dayIso).fleet, dayIso); }
             const nsEur = (d.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, dayIso) : null;
             // € do dia NÃO-VOO (auditoria 2026-07-11 — paridade de relance com o per-diem):
             // as MESMAS regras do motor mensal: treino presencial piloto = 3 NS (Art. 43;
@@ -705,7 +709,7 @@ export default function EscalaScreen({ navigation, route }) {
           // Hotel da pernoita do DIA (catálogo por estação) — a linha 🏨 logo ao 1.º toque
           // na grelha, sem precisar do "Ver tudo". Só quando algum serviço tem pernoita.
           const nsSvc = services.find((sv) => sv && sv.nightStop);
-          const nsSt = nsSvc ? nightStopStation(nsSvc, base) : null;
+          const nsSt = nsSvc ? nightStopStation(nsSvc, homeBaseAt(dayIso)) : null;   // a base DESSE dia
           const nsHotel = nsSt ? (hotels || {})[nsSt] : null;
           const hotelEl = nsSvc ? (
             nsHotel ? (

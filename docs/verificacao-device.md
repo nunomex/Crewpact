@@ -122,6 +122,37 @@ SINTÉTICOS (título do género "EZY1234 LIS-OPO", com horas) — nunca dados re
 - [ ] **‹** volta: da escolha ao passo, do passo à antiguidade (e "Continuar" volta a gravar).
 - [ ] **Mudar de companhia** (Perfil) com o calendário já ligado: o 7.º passo NÃO aparece.
 
+### 0g · Linha do tempo do contrato — companhia e base com datas (2026-11-03, esboço `design/linha-do-tempo.html`)
+_Conta de TESTE com serviços sintéticos em vários meses (ex.: easyJet cabine FA, base Lisboa, voos LIS-OPO em
+fevereiro e março, e alguns voos em abril e maio). Nunca dados reais._
+- [ ] **Base, mudei:** Perfil → Base → tocar **Porto** → o visto e, logo a seguir, **"Porto, desde quando?"** com
+      "Mudei de base" escolhido e a roda no mês atual (não passa do mês atual). Pôr **março 2026** → aparece "Até
+      fevereiro de 2026 a tua base fica Lisboa" e o histórico → **Guardar a base**.
+- [ ] Voltar a abrir a Base: Porto com "atual"; o histórico diz "Lisboa desde … · Porto desde março de 2026".
+- [ ] Escala: em **fevereiro** o voo LIS-OPO mostra o código OPO (acaba fora); em **março** mostra LIS (acaba em casa).
+- [ ] **Base, sempre foi esta:** Base → outra cidade → "Sempre foi esta" → a caixa diz "Corrige a base desde que
+      entraste na easyJet, em …" (sem roda) → Guardar → o histórico fica só com essa cidade.
+- [ ] **‹** no "desde quando?" volta à lista (não sai da página); tocar na base atual volta ao Perfil sem mudar nada.
+- [ ] **Mudar de companhia, mudei:** Perfil → Mudar de companhia → **SEM janela de confirmação**; abre a Porta com
+      "Mudar de companhia · 1 de N" e **"O que aconteceu?"** ("Hoje estás na easyJet, cabine, desde …").
+      "Mudei de companhia" → TAP → cabine → categoria → base → **"Na TAP desde?"** (explicação easyJet/TAP) →
+      maio 2026 → por baixo "Os serviços de antes continuam a mostrar o dinheiro da easyJet" → Continuar.
+- [ ] Estatísticas, vista **Mês**: **abril** diz "EASYJET · AE" e o dinheiro da easyJet; **maio** diz "TAP · AE".
+      Vista **Ano**: soma os dois. Detalhe de um serviço de abril: o € e a Prova são da easyJet.
+- [ ] Perfil → Categoria: o histórico só mostra a categoria da TAP (não a FA da easyJet).
+- [ ] Perfil → **Na TAP desde** → abril 2026 → Guardar → Estatísticas de abril passam a TAP.
+- [ ] **Cancelar** no "O que aconteceu?" volta à app sem mudar nada.
+- [ ] **Estou a corrigir** → as respostas substituem tudo (abril e maio passam a ser da companhia nova).
+- [ ] "Na … desde?" antes da data de entrada na companhia antiga → aparece "Isto é antes de entrares na easyJet…".
+- [ ] **Vínculo:** Perfil → Vínculo → Agência → "Agência, desde quando?" (Mudei de vínculo · Sempre foi assim) →
+      mês atual → Guardar. Estatísticas: o mês atual fica sem salário do AE e os meses ANTES continuam com ele.
+      "Sempre foi assim" → todos os meses na companhia atual sem salário do AE.
+- [ ] **Frota (piloto TAP de teste):** Perfil → Frota → WB, a partir de um mês com voos → Guardar. Nesse mês, a
+      ajuda de custo por dia de voo é a WB; no mês antes continua a NB. O histórico mostra "NB desde … · WB desde …".
+- [ ] **PDF da carreira** (Perfil → Relatórios → Carreira), na conta com a mudança: o Percurso diz "Início de
+      serviço · easyJet", "Base Porto · transferência" (se houve), "Entrada na TAP · CAB 2 · Base Porto"; o
+      cabeçalho diz "Na companhia desde"; nenhuma "mudança de categoria" no mês da entrada.
+
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._
 - [ ] Escreves o email → **Verificar** → passa ao ecrã de **inserir código**.

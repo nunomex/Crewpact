@@ -7,7 +7,7 @@ import { Alert } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppContext } from '../data/appContext';
 import { updateProfile } from '../data/auth';
-import { addCrewChange, currentCrew } from '../data/crewHistory';
+import { addCrewChange, currentCrew, resolveCrew, addBaseChange, resolveBase, companyStartYm, moveEmploymentStart, addEmploymentChange, resolveCompany } from '../data/crewHistory';
 import { t } from '../data/i18n';
 import { success } from '../data/haptics';
 
@@ -18,7 +18,7 @@ export const currentYmNow = () => {
 
 export default function usePerfilActions() {
   const ctx = useContext(AppContext);
-  const { crewType, ae, caps, aeStatus, crewContract, crewHistory, setProfile, lang, lockEnabled, setLockEnabled } = ctx;
+  const { crewType, ae, caps, aeStatus, crewContract, crewHistory, companyHistory, baseHistory, setProfile, lang, lockEnabled, setLockEnabled } = ctx;
 
   const set = (patch, haptic = true) => {
     setProfile((p) => ({ ...p, ...patch }));
@@ -40,17 +40,55 @@ export default function usePerfilActions() {
 
   // ── Gravações ──
   const saveInstructor = (val) => set({ instructorRated: val });
-  const saveFleet = (val) => set({ crewFleet: val });
+  // Frota com DATAS (linha da categoria, 2026-11-03): a mudança conta a partir de `fromYm`; os meses antes
+  // ficam com a frota de então (as ajudas de custo da TAP dependem dela).
+  const saveFleet = (val, fromYm) => {
+    const from = /^\d{4}-(0[1-9]|1[0-2])$/.test(fromYm || '') ? fromYm : currentYmNow();
+    const at = resolveCrew(crewHistory, from);
+    const cat = at.category || currentCrew(crewHistory).category;
+    if (!cat) { set({ crewFleet: val }); return; }
+    const hist = addCrewChange(crewHistory, { category: cat, contract: at.contract || crewContract || '12/12', fleet: val, from });
+    set({ crewHistory: hist, crewFleet: resolveCrew(hist, currentYmNow()).fleet || val });
+  };
   const saveLifestyle = (val) => set({ lifestyle: val });
   // Serviço pós-voo / débrief (min) — do OM do operador (ORO.FTL.235c).
   const savePostFlight = (val) => set({ postFlightMin: val });
   const saveVacDays = (n) => set({ vacationDaysYear: Math.max(1, Math.min(99, Math.floor(+n || 0))) });
-  const saveEmployment = (val) => set({ employment: val });
+  // Vínculo com DATAS (linha da companhia, 2026-11-03): `from` = mudou a partir desse mês; sem `from` =
+  // "sempre foi assim" desde a entrada na companhia atual (as companhias anteriores não mudam).
+  const saveEmployment = (val, { from = null } = {}) => {
+    if (!(companyHistory || []).length) { set({ employment: val }); return; }
+    const moved = /^\d{4}-(0[1-9]|1[0-2])$/.test(from || '');
+    const hist = addEmploymentChange(companyHistory, moved
+      ? { employment: val, from }
+      : { employment: val, from: companyStartYm(companyHistory), correct: true });
+    set({ companyHistory: hist, employment: resolveCompany(hist, currentYmNow()).employment || val });
+  };
   const saveAeCovered = (val) => set({ aeCovered: val });
-  // Base — guardada como CÓDIGO; "fora da base" no per-diem/pernoitas.
-  const saveBase = (val) => set({ base: val });
-  // Antiguidade — 'AAAA-MM-DD' (ou null para remover).
-  const saveServiceStart = (val) => set({ serviceStart: val });
+  // Base — guardada como CÓDIGO, com DATAS (linha do tempo do contrato, 2026-11-03): decide o "fora da
+  // base" (repouso 12 h/10 h, pernoitas, Auditoria). `from` = transferência a partir desse mês (os meses
+  // antes ficam com a base antiga); sem `from` = correção ("sempre foi esta") desde a entrada na
+  // companhia atual — a base das companhias anteriores não muda.
+  const saveBase = (val, { from = null } = {}) => {
+    const transfer = /^\d{4}-(0[1-9]|1[0-2])$/.test(from || '');
+    const hist = addBaseChange(baseHistory, transfer
+      ? { base: val, from }
+      : { base: val, from: companyStartYm(companyHistory), correct: true });
+    set({ baseHistory: hist, base: resolveBase(hist, currentYmNow()) || val });
+  };
+  // Antiguidade — 'AAAA-MM-DD' (ou null para remover). Depois de uma mudança de companhia, é também a
+  // data de entrada na atual: a fronteira das três linhas do tempo acompanha (moveEmploymentStart).
+  const saveServiceStart = (val) => {
+    if (val && (companyHistory || []).length > 1) {
+      const lines = moveEmploymentStart({ crewHistory, companyHistory, baseHistory }, String(val).slice(0, 7));
+      // A categoria espelhada só muda se a atual tiver categoria (companhia sem AE: fica como estava).
+      const lastCrew = lines.crewHistory[lines.crewHistory.length - 1];
+      const cur = lastCrew && lastCrew.from >= companyStartYm(lines.companyHistory) ? currentCrew(lines.crewHistory) : null;
+      set({ serviceStart: val, ...lines, ...(cur ? { crewCategory: cur.category, crewContract: cur.contract } : {}), base: resolveBase(lines.baseHistory, currentYmNow()) });
+      return;
+    }
+    set({ serviceStart: val });
+  };
 
   // Categoria/contrato EFFECTIVE-DATED: a mudança ACRESCENTA um período "a partir de" um mês →
   // os meses anteriores ficam congelados (a categoria escala o AE inteiro; não se reescreve o passado).

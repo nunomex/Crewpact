@@ -30,7 +30,7 @@ const MONS = {
 const dOf = (iso) => new Date(`${iso}T12:00:00`);
 
 export default function HoteisScreen({ navigation }) {
-  const { lang, hotels, duties, base } = useContext(AppContext);
+  const { lang, hotels, duties, base, homeBaseAt } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const tabSpace = useTabBarSpace();
@@ -42,7 +42,7 @@ export default function HoteisScreen({ navigation }) {
   const openStation = (st) => { select(); navigation.navigate('HotelStation', { station: st }); };
 
   const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
-  const stays = useMemo(() => staysByStation(duties, base), [duties, base]);
+  const stays = useMemo(() => staysByStation(duties, homeBaseAt || base), [duties, base]);
 
   // Relevância: registados (próxima pernoita ↑, depois última estadia ↓) + tracejados
   // (pernoita futura sem hotel, mais próxima primeiro).

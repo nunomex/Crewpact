@@ -62,7 +62,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -104,11 +104,25 @@ export default function StatsScreen({ navigation }) {
     return x.charAt(0).toUpperCase() + x.slice(1);
   })();
 
+  // O AE do período mostrado (linha do tempo do contrato, 2026-11-03): o mês → o acordo da companhia
+  // DESSE mês; o ano → o do último mês com acordo (a soma do ano usa o de cada mês, via `aeAt`).
+  // `companyHistory` nas dependências = o que faz o `aeAt` mudar.
+  const ae = useMemo(() => {
+    if (!isYear) return aeAt(ym);
+    for (let mo = 12; mo >= 1; mo--) { const a = aeAt(`${year}-${String(mo).padStart(2, '0')}`); if (a) return a; }
+    return null;
+  }, [isYear, ym, year, aeNow, companyHistory]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A companhia do mês mostrado (o ano mostra a atual).
+  const coView = (() => {
+    if (isYear) return company;
+    const c = companyAt(ym).company;
+    return (airlines || []).find((a) => a.id === c || a.slug === c) || company;
+  })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents })
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents })
       : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents }),
-    [isYear, duties, year, ym, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents],
+    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -214,9 +228,12 @@ export default function StatsScreen({ navigation }) {
   }, [radVisible, user?.id]);
 
   // ── Radar (Auditoria do mês) nos Números — 2.ª entrada do mockup: SÓ modo Ganhos + MÊS.
-  const audit = useMemo(() => (ae && crewCategory && !isYear && st.ym
-    ? monthAudit(duties || {}, { ym: st.ym, ae, cat: crewCategory, fleet: crewFleet, base, rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
-    : null), [ae, crewCategory, isYear, st.ym, duties, crewFleet, base, rosterLog, aeEvents, isPilot]);
+  // Categoria e base DESSE mês (linha do tempo do contrato) — uma promoção ou transferência não mexe
+  // na Auditoria dos meses antigos.
+  const auditCat = !isYear && st.ym ? crewAt(st.ym).category : null;
+  const audit = useMemo(() => (ae && auditCat && !isYear && st.ym
+    ? monthAudit(duties || {}, { ym: st.ym, ae, cat: auditCat, fleet: crewAt(st.ym).fleet, base: homeBaseAt(st.ym), rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
+    : null), [ae, auditCat, isYear, st.ym, duties, crewFleet, base, rosterLog, aeEvents, isPilot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
@@ -261,7 +278,7 @@ export default function StatsScreen({ navigation }) {
       <View style={s.headWrap}>
         <PeleHeader
           eyebrowTop
-          eyebrow={`${l('Estatísticas', 'Statistics')} · ${[company?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
+          eyebrow={`${l('Estatísticas', 'Statistics')} · ${[coView?.name, ae ? 'AE' : 'FTL'].filter(Boolean).join(' · ').toUpperCase()}`}
           ghost={isYear ? l('ANO', 'YEAR') : l('MÊS', 'MONTH')}
           word={isYear ? String(year) : monthName}
           wordTrailing={!isYear ? (

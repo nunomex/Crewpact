@@ -1,0 +1,235 @@
+<title>Linha do tempo do contrato</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: os ecrãs novos da linha do tempo do contrato, pela ordem em que a pessoa os vê — mudar de
+   companhia (na Porta: a pergunta nova e a data de entrada) e mudar de base (no Perfil: a lista e o
+   "desde quando", nos dois estados). Tema único de propósito: a pele de dia da app, escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --on-ink: #8F8D88; --track: #3A3A38;
+  --ok: #118A55; --warn: #E86A10;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 40px 30px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+figcaption .step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Porta em faixa, com o progresso */
+.plate { left: 0; right: 0; top: 0; height: 151px; background: var(--ink); }
+.prog-l { left: 24px; top: 84px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--on-ink); }
+.prog-l b { color: var(--paper); font-weight: 800; }
+.bar { left: 24px; right: 24px; top: 106px; height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--yellow); border-radius: 2px; }
+.out { right: 24px; top: 67px; font: 700 12px/1 var(--f-body); color: var(--on-ink); }
+.sheet { left: 0; right: 0; top: 127px; bottom: 0; background: var(--paper); border-radius: 24px 24px 0 0; }
+.back { left: 16px; top: 143px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 22px/1 var(--f-body); color: var(--ink); }
+.back.pg { top: 58px; }
+
+.title { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.body { left: 24px; right: 24px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.body b { color: var(--ink); }
+.foot { left: 24px; right: 24px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.foot b { color: var(--ink); font-weight: 700; }
+.lab { left: 28px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+
+/* cartões (OptCard) */
+.opt { left: 24px; right: 24px; min-height: 56px; border: 2px solid var(--line); border-radius: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.opt.sel { border-color: var(--ink); }
+.opt .code { width: 46px; font: 700 22px/1 var(--f-display); color: var(--grey); flex: none; }
+.opt.sel .code { color: var(--ink); }
+.opt .txt { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.opt .txt b { font: 700 15px/1.2 var(--f-body); }
+.opt .txt small { font: 500 12px/16px var(--f-body); color: var(--grey); }
+.radio { width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line); flex: none; }
+.tick { width: 22px; height: 22px; border-radius: 99px; background: var(--yellow); flex: none; display: grid; place-items: center; font-size: 12px; color: var(--ink); }
+.tick .ico { stroke-width: 2.8; }
+.now { background: var(--soft); border-radius: 99px; padding: 4px 8px; font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--grey); flex: none; }
+
+/* pesquisa, roda, segmento */
+.search { left: 24px; right: 24px; height: 44px; border-radius: 12px; background: var(--soft); display: flex; align-items: center; gap: 8px; padding: 0 14px; font: 500 14px/1 var(--f-body); color: var(--placeholder); }
+.search .ico { color: var(--grey); font-size: 16px; }
+.wheel { left: 24px; right: 24px; height: 120px; }
+.wheel .hl { position: absolute; left: 0; right: 0; top: 40px; height: 40px; border-radius: 10px; background: var(--soft); }
+.wheel p { position: absolute; font: 500 17px/40px var(--f-body); color: var(--grey); }
+.wheel p.on { font: 700 20px/40px var(--f-body); color: var(--ink); }
+.wheel .m { left: 20px; } .wheel .y { right: 20px; text-align: right; }
+.wheel .f { opacity: .5; }
+.seg { left: 24px; right: 24px; height: 40px; border-radius: 99px; background: var(--soft); display: grid; grid-template-columns: 1fr 1fr; padding: 3px; }
+.seg span { display: grid; place-items: center; border-radius: 99px; font: 700 14px/1 var(--f-body); color: var(--ink-soft); }
+.seg span.on { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(20,20,20,.12); }
+.note { left: 24px; right: 24px; display: flex; gap: 10px; background: var(--soft); border-radius: 14px; padding: 12px 14px; font: 500 12px/17px var(--f-body); color: var(--ink); }
+.note .ico { font-size: 16px; flex: none; margin-top: 1px; }
+.btn { left: 24px; right: 24px; height: 50px; border-radius: 99px; display: grid; place-items: center; font: 800 14px/1 var(--f-body); letter-spacing: .3px; background: var(--ink); color: var(--paper); }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/></symbol>
+</svg>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · linha do tempo do contrato · 3 de novembro de 2026</p>
+    <h1>Linha do tempo do contrato</h1>
+    <p class="lede">A companhia e a base passam a ter datas, como a categoria já tem. Cada mês é calculado com a companhia, o acordo e a base desse mês. Estes são os ecrãs onde a pessoa diz quando mudou. Exemplo: tripulante de cabine da easyJet em Lisboa desde maio de 2018, que entrou na TAP em maio de 2026.</p>
+  </header>
+
+  <section aria-labelledby="h-co">
+    <h2 id="h-co">Mudar de companhia</h2>
+    <div class="phones">
+
+      <!-- 1 · A PERGUNTA NOVA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Mudar de companhia, passo 1: o que aconteceu? Mudei de companhia ou estou a corrigir">
+          <div class="plate"></div><p class="out">Cancelar</p>
+          <p class="prog-l"><b>Mudar de companhia</b> · 1 de 8</p><span class="bar"><i style="width:12.5%"></i></span>
+          <div class="sheet"></div>
+          <p class="title" style="top:195px">O que aconteceu?</p>
+          <p class="body" style="top:235px">Hoje estás na <b>easyJet</b>, cabine, desde maio de 2018.</p>
+          <div class="opt sel" style="top:286px"><span class="txt"><b>Mudei de companhia</b><small>A easyJet fica nos meses antigos. A seguir escolhes a nova e o mês em que entraste.</small></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:384px"><span class="txt"><b>Estou a corrigir</b><small>A companhia ou o tipo estavam errados. Muda tudo, também os meses antigos.</small></span><span class="radio"></span></div>
+          <p class="foot" style="top:490px">A tua escala e os teus registos ficam como estão.</p>
+        </div></div>
+        <figcaption><span class="step">1 de 8</span><b>O que aconteceu?</b><span>A pergunta nova, antes da companhia. Toca e avança, como as outras. O "Cancelar" volta à app sem mudar nada. A janela "Mudar de companhia?" do Perfil deixa de ser precisa: este ecrã já faz esse papel.</span></figcaption>
+      </figure>
+
+      <!-- 2 · A DATA DE ENTRADA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Mudar de companhia, último passo: na TAP desde maio de 2026">
+          <div class="plate"></div><p class="out">Cancelar</p>
+          <p class="prog-l"><b>Mudar de companhia</b> · 7 de 8</p><span class="bar"><i style="width:87.5%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">Na TAP desde?</p>
+          <p class="body" style="top:235px">Até aí, a app calcula com o acordo da <b>easyJet</b>. A partir daí, com o da <b>TAP</b>. A antiguidade também conta deste mês.</p>
+          <div class="wheel" style="top:318px">
+            <span class="hl"></span>
+            <p class="m f" style="top:0">Abril</p><p class="y f" style="top:0">2025</p>
+            <p class="m on" style="top:40px">Maio</p><p class="y on" style="top:40px">2026</p>
+            <p class="m f" style="top:80px">Junho</p><p class="y f" style="top:80px"></p>
+          </div>
+          <p class="foot" style="top:456px">Os serviços de antes continuam a mostrar o dinheiro da easyJet.</p>
+          <p class="btn" style="top:704px">Continuar</p>
+        </div></div>
+        <figcaption><span class="step">7 de 8</span><b>A data de entrada</b><span>É a pergunta da antiguidade que já existe, com outra explicação. Não há pergunta a mais. Depois segue o passo da escala, se o calendário ainda não estiver ligado. Uma companhia sem acordo modelado também faz esta pergunta.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ba">
+    <h2 id="h-ba">Mudar de base</h2>
+    <div class="phones">
+
+      <!-- 3 · A LISTA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Perfil, a tua base: lista com Lisboa atual e Porto escolhido">
+          <span class="back pg">‹</span>
+          <p class="title" style="top:110px">A tua base</p>
+          <p class="body" style="top:150px">O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). As ajudas de custo e as pernoitas contam fora dela.</p>
+          <p class="search" style="top:228px"><svg class="ico"><use href="#i-search"/></svg>Procurar cidade ou código</p>
+          <p class="lab" style="top:296px">Portugal</p>
+          <div class="opt" style="top:318px"><span class="code">FAO</span><span class="txt"><b>Faro</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:384px"><span class="code">LIS</span><span class="txt"><b>Lisboa</b></span><span class="now">atual</span></div>
+          <div class="opt sel" style="top:450px"><span class="code">OPO</span><span class="txt"><b>Porto</b></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+        </div></div>
+        <figcaption><span class="step">Perfil · Base</span><b>A lista</b><span>A página de hoje, com a base atual marcada "atual". Tocar noutra base já não grava logo: passa à pergunta seguinte.</span></figcaption>
+      </figure>
+
+      <!-- 4 · MUDEI DE BASE -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Porto, desde quando? Mudei de base em março de 2026">
+          <span class="back pg">‹</span>
+          <p class="title" style="top:110px">Porto, desde quando?</p>
+          <p class="body" style="top:150px">O repouso, as pernoitas e a Auditoria usam a base de cada mês.</p>
+          <p class="seg" style="top:206px"><span class="on">Mudei de base</span><span>Sempre foi esta</span></p>
+          <p class="lab" style="top:276px">A partir de que mês?</p>
+          <div class="wheel" style="top:296px">
+            <span class="hl"></span>
+            <p class="m f" style="top:0">Fevereiro</p><p class="y f" style="top:0">2025</p>
+            <p class="m on" style="top:40px">Março</p><p class="y on" style="top:40px">2026</p>
+            <p class="m f" style="top:80px">Abril</p><p class="y f" style="top:80px"></p>
+          </div>
+          <p class="foot" style="top:434px">Até fevereiro de 2026 a tua base fica <b>Lisboa</b>.</p>
+          <p class="foot" style="top:470px">Histórico: Lisboa desde maio de 2018.</p>
+          <p class="btn" style="top:750px">Guardar a base</p>
+        </div></div>
+        <figcaption><span class="step">Mudei de base</span><b>Desde quando</b><span>O mesmo modelo da página da categoria: a roda do mês, o histórico e "Guardar". Vem escolhido por defeito, porque não mexe no passado. A roda não vai além do mês atual.</span></figcaption>
+      </figure>
+
+      <!-- 5 · SEMPRE FOI ESTA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Porto, desde quando? Sempre foi esta: corrige a base desde a entrada na easyJet">
+          <span class="back pg">‹</span>
+          <p class="title" style="top:110px">Porto, desde quando?</p>
+          <p class="body" style="top:150px">O repouso, as pernoitas e a Auditoria usam a base de cada mês.</p>
+          <p class="seg" style="top:206px"><span>Mudei de base</span><span class="on">Sempre foi esta</span></p>
+          <p class="note" style="top:276px"><svg class="ico"><use href="#i-clock"/></svg><span>Corrige a base desde que entraste na easyJet, em <b>maio de 2018</b>. Os meses antigos também passam a contar com o Porto.</span></p>
+          <p class="btn" style="top:750px">Guardar a base</p>
+        </div></div>
+        <figcaption><span class="step">Sempre foi esta</span><b>Corrigir um engano</b><span>Sem roda. Corrige só a companhia atual: se antes estiveste noutra companhia, a base de então fica.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>Os meses antigos ficam certos</b><span>Hoje, mudar de companhia faz todos os meses serem calculados com o acordo novo, e mudar de base mexe nas pernoitas e no repouso dos meses antigos. Passam a ficar com a companhia e a base de então.</span></li>
+      <li><b>Já feito no motor, com testes</b><span>As três linhas do tempo, o acordo de cada mês e a base de cada dia. Os testes golden provam: um ano com 4 meses na easyJet e 8 na TAP soma cada mês pelo seu acordo (18 716,64 € em vez de 19 524,24 €).</span></li>
+      <li><b>Onde se nota</b><span>Estatísticas, Escala, detalhe do serviço, Extras, Relatórios, Disrupção, importação da escala e hotéis: cada um usa o acordo e a base do mês que mostra.</span></li>
+      <li><b>Mudar a data de entrada depois</b><span>Se corrigires "Na TAP desde" no Perfil, a fronteira entre as duas companhias acompanha.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas os cinco ecrãs?</b><span>Se sim, passo-os para o código: a pergunta nova na configuração e a página da base em dois passos.</span></li>
+      <li><b>A janela "Mudar de companhia?" sai?</b><span>A pergunta "O que aconteceu?" já tem o "Cancelar" no canto. Recomendo tirar a janela, para não haver duas confirmações seguidas.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

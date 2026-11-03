@@ -39,7 +39,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date() } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date() } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -93,20 +93,34 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
   // vista Mês (monthlyAe: base + abono p/ falhas + per-diem + pernoita + OFC4/ADTY/papéis/
   // DDO-WFLY) + eventos do mês (ae.monthExtras) — o Ano bate com a soma dos Meses. AEs
   // mínimos sem computeAeMonth caem no cálculo antigo (base + per-diem) — retrocompatível.
+  // LINHA DO TEMPO DO CONTRATO (2026-11-03): `aeAt(ym)` dá o AE da companhia DESSE mês — um ano com
+  // mudança de companhia soma cada mês com o seu acordo. Sem `aeAt`, o `ae` vale para todos (como antes).
   let aeYtd = null;
   const history = (Array.isArray(crewHistory) && crewHistory.length)
     ? crewHistory
     : (category ? [{ category, contract: contract || '12/12', from: '0000-01' }] : []);
-  if (ae && history.length && typeof ae.monthlyBase === 'function') {
-    const cy = now.getFullYear();
-    const monthsElapsed = (+y < cy) ? 12 : (+y > cy ? 0 : now.getMonth() + 1);
-    const index = ae.indexFactor ? ae.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
+  const aeOfMonth = typeof aeAt === 'function' ? aeAt : () => ae;
+  const cyA = now.getFullYear();
+  const monthsElapsed = (+y < cyA) ? 12 : (+y > cyA ? 0 : now.getMonth() + 1);
+  const monthsAe = Array.from({ length: monthsElapsed }, (_, mo) => {
+    const a = aeOfMonth(`${y}-${String(mo + 1).padStart(2, '0')}`);
+    return a && typeof a.monthlyBase === 'function' ? a : null;
+  });
+  const anyAe = typeof aeAt === 'function' ? monthsAe.some(Boolean) : !!(ae && typeof ae.monthlyBase === 'function');
+  if (anyAe && history.length) {
+    const lastAe = [...monthsAe].reverse().find(Boolean) || ae;
+    const index = lastAe && lastAe.indexFactor ? lastAe.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
+    let estimated = false;
     let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0;
     for (let mo = 0; mo < monthsElapsed; mo++) {
       const ym = `${y}-${String(mo + 1).padStart(2, '0')}`;
-      const { category: catM, contract: ctrM } = resolveCrew(history, ym);
+      const ae = monthsAe[mo];   // o AE DESTE mês (sombra intencional: o resto do ciclo usa-o)
+      if (!ae) continue;
+      const index = ae.indexFactor ? ae.indexFactor(+y) : 1;
+      if (ae.isIndexEstimated && ae.isIndexEstimated(+y) && index > 1) estimated = true;
+      const { category: catM, contract: ctrM, fleet: fleetM } = resolveCrew(history, ym);   // posto DESSE mês (categoria, contrato, frota)
       if (!catM) continue;
-      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet });   // à categoria desse mês (frota → coluna A no TAP)
+      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
         baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
@@ -114,7 +128,7 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
       } else {
         const b = ae.monthlyBase(catM, { contract: ctrM, index, ym }) || 0;
         baseY += b; totalY += b;
-        const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet });
+        const pd = monthlyPerDiem(duties, catM, ae, { ym, index, fleet: fleetM || fleet });
         if (pd) { perDiemY += pd.total; totalY += pd.total; wrY += pd.withRoute; missY += pd.missing; }
       }
       if (ae.monthExtras) {
@@ -126,7 +140,7 @@ export const yearStats = (duties = {}, { year, ae = null, category = null, contr
       base: +baseY.toFixed(2), cash: +cashY.toFixed(2), perDiem: +perDiemY.toFixed(2),
       nightStops: +nightY.toFixed(2), extras: +extrasY.toFixed(2), events: +eventsY.toFixed(2),
       total: +totalY.toFixed(2), monthsElapsed, index,
-      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(+y)) && index > 1,
+      estimated,
       withRoute: wrY, missing: missY,
     };
   }
@@ -247,7 +261,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   const resolved = history.length ? resolveCrew(history, ymStr) : { category: null, contract: '12/12' };
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(y) : 1;
-    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet });
+    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet });   // frota DESSE mês
     const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {

@@ -30,6 +30,8 @@ export const mapUser = (u) => ({
   crewContract: u.user_metadata?.crewContract || null,
   crewFleet: u.user_metadata?.crewFleet || null,         // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
   crewHistory: u.user_metadata?.crewHistory || null,    // linha do tempo categoria/contrato (effective-dated)
+  companyHistory: u.user_metadata?.companyHistory || null,   // linha do tempo companhia+tipo (2026-11-03)
+  baseHistory: u.user_metadata?.baseHistory || null,         // linha do tempo da base (2026-11-03)
   serviceStart: u.user_metadata?.serviceStart || null,   // data de início na companhia (AAAA-MM-DD) → antiguidade
   base:      u.user_metadata?.base     || null,          // base do tripulante (LIS/OPO/FAO) → "fora da base"
   lifestyle: u.user_metadata?.lifestyle || false,        // PPY como estilo de vida (Art. 66.9) → sem retenção

@@ -18,7 +18,7 @@ import { PELE as P, PELE_FONT as F } from '../data/constants';
 const DUTY_CONDITION_TYPES = new Set(['ddo', 'wfly', 'ido', 'instructorDays', 'adhocDays']);
 
 export default function ExtraEventSheet({ visible, onClose }) {
-  const { lang, ae, crewAt, duties, addAeEvents, aeEvents, vacationDaysYear } = useContext(AppContext);
+  const { lang, ae, aeAt, crewAt, duties, addAeEvents, aeEvents, vacationDaysYear } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const kinds = (ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS : []).filter((k) => !DUTY_CONDITION_TYPES.has(k.id));
@@ -71,7 +71,8 @@ export default function ExtraEventSheet({ visible, onClose }) {
   // € por unidade (valorização oficial do AE — monthExtras com contagem 1).
   const eachYm = (iso || isoDay()).slice(0, 7);
   const eachCat = crewAt(eachYm).category;   // categoria EFETIVA-DATADA no mês do evento (não a plana)
-  const each = (type && ae && ae.monthExtras && eachCat) ? ae.monthExtras(eachCat, { [type]: 1 }, { ym: eachYm }).total : null;
+  const eachAe = aeAt(eachYm);   // o acordo da companhia desse mês (linha do tempo do contrato)
+  const each = (type && eachAe && eachAe.monthExtras && eachCat) ? eachAe.monthExtras(eachCat, { [type]: 1 }, { ym: eachYm }).total : null;
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dec] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`; };
 
   const save = () => {

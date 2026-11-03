@@ -531,6 +531,16 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('reconcile: não clobbera manual', reconcileDayLog(oneDuty, manual)['2026-06-10'].src, 'manual');
   eq('reconcile: ref IGUAL quando nada falta', reconcileDayLog(oneDuty, manual) === manual, true);
   eq('reconcile: sem duties → ref igual', reconcileDayLog({}, manual) === manual, true);
+  // BASE COM DATAS (linha do tempo, 2026-11-03): transferência LIS→OPO em março. Um serviço que acaba
+  // no Porto em FEVEREIRO acaba FORA da base (10 h, ORO.FTL.235 b); em MARÇO acaba NA base (12 h, 235 a).
+  const viaOpo = (date) => ({ duty_date: date, report_time: '06:00', block_on: '08:00', sectors: 1, flight_minutes: 60, kind: 'flight', route: 'LIS-OPO' });
+  const tr = { '2026-02-10': viaOpo('2026-02-10'), '2026-03-10': viaOpo('2026-03-10') };
+  const baseAt = (d) => (String(d).slice(0, 7) >= '2026-03' ? 'OPO' : 'LIS');
+  const rb = reconcileDayLog(tr, {}, { baseAt });
+  eq('base datada: fevereiro no Porto = fora da base', Object.keys(rb['2026-02-10'].rest).includes('away'), true);
+  eq('base datada: março no Porto = na base', Object.keys(rb['2026-03-10'].rest).includes('base'), true);
+  const rOld = reconcileDayLog(tr, {}, { base: 'OPO' });
+  eq('sem datas (base de hoje = OPO): fevereiro dava "na base" (o erro)', Object.keys(rOld['2026-02-10'].rest).includes('base'), true);
 }
 
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────

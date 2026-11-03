@@ -397,7 +397,9 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
 // a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
 // sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
 // ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
-export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null } = {}) => {
+// `baseAt(date)` (linha do tempo do contrato, 2026-11-03) = a base EM VIGOR nesse dia — uma
+// transferência não muda o "na base / fora" (12 h / 10 h, ORO.FTL.235) dos dias antigos.
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null } = {}) => {
   let next = dayLog, changed = false;
   for (const date in duties) {
     const d = duties[date];
@@ -408,7 +410,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
       legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base });
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: typeof baseAt === 'function' ? baseAt(date) : base });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

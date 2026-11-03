@@ -32,7 +32,7 @@ const dOf = (iso) => new Date(`${iso}T12:00:00`);
 
 export default function HotelStationScreen({ navigation, route }) {
   const station = String(route?.params?.station || '').toUpperCase();
-  const { lang, hotels, duties, base } = useContext(AppContext);
+  const { lang, hotels, duties, base, homeBaseAt } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const tabSpace = useTabBarSpace();
@@ -44,7 +44,7 @@ export default function HotelStationScreen({ navigation, route }) {
   const cc = (info && info.cc) ? String(info.cc).toUpperCase() : '';
 
   const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
-  const runs = useMemo(() => stayRuns(staysByStation(duties, base)[station] || []), [duties, base, station]);
+  const runs = useMemo(() => stayRuns(staysByStation(duties, homeBaseAt || base)[station] || []), [duties, base, station]);
   const upcoming = runs.filter((r) => r.end >= todayISO);
   const past = runs.filter((r) => r.end < todayISO).reverse();   // mais recente primeiro
   const PAST_MAX = 10;
