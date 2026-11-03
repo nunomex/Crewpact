@@ -51,4 +51,4 @@ export async function fetchAirportStats(iata) {
 
 // A lógica de desvio/atraso (PURA) vive em ./flightDelay — testável por golden (sem supabase).
 // Re-exportada aqui para os consumidores continuarem a importar tudo de um só sítio.
-export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption } from './flightDelay';
+export { depDelayMin, arrDelayMin, hasDeviation, worstDelay, settledArrZ, schedArrZ, recordBehindLive, storedMatchesReal, inboundGap, airportDisruption, activeLegIndex, legNo } from './flightDelay';

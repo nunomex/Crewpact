@@ -380,6 +380,9 @@ _Serviço amanhã com report a ≤ 14 h e serem ≥ 18h. Ou `FORCE='vespera'` co
 - [ ] "● EM VOO · EZY8351" + tempo no destino · "ATERRAS DAQUI A 1 H 05" · **hora de chegada** amarela.
 - [ ] Barra amarela do setor com "07:05 LIS · PSV 2:25 de 13:00 · 09:50 LGW"; anda com o relógio.
 - [ ] Frase "**Está a correr como previsto.**" só com o voo ao vivo a confirmar; sem feed, sem frase.
+- [ ] **Dia de vários setores** (ex.: LIS-CDG-LIS, dois números de voo): o topo "EM VOO · …" mostra o número do setor
+      em curso; depois de o 1.º aterrar passa ao 2.º; um atraso do 1.º NÃO deixa o dia em disrupção quando o 2.º sai a
+      horas; com o 1.º atrasado ainda no ar, continua "EM VOO" nele (não salta para o 2.º à hora planeada).
 - [ ] Secundário "Depois": pernoita (+ hotel) ou o próximo serviço. Tecla **Partilhar a chegada**.
 
 ## 3c · Disrupção (ao vivo)

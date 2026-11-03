@@ -85,10 +85,16 @@ da privacidade ficava inalcançável) → blocos normais · em voo, "A seguir" r
 "Registar o sign-off" abria o detalhe só de leitura → abre logo o formulário (`DutyDetail` aceita `edit`); com o sign-off já
 registado diz "Ver o dia" · as interpolações do Solari passaram a ser criadas uma vez (sem saltos a meio).
 **Ficou como está (decidido):** a tecla "Amanhã" do pós-voo repete a 1.ª linha do painel, mas está no esboço aprovado.
-**Pendente:** a Caveat continua no arranque (o detalhe do hotel usa-a) · a Escala na linguagem do Início · **(antigo,
-achado na revisão)** o voo ao vivo segue o número do 1.º setor o dia todo: num dia de vários setores, um atraso do 1.º
-mete o dia em disrupção nos seguintes → corrigir quando se mexer no voo ao vivo · confirmar no iPhone que
-`alignItems: 'baseline'` alinha a unidade com os dígitos animados.
+**Voo ao vivo segue o SETOR ATIVO — CORRIGIDO (Nuno: "corrigir isto", mesma sessão):** antes seguia o nº do 1.º setor
+o dia todo e um atraso dele punha os setores seguintes em disrupção. Agora `activeLegIndex` (`data/flightDelay.js`,
+teste primeiro em `test:flightstatus`, 51 → 66): o setor ativo avança pela chegada REAL/ESTIMADA do voo seguido (um setor
+atrasado já não "acaba" no ar à hora planeada) e nunca volta atrás no mesmo dia (um setor que aterrou cedo fazia o feed
+oscilar). Setor sem número → não se segue nada (nunca o de outro setor). O estado só vale para o voo pedido. O aviso
+"o registo ainda tem o planeado" só se marca com o ÚLTIMO setor (é com os calços dele que o App o limpa); o PSV com o
+atraso só é "facto" quando o último aterrou (antes é projeção). As horas reais do feed passam a valer em dias de
+vários setores. O estado é pedido outra vez ao voltar ao Início (o servidor guarda 60 s) — antes só ao puxar.
+**Pendente:** a Caveat continua no arranque (o detalhe do hotel usa-a) · a Escala na linguagem do Início · confirmar no
+iPhone que `alignItems: 'baseline'` alinha a unidade com os dígitos animados.
 
 ---
 

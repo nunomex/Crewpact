@@ -31,7 +31,7 @@ import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
 import { yearCount } from '../data/aeEvents';
-import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption } from '../data/flightStatus';
+import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, activeLegIndex, legNo } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import { scheduleWakeUp } from '../data/reminders';
 import HotelSheet from '../components/HotelSheet';
@@ -381,21 +381,46 @@ export default function HomeScreen({ navigation }) {
     if (user?.id) AsyncStorage.setItem(`cp_tip_plus_${user.id}`, '1').catch(() => {});
   };
 
-  // ── Estado do voo AO VIVO (AirLabs via Edge `flight-status`) — só DENTRO DA JANELA (~4 h antes da
-  // partida até ~1 h depois da chegada) → poupa pedidos.
-  const flightNo = flight && flight.flightNo;
+  // ── Estado do voo AO VIVO (AirLabs via Edge `flight-status`, cache de 60 s no servidor) — só DENTRO DA
+  // JANELA do dia (~4 h antes da partida até ~1 h depois do fim) → poupa pedidos.
+  // SEGUE O SETOR ATIVO (2026-11-03): antes seguia o nº do 1.º setor o dia todo e um atraso dele punha os
+  // setores seguintes em disrupção. O setor ativo avança pela chegada real/estimada do voo seguido (não pela
+  // hora planeada) e nunca volta atrás no mesmo dia — `activeLegIndex` (data/flightDelay.js, test:flightstatus).
+  const [fsRaw, setFsRaw] = useState(null);   // { no, st } — o estado E o voo a que pertence
+  const sectorLegs = (flight && flight.kind === 'flight' && Array.isArray(flight.legs))
+    ? flight.legs.filter((lg) => lg && (lg.dep || lg.arr)) : [];
+  const legFloor = useRef({ iso: null, idx: 0 });
+  const activeSector = (() => {
+    if (!sectorLegs.length) return null;
+    const live = fsRaw && fsRaw.st && fsRaw.st.arr ? { no: fsRaw.no, arrTs: fsRaw.st.arr.actualTs || fsRaw.st.arr.estimatedTs || null } : null;
+    const floor = legFloor.current.iso === flight.dateISO ? legFloor.current.idx : 0;
+    const idx = activeLegIndex(sectorLegs, { now: Date.now(), onMs: (lg) => { const d = legInstant(flight.dateISO, lg.on, flight.report); return d ? d.getTime() : null; }, live, floor });
+    legFloor.current = { iso: flight.dateISO, idx };   // o índice só sobe neste dia
+    return { idx, total: sectorLegs.length, leg: sectorLegs[idx] };
+  })();
+  // O voo seguido: o do setor ativo (sem número nesse setor → não se segue nada, nunca o de outro setor).
+  const flightNo = !flight ? null : activeSector ? (legNo(activeSector.leg) || null) : (flight.flightNo ? legNo({ flightNo: flight.flightNo }) : null);
+  const trackingLast = !activeSector || activeSector.idx === activeSector.total - 1;
   const depTs = (flight && flight.startDate) ? +new Date(flight.startDate) : null;
   const endTs = (flight && flight.endDate) ? +new Date(flight.endDate) : (depTs ? depTs + 3 * 3600e3 : null);
   const inFlightWindow = !!depTs && Date.now() >= depTs - 4 * 3600e3 && Date.now() <= (endTs || depTs) + 3600e3;
-  const [flightStatus, setFlightStatus] = useState(null);
   const [detailItem, setDetailItem] = useState(null);   // pergunta aberta na folha "porquê"
   const [fsTick, setFsTick] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    if (!flightNo || !inFlightWindow) { setFlightStatus(null); return; }
-    fetchFlightStatus(flightNo).then((st) => { if (!cancelled) setFlightStatus(st); });
+    if (!flightNo || !inFlightWindow) { setFsRaw(null); return; }
+    const no = flightNo;
+    fetchFlightStatus(no).then((st) => { if (!cancelled) setFsRaw({ no, st: st || null }); });
     return () => { cancelled = true; };
   }, [flightNo, inFlightWindow, fsTick]);
+  // Só vale o estado do voo que está a ser seguido (no instante da troca de setor, o antigo ainda está em memória).
+  const flightStatus = fsRaw && fsRaw.no === flightNo ? fsRaw.st : null;
+  // Ao voltar ao Início (aba ou app), pede o estado outra vez — o servidor guarda 60 s, é barato.
+  useFocusEffect(useCallback(() => { setFsTick((n) => n + 1); }, []));
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') setFsTick((n) => n + 1); });
+    return () => sub.remove();
+  }, []);
 
   // INBOUND — onde anda o avião que nos vem buscar (só antes da nossa partida, com matrícula).
   const [inbound, setInbound] = useState(null);
@@ -461,7 +486,8 @@ export default function HomeScreen({ navigation }) {
   // Voo ao vivo: recalcula o PSV com o ATRASO REAL à chegada e dá o veredicto (105/205).
   const ndArrDelay = flightStatus ? arrDelayMin(flightStatus) : 0;
   const liveVerdict = (ndArrDelay > 0 && ndDuty)
-    ? liveFdpVerdict(ndDuty, ndArrDelay, { projected: !(flightStatus.arr && flightStatus.arr.actual) })
+    // Só é facto (não projeção) quando o setor seguido é o ÚLTIMO e já aterrou: o PSV acaba nos calços do último.
+    ? liveFdpVerdict(ndDuty, ndArrDelay, { projected: !(trackingLast && flightStatus.arr && flightStatus.arr.actual) })
     : null;
   // O REGISTO guardado está atrás da chegada REAL? (aviso de sincronizar a escala eCrew).
   const ndReg = flight ? duties[flight.dateISO] : null;
@@ -469,7 +495,8 @@ export default function HomeScreen({ navigation }) {
     ? ndReg.legs[ndReg.legs.length - 1]
     : (flight && flight.arrTime ? { on: flight.arrTime, arr: (flightStatus && flightStatus.arr && flightStatus.arr.iata) || null } : null);
   const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on') : null;
-  const syncBehind = !!(flightStatus && ndStoredOnZ && recordBehindLive(flightStatus, ndStoredOnZ));
+  // Só com o ÚLTIMO setor seguido: o registo compara-se com os calços do último (é o que o App também limpa).
+  const syncBehind = !!(trackingLast && flightStatus && ndStoredOnZ && recordBehindLive(flightStatus, ndStoredOnZ));
   // Só o Início vê o feed ao vivo → é aqui que se MARCA o sinal persistente (idempotente).
   useEffect(() => {
     if (syncBehind && flight) markLiveSync(flight.dateISO, { flightNo, realArrZ: settledArrZ(flightStatus), schedArrZ: schedArrZ(flightStatus) });
@@ -485,16 +512,6 @@ export default function HomeScreen({ navigation }) {
     const dists = routeDistancesNM(flight.route);
     if (dists.length && !dists.some((x) => x == null)) dayPerDiem = ae.perDiem(crewCategory, dists, 1, crewFleet);
   }
-  // Setor ATIVO (só voo): o que está a decorrer / o próximo (now vs on-block de cada leg).
-  const sectorLegs = (flight && flight.kind === 'flight' && Array.isArray(flight.legs))
-    ? flight.legs.filter((lg) => lg && (lg.dep || lg.arr)) : [];
-  const activeSector = (() => {
-    if (!sectorLegs.length) return null;
-    let idx = sectorLegs.findIndex((lg) => { const on = legInstant(flight.dateISO, lg.on, flight.report); return !on || Date.now() <= on.getTime(); });
-    if (idx < 0) idx = sectorLegs.length - 1;
-    return { idx, total: sectorLegs.length, leg: sectorLegs[idx] };
-  })();
-
   const loadingFlight = !flight && syncing && !syncDone && calOk;
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
 
@@ -554,20 +571,21 @@ export default function HomeScreen({ navigation }) {
   const fsArr = flightStatus && flightStatus.arr;
 
   // ── A FASE do dia de voo (hoje): antes do report · em serviço em terra · no ar · aterrado ──
-  const single = sectorLegs.length <= 1;
+  // O feed ao vivo é SEMPRE do setor ativo (ver flightNo acima) → as horas reais valem também em dias de vários setores.
+  const liveActive = !!flightStatus;
   const depPlan = flight ? (activeSector ? activeSector.leg.off : flight.depTime) : null;
   const arrPlan = flight ? (activeSector ? activeSector.leg.on : flight.arrTime) : null;
-  const depHm = (single && fsDep && hm(fsDep.actual || fsDep.estimated)) || depPlan || null;
-  const arrHm = (single && fsArr && hm(fsArr.actual || fsArr.estimated)) || arrPlan || null;
+  const depHm = (liveActive && fsDep && hm(fsDep.actual || fsDep.estimated)) || depPlan || null;
+  const arrHm = (liveActive && fsArr && hm(fsArr.actual || fsArr.estimated)) || arrPlan || null;
   const depMs = (() => {
     if (!flight) return null;
-    const ts = single && fsDep && (fsDep.actualTs || fsDep.estimatedTs);
+    const ts = liveActive && fsDep && (fsDep.actualTs || fsDep.estimatedTs);
     if (ts) return ts * 1000;
     const d = legInstant(flight.dateISO, depPlan, flight.report); return d ? d.getTime() : null;
   })();
   const arrMs = (() => {
     if (!flight) return null;
-    const ts = single && fsArr && (fsArr.actualTs || fsArr.estimatedTs);
+    const ts = liveActive && fsArr && (fsArr.actualTs || fsArr.estimatedTs);
     if (ts) return ts * 1000;
     const d = legInstant(flight.dateISO, arrPlan, flight.report); return d ? d.getTime() : null;
   })();
@@ -873,7 +891,7 @@ export default function HomeScreen({ navigation }) {
         return { ...b, head: { left: kindLabel, dot: true }, lbl: end ? l('Termina às', 'Ends at') : l('A decorrer', 'Ongoing'), digits: end || flight.report,
           headline: kindLabel, rows, heroISO: flight.dateISO };
       }
-      const fno = flightNo || (activeSector && (activeSector.leg.flightNo || activeSector.leg.flight)) || null;
+      const fno = flightNo || null;   // já é o do setor ativo
       const secTxt = activeSector && activeSector.total > 1 ? `${l('setor', 'sector')} ${activeSector.idx + 1}/${activeSector.total}` : null;
       if (phase === 'air') {
         return { ...b, head: { left: `${l('Em voo', 'In flight')}${fno ? ` · ${String(fno).toUpperCase()}` : ''}`, dot: true },

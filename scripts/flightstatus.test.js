@@ -134,5 +134,29 @@ eq('fallback rota+nº (sem legs)', legsForShare({ flightNo: 'U2 8903', route: 'L
 eq('sem nº de voo → []', legsForShare({ route: 'LIS-OPO' }), []);
 eq('duty nula → []', legsForShare(null), []);
 
+// ═══ SETOR SEGUIDO AO VIVO (2026-11-03, Nuno "corrigir isto") ═══
+// Antes: o feed seguia o nº do 1.º setor o dia todo → um atraso do 1.º setor punha o Início em disrupção
+// nos setores seguintes. Agora segue o SETOR ATIVO, e "terminou" mede-se pela chegada real/estimada do
+// voo seguido (não pela hora planeada); nunca se volta atrás no mesmo dia (floor).
+const { activeLegIndex, legNo } = require(path.resolve('data/flightDelay.js'));
+const T = (hm) => { const [h, m] = hm.split(':').map(Number); return Date.UTC(2026, 10, 3, h, m); };
+const LEGS = [{ flightNo: 'EZY 1', on: '09:50' }, { flightNo: 'EZY2', on: '13:20' }];
+const onMs = (lg) => (lg.on ? T(lg.on) : null);
+eq('legNo normaliza ("EZY 1" → "EZY1")', legNo(LEGS[0]), 'EZY1');
+eq('legNo aceita "flight"', legNo({ flight: 'tp 1234' }), 'TP1234');
+eq('legNo sem número → ""', legNo({}), '');
+eq('sem setores → -1', activeLegIndex([], { now: T('09:00'), onMs }), -1);
+eq('antes da chegada planeada do 1.º → 0', activeLegIndex(LEGS, { now: T('09:00'), onMs }), 0);
+eq('sem ao vivo, passou a hora planeada → 1', activeLegIndex(LEGS, { now: T('10:00'), onMs }), 1);
+eq('O CASO: 1.º atrasado ainda no ar (estimada 10:30) → continua no 1.º', activeLegIndex(LEGS, { now: T('10:00'), onMs, live: { no: 'EZY1', arrTs: T('10:30') / 1000 } }), 0);
+eq('1.º aterrou às 10:20 → passa ao 2.º', activeLegIndex(LEGS, { now: T('10:25'), onMs, live: { no: 'EZY1', arrTs: T('10:20') / 1000 } }), 1);
+eq('ao vivo de OUTRO voo não mexe no 1.º (hora planeada manda)', activeLegIndex(LEGS, { now: T('09:00'), onMs, live: { no: 'EZY9', arrTs: T('08:00') / 1000 } }), 0);
+eq('1.º aterrou ANTES da hora (09:30) → passa ao 2.º', activeLegIndex(LEGS, { now: T('09:35'), onMs, live: { no: 'EZY1', arrTs: T('09:30') / 1000 } }), 1);
+eq('…e o ao vivo já segue o 2.º: NÃO volta ao 1.º (floor)', activeLegIndex(LEGS, { now: T('09:40'), onMs, live: { no: 'EZY2', arrTs: T('13:20') / 1000 }, floor: 1 }), 1);
+eq('sem floor voltaria (prova de que o floor é preciso)', activeLegIndex(LEGS, { now: T('09:40'), onMs, live: { no: 'EZY2', arrTs: T('13:20') / 1000 } }), 0);
+eq('todos aterrados → fica no último', activeLegIndex(LEGS, { now: T('15:00'), onMs }), 1);
+eq('setor sem hora de chegada → é o ativo', activeLegIndex([{ flightNo: 'A1', on: null }, { flightNo: 'A2', on: '13:00' }], { now: T('12:00'), onMs }), 0);
+eq('floor maior que o nº de setores → o último', activeLegIndex(LEGS, { now: T('09:00'), onMs, floor: 5 }), 1);
+
 console.log(`\nflightStatus (desvio) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

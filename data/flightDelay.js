@@ -122,3 +122,27 @@ export function inboundGap(inb, { ourFlight, ourDepZ, ourDepIata = null, turnMin
   else if (gap > 720) gap -= 1440;
   return { gapMin: gap, projDelayMin: Math.max(0, -gap), etaZ };
 }
+
+// ── SETOR SEGUIDO AO VIVO (2026-11-03) ──────────────────────────────────────────────────────────────
+// Número de voo normalizado de um setor ('EZY 8351' → 'EZY8351'). '' quando o setor não tem número.
+export const legNo = (lg) => String((lg && (lg.flightNo || lg.flight)) || '').toUpperCase().replace(/\s+/g, '');
+
+// O SETOR ATIVO de um dia com vários setores = o primeiro que ainda não terminou. "Terminou" mede-se pela
+// chegada REAL ou ESTIMADA do voo ao vivo quando é ESSE o setor seguido (live.no); senão pela hora planeada.
+// Antes seguia-se o nº do 1.º setor o dia todo e um atraso dele punha os setores seguintes em disrupção;
+// e com a hora planeada um setor atrasado "acabava" ainda no ar.
+// `floor` = o índice já alcançado neste dia: nunca se volta atrás (um setor que aterrou ANTES da hora
+// planeada voltaria a parecer ativo quando o ao vivo passa a seguir o seguinte — e o feed oscilaria).
+//   legs: [{ on, flightNo|flight }] · onMs(leg) → instante planeado da chegada (ms) ou null
+//   live: { no, arrTs } (arrTs em SEGUNDOS, real ou estimada) | null  →  índice, ou -1 sem setores
+export function activeLegIndex(legs, { now, onMs, live = null, floor = 0 } = {}) {
+  if (!Array.isArray(legs) || !legs.length) return -1;
+  const endOf = (lg) => {
+    const n = legNo(lg);
+    if (live && live.arrTs && n && n === live.no) return live.arrTs * 1000;
+    return onMs ? onMs(lg) : null;
+  };
+  let idx = legs.findIndex((lg) => { const e = endOf(lg); return e == null || now <= e; });
+  if (idx < 0) idx = legs.length - 1;
+  return Math.min(legs.length - 1, Math.max(idx, floor || 0));
+}
