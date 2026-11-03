@@ -1,11 +1,11 @@
 {
  "gerado": "2026-11-03",
  "total": {
-  "tipoFora": 275,
-  "tipoMenor11": 136,
-  "espacoFora": 552,
-  "raioFora": 78,
-  "corSolta": 96,
+  "tipoFora": 238,
+  "tipoMenor11": 118,
+  "espacoFora": 463,
+  "raioFora": 61,
+  "corSolta": 76,
   "ionicons": 10,
   "iconeNavSolto": 3,
   "amareloTexto": 4
@@ -37,16 +37,6 @@
    "espacoFora": 23,
    "raioFora": 1,
    "corSolta": 2,
-   "ionicons": 0,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "screens/EscalaScreen.js": {
-   "tipoFora": 37,
-   "tipoMenor11": 18,
-   "espacoFora": 89,
-   "raioFora": 17,
-   "corSolta": 20,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0

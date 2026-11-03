@@ -6,7 +6,91 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO — LAYOUT: a ESCALA (Nuno: "vamos ao layout", 2026-11-03) — ler isto primeiro
+## 2026-11-03 (noite, mais tarde) — INÍCIO v4: "mais moderna e clean", informação certa para cada momento
+
+**Contexto:** a Escala v2 FUNCIONA no iPhone (16/16) mas o Nuno achou-a "genérica"; ronda 3 da Escala (letra da casa ·
+fantasma · poster no dia, `design/escala-v3.html`, https://claude.ai/artifact/FPXPLFY5bkPDFpqfoYBybj) ficou SEM escolha
+porque o Nuno pediu a app inteira "mais moderna e clean, com animações e sugestões, acessos rápidos e atalhos" e quis
+começar pelo Início. **A Escala segue a linguagem que o Início fixar.** O código da Escala v2 continua por gravar.
+**Escolhido (Nuno):** direções 1 (cartão do momento) + 2 (sugestões do momento) e ver a 3 (mosaico). Pediu a minha
+recomendação sobre o que fica → **fica** o tema noturno e o fantasma PROMOVIDO a número do momento; **sai** a letra
+manuscrita (a frase fica em letra normal) e o halo de luz (o tempo fica como dado). Refs em `referencias/inicio/`.
+**Esboço:** `design/inicio-v4.html` (https://claude.ai/artifact/29hpznanZfKssbwQikVY4Q): folga · véspera (noturno) ·
+pré-report · folga+mosaico. Cartão escuro "ao vivo" quando há serviço, claro quando é calmo; atalhos por estado numa
+tabela (regras fixas, sem AI); movimento com propósito. **Versão 2 do artifact (Nuno: "faz outras variantes" — li como os
+outros estados):** + em voo (barra do setor), disrupção (+25, hora riscada, sem frase), standby (fim da janela + "se te
+chamarem agora"), formação + aviso de documento, pós-voo (claro, sign-off), pernoita (noturno, estação + hotel), fecho do
+mês + escala mudou (total + parcelas), férias e doença (sem atalhos), configuração.
+**Depois (Nuno: "outras versões do desenho · gosto das coisas grandes · lembra-te do tipo de utilizador"):**
+`design/inicio-v5.html` (https://claude.ai/artifact/AyCUmV1SeLYKEqN7fxSN8d) — 3 versões × 2 momentos (pré-report, folga):
+**A · Uma coisa só** (Brick, Cash App: número de 150 pt, botão largo + 2 redondos ao polegar, o resto a deslizar) ·
+**B · Cartão de embarque** (Apple Wallet: códigos a 72 pt, horas, picotagem, atalhos no cartão, próximos empilhados) ·
+**C · Painel de partidas** (o aeroporto: hora amarela a 96 pt, destino, estado, linhas dos próximos dias, 3 teclas).
+Regras para quem usa (valem para as três): um número enorme por ecrã · hora/sítio/"está tudo bem?" sem deslizar ·
+atalhos ≥ 48 pt na metade de baixo · contraste alto · letra dinâmica.
+**Nuno: "misturar. que achas?" → proposta (minha), `design/inicio-v6.html` (https://claude.ai/artifact/UBfuuAehZRYjjSbfR2TPJh):**
+um só sistema com duas intensidades. AO VIVO (véspera, pré-report, em serviço, em voo, disrupção, standby, pernoita) =
+placa escura do painel de partidas (C), a HORA do relógio a amarelo (104 pt), a contagem no rótulo, o estado numa
+pílula (a horas · atraso +25 · repouso ✓). CALMO (folga, pós-voo, férias, doença, fecho, configuração) = fundo claro
+e o número enorme a tinta (A, 150 pt: "2 dias", "7:45"). Sempre: as linhas do painel com o que vem a seguir (hora ·
+destino · dia) e 3 TECLAS no mesmo sítio, ao polegar (a 1.ª a tinta; tabela de atalhos da v4). Movimento: dígitos
+viram como o painel Solari quando a hora muda; calmo↔ao vivo escurece do topo; reduzido = seco. O cartão de embarque
+(B) sai do Início → proposta para o cartão que a família recebe. Mostrado em 6 momentos.
+**Versão 2 (Nuno: "na parte das frases tem imenso espaço até abaixo"):** o meio passa a ser os **2 SECUNDÁRIOS** da fila de
+prioridades do motor (living-interface §2): documento a expirar, escala mudou, o avião, o tempo no destino, os
+limites, a semana, o dinheiro do mês. Nunca vazio (sem nada urgente → o dinheiro do mês). O que está num secundário
+não se repete numa tecla (folga: tecla do € → Limites; véspera: tecla do tempo → Limites). Medido: tudo cabe nos 714 pt
+(a folga passou a 2 linhas no painel). **✅ APROVADO pelo Nuno ("sim gosto", 2026-11-03).**
+**Cores e letra (Nuno: "fica assim?") — fica a identidade, com acertos MEDIDOS:** papel/tinta/amarelo e Barlow Condensed
++ Hanken Grotesk como hoje. Amarelo SÓ sobre a placa escura (= `BRAND.onDark`, 10,62; noturno 9,36 → as edições por
+sindicato trocam-no sozinhas); no claro os números são a tinta. Placa: rótulos #A3A39B 7,25 · pílulas verde 6,26 /
+laranja 5,27. **Falhavam e foram corrigidos no esboço (v3 do artifact):** cinzento sobre o suave 4,03 → **#5E5E57 (5,84)**;
+verde de texto sobre o suave 3,92 → **#0B6E43 (5,64)**. **Tokens novos a criar na construção:** `PELE.greyOnSoft`,
+`PELE.okText`, `PELE_NIGHT.plate` (#18212D) e os fundos das pílulas sobre a placa. Letra: números 104 (hora ao vivo) e
+150 (calmo) = escala decorativa ≥ 48 (TUNE); 44 · 26 · 24 e os `TXT` estão na escala. A Caveat (letra manuscrita)
+deixa de ser usada no Início → ver se sai do arranque (menos uma fonte a carregar).
+**Construção (quando aprovado):** é a BASE do Início novo (HomeScreen tem 1885 linhas) → sessão própria em Opus 5.5
+Extra; o motor `crewState`, as frases (`stateVoice`, golden) e os cálculos ficam; muda a pele e a anatomia.
+**Respondido ao Nuno:** o Início tem 10 estados no motor (`data/crewState.js`) + 4 variantes do "hoje" (pré-report,
+em serviço/voo, standby, formação) + 2 avisos (escala mudou, documento) = 15 situações, em 2 temas (dia/noite).
+
+---
+
+## 2026-11-03 (noite) — Escala: esboço v2 APROVADO ("sim") e passado para o código — falta o iPhone
+
+**Código (por gravar no git):** `screens/EscalaScreen.js` reescrito pelo esboço; cálculos intactos (€, repouso 235/220,
+pernoita, linha do tempo). Sai a folha "Detalhe do dia" (Modal): o dia vive por baixo da grelha, com a pega
+(PanResponder + Animated no driver JS: altura e deslocação; scroll desligado durante o arrasto; toque alterna;
+movimentos reduzidos = troca seca; VoiceOver = botão "Mostrar só a semana / Mostrar o mês"). Tocar num dia desliza
+só o necessário (200 pt da folha à vista, sem esconder a linha tocada). Emoji fora (🏨 🗺 🌙 → ícones `bed`/`pin` e
+"pernoita"). Folhas do hub e do seletor de meses passadas a `TXT`/`SPACE` (‹ › do ano = `IconButton`).
+**Verificado no PC:** guardião 181 → 0 na Escala (total: tipo 275→238 · <11 136→118 · espaço 552→463 · raio 78→61 ·
+cores 96→76), chão gravado (`--atualizar`) · `npm test` verde · pacote iOS gera. **Não verificado:** nada no iPhone
+(lista no bloco C de `docs/05-verificacao.md`). `design/escala*.html` antigos → `design/arquivo/`; §9 sem exceção.
+**A seguir:** o Nuno vê no iPhone; afinações; depois o formulário de serviço (107 de dívida).
+
+**Medido** (fontes da app, 390 pt): código a 11 pt cabe ("LGW" 25,9 px em 35,7 úteis; 33,6 a 375), "2× LGW" não
+(42,9) · "folga" nos dias vazios 1,78:1 · hoje = borda amarela 1,73:1 (indicador pede 3) · tons pastel dos tipos
+1,05–1,31 · dias de fora do mês 1,35 · cinzento sobre o fundo suave 4,03 · laranja da faixa de repouso 2,74 · folha do
+dia com emoji (🏨 🗺 🌙) e tamanhos soltos · rótulo lateral ainda lá. Noturno: a Escala não tem.
+**Escolhido (Nuno):** opções 1 + 2 do Mobbin → `referencias/escala/` (Tonal, Todoist, Google Calendar) + coleção.
+Etiqueta por baixo do número (não a célula pintada) · por baixo da grelha SÓ o dia escolhido (não a agenda).
+**Esboço:** `design/escala-v2.html` (artifact https://claude.ai/artifact/CbE66bEiaQEbi1SNiA5oV7). Hoje = círculo de
+tinta, escolhido = anel, dia vazio = só o número, etiqueta 11 pt (preta no voo, um tom claro no resto), lua dentro da
+etiqueta, 2 serviços = segunda camada, "€" extra sai da grelha, uma ação "Ver tudo", Zulu só quando difere da local,
+resumo a tinta. Medido no esboço: célula 47,7 × 46 · grelha de 6 semanas 286 · cartão do dia com 132 pt à vista ao abrir.
+**Ronda 2 (Nuno: "mês está enorme", Mobbin outra vez):** escolhidos título "Novembro 2026" a 30 pt + ‹ › redondos
+(IconButton) + resumo numa linha ("17 serviços · 2 pernoitas · 418,60 € per-diem"; sai "folgas") — Orbit/pliability;
+botão "Hoje" fora do mês corrente — Joi; o dia é uma folha encaixada com pega que encolhe o mês para a semana —
+Outlook/Todoist. Sai o fantasma "2026" da Escala (as outras abas mantêm o PeleHeader grande; a linha de cima fica
+alinhada). Medido: do topo à grelha 228 → 154 pt; cartão do dia com 193 pt à vista ao abrir (mês de 6 semanas).
+Mesmo artifact (versão 2). Refs em `referencias/escala/` + coleção.
+**Feito a seguir ao "sim":** ver o bloco do código acima (a pega ficou com Animated + PanResponder, sem Reanimated: a app
+não tem `GestureHandlerRootView` e o gesto é só um).
+
+---
+
+## (histórico) LAYOUT: a ESCALA (Nuno: "vamos ao layout", 2026-11-03) — passos 1–4 feitos (ver acima)
 
 **Modelo:** sessão nova em **Opus 5.5 Extra** (ecrã com referências e esboço — tabela do método). O Nuno escreve
 "vamos à Escala".

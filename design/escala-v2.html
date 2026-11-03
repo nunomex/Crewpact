@@ -1,0 +1,343 @@
+<meta charset="utf-8">
+<title>CrewPact Escala v2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@500;700;800&display=swap">
+<style>
+/* Esboço da aba Escala, ronda 2 (2026-11-03). Referências: Tonal/Todoist (o dia por baixo), Google Calendar (dias vazios,
+   hoje num círculo), Orbit + pliability (título médio com setas e o resumo numa linha), Joi (botão Hoje),
+   Outlook/Todoist (a grelha encolhe para a semana). O esboço manda na HIERARQUIA; os números vêm da escala da app
+   (data/constants.js: TXT, SPACE, RADIUS, ICON_BTN).
+   Layout da página: três telemóveis de 390 × 844 lado a lado, notas e medidas por baixo. */
+:root{
+  /* moldura da página (segue o tema de quem vê) */
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  /* a app (PELE) — o ecrã é sempre papel, nos dois temas */
+  --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7;
+  --signal:#FFB800; --warn:#E86A10; --okSoft:#E7F3EC; --redSoft:#F6E9E6; --warnSoft:#FBEAD2;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 64px}
+.page{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.lead{max-width:760px}
+.lead h1{font-family:var(--display);font-size:34px;letter-spacing:-.5px;text-wrap:balance}
+.lead p{margin-top:8px;font-size:14px;line-height:1.55;color:var(--muted)}
+.lead b{color:var(--fg)}
+
+.phones{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.shot{display:flex;flex-direction:column;gap:12px;width:406px;max-width:100%}
+.shot h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.5;color:var(--muted);min-height:40px}
+.fit{width:100%;position:relative}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;transform-origin:top left;position:absolute;left:0;top:0}
+
+/* ── estilos de texto = TXT da app ── */
+.tag{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-family:var(--body);font-weight:500;font-size:11px;line-height:15px}
+.label{font-family:var(--body);font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-family:var(--body);font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-family:var(--body);font-weight:700;font-size:13px;line-height:17px}
+.callout{font-family:var(--body);font-weight:700;font-size:15px;line-height:20px}
+.title{font-family:var(--display);font-weight:700;font-size:22px;line-height:26px;letter-spacing:-.2px}
+.titleLg{font-family:var(--display);font-weight:700;font-size:30px;line-height:36px;letter-spacing:-.4px}
+.num{font-family:var(--display);font-weight:700;font-size:24px;line-height:28px;letter-spacing:-.2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ink{color:var(--ink)} .grey{color:var(--grey)}
+.ic{display:inline-block;flex:none;fill:currentColor;vertical-align:middle}
+
+/* ── moldura do iPhone (390 × 844: 47 em cima, 83 a barra de abas) ── */
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;overflow-y:auto;scrollbar-width:none;padding:0 16px 20px}
+.scr::-webkit-scrollbar{display:none}
+.tabbar{height:83px;flex:none;border-top:1px solid rgba(20,20,20,.13);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+
+/* ── cabeçalho compacto ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-top:12px;height:48px}
+.ibtn{width:36px;height:36px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink)}
+.ibtn.bare{background:transparent}
+.mrow{display:flex;align-items:center;gap:8px;height:44px;margin-top:4px}
+.mtitle{flex:1;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.mtitle .ic{color:var(--grey)}
+.hoje{height:36px;padding:0 14px;border-radius:18px;background:var(--soft);display:flex;align-items:center}
+.sumline{margin-top:2px;color:var(--grey)}
+.sumline b{color:var(--ink);font-weight:700}
+
+/* ── grelha ── */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;margin:16px 0 6px;text-align:center;color:var(--grey)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;row-gap:2px}
+.cell{height:46px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;min-width:0}
+.n{width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cell.today .n{background:var(--ink);color:var(--paper)}
+.cell.sel .n{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.chip{align-self:stretch;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:3px;position:relative;white-space:nowrap}
+.chip.voo{background:var(--ink);color:var(--paper)}
+.chip.srv{background:var(--soft2);color:var(--ink)}
+.chip.fer{background:var(--okSoft);color:var(--ink)}
+.chip.doe{background:var(--redSoft);color:var(--ink)}
+/* dois serviços no dia: uma segunda camada por baixo (o "baralho" da família cheia) */
+.chip.two::after{content:"";position:absolute;left:4px;right:4px;bottom:-4px;height:3px;border-radius:0 0 3px 3px;background:inherit;opacity:.55}
+.pend{position:absolute;left:2px;top:2px;width:6px;height:6px;border-radius:3px;background:var(--warn)}
+
+/* ── o dia escolhido: uma folha encaixada por baixo da grelha (pega = puxar para encolher o mês) ── */
+.day{margin:8px -16px 0;background:var(--soft);border-radius:24px 24px 0 0;padding:0 16px 20px;display:flex;flex-direction:column;gap:8px}
+.grab{height:20px;display:flex;align-items:center;justify-content:center}
+.grab i{width:36px;height:4px;border-radius:2px;background:var(--ghost)}
+.dayH{display:flex;align-items:baseline;gap:8px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 16px 0;display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;align-items:center;gap:8px}
+.kchip{height:20px;border-radius:4px;padding:0 6px;display:inline-flex;align-items:center}
+.kchip.voo{background:var(--ink);color:var(--paper)} .kchip.srv{background:var(--soft2);color:var(--ink)}
+.idx{width:20px;height:20px;border-radius:6px;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.meta div{display:flex;flex-direction:column;gap:2px}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:8px;min-height:44px;border-top:1px solid var(--line)}
+.row .fno{width:64px;flex:none}
+.row .rt{flex:1;min-width:0}
+.row .tm{font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:flex-end}
+.money{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.money > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.more{display:flex;align-items:center;justify-content:space-between;min-height:48px;border-top:1px solid var(--line)}
+.rest{display:flex;align-items:center;gap:8px;border-radius:12px;padding:8px 12px;background:var(--warnSoft)}
+.rest i{width:8px;height:8px;border-radius:4px;background:var(--warn);flex:none}
+.legpill{margin-top:16px;border:1px solid var(--line);border-radius:99px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px}
+.foot{margin-top:12px}
+
+/* ── notas ── */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.note h3{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.note ol,.note ul{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.note li b{font-weight:700}
+.note .m{color:var(--muted)}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 8px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl td.v{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+.tbl th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+</style>
+
+<div class="page">
+  <header class="lead">
+    <h1>Escala · esboço v2, ronda 2</h1>
+    <p><b>O mês encolheu:</b> título médio com as setas e o resumo numa linha (do topo à grelha: de 228 para 154 pt). <b>O dia escolhido</b> é uma folha encaixada por baixo da grelha: puxa-se pela pega e o mês encolhe para a semana. <b>"Hoje"</b> aparece quando estás noutro mês. Dados de teste, base LIS, hoje = terça, 3 de novembro de 2026. Tamanhos e espaços da escala da app (TXT, SPACE).</p>
+  </header>
+
+  <section class="phones">
+    <div class="shot">
+      <h2>1 · Ao abrir: hoje</h2>
+      <p>O mês inteiro e, por baixo, o dia de hoje já aberto.</p>
+      <div class="fit"><div class="ph" id="ph1" data-m="nov" data-sel="3"></div></div>
+    </div>
+    <div class="shot">
+      <h2>2 · Puxar o dia para cima</h2>
+      <p>O mês encolhe para a semana do dia escolhido (aqui o 12, com 2 serviços). Puxar para baixo devolve o mês.</p>
+      <div class="fit"><div class="ph" id="ph2" data-m="nov" data-sel="12" data-week="1"></div></div>
+    </div>
+    <div class="shot">
+      <h2>3 · Outro mês: aparece "Hoje"</h2>
+      <p>Em dezembro abre o primeiro dia com serviço. "Hoje" volta a 3 de novembro com um toque.</p>
+      <div class="fit"><div class="ph" id="ph3" data-m="dez" data-sel="1"></div></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h3>O que muda em relação ao ecrã de hoje</h3>
+      <ol>
+        <li><b>O mês</b>: sai o "2026" gigante e o nome a 44 pt. Fica "Novembro 2026" a 30 pt (toque abre o seletor de meses), com ‹ › à direita (o mesmo botão redondo de 36 pt da app). Deslizar para o lado continua a mudar de mês.</li>
+        <li><b>O resumo numa linha</b>: "17 serviços · 2 pernoitas · 418,60 € per-diem". Sai o "folgas" (os dias vazios já o mostram, e no mês corrente contava só os dias passados).</li>
+        <li><b>"Hoje"</b> só aparece fora do mês corrente, ao lado das setas.</li>
+        <li><b>Hoje</b> = número num círculo de tinta (18,4:1); o dia escolhido leva um anel. Sai a borda amarela (1,73:1).</li>
+        <li><b>Dia vazio = só o número.</b> Saem o "folga" escrito (1,78:1) e os dias de fora do mês.</li>
+        <li><b>Etiqueta a 11 pt</b>: preta no voo (destino), um só tom claro no resto, férias e doença com o tom suave. Pernoita = lua dentro da etiqueta; 2 serviços = segunda camada. Acaba a exceção dos 8–9,5 pt.</li>
+        <li><b>O dia</b>: folha encaixada com pega. Puxar para cima encolhe o mês para a semana; para baixo, ou tocar na pega, volta ao mês. Uma só ação, "Ver tudo"; editar continua no toque longo e no detalhe.</li>
+        <li><b>Hora Zulu</b> só quando difere da local (no telemóvel 3, a chegada a BCN).</li>
+        <li><b>Sai o rótulo lateral rodado.</b> A legenda (pílula no fundo) passa de seis tons a dois.</li>
+      </ol>
+    </div>
+    <div class="note">
+      <h3>Medido neste esboço (390 pt)</h3>
+      <div class="tbl"><table id="medidas"><thead><tr><th>O quê</th><th>Medida</th></tr></thead><tbody><tr><td colspan="2" class="m">A medir…</td></tr></tbody></table></div>
+      <p class="m" style="font-size:13px;line-height:1.5">Medidas tiradas desta página depois de as letras carregarem. A 375 pt (iPhone SE) o código mais largo com a lua deixa 3 pt de cada lado da etiqueta.</p>
+    </div>
+    <div class="note">
+      <h3>A confirmar no iPhone</h3>
+      <ul>
+        <li>A segunda camada dos dois serviços lê-se como "mais de um"?</li>
+        <li>O gesto da pega: puxar acompanha o dedo; largar a meio decide pelo lado mais perto. Com os movimentos reduzidos, troca seca. Leitor de ecrã: a pega é um botão "Mostrar só a semana" / "Mostrar o mês".</li>
+        <li>A troca de dia dentro da folha: cross-fade curto (decide-se na construção, com a skill de animação).</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var P = {
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>',
+    chevron:'<path d="M8.5 4.8 15.7 12l-7.2 7.2-2.1-2.1L11.4 12 6.4 6.9z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    pin:'<path fill-rule="evenodd" d="M12 2a7 7 0 0 0-7 7c0 4.8 7 12.5 7 12.5S19 13.8 19 9a7 7 0 0 0-7-7zm0 4.4A2.6 2.6 0 1 1 12 11.6 2.6 2.6 0 0 1 12 6.4z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+
+  // Dados de TESTE. Seg = coluna 0. 1 nov 2026 = domingo (coluna 6); 1 dez 2026 = terça (coluna 1).
+  var M = {
+    nov:{ name:'Novembro', first:6, dim:30, today:3, sum:['17','2','418,60 €'], days:{
+      2:{k:'voo',c:'FNC'}, 3:{k:'voo',c:'LGW',ns:1}, 4:{k:'voo',c:'LGW'}, 7:{k:'srv',c:'SBY'}, 8:{k:'voo',c:'AMS'}, 9:{k:'voo',c:'CDG'},
+      12:{k:'srv',c:'FRM',two:1}, 13:{k:'srv',c:'OFC'}, 16:{k:'voo',c:'BCN',ns:1}, 17:{k:'voo',c:'BCN'}, 18:{k:'voo',c:'MAD'},
+      19:{k:'srv',c:'SBY'}, 22:{k:'voo',c:'GVA'}, 23:{k:'srv',c:'POS'}, 24:{k:'fer',c:'FÉR'}, 25:{k:'fer',c:'FÉR'}, 26:{k:'fer',c:'FÉR'},
+      28:{k:'voo',c:'FNC',dirty:1}, 29:{k:'voo',c:'OPO'}, 30:{k:'srv',c:'RES'} } },
+    dez:{ name:'Dezembro', first:1, dim:31, today:null, sum:['17','2','402,80 €'], days:{
+      1:{k:'voo',c:'BCN',ns:1}, 2:{k:'voo',c:'BCN'}, 3:{k:'srv',c:'SBY'}, 6:{k:'voo',c:'FNC'}, 7:{k:'voo',c:'LGW'}, 8:{k:'voo',c:'AMS',ns:1},
+      9:{k:'voo',c:'AMS'}, 12:{k:'srv',c:'OFC'}, 13:{k:'voo',c:'GVA'}, 14:{k:'voo',c:'GVA'}, 18:{k:'voo',c:'FNC'}, 19:{k:'voo',c:'FNC'},
+      20:{k:'srv',c:'SBY'}, 23:{k:'voo',c:'CDG'}, 24:{k:'fer',c:'FÉR'}, 25:{k:'fer',c:'FÉR'}, 26:{k:'fer',c:'FÉR'}, 29:{k:'voo',c:'MAD'},
+      30:{k:'voo',c:'OPO'}, 31:{k:'srv',c:'RES'} } }
+  };
+  var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+  function cell(m, d, sel){
+    var x = m.days[d] || null, cls = 'cell' + (d === m.today ? ' today' : '') + (d === sel && d !== m.today ? ' sel' : '');
+    var chip = x ? '<div class="chip '+x.k+(x.two?' two':'')+'"><span class="tag">'+x.c+'</span>'+(x.ns?ic('moon',10):'')+'</div>' : '';
+    return '<div class="'+cls+'">'+(x && x.dirty ? '<i class="pend"></i>' : '')+'<div class="n">'+d+'</div>'+chip+'</div>';
+  }
+  function meta(a){ return '<div class="meta">'+a.map(function(p){ return '<div><span class="tag grey">'+p[0]+'</span><span class="num">'+p[1]+'</span></div>'; }).join('')+'</div>'; }
+  var more = '<div class="more"><span class="callout">Ver tudo</span>'+ic('chevron',16)+'</div>';
+
+  var DAY = {
+    'nov-3': '<div class="dayH"><span class="bodyStrong ink">Terça, 3 de novembro</span><span class="tag ink">· hoje</span></div>'+
+       '<div class="card">'+
+         '<div class="chips"><span class="kchip voo tag">Voo</span><span class="label grey" style="display:inline-flex;align-items:center;gap:4px">'+ic('moon',13)+'Pernoita</span></div>'+
+         '<div class="title">LIS → LGW</div>'+ meta([['Report','06:20'],['Block','2:45'],['Duty','4:00']])+
+         '<div class="rows">'+
+           '<div class="row"><span class="fno label grey">EZY8351</span><span class="rt bodyStrong">LIS → LGW</span><span class="tm bodyT">07:05 → 09:50</span></div>'+
+           '<div class="row">'+ic('bed',16)+'<span class="rt bodyStrong">Hotel Gatwick Norte</span><span class="label" style="display:inline-flex;align-items:center;gap:4px">'+ic('pin',14)+'Mapas</span></div>'+
+         '</div>'+
+         '<div class="money"><div><span class="label">Ganhos do dia</span><span class="caption grey">per-diem 41,20 € · pernoita 48,00 €</span></div><span class="num">+89,20 €</span></div>'+
+         more+
+       '</div>',
+    'nov-12':'<div class="dayH"><span class="bodyStrong ink">Quinta, 12 de novembro</span><span class="tag ink">· 2 serviços</span></div>'+
+       '<div class="card">'+
+         '<div class="chips"><span class="idx">1</span><span class="kchip srv tag">Formação</span></div>'+
+         meta([['Início','08:00'],['Fim','12:00'],['Duração','4:00']])+
+         '<div style="height:4px"></div>'+
+       '</div>'+
+       '<div class="rest"><i></i><span class="label ink">Split duty · 6:30 entre os dois (mín. 12:00) → conta como 1 serviço (220)</span></div>'+
+       '<div class="card">'+
+         '<div class="chips"><span class="idx">2</span><span class="kchip voo tag">Voo</span></div>'+
+         '<div class="title">LIS → FNC → LIS</div>'+ meta([['Report','18:30'],['Block','3:20'],['Duty','5:25']])+
+         '<div class="rows">'+
+           '<div class="row"><span class="fno label grey">EZY8343</span><span class="rt bodyStrong">LIS → FNC</span><span class="tm bodyT">19:15 → 20:55</span></div>'+
+           '<div class="row"><span class="fno label grey">EZY8344</span><span class="rt bodyStrong">FNC → LIS</span><span class="tm bodyT">21:45 → 23:25</span></div>'+
+         '</div>'+
+         '<div class="money"><div><span class="label">Ganhos do serviço</span><span class="caption grey">per-diem 23,40 €</span></div><span class="num">+23,40 €</span></div>'+
+         more+
+       '</div>',
+    'dez-1': '<div class="dayH"><span class="bodyStrong ink">Terça, 1 de dezembro</span></div>'+
+       '<div class="card">'+
+         '<div class="chips"><span class="kchip voo tag">Voo</span><span class="label grey" style="display:inline-flex;align-items:center;gap:4px">'+ic('moon',13)+'Pernoita</span></div>'+
+         '<div class="title">LIS → BCN</div>'+ meta([['Report','05:50'],['Block','1:55'],['Duty','3:10']])+
+         '<div class="rows">'+
+           '<div class="row"><span class="fno label grey">EZY8411</span><span class="rt bodyStrong">LIS → BCN</span><span class="tm"><span class="bodyT">06:35 → 09:30</span><span class="caption grey">06:35 → 08:30Z</span></span></div>'+
+           '<div class="row">'+ic('bed',16)+'<span class="rt bodyStrong">Hotel Prat Sul</span><span class="label" style="display:inline-flex;align-items:center;gap:4px">'+ic('pin',14)+'Mapas</span></div>'+
+         '</div>'+
+         '<div class="money"><div><span class="label">Ganhos do dia</span><span class="caption grey">per-diem 38,90 € · pernoita 48,00 €</span></div><span class="num">+86,90 €</span></div>'+
+         more+
+       '</div>'
+  };
+
+  function screen(el){
+    var key = el.dataset.m, m = M[key], sel = +el.dataset.sel, week = !!el.dataset.week, cells = '';
+    var all = [];
+    for (var i = 0; i < m.first; i++) all.push('<div class="cell"></div>');
+    for (var d = 1; d <= m.dim; d++) all.push(cell(m, d, sel));
+    if (week) { var r = Math.floor((m.first + sel - 1) / 7) * 7; all = all.slice(r, r + 7); while (all.length < 7) all.push('<div class="cell"></div>'); }
+    cells = all.join('');
+    var other = m.today == null;
+    el.innerHTML =
+      '<div class="status"><span>9:41</span><span style="font-size:13px">100%</span></div>'+
+      '<div class="scr">'+
+        '<div class="hdr"><span class="eyebrow grey">A tua escala · eCrew</span><span class="ibtn bare" aria-label="Calendário e sincronizar">'+ic('sync',19)+'</span></div>'+
+        '<div class="mrow">'+
+          '<div class="mtitle"><span class="titleLg">'+m.name+'</span><span class="titleLg grey">2026</span>'+ic('chevron',14,90)+'</div>'+
+          (other ? '<span class="hoje label">Hoje</span>' : '')+
+          '<span class="ibtn" aria-label="Mês anterior">'+ic('chevron',18,180)+'</span><span class="ibtn" aria-label="Mês seguinte">'+ic('chevron',18)+'</span>'+
+        '</div>'+
+        '<p class="sumline bodyT"><b>'+m.sum[0]+'</b> serviços · <b>'+m.sum[1]+'</b> pernoitas · <b>'+m.sum[2]+'</b> per-diem</p>'+
+        '<div class="wk">'+WD.map(function(w){return '<span class="tag">'+w+'</span>';}).join('')+'</div>'+
+        '<div class="grid">'+cells+'</div>'+
+        '<div class="day"><div class="grab" role="button" aria-label="'+(week?'Mostrar o mês':'Mostrar só a semana')+'"><i></i></div>'+DAY[key+'-'+sel]+'</div>'+
+        (week ? '' : '<div class="legpill"><span class="tag">Legenda</span><span class="grey">'+ic('chevron',12,90)+'</span></div><p class="caption grey foot">Guardado no telemóvel. Sincroniza com a conta quando houver rede.</p>')+
+      '</div>'+
+      '<nav class="tabbar">'+
+        '<div class="tab">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+        '<div class="tab on">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+        '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+        '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div>'+
+      '</nav>';
+  }
+
+  var phones = document.querySelectorAll('.ph');
+  phones.forEach(screen);
+
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(w){
+      var s = Math.min(1, w.clientWidth / 406);
+      var ph = w.querySelector('.ph');
+      ph.style.transform = s < 1 ? 'scale('+s+')' : '';
+      w.style.height = (860 * s) + 'px';
+    });
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  function measure(){
+    function probe(ph){
+      var scr = ph.querySelector('.scr'), k = ph.getBoundingClientRect().width / 406 || 1;
+      var top = function(el){ return (el.getBoundingClientRect().top - scr.getBoundingClientRect().top) / k + scr.scrollTop; };
+      var h = function(el){ return el.getBoundingClientRect().height / k; };
+      return { scr:scr, top:top, h:h, k:k };
+    }
+    var a = probe(document.getElementById('ph1')), ph1 = document.getElementById('ph1');
+    var c = ph1.querySelector('.grid .cell:nth-child(7)'), grid = ph1.querySelector('.grid');
+    var chips = ph1.querySelectorAll('.grid .chip'), worst = 0, worstTxt = '', clipped = 0;
+    chips.forEach(function(ch){ var w = ch.querySelector('.tag').getBoundingClientRect().width / a.k + (ch.querySelector('svg') ? 13 : 0); if (w > worst) { worst = w; worstTxt = ch.textContent; } if (ch.scrollWidth > ch.clientWidth + .5) clipped++; });
+    var area = a.scr.clientHeight, monthBlock = a.top(ph1.querySelector('.wk')) - 0;
+    var card1 = a.top(ph1.querySelector('.day .card'));
+    var b = probe(document.getElementById('ph2')), ph2 = document.getElementById('ph2');
+    var cards2 = ph2.querySelectorAll('.day .card'), last2 = cards2[cards2.length - 1];
+    var rows = [
+      ['Área entre o topo e a barra de abas', area + ' pt'],
+      ['Do topo até à grelha (antes: 228 pt)', monthBlock.toFixed(0) + ' pt'],
+      ['Célula (também é a área de toque)', (c.getBoundingClientRect().width / a.k).toFixed(1) + ' × ' + a.h(c).toFixed(0) + ' pt'],
+      ['Etiqueta mais cheia ("'+worstTxt.trim()+'" com a lua)', worst.toFixed(1) + ' pt · cortadas: ' + clipped],
+      ['Grelha de 6 semanas', a.h(grid).toFixed(0) + ' pt'],
+      ['Mês inteiro: cartão do dia à vista ao abrir', Math.max(0, area - card1).toFixed(0) + ' pt'],
+      ['Semana: os 2 cartões do dia 12 acabam a', (b.top(last2) + b.h(last2)).toFixed(0) + ' pt (área ' + b.scr.clientHeight + ')']
+    ];
+    document.querySelector('#medidas tbody').innerHTML = rows.map(function(r){ return '<tr><td>'+r[0]+'</td><td class="v">'+r[1]+'</td></tr>'; }).join('');
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(measure, 50); });
+})();
+</script>

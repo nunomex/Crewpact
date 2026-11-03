@@ -1,0 +1,289 @@
+<meta charset="utf-8">
+<title>CrewPact Escala v3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@500;700;800&display=swap">
+<style>
+/* Esboço da aba Escala, ronda 3 (2026-11-03). Nuno, depois de testar a v2 no iPhone: "parece genérico".
+   A estrutura fica (mês compacto, grelha com etiqueta, o dia por baixo com pega); volta a VOZ da app:
+   a letra condensada faz o trabalho, o fantasma, o amarelo como marca. Três doses lado a lado (A ⊂ B ⊂ C).
+   Os números vêm da escala da app (TXT, SPACE, RADIUS); o Barlow nos dias e códigos usa tamanhos da escala (17, 14).
+   Layout da página: três telemóveis de 390 × 844, notas e medidas por baixo. */
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  --paper:#FFFFFF; --ink:#141414; --ghost:#E2E1DC; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7;
+  --signal:#FFB800; --warn:#E86A10; --okSoft:#E7F3EC; --redSoft:#F6E9E6;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 64px}
+.page{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.lead{max-width:760px}
+.lead h1{font-family:var(--display);font-size:34px;letter-spacing:-.5px;text-wrap:balance}
+.lead p{margin-top:8px;font-size:14px;line-height:1.55;color:var(--muted)}
+.lead b{color:var(--fg)}
+.phones{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.shot{display:flex;flex-direction:column;gap:12px;width:406px;max-width:100%}
+.shot h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.5;color:var(--muted);min-height:60px}
+.fit{width:100%;position:relative}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;transform-origin:top left;position:absolute;left:0;top:0}
+
+/* ── TXT da app ── */
+.tag{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-family:var(--body);font-weight:500;font-size:11px;line-height:15px}
+.label{font-family:var(--body);font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-family:var(--body);font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-family:var(--body);font-weight:700;font-size:13px;line-height:17px}
+.callout{font-family:var(--body);font-weight:700;font-size:15px;line-height:20px}
+.title{font-family:var(--display);font-weight:700;font-size:22px;line-height:26px;letter-spacing:-.2px}
+.titleLg{font-family:var(--display);font-weight:700;font-size:30px;line-height:36px;letter-spacing:-.4px}
+.num{font-family:var(--display);font-weight:700;font-size:24px;line-height:28px;letter-spacing:-.2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.numLg{font-family:var(--display);font-weight:700;font-size:34px;line-height:38px;letter-spacing:-.5px;white-space:nowrap}
+.ink{color:var(--ink)} .grey{color:var(--grey)}
+.ic{display:inline-block;flex:none;fill:currentColor;vertical-align:middle}
+
+/* ── iPhone 390 × 844 ── */
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;overflow-y:auto;scrollbar-width:none;padding:0 16px 20px;position:relative}
+.scr::-webkit-scrollbar{display:none}
+.tabbar{height:83px;flex:none;border-top:1px solid rgba(20,20,20,.13);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+
+/* ── topo ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-top:12px;height:48px;position:relative;z-index:1}
+.ibtn{width:36px;height:36px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink);position:relative;z-index:1}
+.ibtn.bare{background:transparent}
+.mrow{display:flex;align-items:center;gap:8px;min-height:44px;margin-top:4px;position:relative}
+.mtitle{flex:1;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;position:relative;z-index:1}
+.mtitle .ic{color:var(--grey)}
+.word44{font-family:var(--display);font-weight:700;font-size:44px;line-height:50px;letter-spacing:-.5px}
+/* fantasma do ano (B, C): decorativo, atrás do mês, entra na linha de cima como no PeleHeader */
+.ghostY{position:absolute;right:-2px;top:-58px;font-family:var(--display);font-weight:700;font-size:96px;line-height:110px;letter-spacing:-3px;color:var(--ghost);pointer-events:none;z-index:0}
+/* resumo com os números condensados (A, B, C) */
+.sumrow{display:flex;align-items:baseline;gap:6px;margin-top:2px;flex-wrap:wrap;position:relative;z-index:1}
+.sumrow .num{color:var(--ink)}
+.sumrow .tag{color:var(--grey);margin-right:6px}
+
+/* ── grelha ── */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;margin:16px 0 6px;text-align:center;color:var(--grey)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);column-gap:4px;row-gap:2px}
+.cell{height:46px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;min-width:0}
+.n{width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-variant-numeric:tabular-nums;
+   font-family:var(--display);font-weight:700;font-size:17px;line-height:20px}
+/* hoje = disco de tinta com o número a AMARELO (como o avatar da casa: 10,6:1) */
+.cell.today .n{background:var(--ink);color:var(--signal)}
+.cell.sel .n{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.chip{align-self:stretch;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:2px;position:relative;white-space:nowrap}
+.chip .code{font-family:var(--display);font-weight:700;font-size:14px;line-height:17px;letter-spacing:.4px;text-transform:uppercase}
+.chip.voo{background:var(--ink);color:var(--paper)}
+.chip.srv{background:var(--soft2);color:var(--ink)}
+.chip.fer{background:var(--okSoft);color:var(--ink)}
+.chip.two::after{content:"";position:absolute;left:6px;right:6px;bottom:-4px;height:2px;border-radius:2px;background:var(--grey)}
+.pend{position:absolute;left:2px;top:2px;width:6px;height:6px;border-radius:3px;background:var(--warn)}
+
+/* ── o dia (folha encaixada) ── */
+.day{margin:8px -16px 0;background:var(--soft);border-radius:24px 24px 0 0;padding:0 16px 20px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.grab{height:28px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.grab i{width:36px;height:4px;border-radius:2px;background:var(--ghost)}
+.dayH{display:flex;align-items:baseline;gap:8px;position:relative;z-index:1}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 16px 0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1}
+.chips{display:flex;align-items:center;gap:8px}
+.kchip{height:20px;border-radius:4px;padding:0 6px;display:inline-flex;align-items:center}
+.kchip.voo{background:var(--ink);color:var(--paper)}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.meta div{display:flex;flex-direction:column;gap:2px}
+.row{display:flex;align-items:center;gap:8px;min-height:44px;border-top:1px solid var(--line)}
+.row .fno{width:64px;flex:none}
+.row .rt{flex:1;min-width:0}
+.money{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.money > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.more{display:flex;align-items:center;justify-content:space-between;min-height:48px;border-top:1px solid var(--line)}
+/* C: o dia em gramática de poster — o destino como fantasma na faixa, a palavra do dia condensada */
+.ghostD{position:absolute;right:12px;top:4px;font-family:var(--display);font-weight:700;font-size:64px;line-height:70px;letter-spacing:-2px;color:#E2E0D8;pointer-events:none;z-index:0}
+.dayWord{font-family:var(--display);font-weight:700;font-size:30px;line-height:34px;letter-spacing:-.4px}
+
+/* ── notas ── */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.note h3{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.note ul{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.note li b{font-weight:700}
+.note .m{color:var(--muted)}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 8px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl td.v{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+.tbl th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+</style>
+
+<div class="page">
+  <header class="lead">
+    <h1>Escala · ronda 3: a voz da app</h1>
+    <p><b>Mesma estrutura</b> que já testaste no iPhone (mês compacto, grelha com etiqueta, o dia por baixo com a pega). <b>Muda a voz</b>, em três doses que se somam: A só a letra, B junta o fantasma, C junta o poster no dia. Dados de teste, base LIS, hoje = terça, 3 de novembro de 2026.</p>
+  </header>
+
+  <section class="phones">
+    <div class="shot">
+      <h2>A · A letra da casa</h2>
+      <p>Dias e códigos na letra condensada (Barlow), como um painel de partidas. Hoje = disco preto com o número a amarelo, como o avatar. Os números do resumo condensados.</p>
+      <div class="fit"><div class="ph" id="phA" data-v="A"></div></div>
+    </div>
+    <div class="shot">
+      <h2>B · A + o fantasma</h2>
+      <p>O mês volta a ser a palavra da casa (44) e o ano é o fantasma por trás, como nas outras abas, mas numa só linha.</p>
+      <div class="fit"><div class="ph" id="phB" data-v="B"></div></div>
+    </div>
+    <div class="shot">
+      <h2>C · B + o dia em poster</h2>
+      <p>Por baixo, o dia fala como o Início: "Terça, 3" condensado e o destino (LGW) como fantasma na faixa.</p>
+      <div class="fit"><div class="ph" id="phC" data-v="C"></div></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h3>O que é igual nas três</h3>
+      <ul>
+        <li><b>A estrutura testada:</b> ‹ › e "Hoje", o resumo numa linha, a grelha com etiqueta por baixo do número, o dia por baixo com a pega, uma ação "Ver tudo".</li>
+        <li><b>A letra condensada</b> nos números dos dias (17 pt) e nos códigos (14 pt, mais altos e mais estreitos do que os 11 pt em maiúsculas da v2).</li>
+        <li><b>Hoje</b> = disco de tinta com o número a amarelo (10,6:1). O amarelo volta como marca, nunca como texto sobre papel.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Medido neste esboço (390 pt)</h3>
+      <div class="tbl"><table id="medidas"><thead><tr><th>O quê</th><th>Medida</th></tr></thead><tbody><tr><td colspan="2" class="m">A medir…</td></tr></tbody></table></div>
+    </div>
+    <div class="note">
+      <h3>O que escolhes</h3>
+      <ul>
+        <li><b>A</b>: identidade só na letra; o ecrã fica o mais calmo.</li>
+        <li><b>B</b>: a Escala volta a parecer irmã das outras abas.</li>
+        <li><b>C</b>: o dia escolhido ganha voz própria; o mais "CrewPact" e o mais carregado.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var P = {
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    sync:'<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>',
+    chevron:'<path d="M8.5 4.8 15.7 12l-7.2 7.2-2.1-2.1L11.4 12 6.4 6.9z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    pin:'<path fill-rule="evenodd" d="M12 2a7 7 0 0 0-7 7c0 4.8 7 12.5 7 12.5S19 13.8 19 9a7 7 0 0 0-7-7zm0 4.4A2.6 2.6 0 1 1 12 11.6 2.6 2.6 0 0 1 12 6.4z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+
+  // Novembro de 2026 (TESTE): 1 = domingo → coluna 6.
+  var FIRST = 6, DIM = 30, TODAY = 3, SEL = 3;
+  var D = {
+    2:{k:'voo',c:'FNC'}, 3:{k:'voo',c:'LGW',ns:1}, 4:{k:'voo',c:'LGW'}, 7:{k:'srv',c:'SBY'}, 8:{k:'voo',c:'AMS'}, 9:{k:'voo',c:'CDG'},
+    12:{k:'srv',c:'FRM',two:1}, 13:{k:'srv',c:'OFC'}, 16:{k:'voo',c:'BCN',ns:1}, 17:{k:'voo',c:'BCN'}, 18:{k:'voo',c:'MAD'},
+    19:{k:'srv',c:'SBY'}, 22:{k:'voo',c:'GVA'}, 23:{k:'srv',c:'POS'}, 24:{k:'fer',c:'FÉR'}, 25:{k:'fer',c:'FÉR'}, 26:{k:'fer',c:'FÉR'},
+    28:{k:'voo',c:'FNC',dirty:1}, 29:{k:'voo',c:'OPO'}, 30:{k:'srv',c:'RES'}
+  };
+  var WD = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+  function cell(d){
+    var x = D[d] || null, cls = 'cell' + (d === TODAY ? ' today' : '') + (d === SEL && d !== TODAY ? ' sel' : '');
+    var chip = x ? '<div class="chip '+x.k+(x.two?' two':'')+'"><span class="code">'+x.c+'</span>'+(x.ns?ic('moon',10):'')+'</div>' : '';
+    return '<div class="'+cls+'">'+(x && x.dirty ? '<i class="pend"></i>' : '')+'<div class="n">'+d+'</div>'+chip+'</div>';
+  }
+
+  function header(v){
+    var title = v === 'A'
+      ? '<span class="titleLg">Novembro</span><span class="titleLg grey">2026</span>'+ic('chevron',14,90)
+      : '<span class="word44">Novembro</span>'+ic('chevron',16,90);
+    return '<div class="hdr"><span class="eyebrow grey">A tua escala · eCrew</span><span class="ibtn bare" aria-label="Calendário e sincronizar">'+ic('sync',19)+'</span></div>'+
+      '<div class="mrow">'+(v === 'A' ? '' : '<span class="ghostY" aria-hidden="true">2026</span>')+
+        '<div class="mtitle">'+title+'</div>'+
+        '<span class="ibtn" aria-label="Mês anterior">'+ic('chevron',18,180)+'</span><span class="ibtn" aria-label="Mês seguinte">'+ic('chevron',18)+'</span>'+
+      '</div>'+
+      '<div class="sumrow"><span class="num">17</span><span class="tag">serviços</span><span class="num">2</span><span class="tag">pernoitas</span><span class="num">418,60 €</span><span class="tag">per-diem</span></div>';
+  }
+
+  function day(v){
+    var head = v === 'C'
+      ? '<span class="ghostD" aria-hidden="true">LGW</span><div class="dayH"><span class="dayWord">Terça, 3</span><span class="tag ink">· hoje</span></div>'
+      : '<div class="dayH"><span class="bodyStrong ink">Terça-feira, 3 de novembro</span><span class="tag ink">· hoje</span></div>';
+    var route = v === 'C' ? '<div class="numLg">LIS → LGW</div>' : '<div class="title">LIS → LGW</div>';
+    return '<div class="day"><div class="grab"><i></i></div>'+head+
+      '<div class="card">'+
+        '<div class="chips"><span class="kchip voo tag">Voo</span><span class="label grey" style="display:inline-flex;align-items:center;gap:4px">'+ic('moon',13)+'Pernoita</span></div>'+
+        route+
+        '<div class="meta"><div><span class="tag grey">Report</span><span class="num">06:20</span></div><div><span class="tag grey">Block</span><span class="num">2:45</span></div><div><span class="tag grey">Duty</span><span class="num">4:00</span></div></div>'+
+        '<div class="row"><span class="fno label grey">EZY8351</span><span class="rt bodyStrong">LIS → LGW</span><span class="bodyT">07:05 → 09:50</span></div>'+
+        '<div class="row">'+ic('bed',16)+'<span class="rt bodyStrong">Hotel Gatwick Norte</span><span class="label" style="display:inline-flex;align-items:center;gap:4px">'+ic('pin',14)+'Mapas</span></div>'+
+        '<div class="money"><div><span class="label">Ganhos do dia</span><span class="caption grey">per-diem 41,20 € · pernoita 48,00 €</span></div><span class="num">+89,20 €</span></div>'+
+        '<div class="more"><span class="callout">Ver tudo</span>'+ic('chevron',16)+'</div>'+
+      '</div></div>';
+  }
+
+  function screen(el){
+    var v = el.dataset.v, cells = '';
+    for (var i = 0; i < FIRST; i++) cells += '<div class="cell"></div>';
+    for (var d = 1; d <= DIM; d++) cells += cell(d);
+    el.innerHTML =
+      '<div class="status"><span>9:41</span><span style="font-size:13px">100%</span></div>'+
+      '<div class="scr">'+ header(v)+
+        '<div class="wk">'+WD.map(function(w){return '<span class="tag">'+w+'</span>';}).join('')+'</div>'+
+        '<div class="grid">'+cells+'</div>'+ day(v)+
+      '</div>'+
+      '<nav class="tabbar">'+
+        '<div class="tab">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+        '<div class="tab on">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+        '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+        '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div>'+
+      '</nav>';
+  }
+  var phones = document.querySelectorAll('.ph');
+  phones.forEach(screen);
+
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(w){
+      var s = Math.min(1, w.clientWidth / 406), ph = w.querySelector('.ph');
+      ph.style.transform = s < 1 ? 'scale('+s+')' : '';
+      w.style.height = (860 * s) + 'px';
+    });
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  function measure(){
+    var rows = [];
+    phones.forEach(function(ph){
+      var scr = ph.querySelector('.scr'), k = ph.getBoundingClientRect().width / 406 || 1;
+      var top = function(el){ return (el.getBoundingClientRect().top - scr.getBoundingClientRect().top) / k + scr.scrollTop; };
+      var card = ph.querySelector('.day .card');
+      rows.push([ph.dataset.v + ' · do topo até à grelha', top(ph.querySelector('.wk')).toFixed(0) + ' pt (v2: 154)']);
+      rows.push([ph.dataset.v + ' · cartão do dia à vista ao abrir', Math.max(0, scr.clientHeight - top(card)).toFixed(0) + ' pt (v2: 193)']);
+    });
+    var ph = document.getElementById('phA'), k = ph.getBoundingClientRect().width / 406 || 1, worst = 0, txt = '', cut = 0;
+    ph.querySelectorAll('.grid .chip').forEach(function(ch){ var w = ch.querySelector('.code').getBoundingClientRect().width / k + (ch.querySelector('svg') ? 12 : 0); if (w > worst) { worst = w; txt = ch.textContent; } if (ch.scrollWidth > ch.clientWidth + .5) cut++; });
+    var c = ph.querySelector('.grid .cell:nth-child(7)');
+    rows.push(['Código mais largo ("'+txt+'" com a lua), Barlow 14', worst.toFixed(1) + ' pt de ' + (c.getBoundingClientRect().width / k).toFixed(1) + ' · cortados: ' + cut]);
+    document.querySelector('#medidas tbody').innerHTML = rows.map(function(r){ return '<tr><td>'+r[0]+'</td><td class="v">'+r[1]+'</td></tr>'; }).join('');
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(measure, 50); });
+})();
+</script>

@@ -1,0 +1,308 @@
+<meta charset="utf-8">
+<title>CrewPact Início v6</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@500;700;800&display=swap">
+<style>
+/* Início v6 (2026-11-03) — a MISTURA pedida pelo Nuno, como um só sistema:
+   AO VIVO (serviço) = o painel de partidas (versão C): escuro, a HORA do relógio a amarelo, o estado numa pílula.
+   CALMO = o número enorme (versão A): claro, uma CONTAGEM ou um TOTAL a tinta.
+   Sempre: as linhas do painel com o que vem a seguir (escuras ao vivo, claras no calmo) e 3 teclas ao polegar.
+   Movimento: os dígitos viram como o painel Solari quando a hora muda (movimentos reduzidos = troca seca).
+   Para quem usa: o tripulante às 4h, de pé, numa mão, com sono — um número enorme, poucas palavras, teclas grandes.
+   Layout da página: seis telemóveis de 390 × 844 em grelha, notas por baixo. */
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED;
+  --signal:#FFB800; --ok:#118A55; --okNight:#46C98A; --warnNight:#F08A3C; --plate:#141414; --onInk:#FFFFFF; --onInkSub:#A3A39B;
+  /* medidos 2026-11-03: o cinzento (#77776F) sobre o suave dá 4,03 e o verde (#118A55) 3,92 → tons de texto próprios */
+  --greyOnSoft:#5E5E57; --okText:#0B6E43;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:820px;display:flex;flex-direction:column;gap:10px}
+.lead h1{font-family:var(--display);font-size:34px;letter-spacing:-.5px;text-wrap:balance}
+.lead p{font-size:14px;line-height:1.55;color:var(--muted)}
+.lead b{color:var(--fg)}
+.replay{align-self:flex-start;height:40px;padding:0 16px;border-radius:99px;border:1px solid var(--rule);background:var(--card);color:var(--fg);font:700 13px var(--body);cursor:pointer}
+.replay:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:1320px){ .grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))} }
+.shot{display:flex;flex-direction:column;gap:10px;min-width:0}
+.shot h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.shot p{font-size:13px;line-height:1.5;color:var(--muted);min-height:40px}
+.fit{width:100%;position:relative}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;transform-origin:top left;position:absolute;left:0;top:0}
+.ph.night{--paper:#0D131C; --ink:#F4F2ED; --grey:rgba(244,242,237,.62); --line:rgba(244,242,237,.14); --soft:rgba(244,242,237,.08); --plate:#18212D; --onInkSub:rgba(244,242,237,.62); --greyOnSoft:rgba(244,242,237,.62)}
+
+/* ── TXT ── */
+.tag{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-family:var(--body);font-weight:500;font-size:11px;line-height:15px}
+.label{font-family:var(--body);font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-family:var(--body);font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-family:var(--body);font-weight:700;font-size:13px;line-height:17px}
+.headline{font-family:var(--body);font-weight:800;font-size:17px;line-height:22px}
+.grey{color:var(--grey)}
+.ic{display:inline-block;flex:none;fill:currentColor;vertical-align:middle}
+
+/* ── iPhone ── */
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.ph.live .status{background:var(--plate);color:var(--onInk)}
+.scr{flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:16px}
+.scr > *{flex-shrink:0}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+
+/* ── a placa (ao vivo = escura · calmo = clara) ── */
+.board{margin:0 -16px;padding:4px 16px 12px;display:flex;flex-direction:column}
+.live .board{background:var(--plate);color:var(--onInk)}
+.bHead{display:flex;justify-content:space-between;align-items:center;padding:12px 0 10px}
+.live .bHead{border-bottom:1px solid rgba(255,255,255,.14);color:var(--onInkSub)}
+.calm .bHead{border-bottom:1px solid var(--line)}
+.hero{display:flex;flex-direction:column;gap:6px;padding:10px 0 14px}
+.live .hero{border-bottom:1px solid rgba(255,255,255,.14)}
+.hero .lbl{color:var(--grey)}
+.live .hero .lbl{color:var(--onInkSub)}
+/* o número: ao vivo = a HORA a amarelo; calmo = a contagem/total a tinta */
+.digits{display:flex;align-items:flex-end;gap:2px;font-family:var(--display);font-weight:700;letter-spacing:-3px;font-variant-numeric:tabular-nums;perspective:400px}
+.live .digits{font-size:104px;line-height:90px;color:var(--signal)}
+.calm .digits{font-size:150px;line-height:126px;color:var(--ink)}
+.digits .u{font-size:44px;line-height:44px;letter-spacing:-1px;margin-left:8px;margin-bottom:10px;color:inherit}
+.live .digits .u{color:var(--onInk)}
+.digits .d{display:inline-block;transform-origin:50% 50%}
+.digits .was{font-size:34px;line-height:34px;letter-spacing:-.5px;margin-left:10px;margin-bottom:12px;text-decoration:line-through;opacity:.55;color:var(--onInk)}
+/* Solari: cada dígito vira uma vez, em cascata */
+.play .digits .d{animation:flip .46s cubic-bezier(.2,.8,.2,1) both}
+@keyframes flip{0%{transform:rotateX(-90deg);opacity:0}60%{transform:rotateX(12deg);opacity:1}100%{transform:rotateX(0)}}
+@media (prefers-reduced-motion: reduce){ .play .digits .d{animation:none} }
+.dest{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dest b{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px}
+.pill{font-family:var(--body);font-weight:800;font-size:12px;letter-spacing:.8px;text-transform:uppercase;padding:5px 9px;border-radius:5px;white-space:nowrap}
+.pill.ok{background:rgba(70,201,138,.18);color:var(--okNight)}
+.pill.warn{background:rgba(240,138,60,.2);color:var(--warnNight)}
+.pill.calm{background:var(--soft);color:var(--okText)}
+.sub{color:var(--onInkSub)} .calm .sub{color:var(--grey)}
+.prog{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.prog .track{height:6px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
+.prog .track i{display:block;height:100%;background:var(--signal)}
+.prog .ends{display:flex;justify-content:space-between;color:var(--onInkSub)}
+/* as linhas do painel: o que vem a seguir */
+.cols{display:grid;grid-template-columns:76px 1fr 72px;gap:8px;padding:8px 0 2px}
+.live .cols{color:var(--onInkSub)} .calm .cols{color:var(--grey)}
+.row{display:grid;grid-template-columns:76px 1fr 72px;gap:8px;align-items:center;min-height:44px}
+.live .row{border-bottom:1px solid rgba(255,255,255,.08)}
+.calm .row{border-bottom:1px solid var(--line)}
+.row .tm,.row .ds{font-family:var(--display);font-weight:700;font-size:26px;line-height:28px}
+.live .row .tm{color:var(--signal)}
+.row .dy{text-align:right}
+.live .row .dy{color:var(--onInkSub)} .calm .row .dy{color:var(--grey)}
+.say{color:var(--grey)} .say b{color:var(--ink);font-weight:700}
+/* o meio: os SECUNDÁRIOS (máx. 2, pela fila de prioridades do motor — living-interface §2) */
+.secs{display:flex;flex-direction:column;gap:8px}
+.sec2{border-radius:16px;background:var(--soft);padding:12px 14px;display:flex;align-items:center;gap:12px;min-height:60px}
+.sec2 .ci{width:32px;height:32px;border-radius:16px;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink)}
+.sec2 .ci.red{color:#C6362B} .sec2 .ci.warn{color:#E86A10}
+.sec2 .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sec2 .grey{color:var(--greyOnSoft)}
+.sec2 .vv{font-family:var(--display);font-weight:700;font-size:24px;line-height:26px;white-space:nowrap}
+.sec2 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:4px}
+.sec2 .bar i{display:block;height:100%;background:var(--ink)}
+/* as 3 teclas — sempre aqui, ao polegar */
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:auto;margin-bottom:12px}
+.key{border-radius:18px;background:var(--soft);min-height:88px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;color:var(--ink)}
+.key.pri{background:var(--ink);color:var(--paper)}
+.key .v{font-family:var(--display);font-weight:700;font-size:24px;line-height:26px}
+
+/* ── notas ── */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.note h3{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.note ul{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.note li b{font-weight:700}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 8px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+</style>
+
+<div class="page">
+  <header class="lead">
+    <h1>Início · a mistura: painel quando há serviço, número quando é calmo</h1>
+    <p><b>Ao vivo</b> (há serviço ou está para haver): o painel de partidas escuro, com a <b>hora do relógio a amarelo</b> e o estado numa pílula. <b>Calmo</b>: fundo claro e um <b>número enorme a tinta</b> (dias que faltam, horas de serviço). Nos dois: as linhas do painel com o que vem a seguir e <b>3 teclas sempre no mesmo sítio</b>, ao polegar. Dados de teste, base LIS.</p>
+    <button class="replay" id="replay" type="button">Repetir a animação dos dígitos</button>
+  </header>
+
+  <section class="grid3">
+    <div class="shot"><h2>Folga · calmo</h2><p>O número é quantos dias faltam. Por baixo, as linhas claras dos próximos serviços.</p><div class="fit"><div class="ph calm" data-s="folga"></div></div></div>
+    <div class="shot"><h2>Véspera · ao vivo, noturno</h2><p>21h40: o painel mostra o report de amanhã. A primeira tecla põe o lembrete para acordar.</p><div class="fit"><div class="ph live night" data-s="vespera"></div></div></div>
+    <div class="shot"><h2>Pré-report · ao vivo</h2><p>A hora do report a amarelo, a contagem no rótulo, "a horas" na pílula. Teclas para sair de casa.</p><div class="fit"><div class="ph live" data-s="hoje"></div></div></div>
+    <div class="shot"><h2>Em voo · ao vivo</h2><p>A hora a que aterras, quanto falta e a barra do setor.</p><div class="fit"><div class="ph live" data-s="voo"></div></div></div>
+    <div class="shot"><h2>Disrupção · ao vivo</h2><p>A nova hora a amarelo, a antiga riscada, "atraso +25" a laranja. Sem frase: só o operacional.</p><div class="fit"><div class="ph live" data-s="disrupcao"></div></div></div>
+    <div class="shot"><h2>Pós-voo · calmo</h2><p>O dia fechou: o número é o serviço feito. A primeira tecla regista o sign-off real.</p><div class="fit"><div class="ph calm" data-s="posvoo"></div></div></div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h3>As regras do sistema</h3>
+      <ul>
+        <li><b>Escuro = ao vivo:</b> véspera, pré-report, em serviço, em voo, disrupção, standby, pernoita. <b>Claro = calmo:</b> folga, pós-voo, férias, doença, fecho do mês, configuração.</li>
+        <li><b>O número grande:</b> ao vivo é sempre uma hora do relógio (a do próximo marco), a amarelo; a contagem ("daqui a 1:40") vai no rótulo. No calmo é uma contagem ou um total, a tinta.</li>
+        <li><b>As linhas do painel</b> mostram sempre o que vem a seguir, com as mesmas colunas (hora · destino · dia).</li>
+        <li><b>3 teclas, sempre no mesmo sítio,</b> a primeira a tinta. Mudam com o momento (a tabela da v4 continua válida).</li>
+        <li><b>O meio = os 2 secundários</b>, pela fila de prioridades do motor (documento a expirar, escala mudou, o avião, o tempo no destino, os limites, a semana, o dinheiro do mês). Nunca fica vazio: sem nada urgente, aparece o dinheiro do mês. O que está num secundário não se repete numa tecla.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Movimento</h3>
+      <ul>
+        <li><b>Solari:</b> quando uma hora muda (a contagem ao minuto, uma nova hora na disrupção, o momento seguinte), os dígitos viram em cascata, como no painel do aeroporto. Carrega no botão lá em cima para ver.</li>
+        <li><b>Calmo ↔ ao vivo:</b> a placa escurece a partir do topo e o número troca com o mesmo virar.</li>
+        <li><b>Movimentos reduzidos:</b> troca seca. Nada fica escondido se a animação falhar.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>O que veio de cada versão</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Versão</th><th>O que entra</th></tr></thead>
+        <tbody>
+          <tr><td>C · Painel</td><td>A placa escura ao vivo, a hora a amarelo, a pílula do estado, as linhas, as 3 teclas.</td></tr>
+          <tr><td>A · Uma coisa só</td><td>O número enorme a tinta nos momentos calmos (150 pt).</td></tr>
+          <tr><td>B · Cartão</td><td>Fica de fora do Início; proposta para o cartão que a família recebe ao partilhar o voo.</td></tr>
+          <tr><td>v4</td><td>A frase do momento (sem letra manuscrita) e a tabela de atalhos por estado.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    wallet:'<path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h12A2.5 2.5 0 0 1 20 6.5V8h1v8h-1v1.5A2.5 2.5 0 0 1 17.5 20h-12A2.5 2.5 0 0 1 3 17.5v-11zM15 10.4a1.6 1.6 0 0 0 0 3.2h6v-3.2h-6z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    bell:'<path d="M12 2.2a2.1 2.1 0 0 0-2.1 2.1v.5A6 6 0 0 0 6 10.4V15l-1.8 1.8v1.3h15.6v-1.3L18 15v-4.6a6 6 0 0 0-3.9-5.6v-.5A2.1 2.1 0 0 0 12 2.2zM9.8 19.5a2.2 2.2 0 0 0 4.4 0z"/>',
+    doc:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.4 1.8V8h4.2l-4.2-4.2zM7.4 12h9.2v1.9H7.4V12zm0 4h7v1.9h-7V16z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>'
+  };
+  function ic(n, s){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>'; }
+  // dígitos em cascata (Solari): cada carácter é um span com atraso próprio
+  function dig(txt, unit, was){
+    var out = '', i = 0;
+    txt.split('').forEach(function(c){ out += '<span class="d" style="animation-delay:'+(i++ * 70)+'ms">'+(c === ' ' ? '&nbsp;' : c)+'</span>'; });
+    return '<div class="digits" aria-label="'+txt+(unit ? ' '+unit : '')+'">'+out+(unit ? '<span class="u">'+unit+'</span>' : '')+(was ? '<span class="was">'+was+'</span>' : '')+'</div>';
+  }
+  function row(tm, ds, dy){ return '<div class="row"><span class="tm">'+tm+'</span><span class="ds">'+ds+'</span><span class="dy label">'+dy+'</span></div>'; }
+  function cols(){ return '<div class="cols tag"><span>Hora</span><span>Destino</span><span style="text-align:right">Dia</span></div>'; }
+  function key(icon, txt, pri, val){ return '<span class="key'+(pri?' pri':'')+'">'+ic(icon,20)+(val ? '<span><span class="v">'+val+'</span><br><span class="label" style="color:inherit">'+txt+'</span></span>' : '<span class="bodyStrong" style="color:inherit">'+txt+'</span>')+'</span>'; }
+  // um secundário: ícone · rótulo · frase · (valor) · (barra)
+  function sec(icon, lbl, txt, val, bar, tone){ return '<div class="sec2"><span class="ci'+(tone ? ' '+tone : '')+'">'+ic(icon,16)+'</span><div class="tx"><span class="tag grey">'+lbl+'</span><span class="bodyStrong">'+txt+'</span>'+(bar != null ? '<div class="bar"><i style="width:'+bar+'%"></i></div>' : '')+'</div>'+(val ? '<span class="vv">'+val+'</span>' : '')+'</div>'; }
+  function head(l, r){ return '<div class="bHead"><span class="eyebrow">'+l+'</span><span class="eyebrow">'+r+'</span></div>'; }
+
+  var S = {
+    folga: head('Quinta · 5 novembro', ic('sun',14)+' 19°')+
+      '<div class="hero"><span class="tag lbl">Próximo serviço daqui a</span>'+dig('2','dias')+
+      '<div class="dest"><span class="headline">Sábado 7 · Standby aeroporto</span><span class="pill calm">Em dia</span></div></div>'+
+      cols()+row('05:00','SBY','SÁB 7')+row('06:40','AMS','DOM 8'),
+    folgaSay:'<p class="bodyT say"><b>Descansa, está tudo em dia.</b> Sol e 19° até ao fim da tarde.</p>',
+    folgaSec: sec('wallet','Novembro · estimado','Dia 5 de 30','418,60 €',17)+sec('doc','Documentos','Certificado médico expira em 24 dias',null,null,'warn'),
+    folgaKeys: key('cal','Ver a escala',true)+key('shield','Limites')+key('gauge','Simular'),
+
+    vespera: head('Report amanhã', ic('moon',14)+' 12° · LIS')+
+      '<div class="hero"><span class="tag lbl">Daqui a 8 h 40 · terça, 3</span>'+dig('06:20')+
+      '<div class="dest"><b>LIS → LGW</b><span class="pill ok">Repouso ✓</span></div>'+
+      '<span class="label sub">EZY8351 · parte 07:05 · pernoita em Gatwick</span></div>'+
+      cols()+row('11:15','LIS','QUA 4')+row('05:00','SBY','SÁB 7'),
+    vesperaSay:'<p class="bodyT say"><b>Está tudo verificado. Dorme.</b> Acordar às 05:00 dá-te tempo.</p>',
+    vesperaSec: sec('cloud','Gatwick amanhã às 10h','Chuva fraca: leva casaco','7°')+sec('wallet','Ganhos de amanhã','per-diem + pernoita','+89,20 €'),
+    vesperaKeys: key('bell','Lembrete 05:00',true)+key('shield','Limites')+key('share','Partilhar o voo'),
+
+    hoje: head('Partidas · hoje', ic('cloud',14)+' 9° · LIS')+
+      '<div class="hero"><span class="tag lbl">Report daqui a 1:40</span>'+dig('06:20')+
+      '<div class="dest"><b>LIS → LGW</b><span class="pill ok">A horas</span></div>'+
+      '<span class="label sub">EZY8351 · parte 07:05 · avião em LIS · PSV até 15:20</span></div>'+
+      cols()+row('11:15','LIS','QUA 4')+row('05:00','SBY','SÁB 7'),
+    hojeSay:'<p class="bodyT say"><b>Tudo pronto.</b> Leva casaco: 7° em Gatwick à chegada.</p>',
+    hojeSec: sec('cloud','O teu avião','G-UZHB já está em LIS desde as 22:10')+sec('wallet','Ganhos de hoje','per-diem 41,20 € · pernoita 48,00 €','+89,20 €'),
+    hojeKeys: key('share','Família',true)+key('shield','Limites')+key('bed','Hotel'),
+
+    voo: head('Em voo · EZY8351', ic('cloud',14)+' 7° · LGW')+
+      '<div class="hero"><span class="tag lbl">Aterras daqui a 1:05</span>'+dig('09:50')+
+      '<div class="dest"><b>LIS → LGW</b><span class="pill ok">A horas</span></div>'+
+      '<div class="prog"><div class="track"><i style="width:61%"></i></div><div class="ends caption"><span>07:05 LIS</span><span>PSV 02:25 de 13:00</span><span>09:50 LGW</span></div></div></div>'+
+      cols()+row('11:15','LIS','QUA 4')+row('05:00','SBY','SÁB 7'),
+    vooSay:'<p class="bodyT say"><b>Está a correr como previsto.</b> A família vê o mesmo que tu.</p>',
+    vooSec: sec('cloud','Em Gatwick à chegada','Chuva fraca','7°')+sec('moon','Depois','Pernoita · report amanhã às 10:30'),
+    vooKeys: key('share','Partilhar a chegada',true)+key('shield','Limites')+key('bed','Hotel'),
+
+    disrupcao: head('Partidas · hoje', ic('cloud',14)+' 9° · LIS')+
+      '<div class="hero"><span class="tag lbl">Partida prevista · report 06:20</span>'+dig('07:30','','07:05')+
+      '<div class="dest"><b>LIS → LGW</b><span class="pill warn">Atraso +25</span></div>'+
+      '<span class="label sub">O avião ainda vem de FNC (chega ~06:55) · PSV projetado 12:40 de 13:00</span></div>'+
+      cols()+row('11:15','LIS','QUA 4'),
+    disrupcaoSay:'',
+    disrupcaoSec: sec('cloud','Porquê','O avião saiu de FNC às 05:30, com 25 min de atraso',null,null,'warn')+sec('shield','Limites com o atraso','PSV a 20 min do máximo: 12:40 de 13:00',null,97),
+    disrupcaoKeys: key('share','Avisar a família',true)+key('shield','Limites c/ atraso')+key('gauge','Simular'),
+
+    posvoo: head('Segunda · 9 novembro', ic('sun',14)+' 18°')+
+      '<div class="hero"><span class="tag lbl">Dia fechado · de serviço</span>'+dig('7:45')+
+      '<div class="dest"><span class="headline">LIS → CDG → LIS · 2 setores</span><span class="pill calm">Dentro da lei</span></div>'+
+      '<span class="label grey">5:10 de voo · repouso mínimo até amanhã 02:05</span></div>'+
+      cols()+row('05:00','SBY','SÁB 14')+row('06:10','FNC','DOM 15'),
+    posvooSay:'<p class="bodyT say"><b>Fechado. Bom descanso.</b> Contei 30 min de débriefing: se foi diferente, regista.</p>',
+    posvooSec: sec('shield','Esta semana','31 h de 60 de serviço','31 h',52)+sec('wallet','Novembro · estimado','Dia 9 de 30','480,80 €',30),
+    posvooKeys: key('doc','Registar o sign-off',true)+key('wallet','hoje',false,'+62,40 €')+key('cal','Amanhã')
+  };
+
+  function screen(el){
+    var s = el.dataset.s;
+    el.innerHTML =
+      '<div class="status"><span>9:41</span><span style="font-size:13px">100%</span></div>'+
+      '<div class="scr"><div class="board">'+S[s]+'</div>'+ (S[s+'Say'] || '') + (S[s+'Sec'] ? '<div class="secs">'+S[s+'Sec']+'</div>' : '') +'<div class="keys">'+S[s+'Keys']+'</div></div>'+
+      '<nav class="tabbar">'+
+        '<div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+        '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+        '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div>'+
+      '</nav>';
+  }
+  var phones = document.querySelectorAll('.ph');
+  phones.forEach(screen);
+  function play(){ phones.forEach(function(p){ p.classList.remove('play'); void p.offsetWidth; p.classList.add('play'); }); }
+  play();
+  document.getElementById('replay').addEventListener('click', play);
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(w){
+      var k = Math.min(1, w.clientWidth / 406), ph = w.querySelector('.ph');
+      ph.style.transform = k < 1 ? 'scale('+k+')' : '';
+      w.style.height = (860 * k) + 'px';
+    });
+  }
+  fit(); window.addEventListener('resize', fit);
+})();
+</script>

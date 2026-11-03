@@ -74,6 +74,43 @@ Esboço: `design/login-v4.html` (A e A+B lado a lado).
 
 Esboço: `design/onboarding-v2.html`.
 
+## inicio/ — escolhidas a 2026-11-03 (Início v4, direções 1 + 2, e a 3 para comparar)
+
+Pedido do Nuno: "mais moderna e clean, com animações e sugestões, acessos rápidos e atalhos; a informação certa
+para cada momento". Esboço `design/inicio-v4.html`.
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `cartao-momento-american.webp` | American Airlines | um só cartão responde "o que tenho agora?" (partida, rota, porta) | https://mobbin.com/screens/8c235e1a-f757-49a2-a732-a3f2750c1fff |
+| `numero-estado-outsiders.webp` | The Outsiders | número herói + palavra de estado + uma frase | https://mobbin.com/screens/7a8b4054-0cfa-4a24-8b38-fe6c351105ba |
+| `sugestoes-fitbit.webp` | Google Health (Fitbit) | uma mensagem para o momento + botões de resposta | https://mobbin.com/screens/11294425-4d03-4375-9bcf-55da80b226e5 |
+| `sugestoes-atalhos-cleo.webp` | Cleo | frase + sugestões + fila de atalhos | https://mobbin.com/screens/0a251f82-32fe-47cf-a6f8-ca6ed621ab4c |
+| `mosaico-lembretes.webp` | Lembretes (Apple) | atalhos em mosaico com números, sempre no mesmo sítio (opção 3, para comparar) | https://mobbin.com/screens/84be367a-1f4e-48ac-8740-541510d01dad |
+
+## escala/ — escolhidas a 2026-11-03 (aba Escala, opções 1 + 2)
+
+**O dia tocado aparece por baixo da grelha, sem folha** (opção 1) + **dias vazios em branco e hoje num
+círculo cheio** (opção 2):
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `dia-por-baixo-tonal.webp` | Tonal | grelha sem caixas; o dia escolhido numa faixa por baixo, com o cabeçalho do dia e o cartão; mês grande + ano à direita | https://mobbin.com/screens/aa4998b0-0771-4367-b2cb-c65e58d8c127 |
+| `dia-por-baixo-todoist.webp` | Todoist | hoje = número num círculo cheio; por baixo, a agenda dos dias seguintes com "amanhã" | https://mobbin.com/screens/a62d6a9f-94af-4e57-b0df-444edf90996f |
+| `dias-vazios-hoje-google-calendar.webp` | Google Calendar | só os dias com algo têm etiqueta; o dia vazio é só o número; etiqueta cheia com o texto | https://mobbin.com/screens/d8b5a4b1-fdc8-44f4-85aa-fc522f9bb9b9 |
+
+**Ronda 2 (Nuno: "mês está enorme")** — título médio com setas + resumo numa linha, botão Hoje, grelha que encolhe:
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `mes-titulo-resumo-orbit.webp` | Orbit | o nome do mês e, por baixo, os totais numa só linha | https://mobbin.com/screens/97df9397-6397-4724-a075-25db1848245e |
+| `mes-titulo-setas-pliability.webp` | pliability | título do mês médio com ‹ › redondos à direita | https://mobbin.com/screens/c9360790-e638-4dae-b3cf-cf6887db0d83 |
+| `botao-hoje-joi.webp` | Joi | botão "Today" ao lado das setas | https://mobbin.com/screens/1b6724ed-7524-4e8e-897f-a24590c52306 |
+| `grelha-encolhe-outlook.webp` | Microsoft Outlook | pega por baixo do mês: puxar encolhe o mês e dá o ecrã ao dia | https://mobbin.com/screens/5df44b2c-c249-49a6-989e-25f34a8267c9 |
+
+Medição que levou a esta escolha (2026-11-03, fontes da app): "folga" nos dias vazios a 1,78:1; hoje = borda
+amarela a 1,73:1 (um indicador pede 3:1); os 5 tons pastel dos tipos a 1,05–1,31; o código a 11 pt cabe
+(25,9 px em 33,6 úteis a 375 px), "2× LGW" não (42,9 px).
+
 ## limites/ — escolhidas a 2026-11-03 (limites de escala do AE, Números)
 
 **Lista agrupada pelo resultado, com uma frase por regra** (opção 2) + **gráfico com a linha do limite** na página

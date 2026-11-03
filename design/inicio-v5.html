@@ -1,0 +1,311 @@
+<meta charset="utf-8">
+<title>CrewPact Início v5</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Hanken+Grotesk:wght@500;700;800&display=swap">
+<style>
+/* Início v5 (2026-11-03): três versões do desenho, todas com "coisas grandes" (pedido do Nuno), pensadas para quem
+   usa: o tripulante que olha às 4h, de pé, numa mão, com sono, às vezes com óculos de perto. Regra: UM número
+   enorme por ecrã, poucas palavras ao lado, atalhos grandes ao alcance do polegar.
+   A · Uma coisa só (Brick, Cash App) · B · Cartão de embarque (Apple Wallet) · C · Painel de partidas (o aeroporto).
+   Layout da página: grelha 3 × 2 (versões × momentos), notas por baixo. */
+:root{
+  --bg:#E8E7E2; --fg:#141414; --muted:#55554F; --card:#FFFFFF; --rule:#D6D4CD; --frame:#04060A;
+  --paper:#FFFFFF; --ink:#141414; --grey:#77776F; --line:#ECEAE4; --soft:#F4F2ED; --soft2:#EFEDE7;
+  --signal:#FFB800; --ok:#118A55; --okNight:#46C98A; --warn:#E86A10; --onInk:#FFFFFF; --onInkSub:#A3A39B;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0F1218; --fg:#E8EBF0; --muted:#96A0AD; --card:#171C24; --rule:#2A313C; color-scheme:dark }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 64px}
+.page{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.lead{max-width:800px}
+.lead h1{font-family:var(--display);font-size:34px;letter-spacing:-.5px;text-wrap:balance}
+.lead p{margin-top:8px;font-size:14px;line-height:1.55;color:var(--muted)}
+.lead b{color:var(--fg)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,406px));gap:24px;justify-content:center}
+@media (max-width:1320px){ .grid3{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),406px))} }
+.colH{display:flex;flex-direction:column;gap:6px}
+.colH h2{font-family:var(--display);font-size:26px;letter-spacing:-.3px}
+.colH p{font-size:13px;line-height:1.5;color:var(--muted)}
+.rowLbl{grid-column:1/-1;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.fit{width:100%;position:relative}
+.ph{width:406px;height:860px;border:8px solid var(--frame);border-radius:52px;overflow:hidden;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;transform-origin:top left;position:absolute;left:0;top:0}
+
+/* ── TXT ── */
+.tag{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:.6px;text-transform:uppercase}
+.eyebrow{font-family:var(--body);font-weight:800;font-size:11px;line-height:14px;letter-spacing:1.4px;text-transform:uppercase}
+.caption{font-family:var(--body);font-weight:500;font-size:11px;line-height:15px}
+.label{font-family:var(--body);font-weight:700;font-size:12px;line-height:16px}
+.bodyT{font-family:var(--body);font-weight:500;font-size:13px;line-height:19px}
+.bodyStrong{font-family:var(--body);font-weight:700;font-size:13px;line-height:17px}
+.callout{font-family:var(--body);font-weight:700;font-size:15px;line-height:20px}
+.headline{font-family:var(--body);font-weight:800;font-size:17px;line-height:22px}
+.num{font-family:var(--display);font-weight:700;font-size:24px;line-height:28px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.numLg{font-family:var(--display);font-weight:700;font-size:34px;line-height:38px;letter-spacing:-.5px;white-space:nowrap}
+.grey{color:var(--grey)}
+.ic{display:inline-block;flex:none;fill:currentColor;vertical-align:middle}
+
+/* ── iPhone 390 × 844 ── */
+.status{height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-weight:700;font-size:15px}
+.scr{flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:16px;position:relative}
+.scr > *{flex-shrink:0}
+.tabbar{height:83px;flex:none;border-top:1px solid var(--line);display:flex;padding-bottom:34px;background:var(--paper)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--grey)}
+.tab .tl{font-size:11px;font-weight:700}
+.tab.on{color:var(--ink)}
+.tab .dot{width:4px;height:4px;border-radius:2px;background:transparent}
+.tab.on .dot{background:var(--signal)}
+.tab.plus{flex:none;width:64px}
+.tab.plus .pl{width:44px;height:44px;border-radius:22px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+.top{display:flex;align-items:center;justify-content:space-between;padding-top:12px;min-height:48px}
+.wx{display:flex;align-items:center;gap:6px}
+.chk{display:inline-flex;align-items:center;gap:6px}
+.chk i{width:7px;height:7px;border-radius:4px;background:var(--ok);flex:none}
+
+/* ═════ A · UMA COISA SÓ ═════ */
+.A-hero{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.A-num{font-family:var(--display);font-weight:700;font-size:150px;line-height:128px;letter-spacing:-6px;font-variant-numeric:tabular-nums}
+.A-num small{font-size:44px;letter-spacing:-1px;margin-left:6px}
+.A-route{font-family:var(--display);font-weight:700;font-size:44px;line-height:46px;letter-spacing:-.5px;margin-top:8px}
+.A-checks{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px}
+.A-say{color:var(--grey)} .A-say b{color:var(--ink);font-weight:700}
+.A-dock{position:absolute;left:16px;right:16px;bottom:12px;display:flex;gap:8px;align-items:center}
+.A-pri{flex:1;height:56px;border-radius:99px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;gap:10px}
+.A-rnd{width:56px;height:56px;border-radius:28px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:none}
+.A-peek{position:absolute;left:16px;right:16px;bottom:80px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--grey)}
+
+/* ═════ B · CARTÃO DE EMBARQUE ═════ */
+.B-wrap{position:relative;padding-bottom:28px}
+.B-pass{position:relative;border-radius:22px;background:var(--ink);color:var(--onInk);overflow:hidden;z-index:3}
+.B-pass.calm{background:var(--soft);color:var(--ink)}
+.B-top{padding:18px 20px 16px;display:flex;flex-direction:column;gap:14px}
+.B-head{display:flex;justify-content:space-between;align-items:center}
+.B-head .tag{color:var(--onInkSub)} .calm .B-head .tag{color:var(--grey)}
+.B-codes{display:flex;align-items:flex-end;justify-content:space-between}
+.B-code{display:flex;flex-direction:column;gap:2px}
+.B-code b{font-family:var(--display);font-weight:700;font-size:72px;line-height:64px;letter-spacing:-2px}
+.B-code span{color:var(--onInkSub)} .calm .B-code span{color:var(--grey)}
+.B-plane{margin-bottom:22px;opacity:.85}
+.B-times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.B-times div{display:flex;flex-direction:column;gap:2px}
+.B-times .tag{color:var(--onInkSub)} .calm .B-times .tag{color:var(--grey)}
+.B-times .big{font-family:var(--display);font-weight:700;font-size:34px;line-height:36px;letter-spacing:-.5px}
+.B-times .big.y{color:var(--signal)}
+.B-perf{position:relative;height:0;border-top:2px dashed rgba(255,255,255,.22);margin:0 20px}
+.calm .B-perf{border-top-color:rgba(20,20,20,.14)}
+.B-perf::before,.B-perf::after{content:"";position:absolute;top:-13px;width:24px;height:24px;border-radius:12px;background:var(--paper)}
+.B-perf::before{left:-32px} .B-perf::after{right:-32px}
+.B-bot{padding:14px 20px 16px;display:flex;flex-direction:column;gap:12px}
+.B-checks{display:flex;flex-wrap:wrap;gap:6px 14px}
+.B-pass:not(.calm) .chk i{background:var(--okNight)}
+.B-acts{display:flex;justify-content:space-between}
+.B-act{display:flex;flex-direction:column;align-items:center;gap:6px;width:78px}
+.B-act .r{width:48px;height:48px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+.calm .B-act .r{background:var(--paper)}
+.B-act .r.pri{background:var(--signal);color:var(--ink)}
+.B-stack{position:absolute;left:12px;right:12px;bottom:14px;height:40px;border-radius:0 0 20px 20px;background:#3A3A36;z-index:2}
+.B-stack2{position:absolute;left:24px;right:24px;bottom:2px;height:40px;border-radius:0 0 18px 18px;background:#6E6D66;z-index:1}
+.B-stack.calm{background:#E3E1DA} .B-stack2.calm{background:#ECEAE4}
+.B-list{display:flex;flex-direction:column}
+.B-row{display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--line)}
+.B-row b{font-family:var(--display);font-weight:700;font-size:24px;width:56px}
+
+/* ═════ C · PAINEL DE PARTIDAS ═════ */
+.C-board{margin:0 -16px;background:var(--ink);color:var(--onInk);padding:4px 16px 16px;display:flex;flex-direction:column}
+.C-head{display:flex;justify-content:space-between;align-items:center;padding:12px 0 8px;border-bottom:1px solid rgba(255,255,255,.14)}
+.C-head .eyebrow{color:var(--onInkSub)}
+.C-cols{display:grid;grid-template-columns:88px 1fr 84px;gap:8px;padding:8px 0 4px;color:var(--onInkSub)}
+.C-now{display:grid;grid-template-columns:1fr;gap:6px;padding:8px 0 14px;border-bottom:1px solid rgba(255,255,255,.14)}
+.C-now .t{font-family:var(--display);font-weight:700;font-size:96px;line-height:84px;letter-spacing:-3px;color:var(--signal)}
+.C-now .d{display:flex;align-items:baseline;justify-content:space-between}
+.C-now .d b{font-family:var(--display);font-weight:700;font-size:44px;line-height:44px;letter-spacing:-.5px}
+.C-st{font-family:var(--body);font-weight:800;font-size:12px;letter-spacing:.8px;text-transform:uppercase;padding:4px 8px;border-radius:4px}
+.C-st.ok{background:rgba(70,201,138,.16);color:var(--okNight)}
+.C-st.calm{background:rgba(255,255,255,.1);color:var(--onInk)}
+.C-row{display:grid;grid-template-columns:88px 1fr 84px;gap:8px;align-items:center;min-height:46px;border-bottom:1px solid rgba(255,255,255,.08)}
+.C-row .tm{font-family:var(--display);font-weight:700;font-size:26px;color:var(--signal)}
+.C-row .ds{font-family:var(--display);font-weight:700;font-size:26px}
+.C-row .rt{text-align:right;color:var(--onInkSub)}
+.C-say{color:var(--grey)} .C-say b{color:var(--ink);font-weight:700}
+.C-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.C-key{border-radius:16px;background:var(--soft);min-height:84px;padding:12px;display:flex;flex-direction:column;justify-content:space-between}
+.C-key.pri{background:var(--ink);color:var(--paper)}
+
+/* ── notas ── */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.note h3{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.note ul{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.note li b{font-weight:700}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 8px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+</style>
+
+<div class="page">
+  <header class="lead">
+    <h1>Início · três versões, todas grandes</h1>
+    <p><b>Para quem desenhamos:</b> o tripulante que olha às 4h, de pé, a sair de casa ou no autocarro da tripulação, com o telemóvel numa mão, muitas vezes no escuro, com sono, às vezes já com óculos de perto. Precisa de ver ao relance, a um braço de distância, <b>a hora</b>, <b>o sítio</b> e <b>"está tudo bem?"</b>. Por isso: um número enorme por ecrã, poucas palavras, atalhos grandes ao alcance do polegar. Dados de teste, base LIS.</p>
+  </header>
+
+  <section class="grid3" id="grid">
+    <div class="colH"><h2>A · Uma coisa só</h2><p>O ecrã inteiro é o número. Uma frase, e em baixo, ao polegar, um botão largo e dois redondos. O resto do dia está por baixo, a deslizar. Referências: Brick, Cash App.</p></div>
+    <div class="colH"><h2>B · Cartão de embarque</h2><p>O momento é um cartão como o da Wallet: os códigos dos aeroportos em grande, as horas, a picotagem, e os atalhos dentro do cartão. Os próximos serviços espreitam empilhados por trás.</p></div>
+    <div class="colH"><h2>C · Painel de partidas</h2><p>O topo é o painel do aeroporto: a hora a amarelo, o destino, o estado. As linhas seguintes são os próximos dias. Em baixo, três teclas grandes de atalho.</p></div>
+    <div class="rowLbl">Pré-report · terça, 3 de novembro, 04:40</div>
+    <div class="fit"><div class="ph" data-v="A" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph" data-v="B" data-s="hoje"></div></div>
+    <div class="fit"><div class="ph" data-v="C" data-s="hoje"></div></div>
+    <div class="rowLbl">Folga · quinta, 5 de novembro</div>
+    <div class="fit"><div class="ph" data-v="A" data-s="folga"></div></div>
+    <div class="fit"><div class="ph" data-v="B" data-s="folga"></div></div>
+    <div class="fit"><div class="ph" data-v="C" data-s="folga"></div></div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h3>O que cada uma ganha e custa</h3>
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>Ganha</th><th>Custa</th></tr></thead>
+        <tbody>
+          <tr><td><b>A</b></td><td>O maior número (150 pt), lê-se a 2 metros. O botão principal fica sempre no mesmo sítio, ao polegar.</td><td>O resto do dia fica escondido; é preciso deslizar para ver o que vem a seguir.</td></tr>
+          <tr><td><b>B</b></td><td>Fala a língua do tripulante (é um cartão de embarque) e é muito iOS. A rota e as horas veem-se juntas.</td><td>Em dias sem voo (standby, formação, folga) o cartão de embarque é uma metáfora mais fraca.</td></tr>
+          <tr><td><b>C</b></td><td>O hoje e os próximos dias num só olhar, como no aeroporto. Escuro por natureza: ótimo à noite.</td><td>O topo é sempre escuro (perde-se a diferença entre calmo e ao vivo). Mais denso.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="note">
+      <h3>Regras para quem usa (valem para as três)</h3>
+      <ul>
+        <li><b>Um número enorme por ecrã</b> (96–150 pt), em letra condensada: lê-se ao relance e com sono.</li>
+        <li><b>A hora, o sítio, "está tudo bem?"</b> sempre visíveis sem deslizar.</li>
+        <li><b>Atalhos ≥ 48 pt</b> na metade de baixo, ao alcance do polegar com uma mão.</li>
+        <li><b>Contraste alto</b>: tinta sobre branco, branco e amarelo sobre tinta (10,6:1); nada importante em cinzento claro.</li>
+        <li><b>Letra dinâmica</b> respeitada nos textos; o número grande já é grande.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>A comparar com</h3>
+      <ul>
+        <li>A v4 (cartão do momento + atalhos): https://claude.ai/artifact/29hpznanZfKssbwQikVY4Q</li>
+        <li>Podes misturar: por exemplo, o número da A com os atalhos da C, ou o cartão de embarque da B só nos dias de voo.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var P = {
+    sun:'<path d="M12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 0 1 0-9.6zM11 2h2v3.2h-2V2zm0 16.8h2V22h-2v-3.2zM2 11h3.2v2H2v-2zm16.8 0H22v2h-3.2v-2zM4.6 6 6 4.6 8.3 6.9 6.9 8.3 4.6 6zm11.1 11.1 1.4-1.4 2.3 2.3-1.4 1.4-2.3-2.3zm2.3-12.5L19.4 6l-2.3 2.3-1.4-1.4 2.3-2.3zM4.6 18l2.3-2.3 1.4 1.4L6 19.4 4.6 18z"/>',
+    cloud:'<circle cx="7.6" cy="13.6" r="3.9"/><circle cx="12.6" cy="10.8" r="4.8"/><circle cx="16.9" cy="13.8" r="3.5"/><path d="M7.6 12.2h9.3v5.3H7.6z"/>',
+    chevron:'<path d="M8.5 4.8 15.7 12l-7.2 7.2-2.1-2.1L11.4 12 6.4 6.9z"/>',
+    cal:'<path d="M7 2h2.6v3H7V2zm7.4 0H17v3h-2.6V2zM4 5h16v3.6H4V5zm0 5h16v10a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 20V10zm3.4 3v2.8h2.8V13H7.4zm5 0v2.8h2.8V13h-2.8z"/>',
+    wallet:'<path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h12A2.5 2.5 0 0 1 20 6.5V8h1v8h-1v1.5A2.5 2.5 0 0 1 17.5 20h-12A2.5 2.5 0 0 1 3 17.5v-11zM15 10.4a1.6 1.6 0 0 0 0 3.2h6v-3.2h-6z"/>',
+    gauge:'<path d="M12 5a10 10 0 0 0-10 10.4h3.4A6.6 6.6 0 0 1 14 9.3l2.5-2.6A9.9 9.9 0 0 0 12 5zm7.4 3.3-6.1 5a2 2 0 1 0 2 2.1l5.4-5.7a10 10 0 0 0-1.3-1.4zM18.6 15.4h3.3c0-.5 0-1-.1-1.5l-3.3.7c.1.3.1.5.1.8z"/>',
+    share:'<path d="M17 3a2.8 2.8 0 1 1-2.6 3.8L8.6 10a2.8 2.8 0 0 1 0 4l5.8 3.2A2.8 2.8 0 1 1 13.6 19l-5.8-3.3a2.8 2.8 0 1 1 0-7.4l5.8-3.2A2.8 2.8 0 0 1 17 3z"/>',
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9.2-8 11-4.6-1.8-8-6-8-11V5l8-3z"/>',
+    bed:'<path d="M3 6h3.2v7H3V6zm0 8h18v5h-2.6v-2.2H5.6V19H3v-5zm5-4.6h8.6A4.4 4.4 0 0 1 21 13.8H8V9.4z"/>',
+    moon:'<path d="M14.2 3a9.2 9.2 0 1 0 6.6 15.6A10.6 10.6 0 0 1 14.2 3z"/>',
+    plane:'<path d="M21 16v-2l-8-5V3.5C13 2.7 12.33 2 11.5 2S10 2.7 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>',
+    home:'<path d="M12 3l9.2 8.2h-2.5V21h-4.9v-6.4h-3.6V21H5.3v-9.8H2.8L12 3z"/>',
+    stats:'<path d="M4 12.5h3.8V20H4v-7.5zM10.1 5.5h3.8V20h-3.8V5.5zM16.2 9.5H20V20h-3.8V9.5z"/>',
+    user:'<path d="M12 3.4a3.7 3.7 0 1 1 0 7.4 3.7 3.7 0 0 1 0-7.4zM4.8 20.2c0-4 3.2-6.6 7.2-6.6s7.2 2.6 7.2 6.6a.8.8 0 0 1-.8.8H5.6a.8.8 0 0 1-.8-.8z"/>',
+    plus:'<path d="M10.4 4h3.2v6.4H20v3.2h-6.4V20h-3.2v-6.4H4v-3.2h6.4V4z"/>'
+  };
+  function ic(n, s, rot){ return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"'+(rot?' style="transform:rotate('+rot+'deg)"':'')+'>'+P[n]+'</svg>'; }
+  function chk(t){ return '<span class="chk label"><i></i>'+t+'</span>'; }
+  var D = {
+    hoje:  { date:'Terça · 3 novembro · 04:40', wx:['cloud','9°'] },
+    folga: { date:'Quinta · 5 novembro', wx:['sun','19°'] }
+  };
+
+  function A(s){
+    if (s === 'hoje') return ''+
+      '<div class="A-hero"><span class="tag grey">Report em</span><span class="A-num">1:40</span><span class="headline">às 06:20 · LIS</span>'+
+      '<span class="A-route">LIS → LGW</span><span class="bodyT grey">EZY8351 · 07:05 → 09:50 · pernoita</span>'+
+      '<div class="A-checks">'+chk('Avião em LIS')+chk('Aeroporto calmo')+chk('PSV até 15:20')+'</div></div>'+
+      '<p class="bodyT A-say"><b>Tudo pronto.</b> Em Gatwick estão 7° à chegada: leva casaco.</p>'+
+      '<div class="A-peek"><span class="caption">O dia todo</span>'+ic('chevron',14,-90)+'</div>'+
+      '<div class="A-dock"><span class="A-pri">'+ic('share',18)+'<span class="callout" style="color:inherit">Partilhar com a família</span></span><span class="A-rnd" aria-label="Limites">'+ic('shield',20)+'</span><span class="A-rnd" aria-label="Hotel">'+ic('bed',20)+'</span></div>';
+    return ''+
+      '<div class="A-hero"><span class="tag grey">Próximo serviço daqui a</span><span class="A-num">2<small>dias</small></span><span class="headline">Sábado 7 · Standby aeroporto</span>'+
+      '<span class="bodyT grey">05:00 – 17:00 · LIS</span>'+
+      '<div class="A-checks">'+chk('Legal')+chk('Escala em dia')+chk('Férias 22 de 22')+'</div></div>'+
+      '<p class="bodyT A-say"><b>Descansa, está tudo em dia.</b> Sol e 19° até ao fim da tarde.</p>'+
+      '<div style="display:flex;flex-direction:column;gap:2px"><span class="tag grey">Novembro · estimado</span><span class="numLg">418,60 €</span></div>'+
+      '<div class="A-peek"><span class="caption">Os próximos dias</span>'+ic('chevron',14,-90)+'</div>'+
+      '<div class="A-dock"><span class="A-pri">'+ic('cal',18)+'<span class="callout" style="color:inherit">Ver a escala</span></span><span class="A-rnd" aria-label="Ganhos">'+ic('wallet',20)+'</span><span class="A-rnd" aria-label="Simular">'+ic('gauge',20)+'</span></div>';
+  }
+
+  function B(s){
+    var calm = s === 'folga';
+    var pass = calm
+      ? '<div class="B-pass calm"><div class="B-top"><div class="B-head"><span class="tag">Hoje: folga · próximo daqui a 2 dias</span><span class="tag">SÁB 7</span></div>'+
+          '<div class="B-codes"><div class="B-code"><b>SBY</b><span class="label">Standby aeroporto</span></div><div class="B-code" style="align-items:flex-end"><b>LIS</b><span class="label">Lisboa</span></div></div>'+
+          '<div class="B-times"><div><span class="tag">Início</span><span class="big">05:00</span></div><div><span class="tag">Fim</span><span class="big">17:00</span></div><div><span class="tag">Janela</span><span class="big">12 h</span></div></div></div>'+
+          '<div class="B-perf"></div>'+
+          '<div class="B-bot"><div class="B-checks">'+chk('Legal')+chk('Escala em dia')+chk('Férias 22 de 22')+'</div>'+
+          '<div class="B-acts"><span class="B-act"><span class="r">'+ic('cal',20)+'</span><span class="label">Escala</span></span><span class="B-act"><span class="r">'+ic('wallet',20)+'</span><span class="label">Ganhos</span></span><span class="B-act"><span class="r">'+ic('gauge',20)+'</span><span class="label">Simular</span></span></div></div></div>'
+      : '<div class="B-pass"><div class="B-top"><div class="B-head"><span class="tag">EZY8351 · report em 1:40</span><span class="tag">TER 3</span></div>'+
+          '<div class="B-codes"><div class="B-code"><b>LIS</b><span class="label">Lisboa</span></div><span class="B-plane">'+ic('plane',28,90)+'</span><div class="B-code" style="align-items:flex-end"><b>LGW</b><span class="label">Gatwick · 7°</span></div></div>'+
+          '<div class="B-times"><div><span class="tag">Report</span><span class="big y">06:20</span></div><div><span class="tag">Parte</span><span class="big">07:05</span></div><div><span class="tag">Chega</span><span class="big">09:50</span></div></div></div>'+
+          '<div class="B-perf"></div>'+
+          '<div class="B-bot"><div class="B-checks">'+chk('Avião em LIS')+chk('Aeroporto calmo')+chk('PSV até 15:20')+'</div>'+
+          '<div class="B-acts"><span class="B-act"><span class="r pri">'+ic('share',20)+'</span><span class="label">Família</span></span><span class="B-act"><span class="r">'+ic('shield',20)+'</span><span class="label">Limites</span></span><span class="B-act"><span class="r">'+ic('bed',20)+'</span><span class="label">Hotel</span></span></div></div></div>';
+    var list = calm
+      ? '<div class="B-list"><div class="B-row"><b>3</b><div><div class="bodyStrong">Domingo 8 · LIS → AMS</div><div class="caption grey">report 06:40 · 2 setores</div></div></div><div class="B-row"><b>4</b><div><div class="bodyStrong">Segunda 9 · LIS → CDG</div><div class="caption grey">report 07:15 · 2 setores</div></div></div></div>'
+      : '<div class="B-list"><div class="B-row">'+ic('moon',20)+'<div><div class="bodyStrong">Pernoita em Gatwick</div><div class="caption grey">Hotel Gatwick Norte · regresso amanhã 11:15</div></div></div><div class="B-row"><b>+89</b><div><div class="bodyStrong">Ganhos de hoje: 89,20 €</div><div class="caption grey">per-diem 41,20 € · pernoita 48,00 €</div></div></div></div>';
+    return '<div class="B-wrap">'+pass+'<div class="B-stack'+(calm?' calm':'')+'"></div><div class="B-stack2'+(calm?' calm':'')+'"></div></div>'+
+      '<p class="bodyT A-say">'+(calm ? '<b>Descansa, está tudo em dia.</b> Sol e 19° lá fora.' : '<b>Tudo pronto.</b> Em Gatwick estão 7° à chegada: leva casaco.')+'</p>'+ list;
+  }
+
+  function C(s){
+    var calm = s === 'folga';
+    var now = calm
+      ? '<div class="C-now"><span class="tag" style="color:var(--onInkSub)">Hoje</span><div class="d"><b>Folga</b><span class="C-st calm">Em dia</span></div><span class="label" style="color:var(--onInkSub)">próximo serviço daqui a 2 dias</span></div>'
+      : '<div class="C-now"><span class="tag" style="color:var(--onInkSub)">Report hoje · daqui a 1:40</span><span class="t">06:20</span><div class="d"><b>LIS → LGW</b><span class="C-st ok">A horas</span></div><span class="label" style="color:var(--onInkSub)">EZY8351 · parte 07:05 · avião em LIS · PSV até 15:20</span></div>';
+    var rows = calm
+      ? '<div class="C-row"><span class="tm">05:00</span><span class="ds">SBY</span><span class="rt label">SÁB 7</span></div><div class="C-row"><span class="tm">06:40</span><span class="ds">AMS</span><span class="rt label">DOM 8</span></div><div class="C-row"><span class="tm">07:15</span><span class="ds">CDG</span><span class="rt label">SEG 9</span></div>'
+      : '<div class="C-row"><span class="tm">11:15</span><span class="ds">LIS</span><span class="rt label">QUA 4</span></div><div class="C-row"><span class="tm">05:00</span><span class="ds">SBY</span><span class="rt label">SÁB 7</span></div><div class="C-row"><span class="tm">06:40</span><span class="ds">AMS</span><span class="rt label">DOM 8</span></div>';
+    var keys = calm
+      ? '<div class="C-keys"><span class="C-key pri">'+ic('cal',20)+'<span class="bodyStrong" style="color:inherit">Ver a escala</span></span><span class="C-key">'+ic('wallet',20)+'<span class="bodyStrong">418,60 €</span></span><span class="C-key">'+ic('gauge',20)+'<span class="bodyStrong">Simular</span></span></div>'
+      : '<div class="C-keys"><span class="C-key pri">'+ic('share',20)+'<span class="bodyStrong" style="color:inherit">Família</span></span><span class="C-key">'+ic('shield',20)+'<span class="bodyStrong">Limites</span></span><span class="C-key">'+ic('bed',20)+'<span class="bodyStrong">Hotel</span></span></div>';
+    return '<div class="C-board"><div class="C-head"><span class="eyebrow">'+(calm ? 'Partidas · a tua escala' : 'Partidas · hoje')+'</span><span class="eyebrow">'+(calm ? '19°' : '9° · LIS')+'</span></div>'+now+
+      '<div class="C-cols tag"><span>Hora</span><span>Destino</span><span style="text-align:right">Dia</span></div>'+rows+'</div>'+
+      '<p class="bodyT C-say">'+(calm ? '<b>Descansa, está tudo em dia.</b> Sol e 19° até ao fim da tarde.' : '<b>Tudo pronto.</b> Leva casaco: 7° em Gatwick.')+'</p>'+ keys;
+  }
+
+  function screen(el){
+    var v = el.dataset.v, s = el.dataset.s, d = D[s];
+    var body = v === 'A' ? A(s) : v === 'B' ? B(s) : C(s);
+    var top = v === 'C' ? '' : '<div class="top"><span class="eyebrow">'+d.date+'</span><span class="wx label">'+ic(d.wx[0],16)+d.wx[1]+'</span></div>';
+    el.innerHTML =
+      '<div class="status"'+(v === 'C' ? ' style="background:var(--ink);color:var(--onInk)"' : '')+'><span>9:41</span><span style="font-size:13px">100%</span></div>'+
+      '<div class="scr">'+ top + body +'</div>'+
+      '<nav class="tabbar">'+
+        '<div class="tab on">'+ic('home',24)+'<span class="tl">Início</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('cal',24)+'<span class="tl">Escala</span><i class="dot"></i></div>'+
+        '<div class="tab plus"><span class="pl">'+ic('plus',22)+'</span></div>'+
+        '<div class="tab">'+ic('stats',24)+'<span class="tl">Números</span><i class="dot"></i></div>'+
+        '<div class="tab">'+ic('user',24)+'<span class="tl">Perfil</span><i class="dot"></i></div>'+
+      '</nav>';
+  }
+  document.querySelectorAll('.ph').forEach(screen);
+  function fit(){
+    document.querySelectorAll('.fit').forEach(function(w){
+      var k = Math.min(1, w.clientWidth / 406), ph = w.querySelector('.ph');
+      ph.style.transform = k < 1 ? 'scale('+k+')' : '';
+      w.style.height = (860 * k) + 'px';
+    });
+  }
+  fit(); window.addEventListener('resize', fit);
+})();
+</script>

@@ -38,7 +38,7 @@
 **Gramática da pele:**
 - **Fantasma** — numeral/sigla gigante em `PELE.ghost` atrás do herói. Tamanhos **determinísticos por comprimento** (TUNE.ghost s3/s4/s5). ⚠️ **Nunca `adjustsFontSizeToFit` em `Text` absoluto** — bug iOS: fica invisível quando um irmão re-renderiza.
 - **PeleSide (A SAIR — 2026-11-02):** já saiu do Início; nos outros ecrãs sai na migração de cada um (bloco C) — nenhuma das melhores apps roda texto e a informação passa para um sítio legível (data/estado no topo). Onde é **selo funcional** (Simulação "E-SE", modo exemplo) troca por um rótulo visível no cabeçalho. *Histórico:* rótulo lateral rodado 90°, início ancorado no TOPO em todos os ecrãs (wrap width 320 + textAlign left; a rotação ancora o FIM, o wrap fixo devolve o início).
-- **PeleHeader** — **fonte única do cabeçalho** (o fantasma tinha divergido 74/92/130 entre ecrãs antes da consolidação). Régua 130/44/108; slots avatar/back · actions · sino · word/kick. Fora da régua por decisão deliberada: DutyDetail 104 · Perfil 150 · Início (sem fantasma de header).
+- **PeleHeader** — **fonte única do cabeçalho** (o fantasma tinha divergido 74/92/130 entre ecrãs antes da consolidação). Régua 130/44/108; slots avatar/back · actions · sino · word/kick. Fora da régua por decisão deliberada: DutyDetail 104 · Perfil 150 · Início (sem fantasma de header) · **Escala (2026-11-03): só a linha de cima do PeleHeader; o mês é um título médio (`TXT.titleLg`) com ‹ › e "Hoje", e o resumo numa linha — a grelha e o dia precisam do ecrã** (esboço `design/escala-v2.html`).
 - **Amarelo** = marca/realce: numeração bento, kicks, seleção, pontinhos de atenção suave — **como FUNDO, PONTO, BARRA ou texto SOBRE PLACA PRETA, nunca como texto sobre papel** (§6, medido).
 - **Tema noturno** — conduzido pelo **ESTADO do dia** (véspera/pernoita), NÃO pelo dark-mode do sistema. Fábrica `makeSkin(P, night)` → `sDay`/`sNight`.
 - **Navegação = TAB BAR com ＋ central** (`components/TabBar.js`, 2026-07-09 — referência aprovada pelo user): barra inteira em **papel + hairline no topo**, **em layout** (o conteúdo termina acima dela, nada fica tapado), simetria **`Início · Escala · ＋ · Números · Perfil`**, ativa = **ink + ponto amarelo** (espaço reservado, fade+scale 180ms + pop do ícone, reduce-motion salta); tema noturno herdado do Início via `homeNight`; ponto âmbar em "Escala" (alterações por rever); háptico; `useTabBarSpace` = só folga (20).
@@ -183,8 +183,10 @@ Tamanhos permitidos (`SCALE.type`): 11 · 12 · 13 · 14 · 15 · 16 · 17 · 20
 | 24 – 25 | `TXT.num` |
 | 28 – 29 | 28 · 30 – 33 → `TXT.titleLg` (título) ou 34 (número) · 36 – 46 → 34 ou 44 |
 
-**Exceção a decidir no device:** a grelha do calendário da Escala usa 8 – 9,5 nas etiquetas das células.
-Fica na roquete até a migração da Escala; se 11 não couber, documenta-se aqui a exceção com a medida.
+**Sem exceção na grelha da Escala (decidido 2026-11-03, medido):** as etiquetas das células passaram de 8–9,5 para
+`TXT.tag` (11). Medido com as fontes da app: "LGW" a 11 pt ocupa 25,9 px e, com a lua da pernoita, 38,9 px numa
+célula de 47,7 a 390 pt (45,6 a 375 → 3 pt de cada lado). O que não cabia ("2× LGW", 42,9 px) passou a outra
+forma: uma 2.ª camada por baixo da etiqueta. Esboço `design/escala-v2.html`.
 
 **Espaço** (`SPACE`): 2 · 4 · 6 · 8 · 12 · 16 · 20 · 24 · 32 · 40 (+ 1 hairline). Migração: vai para o
 **mais próximo**; empate → o que mantém o ritmo dos irmãos (ex.: 10 → 8 ou 12; 14 → 12 ou 16).

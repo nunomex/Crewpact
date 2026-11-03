@@ -2,8 +2,9 @@
 // partilham (para o fantasma/herói nunca mais divergir entre ecrãs):
 //   avatar↖ (ou ‹voltar) + ações + sino↗  ·  eyebrow  ·  FANTASMA (Barlow) + palavra  ·  régua ink
 // SEM padding horizontal próprio → herda o GUTTER do contentor de cada ecrã (16 na família · 22 no Info).
-// Slots para os casos especiais: `word` pode ser um NÓ (o botão-mês animado da Escala), `wordTrailing`
-// (nav ‹› das Estatísticas), `kick` (subtítulo das Validades), `actions` (sincronizar da Escala).
+// Slots para os casos especiais: `word` pode ser um NÓ, `wordTrailing` (nav ‹› das Estatísticas), `kick`
+// (subtítulo das Validades), `actions` (sincronizar da Escala). A Escala usa só a linha de cima desde
+// 2026-11-03 (o mês dela é um título médio — design/escala-v2.html).
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from './Icon';

@@ -64,8 +64,14 @@ Dívida de partida (2026-11-02): tipo fora 325 · letra < 11 155 · espaço fora
 cores soltas 105 · Ionicons 14. Ficheiros com mais: Escala, formulário de serviço, Perfil, Estatísticas, Início.
 - [ ] **Início** — sistema de luz (ponto, véu, temperatura horária); folga v2 (fantasma "QUI", bilhete
       manuscrito Caveat, cartão preto do countdown); marcos na voz + primeiro alerta explicado.
-- [ ] **Escala** — morph pílula→cartão da legenda; família cheia >4 (stack "+N" → grelha); pontinho âmbar;
-      sincronizar e confirmação 3-vias das mudanças.
+- [ ] **Escala** — FUNCIONA no iPhone (Nuno, 2026-11-03: grupos A, B e C, 16/16 ✅, incluindo a pega e os movimentos
+      reduzidos) mas o LAYOUT NÃO o convence ("não estou a gostar do UI e UX") → nova ronda de design antes de fechar.
+      MIGRADA no código a 2026-11-03 (esboço `design/escala-v2.html`, dívida do guardião 181 → 0). O que se testou: o mês compacto (‹ › · "Hoje" fora do mês corrente · toque no título abre o seletor · deslizar
+      para o lado muda de mês) · hoje = círculo de tinta, escolhido = anel · etiquetas a 11 pt cabem sem cortar
+      (incluir um mês de 6 semanas e um voo com pernoita) · a 2.ª camada dos 2 serviços lê-se? · tocar num dia
+      mostra-o por baixo e desliza só o necessário · a PEGA: arrastar acompanha o dedo, largar decide, tocar alterna,
+      o scroll não rouba o gesto · movimentos reduzidos = troca seca · VoiceOver na pega e nas células · legenda
+      pílula→cartão · pontinho âmbar · sincronizar e confirmação 3-vias das mudanças.
 - [ ] **＋ central** — speed-dial Serviço·Simulação·Evento; Simulação em gramática de poster (Legal/Não legal/E se…).
 - [ ] **Números** — Prova (§ inline → ProvaSheet, crew-aware); Auditoria do mês (pernoita · rotas · SNC/RDP, € ink);
       Radiação cósmica ("≈ X,X mSv", batismo 1×); Estatísticas.
