@@ -6,6 +6,21 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## PRÓXIMA SESSÃO — CONSTRUIR O INÍCIO v6 (ler isto primeiro)
+
+**Modelo:** sessão nova em **Opus 5.5 Extra** (base nova de um ecrã — tabela do método).
+**O que está aprovado:** `design/inicio-v6.html` (https://claude.ai/artifact/UBfuuAehZRYjjSbfR2TPJh, versão 3) — o
+sistema "ao vivo / calmo", os 2 secundários, as 3 teclas e o Solari; detalhe nas duas entradas abaixo. A tabela de
+atalhos por estado está em `design/inicio-v4.html`; os outros momentos desenhados também.
+**Como:** `screens/HomeScreen.js` (1885 linhas) ganha a anatomia nova; ficam o motor `data/crewState.js`, as frases
+`data/stateVoice.js` (golden), os cálculos e os avisos. Saem o halo (sistema de luz), o bilhete manuscrito, o fantasma
+pálido, o chip das horas e a barra de ações. Tokens novos: `PELE.greyOnSoft`, `PELE.okText`, `PELE_NIGHT.plate` e os
+fundos das pílulas. Movimento com a skill `animacoes`. Golden e guardião verdes; ver no iPhone ("testar os estados").
+**Gravado nesta sessão:** `63726c9` (versões do Expo que o `expo start` propôs) · `ed2fd87` (Escala v2 + esboços).
+**Depois:** a Escala segue a linguagem do Início (a escolha A/B/C da `escala-v3` fica para lá).
+
+---
+
 ## 2026-11-03 (noite, mais tarde) — INÍCIO v4: "mais moderna e clean", informação certa para cada momento
 
 **Contexto:** a Escala v2 FUNCIONA no iPhone (16/16) mas o Nuno achou-a "genérica"; ronda 3 da Escala (letra da casa ·
