@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
-import { getDutiesInRange, getNonFlightInRange, diagnoseEvents } from '../data/calendar';
-import { buildImportCandidates, importSaveFields } from '../data/rosterImport';
+import { diagnoseEvents } from '../data/calendar';
+import { importWindow, readCalendarRoster } from '../data/rosterRead';
+import { buildImportCandidates, importSaveFields, candidateKind, routeAirports } from '../data/rosterImport';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
@@ -19,19 +20,7 @@ import { AppContext, isoDay } from '../data/appContext';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 
-// JANELA ÚNICA (2026-07-10, doutrina do user — o seletor 14/28/mês morreu; a Apple não
-// pergunta o que pode saber): lê os ÚLTIMOS 12 MESES (a janela FTL mais longa — 1000h/12m —
-// precisa deles; o € do ano e o 245 idem) até ao FIM DO MÊS SEGUINTE (tudo o que o feed
-// publica). GUARDA: os cancelados só se detetam PARA A FRENTE (hoje→fim do mês seguinte) —
-// os feeds aparam eventos antigos e a ausência no passado não significa que não voou.
-const importWindow = () => {
-  const now = new Date(); now.setHours(0, 0, 0, 0);
-  return {
-    start: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),   // −12 meses
-    end: new Date(now.getFullYear(), now.getMonth() + 2, 1),                 // fim do mês seguinte
-    fwdStart: now,                                                           // cancelados: só daqui p/ a frente
-  };
-};
+// JANELA ÚNICA e leitura: data/rosterRead.js (partilhadas com o 7.º passo da configuração, 2026-11-03).
 
 // ⚠️ TEMPORÁRIO — candidatos de EXEMPLO para ver o preview sem eventos no
 // calendário. Pôr DEMO_EXAMPLES=false (ou remover) quando já houver escala real.
@@ -74,18 +63,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
   const load = async () => {
     setLoading(true); setDenied(false);
-    const { start, end, fwdStart } = importWindow();
-    const co = company?.slug;
-    const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
-    // Cancelados SÓ na janela para a frente: o passado é acrescentar/atualizar, nunca apagar.
-    const window = { start: isoDay(fwdStart), end: isoDay(end) };
-    let next = (fl.ok || nf.ok) ? buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base }) : [];
+    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, aeEvents });
+    let next = r.cands;
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
-    else if (!fl.ok && !nf.ok) setDenied(true);
-    setVacDates((nf.vacations || []).filter((d) => !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === d)));
-    setVacSel(true);
-    setSickDates((nf.sicks || []).filter((d) => !(aeEvents || []).some((e) => e && e.type === 'sickDays' && e.date === d)));
-    setSickSel(true);
+    else if (!r.ok) setDenied(true);
+    setVacDates(r.vacDates); setVacSel(true);
+    setSickDates(r.sickDates); setSickSel(true);
     setCands(next);
     setLoading(false);
   };
@@ -161,14 +144,10 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   //   info    = não-voo (standby/terra) → importável, sem per-diem (⏱ âmbar, — €)
   //   removed = cancelado
   const fmtEur0n = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
-  const apsOf = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
   const candInfo = (c) => {
-    if (c.action === 'delete') return { kind: 'removed', perDiem: null, badAp: null, nsEur: null };
-    if (c.kind !== 'flight') return { kind: 'info', perDiem: null, badAp: null, nsEur: null };
-    const aps = apsOf(c.duty.route);
-    if (aps.length < 2) return { kind: 'fix', perDiem: null, badAp: null, nsEur: null };
-    const bad = aps.find((a) => airportCoord(a) == null);
-    if (bad) return { kind: 'fix', perDiem: null, badAp: bad, nsEur: null };
+    const { kind, badAp } = candidateKind(c);   // a MESMA regra do 7.º passo da configuração
+    if (kind !== 'ready') return { kind, perDiem: null, badAp, nsEur: null };
+    const aps = routeAirports(c.duty.route);
     let perDiem = null;
     if (ae && crewCategory) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = ae.perDiem(crewCategory, ds, 1, crewFleet); }
     // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
@@ -308,7 +287,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
              no telemóvel e a cópia é APAGADA logo a seguir; nada sai do dispositivo. */
           <View style={s.pasteWrap}>
             <PrimaryButton onPress={pickPdf} icon="document-attach-outline" radius="lg" label={l('Escolher PDF da escala', 'Choose roster PDF')} />
-            <Text style={s.pasteNote}>{l('🔒 O PDF é lido no telemóvel (nativo) e a cópia apagada logo a seguir. Nada sai do dispositivo. Precisa de dev build.', '🔒 The PDF is read on-device (native) and the copy deleted right after. Nothing leaves your device. Requires a dev build.')}</Text>
+            <Text style={s.pasteNote}>{l('O PDF é lido no telemóvel e a cópia apagada logo a seguir: o ficheiro nunca sai do dispositivo. Precisa do dev build.', 'The PDF is read on your phone and the copy deleted right after: the file never leaves your device. Requires the dev build.')}</Text>
           </View>
         )}
 

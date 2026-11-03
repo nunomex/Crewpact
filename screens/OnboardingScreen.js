@@ -13,12 +13,14 @@
 //   TIPO (piloto → SPAC · cabine → SNPVAC). Decisão do Nuno 2026-11-03; confirmar com o advogado.
 // A gravação (updateProfile + upsertProfile) é a MESMA de sempre (caminho auditado).
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Easing, Linking } from 'react-native';
 import { getLocales } from 'expo-localization';
 import AsyncStorage from '../data/secureStorage';
 import Icon from '../components/Icon';
 import Porta, { portaTxt as P } from '../components/Porta';
 import PrimaryButton from '../components/PrimaryButton';
+import GhostButton from '../components/GhostButton';
+import RosterImportSheet from '../components/RosterImportSheet';
 import MonthYearWheel from '../components/MonthYearWheel';
 import Opt, { SelTick, itemsOf, norm, optStyles } from '../components/OptCard';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -26,6 +28,9 @@ import { countryName as countryNameOf, baseCityName } from '../data/countries';
 import { AppContext } from '../data/appContext';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
+import { requestCalendarAccess, listCalendars } from '../data/calendar';
+import { readCalendarRoster, countUpcomingDuties, importWindow } from '../data/rosterRead';
+import { candidateKind, importSaveFields } from '../data/rosterImport';
 import { getAe } from '../ae';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -35,7 +40,8 @@ const ADVANCE_MS = 280;   // o visto aparece e, só depois, passa à pergunta se
 
 
 export default function OnboardingScreen() {
-  const { user, profile, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang } = useContext(AppContext);
+  const { user, profile, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang,
+    calendarId, setCalendarId, setCalendarName, duties, dayLog, aeEvents, saveDuty, addAeEvents } = useContext(AppContext);
   // MUDAR DE COMPANHIA (2026-11-03, Perfil): a configuração reabre para quem JÁ tem companhia. Nesse modo
   // o canto diz "Cancelar" (volta à app sem mudar nada), as boas-vindas não voltam, e as respostas
   // JUNTAM-SE ao perfil (não o substituem: pós-voo, vínculo, férias… ficam).
@@ -46,6 +52,18 @@ export default function OnboardingScreen() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [query, setQuery] = useState('');   // pesquisa de base
+  // 7.º PASSO — A ESCALA (2026-11-04, esboço design/configuracao-escala.html, aprovado): depois das
+  // perguntas, ligar o calendário, escolher o calendário da escala e confirmar os serviços — na mesma
+  // Porta. Nada se grava sem confirmar. Em "mudar de companhia" com calendário já ligado, salta-se.
+  const hasRosterStep = !(isChange && calendarId);
+  const [phase, setPhase] = useState('questions');   // 'questions' | 'roster'
+  const [rStep, setRStep] = useState('intro');        // 'intro' | 'pick' | 'review'
+  const [rBusy, setRBusy] = useState(false);
+  const [rMsg, setRMsg] = useState('');
+  const [cals, setCals] = useState([]);               // calendários do telemóvel + nº de serviços
+  const [selCal, setSelCal] = useState(null);
+  const [rRes, setRRes] = useState(null);             // leitura: { ok, cands, vacDates, sickDates }
+  const [importSrc, setImportSrc] = useState(null);   // 'calendar' | 'paste' → abre a folha de sempre
 
   // Transição entre perguntas (o MESMO gesto do login): avançar desliza para a esquerda, voltar para
   // a direita; sai 130 easeIn · entra 200 easeOut. Driver JS (lição do device 2026-11-02).
@@ -55,17 +73,18 @@ export default function OnboardingScreen() {
   const advancing = useRef(false);
   const transX = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] });
   const transOp = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
-  const goStep = (next, forward = true) => {
+  const swap = (apply, forward = true) => {
     if (moving.current) return;
-    setQuery('');
-    if (reduce) { setStep(next); return; }
+    setQuery(''); setRMsg('');
+    if (reduce) { apply(); return; }
     moving.current = true;
     Animated.timing(trans, { toValue: forward ? -1 : 1, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => {
-      setStep(next);
+      apply();
       trans.setValue(forward ? 1 : -1);
       Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => { trans.setValue(0); moving.current = false; });
     });
   };
+  const goStep = (next, forward = true) => swap(() => setStep(next), forward);
 
   // Tudo o que depende das respostas, calculado de um rascunho (o atual ou o que acabou de ser tocado —
   // a escolha muda quantas perguntas há: a Ryanair não tem categoria, a TAP tem frota).
@@ -138,9 +157,12 @@ export default function OnboardingScreen() {
   const field = flow[idx];
   const S = STEP_DEFS[field];
   const isLast = idx >= flow.length - 1;
+  const total = flow.length + (hasRosterStep ? 1 : 0);
+  const inRoster = phase === 'roster';
 
-  // Grava o perfil e termina — o MESMO caminho auditado de sempre (updateProfile + profiles).
-  const finish = async (d = draft) => {
+  // Grava o perfil — o MESMO caminho auditado de sempre (updateProfile + profiles). Não entra na app:
+  // o 7.º passo (a escala) precisa da companhia e da base já no contexto.
+  const saveProfile = async (d = draft) => {
     const dd = derive(d);
     setSaving(true);
     setSaveError(null);
@@ -160,17 +182,82 @@ export default function OnboardingScreen() {
       ? [{ category: payload.crewCategory, contract: payload.crewContract || '12/12', from: payload.serviceStart ? payload.serviceStart.slice(0, 7) : '2000-01' }]
       : [];
     const result = await updateProfile(payload, lang);
-    if (!result.ok) { setSaving(false); setSaveError(l('Não foi possível gravar. Tenta outra vez.', 'Couldn’t save. Please try again.')); return; }
+    if (!result.ok) { setSaving(false); setSaveError(l('Não foi possível gravar. Tenta outra vez.', 'Couldn’t save. Please try again.')); return false; }
     await upsertProfile(user?.id, payload);
     setSaving(false);
     if (result.user) setUser(result.user);
     if (isChange) setProfile((p) => ({ ...p, ...payload }));
     else setProfile(payload);
-    // A folha de BOAS-VINDAS só nasce do funil (1.ª vez): arma-se aqui, o Início mostra-a 1× e marca 'seen'.
+    return true;
+  };
+  // Entrar na app (fim do funil). A folha de BOAS-VINDAS só nasce do funil (1.ª vez): arma-se aqui.
+  const complete = async () => {
     if (user?.id && !isChange) await AsyncStorage.setItem(`cp_welcome_${user.id}`, 'pending').catch(() => {});
     success();
     setOnboarded(true);
   };
+  // Última pergunta respondida → grava → o passo da escala (ou entra, se não há passo).
+  const finish = async (d = draft) => {
+    const ok = await saveProfile(d);
+    if (!ok) return;
+    if (hasRosterStep) swap(() => { setPhase('roster'); setRStep('intro'); });
+    else complete();
+  };
+
+
+  // ── 7.º passo: ligar, escolher o calendário, ler, guardar ──
+  const coSlug = D.selAirline?.slug || null;
+  const isEzy = /easyjet|ezy/i.test(String(D.selAirline?.slug || '') + ' ' + String(D.selAirline?.name || ''));
+  const connect = async () => {
+    if (rBusy) return;
+    select(); setRMsg(''); setRBusy(true);
+    try {
+      const res = await requestCalendarAccess();
+      if (!res?.granted) {
+        if (res && res.canAskAgain === false) {
+          Linking.openSettings();
+          setRMsg(l('O acesso ao calendário está desligado. Liga-o nas Definições do iPhone e volta.', 'Calendar access is off. Turn it on in iPhone Settings and come back.'));
+        } else setRMsg(l('Sem acesso ao calendário. Toca outra vez para autorizar.', 'No calendar access. Tap again to allow.'));
+        return;
+      }
+      // "Sugerido": conta os serviços de cada calendário daqui até ao fim do mês seguinte.
+      const list = await listCalendars();
+      const counted = await Promise.all(list.map(async (c) => ({ ...c, n: await countUpcomingDuties(c.id, coSlug) })));
+      counted.sort((a, b) => (b.n - a.n) || String(a.title).localeCompare(String(b.title)));
+      setCals(counted);
+      setSelCal(counted[0] && counted[0].n > 0 ? counted[0] : null);
+      swap(() => setRStep('pick'));
+    } finally { setRBusy(false); }
+  };
+  const readRoster = async () => {
+    if (!selCal || rBusy) return;
+    select(); setRBusy(true);
+    setCalendarId(selCal.id); if (setCalendarName) setCalendarName(selCal.title || null);
+    try {
+      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, aeEvents });
+      setRRes(r);
+      swap(() => setRStep('review'));
+    } finally { setRBusy(false); }
+  };
+  // "Guardar a escala" grava só o que é NOVO e PRONTO (+ férias e doença detetadas, como a folha faz por
+  // defeito). Voos por corrigir, sobreposições a edições tuas e cancelados ficam para "Rever um a um".
+  const rCands = (rRes && rRes.cands) || [];
+  const quick = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && c.status !== 'conflict' && candidateKind(c).kind !== 'fix');
+  const fixN = rCands.filter((c) => c.action !== 'delete' && c.status !== 'same' && candidateKind(c).kind === 'fix').length;
+  const nFlights = quick.filter((c) => c.kind === 'flight').length;
+  const nStandby = quick.filter((c) => /standby|reserve/.test(String(c.kind || ''))).length;
+  const nOther = quick.length - nFlights - nStandby;
+  const vacN = rRes && rRes.ok ? rRes.vacDates.length : 0;
+  const sickN = rRes && rRes.ok ? rRes.sickDates.length : 0;
+  const found = quick.length + fixN + vacN + sickN > 0;
+  const saveRoster = () => {
+    if (!quick.length) return;
+    for (const c of quick) saveDuty(c.duty.duty_date, importSaveFields(c, 'calendar', duties[c.duty.duty_date]?.extra));
+    if (addAeEvents && vacN) addAeEvents(rRes.vacDates.map((d) => ({ date: d, type: 'vacDays' })));
+    if (addAeEvents && sickN) addAeEvents(rRes.sickDates.map((d) => ({ date: d, type: 'sickDays' })));
+    complete();
+  };
+  const endLabel = (() => { const e = importWindow().end; e.setDate(e.getDate() - 1); return e.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'long' }); })();
 
   // TOCA E AVANÇA: escolhe, mostra o visto e, um instante depois, passa à seguinte (ou grava, na última).
   const choose = (key, id, reset = {}) => {
@@ -194,8 +281,32 @@ export default function OnboardingScreen() {
   };
 
   // ── rodapé: o botão da antiguidade; nas outras, só aparece a gravar ou para tentar outra vez ──
-  const footer = field === 'serviceStart'
-    ? <PrimaryButton label={isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')} onPress={handleNext} loading={saving} disabled={!isRealMonth(draft.serviceStart)} />
+  const linkBtn = (label, onPress) => (
+    <TouchableOpacity onPress={onPress} style={o.skip} hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }} accessibilityRole="button">
+      <Text style={[P.link, P.center]}>{label}</Text>
+    </TouchableOpacity>
+  );
+  const rosterFooter = rStep === 'intro' ? (
+    <>
+      <PrimaryButton glyph="cal" label={l('Ligar ao calendário', 'Connect calendar')} onPress={connect} loading={rBusy} />
+      <GhostButton glyph="doc" label={l('Importar o PDF da escala', 'Import the roster PDF')} onPress={() => { select(); setImportSrc('paste'); }} />
+      {linkBtn(l('Agora não', 'Not now'), complete)}
+    </>
+  ) : rStep === 'pick' ? (
+    <PrimaryButton label={l('Ler a escala', 'Read the roster')} onPress={readRoster} loading={rBusy} disabled={!selCal} />
+  ) : found ? (
+    <>
+      <PrimaryButton label={l('Guardar a escala', 'Save the roster')} onPress={saveRoster} disabled={!quick.length} />
+      {linkBtn(l('Rever um a um', 'Review one by one'), () => { select(); setImportSrc('calendar'); })}
+    </>
+  ) : (
+    <>
+      <PrimaryButton label={l('Escolher outro calendário', 'Pick another calendar')} onPress={() => swap(() => setRStep('pick'), false)} />
+      {linkBtn(l('Continuar sem escala', 'Continue without roster'), complete)}
+    </>
+  );
+  const footer = inRoster ? rosterFooter : field === 'serviceStart'
+    ? <PrimaryButton label={isLast && !hasRosterStep ? l('Entrar', 'Enter') : l('Continuar', 'Continue')} onPress={handleNext} loading={saving} disabled={!isRealMonth(draft.serviceStart)} />
     : saving
       ? <PrimaryButton label={l('A guardar', 'Saving')} loading disabled />
       : saveError
@@ -207,6 +318,90 @@ export default function OnboardingScreen() {
       <Text style={o.exit}>{isChange ? l('Cancelar', 'Cancel') : l('Sair', 'Sign out')}</Text>
     </TouchableOpacity>
   );
+
+
+  const renderRoster = () => {
+    if (rStep === 'intro') return (
+      <>
+        <Text style={P.title} accessibilityRole="header">{l('Liga a tua escala', 'Connect your roster')}</Text>
+        <Text style={[P.body, o.lead]}>{l('A app lê os teus serviços no calendário do telemóvel e calcula os limites e o salário a partir daí. Quando a escala muda, a app vê.', 'The app reads your duties from your phone’s calendar and works out your limits and pay from there. When the roster changes, the app sees it.')}</Text>
+        {[
+          [l('Autorizas o calendário', 'You allow calendar access'), l('o iPhone pergunta uma vez', 'your phone asks once')],
+          [l('Escolhes o calendário da escala', 'You pick the roster calendar'), isEzy ? l('o que o eCrew preenche', 'the one eCrew fills') : l('o que o portal da companhia preenche', 'the one your crew portal fills')],
+          [l('Confirmas os serviços', 'You confirm your duties'), l('nada se grava sem o teu sim', 'nothing is saved without your yes')],
+        ].map(([a, b], i) => (
+          <View key={a} style={o.stepRow}>
+            <View style={o.stepNum}><Text style={o.stepNumTxt}>{i + 1}</Text></View>
+            <View style={o.flex1}><Text style={o.stepT}>{a}</Text><Text style={P.foot}>{b}</Text></View>
+          </View>
+        ))}
+        <View style={o.priv}>
+          <Icon name="shield" size={15} color={PELE.ok} />
+          <Text style={[P.foot, o.flex1]}>{l('O calendário é lido no teu telemóvel. A app só vê o calendário que escolheres.', 'The calendar is read on your phone. The app only sees the calendar you pick.')}</Text>
+        </View>
+        {rMsg ? <Text style={P.err}>{rMsg}</Text> : null}
+      </>
+    );
+    if (rStep === 'pick') return (
+      <>
+        <Text style={P.title} accessibilityRole="header">{l('Qual é o calendário da escala?', 'Which calendar has your roster?')}</Text>
+        <View style={o.tip}>
+          <Icon name="bulb" size={16} color={PELE.ink} />
+          <Text style={o.tipTxt}>
+            {isEzy
+              ? <>{l('No ', 'In ')}<Text style={P.strong}>eCrew</Text>{l(', ativa a sincronização da escala para um calendário do telemóvel. É esse que escolhes aqui.', ', turn on roster sync to a phone calendar. That is the one you pick here.')}</>
+              : l('No portal da companhia, ativa a exportação da escala para um calendário do telemóvel. É esse que escolhes aqui.', 'In your crew portal, turn on roster export to a phone calendar. That is the one you pick here.')}
+          </Text>
+        </View>
+        {cals.length ? cals.map((c, i) => (
+          <Opt key={c.id} label={c.title} reduce={reduce} sel={selCal?.id === c.id} onPress={() => { select(); setSelCal(c); }}
+            sub={c.n > 0
+              ? `${i === 0 ? l('Sugerido · ', 'Suggested · ') : ''}${c.n} ${l('serviços nos próximos 2 meses', 'duties in the next 2 months')}`
+              : (c.source || null)} />
+        )) : <Text style={P.body}>{l('Não encontrámos calendários neste telemóvel.', 'No calendars found on this phone.')}</Text>}
+      </>
+    );
+    return (
+      <>
+        <Text style={P.title} accessibilityRole="header">{l('A tua escala', 'Your roster')}</Text>
+        {!rRes || !rRes.ok ? (
+          <Text style={P.body}>{l('Não consegui ler este calendário. Volta atrás e tenta outra vez.', 'I could not read this calendar. Go back and try again.')}</Text>
+        ) : found ? (
+          <>
+            <Text style={[P.body, o.lead]}>
+              {l('Encontrámos estes serviços em ', 'We found these duties in ')}<Text style={P.strong}>{selCal?.title}</Text>
+              {l(`: os dos últimos 12 meses e os publicados até ${endLabel}.`, `: the last 12 months and those published up to ${endLabel}.`)}
+            </Text>
+            <Text style={o.hero} allowFontScaling={false}>{quick.length}<Text style={o.heroSm}> {l('serviços', 'duties')}</Text></Text>
+            <View style={o.split}>
+              {[
+                [l('Voos', 'Flights'), nFlights],
+                [l('Standby e reserva', 'Standby and reserve'), nStandby],
+                [l('Escritório, formação e outros', 'Office, training and other'), nOther],
+                vacN ? [l('Dias de férias', 'Leave days'), vacN] : null,
+                sickN ? [l('Dias de doença', 'Sick days'), sickN] : null,
+              ].filter(Boolean).map(([k, v], i, arr) => (
+                <View key={k} style={[o.splitRow, i < arr.length - 1 && o.splitBorder]}>
+                  <Text style={o.splitK}>{k}</Text><Text style={o.splitV}>{v}</Text>
+                </View>
+              ))}
+            </View>
+            {fixN ? (
+              <View style={o.warn}>
+                <View style={o.warnDot} />
+                <Text style={o.warnTxt}>
+                  <Text style={P.strong}>{fixN === 1 ? l('1 voo por corrigir. ', '1 flight to fix. ') : l(`${fixN} voos por corrigir. `, `${fixN} flights to fix. `)}</Text>
+                  {l('Ficam de fora até lhes dares a rota. Corriges em "Rever um a um".', 'They stay out until you add the route. Fix them in "Review one by one".')}
+                </Text>
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <Text style={P.body}>{l(`Não encontrámos serviços em ${selCal?.title || ''}. Escolhe outro calendário ou continua sem escala.`, `No duties found in ${selCal?.title || ''}. Pick another calendar or continue without a roster.`)}</Text>
+        )}
+      </>
+    );
+  };
 
   const bigCard = (id, title, sub) => {
     const sel = draft.crewType === id;
@@ -222,11 +417,14 @@ export default function OnboardingScreen() {
     );
   };
 
+  const rosterBack = () => { select(); swap(() => (rStep === 'intro' ? setPhase('questions') : setRStep(rStep === 'review' ? 'pick' : 'intro')), false); };
   return (
-    <Porta plate="band" stepKey={idx} corner={corner} footer={footer}
-      progress={{ label: l('Configuração', 'Setup'), now: idx + 1, total: flow.length, of: l('de', 'of') }}
-      onBack={idx > 0 ? () => { select(); setSaveError(null); goStep(idx - 1, false); } : undefined} backLabel={l('Voltar', 'Back')}>
+    <>
+    <Porta plate="band" stepKey={inRoster ? `r-${rStep}` : idx} corner={corner} footer={footer}
+      progress={{ label: l('Configuração', 'Setup'), now: inRoster ? total : idx + 1, total, of: l('de', 'of') }}
+      onBack={inRoster ? rosterBack : idx > 0 ? () => { select(); setSaveError(null); goStep(idx - 1, false); } : undefined} backLabel={l('Voltar', 'Back')}>
       <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
+        {inRoster ? renderRoster() : (<>
         <Text style={P.title} accessibilityRole="header">{S.q}</Text>
         <Text style={[P.body, o.lead]}>{S.sub}</Text>
 
@@ -283,13 +481,38 @@ export default function OnboardingScreen() {
             })
           )}
         </View>
+        </>)}
         {saveError ? <Text style={P.err}>{saveError}</Text> : null}
       </Animated.View>
     </Porta>
+    {/* "Rever um a um" e o PDF abrem a folha de importação de sempre (a mesma leitura e as mesmas regras). */}
+    <RosterImportSheet visible={!!importSrc} initialSource={importSrc || 'calendar'} onConnect={connect}
+      onClose={() => setImportSrc(null)} onDone={() => { setImportSrc(null); complete(); }} />
+    </>
   );
 }
 
 const o = StyleSheet.create({
+  flex1:   { flex: 1 },
+  // 7.º passo — a escala
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.md, marginBottom: SPACE.md },
+  stepNum: { width: 28, height: 28, borderRadius: 999, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
+  stepNumTxt: { fontFamily: PELE_FONT.display, fontSize: 16, color: PELE.ink },
+  stepT:   { ...TXT.callout, color: PELE.ink },
+  priv:    { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, marginTop: SPACE.md },
+  skip:    { alignSelf: 'center', paddingVertical: SPACE.xs },
+  tip:     { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, backgroundColor: PELE.soft, borderRadius: RADIUS.md, padding: SPACE.md, marginBottom: SPACE.lg },
+  tipTxt:  { ...TXT.footnote, color: PELE.ink, flex: 1 },
+  hero:    { fontFamily: PELE_FONT.display, fontSize: 44, color: PELE.ink, marginBottom: SPACE.md },
+  heroSm:  { ...TXT.title, color: PELE.ink },
+  split:   { borderWidth: 1.5, borderColor: PELE.line, borderRadius: RADIUS.md, overflow: 'hidden' },
+  splitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACE.md, paddingVertical: SPACE.md },
+  splitBorder: { borderBottomWidth: 1, borderBottomColor: PELE.line },
+  splitK:  { ...TXT.bodyStrong, color: PELE.ink },
+  splitV:  { ...TXT.title, color: PELE.ink },
+  warn:    { flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.sm, backgroundColor: PELE.warnSoft, borderRadius: RADIUS.md, padding: SPACE.md, marginTop: SPACE.lg },
+  warnDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: PELE.warn, marginTop: SPACE.s },
+  warnTxt: { ...TXT.footnote, color: PELE.ink, flex: 1 },
   lead:    { marginBottom: SPACE.xl },
   after:   { marginTop: SPACE.lg },
   exit:    { ...TXT.label, color: PELE_NIGHT.grey },

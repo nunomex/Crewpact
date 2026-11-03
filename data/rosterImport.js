@@ -3,6 +3,22 @@
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
 import { dayFtlFromDuties, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
+import { airportCoord } from './airports';
+
+// Estado de um candidato do import (à prova de falha), SEM dinheiro — partilhado pela folha "Confirmar
+// import" e pelo 7.º passo da configuração (2026-11-03), para as duas nunca divergirem:
+//   removed = cancelado (ausência no feed)   ·   info  = não-voo (entra, sem per-diem)
+//   fix     = voo sem rota ou com aeroporto desconhecido → FICA DE FORA até ser corrigido
+//   ready   = voo com rota reconhecida → entra (e conta para o per-diem)
+export const routeAirports = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
+export const candidateKind = (c) => {
+  if (c.action === 'delete') return { kind: 'removed', badAp: null };
+  if (c.kind !== 'flight') return { kind: 'info', badAp: null };
+  const aps = routeAirports(c.duty && c.duty.route);
+  if (aps.length < 2) return { kind: 'fix', badAp: null };
+  const bad = aps.find((a) => airportCoord(a) == null);
+  return bad ? { kind: 'fix', badAp: bad } : { kind: 'ready', badAp: null };
+};
 
 // Pernoita = NOITE FORA DA BASE (Art. 39 pilotos / Art. 56 cabine): uma duty de VOO acaba
 // num aeroporto ≠ base do tripulante → dormes fora → pernoita. Sem base OU sem rota conhecida

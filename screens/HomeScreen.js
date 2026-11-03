@@ -1078,7 +1078,7 @@ export default function HomeScreen({ navigation }) {
   // Micro-texto útil (título BC + frase) — o resumo das perguntas/estado; toca → folha "porquê".
   const utilTtl = homeState === 'setup' ? l('Privacidade', 'Privacy') : homeState === 'folga' ? l('Estado', 'Status') : homeState === 'vespera' ? l('Amanhã', 'Tomorrow') : homeState === 'pernoita' ? l('Fora', 'Away') : homeState === 'posvoo' ? l('Fecho', 'Wrap-up') : homeState === 'ferias' ? l('Ano', 'Year') : homeState === 'doenca' ? l('Agora', 'Now') : homeState === 'fecho' ? l('Mês', 'Month') : homeState === 'disrupcao' ? 'PSV' : l('Hoje', 'Today');
   const utilTxt = (() => {
-    if (homeState === 'setup') return l('Os teus dados ficam no teu telemóvel — a app só lê o calendário que escolheres. Saber mais ›', 'Your data stays on your phone — the app only reads the calendar you choose. Learn more ›');
+    if (homeState === 'setup') return l('O calendário é lido no teu telemóvel — a app só lê o calendário que escolheres. Saber mais ›', 'Your calendar is read on your phone — the app only reads the calendar you choose. Learn more ›');
     if (homeState === 'vespera') return [
       wakeAt ? `${l('acordar', 'wake')} ~${wakeAt}` : null,
       (wxArr && wxArr.tmwMin != null) ? `${l('amanhã cedo', 'early tomorrow')} ${wxArr.tmwMin}°${wxArr.tmwSym ? ` ${wxSymbol(wxArr.tmwSym, lang).label}` : ''}` : null,
@@ -1154,12 +1154,12 @@ export default function HomeScreen({ navigation }) {
   // "Saber mais" — progressive disclosure em vez de dois parágrafos no ecrã.
   const setupWhyItem = homeState === 'setup' ? {
     id: 'setupWhy', q: l('Privacidade', 'Privacy'),
-    answer: l('Os teus dados ficam no teu telemóvel.', 'Your data stays on your phone.'),
+    answer: l('O calendário é lido no teu telemóvel.', 'Your calendar is read on your phone.'),
     suggestion: (/easyjet|ezy/i.test([company && company.slug, company && company.name].filter(Boolean).join(' '))
-      ? l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. Dica: no eCrew, ativa o sync da escala para o calendário do telemóvel — com ele ligado, a escala chega sempre atualizada.',
-          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Tip: in eCrew, enable roster sync to your phone calendar — with it on, your roster always arrives fresh.')
-      : l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. Dica: no portal da companhia, ativa a exportação da escala para o calendário do telemóvel.',
-          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Tip: in your crew portal, enable roster export to your phone calendar.')),
+      ? l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. A escala fica guardada na tua conta, para não a perderes se mudares de telemóvel. Dica: no eCrew, ativa o sync da escala para o calendário do telemóvel — com ele ligado, a escala chega sempre atualizada.',
+          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Your roster is kept in your account, so you do not lose it if you change phones. Tip: in eCrew, enable roster sync to your phone calendar — with it on, your roster always arrives fresh.')
+      : l('A app lê APENAS o calendário que escolheres (só leitura — nunca escreve nele) e os cálculos FTL/AE acontecem no dispositivo. A escala fica guardada na tua conta, para não a perderes se mudares de telemóvel. Dica: no portal da companhia, ativa a exportação da escala para o calendário do telemóvel.',
+          'The app reads ONLY the calendar you choose (read-only — it never writes) and FTL/CLA maths happen on-device. Your roster is kept in your account, so you do not lose it if you change phones. Tip: in your crew portal, enable roster export to your phone calendar.')),
   } : null;
   // O toque-no-bloco só vive onde o útil é prosa — na folga os chips têm alvos próprios.
   const utilTap = homeState === 'setup' ? setupWhyItem
@@ -1807,7 +1807,7 @@ const makeSkin = (P, night) => StyleSheet.create({
 
   // Micro-texto útil (mockup .util)
   util: { flexDirection: 'row', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: P.line },
-  utilTtl: { width: 70, fontFamily: PELE_FONT.display, fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5, color: P.ink },
+  utilTtl: { minWidth: 70, flexShrink: 0, fontFamily: PELE_FONT.display, fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5, color: P.ink },
   utilP: { flex: 1, fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: P.grey, lineHeight: 18 },
   // Chips de estado da FOLGA — hairline + ponto de cor; cada chip abre o seu porquê.
   // Pílula do MODO EXEMPLO (topo, no lugar do sino): sempre visível, sai num toque.

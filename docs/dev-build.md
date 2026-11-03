@@ -140,3 +140,9 @@
 - **Validades — formulário manual**: parado à espera de o user rever documentos
   reais (estrutura dos campos, nunca valores).
 - **Dia Android**: QA visual + Live Update (equivalente Android do Dynamic Island).
+
+## Privacidade na App Store (2026-11-04)
+- Na ficha de privacidade da App Store Connect, declarar os dados **ligados à conta**: e-mail, nome e a **escala de
+  trabalho** (serviços sincronizados na tabela `duties` da Supabase, para cópia de segurança e mudança de telemóvel).
+  A app NÃO pode dizer "nada sai do telemóvel": o calendário é lido no telemóvel e os cálculos são feitos lá, mas a
+  escala guarda-se na conta. Os hotéis ficam só no telemóvel (armazenamento local).

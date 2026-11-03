@@ -104,6 +104,24 @@ _Da análise da concorrência (`docs/concorrencia-calculos.md`)._
       (não "Sair"). Cancelar volta ao Perfil sem mudar nada. Ir até ao fim grava a companhia nova, a categoria
       certa (o histórico antigo não manda) e NÃO mostra as boas-vindas outra vez.
 
+### 0f · A escala na configuração — 7.º passo (2026-11-04, esboço `design/configuracao-escala.html`)
+_Conta NOVA. Antes, no calendário do iPhone, cria um calendário de teste (ex.: "Escala teste") com 2 ou 3 voos
+SINTÉTICOS (título do género "EZY1234 LIS-OPO", com horas) — nunca dados reais._
+- [ ] Depois da antiguidade, o botão diz **"Continuar"** (não "Entrar") e aparece **"Liga a tua escala"** com
+      "Configuração · 7 de 7": os 3 passos numerados, a linha do escudo, "Ligar ao calendário", "Importar o PDF da
+      escala" e "Agora não".
+- [ ] **Ligar ao calendário** → o iPhone pergunta (no Expo Go a frase é a do Expo Go) → **"Qual é o calendário da
+      escala?"** com a dica do eCrew (easyJet) ou do portal (outras); o calendário com serviços aparece em primeiro,
+      com "Sugerido · N serviços nos próximos 2 meses", e já escolhido.
+- [ ] **Ler a escala** → **"A tua escala"**: o número grande, Voos / Standby / Outros (e férias/doença se houver) e,
+      se algum voo não tiver rota, a caixa laranja "N voos por corrigir".
+- [ ] **Guardar a escala** → oferta do Face ID → Início JÁ com os serviços (e as boas-vindas).
+- [ ] **Rever um a um** abre a folha de importação de sempre; confirmar lá também entra na app.
+- [ ] **Agora não** entra na app sem escala (o Início mostra as opções, sem "PRIVACID…" cortado).
+- [ ] Calendário sem serviços → "Não encontrámos serviços…" com "Escolher outro calendário" e "Continuar sem escala".
+- [ ] **‹** volta: da escolha ao passo, do passo à antiguidade (e "Continuar" volta a gravar).
+- [ ] **Mudar de companhia** (Perfil) com o calendário já ligado: o 7.º passo NÃO aparece.
+
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._
 - [ ] Escreves o email → **Verificar** → passa ao ecrã de **inserir código**.

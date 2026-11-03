@@ -6,6 +6,51 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## Sessão seguinte (dia 2) — a escala entra na configuração (ANTES da linha do tempo e da TAP, decisão do Nuno)
+
+**Nuno (captura do Início vazio):** "falta esta parte da configuração". Ligar a escala acontecia depois das 6
+perguntas, no Início, com o desenho antigo, e o rótulo "PRIVACID…" aparecia cortado.
+- **Corrigido já:** a coluna do rótulo do Início tinha largura fixa de 70; passou a mínima.
+
+**Esboço do 7.º passo:** `design/configuracao-escala.html` (https://claude.ai/artifact/PpoqP1hQTBuh24VWHwiVgk).
+- O passo: título, 3 passos numerados e a linha do escudo; "Ligar ao calendário", "Importar o PDF" e "Agora não".
+- A autorização do iPhone: proposta de frase nova, que fala dos limites e do salário.
+- Escolher o calendário: a dica do eCrew vem ANTES; o calendário com serviços fica "sugerido".
+- A escala encontrada: o número grande, a divisão por tipo e os voos sem rota; "Guardar a escala" e "Rever um a um".
+
+Nada se grava sem confirmar. **APROVADO (Nuno):** os 4 ecrãs e o "sugerido".
+
+**FEITO no código:**
+- **`OnboardingScreen` tem a fase "escala" depois das perguntas, na mesma Porta:**
+  - "Liga a tua escala" → autorização → escolher o calendário, com o sugerido contado → a escala encontrada →
+    "Guardar a escala";
+  - o perfil grava-se no fim das perguntas e só se entra na app no fim do passo 7 (ou com "Agora não");
+  - "Guardar a escala" grava só o NOVO e PRONTO, mais férias e doença;
+  - voos por corrigir, conflitos e cancelados ficam para "Rever um a um", que é a folha de sempre;
+  - em "mudar de companhia" com calendário ligado, o passo salta-se.
+- **Motor partilhado, sem cópias:**
+  - `data/rosterRead.js`: janela, leitura e contagem;
+  - `candidateKind` em `data/rosterImport.js`, golden +6;
+  - a `RosterImportSheet` passou a usar os dois.
+- **Correções de verdade:**
+  - o esboço dizia que voos sem rota "entram e contam para os limites" — FALSO: ficam de fora até corrigir, e
+    assim fica;
+  - a frase do iPhone e a folha da Escala diziam "Nada sai do telemóvel", mas a escala sincroniza com a conta
+    (tabela `duties`). Agora: "lê a tua escala… para calcular os limites e o salário" e "Lido no telemóvel".
+
+**Verificado no PC:** testes (FTL golden 313) · pacote iOS · guardião; a configuração continua a zero.
+**Mais 3 frases falsas corrigidas** (pergunta do Nuno):
+- no Início sem escala, duas vezes, "Os teus dados ficam no teu telemóvel" → "O calendário é lido no teu telemóvel";
+  a explicação passa a dizer que a escala fica na tua conta;
+- na folha do PDF, "Nada sai do dispositivo" → "o ficheiro nunca sai do dispositivo".
+
+"Guardado só no teu telemóvel" nos hotéis é VERDADE (só armazenamento local) e fica. A declaração à Apple foi para
+`docs/dev-build.md`. **Regra:** nunca prometer "nada sai do telemóvel"; o que é verdade é que o calendário é LIDO no
+telemóvel e os cálculos são feitos lá.
+**Falta:** iPhone (guião §0f, com calendário de teste sintético).
+
+---
+
 ## PRÓXIMA SESSÃO (Nuno: "amanhã, junto com a TAP") — ler isto primeiro
 
 **1. Linha do tempo do contrato (effective-dating da companhia e da base) — proposta, por aprovar.**

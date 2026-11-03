@@ -836,7 +836,7 @@ export default function EscalaScreen({ navigation, route }) {
             </TouchableOpacity>
           </>
         )}
-        <View style={s.hubNote}><Icon name="lock" size={13} color={PELE.ok} /><Text style={s.hubNoteTxt}>{l('Nada sai do telemóvel · confirmas antes de gravar', 'Nothing leaves your phone · you confirm before saving')}</Text></View>
+        <View style={s.hubNote}><Icon name="lock" size={13} color={PELE.ok} /><Text style={s.hubNoteTxt}>{l('Lido no telemóvel · confirmas antes de gravar', 'Read on your phone · you confirm before saving')}</Text></View>
       </PeleSheet>
       {/* Hotel da pernoita — registar/editar a partir da folha do dia. */}
       <HotelSheet visible={hotelOpen} onClose={() => setHotelOpen(false)} station={hotelStation} />

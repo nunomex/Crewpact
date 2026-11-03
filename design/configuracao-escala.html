@@ -1,0 +1,243 @@
+<title>Escala na configuração</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: o 7.º passo da configuração (ligar a escala) em três telemóveis, pela ordem em que a pessoa os
+   vê — o passo, escolher o calendário, a escala encontrada — dentro da Porta (faixa de tinta com o
+   progresso + folha). Tema único de propósito: a pele de dia da app, escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --on-ink: #8F8D88; --track: #3A3A38;
+  --ok: #118A55; --warn: #E86A10;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 40px 34px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+figcaption .step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Porta em faixa, com o progresso */
+.plate { left: 0; right: 0; top: 0; height: 151px; background: var(--ink); }
+.prog-l { left: 24px; top: 84px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--on-ink); }
+.prog-l b { color: var(--paper); font-weight: 800; }
+.bar { left: 24px; right: 24px; top: 106px; height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--yellow); border-radius: 2px; }
+.out { right: 24px; top: 67px; font: 700 12px/1 var(--f-body); color: var(--on-ink); }
+.sheet { left: 0; right: 0; top: 127px; bottom: 0; background: var(--paper); border-radius: 24px 24px 0 0; }
+
+.back { left: 16px; top: 143px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 22px/1 var(--f-body); color: var(--ink); }
+.title { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.body { left: 24px; right: 24px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.body b { color: var(--ink); }
+.foot { left: 24px; right: 24px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.priv { left: 24px; right: 24px; display: flex; gap: 8px; align-items: flex-start; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.priv .ico { font-size: 15px; color: var(--ok); flex: none; margin-top: 1px; }
+
+/* os 3 passos do que acontece (é mesmo uma sequência) */
+.steps { left: 24px; right: 24px; display: grid; gap: 14px; }
+.steps div { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
+.steps i { width: 28px; height: 28px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 16px/1 var(--f-display); font-style: normal; }
+.steps b { font: 700 15px/1.25 var(--f-body); display: block; }
+.steps span { font: 500 12px/17px var(--f-body); color: var(--grey); }
+
+.btn { left: 24px; right: 24px; height: 50px; border-radius: 99px; display: flex; gap: 8px; align-items: center; justify-content: center; font: 800 14px/1 var(--f-body); letter-spacing: .3px; background: var(--ink); color: var(--paper); }
+.btn .ico { font-size: 18px; color: var(--yellow); }
+.ghost { left: 24px; right: 24px; height: 48px; border-radius: 99px; border: 1.5px solid var(--line); display: flex; gap: 8px; align-items: center; justify-content: center; font: 700 13px/1 var(--f-body); color: var(--ink); }
+.link { left: 0; right: 0; text-align: center; font: 700 13px/1 var(--f-body); color: var(--ink); text-decoration: underline var(--yellow) 2px; text-underline-offset: 4px; }
+
+/* calendários */
+.tip { left: 24px; right: 24px; display: flex; gap: 10px; background: var(--soft); border-radius: 14px; padding: 12px 14px; font: 500 12px/17px var(--f-body); color: var(--ink); }
+.tip .ico { font-size: 16px; flex: none; margin-top: 1px; }
+.tip b { font-weight: 700; }
+.opt { left: 24px; right: 24px; height: 60px; border: 2px solid var(--line); border-radius: 14px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.opt.sel { border-color: var(--ink); }
+.opt .dot { width: 12px; height: 12px; border-radius: 99px; flex: none; }
+.opt .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.opt .txt b { font: 700 15px/1.2 var(--f-body); }
+.opt .txt small { font: 500 12px/1.2 var(--f-body); color: var(--grey); }
+.radio { width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line); flex: none; }
+.tick { width: 22px; height: 22px; border-radius: 99px; background: var(--yellow); flex: none; display: grid; place-items: center; font-size: 12px; color: var(--ink); }
+.tick .ico { stroke-width: 2.8; }
+.sug { background: var(--soft); border-radius: 99px; padding: 4px 8px; font: 800 11px/1 var(--f-body); letter-spacing: .6px; text-transform: uppercase; color: var(--ink); }
+
+/* a escala encontrada */
+.hero { left: 24px; font: 700 64px/1 var(--f-display); letter-spacing: -1px; }
+.hero small { font: 700 24px/1 var(--f-display); letter-spacing: 0; margin-left: 6px; }
+.split { left: 24px; right: 24px; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; }
+.split div { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); font: 600 14px/1 var(--f-body); }
+.split div:last-child { border-bottom: 0; }
+.split em { font: 700 20px/1 var(--f-display); font-style: normal; }
+.warnbox { left: 24px; right: 24px; display: flex; gap: 10px; background: #FBEAD2; border-radius: 14px; padding: 12px 14px; font: 500 12px/17px var(--f-body); color: var(--ink); }
+.warnbox i { width: 8px; height: 8px; border-radius: 99px; background: var(--warn); flex: none; margin-top: 5px; }
+
+/* alerta do iPhone */
+.sys { left: 50px; right: 50px; background: rgba(242,242,247,.97); border-radius: 14px; overflow: hidden; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.sys p { padding: 16px 16px 4px; font: 600 15px/1.3 -apple-system, var(--f-body); color: #000; }
+.sys small { display: block; padding: 0 16px 14px; font: 400 12px/1.35 -apple-system, var(--f-body); color: #000; }
+.sys span { display: block; border-top: 1px solid rgba(60,60,67,.29); padding: 11px; font: 400 15px/1 -apple-system, var(--f-body); color: #0A6CFF; }
+.sys span b { font-weight: 600; }
+.dim { left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,.28); }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+</svg>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · configuração, 7.º passo · novembro de 2026</p>
+    <h1>Escala na configuração</h1>
+    <p class="lede">Ligar a escala passa a ser o último passo da configuração, na mesma Porta das 6 perguntas. Hoje acontece depois, no Início, com o desenho antigo. A regra de sempre fica: nada se grava sem confirmares. Exemplo: tripulante de cabine da easyJet.</p>
+  </header>
+
+  <section aria-labelledby="h-p">
+    <h2 id="h-p">Os ecrãs</h2>
+    <div class="phones">
+
+      <!-- 1 · O PASSO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Passo 7: liga a tua escala, com os três passos e o botão Ligar ao calendário">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 7 de 7</p><span class="bar"><i style="width:100%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">Liga a tua escala</p>
+          <p class="body" style="top:235px">A app lê os teus serviços no calendário do telemóvel e calcula os limites e o salário a partir daí. Quando a escala muda, a app vê.</p>
+          <div class="steps" style="top:318px">
+            <div><i>1</i><p><b>Autorizas o calendário</b><span>o iPhone pergunta uma vez</span></p></div>
+            <div><i>2</i><p><b>Escolhes o calendário da escala</b><span>o que o eCrew preenche</span></p></div>
+            <div><i>3</i><p><b>Confirmas os serviços</b><span>nada se grava sem o teu sim</span></p></div>
+          </div>
+          <p class="priv" style="top:520px"><svg class="ico"><use href="#i-shield"/></svg>O calendário é lido no teu telemóvel. A app só vê o calendário que escolheres.</p>
+          <p class="btn" style="top:642px"><svg class="ico"><use href="#i-cal"/></svg>Ligar ao calendário</p>
+          <p class="ghost" style="top:704px"><svg class="ico"><use href="#i-doc"/></svg>Importar o PDF da escala</p>
+          <p class="link" style="top:776px">Agora não</p>
+        </div></div>
+        <figcaption><span class="step">7 de 7</span><b>O passo</b><span>Três passos numerados (são mesmo uma sequência) e a linha do escudo. O PDF fica como segunda opção; "Agora não" deixa as opções no Início para depois.</span></figcaption>
+      </figure>
+
+      <!-- 2 · AUTORIZAÇÃO DO IPHONE -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="O alerta do iPhone a pedir acesso ao calendário, por cima do passo">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 7 de 7</p><span class="bar"><i style="width:100%"></i></span>
+          <div class="sheet"></div>
+          <p class="title" style="top:195px">Liga a tua escala</p>
+          <p class="body" style="top:235px">A app lê os teus serviços no calendário do telemóvel e calcula os limites e o salário a partir daí.</p>
+          <p class="btn" style="top:642px"><svg class="ico"><use href="#i-cal"/></svg>Ligar ao calendário</p>
+          <div class="dim"></div>
+          <div class="sys" style="top:300px">
+            <p>“CrewPact” pretende acesso total aos seus calendários</p>
+            <small>A CrewPact lê a tua escala do calendário para calcular os limites e o salário.</small>
+            <span>Não permitir</span><span><b>Permitir acesso total</b></span>
+          </div>
+        </div></div>
+        <figcaption><span class="step">O iPhone</span><b>A autorização</b><span>É o iPhone que pergunta, uma vez. Proponho mudar a frase da app: hoje fala em "próximo voo, folgas e pernoitas"; passa a dizer o que a app faz de facto. No Expo Go aparece o nome e a frase do Expo Go.</span></figcaption>
+      </figure>
+
+      <!-- 3 · ESCOLHER O CALENDÁRIO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Escolher o calendário da escala, com a dica do eCrew e a lista de calendários">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 7 de 7</p><span class="bar"><i style="width:100%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">Qual é o calendário da escala?</p>
+          <p class="tip" style="top:270px"><svg class="ico"><use href="#i-bulb"/></svg><span>No <b>eCrew</b>, ativa a sincronização da escala para um calendário do telemóvel. É esse que escolhes aqui.</span></p>
+          <div class="opt sel" style="top:354px"><span class="dot" style="background:#FF9500"></span><span class="txt"><b>Escala eCrew</b><small>23 serviços nos próximos 2 meses</small></span><span class="sug">sugerido</span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:422px"><span class="dot" style="background:#34C759"></span><span class="txt"><b>Pessoal</b><small>iCloud</small></span><span class="radio"></span></div>
+          <div class="opt" style="top:490px"><span class="dot" style="background:#007AFF"></span><span class="txt"><b>nuno@exemplo.pt</b><small>Google</small></span><span class="radio"></span></div>
+          <div class="opt" style="top:558px"><span class="dot" style="background:#AF52DE"></span><span class="txt"><b>Aniversários</b><small>iCloud</small></span><span class="radio"></span></div>
+          <p class="btn" style="top:704px">Ler a escala</p>
+        </div></div>
+        <figcaption><span class="step">Escolher</span><b>O calendário da escala</b><span>A dica do eCrew vem para aqui, antes de escolher (hoje aparece depois, num aviso). O calendário com serviços fica "sugerido"; os outros dizem de onde vêm (iCloud, Google).</span></figcaption>
+      </figure>
+
+      <!-- 4 · A ESCALA ENCONTRADA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="A escala encontrada: 23 serviços, a divisão por tipo, 4 voos sem rota e o botão Guardar">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 7 de 7</p><span class="bar"><i style="width:100%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">A tua escala</p>
+          <p class="body" style="top:235px">Encontrámos estes serviços em <b>Escala eCrew</b>, de hoje até 31 de dezembro.</p>
+          <p class="hero" style="top:282px">23<small>serviços</small></p>
+          <div class="split" style="top:364px">
+            <div>Voos <em>18</em></div>
+            <div>Standby e reserva <em>3</em></div>
+            <div>Escritório e formação <em>2</em></div>
+          </div>
+          <p class="warnbox" style="top:526px"><i></i><span><b>4 voos por corrigir.</b> Ficam de fora até lhes dares a rota. Corriges em "Rever um a um".</span></p>
+          <p class="btn" style="top:704px">Guardar a escala</p>
+          <p class="link" style="top:776px">Rever um a um</p>
+        </div></div>
+        <figcaption><span class="step">Confirmar</span><b>A escala encontrada</b><span>Um resumo em vez da lista inteira: o número grande, a divisão por tipo e o que falta. "Guardar a escala" confirma tudo; "Rever um a um" abre a revisão de sempre. Depois segue a oferta do Face ID e o Início já com os serviços.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>A escala entra na configuração</b><span>Hoje as 6 perguntas acabam e o Início pede a escala, no desenho antigo. Passa a ser o 7.º passo, com o progresso "7 de 7".</span></li>
+      <li><b>Tudo na mesma superfície</b><span>A autorização, a escolha e a confirmação acontecem na folha da Porta, sem saltar para a aba Escala.</span></li>
+      <li><b>A dica do eCrew no momento certo</b><span>Antes de escolher o calendário, que é quando serve. Para a TAP diz "no portal da companhia".</span></li>
+      <li><b>Confirmar sem uma lista de 23 linhas</b><span>Um resumo com o que importa. A revisão linha a linha continua disponível.</span></li>
+      <li><b>A frase do iPhone diz a verdade</b><span>A frase da autorização passa a falar dos limites e do salário (sem prometer que nada sai do telemóvel: a escala sincroniza com a tua conta). Muda na próxima versão da app; no Expo Go não se vê.</span></li>
+      <li><b>"Agora não" tem rede</b><span>Quem saltar continua a ver as opções no Início (o desenho novo desse ecrã vem com a revisão do Início).</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas os quatro ecrãs?</b><span>Se sim, passo-os para o código na configuração, reutilizando a leitura do calendário e a importação que já existem.</span></li>
+      <li><b>O "sugerido" no calendário?</b><span>Pede que a app espreite cada calendário para contar os serviços antes de escolheres. Recomendo que sim: a maioria das pessoas tem 4 ou 5 calendários e nem sempre sabe qual é o do eCrew.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

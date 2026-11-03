@@ -436,6 +436,19 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('fatigueFromDuty: WOCL = 35', fatigueFromDuty(d).factors.wocl, 35);
 }
 
+// ─────────── Estado de um candidato do import (à prova de falha) — 2026-11-03 ───────────
+// Partilhado pela folha "Confirmar import" e pelo 7.º passo da configuração: um voo sem rota ou com
+// um aeroporto desconhecido fica "a corrigir" (FORA do import até ser corrigido).
+{
+  const { candidateKind } = require(path.resolve('data/rosterImport.js'));
+  eq('Candidato: voo com rota conhecida = pronto', candidateKind({ kind: 'flight', duty: { route: 'LIS-OPO-LIS' } }).kind, 'ready');
+  eq('Candidato: voo sem rota = a corrigir', candidateKind({ kind: 'flight', duty: { route: null } }).kind, 'fix');
+  eq('Candidato: aeroporto desconhecido = a corrigir', candidateKind({ kind: 'flight', duty: { route: 'LIS-ZZZ' } }).kind, 'fix');
+  eq('Candidato: aeroporto desconhecido identificado', candidateKind({ kind: 'flight', duty: { route: 'LIS-ZZZ' } }).badAp, 'ZZZ');
+  eq('Candidato: não-voo = informativo (entra, sem per-diem)', candidateKind({ kind: 'standby_airport', duty: {} }).kind, 'info');
+  eq('Candidato: cancelado = removido', candidateKind({ action: 'delete', kind: 'flight', duty: { route: 'LIS-OPO' } }).kind, 'removed');
+}
+
 // ─────────── Importação de escala (rosterImport) ───────────
 {
   const { dutyFromActivity, prospectiveDuty, isNightStop } = require(path.resolve('data/rosterImport.js'));
