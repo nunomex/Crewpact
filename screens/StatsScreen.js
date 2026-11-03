@@ -245,8 +245,10 @@ export default function StatsScreen({ navigation }) {
   const [aeRule, setAeRule] = useState(null);
   const aeLim = useMemo(() => {
     const isTapAt = (d) => { const a = aeAt(d); return !!a && /^tap/.test(String(a.AE_ID || '')); };
-    return evaluateTapLimits({ crewType: isPilot ? 'pilot' : 'cabin', duties, events: aeEvents, baseAt: homeBaseAt, isTapAt, today: todayIso });
-  }, [duties, aeEvents, aeNow, companyHistory, isPilot, base, todayIso]); // eslint-disable-line react-hooks/exhaustive-deps
+    // A frota de cada dia (WB/NB, linha do tempo do contrato): o reforço dos pilotos só existe nos wide-body (Cl. 42.ª).
+    const fleetAt = (d) => (crewAt(d) || {}).fleet || null;
+    return evaluateTapLimits({ crewType: isPilot ? 'pilot' : 'cabin', duties, events: aeEvents, baseAt: homeBaseAt, isTapAt, fleetAt, today: todayIso });
+  }, [duties, aeEvents, aeNow, companyHistory, crewHistory, isPilot, base, todayIso]); // eslint-disable-line react-hooks/exhaustive-deps
   // A regra europeia ao lado (D1): as mesmas janelas do mostrador da Segurança, em minutos.
   const easaFor = (id) => {
     const w = (grp, days) => limits.rows.find((x) => x.grp === grp && x.days === days);

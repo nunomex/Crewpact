@@ -106,5 +106,18 @@ eq('voo all-day SEM horas (junk) → largado', mapFlight(ev('EJU7625 LIS-FNC', {
 eq('voo com horas (não all-day) → mantido', mapFlight(ev('EJU7625 LIS-FNC 06:40-08:15', { allDay: false }), codes) !== null, true);
 eq('voo mantido: flightNo extraído', mapFlight(ev('EJU7625 LIS-FNC 06:40-08:15', { allDay: false }), codes).flightNo, 'EJU7625');
 
+// A apresentação vem SEMPRE antes da saída (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 25: o serviço começa na
+// apresentação). Saída depois da meia-noite com "RP 23:00" nas notas → a apresentação é da VÉSPERA e o serviço é
+// desse dia. (Erro encontrado a 2026-11-03 com o kit de longo curso: ficava 24 h depois da saída.)
+{
+  const m = mapFlight(ev('TP EWR-LIS', { start: '2026-12-23T00:00:00', end: '2026-12-23T09:20:00', notes: 'RP 23:00' }), codes);
+  eq('saída às 00:00 com RP 23:00 → apresentação na véspera às 23:00', m && [m.report, m.dateISO, m.depTime], ['23:00', '2026-12-22', '00:00']);
+  eq('… e a apresentação fica antes da saída', m && new Date(m.reportDate) < new Date(m.startDate), true);
+  const same = mapFlight(ev('TP LIS-GRU', { start: '2026-11-16T23:15:00', end: '2026-11-17T09:45:00', notes: 'RP 22:00' }), codes);
+  eq('saída às 23:15 com RP 22:00 → mesmo dia (sem mudança)', same && [same.report, same.dateISO], ['22:00', '2026-11-16']);
+  const far = mapFlight(ev('TP LIS-OPO', { start: '2026-11-16T08:00:00', end: '2026-11-16T09:00:00', notes: 'RP 23:00' }), codes);
+  eq('RP 23:00 para uma saída às 08:00 (9 h antes, na véspera) não bate com o evento → apresentação por preencher', far && [far.report, far.dateISO], [null, '2026-11-16']);
+}
+
 console.log(`\ncalendar (parsing) — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) process.exit(1);

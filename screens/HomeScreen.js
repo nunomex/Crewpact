@@ -21,7 +21,7 @@ import { AppContext, toZulu } from '../data/appContext';
 import { airportZulu, legZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
-import { servicesOf, fdpLimitFor } from '../ae/tapLimits';
+import { fdpForDuty } from '../ae/tapLimits';
 import { fmtClock } from '../data/tapLimitsText';
 import { monthStats, yearStats } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
@@ -174,12 +174,14 @@ export default function HomeScreen({ navigation }) {
     const dt = duties && duties[todayISO];
     if (!dt || dt.deleted || !ae || !/^tap/.test(String(ae.AE_ID || ''))) return null;
     const ct = isPilot ? 'pilot' : 'cabin';
-    const svc = servicesOf({ [todayISO]: { ...dt, extra: [] } }, { baseAt: base, crewType: ct })[0];
-    const r = svc ? fdpLimitFor(svc, ct) : null;
+    // Com o mapa todo: o longo curso precisa da rotação (aclimatização) e da frota do dia (reforço, Cl. 42.ª).
+    const one = fdpForDuty({ duties: { ...duties, [todayISO]: { ...dt, extra: [] } }, date: todayISO, crewType: ct, baseAt: base, fleetAt: crewFleet || null });
+    const svc = one ? one.svc : null;
+    const r = one ? one.fdp : null;
     if (!r || r.limit == null) return null;
     return { onBlockMax: r.limit - 30, latest: fmtClock(r.latestOnBlock), latestNextDay: r.latestOnBlock >= (svc.dn + 1) * 1440,
       over: r.status === 'excede', excess: r.value - r.limit };
-  }, [duties, ae, base, isPilot, todayISO]);
+  }, [duties, ae, base, isPilot, todayISO, crewFleet]);
   const todayItems = useMemo(
     () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday }, lang),
     [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, lang],

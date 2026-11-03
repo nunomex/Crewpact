@@ -58,6 +58,14 @@ if (!PAGES.pilot || !PAGES.cabin) {
       ok(`${r.id} citação ${i + 1} na p. ${page} do BTE`, (pages.get(page) || '').includes(nq));
     });
     ok(`${r.id} tem convenções escritas (pt e en)`, Array.isArray(r.conventions) && r.conventions.every((c) => c.pt && c.en));
+    // Fontes oficiais fora do BTE (ex.: ICAO para o Atlântico Norte): o texto guardado em fontes/, na página indicada.
+    (r.ext || []).forEach((e, i) => {
+      const p = path.resolve('fontes', `${e.file}.txt`);
+      const txt = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+      const parts = txt.split(/=====\[PDF p\.(\d+)\]=====/);
+      const page = new Map(); for (let k = 1; k < parts.length; k += 2) page.set(+parts[k], norm(parts[k + 1]));
+      ok(`${r.id} fonte externa ${i + 1} (${e.src}) existe no texto guardado`, (page.get(e.page) || '').includes(norm(e.quote)));
+    });
   }
   // As tabelas: cada valor aparece nas páginas do quadro (os valores foram conferidos na imagem da página).
   const hm = (m) => `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
@@ -71,6 +79,19 @@ if (!PAGES.pilot || !PAGES.cabin) {
     ok(`C23 linha ${hm(a)}–${hm(b)} existe no quadro`, cabTablePage.includes(norm(`${hm(a)} - ${hm(b)}`)));
     ok(`C23 ${hm(a)}: ${hm(c)} existe no quadro`, cabTablePage.includes(norm(hm(c))));
   });
+  // Longo curso (v2): as linhas e os valores dos quadros existem nas páginas (conferidos na imagem da página).
+  const LC_ROWS = ['7h00-13h59', '14h00-15h59', '16h00-18h59', '19h00- 6h59'];
+  const p307 = PAGES.pilot.get(307) || '';
+  LC_ROWS.forEach((x) => ok(`P32 linha ${x} existe no quadro (p. 307)`, p307.includes(norm(x))));
+  L.P32_TABLE.forEach(([a, , ac, na]) => [...ac, ...na].filter((v) => v != null)
+    .forEach((v) => ok(`P32 ${hm(a)}: ${hm(v)} existe no quadro`, p307.includes(norm(hm(v))))));
+  ok('P32 "N/A" existe no quadro', p307.includes('N/A'));
+  LC_ROWS.forEach((x) => ok(`C26 linha ${x} existe no quadro (p. 341)`, cabTablePage.includes(norm(x.replace('-', ' - ')))));
+  L.C26_TABLE.forEach(([a, , ac]) => ac.filter((v) => v != null).forEach((v) => ok(`C26 ${hm(a)}: ${hm(v)} existe no quadro`, cabTablePage.includes(norm(hm(v))))));
+  const p342 = PAGES.cabin.get(342) || '';
+  L.C26_NOT_ACCL.forEach((v) => ok(`C26 não aclimatizado: ${hm(v)} existe no quadro do n.º 5`, p342.includes(norm(hm(v)))));
+  ['47 horas e 59 minutos', 'Após 48 horas', '48 a 71h59 horas', 'Após 72 horas', '48 a 95h59 horas', 'Após 96 horas', '48 a 119h59 horas', 'Após 120 horas', 'Até 4', '4, 5 e 6', '7, 8 e 9', '10, 11 e 12']
+    .forEach((x) => ok(`C26 quadro do n.º 4: "${x}" existe (p. 342)`, p342.includes(norm(x))));
 }
 
 // ── Parte 2 — golden ───────────────────────────────────────────────────────────────────────────
@@ -131,8 +152,15 @@ eq('LIS-JFK não é médio curso (73°W)', isMediumHaul(['LIS', 'JFK'], 'pilot')
   const sb = (rep) => rule(run('pilot', { '2026-03-02': S('standby_home', '06:00', '16:00'), '2026-03-03': F(rep, '05:00', '09:00', 2, 'LIS-OPO-LIS') }), 'P42').findings[0].status;
   eq('P42 depois de assistência sem chamada: 11h30 < 12 h → excede (Cl. 25.ª, n.º 6)', sb('03:30'), 'excede');
   eq('P42 depois de assistência: 12 h → dentro', sb('04:00'), 'dentro');
-  const gr = rule(run('pilot', { '2026-03-02': F('10:00', '10:30', '20:00', 2, 'LIS-OPO-LIS'), '2026-03-03': S('office', '10:00', '17:00') }), 'P42').findings[0];
-  eq('P42 voo → solo na base: 14 h = 12 h + 2 h → dentro', [gr.value, gr.limit, gr.status], [840, 840, 'dentro']);
+  // Voo → solo na base: a Cl. 34.ª, n.º 1 b) pede 9 h (ou o trabalho planeado, 10h30) e a Cl. 25.ª, n.º 2, 12 h.
+  const gr = (st) => rule(run('pilot', { '2026-03-02': F('10:00', '10:30', '20:00', 2, 'LIS-OPO-LIS'), '2026-03-03': S('office', st, '17:00') }), 'P42').findings[0];
+  eq('P42 voo → solo na base: 14 h ≥ 12 h + 2 h → dentro (as duas leituras)', [gr('10:00').value, gr('10:00').limit, gr('10:00').limitStr, gr('10:00').status], [840, 750, 840, 'dentro']);
+  eq('P42 voo → solo: 13 h cabe na Cl. 34.ª (10h30 + 2 h) mas não na Cl. 25.ª (12 h + 2 h) → incerto', [gr('09:00').status, gr('09:00').reason], ['incerto', 'leituras']);
+  eq('P42 voo → solo: 12 h < 10h30 + 2 h → excede', gr('08:00').status, 'excede');
+  // Cl. 34.ª, n.º 2: serviço de voo que toca as 2h00–5h59 de Lisboa → mais 2 h de repouso.
+  const w = rule(run('pilot', { '2026-03-02': F('03:00', '03:30', '10:00', 2, 'LIS-OPO-LIS'), '2026-03-03': F('02:30', '03:00', '09:00', 2, 'LIS-FAO-LIS') }), 'P42').findings[0];
+  eq('P42 Cl. 34.ª, n.º 2: TSV 03h00→10h30 → 12 h + 2 h + 4 h = 18 h; 17 h → excede (sem o n.º 2 dava dentro)', [w.limit, w.value, w.status], [1080, 1020, 'excede']);
+  eq('próxima saída de calços com as 2 h de Lisboa (pilotos): 10h00 + 14 h + 4 h = 04:00', L.nextOffBlockAfter(svc1(F('03:00', '03:30', '10:00', 2, 'LIS-OPO-LIS'), 'pilot'), 'pilot').at % 1440, 4 * 60);
 }
 
 // C38 + C42 — repouso + transição (cabine).
@@ -278,6 +306,235 @@ eq('LIS-JFK não é médio curso (73°W)', isMediumHaul(['LIS', 'JFK'], 'pilot')
   ok('C34 7 dias × 8 h = 56 h de serviço → excede (55 h)', rule(run('cabin', week), 'C34').findings.some((f) => f.window === '7d-servico' && f.value === 3360));
 }
 
+// ── LONGO CURSO (v2) ─────────────────────────────────────────────────────────────────────────────
+// Voos com a hora UTC de cada perna (como a escala importada). Inverno de 2026: Lisboa = UTC+0, logo a
+// hora da escala (a do telemóvel, em Lisboa) é a UTC. GRU = UTC−3 (zona geográfica −3; Lisboa −1);
+// EWR = UTC−5 (zona −5); SFO = UTC−8 (zona −8).
+// FZ(apresentação, [[partida, chegada, off, on, offZ?, onZ?], …]) — sem Z, Z = a hora da escala (inverno).
+const FZ = (rep, legs, extra = {}) => ({
+  kind: 'flight', report_time: rep, block_off: legs[0][2], block_on: legs[legs.length - 1][3], sectors: legs.length,
+  route: [legs[0][0], ...legs.map((l) => l[1])].join('-'), flight_minutes: 60,
+  legs: legs.map(([dep, arr, off, on, offZ, onZ]) => ({ dep, arr, off, on, offZ: offZ || off, onZ: onZ || on })), ...extra,
+});
+const fdp = (res, id, date) => rule(res, id).findings.find((f) => f.date === date) || null;
+const LISGRU = () => FZ('22:00', [['LIS', 'GRU', '23:15', '09:45']]);   // TSV 22h00 → 10h15 = 12h15; block 10h30
+const GRULIS = () => FZ('19:45', [['GRU', 'LIS', '21:00', '06:30']]);   // 16h45 em GRU; TSV → 07h00 = 11h15; block 9h30
+const LISEWR = () => FZ('10:00', [['LIS', 'EWR', '11:00', '19:00']]);   // chega às 14h00 de EWR; TSV 9h30; block 8 h
+const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
+
+// O modelo de horas: com a hora UTC, a escala pode vir na hora local de cada escala — o motor usa a UTC.
+{
+  const s = svc1(FZ('22:00', [['LIS', 'GRU', '23:15', '06:45', '23:15', '09:45']]), 'cabin', '2026-01-12');
+  eq('UTC: chegada às 06h45 de GRU = 09h45 de Lisboa (a hora da base)', [s.end - L.dayNum('2026-01-12') * 1440, s.workEnd - s.start, s.legs[0].block], [33 * 60 + 45, 735, 630]);
+  const v = svc1(FZ('09:00', [['LIS', 'GRU', '10:00', '20:00', '09:00', '19:00']]), 'cabin', '2026-07-06');
+  eq('UTC no verão (Lisboa = UTC+1): as horas ficam as de Lisboa', [v.start % 1440, v.end % 1440, v.bo], [540, 1200, 60]);
+  eq('hora local em GRU (UTC−3) na apresentação de verão = 05h00', L.localAt(v, 'GRU', v.start) % 1440, 300);
+  eq('zona geográfica: Lisboa −1, GRU −3, EWR −5, SFO −8', ['LIS', 'GRU', 'EWR', 'SFO'].map(L.zoneOf), [-1, -3, -5, -8]);
+}
+
+// P32 — pilotos, Cl. 43.ª. Apresentação às 22h00 em Lisboa (na base: aclimatizado): 1 aterragem → 11h30.
+{
+  const at = (fleet) => fdp(run('pilot', { '2026-01-12': LISGRU() }, { fleetAt: () => fleet }), 'P32', '2026-01-12');
+  eq('P32 22h00 na base, 1 aterragem: 11h30 (690); TSV 12h15 (735)', [at('NB').limit, at('NB').value], [690, 735]);
+  eq('P32 num narrow-body não há reforço (Cl. 42.ª, n.º 2) → excede', at('NB').status, 'excede');
+  eq('P32 wide-body: pode ter reforço (até +5 h) → incerto', [at('WB').status, at('WB').reason], ['incerto', 'pode-ter-reforco']);
+  eq('P32 frota desconhecida: também incerto', at(null).status, 'incerto');
+  // Regresso de GRU: 2 zonas da base (Lisboa −1, GRU −3) → aclimatizado pela alínea c); 16h45 local → 11h45.
+  const r = run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }, { fleetAt: () => 'NB' });
+  const g = fdp(r, 'P32', '2026-01-14');
+  eq('P32 GRU→LIS: aclimatizado (alínea c)), 16h45 local → 11h45; TSV 11h15 → dentro', g && [g.readings.map((x) => x.accl), g.limit, g.value, g.status], [[true], 705, 675, 'dentro']);
+  // EWR (4 zonas): estadia de 27h30 → não aclimatizado; 18h00 local → 10h00; TSV 10h50 → excede no narrow-body.
+  const e = fdp(run('pilot', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('23:00', '00:00', '09:20') }, { fleetAt: () => 'NB' }), 'P32', '2026-01-13');
+  eq('P32 EWR→LIS ao fim de 27h30: não aclimatizado, 10h00; TSV 10h50 → excede', e && [e.readings.map((x) => x.accl), e.limit, e.value, e.status], [[false], 600, 650, 'excede']);
+  // Estadia de 75h30 com 3 noites locais, mas as últimas 36 h só têm uma noite inteira: as duas leituras da alínea b).
+  const b = fdp(run('pilot', { '2026-01-12': LISEWR(), '2026-01-15': EWRLIS('23:00', '00:00', '09:20') }, { fleetAt: () => 'NB' }), 'P32', '2026-01-15');
+  eq('P32 alínea b) com duas leituras: 11h45 aclimatizado, 10h00 não → TSV 10h50 incerto', b && [b.readings.map((x) => x.accl), b.limit, b.limitMax, b.status, b.reason], [[true, false], 600, 705, 'incerto', 'aclimatizacao']);
+}
+
+// P49 — repouso no longo curso (Cl. 41.ª). Em EWR depois de LIS→EWR: chegada às 14h00 locais (a fronteira do c)).
+{
+  const r = (on) => rule(run('pilot', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('23:00', on, '09:20') }), 'P49').findings[0];
+  const f = r('00:00');
+  // leve: 11 h + 2 zonas acima de 2 (geográficas: 4) = 13 h → mínimo do n.º 2 a) com 4 zonas: 14h30;
+  // estrita: 11 h + 3 h (chegada às 14h00 conta) + 3 h (5 h legais) = 17 h. Mais 3 h de transição fora da base.
+  eq('P49 EWR: repouso 14h30 (leitura leve) e 17h00 (estrita), mais 3 h', [f.rest, f.restStr, f.limit, f.limitStr], [870, 1020, 1050, 1200]);
+  eq('P49 29 h entre calços e saída: chega nas duas leituras, falta o transporte → incerto', [f.value, f.status, f.reason], [1740, 'incerto', 'sem-transporte']);
+  const short = rule(run('pilot', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('08:00', '09:00', '17:00') }), 'P49').findings[0];
+  eq('P49 14 h entre calços e saída < 17h30 → excede', [short.value, short.status], [840, 'excede']);
+  const mid = rule(run('pilot', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('12:30', '13:30', '21:00') }), 'P49').findings[0];
+  eq('P49 18h30: cabe na leitura leve (17h30) e não na estrita (20h00) → incerto', [mid.value, mid.status, mid.reason], [1110, 'incerto', 'leituras']);
+  // GRU depois de LIS→GRU: TSV 12h15 (+3), apresentação às 22h00 (+3), chegada às 06h45 locais (+3), block 10h30 (+12).
+  const g = rule(run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }), 'P49').findings[0];
+  eq('P49 GRU: 11 h + 21 h = 32 h (leve); 12h15 + 21 h + 1 h (3 h legais) = 34h15 (estrita)', [g.rest, g.restStr], [1920, 2055]);
+  eq('P49 GRU: 35h15 entre calços e saída → entre as duas leituras → incerto', [g.value, g.status, g.reason], [2115, 'incerto', 'leituras']);
+}
+
+// P36 — rotações; P39 — a noite antes do longo curso.
+{
+  const mh = (n) => rule(run('pilot', { '2026-03-02': F('08:00', '08:30', '10:00', 1, 'LIS-OPO'), [L.isoOf(L.dayNum('2026-03-02') + n - 1)]: F('08:00', '08:30', '10:00', 1, 'OPO-LIS') }), 'P36').findings[0];
+  eq('P36 médio curso de 6 dias → dentro', mh(6).status, 'dentro');
+  eq('P36 médio curso de 7 dias: só por irregularidade (Cl. 33.ª, n.º 2) → incerto', [mh(7).status, mh(7).reason], ['incerto', 'irregularidade']);
+  eq('P36 médio curso de 8 dias → excede', mh(8).status, 'excede');
+  const lc = rule(run('pilot', { '2026-01-12': LISGRU(), '2026-01-22': GRULIS() }), 'P36').findings[0];
+  eq('P36 longo curso de 12 dias (12 → 23 jan) → excede (máx. 11)', [lc.value, lc.status], [12, 'excede']);
+  // 11 rotações de 10 dias em 52 semanas → excede o limite anual de 10 (Cl. 39.ª, n.º 4).
+  const many = {};
+  for (let k = 0; k < 11; k++) { const d = L.dayNum('2026-01-05') + k * 14; many[L.isoOf(d)] = LISGRU(); many[L.isoOf(d + 8)] = GRULIS(); }
+  const an = rule(run('pilot', many), 'P36').findings.find((f) => f.reason === 'dez-dias-ano');
+  eq('P36 11 rotações de 10 dias em 52 semanas → excede (máx. 10)', an && [an.value, an.status], [11, 'excede']);
+  // P39: o LIS→GRU às 22h00 toca o trabalho noturno → livre até às 10h00 desse dia.
+  const p39 = (other) => rule(run('pilot', { '2026-01-12': { ...LISGRU(), extra: other ? [other] : [] } }), 'P39').findings[0];
+  eq('P39 sem nada antes → dentro', p39(null).status, 'dentro');
+  eq('P39 com um serviço no solo das 07h00 às 09h00 → excede', p39(S('office', '07:00', '09:00')).status, 'excede');
+  const eve = rule(run('pilot', { '2026-01-11': F('20:00', '20:30', '22:00', 1, 'OPO-LIS'), '2026-01-12': LISGRU() }), 'P39').findings[0];
+  eq('P39 com trabalho na véspera até às 22h30: o AE não diz quando começa a noite → incerto', [eve.status, eve.reason], ['incerto', 'trabalho-na-vespera']);
+}
+
+// C26 — cabine, Cl. 23.ª. Na base às 22h00: 1 aterragem → 11h30.
+{
+  const a = fdp(run('cabin', { '2026-01-12': LISGRU() }), 'C26', '2026-01-12');
+  eq('C26 22h00, 1 aterragem: 11h30; PSV 12h15 → pode ter descanso a bordo (até 16h30) → incerto', [a.limit, a.value, a.status, a.reason], [690, 735, 'incerto', 'pode-ter-ldmcr']);
+  const long = fdp(run('cabin', { '2026-01-12': FZ('08:00', [['LIS', 'SFO', '09:00', '00:00']]) }), 'C26', '2026-01-12');
+  eq('C26 PSV de 16h30 (08h00 → 00h30) → ainda incerto', long.status, 'incerto');
+  const vlong = fdp(run('cabin', { '2026-01-12': FZ('08:00', [['LIS', 'SFO', '09:00', '00:10']]) }), 'C26', '2026-01-12');
+  eq('C26 PSV de 16h40 → excede (o quadro do n.º 11 acaba nas 16h30)', vlong.status, 'excede');
+  const two = fdp(run('cabin', { '2026-01-12': FZ('10:00', [['LIS', 'FOR', '11:00', '18:00'], ['FOR', 'BEL', '19:00', '23:50']]) }), 'C26', '2026-01-12');
+  eq('C26 2 setores acima do quadro (14h20 > 13h15) → excede (n.º 10)', [two.limit, two.value, two.status], [795, 860, 'excede']);
+  // Regresso de EWR (5 h): até às 47h59 vale a hora de referência (Lisboa); depois, o quadro do n.º 4 ("4, 5 e 6").
+  const ewr = (date, on) => fdp(run('cabin', { '2026-01-12': LISEWR(), [date]: EWRLIS('23:00', '00:00', on) }), 'C26', date);
+  const d2 = ewr('2026-01-13', '09:20');
+  eq('C26 EWR ao fim de 37 h: aclimatizado a Lisboa (23h00 → 11h30); PSV 10h50 → dentro', d2 && [d2.readings[0].accl, d2.limit, d2.status], [true, 690, 'dentro']);
+  const d3 = ewr('2026-01-14', '09:20');
+  eq('C26 EWR ao fim de 61 h (48–71h59): não aclimatizado → 11h00 (n.º 5); PSV 10h50 → dentro', d3 && [d3.readings[0].accl, d3.limit, d3.status], [false, 660, 'dentro']);
+  const d3b = ewr('2026-01-14', '10:00');
+  eq('C26 não aclimatizado, PSV 11h30 com 1 setor → incerto (pode ter descanso a bordo)', d3b && [d3b.status, d3b.reason], ['incerto', 'pode-ter-ldmcr']);
+  const d4 = ewr('2026-01-15', '09:20');
+  eq('C26 EWR ao fim de 85 h (depois das 72 h): aclimatizado à hora local (18h00 → 11h45)', d4 && [d4.readings[0].accl, d4.limit, d4.status], [true, 705, 'dentro']);
+  // Verão: Lisboa UTC+1, GRU UTC−3 → 4 h de diferença: o "4" está em duas linhas do quadro → duas leituras.
+  const sum = (on, onZ) => fdp(run('cabin', {
+    '2026-07-06': FZ('22:00', [['LIS', 'GRU', '23:15', '09:45', '22:15', '08:45']]),
+    '2026-07-09': FZ('21:00', [['GRU', 'LIS', '22:00', on, '21:00', onZ]]),   // 17h00 em GRU; ao fim de 71 h da apresentação
+  }), 'C26', '2026-07-09');
+  const s1 = sum('08:50', '07:50');
+  eq('C26 4 h de diferença: duas leituras (aclimatizado a GRU 11h45 / não aclimatizado 11h00); PSV 12h20 → incerto', s1 && [s1.readings.map((x) => x.accl), s1.limit, s1.limitMax, s1.value, s1.status], [[true, false], 660, 705, 740, 'incerto']);
+  const s2 = sum('07:00', '06:00');
+  eq('C26 4 h, PSV 10h30 → dentro nas duas', s2 && s2.status, 'dentro');
+}
+
+// C41 — repouso no longo curso (cabine, Cl. 29.ª, n.os 8 a 10).
+{
+  const r = (rep, off, on) => rule(run('cabin', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS(rep, off, on) }), 'C41').findings[0];
+  const f = r('23:00', '00:00', '09:20');
+  // EWR, 5 h: max(9h30, 14 h + 2 × 30 min) = 15 h (leve) · 14 h + 3 × 30 min = 15h30 (estrita); + 3 h fora.
+  eq('C41 EWR (5 h): repouso 15h00 / 15h30, mais 3 h', [f.rest, f.restStr, f.limit, f.limitStr], [900, 930, 1080, 1110]);
+  eq('C41 29 h: falta o transporte → incerto', [f.status, f.reason], ['incerto', 'sem-transporte']);
+  eq('C41 14h30 → excede', r('08:30', '09:30', '17:00').status, 'excede');
+  eq('C41 18h10: entre 18h00 e 18h30 → incerto (a 3.ª hora conta ou não)', [r('12:10', '13:10', '20:00').status, r('12:10', '13:10', '20:00').reason], ['incerto', 'leituras']);
+  // SFO (8 h): 24 h com uma noite local (n.º 9) e 36 h com duas noites locais de calços a calços (n.º 10).
+  const sfo = (rep, off, on) => rule(run('cabin', { '2026-01-12': FZ('10:00', [['LIS', 'SFO', '11:00', '23:00']]), '2026-01-14': FZ(rep, [['SFO', 'LIS', off, on]]) }), 'C41').findings[0];
+  const ok46 = sfo('20:00', '21:00', '08:00');                   // saída às 13h00 de SFO: 46 h depois dos calços, 2 noites
+  eq('C41 SFO: saída 46 h depois, com duas noites locais → só falta o transporte', [ok46.status, ok46.reason], ['incerto', 'sem-transporte']);
+  const n2 = sfo('12:00', '13:00', '00:00');                     // saída às 05h00 de SFO: 38 h, mas a 2.ª noite só tem 7 h
+  eq('C41 SFO: 38 h mas a 2.ª noite local tem só 7 h → excede (n.º 10)', [n2.status, n2.reason], ['excede', '36h-duas-noites']);
+}
+
+// C15 — folga (e RAD) no regresso à base (Cl. 20.ª, n.os 3, 13 e 14; Cl. 30.ª).
+{
+  // LIS→GRU→LIS: block de 10h30 → RAD de 24 h (Cl. 30.ª, n.º 2 a)) → 48 h + 24 h = 72 h de folga.
+  // Calços 06h30 de 15 jan; repouso 12 h (PSV com RAD) + 2 h (toca as 2h00–5h59) + 2 h de transição → 22h30 → a folga começa às 23h00.
+  const c = (nextDate, rep) => rule(run('cabin', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS(), [nextDate]: F(rep, '08:00', '12:00', 2, 'LIS-OPO-LIS') }), 'C15').findings[0];
+  const okc = c('2026-01-19', '06:00');
+  eq('C15 GRU: folga 48 h + RAD 24 h, a contar das 23h00 → 79 h até à apresentação → dentro', okc && [okc.folga, okc.rad, okc.limit, okc.value, okc.status], [2880, 1440, 4320, 4740, 'dentro']);
+  eq('C15 GRU: apresentação às 20h00 de 18 jan (69 h) → excede', c('2026-01-18', '20:00').status, 'excede');
+  const mid = c('2026-01-18', '23:30');
+  eq('C15 GRU: 72h30 pela leitura leve, 71h30 pela estrita (repouso 13 h, folga às 00h00) → incerto', mid && [mid.value, mid.status], [4350, 'incerto']);
+  // LIS→SFO→LIS: 8 h de diferença → duas folgas seguidas (96 h), sem RAD (n.º 16).
+  const sf = rule(run('cabin', { '2026-01-12': FZ('10:00', [['LIS', 'SFO', '11:00', '23:00']]), '2026-01-14': FZ('20:00', [['SFO', 'LIS', '21:00', '08:00']]), '2026-01-18': F('08:00', '08:30', '12:00', 2, 'LIS-OPO-LIS') }), 'C15').findings[0];
+  eq('C15 SFO: 96 h e sem RAD; a apresentação ao fim de ~2 dias e meio → excede', sf && [sf.folga, sf.rad, sf.reason, sf.status], [5760, 0, '96h', 'excede']);
+  // Médio curso com 4 aterragens (n.º 13 a)): folga de 48 h logo no regresso.
+  const four = rule(run('cabin', { '2026-03-02': F('06:00', '06:30', '15:00', 4, 'LIS-OPO-LIS-FAO-LIS'), '2026-03-04': F('08:00', '08:30', '12:00', 2, 'LIS-OPO-LIS') }), 'C15').findings[0];
+  eq('C15 4 aterragens: a folga começa às 06h00 de 3 mar → 26 h até à apresentação → excede', four && [four.reason, four.value, four.status], ['quatro-aterragens', 1560, 'excede']);
+}
+
+// P22 — pilotos, Cl. 38.ª: dias de folga seguidos depois do longo curso.
+{
+  // LIS→GRU→LIS: 4 dias de ocupação (12 a 15 jan) + 2 períodos críticos + 0 × 45° = 6 → 3 dias de folga.
+  // Calços 06h30 de 15 jan + repouso da Cl. 41.ª (18 h leve / 19 h estrita) + 2 h → a folga começa às 03h00 (leve) ou 04h00 (estrita) de 16 jan.
+  const g = (date, rep) => rule(run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS(), [date]: F(rep, '03:00', '05:00', 2, 'LIS-OPO-LIS') }), 'P22').findings[0];
+  const ok22 = g('2026-01-19', '08:00');
+  eq('P22 GRU: fatores 4 + 2 + 0 → 3 dias; a contar das 03h00 de 16 jan → 77 h → dentro', ok22 && [ok22.factors, ok22.days, ok22.value, ok22.status], [{ a: 4, b: 2, c: 0 }, 3, 4620, 'dentro']);
+  eq('P22 GRU: serviço às 02h00 de 19 jan (71 h < 72 h) → excede', g('2026-01-19', '02:00').status, 'excede');
+  const mid = g('2026-01-19', '03:30');
+  eq('P22 GRU: 03h30 de 19 jan: 72h30 na leitura leve, 71h30 na estrita → incerto', mid && [mid.value, mid.status], [4350, 'incerto']);
+  // LIS→EWR→LIS: 5 dias + 1 período crítico (na hora local, passadas 48 h e 4 zonas) + 1 × 45° (65°) = 7 → 4 dias.
+  const e = rule(run('pilot', { '2026-01-12': LISEWR(), '2026-01-15': EWRLIS('23:00', '00:00', '09:20'), '2026-01-25': F('08:00', '08:30', '10:00', 2, 'LIS-OPO-LIS') }), 'P22').findings[0];
+  eq('P22 EWR: fatores 5 + 1 + 1 → 4 dias de folga', e && [e.factors, e.days], [{ a: 5, b: 1, c: 1 }, 4]);
+}
+
+// P38 — pilotos, Cl. 39.ª, n.º 2: de SFO (zona −8) a LAD (zona +1) são 9 h → 6 dias de folga entre as rotações.
+{
+  // Depois de SFO→LIS (calços 08h00 de 15 jan): repouso da Cl. 41.ª 35 h (leve) / 36h30 (estrita) + 2 h → folga às 21h00 / 23h00 de 16 jan.
+  const sfo = { '2026-01-12': FZ('10:00', [['LIS', 'SFO', '11:00', '23:00']]), '2026-01-14': FZ('20:00', [['SFO', 'LIS', '21:00', '08:00']]) };
+  const lad = (date, rep, off, on) => ({ [date]: FZ(rep, [['LIS', 'LAD', off, on]]), [L.isoOf(L.dayNum(date) + 3)]: FZ('20:00', [['LAD', 'LIS', '21:00', '04:30']]) });
+  const r = (date, rep, off, on) => rule(run('pilot', { ...sfo, ...lad(date, rep, off, on) }), 'P38').findings[0];
+  const a = r('2026-01-22', '10:00', '11:00', '18:00');
+  eq('P38 SFO→LAD: 9 h de diferença; 5 dias de folga (133 h) → excede', a && [a.diff, a.value, a.status], [9, 5, 'excede']);
+  eq('P38 com 6 dias (157 h / 155 h) → dentro', r('2026-01-23', '10:00', '11:00', '18:00').status, 'dentro');
+  const m = r('2026-01-22', '22:00', '23:00', '06:00');
+  eq('P38 6 dias na leitura leve (145 h), 5 na estrita (143 h) → incerto', m && [m.value, m.valueStr, m.status], [6, 5, 'incerto']);
+}
+
+// P33 — pilotos, Cl. 42.ª, n.º 4: 20 h de acréscimos com reforço em 4 semanas.
+{
+  // LIS→SFO às 08h00 num wide-body: quadro 13h15; TSV 17h45 → 4h30 acima, só com reforço (até +5 h).
+  const long = () => FZ('08:00', [['LIS', 'SFO', '09:00', '01:15']]);
+  const mk = (n) => Object.fromEntries(Array.from({ length: n }, (_, k) => [L.isoOf(L.dayNum('2026-02-02') + 4 * k), long()]));
+  const five = rule(run('pilot', mk(5), { fleetAt: () => 'WB' }), 'P33');
+  eq('P33 5 × 4h30 = 22h30 de acréscimos em 4 semanas → excede (máx. 20 h)', [five.status, (five.findings[0] || {}).value], ['excede', 1350]);
+  eq('P33 4 × 4h30 = 18 h → dentro', rule(run('pilot', mk(4), { fleetAt: () => 'WB' }), 'P33').status, 'dentro');
+  ok('P33 sem serviços acima do quadro, a regra não aparece', !run('pilot', { '2026-01-12': LISEWR() }).rules.some((x) => x.id === 'P33'));
+}
+
+// P37 — pilotos, Cl. 39.ª, n.º 1: no máximo 8 rotações no Atlântico Norte em 2 meses de calendário.
+{
+  const ewr = (n) => { const o = {}; for (let k = 0; k < n; k++) { const d = L.dayNum('2026-01-05') + 6 * k; o[L.isoOf(d)] = LISEWR(); o[L.isoOf(d + 1)] = EWRLIS('23:00', '00:00', '09:20'); } return o; };
+  const w = (res) => rule(res, 'P37').findings.find((f) => f.period === '2026-01');
+  const nine = w(run('pilot', ewr(9)));
+  eq('P37 9 rotações a EWR em jan–fev → excede (máx. 8)', nine && [nine.value, nine.status], [9, 'excede']);
+  eq('P37 8 rotações a EWR → dentro', w(run('pilot', ewr(8))).status, 'dentro');
+  const puj = { ...ewr(8), '2026-02-25': FZ('10:00', [['LIS', 'PUJ', '11:00', '20:00']]), '2026-02-26': FZ('22:00', [['PUJ', 'LIS', '23:00', '07:00']]) };
+  const p = w(run('pilot', puj));
+  eq('P37 8 a EWR + 1 a Punta Cana (pode ou não passar pelo Atlântico Norte da ICAO) → incerto', p && [p.value, p.valueStr, p.status], [8, 9, 'incerto']);
+  ok('P37 rotações ao Brasil não contam', !run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }).rules.some((x) => x.id === 'P37'));
+}
+
+// Trabalho noturno na "hora local" de cada AE (v2).
+{
+  // Pilotos, Cl. 6.ª, n.º 14: SFO→LIS a 15 jan, mais de 48 h depois de sair de Lisboa → hora de origem (SFO).
+  // 16h00→03h30 de Lisboa = 08h00→19h30 de SFO: não é noturno. Na hora da base seriam 3 noturnos seguidos (15, 16, 17).
+  const N = () => F('20:00', '20:30', '23:10', 2, 'LIS-OPO-LIS');
+  const res = run('pilot', { '2026-01-12': FZ('10:00', [['LIS', 'SFO', '11:00', '23:00']]), '2026-01-15': FZ('16:00', [['SFO', 'LIS', '17:00', '03:00']]), '2026-01-16': N(), '2026-01-17': N() });
+  ok('P53 SFO→LIS depois de 48 h conta na hora de origem (não é noturno) → sem "3 seguidos"', !rule(res, 'P53').findings.some((f) => f.reason === 'tres-seguidos'));
+  // Cabine, Cl. 4.ª, n.º 13: LIS→SFO 10h00→23h30 de Lisboa = 02h00→15h30 de SFO (toca as 2h00–5h59 só na hora de chegada);
+  // SFO→LIS 12h00→00h30 = 04h00→16h30 de SFO. Os dois críticos só numa leitura da hora local → "incerto", nunca "excede".
+  const cab = rule(run('cabin', { '2026-01-12': FZ('10:00', [['LIS', 'SFO', '11:00', '23:00']]), '2026-01-14': FZ('12:00', [['SFO', 'LIS', '13:00', '00:00']]) }), 'C36').findings;
+  const loc = cab.find((f) => f.reason === 'dois-criticos');
+  eq('C36 dois críticos só na hora de chegada → incerto pela hora local', loc && [loc.status, loc.hora], ['incerto', 'local']);
+  const T = require(path.resolve('data/tapLimitsText.js'));
+  eq('frase: "conforme a hora local"', loc && T.describe('C36', loc, 'pt').say, '2 noturnos a tocar as 2h00–5h59, conforme a hora local');
+  // Ida e volta a GRU (16/18): os dois tocam o período crítico nas duas leituras; a dúvida é "consecutivos".
+  const gru = rule(run('cabin', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }), 'C36').findings.find((f) => f.reason === 'dois-criticos');
+  eq('C36 ida e volta a GRU: incerto porque o AE não define "consecutivos"', gru && [gru.status, gru.hora || null, T.describe('C36', gru, 'pt').say],
+    ['incerto', null, '2 noturnos a tocar as 2h00–5h59, sem outro serviço pelo meio mas em noites diferentes: o AE não diz se contam como seguidos']);
+}
+
+// fdpForDuty (o detalhe do serviço e o Início): o mesmo resultado que a avaliação do mês.
+{
+  const duties = { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('23:00', '00:00', '09:20') };
+  const x = L.fdpForDuty({ duties, date: '2026-01-13', crewType: 'pilot', baseAt: 'LIS', fleetAt: 'NB' });
+  eq('fdpForDuty: o EWR→LIS dá o mesmo que o motor (10h00, excede)', x && [x.fdp.limit, x.fdp.status, x.next], [600, 'excede', null]);
+}
+
 // Vigência e companhia de cada mês: só os serviços da TAP, a partir da entrada em vigor do RUPT.
 {
   const D = () => F('08:00', '08:30', '14:30', 2, 'LIS-OPO-LIS');
@@ -310,15 +567,30 @@ eq('LIS-JFK não é médio curso (73°W)', isMediumHaul(['LIS', 'JFK'], 'pilot')
   const nx = L.nextOffBlockAfter(svc1(F('06:30', '07:15', '16:20', 2, 'LIS-OPO-LIS'), 'pilot'), 'pilot');
   eq('próxima saída de calços: 08:20 do dia seguinte', [T.fmtClock(nx.at), Math.floor(nx.at / 1440) - L.dayNum('2026-03-02')], ['08:20', 1]);
 
-  // O que a v1 NÃO avalia fica à vista ("Ainda não avaliado"), nunca em silêncio nem como "Incerto".
+  // O que não se consegue avaliar fica à vista ("Ainda não avaliado"), nunca em silêncio nem como "Incerto":
+  // longo curso SEM a hora UTC dos voos (não se sabe a hora local).
   const lc = run('pilot', { '2026-03-02': F('10:00', '11:00', '19:00', 1, 'LIS-JFK'), '2026-03-05': F('08:00', '08:30', '14:30', 2, 'LIS-OPO-LIS') });
   const gl = T.groupRules(lc, '2026-03-01');
-  eq('longo curso: 1 serviço em "Ainda não avaliado"', gl.pendente.lc, 1);
-  ok('longo curso: não entra no grupo Incerto', !gl.incerto.some((x) => x.id === 'P27'));
+  eq('longo curso sem UTC: 1 serviço em "Ainda não avaliado"', gl.pendente.semFuso, 1);
+  ok('longo curso sem UTC: não entra no grupo Incerto', !gl.incerto.some((x) => x.id === 'P32' || x.id === 'P27'));
   // Cabine com 5 aterragens: o AE não tem coluna → o resumo diz que fica só pela regra europeia.
   const c5 = run('cabin', { '2026-04-06': F('09:00', '09:40', '18:00', 5, 'LIS-OPO-LIS-FAO-LIS-OPO'), '2026-04-08': F('08:00', '08:30', '14:30', 2, 'LIS-OPO-LIS') });
   const c23 = T.groupRules(c5, '2026-04-01').dentro.find((x) => x.id === 'C23');
   eq('5 aterragens (cabine): "1 serviço · 1 só pela regra europeia"', c23 && T.summaryFor(c23.rule, 'pt'), '1 serviço · 1 só pela regra europeia');
+
+  // Longo curso COM a hora UTC: avalia-se (sai de "Ainda não avaliado") e as frases dizem o número e porquê.
+  const lh = run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }, { fleetAt: () => 'NB', today: '2026-01-01' });
+  const glh = T.groupRules(lh, '2026-01-01');
+  eq('longo curso com UTC: nada em "Ainda não avaliado"', glh.pendente.semFuso, 0);
+  const p32 = glh.excede.find((x) => x.id === 'P32');
+  eq('frase do P32 (narrow-body, 12h15 > 11h30)', p32 && T.describe('P32', p32.lead, 'pt'), { say: 'Serviço de voo de seg 12 jan: 12:15 (o AE permite 11:30)', det: 'Longo curso, aclimatizado. Calços até às 09:00.' });
+  const wb = T.groupRules(run('pilot', { '2026-01-12': LISGRU() }, { fleetAt: () => 'WB', today: '2026-01-01' }), '2026-01-01').incerto.find((x) => x.id === 'P32');
+  eq('frase do P32 com possível reforço', wb && T.describe('P32', wb.lead, 'pt').det, 'Só cabe com tripulação reforçada (Cl. 42.ª), que a escala não mostra.');
+  const c15 = T.groupRules(run('cabin', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS(), '2026-01-18': F('20:00', '21:00', '23:00', 2, 'LIS-OPO-LIS') }, { today: '2026-01-01' }), '2026-01-01').excede.find((x) => x.id === 'C15');
+  eq('frase da folga depois do longo curso', c15 && T.describe('C15', c15.lead, 'pt'), { say: 'Folga curta depois do serviço de qua 14 jan: 69 h livres (o AE pede 72 h)', det: 'Folga de 48 h + RAD de 24 h, a contar das 23:00 de qui 15 jan.' });
+  const p39 = T.groupRules(run('pilot', { '2026-01-11': F('20:00', '20:30', '22:00', 1, 'OPO-LIS'), '2026-01-12': LISGRU() }, { today: '2026-01-01' }), '2026-01-01').incerto.find((x) => x.id === 'P39');
+  eq('frase da noite antes do longo curso', p39 && T.describe('P39', p39.lead, 'pt').say, 'Trabalho na véspera do longo curso noturno de seg 12 jan');
+  ok('as regras do longo curso só aparecem quando há longo curso', !run('pilot', { '2026-03-02': F('08:00', '08:30', '14:30', 2, 'LIS-OPO-LIS') }).rules.some((r) => ['P32', 'P39', 'P49'].includes(r.id)));
 }
 
 // C14 — o trimestre em curso avalia-se PELA ESCALA PUBLICADA quando ela cobre o trimestre todo.

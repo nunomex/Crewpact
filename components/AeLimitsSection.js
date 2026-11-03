@@ -54,7 +54,7 @@ export default function AeLimitsSection({ result, crewType, lang = 'pt', todayIs
   return (
     <View>
       <Text style={s.eyb}>{l('Limites do acordo', 'Agreement limits')}</Text>
-      <Text style={s.sub}>{l(`${doc.doc} (${doc.bte}), a partir da tua escala. Só o médio curso.`, `${doc.doc} (${doc.bte}), from your roster. Medium haul only.`)}</Text>
+      <Text style={s.sub}>{l(`${doc.doc} (${doc.bte}), a partir da tua escala.`, `${doc.doc} (${doc.bte}), from your roster.`)}</Text>
 
       {first ? (
         <TouchableOpacity style={[s.sum, nEx ? s.sumEx : s.sumIn]} activeOpacity={0.85} onPress={() => open(first.id)}
@@ -85,15 +85,15 @@ export default function AeLimitsSection({ result, crewType, lang = 'pt', todayIs
         </>
       ) : null}
 
-      {/* O que a v1 ainda não avalia: à vista, sem ser "Incerto" (não é o AE que deixa a dúvida). */}
-      {g.pendente.lc || g.pendente.semAeroporto ? (
+      {/* O que a app não consegue avaliar (falta um dado): à vista, sem ser "Incerto" (não é o AE que deixa a dúvida). */}
+      {g.pendente.semFuso || g.pendente.semAeroporto ? (
         <>
           <Text style={s.glab}>{l('Ainda não avaliado', 'Not assessed yet')}</Text>
           <View style={s.list}>
-            {g.pendente.lc ? (
+            {g.pendente.semFuso ? (
               <View style={[s.li, !g.pendente.semAeroporto && s.liLast]}>
-                <Text style={s.liName} numberOfLines={1}>{l('Longo curso', 'Long haul')}</Text>
-                <Text style={s.liVal}>{g.pendente.lc} {g.pendente.lc === 1 ? l('serviço', 'duty') : l('serviços', 'duties')}</Text>
+                <Text style={s.liName} numberOfLines={1}>{l('Longo curso sem hora UTC', 'Long haul without UTC')}</Text>
+                <Text style={s.liVal}>{g.pendente.semFuso} {g.pendente.semFuso === 1 ? l('serviço', 'duty') : l('serviços', 'duties')}</Text>
               </View>
             ) : null}
             {g.pendente.semAeroporto ? (
@@ -104,7 +104,7 @@ export default function AeLimitsSection({ result, crewType, lang = 'pt', todayIs
             ) : null}
           </View>
           <Text style={s.pendNote}>
-            {g.pendente.lc ? l('A app ainda só avalia o médio curso. ', 'The app only assesses medium haul for now. ') : ''}
+            {g.pendente.semFuso ? l('Sem a hora UTC dos voos (ou sem o início da rotação na escala), não se sabe a hora local de cada escala nem a aclimatização. ', 'Without the flights\' UTC times (or the start of the rotation in the roster), the local time at each station and acclimatisation are unknown. ') : ''}
             {g.pendente.semAeroporto ? l('Sem a posição de um aeroporto, não se sabe se o voo é de médio curso. ', 'Without an airport position, it cannot tell whether the flight is medium haul. ') : ''}
             {l('Nestes serviços vale a regra europeia, que a app já calcula.', 'In these duties the EU rules apply, which the app already computes.')}
           </Text>

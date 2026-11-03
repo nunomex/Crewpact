@@ -6,6 +6,77 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## Sessão seguinte (dia 4, continuação) — LIMITES DA TAP, motor v2: LONGO CURSO (por guardar no git)
+
+**Pedido do Nuno:** "continua e fazemos só o longo curso por agora". Mesma regra: tudo do texto oficial; "Excede" só
+quando viola o texto em qualquer leitura.
+
+**FEITO:**
+- **Horas locais pela UTC.** A escala importada traz a hora UTC de cada perna. O motor passa as horas para o relógio
+  da base e calcula a hora legal de cada aeroporto (`airportOffsetMin` em `data/zulu.js`, com cache dos fusos:
+  um ano de escala passou de 109 ms para 38 ms em Node). Sem UTC, o longo curso fica em "Ainda não avaliado"
+  ("Longo curso sem hora UTC").
+- **7 regras novas**, só quando há longo curso:
+  - pilotos: P32 (tempo de serviço de voo, Cl. 43.ª, com aclimatização e reforço), P36 (rotações, Cl. 33.ª e 39.ª),
+    P39 (noite antes do longo curso, Cl. 39.ª, n.º 5), P49 (repouso, Cl. 41.ª);
+  - cabine: C26 (PSV, Cl. 23.ª, n.os 2 a 5, 10 e 11), C41 (repouso, Cl. 29.ª, n.os 8 a 10), C15 (folga e RAD no
+    regresso, Cl. 20.ª e 30.ª).
+- **Lacunas da v1 corrigidas:**
+  - pilotos Cl. 34.ª: 9 h de voo para solo ("incerto" até às 12 h da Cl. 25.ª); +2 h se o voo tocar as 2h00–5h59
+    de Lisboa, também na "próxima saída de calços";
+  - cabine Cl. 20.ª, n.º 3: a folga só começa na hora certa seguinte ao repouso e à transição (C14);
+  - a hora de Lisboa vem da UTC.
+- **Ecrãs:** a secção dos Números deixa de dizer "Só o médio curso". O detalhe do serviço e o Início usam o limite
+  do longo curso com a rotação (`fdpForDuty`) e explicam o "incerto" (aclimatização, reforço, descanso a bordo).
+  Os Números passam a frota de cada dia (`crewAt(d).fleet`) para o reforço.
+- **Golden 230 → 443.** Cada citação, linha e valor dos quadros novos confirmados no texto oficial; casos à mão
+  de GRU, EWR e SFO, no inverno e no verão. 26 suites verdes · guardião sem dívida nova · pacote iOS.
+- Detalhe em `docs/ae-tap-limites.md`, §8.
+
+**Para o Nuno saber (leituras do texto):**
+- **Pilotos, zonas geográficas (Cl. 43.ª, n.º 3):** Lisboa é a zona −1 e GRU a −3 → 2 zonas. Por isso, numa rotação
+  a São Paulo o piloto fica aclimatizado pela alínea c), embora a hora legal difira 3 h. É o que o texto diz.
+- **Cabine, "4" em duas linhas do quadro do n.º 4:** com 4 h de diferença (GRU no verão), a app faz as duas leituras.
+- **"N/A" e "-" nos quadros** (4 aterragens a partir das 16h00): "incerto", porque o AE não dá valor.
+- **Acima do quadro:** pilotos num wide-body (ou frota desconhecida) → "incerto" (reforço até +5 h); num
+  narrow-body → excede. Cabine com 1 setor até 16h30 → "incerto" (descanso a bordo); mais setores ou mais de 16h30 →
+  excede.
+
+**Continua de fora:** os setores em DHC dentro de um serviço de voo (precisa dos códigos da escala da TAP).
+
+**Continuação (Nuno: "ok avança. e faz a (a)"):**
+- **4 regras novas dos pilotos:** P22 (folgas depois do longo curso, Cl. 38.ª), P38 (fusos entre rotações, Cl. 39.ª,
+  n.º 2), P33 (20 h de reforço por mês, Cl. 42.ª, n.º 4), P37 (Atlântico Norte, Cl. 39.ª, n.º 1).
+- **Atlântico Norte = (a):** a região da ICAO, NAT Doc 007 V.2026-1 (texto e SHA-256 em `fontes/icao/` e
+  `fontes/README.md`; a citação é conferida pelo teste). Certas: EUA, Canadá, Islândia, Gronelândia. "Incerto": o resto
+  a norte do equador e a oeste dos 20°W. **Diferença do que eu tinha dito:** o norte do Brasil fica de fora do
+  "Incerto" (está a sul do equador).
+- **Kit de teste:** `docs/kit-teste/longo-curso-tap.ics` (10 voos inventados, 16 nov a 23 dez 2026), gerado por
+  `node scripts/kit-longo-curso.js`; a TAP fica escolhível na configuração **só em desenvolvimento** (Expo Go,
+  `__DEV__`, etiqueta "teste"). Guião §0i reescrito com os resultados esperados à letra; o caminho
+  .ics → leitura do calendário → importação → motor foi corrido no PC e bate certo.
+- Golden 443 → 481. 26 suites verdes · guardião sem dívida nova · pacote iOS.
+
+**Corrigido (Nuno: "temos que corrigir o 1 e o 2. o que diz as leis?"):**
+1. **Importação:** saída depois da meia-noite com a apresentação na véspera → a apresentação passa para a véspera e o
+   serviço fica com o dia da apresentação (o serviço começa na apresentação: pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª,
+   n.º 25). Golden do calendário 44 → 48. Quem já tinha um destes voos importado vê, na próxima sincronização, o
+   serviço na véspera como novo e o antigo como cancelado: confirmar os dois. O kit de teste tem um (Newark, 22 dez).
+2. **Hora local:** pilotos pela Cl. 6.ª, n.º 14 (base nas 48 h depois de sair da zona da base, depois a origem do voo;
+   médio curso sempre base) no trabalho noturno (P53) e como uma das leituras do repouso do longo curso (P49); cabine
+   pela Cl. 4.ª, n.º 13 (partida ou chegada → duas leituras) no serviço noturno (C36). Golden 481 → 488.
+   - **Continua "incerto":** a ida e volta de longo curso com os dois voos a tocar o período crítico, porque o AE não
+     define "consecutivos" (Cl. 22.ª e 27.ª). Confirmado (Nuno: "não há nada na lei sobre isso?"): também não o
+     definem a regra europeia (ORO.FTL.105 define "serviço noturno", não "consecutivos") nem o Código do Trabalho.
+     Quem interpreta é a **comissão paritária** de cada AE (CT art. 493.º; pilotos Cl. 10.ª, n.º 6: as deliberações
+     "vinculam as partes nos mesmos termos deste AE"; cabine Cl. 35.ª, n.º 6: integram o AE e publicam-se no BTE). A
+     única deliberação TAP × SPAC encontrada (20 jun 2023) é sobre a utilização externa (RRCE), não sobre isto.
+     **Pendência:** perguntar ao SPAC e ao SNPVAC (e ao advogado) se há deliberação ou leitura assente; até lá, "incerto".
+
+**A seguir:** device (guião §0i, com o kit); os códigos da escala da TAP quando houver um exemplo do calendário.
+
+---
+
 ## Sessão seguinte (dia 4) — LIMITES DE ESCALA DA TAP, motor v1 (sem ecrãs ainda)
 
 **Decisões do Nuno:** D1–D12 todas como recomendado. E a regra por cima de tudo: **"tem que ser seguir os pdfs

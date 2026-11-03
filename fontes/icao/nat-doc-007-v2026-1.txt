@@ -1,0 +1,72 @@
+=====[PDF p.1]=====
+                                                                                   NAT Doc 007
+
+NORTH ATLANTIC OPERATIONS
+     AND AIRSPACE MANUAL
+
+         V.2026-1 (Applicable from 19 March 2026)
+
+                                                       Prepared by the ICAO European and North Atlantic Office
+                                          on behalf of the North Atlantic Systems Planning Group (NAT SPG)
+
+=====[PDF p.5]=====
+v            NORTH ATLANTIC OPERATIONS AND AIRSPACE MANUAL  v
+
+             FOREWORD
+
+This Document has been produced with the approval and on behalf of the North Atlantic (NAT) Systems
+Planning Group (SPG); the North Atlantic regional planning body established under the auspices of the
+International Civil Aviation Organisation (ICAO). This Group is responsible for developing the required
+operational procedures; specifying the necessary services and facilities; and defining the aircraft and operator
+approval standards employed in the NAT region.
+
+Further information on the functions and working methods of the NAT SPG, together with the NAT Regional
+Safety Policy Statement, are contained in the NAT SPG Handbook (NAT Doc 001) which is available in the
+European and North Atlantic (EUR/NAT) Office public pages on the ICAO website (www.icao.int/EURNAT/).
+
+This Document is for guidance only. Regulatory material relating to North Atlantic aircraft operations is
+contained in relevant ICAO Annexes, PANS-ATM (Doc 4444), Regional Supplementary Procedures
+(Doc 7030), State AIPs and current NOTAMs, which should be read in conjunction with the material contained
+in this Document.
+
+The airspace of the North Atlantic which links Europe and North America is the busiest oceanic airspace in
+the world. For the most part in the North Atlantic, Direct Controller Pilot VHF voice Communications (DCPC
+VHF) and radar surveillance are unavailable. Communications via CPDLC are available to FANS equipped
+aircraft and ADS-B surveillance is available through most of the airspace. Aircraft separation assurance and
+hence safety is ensured by demanding the highest standards of horizontal and vertical navigation
+performance/accuracy and of operating discipline.
+
+The vast majority of North Atlantic flights are performed by commercial jet transport aircraft in the band of
+levels FL 290 – FL 410. To ensure adequate airspace capacity and provide for safe vertical separations,
+Reduced Vertical Separation Minima (RVSM) is applied throughout the ICAO NAT region.
+
+A large portion of the airspace of the NAT, which, incidentally, contains the majority of these NAT crossings
+routes, is designated as the NAT High Level Airspace (NAT HLA) between FL 285 and FL 420 inclusive.
+Within this airspace a formal approval process by the State of Registry of the aircraft or the State of the operator
+ensures that aircraft meet defined NAT HLA Standards and that appropriate flight crew procedures and training
+have been adopted. The lateral dimensions of the NAT HLA include the following Oceanic Control Areas
+(OCAs):
+
+REYKJAVIK, SHANWICK (excluding SOTA & BOTA), GANDER, SANTA MARIA OCEANIC, BODO
+OCEANIC and NEW YORK OCEANIC EAST north of 27N.
+
+Some idea of these dimensions can be obtained from the maps at and those in Chapter 2 and Chapter 3.
+However, for specific dimensions, reference should be made to the ICAO North Atlantic Regional Air
+Navigation Plan (NAT eANP, Doc 9634) and Doc 7030 – NAT (available at www.icao.int/EURNAT/).
+
+Although aircraft and flight crews may fly above the NAT HLA without the requisite of a NAT HLA approval,
+it is important that flight crews of such aircraft have both an understanding of the operational procedures and
+systems employed in the NAT HLA and specific knowledge of any active organized route structures.
+
+The bulk of this Document provides information for Aircraft Operating Agencies, flight crews and Dispatchers
+planning and conducting operations in or above the NAT HLA and it also offers guidance to the State
+Regulators responsible for the approval/certification/or licensing of such aircraft operators, flight crews or
+dispatchers.
+
+Aircraft without NAT HLA or RVSM approvals may, of course, also fly across the North Atlantic below
+FL 285. However, due consideration should be given to the particular operating environment. Especially by
+pilots/operators of single and twin engine aeroplanes. Weather conditions can be harsh; there are limited VHF
+radio communications and ground-based navigation aids; and the terrain can be rugged and sparsely populated.
+International General Aviation (IGA) flights at these lower levels constitute a very small percentage of the
+
+NAT Doc 007  Foreword  V.2026-1 (Applicable from 19 March 2026)

@@ -488,10 +488,14 @@ export default function OnboardingScreen() {
             <>
               {airlines.map((a) => {
                 // Escala que a app ainda não sabe ler (data/rosterCodes · ROSTER_PENDING): à vista, esbatida, sem escolha.
-                const pending = isRosterPending(a);
+                // SÓ EM DESENVOLVIMENTO (Expo Go, __DEV__): fica escolhível, para os testes no device (guião §0h/§0i).
+                // A versão das lojas é compilada sem __DEV__ e continua bloqueada.
+                const devOpen = isRosterPending(a) && typeof __DEV__ !== 'undefined' && __DEV__;
+                const pending = isRosterPending(a) && !devOpen;
                 return (
-                  <Opt key={a.id} label={a.name} reduce={reduce} disabled={pending} tag={pending ? l('brevemente', 'soon') : null}
-                    sub={pending ? l('A app ainda não lê a escala desta companhia.', 'The app cannot read this airline’s roster yet.') : aeStatusOf(a)}
+                  <Opt key={a.id} label={a.name} reduce={reduce} disabled={pending} tag={pending ? l('brevemente', 'soon') : devOpen ? l('teste', 'test') : null}
+                    sub={pending ? l('A app ainda não lê a escala desta companhia.', 'The app cannot read this airline’s roster yet.')
+                      : devOpen ? l('Só em desenvolvimento: aberta para testes.', 'Development only: open for testing.') : aeStatusOf(a)}
                     sel={!pending && draft.company === a.id}
                     onPress={() => (pending ? null : choose('company', a.id, a.id === draft.company ? {} : { crewCategory: null, crewContract: null, crewFleet: null, base: null }))} />
                 );

@@ -130,7 +130,7 @@ SINTÉTICOS (título do género "EZY1234 LIS-OPO", com horas) — nunca dados re
 ### 0h · Limites do acordo (2026-11-03, esboço `design/limites-ae.html`)
 _Conta de TESTE na TAP (a TAP está bloqueada na configuração: usar uma conta de teste que já esteja na TAP, ou tirar
 `'tap'` de `ROSTER_PENDING` só no PC). Serviços INVENTADOS no calendário de teste._
-- [ ] Números → por baixo de Voo e Corpo aparece "Limites do acordo", com o nome do regulamento e "Só o médio curso".
+- [ ] Números → por baixo de Voo e Corpo aparece "Limites do acordo", com o nome do regulamento (já sem "Só o médio curso").
 - [ ] Com 3 noturnos em 7 dias (ex.: seg, qua e sex às 20h00–23h40, com serviço de dia pelo meio): aviso vermelho
       "1 excede" no topo; cartão "Trabalho noturno · Cl. 22.ª — 3 serviços noturnos em 7 dias, sem descanso semanal
       pelo meio" com as datas.
@@ -143,12 +143,65 @@ _Conta de TESTE na TAP (a TAP está bloqueada na configuração: usar uma conta 
       "Próxima saída de calços [AE] …", e a explicação "Acordo da TAP: 11:00 … Regra europeia: 13:00". Tocar abre a
       Prova com a cláusula do AE.
 - [ ] Início, num dia com voo → "Dentro dos limites? Sim … calços até às 17:00 (acordo)".
-- [ ] Com um voo de longo curso (ex.: LIS-JFK): no fim da lista, "Ainda não avaliado · Longo curso · 1 serviço" e a
-      nota "vale a regra europeia"; no detalhe desse voo, "Longo curso: a app ainda não avalia o acordo…".
+- [ ] Longo curso: ver §0i (v2).
 - [ ] Cabine com 5 aterragens num serviço: o resumo do PSV diz "· 1 só pela regra europeia"; o detalhe explica que o AE
       não tem limite para 5 ou mais aterragens.
 - [ ] Escala publicada até ao fim do trimestre com menos de 13 folgas: "Pela escala publicada, N folgas semanais…".
 - [ ] Inglês: as mesmas frases em inglês, sem "undefined".
+
+### 0i · Limites do acordo — longo curso (v2, 2026-11-03) — com o KIT DE TESTE
+_Voos INVENTADOS. Nunca no calendário da escala verdadeira._
+**Preparar (uma vez):**
+1. No iPhone, criar um calendário só para testes (Calendário → Calendários → Adicionar calendário → "Teste CrewPact").
+2. Abrir `docs/kit-teste/longo-curso-tap.ics` no iPhone (por e-mail ou pelos Ficheiros) → "Adicionar tudo" → escolher
+   "Teste CrewPact". São 10 voos "TP …" entre 16 nov e 23 dez de 2026 (gerados por `node scripts/kit-longo-curso.js`).
+3. Na app em **Expo Go**, a TAP aparece na configuração com a etiqueta "teste" (só em desenvolvimento; na versão das
+   lojas continua bloqueada). Conta de teste: TAP · piloto · comandante · base Lisboa · frota **NB**; ligar a escala
+   ao calendário "Teste CrewPact" e importar.
+
+**Piloto, frota NB → Números → Limites do acordo:**
+- [ ] **Excede · Folgas depois do longo curso · Cl. 38.ª** — "Folga curta depois do longo curso de seg 16 nov: 47 h
+      livres (o AE pede 3 dias)" e, por baixo, "4 dias de ocupação + 2 períodos críticos + 0 × 45° de longitude →
+      3 dias de folga, a contar das 03:00 de sex 20 nov". Na folha, também o de seg 30 nov (69 h, "3 ou 4 dias").
+- [ ] **Excede · Tempo de serviço de voo (longo curso) · Cl. 43.ª** — 4 serviços: seg 16 nov 12:15 (11:30), seg 30 nov
+      13:30 (13:15), qua 2 dez 12:30 (9:30, não aclimatizado), ter 22 dez 10:50 (10:00, não aclimatizado).
+- [ ] **Excede · Fusos entre rotações · Cl. 39.ª** — "Só 2 dias de folga entre rotações com 9 h de diferença (mín. 6)",
+      "Da última pernoita em SFO à primeira em LAD".
+- [ ] **Incerto · Repouso no longo curso · Cl. 41.ª** — GRU e SFO: "chega numa leitura do AE e não na outra" (GRU 35:15
+      com 35:00 ou 37:15; SFO 38:00 com 34:00 ou 40:30 — a "hora local" da Cl. 6.ª, n.º 14 é uma das leituras); LAD e
+      EWR: "falta o tempo de transporte".
+- [ ] **Dentro** — "Rotações no Atlântico Norte · 2 de 8"; "Noite antes do longo curso · 2 serviços"; "Duração das
+      rotações · 4 rotações". Tocar em "Rotações no Atlântico Norte": a citação do BTE **e** a da ICAO (NAT Doc 007).
+- [ ] Detalhe do voo de seg 16 nov → "PSV máx." e "Calços até às" com o mais apertado (AE ou regra europeia) e a
+      explicação "Acordo da TAP: 11:30…".
+- [ ] Detalhe do voo de qua 18 nov (GRU→LIS) → "Acordo da TAP: 11:45…" (aclimatizado: GRU fica a 2 zonas geográficas
+      de Lisboa).
+
+**Piloto, frota WB** (Perfil → Frota): o tempo de serviço de voo passa a **Incerto** — "Só cabe com tripulação
+reforçada (Cl. 42.ª)…"; aparece "Reforço por mês · x h de 20 h" (conta as 4 semanas até hoje: os acréscimos do kit
+ somam 0:45 + 0:15 + 3:00 + 0:50).
+- [ ] Confirmado.
+
+**Cabine** (outra conta de teste: TAP · cabine · base Lisboa, mesmo calendário):
+- [ ] **Excede · Folga depois do longo curso · Cl. 20.ª** — "Folga curta depois do serviço de qua 18 nov: 51 h livres (o AE
+      pede 72 h)", "Folga de 48 h + RAD de 24 h, a contar das 23:00 de qui 19 nov"; e o de qua 2 dez ("96 h").
+- [ ] **Excede · Repouso no longo curso · Cl. 29.ª** — "Menos de 36 h com duas noites locais em SFO".
+- [ ] **Incerto · Período de serviço de voo (longo curso) · Cl. 23.ª** — "Só cabe com descanso a bordo (Cl. 24.ª, n.º 2)…".
+- [ ] Detalhe do voo de ter 22 dez (EWR→LIS) → "Acordo da TAP: 11:30…" (ao fim de 37 h ainda conta a hora de Lisboa).
+
+**Os dois:**
+- [ ] **Importação (a correção):** na Escala, o EWR→LIS aparece em **ter 22 dez**, apresentação 23:00, saída 00:00
+      (o voo sai à meia-noite e a apresentação é na véspera).
+- [ ] "Trabalho noturno" (piloto) e "Serviço noturno" (cabine) → **Incerto** em seg 16 e qua 18 nov: "sem outro serviço
+      pelo meio mas em noites diferentes: o AE não diz se contam como seguidos".
+- [ ] Só na cabine, mais dois **Incerto** "conforme a hora local" (seg 30 nov e qua 2 dez; seg 21 e ter 22 dez): os
+      voos tocam as 2h00–5h59 numa das leituras da hora local (partida ou chegada, Cl. 4.ª, n.º 13) e não na outra.
+- [ ] A secção abre depressa (o cálculo das horas locais é o mais pesado).
+- [ ] Inglês: as frases novas em inglês, sem "undefined" nem "NaN".
+- [ ] No fim: apagar o calendário "Teste CrewPact" e as contas de teste.
+
+_Escalas já importadas com um voo destes (saída depois da meia-noite, apresentação na véspera): na próxima
+sincronização aparece o serviço na véspera como novo e o antigo como cancelado — confirmar os dois._
 
 ### 0g · Linha do tempo do contrato — companhia e base com datas (2026-11-03, esboço `design/linha-do-tempo.html`)
 _Conta de TESTE com serviços sintéticos em vários meses (ex.: easyJet cabine FA, base Lisboa, voos LIS-OPO em

@@ -148,6 +148,13 @@ export default function AeLimitSheet({ visible, onClose, ruleId, result, crewTyp
       <View style={s.prova}>
         {shown.map(([q]) => <Text key={q} style={s.quote}>«{q}»</Text>)}
         <Text style={s.src}><Text style={s.srcS}>§ </Text>{doc.doc}, {rule.clause} · {doc.bte}{pages ? `, p. ${pages}` : ''}</Text>
+        {/* Fonte oficial fora do AE, quando o AE usa um termo que não define (ex.: Atlântico Norte → ICAO). */}
+        {(rule.ext || []).map((e) => (
+          <React.Fragment key={e.src}>
+            <Text style={s.quote}>«{e.quote}»</Text>
+            <Text style={s.src}><Text style={s.srcS}>§ </Text>{e.src}</Text>
+          </React.Fragment>
+        ))}
         {url ? (
           <TouchableOpacity style={s.btn} activeOpacity={0.85} onPress={() => { select(); openLibraryLink(url); }}
             accessibilityRole="button" accessibilityLabel={l('Abrir a fonte oficial', 'Open the official source')}>

@@ -18,19 +18,44 @@ export const INTL_TZ_OK = (() => {
   } catch { return false; }
 })();
 
-// Desvio (min) de um fuso IANA num dado instante UTC.
+// Desvio (min) de um fuso IANA num dado instante UTC. O formatador de cada fuso guarda-se (criá-lo é o
+// mais caro no Hermes; os limites do longo curso pedem centenas de consultas).
+const DTF = new Map();
+const dtfFor = (tz) => {
+  let f = DTF.get(tz);
+  if (!f) { f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }); DTF.set(tz, f); }
+  return f;
+};
 const tzOffsetMin = (tz, atUTC) => {
-  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dtf = dtfFor(tz);
   const p = {}; for (const x of dtf.formatToParts(atUTC)) p[x.type] = x.value;
   const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
   return Math.round((asUTC - atUTC.getTime()) / 60000);
 };
 
-// Fuso IANA de um aeroporto (IATA/ICAO) pelas coordenadas. null se desconhecido.
+// Fuso IANA de um aeroporto (IATA/ICAO) pelas coordenadas. null se desconhecido. Guardado por código.
+const TZ_CACHE = new Map();
 export const airportTz = (code) => {
+  if (code && TZ_CACHE.has(code)) return TZ_CACHE.get(code);
   const co = code ? airportCoord(code) : null;
-  if (!co) return null;
-  try { return tzlookup(co.lat, co.lon) || null; } catch { return null; }
+  let tz = null;
+  if (co) { try { tz = tzlookup(co.lat, co.lon) || null; } catch { tz = null; } }
+  if (code) TZ_CACHE.set(code, tz);
+  return tz;
+};
+
+// Desvio UTC (min) da hora LEGAL de um aeroporto num instante (ms UTC) — com horário de verão.
+// Cache por aeroporto e por hora: os limites do longo curso pedem centenas de consultas. null sem Intl/fuso.
+const OFF_CACHE = new Map();
+export const airportOffsetMin = (code, utcMs) => {
+  if (!INTL_TZ_OK || !code || !Number.isFinite(utcMs)) return null;
+  const key = `${code}|${Math.floor(utcMs / 3600000)}`;
+  if (OFF_CACHE.has(key)) return OFF_CACHE.get(key);
+  const tz = airportTz(code);
+  let v = null;
+  if (tz) { try { v = tzOffsetMin(tz, new Date(utcMs)); } catch { v = null; } }
+  OFF_CACHE.set(key, v);
+  return v;
 };
 
 // Hora LOCAL "HH:MM" no aeroporto `code`, no dia `dateISO` → Zulu "HH:MM".

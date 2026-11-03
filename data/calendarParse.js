@@ -75,13 +75,20 @@ export function mapFlight(ev, codes) {
   const depTime = times ? `${pad(+times[1])}:${times[2]}` : hhmm(start);
   const arrTime = times ? `${pad(+times[3])}:${times[4]}` : hhmm(finish);
   // Apresentação: SÓ se o evento a trouxer EXPLÍCITA (RE_REPORT). NUNCA dep − 1 h.
+  // O serviço começa na apresentação, que vem sempre ANTES da saída (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª,
+  // n.º 25). Se a hora das notas calhar depois da saída, é da véspera (saída depois da meia-noite, "RP 23:00").
+  // Se nem assim bater com o evento (mais de 6 h antes da saída), fica por preencher — nunca adivinhada.
   const rep = text.match(RE_REPORT);
-  const reportDate = rep ? atDayTime(start, +rep[1], +rep[2]) : null;
+  let reportDate = rep ? atDayTime(start, +rep[1], +rep[2]) : null;
+  if (reportDate && reportDate > start) {
+    const prev = new Date(reportDate); prev.setDate(prev.getDate() - 1);
+    reportDate = start - prev <= DUTY_GAP_MS ? prev : null;
+  }
 
   return {
     kind: 'flight',
     flightNo: flt ? flt[0].toUpperCase().replace(/\s+/g, '') : null,
-    dateISO: isoLocal(start),
+    dateISO: isoLocal(reportDate || start),   // o dia do serviço = o dia da apresentação
     date: fmtDate(start),
     report: reportDate ? hhmm(reportDate) : null,
     reportDate,

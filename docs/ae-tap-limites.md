@@ -342,3 +342,89 @@ vigor dos RUPT (pilotos 1 jul 2023, Cl. 49.ª; cabine até 1 abr 2024, CG Cl. 40
   testadas; só se acendem quando a leitura da escala da TAP as reconhecer. **Decisão do Nuno: até lá, a TAP fica
   bloqueada na configuração** (`ROSTER_PENDING` em `data/rosterCodes.js`; aparece esbatida, com "brevemente").
 - Longo curso, tempo de simulador, RAD, transporte fora da base e voos excecionados (ROV).
+
+## 8. O motor v2: longo curso (3 de novembro de 2026)
+
+**Pedido do Nuno: "fazemos só o longo curso por agora".** Lido o texto oficial do longo curso (pilotos Cl. 37.ª a
+43.ª; cabine Cl. 23.ª, n.os 2 a 11, Cl. 24.ª, Cl. 29.ª, n.os 8 a 10, Cl. 20.ª, n.os 13 a 16, Cl. 30.ª). Os quadros
+foram conferidos na imagem das páginas (BTE 29/2023, p. 307; BTE 7/2024, p. 341 e 342). O teste passa a 443
+asserções, com cada citação, cada linha e cada valor dos quadros novos confirmados no texto oficial.
+
+**As horas locais.** O longo curso precisa da hora local de cada escala. A escala importada traz a hora UTC de cada
+perna (`offZ`/`onZ`): o motor passa tudo para o relógio da base pela UTC e calcula a hora legal de cada aeroporto
+com o fuso pelas coordenadas (`airportOffsetMin`, em `data/zulu.js`). Sem a hora UTC, o serviço de longo curso fica
+em **"Ainda não avaliado"** (`sem-fuso`). No médio curso, com o telemóvel na hora da base, o resultado não muda.
+
+**Regras novas (só aparecem quando há longo curso):**
+- **P32 — Tempo de serviço de voo (longo curso), Cl. 43.ª.** Quadro pela hora legal do local de partida (nota * do
+  quadro). Aclimatização pela Cl. 43.ª, n.º 2, com zonas geográficas (n.º 3: 15° = 1 zona; Lisboa −1, GRU −3 →
+  2 zonas, por isso o GRU fica aclimatizado pela alínea c)). Duas leituras onde o texto deixa duas (as últimas 36 h
+  ou o tempo livre todo; as escalas da rotação até ao serviço ou a rotação toda). Reforço (Cl. 42.ª): acima do
+  quadro, num wide-body ou com frota desconhecida, com 1 aterragem (2 nas condições do n.º 8) e até 5 h a mais →
+  "incerto"; num narrow-body → excede. "N/A" → "incerto" (o AE não dá valor).
+- **C26 — Período de serviço de voo (longo curso), Cl. 23.ª, n.os 2 a 5.** Até às 47h59 depois da apresentação
+  para a rotação, a hora de referência (a da base, ou a do descanso a ≤ 2 h, n.º 3 a) i)); depois, o quadro do
+  n.º 4 pela diferença horária. O "4" está em duas linhas ("Até 4" e "4, 5 e 6") → duas leituras. Não aclimatizado:
+  11h00 / 10h30 / 10h00 (n.º 5). Acima do quadro: 1 setor até 16h30 → "incerto" (descanso a bordo, Cl. 24.ª,
+  n.º 2, e Cl. 23.ª, n.º 11, que a escala não mostra); mais setores → excede (n.º 10); acima de 16h30 → excede.
+- **P49 — Repouso no longo curso, Cl. 41.ª.** Tempo mínimo (Cl. 25.ª, n.º 2) + os fatores nas horas locais; o
+  mínimo do n.º 2 com 3 ou mais zonas (14 h + 30 min por zona além da 3.ª; com 6 ou mais, 24 h com uma noite local).
+  Leituras: o mínimo com ou sem a duração do serviço; zonas geográficas ou horas legais; as fronteiras exatas das
+  8h00 e das 14h00.
+- **C41 — Repouso no longo curso, Cl. 29.ª, n.os 8 a 10.** Fora da base com 3 h ou mais: max(PSV, 14 h + 30 min por
+  hora "a partir da terceira", que pode contar ou não a 3.ª hora → duas leituras); mais de 6 h → 24 h com uma
+  noite local; voo com 8 h ou mais → 36 h com duas noites locais de calços a calços.
+- **P36 — Duração das rotações, Cl. 33.ª e Cl. 39.ª, n.os 3 e 4.** Médio curso: 6 dias; 7 só por irregularidade
+  ("incerto"); 8 ou mais excede. Longo curso: 11 dias; em 52 semanas, até 10 rotações de 10 dias e 8 de mais de 10.
+- **P39 — Noite antes do longo curso, Cl. 39.ª, n.º 5.** Longo curso da base que toca as 23h00–6h29: trabalho entre
+  a 0h00 e as 10h00 desse dia → excede; na véspera depois das 22h00, ou assistência em casa → "incerto"; se o próprio
+  serviço começa antes das 10h00 → "incerto".
+- **C15 — Folga depois do longo curso, Cl. 20.ª, n.os 3, 13, 14 e 16, e Cl. 30.ª.** No regresso: repouso na base +
+  2 h de transição → a folga começa na hora certa seguinte → 48 h (96 h com mais de 6 h de diferença) + RAD
+  (12 h ou 24 h; não se soma às 96 h nem entre si). Também depois de um PSV com 4 aterragens (n.º 13 a)), mesmo em
+  médio curso.
+
+**Lacunas da v1 corrigidas pelo texto:**
+- **Pilotos, Cl. 34.ª (P43/P44).** Na base, de um voo para o solo, a Cl. 34.ª pede 9 h e a Cl. 25.ª 12 h: entre as
+  duas, "incerto". Mais 2 h quando o voo toca as 2h00–5h59 de Lisboa (n.º 2), também na "próxima saída de calços".
+- **Cabine, Cl. 20.ª, n.º 3 (C14).** A folga só começa na hora certa seguinte ao repouso e à transição. Se o
+  repouso acabar numa hora certa, o AE não diz se começa nessa ou na seguinte: com só uma das contas abaixo de 13,
+  "incerto".
+- **A hora de Lisboa (pilotos Cl. 34.ª, n.º 2; cabine Cl. 29.ª, n.º 7)** passa a vir da hora UTC dos voos.
+
+**Acrescentado no mesmo dia (Nuno: "ok avança. e faz a (a)"):**
+- **P22 — Folgas depois do longo curso, Cl. 38.ª.** (dias de ocupação + períodos críticos penetrados + conjuntos de
+  45° de longitude) ÷ 2, arredondado para cima, mínimo 2 dias de 24 h, a contar da hora certa seguinte ao repouso da
+  Cl. 41.ª e às 2 h de transição (Cl. 21.ª, n.º 12). Os períodos críticos pela Cl. 6.ª, n.º 21 (hora da base até 3
+  zonas; depois, 48 h na hora da base e a seguir a local). A app não vê os dias "assinalados como folga": conta o
+  tempo sem serviço (como no P06); um serviço dentro desses dias é "Excede"; férias ou doença logo a seguir → "Incerto".
+- **P38 — Fusos entre rotações, Cl. 39.ª, n.º 2.** 8 h ou mais entre a última pernoita de uma rotação e a primeira
+  da seguinte (zonas geográficas e horas legais: "Excede" só se as duas chegam às 8 h) → 6 dias de folga pelo meio.
+- **P33 — Reforço por mês, Cl. 42.ª, n.º 4.** O que um serviço passa do quadro da tripulação simples só cabe com
+  reforço e conta como acréscimo: mais de 20 h em 4 semanas é infração em qualquer leitura → "Excede".
+- **P37 — Rotações no Atlântico Norte, Cl. 39.ª, n.º 1 (decisão (a) do Nuno).** O AE não delimita o Atlântico Norte:
+  a app usa a região da ICAO (NAT Doc 007, V.2026-1, p. 5, guardado em `fontes/icao/`). Certas: as rotações aos
+  EUA, Canadá, Islândia e Gronelândia (a rota atravessa sempre Santa Maria, Gander, Shanwick ou Nova Iorque Oceânico
+  Este). Possíveis ("Incerto"): as outras escalas a norte do equador e a oeste dos 20°W (Caraíbas, América Central,
+  México, Venezuela, Colômbia, Cabo Verde). O Brasil fica de fora (a sul do equador). Pares de meses seguidos.
+
+**Continua de fora, sem inventar:** a composição da tripulação e o descanso a bordo; os setores em DHC dentro de um
+serviço de voo (precisa dos códigos da escala da TAP).
+
+**Corrigido no mesmo dia (Nuno: "temos que corrigir o 1 e o 2. o que diz as leis?"):**
+- **Importação:** com a saída depois da meia-noite e a apresentação na véspera ("RP 23:00", saída 00:00), a leitura do
+  calendário punha a apresentação no dia da saída, 24 h depois. O serviço começa na apresentação, que vem sempre antes
+  da saída (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 25): agora a apresentação passa para a véspera e o serviço
+  fica com o dia da apresentação (`mapFlight` em `data/calendarParse.js`; golden do calendário 44 → 48). Se nem assim
+  bater com o evento (mais de 6 h antes da saída), fica por preencher.
+- **"Hora local" de cada AE** (o trabalho noturno e o repouso do longo curso usavam a hora da base):
+  - pilotos, Cl. 6.ª, n.º 14: "A hora do local da base, até ao limite de 48 horas a contar da data da saída da zona
+    horária desse local (hora de calços). Após decorridas 48 horas […], considera-se a hora local de origem do voo"
+    (no médio curso, sempre a da base, Cl. 32.ª, n.º 2) → P53 conta nesta hora; P49 usa-a como uma das duas leituras
+    dos fatores b) e c) e da noite local (a outra é a hora legal de cada aeroporto, "horas locais respetivas");
+  - cabine, Cl. 4.ª, n.º 13: "Hora do local de onde o tripulante de cabine se encontra e realiza o descanso" → num voo,
+    a da partida ou a da chegada: C36 faz as duas leituras e só diz "Excede" com os serviços noturnos nas duas.
+- **"Consecutivos" continua por definir no AE** (pilotos Cl. 22.ª; cabine Cl. 27.ª): numa ida e volta de longo curso
+  com os dois voos a tocar o período crítico, sem outro serviço pelo meio mas em noites diferentes, o resultado
+  continua "incerto", agora com a frase "sem outro serviço pelo meio mas em noites diferentes: o AE não diz se contam
+  como seguidos". Só o SPAC/SNPVAC (ou uma decisão do Nuno) pode fechar esta leitura.
