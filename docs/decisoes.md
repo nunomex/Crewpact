@@ -6,6 +6,113 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## Sessão seguinte (dia 4) — LIMITES DE ESCALA DA TAP, motor v1 (sem ecrãs ainda)
+
+**Decisões do Nuno:** D1–D12 todas como recomendado. E a regra por cima de tudo: **"tem que ser seguir os pdfs
+oficiais. tem que ser tudo oficial, nada inventado"**.
+
+**FEITO:**
+- **Fontes no repo:** `fontes/README.md`. Os PDF do BTE ficam no PC, identificados por SHA-256; o texto extraído
+  é versionado.
+- **Motor `ae/tapLimits.js`, puro, golden-first.** 15 grupos de regras, cada um com a cláusula, a página e a
+  citação literal, e as convenções escritas em pt e en.
+- **Teste `scripts/ae-tap-limits.test.js`** (`npm run test:taplimits`, no `npm test`), com 211 asserções:
+  - Parte 1: cada citação existe letra a letra na página indicada do texto oficial, e os valores das tabelas
+    aparecem no quadro (o teste já apanhou uma página errada);
+  - Parte 2: casos calculados à mão.
+- **Tudo no `docs/ae-tap-limites.md`, secção 7.**
+
+**O que o texto oficial mostrou (para o Nuno saber):**
+- Os limites de PSV dos dois AE contam até 30 min depois dos calços (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª,
+  n.os 25 e 44). Hora-limite de calços pelo AE = apresentação + limite − 30 min.
+- D2 e D3 ficaram respondidas pelas definições oficiais (mês, ano, semana, "duty time").
+- **Convenções novas, a confirmar:**
+  - C10: a folga seguinte começa até 120 h depois do fim da anterior;
+  - "consecutivos" = em dias seguidos;
+  - P06: o 6.º dia conta a partir do dia em que acaba o descanso anterior;
+  - C14: uma folga por cada 48 h livres.
+
+**Fora da v1, por falta de dados (nada inventado):**
+- P07, P08 e P10 (folgas dos pilotos): a app não guarda os dias de folga assinalados na escala.
+- A app só conhece os códigos da escala da easyJet: na TAP, as assistências, as reservas e as folgas não são
+  reconhecidas. É preciso um exemplo do calendário da TAP (títulos dos eventos, com dados inventados).
+
+**Respostas do Nuno (mesmo dia):**
+1. **"não tenho ainda da TAP. podemos é bloquear enquanto a opção de escolher a TAP até termos isso."**
+   FEITO: `ROSTER_PENDING = ['tap']` e `isRosterPending` em `data/rosterCodes.js`. Na configuração, a TAP aparece
+   esbatida, com "brevemente" e "A app ainda não lê a escala desta companhia.", e não se escolhe. O `OptCard`
+   ganhou o estilo inativo. Golden +3.
+2. **"temos que seguir sempre os acordos. o que está na lei."** "Excede" só quando o caso viola o texto em
+   qualquer leitura; o resto fica "incerto".
+   - **C10 saiu:** o prazo de 120 h entre folgas era nosso; fica o n.º 4 da Cl. 20.ª (C11) e as 13 folgas por
+     trimestre (C14).
+   - **"Consecutivos" pelo próprio AE:** um serviço ou uma folga/descanso semanal pelo meio separa-os; em noites
+     seguidas são consecutivos; o resto fica "incerto".
+   - **P06:** a leitura com mais tempo.
+   - **C14:** as equivalências do AE (96 h = 2 folgas, 72 h = 1 folga + 24 h).
+
+   Golden 213. Detalhe no `docs/ae-tap-limites.md`, §7.
+
+**Esboço dos ecrãs ("faz o esboço"):**
+- **Referências escolhidas pelo Nuno ("vamos à tua recomendação"):** lista agrupada pelo resultado (Credit
+  Karma) + gráfico com a linha do limite (bunq) + aviso no topo (YNAB). Estão em `referencias/limites/` e na
+  coleção do Mobbin.
+- **Esboço** `design/limites-ae.html` (https://claude.ai/artifact/NKER48N36sqPF31D2v3tmr), com 4 ecrãs:
+  - a lista nos Números;
+  - a folha de um limite de horas;
+  - a folha de uma regra que excede;
+  - o detalhe do serviço, com o mais apertado entre AE e EASA (D1).
+- **APROVADO (Nuno):** os 4 ecrãs, com a etiqueta "Incerto".
+
+**FEITO no código (o motor ligado aos ecrãs):**
+- **`components/AeLimitsSection`:** a lista nos Números.
+  - Aparece por baixo de Voo e Corpo, só com meses na TAP.
+  - No topo, o aviso curto leva à 1.ª regra; depois os grupos Excede, Incerto e Dentro.
+  - Cada cartão tem a regra · cláusula, a frase e "e mais N".
+- **`components/AeLimitSheet`:** a folha da regra.
+  - **Limite de horas:** o valor de hoje e quanto falta ou passou; o gráfico do mês (a soma da janela em cada
+    dia, a escala publicada a cinzento, a linha tracejada do limite); as outras janelas; a regra europeia ao lado.
+  - **Outras regras:** a palavra do resultado, a frase e, nos noturnos, os 7 dias em causa.
+  - **Sempre:** o resumo do que o AE pede, a citação literal do BTE com a cláusula e a página, o botão para a
+    fonte oficial (DRE, confirmado por SHA-256) e as convenções.
+- **`data/tapLimitsText.js`:** as frases (pt e en), puras. O "incerto" da v1 (longo curso, 5+ aterragens,
+  trimestre em curso) não é problema da escala e fica fora do grupo Incerto.
+- **Detalhe do serviço:**
+  - "PSV máx." e "Calços até às" mostram o mais apertado entre AE e EASA, com a marca "AE" e a Prova do acordo;
+  - linha nova "Próxima saída de calços" (na base: repouso + 4 h);
+  - "Excesso (acordo)";
+  - a explicação com os dois valores e as duas fontes.
+- **Início:** o "Dentro dos limites?" e a hora-limite de calços usam o mais apertado ("(acordo)"). Um PSV acima
+  do AE dá "Não — excede o limite do acordo".
+- **Motor:** `current` (o valor de hoje em cada janela), `series` (o mês para o gráfico), `nextOffBlockAfter`,
+  e `where`/`dates`/`fromAt`/`toAt` nos resultados.
+- **Golden:** 213 → 224 (frases, grupos, próxima saída de calços). Ensaio com um mês inventado de piloto e de
+  cabine: nenhuma frase vazia, "undefined" ou "NaN".
+- **Fontes:** os PDF em `fontes/` são os do DRE (mesmo SHA-256) — os mesmos endereços da Biblioteca.
+
+**Correção pedida pelo Nuno ("os casos que a v1 não avalia não aparecem — corrigir isto?"):** nada fica em silêncio.
+- **Longo curso e aeroporto desconhecido:** linha à parte no fim da lista, "Ainda não avaliado", com o número de
+  serviços e "vale a regra europeia, que a app já calcula". Não é "Incerto": não é o AE que deixa a dúvida.
+- **5 ou mais aterragens (cabine):** o AE não tem coluna. O resumo diz "N só pela regra europeia" e o detalhe do
+  serviço explica-o (Cl. 23.ª, n.º 1). O detalhe também avisa no longo curso e no aeroporto desconhecido.
+- **Trimestre em curso:** se a escala publicada cobre o trimestre todo, há veredicto "pela escala publicada"; se
+  não cobre, fica "x de 13 até agora".
+- Golden 224 → 230.
+
+**Para testar no iPhone:** é preciso uma conta de teste na TAP. Como a TAP está bloqueada na configuração, usar
+uma conta de teste que já esteja na TAP, ou tirar `'tap'` de `ROSTER_PENDING` só no PC, para o teste.
+Guião §0h.
+
+**Verificado no PC:** 26 suites verdes · guardião · pacote iOS. O motor ainda não está ligado a nenhum ecrã.
+**A seguir:**
+1. Os códigos da escala da TAP, quando o Nuno tiver um exemplo do calendário (desbloqueia a TAP e as regras de
+   assistência e folgas).
+2. O esboço de onde os limites aparecem (Início "Dentro dos limites?", detalhe do serviço, Números), com D1: o mais
+   restritivo entre AE e EASA, com as duas citações.
+3. Device.
+
+---
+
 ## Sessão seguinte (dia 3) — LINHA DO TEMPO DO CONTRATO (companhia e base com datas) — FEITA
 
 **Decisões do Nuno:**

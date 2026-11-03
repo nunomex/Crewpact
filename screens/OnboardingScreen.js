@@ -31,6 +31,7 @@ import { upsertProfile } from '../data/db';
 import { requestCalendarAccess, listCalendars } from '../data/calendar';
 import { readCalendarRoster, countUpcomingDuties, importWindow } from '../data/rosterRead';
 import { candidateKind, importSaveFields } from '../data/rosterImport';
+import { isRosterPending } from '../data/rosterCodes';
 import { getAe } from '../ae';
 import { startEmployment, companyStartYm } from '../data/crewHistory';
 import { tx } from '../data/i18n';
@@ -485,10 +486,16 @@ export default function OnboardingScreen() {
             </>
           ) : field === 'company' ? (
             <>
-              {airlines.map((a) => (
-                <Opt key={a.id} label={a.name} sub={aeStatusOf(a)} sel={draft.company === a.id} reduce={reduce}
-                  onPress={() => choose('company', a.id, a.id === draft.company ? {} : { crewCategory: null, crewContract: null, crewFleet: null, base: null })} />
-              ))}
+              {airlines.map((a) => {
+                // Escala que a app ainda não sabe ler (data/rosterCodes · ROSTER_PENDING): à vista, esbatida, sem escolha.
+                const pending = isRosterPending(a);
+                return (
+                  <Opt key={a.id} label={a.name} reduce={reduce} disabled={pending} tag={pending ? l('brevemente', 'soon') : null}
+                    sub={pending ? l('A app ainda não lê a escala desta companhia.', 'The app cannot read this airline’s roster yet.') : aeStatusOf(a)}
+                    sel={!pending && draft.company === a.id}
+                    onPress={() => (pending ? null : choose('company', a.id, a.id === draft.company ? {} : { crewCategory: null, crewContract: null, crewFleet: null, base: null }))} />
+                );
+              })}
               <Text style={[P.foot, o.after]}>{l('Podes mudar tudo depois, no Perfil.', 'You can change all of this later, in Profile.')}</Text>
             </>
           ) : field === 'crewType' ? (

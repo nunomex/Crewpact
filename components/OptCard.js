@@ -24,7 +24,7 @@ export function SelTick({ reduce, style }) {
 
 export default function OptCard({ code, label, sub, sel, tag, onPress, reduce, disabled }) {
   return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={0.7} style={[optStyles.opt, sel && optStyles.optSel]}
+    <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={0.7} style={[optStyles.opt, sel && optStyles.optSel, disabled && optStyles.optOff]}
       accessibilityRole="button" accessibilityState={{ selected: !!sel, disabled: !!disabled }}
       accessibilityLabel={[code, label, sub, tag].filter(Boolean).join(', ')}>
       {code ? <Text style={[optStyles.code, sel && optStyles.codeSel]} allowFontScaling={false}>{code}</Text> : null}
@@ -52,6 +52,7 @@ export const norm = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, 
 export const optStyles = StyleSheet.create({
   opt:     { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, backgroundColor: PELE.paper, marginBottom: SPACE.sm },
   optSel:  { borderColor: PELE.ink },
+  optOff:  { opacity: 0.45 },   // indisponível (ex.: companhia cuja escala ainda não sabemos ler)
   code:    { ...TXT.title, color: PELE.grey, minWidth: 46 },
   codeSel: { color: PELE.ink },
   optTxt:  { flex: 1, minWidth: 0 },

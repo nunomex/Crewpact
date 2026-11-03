@@ -27,7 +27,7 @@ Module._extensions['.js'] = function (m, filename) {
 };
 
 const { parseEasyjetRoster, rosterLooksForeign } = require(path.resolve('data/pdfRoster.js'));
-const { flightNoForeign } = require(path.resolve('data/rosterCodes.js'));
+const { flightNoForeign, isRosterPending } = require(path.resolve('data/rosterCodes.js'));
 const { dutyFromActivity, buildImportCandidates, importSaveFields, buildIncoming } = require(path.resolve('data/rosterImport.js'));
 
 let pass = 0, fail = 0;
@@ -212,6 +212,10 @@ ok('nº foreign: TP123 num easyJet → true', flightNoForeign('TP123', { slug: '
 ok('nº foreign: EJU7625 num easyJet → false', flightNoForeign('EJU7625', { slug: 'easyjet' }) === false);
 ok('nº foreign: U28903 num easyJet → false', flightNoForeign('U28903', { slug: 'easyjet' }) === false);
 ok('nº foreign: companhia NÃO modelada (tap) → false (não arrisca)', flightNoForeign('TP123', { slug: 'tap' }) === false);
+// ── Companhias cuja escala ainda não sabemos ler (ROSTER_PENDING): a configuração não as deixa escolher ──
+ok('escala por ler: TAP bloqueada', isRosterPending({ slug: 'tap', name: 'TAP Air Portugal' }) === true);
+ok('escala por ler: easyJet livre', isRosterPending({ slug: 'easyjet', name: 'easyJet' }) === false);
+ok('escala por ler: Ryanair livre (não foi pedido)', isRosterPending({ slug: 'ryanair', name: 'Ryanair' }) === false);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'}  pdfRoster: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

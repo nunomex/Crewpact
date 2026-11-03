@@ -21,6 +21,8 @@ import { AppContext, toZulu } from '../data/appContext';
 import { airportZulu, legZulu } from '../data/zulu';
 import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
+import { servicesOf, fdpLimitFor } from '../ae/tapLimits';
+import { fmtClock } from '../data/tapLimitsText';
 import { monthStats, yearStats } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
 import { stateVoice } from '../data/stateVoice';
@@ -167,9 +169,20 @@ export default function HomeScreen({ navigation }) {
   // tripulação/categoria via ae/isPilot). "Estou legal?" só aparece quando ILEGAL (aviso vermelho);
   // as perguntas (descanso/escala/validades) vão por baixo do card Serviços.
   const todayISO = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+  // Limites do acordo (TAP) para o serviço de HOJE — o "Dentro dos limites?" usa o mais apertado (D1).
+  const aeToday = useMemo(() => {
+    const dt = duties && duties[todayISO];
+    if (!dt || dt.deleted || !ae || !/^tap/.test(String(ae.AE_ID || ''))) return null;
+    const ct = isPilot ? 'pilot' : 'cabin';
+    const svc = servicesOf({ [todayISO]: { ...dt, extra: [] } }, { baseAt: base, crewType: ct })[0];
+    const r = svc ? fdpLimitFor(svc, ct) : null;
+    if (!r || r.limit == null) return null;
+    return { onBlockMax: r.limit - 30, latest: fmtClock(r.latestOnBlock), latestNextDay: r.latestOnBlock >= (svc.dn + 1) * 1440,
+      over: r.status === 'excede', excess: r.value - r.limit };
+  }, [duties, ae, base, isPilot, todayISO]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, lang],
   );
   // Perguntas (por baixo do card Serviços) — "Estou legal?" entra aqui (já ordenado por
   // severidade: ILEGAL sobe ao topo). Mostra-se quando há veredicto (esconde "sem dados").

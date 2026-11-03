@@ -45,10 +45,27 @@ export function buildTodayItems(ctx, lang) {
   const items = [];
 
   // 1 · Dentro dos limites? (id interno 'legal')
-  const legal = legalStatus(ftlSnap, dayLog);
+  // LIMITES DO ACORDO (2026-11-03, D1): num dia na TAP, vale o mais apertado entre o PSV europeu e o do
+  // AE (`ctx.aeToday`, calculado no Início pelo motor ae/tapLimits.js). O do AE conta até 30 min depois
+  // dos calços: compara-se o equivalente até aos calços.
+  let legal = legalStatus(ftlSnap, dayLog);
+  const aeT = ctx.aeToday || null;
+  if (aeT) {
+    const hm = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || '')); return m ? +m[1] * 60 + +m[2] : null; };
+    const easaMax = legal.psv ? hm(legal.psv.max) : null;
+    if (aeT.over && legal.status !== 'bad') legal = { ...legal, status: 'bad', kind: 'aeOver', aeExcess: aeT.excess };
+    else if (legal.kind === 'legal' && (easaMax == null || aeT.onBlockMax < easaMax)) {
+      legal = { ...legal, psv: { ...(legal.psv || {}), latest: aeT.latest, latestNextDay: aeT.latestNextDay, source: 'AE' } };
+    }
+  }
   {
     let answer, suggestion = null;
-    if (legal.kind === 'psvOver') {
+    if (legal.kind === 'aeOver') {
+      const x = Math.max(0, Math.round(legal.aeExcess || 0));
+      answer = l('Não — excede o limite do acordo', 'No — over the agreement limit') + (x ? ` (+${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')})` : '');
+      suggestion = l('O acordo da TAP conta o serviço de voo até 30 min depois dos calços. Vê o detalhe do serviço e confirma com a companhia.',
+        'The TAP agreement counts flight duty to 30 min after on-blocks. See the duty detail and confirm with the company.');
+    } else if (legal.kind === 'psvOver') {
       answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${legal.excess})` : '');
       suggestion = l('Reduzir o serviço ou, se aplicável, recorrer a prolongamento (máx 2 em 7 dias). Confirma sempre com a companhia.',
         'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
@@ -61,7 +78,7 @@ export function buildTodayItems(ctx, lang) {
     } else {
       // A hora-limite de calços primeiro (é como o tripulante pensa: "tenho até às 19:00").
       const lat = legal.psv && legal.psv.latest
-        ? ` · ${l('calços até às', 'on-blocks by')} ${legal.psv.latest}${legal.psv.latestNextDay ? ` (+1)` : ''}` : '';
+        ? ` · ${l('calços até às', 'on-blocks by')} ${legal.psv.latest}${legal.psv.latestNextDay ? ` (+1)` : ''}${legal.psv.source === 'AE' ? l(' (acordo)', ' (agreement)') : ''}` : '';
       answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : ''));
     }
     // Nunca "legal/ilegal": a app estima, nunca declara legalidade (termos §3; o esquema da companhia prevalece).

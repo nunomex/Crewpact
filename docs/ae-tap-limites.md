@@ -295,3 +295,50 @@ O AE não substitui a lei. Os dois remetem para ela (pilotos: CG Cl. 20.ª, BTE 
 - Os valores EASA com † vêm do motor FTL do projeto (`ftl/rules/flightTimeRules.js`, `restRules.js`, `standbyRules.js`, `discretionRules.js`, `fdpRules.js`, `data/ftl.js`). Os marcados **"a confirmar"** são de memória e **não foram verificados** no Regulamento (UE) 965/2012 nem na CS FTL.1 nesta tarefa. O mesmo vale para a Diretiva 2000/79/CE.
 - **Não li** em detalhe o RRRGS (pagamento) além das Cl. 12.ª, 13.ª-A e 13.ª-B dos pilotos, nem o RAAA, o RCPTC, o RCT ou o RRCE. Procurei neles palavras de escala (folga, repouso, descanso, limite) e não encontrei regras de escala além das citadas.
 - Página-resumo das fontes: pilotos — CG BTE 262–277; RAAA 278–289; **RUPT 289–312**; RRRGS e anexos 312–331; RBO 331–337; RRCE 337–338. Cabine — CG BTE 271–288; RBOP 288–293; RCPTC 293–300; RCT 300–302; RPP 302–308; RRRGS 308–322; RTTP 322–326; **RUPT 326–352**.
+
+## 7. Decisões tomadas e o motor v1 (3 de novembro de 2026)
+
+**D1–D12: todas como recomendado (Nuno).** Regra do Nuno por cima de tudo: **"tem que ser tudo oficial, nada
+inventado"**. O motor é `ae/tapLimits.js`; cada regra guarda a cláusula, a página e a citação literal, e o teste
+`scripts/ae-tap-limits.test.js` (211 asserções) confirma cada citação no texto oficial (`fontes/ae-tap/*.txt`,
+ver `fontes/README.md`). As tabelas de PSV foram conferidas na imagem da página.
+
+**O que a leitura completa do texto oficial mudou ou acrescentou:**
+- **O limite do AE inclui 30 min depois dos calços.** Pilotos: o "tempo de serviço de voo" vai até 30 min depois da
+  imobilização (Cl. 6.ª, n.º 40). Cabine: o "período de serviço de voo (duty time)" também (Cl. 4.ª, n.os 25 e 44).
+  A EASA mede o PSV até aos calços. Hora-limite de calços pelo AE = apresentação + limite − 30 min. Os exemplos da
+  secção 1.3 (P27) e 2.3 (C23) comparavam o limite do AE com o da EASA sem descontar estes 30 min.
+- **D2 e D3 ficam respondidas pelas definições oficiais:** pilotos "mês" = 4 semanas, "ano" = 52 semanas
+  (Cl. 6.ª, n.os 2 e 16); cabine "mês" = mês de calendário, "ano" = ano civil, "semana" = 7 dias seguidos
+  (Cl. 4.ª, n.os 3, 19 e 31); o "duty time" da cabine é o PSV (Cl. 4.ª, n.º 25), mais as assistências com o peso
+  da Cl. 17.ª (25 % fora das instalações, 100 % nas instalações) e o posicionamento, que "conta como período de
+  serviço de voo" (Cl. 4.ª, n.º 28).
+- **Médio curso calcula-se pela definição:** pontos entre 23°N–75°N e 35°W–25°E (e, nos pilotos, diferença de
+  longitude ≤ 30°), com as coordenadas dos aeroportos.
+- **Princípio do Nuno (resposta às leituras): "temos que seguir sempre os acordos. o que está na lei."** A app
+  só diz "Excede" quando o caso viola o texto em qualquer leitura. Quando o caso só se decide com uma interpretação
+  nossa, o resultado é "incerto", nunca um número que o AE não escreve. Por isso:
+  - **C10 saiu.** O prazo de 120 h entre folgas era nosso. Fica o que o AE escreve: no máximo 5 dias seguidos entre
+    duas folgas semanais (Cl. 20.ª, n.º 4, regra C11) e 13 folgas por trimestre (C14).
+  - **P53 e C36, "consecutivos", pelo próprio AE:** com outro serviço ou uma folga semanal (cabine, Cl. 27.ª, n.º 2)
+    ou um descanso semanal (pilotos, Cl. 22.ª, n.º 4) pelo meio, não são consecutivos; em noites seguidas, são; o
+    resto fica "incerto".
+  - **P06:** o 6.º dia conta a partir do 1.º dia de serviço depois do descanso, a leitura que dá mais tempo. Um
+    "excede" não depende de interpretação.
+  - **C14:** as equivalências são do AE: 96 h = duas folgas (Cl. 20.ª, n.º 14) e 72 h = uma folga mais 24 h (n.º 2).
+    A app conta uma folga por cada 48 h completas na base.
+
+**Na v1 (14 grupos de regras):** pilotos P06, P25, P26, P27 (+ Cl. 35.ª, n.º 3), P42 + P50, P53, P54–P56; cabine
+C11 (+ Cl. 20.ª, n.º 1), C14, C23 (+ n.º 1 b) e c)), C34, C36, C38 + C42 (+ Cl. 29.ª, n.º 7), C45 + C46 (+ Cl. 17.ª, n.os 11 e) e
+12 a) f)). Avalia só o médio curso, só os meses na TAP (linha do tempo do contrato) e só depois da entrada em
+vigor dos RUPT (pilotos 1 jul 2023, Cl. 49.ª; cabine até 1 abr 2024, CG Cl. 40.ª, n.º 2).
+
+**Fora da v1, sem inventar:**
+- **P07, P08, P10 (folgas dos pilotos: 111/ano, 10/mês, 6 dias entre folgas):** o "dia de folga" tem de estar
+  "assinalado como tal no planeamento" (Cl. 6.ª, n.º 10) e é diferente do "dia livre de serviço" (n.º 12). A app
+  não guarda os dias de folga da escala. Precisa dos códigos da escala da TAP.
+- **Códigos da escala da TAP:** a app só conhece os códigos da easyJet (`data/rosterCodes.js`). Os voos da TAP são
+  reconhecidos pela rota, mas as assistências, as reservas e as folgas não. As regras de assistência estão feitas e
+  testadas; só se acendem quando a leitura da escala da TAP as reconhecer. **Decisão do Nuno: até lá, a TAP fica
+  bloqueada na configuração** (`ROSTER_PENDING` em `data/rosterCodes.js`; aparece esbatida, com "brevemente").
+- Longo curso, tempo de simulador, RAD, transporte fora da base e voos excecionados (ROV).

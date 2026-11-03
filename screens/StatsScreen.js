@@ -1,7 +1,7 @@
 import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, RADIUS, BRAND, SPACE } from '../data/constants';
 import Icon from '../components/Icon';
 import PeleSide from '../components/PeleSide';
 import PeleSheet from '../components/PeleSheet';
@@ -22,7 +22,10 @@ import { yearCount } from '../data/aeEvents';
 import { computeFlightTime, computeDutyTime } from '../ftl';
 import { t } from '../data/i18n';
 import { select } from '../data/haptics';
-import { AppContext } from '../data/appContext';
+import { AppContext, isoDay } from '../data/appContext';
+import AeLimitsSection from '../components/AeLimitsSection';
+import AeLimitSheet from '../components/AeLimitSheet';
+import { evaluateTapLimits } from '../ae/tapLimits';
 import AsyncStorage from '../data/secureStorage';
 
 // Cor do estado da janela FTL (≥90% vermelho · ≥70% laranja · resto verde) — pele.
@@ -234,6 +237,24 @@ export default function StatsScreen({ navigation }) {
   const audit = useMemo(() => (ae && auditCat && !isYear && st.ym
     ? monthAudit(duties || {}, { ym: st.ym, ae, cat: auditCat, fleet: crewAt(st.ym).fleet, base: homeBaseAt(st.ym), rosterLog: rosterLog || [], events: aeEvents || [], isPilot })
     : null), [ae, auditCat, isYear, st.ym, duties, crewFleet, base, rosterLog, aeEvents, isPilot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // LIMITES DO ACORDO (esboço design/limites-ae.html, aprovado 2026-11-03): o motor dos RUPT da TAP
+  // (ae/tapLimits.js) sobre a escala — só os meses na TAP e abrangidos pelo AE (a linha do tempo do
+  // contrato diz qual é a companhia e o vínculo de cada dia). Não depende do Mês/Ano escolhido: é o agora.
+  const todayIso = isoDay();
+  const [aeRule, setAeRule] = useState(null);
+  const aeLim = useMemo(() => {
+    const isTapAt = (d) => { const a = aeAt(d); return !!a && /^tap/.test(String(a.AE_ID || '')); };
+    return evaluateTapLimits({ crewType: isPilot ? 'pilot' : 'cabin', duties, events: aeEvents, baseAt: homeBaseAt, isTapAt, today: todayIso });
+  }, [duties, aeEvents, aeNow, companyHistory, isPilot, base, todayIso]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A regra europeia ao lado (D1): as mesmas janelas do mostrador da Segurança, em minutos.
+  const easaFor = (id) => {
+    const w = (grp, days) => limits.rows.find((x) => x.grp === grp && x.days === days);
+    const row = (x, label) => (x ? { label, done: Math.round(x.done * 60), limit: Math.round(x.limit * 60) } : null);
+    const flt28 = row(w('voo', 28), l('Regra europeia · voo em 28 dias', 'EU rule · flight in 28 days'));
+    const dut7 = row(w('serv', 7), l('Regra europeia · serviço em 7 dias', 'EU rule · duty in 7 days'));
+    return (id === 'P25' ? [flt28] : id === 'P26' ? [dut7] : id === 'C34' ? [dut7, flt28] : []).filter(Boolean);
+  };
 
   // A nota (partilhada pelos 2 modos): as palavras Amarelo/Vermelho pintadas nas próprias
   // cores; a última frase é a lei do consultivo (termos §3) a falar dentro da app.
@@ -447,6 +468,13 @@ export default function StatsScreen({ navigation }) {
               </TouchableOpacity>
             </Animated.View>
 
+            {/* Limites do acordo (TAP) — por baixo de Voo e Corpo (esboço design/limites-ae.html) */}
+            {aeLim && aeLim.rules.length ? (
+              <View style={s.aeLim}>
+                <AeLimitsSection result={aeLim} crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} todayIso={todayIso} onOpen={setAeRule} />
+              </View>
+            ) : null}
+
             {/* Cards extra — Férias (Ano) + Partilhar (o que o mockup não cobre) */}
             {isYear && hasVac ? (
               <View style={s.card}>
@@ -472,6 +500,10 @@ export default function StatsScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+
+      {/* ── Folha de uma regra do acordo ── */}
+      <AeLimitSheet visible={!!aeRule} onClose={() => setAeRule(null)} ruleId={aeRule} result={aeLim}
+        crewType={isPilot ? 'pilot' : 'cabin'} lang={lang} easa={easaFor(aeRule)} duties={duties} />
 
       {/* ── Folha 01 · Segurança (só no modo Ganhos) ── */}
       <PeleSheet visible={sheet === 'seg'} onClose={() => setSheet(null)}>
@@ -705,6 +737,7 @@ const s = StyleSheet.create({
 
   // Bento
   bento: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  aeLim: { marginTop: SPACE.xxl },
   btile: { width: '47%', flexGrow: 1, minHeight: 118, padding: 14, backgroundColor: PELE.paper, borderWidth: 1, borderColor: PELE.line, borderRadius: 16 },
   btileWide: { width: '100%', flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 0, padding: 15 },
   btWt: { flex: 1, minWidth: 0 },

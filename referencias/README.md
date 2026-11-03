@@ -73,3 +73,18 @@ Esboço: `design/login-v4.html` (A e A+B lado a lado).
 | `base-pesquisa-agoda.webp` | Agoda | pesquisa com cidade e código IATA | https://mobbin.com/screens/9701e1eb-1fb9-45b9-b7f7-de55517424b7 |
 
 Esboço: `design/onboarding-v2.html`.
+
+## limites/ — escolhidas a 2026-11-03 (limites de escala do AE, Números)
+
+**Lista agrupada pelo resultado, com uma frase por regra** (opção 2) + **gráfico com a linha do limite** na página
+de cada limite de horas (opção 4) + aviso curto no topo:
+
+| Ficheiro | App | Mobbin |
+|---|---|---|
+| `lista-agrupada-creditkarma.webp` | Credit Karma | https://mobbin.com/screens/f219b700-6dda-470f-acba-1f5be7c431c9 |
+| `grafico-limite-bunq.webp` | bunq | https://mobbin.com/screens/5e4c3ce2-3316-412f-805a-750dfa197108 |
+| `aviso-topo-ynab.webp` | YNAB | https://mobbin.com/screens/51cbfcf5-3cba-4152-b606-a391eae5dbba |
+
+O que se tira delas: o grupo diz o resultado e quantas regras tem ("A ver · 2"); cada cartão tem a categoria em
+pequeno e uma frase grande que diz o que se passa; no gráfico, a linha tracejada do limite e o número que falta
+(ou que passou) por baixo, em vez de uma percentagem.

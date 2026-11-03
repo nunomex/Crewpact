@@ -122,6 +122,34 @@ SINTÉTICOS (título do género "EZY1234 LIS-OPO", com horas) — nunca dados re
 - [ ] **‹** volta: da escolha ao passo, do passo à antiguidade (e "Continuar" volta a gravar).
 - [ ] **Mudar de companhia** (Perfil) com o calendário já ligado: o 7.º passo NÃO aparece.
 
+### 0f-bis · TAP bloqueada na configuração (2026-11-03, decisão do Nuno)
+- [ ] Conta nova → "Voas para quem?": a TAP aparece **esbatida**, com "brevemente" e "A app ainda não lê a escala
+      desta companhia."; tocar não faz nada (VoiceOver diz "indisponível"). As outras escolhem-se como antes.
+- [ ] Perfil → Mudar de companhia → "Mudei de companhia": a TAP também não se escolhe.
+
+### 0h · Limites do acordo (2026-11-03, esboço `design/limites-ae.html`)
+_Conta de TESTE na TAP (a TAP está bloqueada na configuração: usar uma conta de teste que já esteja na TAP, ou tirar
+`'tap'` de `ROSTER_PENDING` só no PC). Serviços INVENTADOS no calendário de teste._
+- [ ] Números → por baixo de Voo e Corpo aparece "Limites do acordo", com o nome do regulamento e "Só o médio curso".
+- [ ] Com 3 noturnos em 7 dias (ex.: seg, qua e sex às 20h00–23h40, com serviço de dia pelo meio): aviso vermelho
+      "1 excede" no topo; cartão "Trabalho noturno · Cl. 22.ª — 3 serviços noturnos em 7 dias, sem descanso semanal
+      pelo meio" com as datas.
+- [ ] Tocar no cartão → folha "Excede", os 7 dias com os noturnos a tinta, "O que o AE pede", a citação literal
+      (com "sete 7 dias", tal como no BTE), "Abrir a fonte oficial" abre o PDF do DRE, "Como a app conta".
+- [ ] Dentro → "Tempo de voo" → número de hoje ("x h de 90 h"), "faltam y h", gráfico do mês com a linha tracejada
+      dos 90 h (dias futuros a cinzento, hoje a amarelo), trimestre, 52 semanas e a regra europeia (100 h).
+- [ ] Um night-stop (LIS-OPO num dia, OPO-LIS no seguinte) → grupo "Incerto": "falta o tempo de transporte".
+- [ ] Detalhe de um voo (apresentação 06:30, 2 setores) → "PSV máx. [AE] 10:30", "Calços até às [AE] 17:00",
+      "Próxima saída de calços [AE] …", e a explicação "Acordo da TAP: 11:00 … Regra europeia: 13:00". Tocar abre a
+      Prova com a cláusula do AE.
+- [ ] Início, num dia com voo → "Dentro dos limites? Sim … calços até às 17:00 (acordo)".
+- [ ] Com um voo de longo curso (ex.: LIS-JFK): no fim da lista, "Ainda não avaliado · Longo curso · 1 serviço" e a
+      nota "vale a regra europeia"; no detalhe desse voo, "Longo curso: a app ainda não avalia o acordo…".
+- [ ] Cabine com 5 aterragens num serviço: o resumo do PSV diz "· 1 só pela regra europeia"; o detalhe explica que o AE
+      não tem limite para 5 ou mais aterragens.
+- [ ] Escala publicada até ao fim do trimestre com menos de 13 folgas: "Pela escala publicada, N folgas semanais…".
+- [ ] Inglês: as mesmas frases em inglês, sem "undefined".
+
 ### 0g · Linha do tempo do contrato — companhia e base com datas (2026-11-03, esboço `design/linha-do-tempo.html`)
 _Conta de TESTE com serviços sintéticos em vários meses (ex.: easyJet cabine FA, base Lisboa, voos LIS-OPO em
 fevereiro e março, e alguns voos em abril e maio). Nunca dados reais._

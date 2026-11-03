@@ -1,0 +1,303 @@
+<title>Limites do acordo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: onde os limites de escala do acordo de empresa aparecem na app, em quatro telemóveis — a lista
+   nos Números (agrupada pelo resultado, uma frase por regra), a folha de um limite de horas (gráfico com a
+   linha do limite), a folha de uma regra que excede e o detalhe do serviço (o limite mais apertado entre o
+   AE e a regra europeia). Tema único de propósito: a pele de dia da app, escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --ghost: #E2E1DC;
+  --ok: #118A55; --okSoft: #E7F3EC; --warn: #E86A10; --red: #C6362B; --redSoft: #F7E9E7;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 40px 30px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+figcaption .step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,18,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* cabeçalho de página */
+.p-eye { left: 22px; top: 62px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.p-tt { left: 22px; right: 22px; top: 82px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.p-sub { left: 22px; right: 22px; top: 120px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+
+/* aviso no topo (o resumo) */
+.sum { left: 20px; right: 20px; top: 158px; height: 40px; border-radius: 12px; background: var(--redSoft); display: flex; align-items: center; gap: 9px; padding: 0 14px; font: 700 13px/1 var(--f-body); }
+.sum .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--red); flex: none; }
+.sum .ch { margin-left: auto; color: var(--grey); }
+
+/* grupos e cartões */
+.glab { left: 24px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.glab b { color: var(--ink); font-weight: 800; }
+.card { left: 20px; right: 20px; border: 1.5px solid var(--line); border-radius: 16px; padding: 14px 16px; display: grid; gap: 6px; background: var(--paper); }
+.card .row1 { display: flex; align-items: center; gap: 8px; }
+.card .cat { font: 800 10.5px/1.2 var(--f-body); letter-spacing: .8px; text-transform: uppercase; color: var(--grey); flex: 1; min-width: 0; }
+.card .say { font: 700 17px/1.25 var(--f-body); color: var(--ink); text-wrap: balance; }
+.card .det { font: 500 12px/17px var(--f-body); color: var(--grey); }
+.pill { border-radius: 99px; padding: 4px 9px; font: 800 11px/1 var(--f-body); letter-spacing: .3px; flex: none; }
+.pill.ex { background: var(--redSoft); color: var(--red); }
+.pill.in { background: var(--soft); color: var(--ink-soft); }
+.pill.ok { background: var(--okSoft); color: var(--ok); }
+.list { left: 20px; right: 20px; border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--paper); }
+.li { display: flex; align-items: center; gap: 10px; height: 43px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+.li:last-child { border-bottom: 0; }
+.li b { flex: 1; font: 700 14px/1 var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li em { font: 600 12.5px/1 var(--f-body); font-style: normal; color: var(--grey); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.li .ch { color: var(--placeholder); font: 700 15px/1 var(--f-body); }
+
+/* barra de abas */
+.tabs { left: 0; right: 0; bottom: 0; height: 83px; background: var(--paper); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr); padding-top: 12px; }
+.tabs span { text-align: center; font: 700 11px/1 var(--f-body); color: var(--grey); }
+.tabs span.on { color: var(--ink); }
+.tabs span.on::after { content: ""; display: block; width: 5px; height: 5px; border-radius: 99px; background: var(--yellow); margin: 6px auto 0; }
+.tabs span.plus { font: 700 22px/1 var(--f-body); color: var(--ink); }
+
+/* folhas */
+.dim { left: 0; right: 0; top: 0; bottom: 0; background: rgba(20,20,20,.42); }
+.sheet { left: 0; right: 0; top: 64px; bottom: 0; background: var(--paper); border-radius: 26px 26px 0 0; }
+.grab { left: 50%; top: 73px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--ghost); }
+.x { right: 18px; top: 88px; width: 32px; height: 32px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; color: var(--grey); font: 700 15px/1 var(--f-body); }
+.s-eye { left: 22px; top: 98px; font: 800 11px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+.big { left: 22px; top: 120px; font: 700 58px/1 var(--f-display); letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.big small { font: 700 22px/1 var(--f-display); color: var(--grey); letter-spacing: 0; margin-left: 4px; }
+.verdict { left: 22px; top: 120px; font: 700 48px/1 var(--f-display); letter-spacing: -.5px; color: var(--red); }
+.kick { left: 22px; right: 22px; font: 700 14px/1.35 var(--f-body); }
+.kick.ok { color: var(--ok); }
+.note { left: 22px; right: 22px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.note b { color: var(--ink); font-weight: 700; }
+.prova { left: 20px; right: 20px; border-radius: 14px; background: var(--soft); padding: 13px 15px; display: grid; gap: 7px; }
+.prova q { font: 500 12.5px/18px var(--f-body); color: var(--ink); quotes: "«" "»"; }
+.prova .src { font: 700 11px/15px var(--f-body); color: var(--grey); }
+.prova .src i { font-style: normal; color: var(--yellow); font-family: var(--f-display); font-size: 13px; margin-right: 4px; }
+
+/* gráfico do limite (barras à escala: 0–95 h em 140 px) */
+.chart { left: 22px; right: 22px; top: 238px; height: 150px; }
+.chart .lim { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--red); }
+.chart .lim span { position: absolute; right: 0; top: -17px; font: 800 10px/1 var(--f-body); color: var(--red); }
+.chart .bars { position: absolute; left: 0; right: 0; bottom: 0; height: 140px; display: flex; align-items: flex-end; gap: 3px; }
+.chart .bars i { flex: 1; background: var(--ink); border-radius: 3px 3px 0 0; }
+.chart .bars i.fut { background: var(--ghost); }
+.chart .bars i.now { background: var(--yellow); }
+.cx { left: 22px; right: 22px; top: 394px; display: flex; justify-content: space-between; font: 700 10px/1 var(--f-body); color: var(--grey); text-transform: uppercase; }
+.rows { left: 20px; right: 20px; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; }
+.rows div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font: 600 13px/1.25 var(--f-body); }
+.rows div:last-child { border-bottom: 0; }
+.rows div span { color: var(--grey); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rows div b { font-weight: 700; }
+
+/* os 7 dias */
+.week { left: 20px; right: 20px; top: 252px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.week div { border-radius: 10px; padding: 8px 0 9px; text-align: center; display: grid; gap: 5px; background: var(--soft); }
+.week div b { font: 800 10px/1 var(--f-body); letter-spacing: .5px; text-transform: uppercase; color: var(--grey); }
+.week div span { font: 700 15px/1 var(--f-display); }
+.week div small { font: 700 9.5px/1 var(--f-body); color: var(--grey); }
+.week div.n { background: var(--ink); }
+.week div.n b, .week div.n small { color: #B9B7B0; }
+.week div.n span { color: var(--paper); }
+.week div.n small { color: var(--yellow); }
+.week div.free { background: var(--paper); border: 1.5px dashed var(--line); }
+
+/* detalhe do serviço */
+.dhead { left: 22px; top: 60px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.dword { left: 22px; top: 80px; font: 700 40px/1 var(--f-display); letter-spacing: -.5px; }
+.dkick { left: 22px; top: 126px; font: 600 13px/1 var(--f-body); color: var(--ok); }
+.back { left: 16px; top: 18px; }
+.sec { left: 24px; font: 800 10.5px/1 var(--f-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey); }
+.kv { left: 20px; right: 20px; border-top: 1px solid var(--line); }
+.kv div { display: flex; align-items: center; gap: 8px; height: 44px; border-bottom: 1px solid var(--line); padding: 0 2px; font: 600 14px/1 var(--f-body); }
+.kv div .k { flex: 1; }
+.kv div .v { font: 700 14px/1 var(--f-body); font-variant-numeric: tabular-nums; }
+.kv div .tag { border-radius: 6px; padding: 3px 6px; background: var(--ink); color: var(--yellow); font: 800 10px/1 var(--f-body); letter-spacing: .4px; }
+.kv div .sec-mark { color: var(--yellow); font: 700 14px/1 var(--f-display); }
+.why { left: 20px; right: 20px; border-radius: 14px; background: var(--soft); padding: 12px 14px; font: 500 12px/17px var(--f-body); color: var(--ink-soft); }
+.why b { color: var(--ink); }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · limites do acordo · 3 de novembro de 2026</p>
+    <h1>Limites do acordo</h1>
+    <p class="lede">Onde os limites de escala do acordo de empresa aparecem na app. Nos Números, uma lista agrupada pelo resultado, com uma frase por regra; ao tocar, a folha da regra com a citação do BTE. No detalhe do serviço, o limite mais apertado entre o acordo e a regra europeia. Exemplo com dados inventados: piloto da TAP em Lisboa, novembro de 2026 (a TAP fica bloqueada até a app saber ler a escala dela).</p>
+  </header>
+
+  <section aria-labelledby="h-p">
+    <h2 id="h-p">Os ecrãs</h2>
+    <div class="phones">
+
+      <!-- 1 · NÚMEROS · A LISTA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Números, limites do acordo: um que excede, um incerto e cinco dentro">
+          <p class="p-eye">Números · TAP · AE</p>
+          <p class="p-tt">Limites do acordo</p>
+          <p class="p-sub">Regulamento dos pilotos (BTE n.º 29/2023), a partir da tua escala. Só o médio curso.</p>
+          <p class="sum"><span class="dot"></span>1 excede · 1 incerto<span class="ch">›</span></p>
+          <p class="glab" style="top:214px"><b>Excede</b> · 1</p>
+          <div class="card" style="top:232px">
+            <div class="row1"><span class="cat">Trabalho noturno · Cl. 22.ª</span><span class="pill ex">Excede</span></div>
+            <p class="say">3 serviços noturnos em 7 dias, sem descanso semanal pelo meio</p>
+            <p class="det">seg 2, qua 4 e sex 6 de novembro</p>
+          </div>
+          <p class="glab" style="top:362px"><b>Incerto</b> · 1</p>
+          <div class="card" style="top:380px">
+            <div class="row1"><span class="cat">Repouso e transição · Cl. 25.ª e 24.ª</span><span class="pill in">Incerto</span></div>
+            <p class="say">Night-stop no Porto: falta o tempo de transporte para confirmar</p>
+            <p class="det">qua 11 · 15 h entre os calços e a saída; o mínimo sem transporte é 14 h</p>
+          </div>
+          <p class="glab" style="top:524px"><b>Dentro</b> · 5</p>
+          <div class="list" style="top:542px">
+            <div class="li"><b>Tempo de voo</b><em>84 h de 90 h</em><span class="ch">›</span></div>
+            <div class="li"><b>Tempo de trabalho</b><em>39 h de 48 h</em><span class="ch">›</span></div>
+            <div class="li"><b>Tempo de serviço de voo</b><em>12 serviços</em><span class="ch">›</span></div>
+            <div class="li"><b>Descanso semanal</b><em>em dia</em><span class="ch">›</span></div>
+            <div class="li"><b>Assistências</b><em>2 este mês</em><span class="ch">›</span></div>
+          </div>
+          <div class="tabs"><span>Início</span><span>Escala</span><span class="plus">＋</span><span class="on">Números</span><span>Perfil</span></div>
+        </div></div>
+        <figcaption><span class="step">Números</span><b>A lista</b><span>Nova secção por baixo de Voo e Corpo, só para quem tem o acordo da TAP. Em cima, o aviso curto leva à primeira regra que excede. Os grupos dizem o resultado; cada cartão tem a cláusula em pequeno e uma frase que diz o que se passa. O "Dentro" fica numa lista compacta.</span></figcaption>
+      </figure>
+
+      <!-- 2 · FOLHA · UM LIMITE DE HORAS -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Folha do tempo de voo: 84 horas de 90 em 28 dias, gráfico com a linha do limite e a citação do BTE">
+          <div class="dim"></div><div class="sheet"></div><span class="grab"></span>
+          <p class="s-eye">Tempo de voo · 28 dias</p><span class="x">✕</span>
+          <p class="big">84 h<small>de 90 h</small></p>
+          <p class="kick ok" style="top:190px">Dentro · faltam 6 h</p>
+          <div class="chart">
+            <div class="lim" style="bottom:133px"><span>90 h</span></div>
+            <div class="bars">
+              <i style="height:110px"></i><i style="height:112px"></i><i style="height:112px"></i><i style="height:115px"></i><i style="height:117px"></i>
+              <i style="height:117px"></i><i style="height:119px"></i><i style="height:120px"></i><i style="height:118px"></i><i style="height:121px"></i>
+              <i style="height:122px"></i><i style="height:124px"></i><i style="height:124px"></i><i style="height:124px"></i><i class="now" style="height:124px"></i>
+              <i class="fut" style="height:126px"></i><i class="fut" style="height:128px"></i><i class="fut" style="height:130px"></i><i class="fut" style="height:128px"></i><i class="fut" style="height:126px"></i>
+              <i class="fut" style="height:125px"></i><i class="fut" style="height:123px"></i><i class="fut" style="height:122px"></i><i class="fut" style="height:120px"></i><i class="fut" style="height:118px"></i>
+              <i class="fut" style="height:117px"></i><i class="fut" style="height:115px"></i><i class="fut" style="height:113px"></i><i class="fut" style="height:112px"></i><i class="fut" style="height:110px"></i>
+            </div>
+          </div>
+          <p class="cx"><span>1 nov</span><span>hoje</span><span>18 nov · 88 h</span><span>30 nov</span></p>
+          <div class="rows" style="top:420px">
+            <div><b>Trimestre (out–dez)</b><span>201 h de 270 h</span></div>
+            <div><b>Ano (52 semanas)</b><span>712 h de 850 h</span></div>
+            <div><b>Regra europeia · 28 dias</b><span>84 h de 100 h</span></div>
+          </div>
+          <div class="prova" style="top:570px">
+            <q>O limite mensal de tempo de voo é de 90 horas; o limite trimestral de tempo de voo é de 270 horas; o limite anual de tempo de voo é de 850 horas.</q>
+            <p class="src"><i>§</i>AE TAP × SPAC · RUPT, Cl. 30.ª, n.º 1 · BTE n.º 29, 8 ago 2023, p. 303</p>
+          </div>
+          <p class="note" style="top:712px"><b>Como a app conta:</b> o AE chama "mês" a 4 semanas seguidas (Cl. 6.ª, n.º 16), por isso a barra de cada dia soma os 28 dias até ele. O tempo de simulador ainda não entra.</p>
+        </div></div>
+        <figcaption><span class="step">Tocar num limite de horas</span><b>A folha do limite</b><span>O número grande e quanto falta (ou quanto passou). O gráfico mostra a soma dos 28 dias em cada dia, com a escala já publicada a cinzento e a linha tracejada do limite. Por baixo, as outras janelas e a regra europeia lado a lado. No fim, a citação do BTE e como a app conta.</span></figcaption>
+      </figure>
+
+      <!-- 3 · FOLHA · UMA REGRA QUE EXCEDE -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Folha do trabalho noturno: excede, três noturnos em sete dias sem descanso semanal">
+          <div class="dim"></div><div class="sheet"></div><span class="grab"></span>
+          <p class="s-eye">Trabalho noturno · Cl. 22.ª</p><span class="x">✕</span>
+          <p class="verdict">Excede</p>
+          <p class="kick" style="top:180px">3 serviços noturnos em 7 dias, sem um descanso semanal pelo meio.</p>
+          <div class="week">
+            <div class="n"><b>seg</b><span>2</span><small>23h10</small></div>
+            <div><b>ter</b><span>3</span><small>dia</small></div>
+            <div class="n"><b>qua</b><span>4</span><small>23h10</small></div>
+            <div><b>qui</b><span>5</span><small>dia</small></div>
+            <div class="n"><b>sex</b><span>6</span><small>23h10</small></div>
+            <div class="free"><b>sáb</b><span>7</span><small>livre</small></div>
+            <div class="free"><b>dom</b><span>8</span><small>livre</small></div>
+          </div>
+          <p class="note" style="top:330px"><b>O que o AE pede:</b> no 3.º serviço noturno em 7 dias, tem de haver um descanso semanal (36 h com duas noites locais) entre eles.</p>
+          <div class="prova" style="top:400px">
+            <q>Se um piloto efetuar o terceiro período de trabalho noturno num período de sete 7 dias consecutivos, tem obrigatoriamente de ter gozado, no mínimo, um período de descanso semanal entre qualquer dos períodos de trabalho noturno realizados.</q>
+            <p class="src"><i>§</i>AE TAP × SPAC · RUPT, Cl. 22.ª, n.º 4 · BTE n.º 29, 8 ago 2023, p. 300</p>
+          </div>
+          <p class="note" style="top:590px"><b>Trabalho noturno</b> é o trabalho entre as 23h00 e as 6h29 (Cl. 6.ª, n.º 28). A app conta qualquer serviço que toque nesse período.</p>
+          <p class="note" style="top:652px">A app estima a partir da tua escala e não vê as exceções por irregularidade (n.º 3). Confirma com a escala oficial.</p>
+        </div></div>
+        <figcaption><span class="step">Tocar numa regra</span><b>A folha da regra</b><span>A palavra do resultado, a frase e os 7 dias em causa, com os noturnos a tinta. Depois, o que o AE pede, em português simples, e a citação literal: o BTE escreve "sete 7 dias", e a app copia sem corrigir.</span></figcaption>
+      </figure>
+
+      <!-- 4 · DETALHE DO SERVIÇO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Detalhe do serviço: PSV máximo 10h30 e calços até às 17h00, pelo acordo, com a regra europeia ao lado">
+          <p class="dhead">seg 2 nov · TP1932 · 2 setores</p>
+          <p class="dword">LIS → OPO → LIS</p>
+          <p class="dkick">Dentro dos limites</p>
+          <p class="sec" style="top:168px">Horas</p>
+          <div class="kv" style="top:186px">
+            <div><span class="k">Apresentação</span><span class="v">06:30</span></div>
+            <div><span class="k">Calços (chegada)</span><span class="v">16:20</span></div>
+          </div>
+          <p class="sec" style="top:292px">Limites</p>
+          <div class="kv" style="top:310px">
+            <div><span class="k">PSV máx.</span><span class="tag">AE</span><span class="v">10h30</span><span class="sec-mark">§</span></div>
+            <div><span class="k">Calços até às</span><span class="tag">AE</span><span class="v">17h00</span><span class="sec-mark">§</span></div>
+            <div><span class="k">Próxima saída de calços</span><span class="tag">AE</span><span class="v">08h20 (+1)</span><span class="sec-mark">§</span></div>
+          </div>
+          <div class="why" style="top:452px">Vale o limite <b>mais apertado</b>. Acordo da TAP: <b>11h00</b>, contado até 30 min depois dos calços (Cl. 35.ª e Cl. 6.ª, n.º 40), ou seja, 10h30 até aos calços. Regra europeia: <b>13h00</b> até aos calços (ORO.FTL.205).</div>
+          <div class="why" style="top:575px">Próxima saída: 12 h de repouso na base e 4 h de transição (Cl. 25.ª, n.º 2, e Cl. 24.ª, n.º 3), contadas a partir dos calços.</div>
+          <div class="tabs"><span>Início</span><span class="on">Escala</span><span class="plus">＋</span><span>Números</span><span>Perfil</span></div>
+        </div></div>
+        <figcaption><span class="step">Detalhe do serviço</span><b>O limite mais apertado</b><span>As linhas que já existem mostram agora o valor mais apertado, com a marca "AE" quando vem do acordo. Por baixo, a explicação com os dois valores e as duas fontes. O § abre a Prova com as duas citações. A linha nova é a próxima saída de calços.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>Os Números ganham a secção do acordo</b><span>Só para quem tem um acordo com limites modelados (hoje, a TAP). Fica por baixo de Voo e Corpo; o mostrador da regra europeia em cima não muda.</span></li>
+      <li><b>"Dentro dos limites?" no Início</b><span>A pergunta e a hora-limite de calços passam a usar o mais apertado entre o acordo e a regra europeia. Quando vem do acordo, a folha diz qual é a cláusula.</span></li>
+      <li><b>Três resultados, nunca "legal"</b><span>"Dentro", "Excede" e "Incerto". "Incerto" aparece quando falta um dado (o transporte do ROV) ou quando o caso só se decide com uma leitura que o AE não faz.</span></li>
+      <li><b>Cada número abre a sua lei</b><span>A folha de cada regra termina com a citação literal do BTE, a cláusula e a página, e com a forma como a app conta.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas os quatro ecrãs?</b><span>Se sim, passo-os para o código, ligados ao motor que já está testado.</span></li>
+      <li><b>"Incerto" ou "Por confirmar"?</b><span>Os dois servem. "Por confirmar" convida a verificar; "Incerto" é mais exato quando o próprio AE não decide o caso. Recomendo "Incerto".</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

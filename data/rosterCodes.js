@@ -39,3 +39,14 @@ export const flightNoForeign = (fno, company) => {
   if (!codes || !codes.flightNo) return false;
   return !codes.flightNo.test(String(fno || ''));
 };
+
+// Companhias cuja escala a app ainda NÃO sabe ler: sem os códigos do calendário dela, as assistências,
+// as reservas e as folgas não são reconhecidas (só os voos, pela rota). A configuração não as deixa
+// escolher até termos esses códigos (Nuno, 2026-11-03: "bloquear ... a opção de escolher a TAP até
+// termos isso"). Para desbloquear: acrescentar o bloco da companhia ao ROSTER_CODES e tirá-la daqui.
+export const ROSTER_PENDING = ['tap'];
+export const isRosterPending = (airline) => {
+  const s = [airline && airline.id, airline && airline.slug, airline && airline.engine_code, airline && airline.name]
+    .filter(Boolean).join(' ').toLowerCase();
+  return ROSTER_PENDING.some((k) => new RegExp(`\\b${k}\\b`).test(s));
+};

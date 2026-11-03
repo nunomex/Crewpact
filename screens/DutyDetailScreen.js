@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
@@ -19,6 +19,9 @@ import HotelSheet from '../components/HotelSheet';
 import ProvaSheet from '../components/ProvaSheet';
 import { provaFor } from '../data/prova';
 import { legZulu } from '../data/zulu';
+import { servicesOf, fdpLimitFor, nextOffBlockAfter, docFor } from '../ae/tapLimits';
+import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
+import { AE_DEEPLINKS } from '../data/library';
 
 const minToHhmm = (min) => { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return `${h}:${String(m).padStart(2, '0')}`; };
 const clkMin = (str) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(str || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
@@ -107,6 +110,38 @@ export default function DutyDetailScreen({ route, navigation }) {
   const sbAccD = kind === 'standby_airport' && !!duty.accommodation;
   const over = sbAccD ? false : !!(d && d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
 
+  // ── LIMITES DO ACORDO (esboço design/limites-ae.html, ecrã 4, aprovado 2026-11-03) — só nos dias na TAP ──
+  // Vale o limite MAIS APERTADO entre o AE e a regra europeia (D1), com as duas fontes. O limite do AE
+  // conta até 30 min depois dos calços (pilotos Cl. 6.ª, n.º 40 · cabine Cl. 4.ª, n.º 25): compara-se o
+  // equivalente até aos calços (limite − 30 min) com o PSV máximo europeu.
+  const ctD = isPilotD ? 'pilot' : 'cabin';
+  const tapAe = !!ae && /^tap/.test(String(ae.AE_ID || ''));
+  const svcAe = tapAe && isFlight && date ? servicesOf({ [date]: { ...duty, extra: [] } }, { baseAt: baseD, crewType: ctD })[0] : null;
+  const aeFdp = svcAe ? fdpLimitFor(svcAe, ctD) : null;
+  const aeOk = !!(aeFdp && aeFdp.limit != null && !sbAccD);
+  const aeOnBlockMax = aeOk ? aeFdp.limit - 30 : null;
+  const easaMax = d && d.fdp && d.fdp.maxFdpMin != null ? d.fdp.maxFdpMin : null;
+  const aeStricter = aeOk && (easaMax == null || aeOnBlockMax < easaMax);
+  const aeOver = aeOk && hasEnd && aeFdp.status === 'excede';
+  const aeNext = svcAe && hasEnd ? nextOffBlockAfter(svcAe, ctD) : null;
+  const aeDoc = docFor(ctD);
+  const aeUrl = AE_DEEPLINKS.tap && AE_DEEPLINKS.tap[ctD] ? AE_DEEPLINKS.tap[ctD].url : null;
+  const aePsvProva = aeOk ? {
+    title: l('PSV máx. · acordo da TAP', 'FDP max · TAP agreement'), lawTag: `${aeDoc.doc} · ${ctD === 'pilot' ? 'Cl. 35.ª' : 'Cl. 23.ª'}`,
+    resumo: plainFor(ctD === 'pilot' ? 'P27' : 'C23', lang),
+    art: ctD === 'pilot' ? 'RUPT, Cl. 35.ª, n.º 1, e Cl. 6.ª, n.º 40' : 'RUPT, Cl. 23.ª, n.º 1, e Cl. 4.ª, n.º 25',
+    ref: `${aeDoc.bte}, p. ${ctD === 'pilot' ? '304–305' : '341'}`, url: aeUrl,
+  } : null;
+  const aeRestProva = aeNext ? {
+    title: l('Próxima saída de calços · acordo da TAP', 'Next off-blocks · TAP agreement'), lawTag: `${aeDoc.doc} · ${ctD === 'pilot' ? 'Cl. 25.ª e 24.ª' : 'Cl. 29.ª e 32.ª'}`,
+    resumo: plainFor(ctD === 'pilot' ? 'P42' : 'C38', lang),
+    art: ctD === 'pilot' ? 'RUPT, Cl. 25.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'RUPT, Cl. 29.ª, n.os 2 e 7, e Cl. 32.ª, n.º 4',
+    ref: `${aeDoc.bte}, p. ${ctD === 'pilot' ? '301' : '345–347'}`, url: aeUrl,
+  } : null;
+  const aeTagged = (v) => (
+    <View style={s.aeVal}><View style={s.aeTag}><Text style={s.aeTagT}>AE</Text></View><Text style={s.rowV} numberOfLines={1}>{v}</Text></View>
+  );
+
   // ── Per-diem (motor AE) — só voo, piloto AE, rota completa ──
   const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
   const catD = crewAt(date).category;   // categoria EM VIGOR no mês desta duty (effective-dated)
@@ -172,6 +207,8 @@ export default function DutyDetailScreen({ route, navigation }) {
   // Pílula de estado FTL (verde dentro / vermelho excede / neutra sem dados de fim).
   const statusPill = (!d || !hasEnd)
     ? { tone: 'neutral', txt: l('sem dados de fim', 'no end data') }
+    : aeOver
+      ? { tone: 'red', txt: l('Excede o limite do acordo', 'Exceeds the agreement limit') }
     : over
       ? { tone: 'red', txt: l('Excede o limite FTL', 'Exceeds FTL limit') }
       : { tone: 'ok', txt: l('Dentro do limite FTL', 'Within FTL limit') };
@@ -292,10 +329,18 @@ export default function DutyDetailScreen({ route, navigation }) {
             <Sec icon="gauge">{l('FTL · Segurança', 'FTL · Safety')}</Sec>
             <Panel rows={[
               (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
-              (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
+              aeStricter
+                ? { k: l('PSV máx (FDP)', 'FDP max'), v: fmtDur(aeOnBlockMax), node: aeTagged(fmtDur(aeOnBlockMax)), prova: aePsvProva }
+                : (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
               // A hora-limite de calços (2026-11-03): o número que toda a concorrência mostra primeiro —
               // o tripulante pensa em horas do relógio. Mesma hora da apresentação; +1 = dia seguinte.
-              (!sbAccD && d.latestOnBlockStr) && { k: l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
+              aeStricter
+                ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`,
+                    node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
+                : (!sbAccD && d.latestOnBlockStr) && { k: l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
+              aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
+              aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`,
+                node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`), prova: aeRestProva },
               sbAccD && { k: l('PSV', 'FDP'), v: l('não se aplica — standby (225)', 'not applicable — standby (225)') },
               (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
                 v: d.discretion.over
@@ -306,6 +351,29 @@ export default function DutyDetailScreen({ route, navigation }) {
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
+            {tapAe && aeFdp && aeFdp.limit == null ? (
+              <Text style={s.aeWhy}>
+                {aeFdp.reason === 'sem-coluna'
+                  ? l('O acordo da TAP não tem limite para 5 ou mais aterragens (Cl. 23.ª, n.º 1): vale a regra europeia.', 'The TAP agreement has no limit for 5 or more landings (Cl. 23, no. 1): EU rules apply.')
+                  : aeFdp.reason === 'longo-curso'
+                    ? l('Longo curso: a app ainda não avalia o acordo da TAP neste serviço. Vale a regra europeia.', 'Long haul: the app does not assess the TAP agreement for this duty yet. EU rules apply.')
+                    : l('Falta a posição de um aeroporto: a app não sabe se este voo é de médio curso. Vale a regra europeia.', 'An airport position is missing: the app cannot tell whether this flight is medium haul. EU rules apply.')}
+              </Text>
+            ) : null}
+            {aeOk ? (
+              <Text style={s.aeWhy}>
+                {aeStricter ? l('Vale o limite mais apertado. ', 'The tighter limit applies. ') : l('Aqui a regra europeia é a mais apertada. ', 'Here the EU rule is the tighter one. ')}
+                {l(`Acordo da TAP: ${fmtDur(aeFdp.limit)}, contado até 30 min depois dos calços (${ctD === 'pilot' ? 'Cl. 35.ª e Cl. 6.ª, n.º 40' : 'Cl. 23.ª e Cl. 4.ª, n.º 25'}), ou seja ${fmtDur(aeOnBlockMax)} até aos calços.`,
+                  `TAP agreement: ${fmtDur(aeFdp.limit)}, counted to 30 min after on-blocks (${ctD === 'pilot' ? 'Cl. 35 and Cl. 6, no. 40' : 'Cl. 23 and Cl. 4, no. 25'}), i.e. ${fmtDur(aeOnBlockMax)} to on-blocks.`)}
+                {easaMax != null ? l(` Regra europeia: ${fmtDur(easaMax)} até aos calços (ORO.FTL.205).`, ` EU rule: ${fmtDur(easaMax)} to on-blocks (ORO.FTL.205).`) : ''}
+              </Text>
+            ) : null}
+            {aeNext ? (
+              <Text style={s.aeWhy}>
+                {l(`Próxima saída: ${fmtDur(aeNext.rest)} de repouso na base e ${fmtDur(aeNext.trans)} de transição (${ctD === 'pilot' ? 'Cl. 25.ª, n.º 2, e Cl. 24.ª, n.º 3' : 'Cl. 29.ª, n.º 2, e Cl. 32.ª, n.º 4'}), contadas a partir dos calços.`,
+                  `Next departure: ${fmtDur(aeNext.rest)} rest at base and ${fmtDur(aeNext.trans)} transition (${ctD === 'pilot' ? 'Cl. 25, no. 2, and Cl. 24, no. 3' : 'Cl. 29, no. 2, and Cl. 32, no. 4'}), counted from on-blocks.`)}
+              </Text>
+            ) : null}
           </>
         ) : null}
 
@@ -432,6 +500,11 @@ const s = StyleSheet.create({
   rowFirst: { borderTopWidth: 0 },
   rowK: { flex: 1, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey },
   rowV: { fontSize: 12.5, fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
+  // Limites do acordo: a marca "AE" ao lado do valor e a explicação com as duas fontes (D1).
+  aeVal: { flexDirection: 'row', alignItems: 'center', gap: SPACE.s },
+  aeTag: { backgroundColor: PELE.ink, borderRadius: RADIUS.xs, paddingHorizontal: SPACE.s, paddingVertical: SPACE.xxs },
+  aeTagT: { ...TXT.tag, color: BRAND.signal },
+  aeWhy: { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.sm, marginHorizontal: SPACE.xs },
   rowLaw: { fontSize: 9.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, marginTop: 2 },   // § inline da PROVA (metadado)
   rowLawS: { color: BRAND.signal },
   rowVZ: { fontSize: 10.5, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, fontVariant: ['tabular-nums'], textAlign: 'right', marginTop: 2, letterSpacing: 0.2 },
