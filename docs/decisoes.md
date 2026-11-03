@@ -10,6 +10,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 **Modelo:** Opus 5.5 **Alto** (verificação de uma mudança). O Nuno escreve **"testar os estados"** → o guião
 `docs/verificacao-device.md` (reescrito hoje para a v6), estado a estado, com `FORCE_HOME_STATE`.
+**Onde está:** ramo **`inicio-v6`** (gravado `59a461e`), por juntar ao `main` — junta-se depois de o Nuno ver no iPhone.
 **Depois:** afinações no `TUNE` do `screens/HomeScreen.js`; e a Escala passa a seguir esta linguagem (a escolha
 A/B/C da `escala-v3` fica para essa sessão).
 
