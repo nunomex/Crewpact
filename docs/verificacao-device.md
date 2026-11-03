@@ -34,23 +34,53 @@ _Fecha a sessão (Perfil → Terminar sessão) para ver a entrada. Usa a conta d
       em letra grande sem caixa, a linha do escudo verde e "Entrar com palavra-passe". A barra de cima (hora,
       bateria) aparece **branca** sobre a placa.
 - [ ] O botão **Continuar** está apagado até o e-mail estar certo; acende sozinho quando fica certo.
-- [ ] Tocar no e-mail: o teclado sobe, a placa **encolhe para uma faixa** (CREWPACT pequeno) e o Continuar fica
-      logo acima do teclado. Fechar o teclado: a placa volta a crescer, sem saltos.
+- [x] Tocar no e-mail: o teclado sobe, a placa **encolhe para uma faixa** (CREWPACT pequeno) e o Continuar fica
+      logo acima do teclado. Fechar o teclado: a placa volta a crescer, sem saltos. ✓ 2026-11-02
 - [x] Passar do e-mail para o código: o conteúdo entra alinhado e as 6 caixas cabem (sem branco, sem 28 pt à
       direita) ✓ 2026-11-02, depois da correção da animação.
-- [ ] **Código:** ‹ em cima à esquerda; as 6 caixas ocupam a largura toda. Ao 6.º dígito aparece "A verificar…"
+- [x] **Código:** ‹ em cima à esquerda; as 6 caixas ocupam a largura toda. Ao 6.º dígito aparece "A verificar…"
       e **entra sozinho** (sem botão Entrar). Código errado → abana, as caixas limpam-se e a mensagem fica por baixo.
-- [ ] **Abrir o Mail** (no fundo) abre a app Mail do iPhone. "Reenviar em 60 s" conta para baixo.
+- [x] **Abrir o Mail** (no fundo) abre a app Mail do iPhone. "Reenviar em 60 s" conta para baixo.
 - [ ] **Conta nova:** "Como te chamas?" com os rótulos NOME e APELIDO por cima dos campos; sem ‹.
 - [ ] **Entrar com palavra-passe:** ‹ volta à entrada; "Esqueci-me da palavra-passe" à direita, por baixo dos campos;
       palavra-passe errada → mensagem a vermelho + "Sem conta ou sem palavra-passe? Entrar com um código".
 - [ ] **Esqueci-me:** o e-mail já vem escrito; o código entra sozinho; "Palavra-passe nova" com o medidor.
 - [ ] **Face ID (conta nova, depois das 6 perguntas):** placa com o símbolo do Face ID a amarelo; "Ligar o Face ID"
       no fundo, "Agora não" por baixo. (No Expo Go o Face ID cai no código do telemóvel — normal.)
-- [ ] **Bloqueio** (com o bloqueio ligado, sai da app 1 min e volta): placa preta alta com a marca, "Sair da conta"
+- [x] **Bloqueio** (com o bloqueio ligado, sai da app 1 min e volta): placa preta alta com a marca, "Sair da conta"
       no canto; "Desbloquear com Face ID" no fundo. **"Usar a palavra-passe ou um código"** → "Confirma que és tu"
-      com palavra-passe OU "Confirmar com um código" → desbloqueia **sem** sair da conta.
+      com palavra-passe OU "Confirmar com um código" → desbloqueia **sem** sair da conta. ✓ 2026-11-02 (Nuno)
 - [ ] Com **Reduzir movimento** ligado (Definições → Acessibilidade → Movimento), a placa muda de tamanho sem animar.
+
+### 0c · Configuração (onboarding) na Porta (2026-11-03, esboço `design/onboarding-v2.html`)
+_Precisa de uma conta NOVA (e-mail de teste que nunca entrou): e-mail → código → nome → "Conta criada" → aqui._
+- [ ] Faixa preta em cima com **"CONFIGURAÇÃO · 1 DE 6"** e a barra amarela; "Sair" no canto (termina a sessão).
+- [ ] **Toca e avança:** tocar numa companhia mostra o visto amarelo e, um instante depois, passa à pergunta seguinte.
+      A barra amarela cresce a cada pergunta.
+- [ ] **‹** volta à pergunta anterior com a escolha ainda marcada; tocar outra vez nela avança.
+- [ ] Piloto/cabine: dois cartões grandes; o escolhido ganha borda preta e visto, o outro esbate.
+- [ ] Categoria e contrato com o código à esquerda; o contrato já não repete o código no nome ("Tempo inteiro").
+- [ ] **Base:** pesquisa por cidade ou código ("lis", "porto", "bcn"); Portugal primeiro; nomes em português
+      (Lisboa, Málaga, Genebra); Faro com "base sazonal"; sem bandeiras.
+- [ ] **Antiguidade:** roda de mês e ano. O "Entrar" só acende depois de rodares ou tocares; não deixa meses no
+      futuro (no ano atual, o mês fica preso ao mês atual).
+- [ ] **Entrar** grava e segue para a oferta do Face ID e o Início, com as boas-vindas.
+- [ ] Ryanair (sem AE modelado): só companhia → tipo → base, e tocar na base grava e entra.
+- [ ] Com **Reduzir movimento** ligado, as perguntas trocam sem deslizar e a barra salta.
+
+### 0d · Hora-limite de calços + palavras do veredicto + esquema da companhia (2026-11-03)
+_Da análise da concorrência (`docs/concorrencia-calculos.md`)._
+- [ ] **Detalhe de um serviço de voo:** logo a seguir a "PSV máx" aparece **"Calços até às 19:00"** (= apresentação +
+      PSV máximo). Num serviço que acaba depois da meia-noite aparece "(+1)". Tocar abre a Prova do PSV.
+- [ ] **Início, num dia de voo:** o chip passa a **"Calços até · 19:00"**; o chip das horas que faltam chama-se
+      **"Margem"** (era "Limite"). A pergunta chama-se **"Dentro dos limites?"** e a resposta diz "Sim, dentro dos
+      limites · calços até às 19:00".
+- [ ] **Simulação** de um serviço dentro dos limites: a palavra grande é **"Dentro"** (era "Legal"), e por baixo
+      "dos limites · PSV 9:10 / 13:00 · calços até às 19:00". Fora dos limites: **"Excede"** (era "Não legal").
+- [ ] **Prova do PSV / repouso / limites / standby:** antes do rodapé aparece **"O esquema da tua companhia
+      prevalece."** com a explicação do Manual de Operações (parte A, cap. 7). A Prova da radiação **não** o mostra.
+- [ ] Em lado nenhum a app diz "Legal", "Ilegal" ou "Não legal" como veredicto (os termos da lei ficam: "mínimo
+      legal", "registo legal", "limite legal" da radiação).
 
 ## 1 · Reset de palavra-passe (OTP + cooldown do reenviar)
 _Ecrã de login → "Esqueci-me da palavra-passe"._

@@ -82,13 +82,18 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
     return '?';
   })();
   const ghostFs = ghostTxt.length <= 1 ? 148 : ghostTxt.length <= 3 ? 112 : 88;
-  const wordTxt = verdict === 'bad' ? l('Não legal', 'Not legal') : verdict === 'ok' ? l('Legal', 'Legal') : l('E se…', 'What if…');
+  // Palavra-veredicto SEM "legal/ilegal" (2026-11-03): a app estima, nunca declara legalidade (termos §3)
+  // e o esquema aprovado da companhia pode ser diferente. "Dentro" / "Excede" dizem o mesmo, com verdade.
+  const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : l('E se…', 'What if…');
   const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey;
   const reasons = verdict === 'bad' ? prosp.issues.map(issueTxt).filter(Boolean) : [];
   const psvRatio = (d && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
-  // Kick em texto plano (para o VoiceOver ler o herói como UMA frase).
+  const latest = d && d.latestOnBlockStr ? `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}` : null;
+  // Kick em texto plano (para o VoiceOver ler o herói como UMA frase). Com "Dentro", a frase completa-o.
   const kickPlain = verdict === 'bad' ? reasons.join(' · ')
-    : verdict === 'ok' ? (psvRatio ? l(`PSV ${psvRatio} · dentro dos limites de 28 d`, `FDP ${psvRatio} · within the 28-day limits`) : l('Dentro do máximo e dos limites de 28 d', 'Within the max and the 28-day limits'))
+    : verdict === 'ok' ? (psvRatio
+      ? l(`dos limites · PSV ${psvRatio}${latest ? ` · calços até às ${latest}` : ''}`, `the limits · FDP ${psvRatio}${latest ? ` · on-blocks by ${latest}` : ''}`)
+      : l('do máximo e dos limites de 28 d', 'the max and the 28-day limits'))
     : l('Preenche a apresentação e as horas — o veredicto aparece aqui', 'Fill the report and the times — the verdict shows up here');
 
   // ── Perguntas/respostas (o PSV MORREU da pilha — o herói responde-lhe; um dado, uma casa) ──
@@ -140,7 +145,8 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
                 <Text style={s.kickB}>{reasons[0] || ''}</Text>
                 {reasons.length > 1 ? ` · ${reasons.slice(1).join(' · ')}` : ''}
               </>) : verdict === 'ok' ? (psvRatio ? (<>
-                {'PSV '}<Text style={s.kickB}>{psvRatio}</Text>{l(' · dentro dos limites de 28 d', ' · within the 28-day limits')}
+                {l('dos limites · PSV ', 'the limits · FDP ')}<Text style={s.kickB}>{psvRatio}</Text>
+                {latest ? (<>{l(' · calços até às ', ' · on-blocks by ')}<Text style={s.kickB}>{latest}</Text></>) : null}
               </>) : kickPlain) : (<>
                 {l('Preenche a ', 'Fill the ')}<Text style={s.kickB}>{l('apresentação', 'report')}</Text>{l(' e as horas — o veredicto aparece aqui', ' and the times — the verdict shows up here')}
               </>)}

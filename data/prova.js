@@ -137,6 +137,9 @@ export const provaFor = (id, { companySlug = null, companyName = null, isPilot =
   if (u) {
     return {
       id, universal: true,
+      // Provas FTL (todas as universais menos a radiação): a folha lembra que o esquema FTL APROVADO da
+      // companhia (OM-A, cap. 7) prevalece — a app calcula a CS FTL.1 de referência (2026-11-03).
+      scheme: id !== 'radiacao',
       title: u.title[L], art: u.art, resumo: u.resumo[L],
       lawTag: L === 'en' ? 'FTL · Universal (pilot and cabin)' : 'FTL · Universal (piloto e cabine)',
       ref: u.ref || FTL_REF, url: u.url || FTL_URL,

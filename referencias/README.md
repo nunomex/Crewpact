@@ -57,3 +57,19 @@ competir com o Guardar); com o teclado aberto, o botão sobe com ele (AllTrails,
 | `bloqueio-dave.webp` | Dave | bloqueio: símbolo, pergunta, ação principal no fundo | https://mobbin.com/screens/4cd532a3-a6d7-4fa8-a2a8-0d1cf74e1a70 |
 
 Esboço: `design/login-v4.html` (A e A+B lado a lado).
+
+## onboarding/ — escolhidas a 2026-11-03 (configuração, opção 3 "toca e avança")
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `toca-avanca-flo.webp` | Flo | tocar na opção escolhe e avança (sem botão) | https://mobbin.com/screens/75520e71-c4c8-46f1-91fd-8b39f3fa6fe7 |
+| `toca-avanca-ahead.webp` | Ahead | o mesmo, com progresso no topo | https://mobbin.com/screens/d0399d4e-86e1-4024-b0bb-2d77b0089531 |
+| `cartoes-myfitnesspal.webp` | MyFitnessPal | cartões com círculo vazio; escolhido = borda + visto | https://mobbin.com/screens/54433fb5-5e5d-4c7a-9b1d-d8ac7a86c7aa |
+| `cartoes-substack.webp` | Substack | dois cartões grandes com rótulo e frase | https://mobbin.com/screens/b149ca79-f03f-452e-84d2-8f8da6b62c1d |
+| `progresso-yazio.webp` | Yazio | barra de progresso no topo | https://mobbin.com/screens/979bc8c3-19d6-412e-b2be-64d45f6fa5b3 |
+| `progresso-macrofactor.webp` | MacroFactor | barra + roda de data | https://mobbin.com/screens/83df39db-774a-440e-b2b0-729fee12c0d2 |
+| `roda-mes-ano-deepseek.webp` | DeepSeek | roda só com mês e ano | https://mobbin.com/screens/73fbf74e-faa1-4779-be35-1cc0f9862253 |
+| `base-pesquisa-scoot.webp` | Scoot | pesquisa de aeroporto, os de perto primeiro | https://mobbin.com/screens/e81cd0da-d743-4812-8407-73df0e1bc587 |
+| `base-pesquisa-agoda.webp` | Agoda | pesquisa com cidade e código IATA | https://mobbin.com/screens/9701e1eb-1fb9-45b9-b7f7-de55517424b7 |
+
+Esboço: `design/onboarding-v2.html`.

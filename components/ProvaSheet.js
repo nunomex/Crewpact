@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import PeleSheet from './PeleSheet';
 import Icon from './Icon';
-import { PELE as P, PELE_FONT as F, BRAND } from '../data/constants';
+import { PELE as P, PELE_FONT as F, BRAND, TXT, SPACE } from '../data/constants';
 import { openLibraryLink } from '../data/library';
 import { select } from '../data/haptics';
 
@@ -36,6 +36,16 @@ export default function ProvaSheet({ visible, onClose, prova, lang = 'pt' }) {
         </TouchableOpacity>
       ) : null}
 
+      {/* Esquema da companhia (2026-11-03, análise da concorrência): as melhores calculadoras dizem-no.
+          A app calcula a especificação de referência (CS FTL.1); o esquema aprovado do operador pode diferir. */}
+      {prova.scheme ? (
+        <Text style={s.scheme}>
+          <Text style={s.schemeB}>{l('O esquema da tua companhia prevalece. ', 'Your airline’s scheme prevails. ')}</Text>
+          {l('A app calcula a especificação de referência da EASA (CS FTL.1). A tua companhia tem um esquema FTL aprovado, no Manual de Operações (parte A, capítulo 7); se for diferente, é ele que vale.',
+            'The app computes EASA’s reference specification (CS FTL.1). Your airline has an approved FTL scheme in its Operations Manual (part A, chapter 7); where it differs, that is what applies.')}
+        </Text>
+      ) : null}
+
       <Text style={s.consult}>{l('Resumo informativo — o texto que vale é o do artigo. Valores de referência; confirma sempre com a companhia.',
         'Informative summary — the article’s text is what counts. Reference values; always confirm with the company.')}</Text>
     </PeleSheet>
@@ -58,4 +68,6 @@ const s = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: P.ink, borderRadius: 12, paddingVertical: 13, marginTop: 16 },
   btnTxt: { fontSize: 12.5, fontFamily: F.bodyHeavy, color: P.paper },
   consult: { fontSize: 9.5, fontFamily: F.bodyMed, color: P.grey, lineHeight: 14, marginTop: 10 },
+  scheme: { ...TXT.footnote, color: P.ink, marginTop: SPACE.lg },
+  schemeB: { fontFamily: F.bodyBold },
 });

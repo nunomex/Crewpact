@@ -34,7 +34,7 @@ function detailFor(it, lang) {
       const act = pMin(raw.psv.result), max = pMin(raw.psv.max), ratio = max ? act / max : 0;
       out.bars.push({ k: l('PSV (FDP)', 'FDP'), label: `${raw.psv.result} / ${raw.psv.max}`,
         tone: raw.psv.over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
-        tag: raw.psv.over ? (raw.psv.excess ? `+${raw.psv.excess}` : l('ilegal', 'illegal')) : null });
+        tag: raw.psv.over ? (raw.psv.excess ? `+${raw.psv.excess}` : l('excede', 'over')) : null });
     }
     const wins = raw.windows || [];
     const sel = wins.filter((w) => w.id === '28d' || w.over);

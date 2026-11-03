@@ -1,10 +1,10 @@
 {
- "gerado": "2026-11-02",
+ "gerado": "2026-11-03",
  "total": {
-  "tipoFora": 300,
-  "tipoMenor11": 145,
-  "espacoFora": 610,
-  "raioFora": 88,
+  "tipoFora": 289,
+  "tipoMenor11": 143,
+  "espacoFora": 598,
+  "raioFora": 86,
   "corSolta": 105,
   "ionicons": 10,
   "iconeNavSolto": 3,
@@ -128,16 +128,6 @@
    "raioFora": 0,
    "corSolta": 0,
    "ionicons": 1,
-   "iconeNavSolto": 0,
-   "amareloTexto": 0
-  },
-  "screens/OnboardingScreen.js": {
-   "tipoFora": 11,
-   "tipoMenor11": 2,
-   "espacoFora": 12,
-   "raioFora": 2,
-   "corSolta": 0,
-   "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0
   },

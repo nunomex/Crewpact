@@ -6,6 +6,102 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
+## 2026-11-03 — Análise da concorrência (cálculos e apresentação)
+
+**Análise em `docs/concorrencia-calculos.md`**, com fontes.
+
+**Concorrentes diretos em Portugal, os dois só para a TAP:**
+- **Roster Mate:** FTL + limites do AE da TAP + ajudas de custo; marca "legal/aviso/ilegal"; 5,99 €/mês.
+- **FTLmate:** FTL + TAP-SPAC 2023, sem salário.
+
+O SPAC e o SNPVAC não têm calculadora. Nenhuma app tem o AE da easyJet, da Ryanair ou da Hi Fly.
+
+**Estamos à frente em:**
+- 4 AE com a cláusula de cada número;
+- tabelas datadas e tempo parcial;
+- Auditoria do mês;
+- 100/900/1000 h e horários disruptivos;
+- escala automática e atrasos ao vivo.
+
+**Lacunas, por prioridade:**
+1. hora-limite de calços ("aterrar até às");
+2. as palavras "Legal / Não legal / Ilegal" (Simulação, chip do Início), incoerentes com "a app estima, nunca declara
+   legalidade";
+3. aviso na Prova de que o esquema aprovado da companhia prevalece;
+4. limites de escala do AE, começando pela TAP;
+5. líquido estimado;
+6. comparar com o recibo (v1.1).
+
+**Decidido (Nuno): os pontos 1, 2 e 3 primeiro — FEITOS no mesmo dia:**
+1. **Hora-limite de calços** = apresentação + PSV máximo efetivo, na mesma hora de relógio da apresentação, com "+1"
+   se passa da meia-noite. A discrição não entra (é para imprevistos, 205 f).
+   - **Golden-first:** 5 asserções novas no `ftl-golden` (06:00 → 19:00 · 18:00 → 05:00 +1 · sem apresentação →
+     sem hora), escritas e a falhar antes do motor.
+   - `computeDuty` devolve `latestOnBlock*`; `dutyToFtlDay` guarda-a no dia.
+   - Aparece no detalhe do serviço ("Calços até às"), no chip do Início ("Calços até · 19:00"), na resposta
+     "Dentro dos limites?" e na Simulação.
+2. **Sem "legal/ilegal" como veredicto:**
+   - "Estou legal?" → "Dentro dos limites?";
+   - chip "Legal/Ilegal" → "Calços até" / "Limites · Dentro/Excede";
+   - chip "Limite" → "Margem";
+   - Simulação "Legal/Não legal" → "Dentro/Excede";
+   - boas-vindas "A legalidade, calculada" → "Os limites, calculados";
+   - mensagens do motor "Ilegal — acima…" → "Excede…";
+   - formulário (discrição) e Validades reescritos.
+
+   Ficam os termos da lei ("mínimo legal", "registo legal", "limite legal" da radiação, "base legal").
+3. **Prova:** as provas FTL universais (PSV, repouso, limites, standby) mostram "O esquema da tua companhia prevalece"
+   (OM-A, cap. 7). A radiação e as provas do AE não. Testado no `prova.test` (+6 asserções).
+
+Verificado no PC: `npm test` verde · pacote iOS gera · guardião sem dívida nova. **Falta:** iPhone (guião §0d).
+**Próximo da lista:** limites de escala do AE (TAP primeiro), numa sessão própria.
+
+---
+
+## 2026-11-03 — Configuração (onboarding) na Porta
+
+**Escolhida a opção 3 (Nuno): "toca e avança".** Cartões de opção com círculo vazio; tocar mostra o visto amarelo e, um
+instante depois, passa à pergunta seguinte. Só a antiguidade tem botão ("Entrar").
+**Detalhes recomendados:**
+- progresso "Configuração · 2 de 6" + barra amarela na faixa de tinta;
+- "Sair" no canto da faixa;
+- títulos Barlow 30 sem maiúsculas;
+- base com pesquisa e nomes em português (hoje "Lisbon");
+- sem bandeiras emoji;
+- antiguidade numa roda de mês e ano, feita por nós (a do iOS não tem "só mês e ano").
+
+Referências em `referencias/onboarding/` e na coleção do Mobbin.
+**Esboço:** `design/onboarding-v2.html` (https://claude.ai/artifact/9UAXxoN7JcW6cciqgxEk6D).
+**Achado RGPD:** perguntar "és sócio de um sindicato?" = recolher filiação sindical (art. 9.º, dado sensível). Como a
+licença serve sócios e não-sócios, a edição pode vir do tipo de tripulante (piloto → SPAC · cabine → SNPVAC), sem
+pergunta. **Para o advogado** ("vamos ao advogado").
+**APROVADO (Nuno).** SPAC = pilotos · SNPVAC = cabine (confirmado; o código já os separa assim: `easyjetSpac`/`tapSpac`
+· `easyjetSnpvac`/`tapSnpvac`). Sindicato fora da configuração: a edição sairá do tipo de tripulante.
+
+**FEITO no código:**
+- **`OnboardingScreen` sobre a `Porta`:**
+  - toca e avança (280 ms para se ver o visto);
+  - cartões com círculo vazio;
+  - ‹ com a escolha marcada;
+  - na última pergunta, tocar grava e entra;
+  - mudar de companhia limpa categoria, contrato, frota e base.
+- **`Porta`:**
+  - `progress` mostra "Configuração · 2 de 6" + barra amarela;
+  - `stepKey` volta a folha ao topo a cada pergunta.
+- **`components/MonthYearWheel.js`:**
+  - mês e ano, nunca no futuro;
+  - o valor só nasce quando a pessoa mexe;
+  - o VoiceOver ajusta-a deslizando para cima e para baixo.
+- **`baseCityName` em `data/countries.js`:** 26 cidades das bases em português.
+- Contratos sem o código repetido no nome; bandeiras emoji fora.
+- Gravação do perfil igual (caminho auditado).
+
+**Verificado no PC:** `npm test` verde · pacote iOS gera · dívida 300→289 tipo, 610→598 espaço; configuração, roda e
+Porta a zero.
+**Falta:** iPhone (guião §0c, precisa de uma conta nova).
+
+---
+
 ## 2026-11-02 — Layout do sistema de entrada (Mobbin + Flighty)
 
 **Commit `6f068dc`** (login por código + prova de posse + DS 2.0 + Início + papéis da cor), antes de mexer no layout.
@@ -61,6 +157,8 @@ iOS, repunha o valor inicial da transição nativa entre passos (28 pt e transpa
 `Animated` (JS), e a transição do login e o véu do bloqueio passaram ao driver JS. O abanar do login passou a respeitar
 os movimentos reduzidos. Testes ✓ · pacote iOS ✓. **Regra:** nunca `LayoutAnimation` num ecrã com animações nativas
 de transparência ou posição. **Confirmado no iPhone (Nuno): corrigido ✓.**
+**Commit `cc4fce2`.** **iPhone (Nuno) ✓:** a placa encolhe e cresce com o teclado · o código entra sozinho · "Abrir o
+Mail" · bloqueio com "palavra-passe ou um código". **Próximo: onboarding na Porta** (referências do Mobbin primeiro).
 
 ---
 

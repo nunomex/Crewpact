@@ -44,7 +44,7 @@ export function buildTodayItems(ctx, lang) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const items = [];
 
-  // 1 · Estou legal?
+  // 1 · Dentro dos limites? (id interno 'legal')
   const legal = legalStatus(ftlSnap, dayLog);
   {
     let answer, suggestion = null;
@@ -59,9 +59,13 @@ export function buildTodayItems(ctx, lang) {
     } else if (legal.kind === 'noData') {
       answer = l('Sem dados suficientes hoje', 'Not enough data today');
     } else {
-      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : '');
+      // A hora-limite de calços primeiro (é como o tripulante pensa: "tenho até às 19:00").
+      const lat = legal.psv && legal.psv.latest
+        ? ` · ${l('calços até às', 'on-blocks by')} ${legal.psv.latest}${legal.psv.latestNextDay ? ` (+1)` : ''}` : '';
+      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : ''));
     }
-    items.push({ id: 'legal', q: l('Estou legal?', 'Am I legal?'), status: legal.status, answer, suggestion, raw: legal });
+    // Nunca "legal/ilegal": a app estima, nunca declara legalidade (termos §3; o esquema da companhia prevalece).
+    items.push({ id: 'legal', q: l('Dentro dos limites?', 'Within limits?'), status: legal.status, answer, suggestion, raw: legal });
   }
 
   // 2 · Quanto me falta para o limite?
@@ -173,8 +177,10 @@ export function buildTodayItems(ctx, lang) {
   const chipOf = (it) => {
     const r = it.raw || {};
     switch (it.id) {
-      case 'legal':     return { topic: 'Legal', short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Ilegal', 'Illegal')) : r.kind === 'limitOver' ? l('Limite', 'Limit') : r.kind === 'noData' ? '—' : l('Sim', 'Yes') };
-      case 'headroom':  return { topic: l('Limite', 'Limit'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
+      case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
+        ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : r.kind === 'limitOver' ? l('Excede', 'Over') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
       case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('Em dia', 'Up to date') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };

@@ -1,40 +1,44 @@
-// ONBOARDING — REESTRUTURADO + PORT À PELE (2026-07-09, mockup `design/onboarding-pele.html`
-// à letra, decisões do founder):
-//  · A CONTA cria-se PRIMEIRO (no LoginScreen: nome·email·password → código OTP → sessão);
-//    este ecrã aparece DEPOIS do login, via gate `onboarded` — e por isso o modo `signup`
-//    (conta no fim, atómica) MORREU daqui. Quem abandonar a meio cai cá outra vez ao entrar.
-//  · Funil COMPLETO e OBRIGATÓRIO, uma pergunta por ecrã (estilo Setup Assistant):
-//    companhia → tipo → categoria → contrato → (frota TAP) → base → antiguidade.
-//    Base obrigatória (país do telemóvel primeiro) · antiguidade obrigatória em MÊS/ANO
-//    (dia 01 por convenção — o prémio de permanência salta por anos, o dia é irrelevante).
-//  · O just-in-time dos Números foi DESCARTADO (funil completo → nada fica por perguntar).
-// A gravação (updateProfile + upsertProfile) é a MESMA do modo reconfiguração de sempre.
+// CONFIGURAÇÃO (onboarding) — PORTA (2026-11-03, esboço `design/onboarding-v2.html`, opção 3 "toca e
+// avança" aprovada pelo Nuno). Aparece DEPOIS do login (gate `onboarded`); quem abandona a meio cai cá
+// outra vez ao entrar. Funil COMPLETO e OBRIGATÓRIO, uma pergunta por ecrã:
+//   companhia → tipo → categoria → contrato → (frota TAP) → base → antiguidade.
+// · Faixa de tinta = progresso ("Configuração · 2 de 6" + barra amarela) e "Sair" no canto.
+// · Cartões de opção com círculo vazio; TOCAR escolhe, mostra o visto amarelo e, um instante depois,
+//   passa à seguinte (Flo, Ahead; o próprio iPhone na configuração). O ‹ volta com a escolha marcada.
+//   Só a antiguidade tem botão. Na última pergunta, tocar grava e entra.
+// · Base com pesquisa (cidade ou código), o país do telemóvel primeiro, nomes em português, sem emoji.
+// · Antiguidade numa roda de mês e ano (components/MonthYearWheel), nunca no futuro; dia 01 por
+//   convenção (o prémio de permanência salta por ANOS).
+// · SEM pergunta de sindicato: filiação sindical é dado sensível (RGPD art. 9.º) — a edição sai do
+//   TIPO (piloto → SPAC · cabine → SNPVAC). Decisão do Nuno 2026-11-03; confirmar com o advogado.
+// A gravação (updateProfile + upsertProfile) é a MESMA de sempre (caminho auditado).
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { getLocales } from 'expo-localization';
 import AsyncStorage from '../data/secureStorage';
 import Icon from '../components/Icon';
-import IconButton from '../components/IconButton';
+import Porta, { portaTxt as P } from '../components/Porta';
+import PrimaryButton from '../components/PrimaryButton';
+import MonthYearWheel from '../components/MonthYearWheel';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { countryName as countryNameOf, countryFlag } from '../data/countries';
+import { countryName as countryNameOf, baseCityName } from '../data/countries';
 import { AppContext } from '../data/appContext';
 import { updateProfile } from '../data/auth';
 import { upsertProfile } from '../data/db';
 import { getAe } from '../ae';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
-import { GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { PELE, PELE_NIGHT, PELE_FONT, BRAND, TXT, SPACE, RADIUS } from '../data/constants';
 
-// VISTO de seleção (mockup design/onboarding-selecao.html ①/⑤, 2026-07-10): disco
-// amarelo 22 + check ink — a MESMA marca em linhas e cartões ("amarelo = escolhido";
-// o ink invertido fica reservado a botões). Pop suave ao aparecer (o eco do "Conta
-// criada"); reduce-motion = direto.
+const ADVANCE_MS = 280;   // o visto aparece e, só depois, passa à pergunta seguinte
+
+// VISTO de seleção: disco amarelo (papel `marker`) + check a tinta, com um pop ao aparecer.
+// Driver JS de propósito (lição do login, device 2026-11-02): um valor nativo preso deixava-o invisível.
 function SelTick({ reduce, style }) {
   const v = useRef(new Animated.Value(reduce ? 1 : 0)).current;
   useEffect(() => {
     if (reduce) { v.setValue(1); return; }
-    Animated.spring(v, { toValue: 1, friction: 6, tension: 280, useNativeDriver: true }).start();
+    Animated.spring(v, { toValue: 1, friction: 6, tension: 280, useNativeDriver: false }).start();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Animated.View style={[o.tick, style, { transform: [{ scale: v }] }]}>
@@ -43,6 +47,30 @@ function SelTick({ reduce, style }) {
   );
 }
 
+// Cartão de opção: código (Barlow) · nome · linha de apoio · círculo vazio OU visto amarelo.
+function Opt({ code, label, sub, sel, onPress, reduce }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[o.opt, sel && o.optSel]}
+      accessibilityRole="button" accessibilityState={{ selected: !!sel }} accessibilityLabel={[code, label, sub].filter(Boolean).join(', ')}>
+      {code ? <Text style={[o.code, sel && o.codeSel]} allowFontScaling={false}>{code}</Text> : null}
+      <View style={o.optTxt}>
+        <Text style={o.lbl} numberOfLines={1}>{label}</Text>
+        {sub ? <Text style={o.sub} numberOfLines={1}>{sub}</Text> : null}
+      </View>
+      {sel ? <SelTick reduce={reduce} /> : <View style={o.radio} />}
+    </TouchableOpacity>
+  );
+}
+
+// Códigos curtos ficam na coluna; os compridos ("PPY 9/12", "sazonal-50") já vão no nome.
+const shortCode = (code) => (code && String(code).length <= 5 ? String(code) : null);
+// O código não se repete no nome: "Tempo inteiro (12/12)" → "Tempo inteiro".
+const cleanLabel = (label, code) => {
+  if (!code || !label || !label.includes(code)) return label;
+  return label.replace(`(${code})`, '').replace(code, '').replace(/\s{2,}/g, ' ').trim() || label;
+};
+const norm = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
 export default function OnboardingScreen() {
   const { user, airlines, bases, countries, setProfile, setOnboarded, setUser, logout, lang } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -50,108 +78,115 @@ export default function OnboardingScreen() {
   const [draft, setDraft] = useState({ company: null, crewType: null, crewCategory: null, crewContract: null, crewFleet: null, base: null, serviceStart: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [query, setQuery] = useState('');   // pesquisa de base
 
-  // Transição direcional entre perguntas (o MESMO gesto do Login: avançar desliza p/ a
-  // esquerda, voltar p/ a direita; sai 130 easeIn · entra 200 easeOut). O topo (dots/Sair)
-  // e o botão ficam fixos — só a pergunta+opções viajam. Reduce-motion = corte direto.
+  // Transição entre perguntas (o MESMO gesto do login): avançar desliza para a esquerda, voltar para
+  // a direita; sai 130 easeIn · entra 200 easeOut. Driver JS (lição do device 2026-11-02).
   const reduce = useReduceMotion();
   const trans = useRef(new Animated.Value(0)).current;
   const moving = useRef(false);
+  const advancing = useRef(false);
   const transX = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] });
   const transOp = trans.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
   const goStep = (next, forward = true) => {
     if (moving.current) return;
+    setQuery('');
     if (reduce) { setStep(next); return; }
     moving.current = true;
-    Animated.timing(trans, { toValue: forward ? -1 : 1, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+    Animated.timing(trans, { toValue: forward ? -1 : 1, duration: 130, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => {
       setStep(next);
       trans.setValue(forward ? 1 : -1);
-      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => { moving.current = false; });
+      Animated.timing(trans, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => { trans.setValue(0); moving.current = false; });
     });
   };
 
-  // AE da companhia escolhida + tipo de tripulação (pilotos e cabine têm AEs diferentes).
-  const selAirline = airlines.find((a) => a.id === draft.company || a.slug === draft.company) || null;
-  const ae = draft.crewType ? getAe(selAirline || draft.company, draft.crewType) : null;
+  // Tudo o que depende das respostas, calculado de um rascunho (o atual ou o que acabou de ser tocado —
+  // a escolha muda quantas perguntas há: a Ryanair não tem categoria, a TAP tem frota).
+  const deviceCC = getLocales?.()[0]?.regionCode || null;
+  const countryName = (cc) => countryNameOf(cc, lang, countries);
+  const derive = (d) => {
+    const selAirline = airlines.find((a) => a.id === d.company || a.slug === d.company) || null;
+    const ae = d.crewType ? getAe(selAirline || d.company, d.crewType) : null;
+    const companyBases = bases.filter((b) => b.airline_id === selAirline?.id);
+    // A BD comanda os passos do AE: `airlines.requires_category` (default: mostra se há AE).
+    const requiresCategory = selAirline?.requires_category ?? !!ae;
+    const requiresContract = selAirline?.requires_contract ?? false;
+    const companyHasFleet = !!ae && Array.isArray(ae.FLEETS) && ae.FLEETS.length > 1;
+    const flow = [
+      'company', 'crewType',
+      ...(requiresCategory ? ['crewCategory'] : []),
+      ...(requiresContract ? ['crewContract'] : []),
+      ...(companyHasFleet ? ['fleet'] : []),
+      ...(companyBases.length ? ['base'] : []),
+      ...(requiresCategory ? ['serviceStart'] : []),
+    ];
+    return { selAirline, ae, companyBases, companyHasAe: !!ae && requiresCategory, companyHasContract: !!ae && requiresContract, companyHasFleet, flow };
+  };
+  const D = derive(draft);
+  const { ae, flow } = D;
+
   // Estado honesto do AE por companhia (níveis da Constituição §5) — mostrado na lista.
   const aeStatusOf = (a) => {
     const any = getAe(a, 'pilot') || getAe(a, 'cabin');
-    if (any) return l('AE modelado · piloto e cabine', 'CLA modelled · pilots and cabin');
-    return l('FTL · acordo por modelar', 'FTL · agreement not modelled yet');
+    return any ? l('AE modelado · piloto e cabine', 'CLA modelled · pilots and cabin') : l('FTL · acordo por modelar', 'FTL · agreement not modelled yet');
   };
-  // Catálogo de bases da companhia (tabela `bases`), agrupado por país — o do telemóvel primeiro.
-  const companyBases = bases.filter((b) => b.airline_id === selAirline?.id);
-  const deviceCC = getLocales?.()[0]?.regionCode || null;
-  const countryName = (cc) => countryNameOf(cc, lang, countries);
+  const itemsOf = (ids, labelFn) => ids.map((id) => ({ id, code: shortCode(id), label: cleanLabel(labelFn(id, lang), id) }));
+  const CATEGORIES = ae ? itemsOf(ae.CATEGORIES, ae.categoryLabel) : [];
+  const CONTRACTS = ae ? itemsOf(ae.CONTRACTS, ae.contractLabel) : [];
+  const FLEET_ITEMS = D.companyHasFleet ? itemsOf(ae.FLEETS, ae.fleetLabel) : [];
+
+  // Bases da companhia por país (o do telemóvel primeiro), filtradas pela pesquisa.
+  const q = norm(query.trim());
   const baseGroups = (() => {
     const by = {};
-    for (const b of companyBases) { (by[b.country_code] = by[b.country_code] || []).push(b); }
+    for (const b of D.companyBases) {
+      const name = baseCityName(b.code, b.city, lang);
+      if (q && !norm(b.code).includes(q) && !norm(name).includes(q) && !norm(b.city).includes(q)) continue;
+      (by[b.country_code] = by[b.country_code] || []).push({ ...b, name });
+    }
     return Object.keys(by)
       .sort((a, z) => (a === deviceCC ? -1 : z === deviceCC ? 1 : countryName(a).localeCompare(countryName(z))))
-      .map((cc) => ({ cc, items: by[cc].slice().sort((x, y) => (x.city || x.code).localeCompare(y.city || y.code)) }));
+      .map((cc) => ({ cc, items: by[cc].sort((x, y) => x.name.localeCompare(y.name)) }));
   })();
-  // A BD comanda os passos do AE: `airlines.requires_category` (default: mostra se há AE).
-  const requiresCategory = selAirline?.requires_category ?? !!ae;
-  const requiresContract = selAirline?.requires_contract ?? false;
-  const companyHasAe = !!ae && requiresCategory;
-  const companyHasContract = !!ae && requiresContract;
-  const companyHasFleet = !!ae && Array.isArray(ae.FLEETS) && ae.FLEETS.length > 1;
-  const CATEGORIES = ae ? ae.CATEGORIES.map((id) => ({ id, code: id, label: { pt: ae.categoryLabel(id, 'pt'), en: ae.categoryLabel(id, 'en') } })) : [];
-  const CONTRACTS = ae ? ae.CONTRACTS.map((id) => ({ id, code: id, label: { pt: ae.contractLabel(id, 'pt'), en: ae.contractLabel(id, 'en') } })) : [];
-  const FLEET_ITEMS = companyHasFleet ? ae.FLEETS.map((id) => ({ id, code: id, label: { pt: ae.fleetLabel(id, 'pt'), en: ae.fleetLabel(id, 'en') } })) : [];
 
-  // Antiguidade em MÊS/ANO (AAAA-MM): máscara + validação de mês real, nunca futuro.
-  const maskMonth = (v) => {
-    const d = (v || '').replace(/\D/g, '').slice(0, 6);
-    return d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`;
-  };
   const isRealMonth = (v) => {
     const m = /^(\d{4})-(\d{2})$/.exec((v || '').trim());
     if (!m) return false;
     const y = +m[1], mo = +m[2];
-    const minYear = new Date().getFullYear() - 100;
-    if (y < minYear || mo < 1 || mo > 12) return false;
+    if (y < new Date().getFullYear() - 100 || mo < 1 || mo > 12) return false;
     const now = new Date();
     return y < now.getFullYear() || (y === now.getFullYear() && mo <= now.getMonth() + 1);
   };
 
-  // As PERGUNTAS (copy do mockup aprovado) — o fluxo depende do que a companhia exige.
+  // As PERGUNTAS — copy do esboço aprovado (a explicação cita a lei: é o que nos distingue).
   const STEP_DEFS = {
-    company:      { q: l('Voas\npara quem?', 'Who do you\nfly for?'), sub: l('A companhia decide a lei do trabalho (AE) e as tuas bases. O FTL é igual para todos — lei europeia.', 'Your airline sets the labour agreement (CLA) and bases. FTL is the same for everyone — EU law.'), field: 'company' },
-    crewType:     { q: l('Piloto\nou cabine?', 'Pilot\nor cabin?'), sub: l('O acordo de empresa é diferente para cada um — o teu salário e extras dependem disto.', 'The company agreement differs for each — your pay and extras depend on this.'), field: 'crewType' },
-    crewCategory: { q: l('A tua\ncategoria?', 'Your\ncategory?'), sub: l('O AE paga por categoria. Promoções registam-se no Perfil sem reescrever o passado.', 'The CLA pays by category. Promotions are logged in Profile without rewriting the past.'), field: 'crewCategory' },
-    crewContract: { q: l('O teu\ncontrato?', 'Your\ncontract?'), sub: l('Meses de trabalho por ano — o AE escala o salário com isto.', 'Working months per year — the CLA scales pay with this.'), field: 'crewContract' },
-    fleet:        { q: l('A tua\nfrota?', 'Your\nfleet?'), sub: l('Wide ou narrow-body — afeta o per-diem.', 'Wide- or narrow-body — affects per-diem.'), field: 'crewFleet' },
-    base:         { q: l('A tua base?', 'Your base?'), sub: l('Obrigatória — o repouso legal depende dela (12h na base · 10h fora, ORO.FTL.235). O teu país aparece primeiro.', 'Required — legal rest depends on it (12h at base · 10h away, ORO.FTL.235). Your country comes first.'), field: 'base' },
-    serviceStart: { q: l('Na companhia\ndesde?', 'With the airline\nsince?'), sub: l('A antiguidade paga o prémio de permanência — sem ela o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus — without it your pay is incomplete. Month and year are enough.'), field: 'serviceStart', input: 'month' },
+    company:      { q: l('Voas para quem?', 'Who do you fly for?'), sub: l('A companhia decide o acordo de empresa (AE) e as tuas bases. O FTL é igual para todos: é lei europeia.', 'Your airline sets the company agreement (CLA) and your bases. FTL is the same for everyone: it is EU law.') },
+    crewType:     { q: l('Piloto ou cabine?', 'Pilot or cabin?'), sub: l('O acordo de empresa é diferente para cada um: o teu salário e os extras dependem disto.', 'The company agreement differs for each: your pay and extras depend on this.') },
+    crewCategory: { q: l('A tua categoria?', 'Your category?'), sub: l('O AE paga por categoria. As promoções registam-se no Perfil, sem reescrever o passado.', 'The CLA pays by category. Promotions are logged in Profile, without rewriting the past.') },
+    crewContract: { q: l('O teu contrato?', 'Your contract?'), sub: l('Meses de trabalho por ano: o AE escala o salário com isto.', 'Working months per year: the CLA scales your pay with this.') },
+    fleet:        { q: l('A tua frota?', 'Your fleet?'), sub: l('Wide-body ou narrow-body: muda o per-diem.', 'Wide-body or narrow-body: it changes the per-diem.') },
+    base:         { q: l('A tua base?', 'Your base?'), sub: l('O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). O teu país aparece primeiro.', 'Legal rest depends on it: 12 h at base and 10 h away (ORO.FTL.235). Your country comes first.') },
+    serviceStart: { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus: without it, your pay is incomplete. Month and year are enough.') },
   };
-  const flow = [
-    'company', 'crewType',
-    ...(requiresCategory ? ['crewCategory'] : []),
-    ...(requiresContract ? ['crewContract'] : []),
-    ...(companyHasFleet ? ['fleet'] : []),
-    ...(companyBases.length ? ['base'] : []),
-    ...(requiresCategory ? ['serviceStart'] : []),
-  ];
   const idx = Math.min(step, flow.length - 1);
-  const s = STEP_DEFS[flow[idx]];
-  const field = s.field;
+  const field = flow[idx];
+  const S = STEP_DEFS[field];
   const isLast = idx >= flow.length - 1;
-  const canNext = s.input === 'month' ? isRealMonth(draft.serviceStart) : !!draft[field];
 
   // Grava o perfil e termina — o MESMO caminho auditado de sempre (updateProfile + profiles).
-  const finish = async () => {
+  const finish = async (d = draft) => {
+    const dd = derive(d);
     setSaving(true);
     setSaveError(null);
     const payload = {
-      company: draft.company,
-      crewType: draft.crewType,
-      crewCategory: companyHasAe ? draft.crewCategory : null,
-      crewContract: companyHasContract ? draft.crewContract : null,
-      crewFleet: companyHasFleet ? draft.crewFleet : null,
-      base: draft.base || null,
-      // Mês/ano do funil → dia 01 por convenção (o prémio salta por ANOS; o dia é irrelevante).
-      serviceStart: isRealMonth(draft.serviceStart) ? `${draft.serviceStart}-01` : null,
+      company: d.company,
+      crewType: d.crewType,
+      crewCategory: dd.companyHasAe ? d.crewCategory : null,
+      crewContract: dd.companyHasContract ? d.crewContract : null,
+      crewFleet: dd.companyHasFleet ? d.crewFleet : null,
+      base: d.base || null,
+      // Mês/ano → dia 01 por convenção (o prémio salta por ANOS; o dia é irrelevante).
+      serviceStart: isRealMonth(d.serviceStart) ? `${d.serviceStart}-01` : null,
     };
     const result = await updateProfile(payload, lang);
     if (!result.ok) { setSaving(false); setSaveError(l('Não foi possível gravar. Tenta outra vez.', 'Couldn’t save. Please try again.')); return; }
@@ -159,167 +194,153 @@ export default function OnboardingScreen() {
     setSaving(false);
     if (result.user) setUser(result.user);
     setProfile(payload);
-    // A folha de BOAS-VINDAS só nasce do funil (mockup boas-vindas): arma-se aqui,
-    // o Início mostra-a 1× e marca 'seen'. Quem já tinha conta nunca a vê.
+    // A folha de BOAS-VINDAS só nasce do funil: arma-se aqui, o Início mostra-a 1× e marca 'seen'.
     if (user?.id) await AsyncStorage.setItem(`cp_welcome_${user.id}`, 'pending').catch(() => {});
     success();
     setOnboarded(true);
   };
 
+  // TOCA E AVANÇA: escolhe, mostra o visto e, um instante depois, passa à seguinte (ou grava, na última).
+  const choose = (key, id, reset = {}) => {
+    if (advancing.current || moving.current || saving) return;
+    select(); setSaveError(null);
+    const next = { ...draft, [key]: id, ...reset };
+    setDraft(next);
+    const last = idx >= derive(next).flow.length - 1;
+    advancing.current = true;
+    setTimeout(() => {
+      advancing.current = false;
+      if (last) finish(next); else goStep(idx + 1);
+    }, reduce ? 120 : ADVANCE_MS);
+  };
+  // Só a antiguidade tem botão.
   const handleNext = () => {
-    if (!canNext || moving.current) return;
+    if (!isRealMonth(draft.serviceStart) || moving.current || saving) return;
     select();
-    if (!isLast) { setSaveError(null); goStep(step + 1); return; }
+    if (!isLast) { setSaveError(null); goStep(idx + 1); return; }
     finish();
   };
 
-  // Linha de opção da pele: código Barlow + rótulo + sub, hairline, seleção = ponto amarelo.
-  const OptionRow = ({ selKey, item, sub }) => {
-    const sel = draft[selKey] === item.id;
+  // ── rodapé: o botão da antiguidade; nas outras, só aparece a gravar ou para tentar outra vez ──
+  const footer = field === 'serviceStart'
+    ? <PrimaryButton label={isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')} onPress={handleNext} loading={saving} disabled={!isRealMonth(draft.serviceStart)} />
+    : saving
+      ? <PrimaryButton label={l('A guardar', 'Saving')} loading disabled />
+      : saveError
+        ? <PrimaryButton label={l('Tentar outra vez', 'Try again')} onPress={() => finish()} />
+        : null;
+
+  const corner = (
+    <TouchableOpacity onPress={logout} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
+      <Text style={o.exit}>{l('Sair', 'Sign out')}</Text>
+    </TouchableOpacity>
+  );
+
+  const bigCard = (id, title, sub) => {
+    const sel = draft.crewType === id;
+    const dim = !sel && !!draft.crewType;   // há escolha e não é este → esbate
     return (
-      <TouchableOpacity onPress={() => { select(); setSaveError(null); setDraft({ ...draft, [selKey]: item.id }); }}
-        style={o.row} activeOpacity={0.7} accessibilityRole="button" accessibilityState={{ selected: sel }}>
-        {item.code ? <Text style={[o.code, sel && { color: PELE.ink }]} allowFontScaling={false}>{item.code}</Text> : null}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[o.lbl, sel && { color: PELE.ink }]} numberOfLines={1}>{tx(item.label || item.name, lang)}</Text>
-          {sub ? <Text style={o.sub} numberOfLines={1}>{sub}</Text> : null}
-        </View>
-        {sel ? <SelTick reduce={reduce} /> : <Icon name="chevron" size={14} color={PELE.ghost} />}
+      <TouchableOpacity key={id} style={[o.big, sel && o.optSel]} activeOpacity={0.8}
+        onPress={() => choose('crewType', id, id === draft.crewType ? {} : { crewCategory: null, crewContract: null, crewFleet: null })}
+        accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityLabel={`${title}, ${sub}`}>
+        {sel ? <SelTick reduce={reduce} style={o.bigTick} /> : null}
+        <Text style={[o.bigT, dim && o.dim]}>{title}</Text>
+        <Text style={o.sub}>{sub}</Text>
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={o.safe} edges={['top', 'bottom']}>
-      {/* Topo: ‹ voltar (passo > 0) · pontinhos (ativo alonga a amarelo) · Sair (logout) */}
-      <View style={o.top}>
-        {idx > 0 ? (
-          <IconButton icon="back" onPress={() => { select(); setSaveError(null); goStep(step - 1, false); }} label={l('Voltar', 'Back')} />
-        ) : <View style={o.back} />}
-        <View style={o.dots}>
-          {flow.map((_, i) => <View key={i} style={[o.dot, i === idx && o.dotOn]} />)}
-        </View>
-        <TouchableOpacity onPress={logout} hitSlop={8} accessibilityRole="button" accessibilityLabel={l('Sair', 'Sign out')}>
-          <Text style={o.exit}>{l('Sair', 'Sign out')}</Text>
-        </TouchableOpacity>
-      </View>
+    <Porta plate="band" stepKey={idx} corner={corner} footer={footer}
+      progress={{ label: l('Configuração', 'Setup'), now: idx + 1, total: flow.length, of: l('de', 'of') }}
+      onBack={idx > 0 ? () => { select(); setSaveError(null); goStep(idx - 1, false); } : undefined} backLabel={l('Voltar', 'Back')}>
+      <Animated.View style={{ transform: [{ translateX: transX }], opacity: transOp }}>
+        <Text style={P.title} accessibilityRole="header">{S.q}</Text>
+        <Text style={[P.body, o.lead]}>{S.sub}</Text>
 
-      <Animated.View style={{ flex: 1, transform: [{ translateX: transX }], opacity: transOp }}>
-      <View style={o.head}>
-        <Text style={o.eyebrow}>{l('Configuração', 'Setup')} · {idx + 1} {l('de', 'of')} {flow.length}</Text>
-        <Text style={o.q} allowFontScaling={false}>{s.q}</Text>
-        <Text style={o.qsub}>{s.sub}</Text>
-      </View>
-
-      <ScrollView style={o.scroll} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* key={step} → conteúdo fresco por passo (evita inputs nativos reciclados no iOS). */}
-        <View key={step}>
+        {/* key={idx} → conteúdo fresco por pergunta (vistos e campos não passam de uma para a outra). */}
+        <View key={idx}>
           {field === 'company' ? (
-            airlines.map((a) => <OptionRow key={a.id} selKey="company" item={a} sub={aeStatusOf(a)} />)
+            <>
+              {airlines.map((a) => (
+                <Opt key={a.id} label={a.name} sub={aeStatusOf(a)} sel={draft.company === a.id} reduce={reduce}
+                  onPress={() => choose('company', a.id, a.id === draft.company ? {} : { crewCategory: null, crewContract: null, crewFleet: null, base: null })} />
+              ))}
+              <Text style={[P.foot, o.after]}>{l('Podes mudar tudo depois, no Perfil.', 'You can change all of this later, in Profile.')}</Text>
+            </>
           ) : field === 'crewType' ? (
-            // Dois cartões grandes, tipográficos puros (sem bonecos — decisão do founder).
-            [
-              { id: 'pilot', t: l('Piloto', 'Pilot'), s2: ae || selAirline ? l('acordo próprio dos pilotos', 'the pilots’ own agreement') : '' },
-              { id: 'cabin', t: l('Tripulante de cabine', 'Cabin crew'), s2: ae || selAirline ? l('acordo próprio da cabine', 'the cabin crew’s own agreement') : '' },
-            ].map((c) => {
-              const sel = draft.crewType === c.id;
-              const dimmed = !sel && !!draft.crewType;   // há escolha e não é este → esbate
-              return (
-                <TouchableOpacity key={c.id} style={[o.bigcard, sel && o.bigcardSel]} activeOpacity={0.8}
-                  onPress={() => { select(); setDraft({ ...draft, crewType: c.id, crewCategory: null, crewContract: null, crewFleet: null }); }}
-                  accessibilityRole="button" accessibilityState={{ selected: sel }}>
-                  {sel ? <SelTick reduce={reduce} style={o.bigTick} /> : null}
-                  <Text style={[o.bigT, dimmed && { color: PELE.grey }]}>{c.t}</Text>
-                  {c.s2 ? <Text style={o.bigS}>{c.s2}</Text> : null}
-                </TouchableOpacity>
-              );
-            })
+            // Dois cartões grandes, tipográficos (sem bonecos — decisão do Nuno).
+            <>
+              {bigCard('pilot', l('Piloto', 'Pilot'), l('o acordo próprio dos pilotos', 'the pilots’ own agreement'))}
+              {bigCard('cabin', l('Tripulante de cabine', 'Cabin crew'), l('o acordo próprio da cabine', 'the cabin crew’s own agreement'))}
+            </>
           ) : field === 'base' ? (
-            baseGroups.map((g) => (
-              <View key={g.cc}>
-                <Text style={o.grp}>{countryFlag(g.cc)} {countryName(g.cc)}</Text>
-                {g.items.map((b) => (
-                  <OptionRow key={b.code} selKey="base"
-                    item={{ id: b.code, code: b.code, label: { pt: b.city || b.code, en: b.city || b.code } }}
-                    sub={b.seasonal ? l('base sazonal', 'seasonal base') : null} />
-                ))}
+            <>
+              <View style={o.search}>
+                <Icon name="search" size={16} color={PELE.grey} />
+                <TextInput value={query} onChangeText={setQuery} style={o.searchInput}
+                  placeholder={l('Procurar cidade ou código', 'Search city or code')} placeholderTextColor={PELE.placeholder}
+                  autoCorrect={false} autoCapitalize="none" returnKeyType="search" clearButtonMode="while-editing"
+                  accessibilityLabel={l('Procurar base', 'Search base')} />
               </View>
-            ))
-          ) : s.input === 'month' ? (
-            <View>
-              <View style={o.monthPill}>
-                <TextInput value={draft.serviceStart} onChangeText={(v) => { setSaveError(null); setDraft({ ...draft, serviceStart: maskMonth(v) }); }}
-                  placeholder="2018-03" placeholderTextColor={PELE.placeholder} keyboardType="number-pad"
-                  maxLength={7} style={o.monthInput} allowFontScaling={false} />
-              </View>
-              <Text style={o.hint}>{l('Formato AAAA-MM (ex.: 2018-03). Editável depois no Perfil.', 'Format YYYY-MM (e.g. 2018-03). Editable later in Profile.')}</Text>
-            </View>
+              {baseGroups.map((g) => (
+                <View key={g.cc}>
+                  <Text style={o.grp}>{countryName(g.cc)}</Text>
+                  {g.items.map((b) => (
+                    <Opt key={b.code} code={b.code} label={b.name} sub={b.seasonal ? l('base sazonal', 'seasonal base') : null}
+                      sel={draft.base === b.code} reduce={reduce} onPress={() => choose('base', b.code)} />
+                  ))}
+                </View>
+              ))}
+              {!baseGroups.length ? <Text style={[P.foot, o.after]}>{l(`Nenhuma base com "${query.trim()}".`, `No base matches "${query.trim()}".`)}</Text> : null}
+            </>
+          ) : field === 'serviceStart' ? (
+            <>
+              <MonthYearWheel value={draft.serviceStart} lang={lang}
+                onChange={(v) => { setSaveError(null); setDraft((d) => ({ ...d, serviceStart: v })); }} />
+              <Text style={[P.foot, o.after]}>
+                {isRealMonth(draft.serviceStart)
+                  ? l('Podes mudar depois, no Perfil.', 'You can change this later, in Profile.')
+                  : l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')}
+              </Text>
+            </>
           ) : (
-            (field === 'crewCategory' ? CATEGORIES : field === 'crewContract' ? CONTRACTS : FLEET_ITEMS)
-              .map((item) => <OptionRow key={item.id} selKey={field} item={item} />)
+            (field === 'crewCategory' ? CATEGORIES : field === 'crewContract' ? CONTRACTS : FLEET_ITEMS).map((item) => {
+              const key = field === 'fleet' ? 'crewFleet' : field;
+              return <Opt key={item.id} code={item.code} label={tx(item.label, lang)} sel={draft[key] === item.id} reduce={reduce} onPress={() => choose(key, item.id)} />;
+            })
           )}
         </View>
-      </ScrollView>
+        {saveError ? <Text style={P.err}>{saveError}</Text> : null}
       </Animated.View>
-
-      {saveError ? <Text style={o.err}>{saveError}</Text> : null}
-      <View style={o.footer}>
-        <TouchableOpacity disabled={saving || !canNext} onPress={handleNext} activeOpacity={0.85}
-          style={[o.btn, (!canNext || saving) && { opacity: 0.45 }]}
-          accessibilityRole="button" accessibilityLabel={isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')}>
-          {saving
-            ? <ActivityIndicator color={BRAND.onDark} size="small" />
-            : <>
-                <Text style={o.btnTxt}>{isLast ? l('Entrar', 'Enter') : l('Continuar', 'Continue')}</Text>
-                <Icon name="chevron" size={16} color={BRAND.onDark} />
-              </>}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </Porta>
   );
 }
 
 const o = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PELE.paper },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER + 4, paddingTop: 10 },
-  // Régua da auditoria 2026-07-10 (contexto Setup Assistant: lê-se para DECIDIR):
-  // voltar 36 (alvo) · Sair 13 (é uma AÇÃO, não rodapé) · rótulos de opção 15.5 ·
-  // subs 11.5 · explicação 13.5/20 — o piso de leitura subiu uma unidade em tudo.
-  back: { width: 36, height: 36, borderRadius: 12, backgroundColor: PELE.soft, alignItems: 'center', justifyContent: 'center' },
-  dots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
-  dot: { width: 5, height: 5, borderRadius: 99, backgroundColor: PELE.line },
-  dotOn: { width: 14, backgroundColor: BRAND.signal },
-  exit: { fontSize: 13, fontFamily: PELE_FONT.bodyBold, color: PELE.grey, paddingVertical: 8, paddingHorizontal: 4 },
-  head: { paddingHorizontal: GUTTER + 4, paddingTop: 22, paddingBottom: 14 },
-  eyebrow: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 2.4, color: PELE.grey, textTransform: 'uppercase' },
-  q: { fontFamily: PELE_FONT.display, fontSize: 38, lineHeight: 40, letterSpacing: 0.3, textTransform: 'uppercase', color: PELE.ink, marginTop: 8, marginBottom: 6 },
-  qsub: { fontSize: 13.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, lineHeight: 20 },
-  scroll: { flex: 1, paddingHorizontal: GUTTER + 4 },
+  lead:    { marginBottom: SPACE.xl },
+  after:   { marginTop: SPACE.lg },
+  exit:    { ...TXT.label, color: PELE_NIGHT.grey },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: PELE.line },
-  code: { fontFamily: PELE_FONT.display, fontSize: 19, color: PELE.grey, minWidth: 44 },
-  lbl: { fontSize: 15.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink },
-  sub: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 1 },
-  // Visto de seleção (substituiu o ponto 9px e a placa preta — mockup onboarding-selecao)
-  tick: { width: 22, height: 22, borderRadius: 99, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
-  bigTick: { position: 'absolute', top: 14, right: 14 },
-  grp: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 1.8, color: PELE.grey, textTransform: 'uppercase', marginTop: 14, marginBottom: 2 },
+  // Cartão de opção (MyFitnessPal/Substack): borda 2 sempre (escolher não mexe no tamanho), raio 14.
+  opt:     { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 56, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, backgroundColor: PELE.paper, marginBottom: SPACE.sm },
+  optSel:  { borderColor: PELE.ink },
+  code:    { ...TXT.title, color: PELE.grey, minWidth: 46 },
+  codeSel: { color: PELE.ink },
+  optTxt:  { flex: 1, minWidth: 0 },
+  lbl:     { ...TXT.callout, color: PELE.ink },
+  sub:     { ...TXT.footnote, color: PELE.grey, marginTop: SPACE.xxs },
+  radio:   { width: 22, height: 22, borderRadius: 999, borderWidth: 1.5, borderColor: PELE.line },
+  tick:    { width: 22, height: 22, borderRadius: 999, backgroundColor: BRAND.marker, alignItems: 'center', justifyContent: 'center' },
 
-  bigcard: { borderWidth: 1.5, borderColor: PELE.line, borderRadius: 18, paddingVertical: 24, paddingHorizontal: 20, marginBottom: 12 },
-  // Escolhido = PAPEL com borda ink + visto no canto (a inversão a preto morreu:
-  // ink invertido é linguagem de BOTÃO, não de seleção — decisão do founder 2026-07-10)
-  bigcardSel: { borderColor: PELE.ink, borderWidth: 2, paddingVertical: 23.5, paddingHorizontal: 19.5 },
-  // Cartões da DECISÃO maior do funil em Barlow display (o mockup onboarding-selecao ⑤
-  // desenhava-os a 24 uppercase — o código nunca tinha apanhado isso).
-  bigT: { fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: 0.4, textTransform: 'uppercase', color: PELE.ink },
-  bigS: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 3 },
+  // Piloto / cabine: os dois cartões grandes, em Barlow (a decisão maior do funil).
+  big:     { borderWidth: 2, borderColor: PELE.line, borderRadius: RADIUS.md, paddingVertical: SPACE.xl, paddingHorizontal: SPACE.lgPlus, marginBottom: SPACE.md, backgroundColor: PELE.paper },
+  bigTick: { position: 'absolute', top: SPACE.lg, right: SPACE.lg },
+  bigT:    { fontFamily: PELE_FONT.display, fontSize: 26, letterSpacing: 0.4, textTransform: 'uppercase', color: PELE.ink, marginBottom: SPACE.xs },
+  dim:     { color: PELE.grey },
 
-  monthPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: PELE.soft, borderWidth: 1.5, borderColor: PELE.line, borderRadius: 999, paddingHorizontal: 22, height: 58 },
-  monthInput: { flex: 1, fontFamily: PELE_FONT.display, fontSize: 24, letterSpacing: 2, color: PELE.ink },
-  hint: { fontSize: 11.5, fontFamily: PELE_FONT.bodyMed, color: PELE.grey, marginTop: 10, lineHeight: 17 },
-
-  err: { color: PELE.red, fontSize: 12.5, fontFamily: PELE_FONT.bodyMed, textAlign: 'center', paddingHorizontal: 24, paddingBottom: 8 },
-  footer: { paddingHorizontal: GUTTER + 4, paddingBottom: 18, paddingTop: 8 },
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: PELE.ink, borderRadius: 999, height: 56 },
-  btnTxt: { fontSize: 15.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.5, color: PELE.paper },   // = login (unificado)
+  // Base: pesquisa (pílula suave) + rótulo do país.
+  search:  { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, height: 44, borderRadius: 999, backgroundColor: PELE.soft, paddingHorizontal: SPACE.lg, marginBottom: SPACE.sm },
+  searchInput: { flex: 1, fontSize: 15, fontFamily: PELE_FONT.body, color: PELE.ink },
+  grp:     { ...TXT.eyebrow, color: PELE.grey, marginTop: SPACE.md, marginBottom: SPACE.sm, marginLeft: SPACE.xs },
 });

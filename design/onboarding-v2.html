@@ -1,0 +1,260 @@
+<title>Configuração da CrewPact</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Hanken+Grotesk:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: as 6 perguntas da configuração lado a lado, pela ordem em que a pessoa as vê, dentro da
+   Porta (faixa de tinta com o progresso + folha de papel). Exemplo real: tripulante de cabine da
+   easyJet em Lisboa. Tema único de propósito: a pele de dia da app, escala TXT/SPACE. */
+:root {
+  color-scheme: light;
+  --paper: #FFFFFF; --ink: #141414; --ink-soft: #4E4E48; --grey: #77776F; --line: #ECEAE4; --soft: #F4F2ED;
+  --board: #EFEDE7; --yellow: #FFB800; --placeholder: #B4B0A8; --on-ink: #8F8D88; --track: #3A3A38;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--board); color: var(--ink); font: 500 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 56px; }
+.top { display: grid; gap: 12px; max-width: 72ch; }
+.eyebrow { font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); margin: 0; }
+h1 { font: 700 clamp(42px, 6.5vw, 68px)/.95 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 700 34px/1 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-soft); font-size: 16px; }
+section { display: grid; gap: 20px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 40px 34px; align-items: start; padding-inline: 8px; }
+figure { margin: 0; display: grid; gap: 12px; align-content: start; }
+figcaption { display: grid; gap: 3px; }
+figcaption b { font: 700 21px/1.1 var(--f-display); }
+figcaption span { font-size: 13px; color: var(--ink-soft); }
+figcaption .step { font: 800 11px/1 var(--f-body); letter-spacing: 1px; color: var(--grey); text-transform: uppercase; }
+
+/* o telemóvel: 390×844 desenhado à escala real e encolhido ao espaço */
+.pw { width: 100%; aspect-ratio: 390 / 844; position: relative; }
+.ph { position: absolute; top: 0; left: 0; width: 390px; height: 844px; transform-origin: top left; transform: scale(var(--s, .6));
+  background: var(--paper); border-radius: 46px; overflow: hidden; box-shadow: 0 0 0 8px var(--ink), 0 18px 40px rgba(20,20,20,.2); }
+.ph * { margin: 0; }
+.ph > * { position: absolute; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.15em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* a faixa de tinta com o progresso */
+.plate { left: 0; right: 0; top: 0; height: 151px; background: var(--ink); }
+.prog-l { left: 24px; top: 84px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--on-ink); }
+.prog-l b { color: var(--paper); font-weight: 800; }
+.bar { left: 24px; right: 24px; top: 106px; height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--yellow); border-radius: 2px; }
+.out { right: 24px; top: 67px; font: 700 12px/1 var(--f-body); color: var(--on-ink); }
+.sheet { left: 0; right: 0; top: 127px; bottom: 0; background: var(--paper); border-radius: 24px 24px 0 0; }
+
+.back { left: 16px; top: 143px; width: 36px; height: 36px; border-radius: 99px; background: var(--soft); display: grid; place-items: center; font: 700 22px/1 var(--f-body); color: var(--ink); }
+.title { left: 24px; right: 24px; font: 700 30px/1.05 var(--f-display); letter-spacing: -.4px; }
+.body { left: 24px; right: 24px; font: 500 13px/19px var(--f-body); color: var(--ink-soft); }
+.foot { left: 24px; right: 24px; font: 500 12px/17px var(--f-body); color: var(--grey); }
+.btn { left: 24px; right: 24px; top: 750px; height: 50px; border-radius: 99px; display: grid; place-items: center; font: 800 14px/1 var(--f-body); letter-spacing: .3px; background: var(--ink); color: var(--paper); }
+
+/* cartões de opção: borda fina + círculo vazio; escolhido = borda de tinta + visto amarelo */
+.opt { left: 24px; right: 24px; height: 56px; border: 1.5px solid var(--line); border-radius: 14px; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: var(--paper); }
+.opt.tall { height: 64px; }
+.opt.sel { border: 2px solid var(--ink); }
+.opt .code { width: 46px; flex: none; font: 700 22px/1 var(--f-display); color: var(--grey); }
+.opt.sel .code { color: var(--ink); }
+.opt .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.opt .txt b { font: 700 15px/1.2 var(--f-body); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt .txt small { font: 500 12px/1.2 var(--f-body); color: var(--grey); }
+.radio { width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line); flex: none; }
+.tick { width: 22px; height: 22px; border-radius: 99px; background: var(--yellow); flex: none; display: grid; place-items: center; color: var(--ink); font-size: 12px; }
+.big { left: 24px; right: 24px; height: 112px; border: 1.5px solid var(--line); border-radius: 14px; padding: 22px 20px; display: grid; align-content: start; gap: 6px; }
+.big.sel { border: 2px solid var(--ink); }
+.big b { font: 700 26px/1 var(--f-display); text-transform: uppercase; letter-spacing: .4px; }
+.big small { font: 500 12px/1.3 var(--f-body); color: var(--grey); }
+.big .tick { position: absolute; top: 16px; right: 16px; }
+.big.dim b { color: var(--grey); }
+
+/* base: pesquisa + grupos por país */
+.search { left: 24px; right: 24px; height: 44px; border-radius: 99px; background: var(--soft); display: flex; align-items: center; gap: 8px; padding: 0 16px; font: 500 15px/1 var(--f-body); color: var(--placeholder); }
+.search .ico { color: var(--grey); font-size: 16px; }
+.grp { left: 28px; font: 800 11px/1 var(--f-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--grey); }
+.fade { left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(rgba(255,255,255,0), var(--paper) 80%); }
+
+/* roda de mês e ano */
+.hl { left: 24px; right: 24px; height: 46px; border-radius: 12px; background: var(--soft); }
+.wh { font: 500 17px/1 var(--f-body); color: var(--grey); }
+.wh.m { left: 44px; } .wh.y { right: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.wh.on { font: 700 22px/1 var(--f-body); color: var(--ink); }
+.wh.f1 { opacity: .6; } .wh.f2 { opacity: .32; } .wh.f3 { opacity: .14; }
+
+.notes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.notes li { background: var(--paper); border-radius: 16px; padding: 16px 20px; display: grid; gap: 4px; }
+.notes b { font-size: 15px; }
+.notes span { font-size: 14px; color: var(--ink-soft); }
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; max-width: 80ch; }
+.decide li { background: var(--paper); border-radius: 16px; padding: 16px 20px; }
+.decide b { display: block; margin-bottom: 4px; }
+.decide span { font-size: 14px; color: var(--ink-soft); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+</svg>
+
+<main class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">CrewPact · esboço · configuração (onboarding) · 3 de novembro de 2026</p>
+    <h1>Configuração da CrewPact</h1>
+    <p class="lede">As 6 perguntas depois de criar a conta, dentro da Porta: a faixa de tinta mostra o progresso, a folha mostra a pergunta. Toca-se numa opção e passa-se à seguinte; o visto amarelo aparece um instante antes. Exemplo: tripulante de cabine da easyJet em Lisboa.</p>
+  </header>
+
+  <section aria-labelledby="h-p">
+    <h2 id="h-p">As perguntas</h2>
+    <div class="phones">
+
+      <!-- 1 · COMPANHIA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 1: a companhia, com a easyJet escolhida">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 1 de 6</p><span class="bar"><i style="width:16.7%"></i></span>
+          <div class="sheet"></div>
+          <p class="title" style="top:159px">Voas para quem?</p>
+          <p class="body" style="top:199px">A companhia decide o acordo de empresa (AE) e as tuas bases. O FTL é igual para todos: é lei europeia.</p>
+          <div class="opt tall sel" style="top:268px"><span class="txt"><b>easyJet</b><small>AE modelado · piloto e cabine</small></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt tall" style="top:342px"><span class="txt"><b>TAP Air Portugal</b><small>AE modelado · piloto e cabine</small></span><span class="radio"></span></div>
+          <div class="opt tall" style="top:416px"><span class="txt"><b>Ryanair</b><small>FTL · acordo por modelar</small></span><span class="radio"></span></div>
+          <div class="opt tall" style="top:490px"><span class="txt"><b>Hi Fly</b><small>FTL · acordo por modelar</small></span><span class="radio"></span></div>
+          <p class="foot" style="top:574px">Podes mudar tudo depois, no Perfil.</p>
+        </div></div>
+        <figcaption><span class="step">1 de 6</span><b>A companhia</b><span>Sem ‹ (é a primeira). O estado do AE de cada companhia fica à vista, como hoje.</span></figcaption>
+      </figure>
+
+      <!-- 2 · TIPO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 2: piloto ou cabine, com cabine escolhida">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 2 de 6</p><span class="bar"><i style="width:33.3%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">Piloto ou cabine?</p>
+          <p class="body" style="top:235px">O acordo de empresa é diferente para cada um: o teu salário e os extras dependem disto.</p>
+          <div class="big dim" style="top:304px"><b>Piloto</b><small>o acordo próprio dos pilotos</small></div>
+          <div class="big sel" style="top:428px"><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span><b>Tripulante de cabine</b><small>o acordo próprio da cabine</small></div>
+        </div></div>
+        <figcaption><span class="step">2 de 6</span><b>Piloto ou cabine</b><span>Os dois cartões grandes de hoje, no estilo novo. A edição (SPAC ou SNPVAC) pode sair daqui, sem pergunta.</span></figcaption>
+      </figure>
+
+      <!-- 3 · CATEGORIA -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 3: a categoria, com FA escolhida">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 3 de 6</p><span class="bar"><i style="width:50%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">A tua categoria?</p>
+          <p class="body" style="top:235px">O AE paga por categoria. As promoções registam-se no Perfil, sem reescrever o passado.</p>
+          <div class="opt" style="top:304px"><span class="code">CM</span><span class="txt"><b>Chefe de Cabine</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:368px"><span class="code">CMP</span><span class="txt"><b>Chefe de Cabine (exp.)</b></span><span class="radio"></span></div>
+          <div class="opt sel" style="top:432px"><span class="code">FA</span><span class="txt"><b>Tripulante de Cabine</b></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:496px"><span class="code">FA1</span><span class="txt"><b>Tripulante 1.º ano</b></span><span class="radio"></span></div>
+        </div></div>
+        <figcaption><span class="step">3 de 6</span><b>A categoria</b><span>O código da escala à esquerda, como os tripulantes o conhecem.</span></figcaption>
+      </figure>
+
+      <!-- 4 · CONTRATO -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 4: o contrato, com tempo inteiro escolhido">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 4 de 6</p><span class="bar"><i style="width:66.7%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">O teu contrato?</p>
+          <p class="body" style="top:235px">Meses de trabalho por ano: o AE escala o salário com isto.</p>
+          <div class="opt sel" style="top:286px"><span class="code">12/12</span><span class="txt"><b>Tempo inteiro</b></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:350px"><span class="code">5453</span><span class="txt"><b>Escala fixa 5/4/5/3</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:414px"><span class="code">10/12</span><span class="txt"><b>Part-time anual</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:478px"><span class="code">9/3</span><span class="txt"><b>Intermitente</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:542px"><span class="code">8/12</span><span class="txt"><b>Part-time anual</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:606px"><span class="code">50%</span><span class="txt"><b>Part-time fixo</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:670px"><span class="code">75%</span><span class="txt"><b>Part-time fixo</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:734px"><span class="code">50%</span><span class="txt"><b>Part-time sazonal</b></span><span class="radio"></span></div>
+          <div class="fade"></div>
+        </div></div>
+        <figcaption><span class="step">4 de 6</span><b>O contrato</b><span>Os 9 contratos do AE da cabine, a deslizar. O código não se repete no nome (hoje aparece "Tempo inteiro (12/12)").</span></figcaption>
+      </figure>
+
+      <!-- 5 · BASE -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 5: a base, com pesquisa e Lisboa escolhida">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 5 de 6</p><span class="bar"><i style="width:83.3%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">A tua base?</p>
+          <p class="body" style="top:235px">O descanso legal depende dela: 12 h na base e 10 h fora (ORO.FTL.235). O teu país aparece primeiro.</p>
+          <p class="search" style="top:300px"><svg class="ico"><use href="#i-search"/></svg>Procurar cidade ou código</p>
+          <p class="grp" style="top:364px">Portugal</p>
+          <div class="opt" style="top:382px"><span class="code">FAO</span><span class="txt"><b>Faro</b><small>base sazonal</small></span><span class="radio"></span></div>
+          <div class="opt sel" style="top:446px"><span class="code">LIS</span><span class="txt"><b>Lisboa</b></span><span class="tick"><svg class="ico"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="top:510px"><span class="code">OPO</span><span class="txt"><b>Porto</b></span><span class="radio"></span></div>
+          <p class="grp" style="top:590px">Espanha</p>
+          <div class="opt" style="top:608px"><span class="code">ALC</span><span class="txt"><b>Alicante</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:672px"><span class="code">BCN</span><span class="txt"><b>Barcelona</b></span><span class="radio"></span></div>
+          <div class="opt" style="top:736px"><span class="code">AGP</span><span class="txt"><b>Málaga</b></span><span class="radio"></span></div>
+          <div class="fade"></div>
+        </div></div>
+        <figcaption><span class="step">5 de 6</span><b>A base</b><span>As 33 bases da easyJet, com pesquisa por cidade ou código. Os nomes passam a português e as bandeiras emoji saem (o design system proíbe emoji).</span></figcaption>
+      </figure>
+
+      <!-- 6 · ANTIGUIDADE -->
+      <figure>
+        <div class="pw"><div class="ph" role="img" aria-label="Pergunta 6: a antiguidade numa roda de mês e ano, março de 2018">
+          <div class="plate"></div><p class="out">Sair</p>
+          <p class="prog-l"><b>Configuração</b> · 6 de 6</p><span class="bar"><i style="width:100%"></i></span>
+          <div class="sheet"></div>
+          <span class="back">‹</span>
+          <p class="title" style="top:195px">Na companhia desde?</p>
+          <p class="body" style="top:235px">A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.</p>
+          <span class="hl" style="top:438px"></span>
+          <p class="wh m f3" style="top:333px">Dezembro</p><p class="wh y f3" style="top:333px">2015</p>
+          <p class="wh m f2" style="top:369px">Janeiro</p><p class="wh y f2" style="top:369px">2016</p>
+          <p class="wh m f1" style="top:405px">Fevereiro</p><p class="wh y f1" style="top:405px">2017</p>
+          <p class="wh m on" style="top:450px">Março</p><p class="wh y on" style="top:450px">2018</p>
+          <p class="wh m f1" style="top:497px">Abril</p><p class="wh y f1" style="top:497px">2019</p>
+          <p class="wh m f2" style="top:533px">Maio</p><p class="wh y f2" style="top:533px">2020</p>
+          <p class="wh m f3" style="top:569px">Junho</p><p class="wh y f3" style="top:569px">2021</p>
+          <p class="foot" style="top:624px">Podes mudar depois, no Perfil.</p>
+          <p class="btn">Entrar</p>
+        </div></div>
+        <figcaption><span class="step">6 de 6</span><b>A antiguidade</b><span>Uma roda de mês e ano no lugar de escrever "2018-03". Não deixa escolher meses no futuro. É a única pergunta com botão.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-muda">
+    <h2 id="h-muda">O que muda em relação a hoje</h2>
+    <ul class="notes">
+      <li><b>Toca e avança</b><span>Tocar numa opção mostra o visto amarelo e, um instante depois, passa à pergunta seguinte. O ‹ volta atrás com a escolha ainda marcada.</span></li>
+      <li><b>Progresso na faixa</b><span>"Configuração · 2 de 6" e uma barra amarela, no lugar dos pontinhos de 5 pt. "Sair" fica no canto da faixa, como no bloqueio.</span></li>
+      <li><b>Cartões de opção</b><span>Cada opção é um cartão com um círculo vazio, para se ver que é tocável. A escolhida ganha borda de tinta e o visto amarelo.</span></li>
+      <li><b>Títulos como no login</b><span>Barlow 30 à esquerda, sem maiúsculas (hoje 38 em maiúsculas). As explicações que citam a lei ficam.</span></li>
+      <li><b>Base com pesquisa</b><span>Campo para procurar por cidade ou código, o teu país primeiro. Nomes em português (hoje "Lisbon").</span></li>
+      <li><b>Antiguidade numa roda</b><span>Mês por extenso e ano, sem formato para decorar. Feita por nós, sem pacote novo.</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Para decidires</h2>
+    <ol class="decide">
+      <li><b>Aprovas o esboço?</b><span>Se sim, passo-o para o código com a mesma Porta do login. A gravação do perfil fica igual (é o caminho auditado de sempre).</span></li>
+      <li><b>O sindicato sai da configuração?</b><span>Perguntar "és sócio?" é recolher filiação sindical, que o RGPD (art. 9.º) trata como dado sensível. Como a licença serve sócios e não-sócios, a edição pode vir do tipo: piloto fica com a edição SPAC, cabine com a SNPVAC. Recomendo que sim, e fica marcado para o advogado.</span></li>
+    </ol>
+  </section>
+
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.pw').forEach((w) => w.querySelector('.ph').style.setProperty('--s', String(w.clientWidth / 390)));
+  fit();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(fit); document.querySelectorAll('.pw').forEach((w) => ro.observe(w)); } else { addEventListener('resize', fit); }
+</script>

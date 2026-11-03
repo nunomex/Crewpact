@@ -26,10 +26,14 @@ import { reduceMotionNow } from '../hooks/useReduceMotion';
 const PLATE = { half: 0.417, tall: 0.71 };   // fração do ecrã (= 352 e 600 pt num iPhone de 844)
 const BAND = 92;                              // faixa por baixo da barra de estado (marca pequena)
 
-export default function Porta({ plate = 'half', brand = 'wordmark', onBack, backLabel = 'Voltar', corner, footer, children }) {
+// progress (configuração): { label: 'Configuração', now: 2, total: 6, of: 'de' } → na faixa, no lugar da marca.
+// stepKey: muda a cada passo → a folha volta ao topo (uma lista deslizada não passa para a pergunta seguinte).
+export default function Porta({ plate = 'half', brand = 'wordmark', progress, stepKey, onBack, backLabel = 'Voltar', corner, footer, children }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [kb, setKb] = useState(false);
+  const scrollRef = useRef(null);
+  useEffect(() => { scrollRef.current?.scrollTo({ y: 0, animated: false }); }, [stepKey]);
 
   // A placa encolhe/cresce COM o teclado (o "will" do iOS chega a tempo de acompanhar a subida).
   useEffect(() => {
@@ -58,14 +62,14 @@ export default function Porta({ plate = 'half', brand = 'wordmark', onBack, back
       <Animated.View style={[s.plate, { height: plateAnim, paddingTop: insets.top }]}>
         {corner ? <View style={[s.corner, { top: insets.top + SPACE.sm }]}>{corner}</View> : null}
         <View style={s.brandArea}>
-          {band ? <Wordmark small /> : brand === 'faceid'
+          {progress ? <Progress {...progress} /> : band ? <Wordmark small /> : brand === 'faceid'
             ? <Icon name="faceid" size={72} color={BRAND.onDark} />
             : <Wordmark />}
         </View>
       </Animated.View>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.sheet}>
-          <ScrollView style={s.flex} contentContainerStyle={[s.content, onBack ? s.contentBack : null]}
+          <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={[s.content, onBack ? s.contentBack : null]}
             keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
             {onBack ? <IconButton icon="back" onPress={onBack} label={backLabel} style={s.back} /> : null}
             {children}
@@ -86,6 +90,25 @@ function Wordmark({ small }) {
       <Text style={[s.name, small && s.nameSm]} allowFontScaling={false}>
         <Text style={s.light}>CREW</Text><Text style={s.heavy}>PACT</Text>
       </Text>
+    </View>
+  );
+}
+
+// Progresso da configuração: "CONFIGURAÇÃO · 2 DE 6" + barra amarela (Yazio, MacroFactor) — no lugar
+// dos pontinhos de 5 pt. A barra cresce pelo Animated (JS); movimentos reduzidos = salta.
+function Progress({ label, now, total, of = 'de' }) {
+  const frac = total ? Math.min(1, now / total) : 0;
+  const w = useRef(new Animated.Value(frac)).current;
+  useEffect(() => {
+    if (reduceMotionNow()) { w.setValue(frac); return; }
+    Animated.timing(w, { toValue: frac, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [frac]); // eslint-disable-line react-hooks/exhaustive-deps
+  const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityLabel={`${label}, ${now} ${of} ${total}`}
+      accessibilityValue={{ min: 0, max: total, now }}>
+      <Text style={s.progTxt}><Text style={s.progStrong}>{label}</Text>{` · ${now} ${of} ${total}`}</Text>
+      <View style={s.track}><Animated.View style={[s.fill, { width }]} /></View>
     </View>
   );
 }
@@ -124,4 +147,9 @@ const s = StyleSheet.create({
   nameSm:    { fontSize: 28, lineHeight: 30, letterSpacing: 2 },
   light:     { fontFamily: PELE_FONT.displayMed },
   heavy:     { fontFamily: PELE_FONT.displayHeavy },
+
+  progTxt:   { ...TXT.eyebrow, color: PELE_NIGHT.grey, marginBottom: SPACE.md },
+  progStrong:{ color: PELE.paper },
+  track:     { height: 4, borderRadius: 2, backgroundColor: PELE_NIGHT.line, overflow: 'hidden' },
+  fill:      { height: 4, borderRadius: 2, backgroundColor: BRAND.onDark },
 });

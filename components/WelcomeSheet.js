@@ -33,8 +33,8 @@ export default function WelcomeSheet({ visible, onDone, lang = 'pt' }) {
   if (!visible) return null;
 
   const ROWS = [
-    { t: l('A legalidade, calculada', 'Legality, computed'),
-      p: l('Os limites FTL da lei europeia, verificados ao minuto — sabes sempre se estás legal.', 'EU-law FTL limits, checked to the minute — you always know you’re legal.') },
+    { t: l('Os limites, calculados', 'Your limits, computed'),
+      p: l('Os limites FTL da lei europeia, verificados ao minuto — sabes sempre se estás dentro deles e até que horas.', 'EU-law FTL limits, checked to the minute — you always know if you’re within them, and until when.') },
     { t: l('O salário, pelo teu acordo', 'Your pay, by your agreement'),
       p: l('Per-diems, pernoitas e extras pelo AE da tua companhia — cêntimo a cêntimo.', 'Per-diems, night stops and extras by your airline’s CLA — cent by cent.') },
     { t: l('Um Início que vive o teu dia', 'A Home that lives your day'),

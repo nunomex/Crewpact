@@ -108,6 +108,11 @@ export const computeDuty = ({
     modifier, stdbyReductionMin, stdbyOver, stdbyOverKind,
   };
 
+  // Hora-limite de calços = apresentação + PSV máximo efetivo (o PSV acaba nos calços do último setor,
+  // ORO.FTL.105(19)). Na MESMA hora de relógio da apresentação. Sem teto → sem hora. A discrição do
+  // comandante NÃO entra: é para imprevistos, nunca para planear (205 f).
+  const latestMin = (reportMin != null && fdp.maxFdpMin != null && !fdp.notAllowed) ? reportMin + fdp.maxFdpMin : null;
+
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
   const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
   const rest = computeRest({ prevDutyMin: dutyPeriodMin || 0, inBase });
@@ -119,6 +124,9 @@ export const computeDuty = ({
     reportMin, endMin, sectors, state, inBase,
     postFlightMin: postFlightMin || 0,
     dutyPeriodMin, dutyPeriodStr: dutyPeriodMin != null ? minToHhmm(dutyPeriodMin) : null,
+    latestOnBlockMin: latestMin,
+    latestOnBlockStr: latestMin != null ? minToHhmm(latestMin % 1440) : null,
+    latestOnBlockNextDay: latestMin != null && latestMin >= 1440,
     fdp, rest, discretion: disc, ...duty,
   };
 };
@@ -259,6 +267,8 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       state: d.state, sectors: d.sectors, result: d.fdp.actualFdpStr, max: sbAcc ? null : d.fdp.maxFdpStr,
       band: d.fdp.band, start: duty.report_time, end: duty.block_on,
       endNextDay: repMin != null && endMin != null && endMin < repMin,
+      // Hora-limite de calços (2026-11-03) — o Início mostra-a no dia do voo. Standby com alojamento não é PSV.
+      latest: sbAcc ? null : d.latestOnBlockStr, latestNextDay: sbAcc ? false : d.latestOnBlockNextDay,
       over: sbAcc ? false : (disc205 ? disc205.over : d.fdp.over),
       excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
       extended: usedExtension, ts: Date.now(),

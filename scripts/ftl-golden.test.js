@@ -223,6 +223,20 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Duty piso 12h domina PSV curto', ds.rest.restMin, M('12:00'));
 }
 
+// ─────────── Hora-limite de calços = apresentação + PSV máximo (ORO.FTL.105(19) · 205) ───────────
+// 2026-11-03 (análise da concorrência): o número que as calculadoras mostram primeiro ("latest on-blocks").
+// Quadro 2, aclimatado, 1–2 setores: 06:00–13:29 → 13:00 · 17:00–04:59 → 11:00.
+{
+  const { computeDuty } = ftl;
+  const a = computeDuty({ state: 'acc', report: '06:00', end: '18:00', sectors: 1 });
+  eq('Calços até: 06:00 + 13:00 = 19:00', a.latestOnBlockStr, '19:00');
+  eq('Calços até: 06:00 fica no mesmo dia', a.latestOnBlockNextDay, false);
+  const b = computeDuty({ state: 'acc', report: '18:00', sectors: 2 });
+  eq('Calços até: 18:00 + 11:00 = 05:00', b.latestOnBlockStr, '05:00');
+  eq('Calços até: 18:00 passa para o dia seguinte', b.latestOnBlockNextDay, true);
+  eq('Calços até: sem apresentação não há hora', computeDuty({ state: 'acc', report: null, sectors: 1 }).latestOnBlockStr, null);
+}
+
 // ─────────── Adapter duties → dayLog (dutyToFtlDay) ───────────
 {
   const { dutyToFtlDay } = ftl;

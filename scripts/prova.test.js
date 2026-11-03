@@ -71,6 +71,10 @@ check('Ryanair: PSV máx continua (universal)', full(provaFor('psvMax', RYR)));
 check('EN: resumo em inglês', /hours|sector|rest/i.test(provaFor('repouso', { ...EZ_CAB, lang: 'en' }).resumo));
 check('id desconhecido → null', provaFor('xpto', EZ_CAB) === null);
 check('determinismo', JSON.stringify(provaFor('perDiem', EZ_CAB)) === JSON.stringify(provaFor('perDiem', EZ_CAB)));
+// 2026-11-03: as provas FTL lembram que o esquema aprovado da companhia (OM-A cap. 7) prevalece; a radiação não é FTL.
+for (const id of ['psvMax', 'repouso', 'limites', 'standby']) check(`esquema da companhia: ${id} avisa`, provaFor(id, EZ_CAB).scheme === true);
+check('esquema da companhia: radiação não avisa', provaFor('radiacao', EZ_CAB).scheme === false);
+check('esquema da companhia: provas do AE não levam o aviso FTL', !provaFor('perDiem', EZ_CAB).scheme);
 
 console.log(`\nProva — ${ok} passou, ${fail} falhou (${ok + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }

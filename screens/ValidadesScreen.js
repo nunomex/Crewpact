@@ -374,7 +374,7 @@ export default function ValidadesScreen({ navigation }) {
                       : l(' — o piloto vê o seu conjunto (licença, type rating, IR, inglês). ', ' — pilots see their own set (licence, type rating, IR, English). ')}
                     {l('Introdução manual; a app ', 'Manual entry; the app ')}
                     <Text style={s.noteB}>{l('não guarda foto nem scan', 'stores no photo or scan')}</Text>
-                    {l(' (dado de saúde, RGPD Art.9) — vive do estado de validade, que alimenta os avisos e o «estou legal?».', ' (health data, GDPR Art.9) — it lives off the validity status, feeding the alerts and the "am I legal?".')}
+                    {l(' (dado de saúde, RGPD Art.9) — vive do estado de validade, que alimenta os avisos e o «dentro dos limites?».', ' (health data, GDPR Art.9) — it lives off the validity status, feeding the alerts and the "within limits?".')}
                   </Text>
                 </>
               ) : (

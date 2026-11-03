@@ -13,12 +13,13 @@ const hasFtlData = (dayLog) =>
 const worstByRatio = (windows) =>
   windows.reduce((a, b) => (b.ratio > a.ratio ? b : a), { ratio: -1 });
 
-// "Estou legal?" — ilegal se o PSV de hoje excede o máximo OU se alguma janela
-// cumulativa está acima do limite. Devolve também psv + todas as janelas (p/ o detalhe).
+// "Dentro dos limites?" — excede se o PSV de hoje passa o máximo OU se alguma janela cumulativa
+// está acima do limite. Devolve também psv (com a hora-limite de calços) + as janelas (p/ o detalhe).
+// A app estima, nunca declara legalidade (termos §3): o id 'legal' é interno, as palavras não.
 export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
   const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)];
   const psv = ftlSnap?.psv || null;
-  const psvData = psv ? { result: psv.result, max: psv.max, over: !!psv.over, excess: psv.excess ?? null } : null;
+  const psvData = psv ? { result: psv.result, max: psv.max, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
   if (psv && psv.over) return { id: 'legal', status: 'bad', kind: 'psvOver', excess: psv.excess ?? null, psv: psvData, windows };
   const overWin = windows.find((w) => w.over);
   if (overWin) return { id: 'legal', status: 'bad', kind: 'limitOver', cat: overWin.key, windowId: overWin.id, days: overWin.days, psv: psvData, windows };

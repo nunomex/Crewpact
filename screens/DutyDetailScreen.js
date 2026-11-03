@@ -284,6 +284,9 @@ export default function DutyDetailScreen({ route, navigation }) {
             <Panel rows={[
               (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
               (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
+              // A hora-limite de calços (2026-11-03): o número que toda a concorrência mostra primeiro —
+              // o tripulante pensa em horas do relógio. Mesma hora da apresentação; +1 = dia seguinte.
+              (!sbAccD && d.latestOnBlockStr) && { k: l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
               sbAccD && { k: l('PSV', 'FDP'), v: l('não se aplica — standby (225)', 'not applicable — standby (225)') },
               (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
                 v: d.discretion.over

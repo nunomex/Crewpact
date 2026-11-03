@@ -868,7 +868,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               </View>
               {discOn ? (
                 <View style={s.advInset}>
-                  <Text style={s.advHint}>{l('Só circunstâncias imprevistas a partir da apresentação: até +2 h (ou +3 h com repouso a bordo). Dentro da margem o excesso é legal e REPORTÁVEL ao operador; além dela continua ilegal.', 'Unforeseen circumstances at or after reporting only: up to +2 h (or +3 h with in-flight rest). Within the margin the excess is legal and REPORTABLE to the operator; beyond it remains illegal.')}</Text>
+                  <Text style={s.advHint}>{l('Só circunstâncias imprevistas a partir da apresentação: até +2 h (ou +3 h com repouso a bordo). Dentro da margem a lei permite o excesso, que é REPORTÁVEL ao operador; além dela, não permite.', 'Unforeseen circumstances at or after reporting only: up to +2 h (or +3 h with in-flight rest). Within the margin the law allows the excess, which is REPORTABLE to the operator; beyond it, it does not.')}</Text>
                 </View>
               ) : null}
               {psvPreview ? (
