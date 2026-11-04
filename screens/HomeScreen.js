@@ -1312,7 +1312,7 @@ export default function HomeScreen({ navigation }) {
         // Em mosaico: o rótulo curto (o mês) e a linha diz o "estimado" e o dia (a barra conta DIAS, não €).
         // Em mosaico: só tipografia — o valor grande, "+€ hoje" a verde, "estimado · dia 3 de 30". Sem barra (contava
         // DIAS ao lado de euros e enganava).
-        tileLabel: `${monthCap} · ${l('estimado', 'estimated')}`, tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
+        tileLabel: `${monthCap.slice(0, 3)} · ${l('estimado', 'estimated')}`,   // meia largura: "NOVEMBRO · ESTIMADO" cortava (iPhone 2026-11-04) tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
         tileText: soFar, tileNoBar: true,
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     } else if (hasLimitData && f28 && f28.limit) {

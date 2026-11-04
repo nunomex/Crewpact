@@ -26,6 +26,14 @@ junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` 
 
 ## 2026-11-04 (tarde) — SNC UM POR SERVIÇO · doença pela lei (Opus 5.5)
 
+**Estados vistos ✅ no iPhone nesta tarde:** doença (piloto) · **standby** ("Se te chamarem agora: PSV até ~04:00" —
+conservador: conta do início do standby) · **em voo com a linha do dia de serviço** (2 troços, ✈ no agora, "aterras com 6:00
+de margem"; o alerta "Tenho descanso? Não · 10:15 (mín 12:00)" apareceu certo) · **pós-voo com o gráfico dos 7 dias** (7
+letras, ontem a cinzento, hoje a tinta, "10 h de 60"). Afinações: o corte por baixo dos dígitos passa a depender do que vem
+a seguir (rota 0,22 · frase 0,13 — o standby ficava a ~11 pt) · o recorte do ✈ a 16 pt (tapava o troço já voado) · o mosaico
+do mês "NOV · ESTIMADO" (cortava). **Falta só:** a disrupção e o aviso de RDP (precisam de um atraso verdadeiro) e a conta de
+CABINE (a doença Cl. 61.ª e o RDP só aparecem lá).
+
 - **SNC — erro corrigido (golden primeiro, `test:disruption` 66):** o aviso "Registar +N SNC" depois da importação usava
   `shortNoticeCandidates` (qualquer mudança a ≤ 7 dias, sem 48 h nem 2 h, sem ver os já registados) → 3 SNC num só serviço
   de teste. Lei lida no BTE: **Art. 63.º SPAC n.º 4** (BTE 40/2023, agora em `fontes/ae-easyjet/`) e **Cl. 66.ª SNPVAC n.º 3**:
