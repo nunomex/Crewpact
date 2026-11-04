@@ -1503,7 +1503,7 @@ export default function HomeScreen({ navigation }) {
                       ))}
                       <View style={[s.dlTick, { left: `${d.limitPct * 100}%`, backgroundColor: d.over ? PLATE.red : PL.fg }]} />
                       <View style={[s.dlNow, { left: `${d.nowPct * 100}%`, backgroundColor: PL.bg }]}>
-                        <Icon name="plane" rot={90} size={16} color={PL.fg} />
+                        <Icon name="plane" rot={90} size={14} color={PL.fg} />
                       </View>
                     </View>
                     <View style={s.progEnds}>
@@ -1815,7 +1815,7 @@ const makeSkin = (P) => StyleSheet.create({
   dlSec: { position: 'absolute', top: 7, height: 6, borderRadius: RADIUS.pill, overflow: 'hidden' },
   dlSecDone: { height: 6 },
   dlTick: { position: 'absolute', top: 3, width: 2, height: 14, marginLeft: -1, borderRadius: RADIUS.pill },
-  dlNow: { position: 'absolute', top: 0, width: 24, height: 20, marginLeft: -SPACE.md, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.pill },
+  dlNow: { position: 'absolute', top: 2, width: 16, height: 16, marginLeft: -SPACE.sm, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.pill },
   track: { height: 6, borderRadius: 6, overflow: 'hidden' },
   trackFill: { height: 6, borderRadius: 6, backgroundColor: BRAND.panel },
   progEnds: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACE.sm },
