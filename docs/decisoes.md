@@ -65,8 +65,13 @@ deslizar, ~48 pt de folga). Afinações e correções, todas por escolha do Nuno
 - **Linha do dia de serviço** também no pré-report e em serviço antes da partida (proposta, por decidir).
 - **Atualizar o esboço `design/inicio-v6.html`** com o que mudou (teclas no fundo + documento, mosaicos, "A seguir",
   pós-voo, linha do dia) — os mockups mandam na hierarquia; e o guião `docs/verificacao-device.md` (pós-voo, em voo).
-**Testado no PC:** `npm test` verde (26 suites) · guardião sem dívida nova. **Não verificado:** os mosaicos alinhados e a
-coluna de hoje do gráfico (último ajuste, passou a meia-noite) · iPhone pequeno · letra dinâmica grande · VoiceOver.
+**Testado no PC:** `npm test` verde (26 suites) · guardião sem dívida nova. **Não verificado:** a coluna de hoje do
+gráfico dos 7 dias (último ajuste, passou a meia-noite) · iPhone pequeno · letra dinâmica grande · VoiceOver.
+**Depois da meia-noite (✅ no iPhone, no "hoje" pré-report):** os mosaicos alinhados (cima com cima, fundo com fundo) ·
+**regra de cores** (Nuno "está bem"; escrita em `docs/design-system.md`): amarelo = agora/realce · **verde = bom** (dentro
+dos limites e os **+€ de um dia** — ganhos de hoje/amanhã, esta noite; o total do mês fica a tinta) · laranja = atenção ·
+vermelho = excede · tinta = o resto · a linha do dia de voo perdeu "pernoita em …" (a tecla Hotel já o diz). Gravado
+`83dc3a4` + `ce81204` (ramo `inicio-v6`, sem push).
 
 ---
 
