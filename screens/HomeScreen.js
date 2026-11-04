@@ -1651,7 +1651,7 @@ export default function HomeScreen({ navigation }) {
                               <View key={d.iso} style={s.wkCol}>
                                 <View style={s.wkTrack}>
                                   {d.pct ? <View style={[s.wkBar, { height: Math.max(3, Math.round((28 * d.pct) / 100)), backgroundColor: d.today ? P.ink : P.greyOnSoft }]} />
-                                    : <View style={[s.wkZero, { backgroundColor: P.ghost }]} />}   // dia sem serviço: traço visível (o line quase desaparecia)
+                                    : <View style={[s.wkZero, { backgroundColor: P.ghost }]} />}{/* dia sem serviço: traço visível (o line quase desaparecia) */}
                                 </View>
                                 <Text style={[s.wkLbl, { color: d.today ? P.ink : P.greyOnSoft }, d.today ? s.wkLblToday : null]}>{d.lbl}</Text>
                               </View>

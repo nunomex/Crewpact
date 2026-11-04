@@ -66,6 +66,9 @@ for (const f of FILES) {
   if (/fontWeight\s*:/.test(src)) duras.push(`${f}: usa fontWeight (proibido — a FAMÍLIA carrega o peso)`);
   src.split(/\r?\n/).forEach((line, i) => {
     if (/LayoutAnimation\.configureNext/.test(line) && !/reduce/i.test(line)) duras.push(`${f}:${i + 1}: LayoutAnimation sem ramo de movimentos reduzidos`);
+    // Um "// comentário" logo a seguir a um elemento de JSX NÃO é comentário: vira texto solto e o iPhone rebenta com
+    // "Text strings must be rendered within a <Text> component" (2026-11-04, gráfico dos 7 dias). Usar {/* … */}.
+    if (/(\/>\}?|<\/[A-Za-z][\w.]*>)\s+\/\/\s/.test(line)) duras.push(`${f}:${i + 1}: "//" a seguir a JSX vira texto solto — usar {/* … */}`);
   });
   if (/Animated\.(timing|spring|loop|decay)\(/.test(src) && !/reduce/i.test(src)) duras.push(`${f}: anima com Animated mas não lê o reduce-motion (motion §5)`);
   // Componente usado em JSX sem import nem definição: o pacote gera, mas a app rebenta ao abrir o ecrã.
