@@ -24,6 +24,27 @@ junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` 
 
 ---
 
+## 2026-11-04 — A BARRA DE BAIXO COMBINA COM O INÍCIO v6 (Opus 5.5)
+
+Nuno: "o menu da app combina com o layout novo da aba Início?" No essencial sim (paleta, ícones, ponto amarelo = realce,
+noturno herdado, 49 pt nativos, ícones inativos 4,51:1). Corrigido em `components/TabBar.js`:
+- **＋ calmo** (escolha do Nuno; refs Breathwrk/Oura/Wabi/Paramount+ no Mobbin): fundo suave (`soft2`), ＋ a tinta, **sem
+  sombra** — antes era um círculo preto com sombra a 20 pt da 1.ª tecla preta do Início (dois primários lado a lado).
+  O primário do ecrã é a tecla. **Nas edições SPAC/SNPVAC o ＋ fica neutro** (a cor do sindicato fica na 1.ª tecla e no
+  ponto da aba) — muda a nota de 2026-11-03 que punha o `action` também no ＋.
+- Rótulos das abas **11 pt** (eram 9,5 — mais pequenos que tudo no Início) · espaço/cores/letra pelos tokens.
+  Guardião: dívida **−4**, chão regravado.
+**Logo a seguir — A PLACA FLUTUANTE (Nuno escolheu, mesma sessão; substitui o ＋ calmo):** a barra passa a ser uma
+cápsula ESCURA como a placa do painel do Início (`PLATE.day`/`.night`), a aba ativa em `BRAND.onDark` (amarelo; nas
+edições, a cor do sindicato sobre placa) com o ponto por baixo, inativas em `PLATE.sub` (~7:1), e o ＋ num círculo À
+PARTE, à direita, da mesma placa, ＋ claro, sem sombra (refs Apple Fitness · Oura · Wabi). Continua EM LAYOUT e com a
+mesma altura (o Início não perde espaço); o menu do ＋ abre à direita, por cima do círculo. Recusados: "painel de
+partidas" só com palavras (pesa, lê-se pior sem ícones) e a barra plana afinada.
+**Por ver no iPhone:** a placa de dia e de noite, o ponto amarelo na aba ativa, o ponto laranja da Escala, o menu do ＋
+(o × cai em cima do círculo).
+
+---
+
 ## 2026-11-04 (madrugada) — AUDITORIA DO TRIPULANTE · fecho do mês · RDP confirmado no BTE (Opus 5.5)
 
 **Princípio novo (Nuno):** "todos os estados são informação para os tripulantes — piloto ou cabine". Escrito como

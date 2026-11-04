@@ -1,11 +1,11 @@
 {
- "gerado": "2026-11-03",
+ "gerado": "2026-11-04",
  "total": {
-  "tipoFora": 218,
-  "tipoMenor11": 109,
-  "espacoFora": 434,
+  "tipoFora": 217,
+  "tipoMenor11": 108,
+  "espacoFora": 432,
   "raioFora": 57,
-  "corSolta": 65,
+  "corSolta": 63,
   "ionicons": 10,
   "iconeNavSolto": 3,
   "amareloTexto": 4
@@ -412,11 +412,11 @@
    "amareloTexto": 0
   },
   "components/TabBar.js": {
-   "tipoFora": 1,
-   "tipoMenor11": 1,
-   "espacoFora": 5,
+   "tipoFora": 0,
+   "tipoMenor11": 0,
+   "espacoFora": 3,
    "raioFora": 1,
-   "corSolta": 3,
+   "corSolta": 1,
    "ionicons": 0,
    "iconeNavSolto": 0,
    "amareloTexto": 0

@@ -1,6 +1,8 @@
-// A TAB BAR da pele — o padrão convencional executado na perfeição (a lição deste user:
-// premium = familiar + craft, nunca o exótico). Anatomia: barra em PAPEL com hairline,
-// EM LAYOUT (o conteúdo termina acima dela — nada fica tapado), simetria 2 abas + ＋ + 2.
+// A TAB BAR = A PLACA FLUTUANTE (Nuno, 2026-11-04; refs Apple Fitness · Oura · Wabi no Mobbin): uma cápsula ESCURA
+// como a placa do painel do Início v6, a aba ativa na cor da marca sobre placa (BRAND.onDark — amarelo; nas edições, a
+// do sindicato), e o ＋ num círculo à parte, à direita. Continua EM LAYOUT (a faixa em papel por baixo da cápsula é da
+// barra: o conteúdo termina acima — nada fica tapado) e com a MESMA altura de antes (o Início mede a altura útil).
+// (Antes: barra plana em papel com hairline, 2 abas + ＋ + 2.)
 //
 // O craft que a separa de uma barra "boa":
 // - Ativa: ícone dá um POP subtil (spring, sem overshoot exagerado — motion §4) e o ponto
@@ -19,17 +21,17 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet, Modal } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
 import { AppContext } from '../data/appContext';
-import { PELE, PELE_NIGHT, PELE_FONT, BRAND } from '../data/constants';
+import { PELE, PELE_NIGHT, PLATE, PELE_FONT, BRAND, TXT, TYPE, SPACE, GUTTER } from '../data/constants';
 import { t } from '../data/i18n';
 import { select, tap } from '../data/haptics';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 const ICON = { 'Início': 'home', 'Escala': 'cal', 'Estatísticas': 'stats', 'Perfil': 'user' };
 const CONTENT_H = 49;   // altura útil = iOS NATIVO (decisão do user; ícones 24 + rótulos cabem: pilha ≈48)
-const PLUS = 44;        // diâmetro do ＋ central = alvo mínimo Apple; 2.5pt de ar na pista de 49 (46 beijava a hairline)
+const CAP = 56;         // altura da cápsula e diâmetro do ＋ (ícone 22 + rótulo 11 + ponto ≈ 44 cabem; alvo folgado ao polegar)
 
 // Um item da barra — o ponto acende e o ícone dá um pop curto quando ganha o foco.
-function TabItem({ focused, lbl, ic, badge, P, onPress, reduce }) {
+function TabItem({ focused, lbl, ic, badge, PL, onPress, reduce }) {
   const dot = useRef(new Animated.Value(focused ? 1 : 0)).current;
   const pop = useRef(new Animated.Value(1)).current;
   const first = useRef(true);
@@ -46,11 +48,11 @@ function TabItem({ focused, lbl, ic, badge, P, onPress, reduce }) {
     <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.65}
       accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={lbl}>
       <Animated.View style={{ transform: [{ scale: pop }] }}>
-        <Icon name={ic} size={24} color={focused ? P.ink : P.grey} />
-        {badge ? <View style={[s.badge, { borderColor: P.paper }]} /> : null}
+        <Icon name={ic} size={22} color={focused ? BRAND.onDark : PL.sub} />
+        {badge ? <View style={[s.badge, { borderColor: PL.bg }]} /> : null}
       </Animated.View>
       <Text numberOfLines={1} maxFontSizeMultiplier={1.2}
-        style={[s.lbl, { color: focused ? P.ink : P.grey }]}>{lbl}</Text>
+        style={[s.lbl, { color: focused ? BRAND.onDark : PL.sub }]}>{lbl}</Text>
       {/* Ponto POR BAIXO (user 2026-07-09: em cima beijava a hairline; precedente Apple = a
           Dock do macOS marca a app ativa com o ponto POR BAIXO). Espaço sempre reservado. */}
       <Animated.View style={[s.adot, { opacity: dot, transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]} />
@@ -67,6 +69,7 @@ export default function TabBar({ state, navigation }) {
   // O noturno é um estado do INÍCIO (véspera/pernoita) — as outras abas são sempre diurnas.
   const night = !!homeNight && state.routes[state.index]?.name === 'Início';
   const P = night ? PELE_NIGHT : PELE;
+  const PL = night ? PLATE.night : PLATE.day;   // a placa do painel do Início
 
   // Rótulos reais (a rota fica, o rótulo traduz): Estatísticas mostra Números.
   const lblFor = (name) => name === 'Estatísticas' ? l('Números', 'Numbers')
@@ -115,32 +118,32 @@ export default function TabBar({ state, navigation }) {
   const xRotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
 
   const padBottom = Math.max(insets.bottom, 8);
-  // Geometria EXATA do ＋ (para o clone × do Modal cair pixel-perfect no mesmo sítio):
-  // círculo centrado na altura útil → topo a (CONTENT_H − PLUS)/2 da borda de cima da barra.
-  const plusBottom = padBottom + (CONTENT_H - PLUS) / 2;
-
-  const half = Math.ceil(state.routes.length / 2);
+  // A cápsula assenta perto do indicador de casa (como as barras flutuantes do iOS) sem mudar a altura da faixa:
+  // faixa = CONTENT_H + padBottom (como antes) · cápsula de CAP com o fundo a capBottom da borda de baixo.
+  // O clone × do Modal usa a MESMA geometria (cai pixel-perfect em cima do ＋).
+  const capBottom = Math.max(padBottom - 18, SPACE.sm);
   const renderItem = (route, i) => (
     <TabItem key={route.key} focused={state.index === i}
       lbl={lblFor(route.name)} ic={ICON[route.name]}
-      badge={route.name === 'Escala' && escPending} P={P} reduce={reduce}
+      badge={route.name === 'Escala' && escPending} PL={PL} reduce={reduce}
       onPress={() => go(route, state.index === i)} />
   );
 
   return (
     <>
-      {/* Hairline REFORÇADA (só aqui): PELE.line era mais clara que o separador da Apple —
-          numa barra branca sobre páginas brancas, a costura é a única fronteira. */}
-      <View style={[s.bar, { height: CONTENT_H + padBottom, paddingBottom: padBottom, backgroundColor: P.paper, borderTopColor: night ? P.line : 'rgba(20,20,20,0.13)' }]}>
-        {state.routes.slice(0, half).map((r, i) => renderItem(r, i))}
-        <TouchableOpacity style={s.plusWrap} onPress={openDial} activeOpacity={1}
-          onPressIn={() => !reduce && pressTo(0.92)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
-          accessibilityRole="button" accessibilityLabel={l('Criar', 'Create')} accessibilityState={{ expanded: open }}>
-          <Animated.View style={[s.plus, night ? s.plusNight : null, { transform: [{ scale: press }] }]}>
-            <Icon name="plus" size={22} color={BRAND.onDark} />
-          </Animated.View>
-        </TouchableOpacity>
-        {state.routes.slice(half).map((r, i) => renderItem(r, half + i))}
+      <View style={[s.bar, { height: CONTENT_H + padBottom, backgroundColor: P.paper }]}>
+        <View style={[s.capRow, { bottom: capBottom }]}>
+          <View style={[s.cap, { backgroundColor: PL.bg }, night ? s.nightEdge : null, night ? { borderColor: PL.rule } : null]}>
+            {state.routes.map((r, i) => renderItem(r, i))}
+          </View>
+          <TouchableOpacity onPress={openDial} activeOpacity={1}
+            onPressIn={() => !reduce && pressTo(0.92)} onPressOut={() => !reduce && pressTo(1)} hitSlop={6}
+            accessibilityRole="button" accessibilityLabel={l('Criar', 'Create')} accessibilityState={{ expanded: open }}>
+            <Animated.View style={[s.plus, { backgroundColor: PL.bg }, night ? s.nightEdge : null, night ? { borderColor: PL.rule } : null, { transform: [{ scale: press }] }]}>
+              <Icon name="plus" size={22} color={PL.fg} />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Speed-dial — Modal: overlay garantido por cima da barra-em-layout; back do Android fecha. */}
@@ -152,7 +155,7 @@ export default function TabBar({ state, navigation }) {
         <Animated.View style={[s.scrim, { opacity: anim }]}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => closeDial()} accessibilityLabel={l('Fechar', 'Close')} />
         </Animated.View>
-        <View pointerEvents="box-none" style={[s.dial, { bottom: padBottom + CONTENT_H + 14 }]}>
+        <View pointerEvents="box-none" style={[s.dial, { bottom: capBottom + CAP + SPACE.md }]}>
           {ACTIONS.map((a, i) => ({ ...a, i })).reverse().map((a) => (
             <Animated.View key={a.key} style={[s.pillRow, itemAnim(a.i)]}>
               <TouchableOpacity style={[s.pill, { backgroundColor: P.paper, borderColor: P.line }]} activeOpacity={0.85}
@@ -164,12 +167,12 @@ export default function TabBar({ state, navigation }) {
           ))}
         </View>
         {/* clone do ＋ no MESMO sítio (geometria partilhada) — roda para × com a abertura */}
-        <Animated.View pointerEvents="box-none" style={[s.xWrap, { bottom: plusBottom, opacity: anim }]}>
+        <Animated.View pointerEvents="box-none" style={[s.xWrap, { bottom: capBottom, opacity: anim }]}>
           <TouchableOpacity onPress={() => closeDial()} activeOpacity={0.85}
             accessibilityRole="button" accessibilityLabel={l('Fechar menu', 'Close menu')}>
-            <View style={[s.plus, night ? s.plusNight : null]}>
+            <View style={[s.plus, { backgroundColor: PL.bg }]}>
               <Animated.View style={{ transform: [{ rotate: xRotate }] }}>
-                <Icon name="plus" size={22} color={BRAND.onDark} />
+                <Icon name="plus" size={22} color={PL.fg} />
               </Animated.View>
             </View>
           </TouchableOpacity>
@@ -181,26 +184,27 @@ export default function TabBar({ state, navigation }) {
 }
 
 const s = StyleSheet.create({
-  bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
-  item: { flex: 1, height: CONTENT_H, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: BRAND.signal },
-  lbl: { fontSize: 9.5, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.3 },
-  badge: { position: 'absolute', top: -2, right: -5, width: 7, height: 7, borderRadius: 99, backgroundColor: '#E86A10', borderWidth: 1.5 },
-  // ＋ central — O botão de criar: ink, sombra leve (elevar é legítimo — é o herdeiro do FAB).
-  plusWrap: { width: 64, height: CONTENT_H, alignItems: 'center', justifyContent: 'center' },
-  plus: { width: PLUS, height: PLUS, borderRadius: PLUS / 2, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#14161A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.22, shadowRadius: 9, elevation: 5 },
-  plusNight: { borderWidth: 1, borderColor: 'rgba(244,242,237,0.18)', shadowOpacity: 0 },
+  bar: { position: 'relative' },
+  // A placa flutuante + o ＋ à parte (8 pt entre os dois), com a margem do ecrã dos dois lados.
+  capRow: { position: 'absolute', left: GUTTER, right: GUTTER, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  cap: { flex: 1, height: CAP, borderRadius: CAP / 2, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACE.xs },
+  nightEdge: { borderWidth: StyleSheet.hairlineWidth },   // à noite a placa (#18212D) precisa de um fio para se ver no fundo
+  item: { flex: 1, height: CAP, alignItems: 'center', justifyContent: 'center', gap: SPACE.xxs },
+  adot: { width: 4, height: 4, borderRadius: 99, backgroundColor: BRAND.onDark },   // a marca SOBRE a placa
+  lbl: { fontSize: TYPE.eyebrow, fontFamily: PELE_FONT.bodyHeavy, letterSpacing: 0.2 },   // 11 pt
+  badge: { position: 'absolute', top: -2, right: -5, width: 7, height: 7, borderRadius: 99, backgroundColor: PELE.warn, borderWidth: 1.5 },
+  // ＋ num círculo À PARTE, da mesma placa (sem sombra — o Início v6 é plano).
+  plus: { width: CAP, height: CAP, borderRadius: CAP / 2, alignItems: 'center', justifyContent: 'center' },
 
   dialRoot: { flex: 1 },
   scrim: { flex: 1, backgroundColor: 'rgba(20,22,26,0.45)' },   // NÃO absoluteFill — altura 0 sob Fabric
-  dial: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  pillRow: { marginBottom: 10 },
+  dial: { position: 'absolute', left: GUTTER, right: GUTTER, alignItems: 'flex-end' },   // por cima do ＋ (à direita)
+  pillRow: { marginBottom: SPACE.sm },
   // Pílula rotulada (referência do user): disco do ícone + rótulo na MESMA cápsula.
   pill: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 99, paddingVertical: 6, paddingLeft: 7, paddingRight: 18,
     shadowColor: '#14161A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16, elevation: 6 },
   pillIc: { width: 34, height: 34, borderRadius: 17, backgroundColor: PELE.ink, alignItems: 'center', justifyContent: 'center' },
   pillIcNight: { backgroundColor: 'rgba(244,242,237,0.12)' },
-  pillTxt: { fontSize: 13, fontFamily: PELE_FONT.bodyBold },
-  xWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  pillTxt: { ...TXT.bodyStrong },
+  xWrap: { position: 'absolute', right: GUTTER, alignItems: 'center' },
 });
