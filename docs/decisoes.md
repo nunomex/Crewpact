@@ -72,6 +72,17 @@ gráfico dos 7 dias (último ajuste, passou a meia-noite) · iPhone pequeno · l
 dos limites e os **+€ de um dia** — ganhos de hoje/amanhã, esta noite; o total do mês fica a tinta) · laranja = atenção ·
 vermelho = excede · tinta = o resto · a linha do dia de voo perdeu "pernoita em …" (a tecla Hotel já o diz). Gravado
 `83dc3a4` + `ce81204` (ramo `inicio-v6`, sem push).
+**A seguir (✅ no iPhone, Nuno "está tudo ok"):** a lista do que vem a seguir ganhou o título **"PRÓXIMOS SERVIÇOS"**
+("serviços", não "voos": também há standby/formação) por cima das colunas, e a coluna **ROTA** mostra a rota inteira como
+no eCrew ("LIS–FNC–LIS"; encolhe se for longa) — só o destino escondia os setores do meio (refs Fly Delta/Air NZ).
+**PENDÊNCIA COM PRIORIDADE — MODO ESCURO DA APP TODA (decidido 2026-11-04, opção 2):** hoje a app ignora o modo escuro
+do iPhone (`app.json` está em `automatic`, mas nenhum ecrã lê `useColorScheme`): os ecrãs ficam brancos e só o teclado,
+os avisos (21 `Alert`) e a folha de partilhar ficam escuros. O problema real: às 4h, no pré-report, o Início está claro
+(o noturno só entra na véspera/pernoita) e encandeia num quarto às escuras. **Projeto próprio, depois de acabar os
+estados:** todos os ecrãs com versão escura (os tokens `PELE_NIGHT` são o ponto de partida), contraste medido, guardião
+do design, refs do Mobbin ecrã a ecrã. Rever então a regra do canon ("o noturno é conduzido pelo ESTADO do dia, não pelo
+sistema") — o significado "véspera/pernoita" tem de sobreviver (ex.: a placa noturna continua a dizê-lo). Recusado: só o
+Início seguir o telemóvel (resolvia metade e mudava o significado do noturno).
 
 ---
 

@@ -879,7 +879,10 @@ export default function HomeScreen({ navigation }) {
       const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now); if (!mf) continue;
       const d = mf.svc;
       const isF = !d.kind || d.kind === 'flight';
-      const ds = isF || (d.kind === 'positioning' && d.route) ? (awayStation(d.route) || l('Voo', 'Flight')) : ((KIND_CODE[lang] || KIND_CODE.pt)[d.kind] || '—');
+      // A ROTA inteira, como no eCrew ("LIS–FNC–LIS") — só o destino escondia os setores do meio (LIS-FNC-LIS-OPO-LIS
+      // mostrava só FNC). Nuno, 2026-11-04; refs Fly Delta/Air NZ. Sem rota → a estação de fora ou "Voo".
+      const chain = String(d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join('–');
+      const ds = isF || (d.kind === 'positioning' && d.route) ? (chain || awayStation(d.route) || l('Voo', 'Flight')) : ((KIND_CODE[lang] || KIND_CODE.pt)[d.kind] || '—');
       // Sem report → "—" na coluna do report (nunca a partida disfarçada de report).
       out.push({ key: iso, tm: d.report_time || '—', ds, dy: `${wdShort(iso)} ${Number(iso.slice(8, 10))}`,
         a11y: `${t('duties.kind.' + (d.kind || 'flight'), lang)} ${d.route || ''}, ${wdLong(iso)} ${Number(iso.slice(8, 10))}, ${d.report_time ? `report ${d.report_time}` : l('sem hora de report', 'no report time')}`,
@@ -1431,16 +1434,18 @@ export default function HomeScreen({ navigation }) {
             const shown = nextOpen ? board.rows : board.rows.slice(0, rowsCap);
             return (
               <View>
+                {/* Título da lista (Nuno, 2026-11-04): "serviços", não "voos" — também há standby, formação, escritório. */}
+                <Text style={[s.tag, s.nextTitle, { color: live ? PL.fg : P.ink }]} accessibilityRole="header">{l('Próximos serviços', 'Next duties')}</Text>
                 <View style={s.cols}>
                   <Text style={[s.tag, s.cTm, { color: subColor }]}>{l('Report', 'Report')}</Text>
-                  <Text style={[s.tag, s.cDs, { color: subColor }]}>{l('Destino', 'To')}</Text>
+                  <Text style={[s.tag, s.cDs, { color: subColor }]}>{l('Rota', 'Route')}</Text>
                   <Text style={[s.tag, s.cDy, { color: subColor }]}>{l('Dia', 'Day')}</Text>
                 </View>
                 {shown.map((r, i) => (
                   <TouchableOpacity key={r.key} style={[s.row, (i < shown.length - 1 || more > 0) ? { borderBottomWidth: 1, borderBottomColor: live ? PL.ruleFaint : P.line } : null]}
                     activeOpacity={0.75} onPress={r.onPress} disabled={!r.onPress} accessibilityRole={r.onPress ? 'button' : undefined} accessibilityLabel={r.a11y}>
                     <Text style={[s.rowBig, s.cTm, { color: live ? BRAND.panel : P.ink }]} numberOfLines={1} allowFontScaling={false}>{r.tm}</Text>
-                    <Text style={[s.rowBig, s.cDs, onPlate]} numberOfLines={1} allowFontScaling={false}>{r.ds}</Text>
+                    <Text style={[s.rowBig, s.cDs, onPlate]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false}>{r.ds}</Text>
                     <Text style={[s.label, s.cDy, { color: subColor }]} numberOfLines={1}>{r.dy}</Text>
                   </TouchableOpacity>
                 ))}
@@ -1706,7 +1711,8 @@ const makeSkin = (P) => StyleSheet.create({
   progEnds: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACE.sm },
 
   // As linhas do painel: 76 · resto · 72 (como o esboço)
-  cols: { flexDirection: 'row', gap: SPACE.sm, paddingTop: SPACE.sm, paddingBottom: SPACE.xxs },
+  nextTitle: { paddingTop: SPACE.md },
+  cols: { flexDirection: 'row', gap: SPACE.sm, paddingTop: SPACE.xs, paddingBottom: SPACE.xxs },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 44 },
   cTm: { width: 76 },
   cDs: { flex: 1 },
