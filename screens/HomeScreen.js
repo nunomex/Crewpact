@@ -69,9 +69,10 @@ const TUNE = {
   // baixo. `trim` aperta a caixa com margens negativas (não cortam a letra): 0,08 em ≈ a linha de 0,84 do esboço.
   trim: 0.08,
   // Por baixo o vazio é maior (descendentes) — MEDIDO no iPhone a 2026-11-03, alvo ~20 pt visíveis (Tempo da Apple):
-  //   ao vivo (104, por baixo a rota 44): com 0,08 dava 35 pt → 0,22.
-  //   calmo (150, por baixo uma frase pequena, sem vazio em cima): com 0,22 dava 6 pt (o 05:00 quase tocava) → 0,13.
-  trimBottom: { live: 0.22, calm: 0.13 },
+  //   por baixo a ROTA (Barlow 44, com vazio em cima): com 0,08 dava 35 pt (em voo, 104) → 0,22.
+  //   por baixo uma FRASE (letra normal, sem vazio em cima): com 0,22 dava 6 pt no pós-voo (150) e ~11 no standby (104) → 0,13.
+  //   (Era "ao vivo/calmo"; o standby — ao vivo com frase — mostrou que conta o que vem a SEGUIR. 2026-11-04.)
+  trimBottom: { dest: 0.22, text: 0.13 },
   flip: { dur: 460, stagger: 70 },                       // Solari: cada dígito vira em 460 ms, cascata de 70 ms
   dot: { leg: 650 },                                     // ponto "ao vivo": 650 ms por perna (motion §3, loops)
   wakeBefore: 75,                                        // lembrete para acordar: report − 75 min (vestir + caminho)
@@ -1390,7 +1391,7 @@ export default function HomeScreen({ navigation }) {
     return { fontSize: size, lineHeight: size, color: P.ink };
   })();
   // Aparo ASSIMÉTRICO: por baixo dos dígitos a caixa traz mais vazio (o lugar dos descendentes) do que por cima.
-  const digitsTrim = digitsStyle ? { marginTop: -Math.round(digitsStyle.fontSize * TUNE.trim), marginBottom: -Math.round(digitsStyle.fontSize * (live ? TUNE.trimBottom.live : TUNE.trimBottom.calm)) } : null;
+  const digitsTrim = digitsStyle ? { marginTop: -Math.round(digitsStyle.fontSize * TUNE.trim), marginBottom: -Math.round(digitsStyle.fontSize * (board.dest ? TUNE.trimBottom.dest : TUNE.trimBottom.text)) } : null;
   const pillStyle = (tone) => {
     if (tone === 'calm') return [s.pill, { backgroundColor: P.soft }, { color: P.okText }];
     if (live) return [s.pill, { backgroundColor: tone === 'red' ? PLATE.redBg : tone === 'warn' ? PLATE.warnBg : PLATE.okBg }, { color: tone === 'red' ? PLATE.red : tone === 'warn' ? PLATE.warn : PLATE.ok }];
