@@ -59,7 +59,7 @@ const SHOW_DEMO_FLIGHT = false;
 // ── DEV: forçar um estado para o ver no iPhone sem esperar pelo gatilho real (a véspera só dispara
 // ≥ 18h). Valores: 'setup' | 'folga' | 'hoje' | 'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' |
 // 'ferias' | 'doenca' | 'fecho' — ou null = estado REAL. Voltar a null depois de ver!
-const FORCE_HOME_STATE = 'doenca';
+const FORCE_HOME_STATE = null;
 // ── AFINAÇÕES visuais (sessão "testar os estados") — números do olho, mexer AQUI.
 const TUNE = {
   live: { size: 104 },                                  // a HORA ao vivo (esboço: 104 pt)
