@@ -87,6 +87,37 @@ para cada momento". Esboço `design/inicio-v4.html`.
 | `sugestoes-atalhos-cleo.webp` | Cleo | frase + sugestões + fila de atalhos | https://mobbin.com/screens/0a251f82-32fe-47cf-a6f8-ca6ed621ab4c |
 | `mosaico-lembretes.webp` | Lembretes (Apple) | atalhos em mosaico com números, sempre no mesmo sítio (opção 3, para comparar) | https://mobbin.com/screens/84be367a-1f4e-48ac-8740-541510d01dad |
 
+**Arrumação do Início — "documento" — escolhida a 2026-11-03 (testar os estados, v6 no iPhone).** Tudo encostado
+ao topo com ritmo fixo; as 3 teclas LOGO a seguir aos secundários; o espaço livre no fim. Substituiu a 1.ª tentativa
+("grupos + espaço à placa": número centrado numa placa que crescia — no iPhone flutuava numa caixa com aresta).
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `documento-neo-financial.jpg` | Neo Financial | número grande à esquerda + 3 botões LOGO por baixo (1.º escuro, 2 claros — como as nossas teclas); o vazio fica no fim | https://mobbin.com/screens/4abbfbc6-ac53-4cc4-866e-8bdc661d3039 |
+| `documento-x-money.jpg` | X Money | rótulo · número · linha · ações · cartões, em fluxo, sem buracos | https://mobbin.com/screens/b17e33ac-8b05-4062-8ab6-aa2a9bd35ec4 |
+| `documento-n26.jpg` | N26 | a mesma ordem; o espaço livre como fim de página | https://mobbin.com/screens/21f874c8-f55d-4912-b60e-8d38c23190fb |
+
+**Para não encher — escolhido a 2026-11-03 (Nuno: "parece muito cheio").** Mosaicos lado a lado (os 2 secundários de
+números em meia largura) + "A seguir" dobrado (uma linha que abre ao toque). Recusado: folha que espreita (Joi),
+carrossel com pontos (Superpower — esconde o 2.º), zoom para o detalhe (Apple Invites — para o dev build, talvez).
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `dobrar-whoop-1-fechado.jpg` · `-2-aberto.jpg` | WHOOP | as métricas do dia numa linha no topo; a lista compacta abre-se no sítio | https://mobbin.com/flows/91a0f665-488f-46a7-8939-78ec3bf0b722 |
+| `dobrar-meetup-1-simples.jpg` · `-2-detalhe.jpg` | Meetup | vista simples ↔ detalhada no mesmo sítio, sem mudar de ecrã | https://mobbin.com/flows/de36ffd2-53f1-442f-8848-ea9a0cf57d11 |
+
+**Ritmo da placa (medido nestas, 2026-11-03).** Nuno: "as coisas estão muito juntas". O Tempo da Apple deixa ~20 pt
+VISÍVEIS de cada lado do número (cidade→31°→Cloudy); a Qantas ~11–15 pt entre grupos. Os nossos dígitos trazem ~7 pt
+vazios dentro da caixa → no código 12 (rótulo→número) e 6 (número→rota) dão ~19 e ~20 visíveis. A Flighty não está
+no Mobbin.
+
+| Ficheiro | App | O que se tira | Mobbin |
+|---|---|---|---|
+| `placa-ritmo-tempo-apple.jpg` | Tempo (Apple) | cidade · número · estado colados num bloco; muito ar À VOLTA; os dados começam bem abaixo | https://mobbin.com/screens/3f737f9f-363b-47a5-b4ab-a8afbf237c4e |
+| `placa-ritmo-lapse.jpg` | Lapse | rótulo colado a uma hora amarela grande; salto grande a seguir | https://mobbin.com/screens/b59bdbee-12de-4995-b037-3964264f4674 |
+| `placa-ritmo-lumy.jpg` | Lumy | "Sunrise · in · 1 h 49" a flutuar com margens largas; detalhes mais abaixo | https://mobbin.com/screens/e37f48a3-fb38-43c3-86b4-2ba29608408d |
+| `placa-grupos-qantas.jpg` | Qantas | cartão de voo denso mas em GRUPOS separados por linhas | https://mobbin.com/screens/bdeb7800-03ad-432d-9535-48900d7212ca |
+
 ## escala/ — escolhidas a 2026-11-03 (aba Escala, opções 1 + 2)
 
 **O dia tocado aparece por baixo da grelha, sem folha** (opção 1) + **dias vazios em branco e hoje num

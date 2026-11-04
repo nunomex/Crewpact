@@ -27,11 +27,12 @@
 import { nightStopStation } from './hotels';
 
 // Fim de UM serviço (instante ms). Regra ESPELHO do dutyToFlight do Início:
-// exige report_time; com block_on ANTERIOR ao report o serviço vira a noite (fim no
+// a âncora é o report — ou, SEM report (calendário sem RP/C-I), a partida (nunca se inventa
+// partida − 1 h; 2026-11-03); com block_on ANTERIOR à âncora o serviço vira a noite (fim no
 // dia seguinte); SEM block_on o serviço "dura" até ao fim do dia (23:59) — ou seja,
 // nunca conta como terminado durante o próprio dia (standby aberto não fecha o dia).
 export const dutyEndMs = (iso, d) => {
-  if (!d || d.deleted || !d.report_time) return null;
+  if (!d || d.deleted) return null;
   const at = (hhmm) => {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
     if (!m) return null;
@@ -39,7 +40,7 @@ export const dutyEndMs = (iso, d) => {
     dt.setHours(+m[1], +m[2], 0, 0);
     return dt;
   };
-  const report = at(d.report_time);
+  const report = at(d.report_time || d.block_off);
   if (!report) return null;
   if (d.block_on) {
     const e = at(d.block_on);
@@ -54,10 +55,21 @@ export const dutyEndMs = (iso, d) => {
 // O dia FECHOU? Multi-serviço (a lei conta períodos, não dias): só fecha quando TODOS
 // os serviços (primário + extra) terminaram — senão "Fechado ✓" era mentira de segurança.
 export const dayClosed = (iso, duty, now) => {
-  if (!duty || duty.deleted || !duty.report_time) return false;
+  if (!duty || duty.deleted) return false;   // um serviço sem fim conhecido dá null em dutyEndMs → não fecha
   const services = [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])];
   const ends = services.map((sv) => dutyEndMs(iso, sv));
   return ends.length > 0 && ends.every((e) => e != null && e < now);
+};
+
+// O serviço do dia que acaba por ÚLTIMO (primário ou um `extra`) — é a estação dele que diz onde o dia acaba.
+export const lastService = (iso, duty) => {
+  if (!duty || duty.deleted) return null;
+  let best = duty, bestEnd = -Infinity;
+  for (const sv of [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])]) {
+    const e = dutyEndMs(iso, sv);
+    if (e != null && e >= bestEnd) { best = sv; bestEnd = e; }
+  }
+  return best;
 };
 
 // Dia anterior de um ISO (UTC — sem fusos, como o aeEvents).
@@ -97,7 +109,8 @@ export function crewState({
   const disrupted = !!(flight && (deviated || inboundLate));
   const ended = dayClosed(todayISO, todayDuty, now);
   const closeMulti = !!(ended && Array.isArray(todayDuty.extra) && todayDuty.extra.length);
-  const nsStation = ended ? (nightStopStation(todayDuty, base) || null) : null;
+  // Onde o dia ACABA: a estação do serviço que acaba por ÚLTIMO (num dia com 2, não a do primário).
+  const nsStation = ended ? (nightStopStation(lastService(todayISO, todayDuty), base) || null) : null;
   const isVespera = !!(flight && !isToday && cdMin != null && cdMin > 0 && cdMin <= 14 * 60 && hour >= 18);
   const sickDay = sickEpisodeDay(events, todayISO);
   const vacToday = (events || []).some((e) => e && e.type === 'vacDays' && e.date === todayISO);

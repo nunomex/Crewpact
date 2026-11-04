@@ -6,13 +6,67 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO — VER O INÍCIO v6 NO IPHONE (ler isto primeiro)
+## PRÓXIMA SESSÃO — ACABAR DE "TESTAR OS ESTADOS" (ler isto primeiro)
 
-**Modelo:** Opus 5.5 **Alto** (verificação de uma mudança). O Nuno escreve **"testar os estados"** → o guião
-`docs/verificacao-device.md` (reescrito hoje para a v6), estado a estado, com `FORCE_HOME_STATE`.
-**Onde está:** ramo **`inicio-v6`** (gravado `59a461e`), por juntar ao `main` — junta-se depois de o Nuno ver no iPhone.
-**Depois:** afinações no `TUNE` do `screens/HomeScreen.js`; e a Escala passa a seguir esta linguagem (a escolha
-A/B/C da `escala-v3` fica para essa sessão).
+**Modelo:** Opus 5.5 **Alto**. O Nuno escreve **"testar os estados"** → continuar o guião `docs/verificacao-device.md`
+(Início v6) onde parou. **Onde está:** ramo **`inicio-v6`**, com as mudanças desta sessão por gravar (ver abaixo);
+junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` está a `null`.
+**Falta ver no iPhone:**
+1. **Os mosaicos alinhados** (em cima: rótulo · número · delta; em baixo, preso ao fundo: gráfico / "dia 3 de 30") e o
+   **gráfico dos 7 dias com a coluna de hoje** (colunas de largura fixa — a 7.ª saía por baixo do mosaico do mês). Só
+   aparece no pós-voo (precisa de um dia fechado ANTES da meia-noite).
+2. **A linha do dia de serviço** no em voo (nunca chegou a ser vista no iPhone).
+3. "A seguir" com 4+ serviços ("Mais N ⌄") e a descer para 2 linhas quando não cabe (em voo com frase).
+4. Estados por ver: **standby (4) · disrupção (3c, só o esqueleto) · férias · doença · fecho (7)** · configuração "Ver um
+   exemplo" (estado real, conta sem calendário) · folga "sem nada marcado" · vários setores com voo ao vivo (precisa de
+   números de voo verdadeiros).
+**Conta de teste:** a base foi posta em **Lisboa** ("sempre foi esta") nesta sessão — estava em Faro.
+
+---
+
+## 2026-11-03/04 (noite) — "TESTAR OS ESTADOS" NO IPHONE · Início v6 afinado (Opus 5.5)
+
+**Vistos ✅ no iPhone:** configuração (com os 3 passos) · folga (com serviço) · véspera (com e sem report) · hoje
+pré-report · em serviço antes da partida (com e sem report) · em voo · pernoita · pós-voo (o estado mais cheio: cabe sem
+deslizar, ~48 pt de folga). Afinações e correções, todas por escolha do Nuno (refs do Mobbin em `referencias/inicio/`):
+- **Configuração:** os 3 passos do 7.º passo da configuração (mesmas palavras) enchem o meio.
+- **Arrumação "documento" + teclas presas ao fundo:** placa do tamanho do conteúdo, tudo encostado ao topo; as 3 teclas
+  ficam no fundo (sempre no mesmo sítio para o polegar) — o espaço livre fica entre os cartões e as teclas. Recusado: o
+  número centrado numa placa que crescia (flutuava numa caixa com aresta).
+- **Ritmo da placa, MEDIDO nas capturas** contra o Tempo da Apple (~20 pt visíveis de cada lado do número): `TUNE.rhythm`
+  (rótulo→número 12 · número→rota 8) · aparo assimétrico dos dígitos `TUNE.trimBottom` (ao vivo 0,22 · calmo 0,13 — por
+  baixo dos dígitos há mais vazio) · `TUNE.destTrim` 0,15 (a rota e a linha de baixo são um grupo: ~9 pt). Lição: o
+  espaço no código não é o que se vê — os dígitos grandes trazem vazio dentro da caixa; medir na captura.
+- **Barra do em voo → a LINHA DO DIA DE SERVIÇO** (`data/dutyLine.js`, golden `test:dutyline` 25/25, 26.ª suite): do report
+  ao limite do PSV (o MESMO "PSV até"), setores como troços, ✈ = agora, "aterras com 8:30 de margem" (vermelho se passa).
+- **Pós-voo:** o número é uma DURAÇÃO — "5:00 h" + rótulo "PSV de hoje" ("05:00" lia-se cinco da manhã) · "Repouso até
+  amanhã às 10:45" em destaque · sem a frase (repetia "Dia fechado") · teclas Registar o sign-off · Limites · Ver o
+  serviço (saíram "Amanhã", que repetia o painel, e o € como tecla).
+- **Mosaicos lado a lado** quando os 2 secundários são números (7 dias com 7 barrinhas do mesmo `dayLog` · mês só
+  tipografia, "+€ hoje" a verde, sem a barra que contava dias); avisos de texto continuam com a largura toda.
+- **"A seguir" aberto até 3** (desce para 2 se não couber — o ecrã mede-se), "Mais N ⌄" abre o resto; cabeçalho
+  "REPORT" (era "HORA").
+- Tempo no destino sem "19° a 19°".
+**Erros a sério corrigidos (golden primeiro onde há motor):**
+- Dia com 2 serviços: o Início só lia o 1.º (o 2.º voo aparecia sem rota, pernoita, hotel nem ganhos) → lê todos e
+  mostra o próximo que ainda não acabou (`dayFlights`; quem lê o registo usa `flight.svc`, nunca `duties[dia]`).
+- Serviço gravado sem hora de report: o Início largava o registo → usa-o, o relógio conta à partida, PSV "não calculado".
+- Motor dos estados (`data/crewState.js`, `test:crewstate` 44 → 51): a pernoita decide-se pelo serviço que acaba por
+  ÚLTIMO (não o 1.º) · um serviço sem report já "acaba" (âncora = partida) e o dia pode fechar.
+**Pendências novas:**
+- **Importação não avisa setores que não encaixam** (achado: "EZY9991 LIS-FNC" depois de aterrar em FNC deu
+  "LIS-FNC-FNC" e pernoita em FNC, sem aviso) — avisar "o 2.º parte de LIS mas o 1.º aterrou em FNC".
+- **3 × "Alteração de escala (SNC) +60,00 €"** no mesmo dia (das mudanças de teste) — confirmar no AE se cada mudança
+  soma um SNC ou se conta a mais. Mexe em €: golden primeiro.
+- **Voo noturno que aterra depois da meia-noite:** depois das 00:00 o Início já olha para o dia seguinte → a pernoita /
+  pós-voo desse voo não aparece (o motor pensa dia a dia). Decidir a regra (o "dia de serviço" até ao repouso).
+- **Escala:** a etiqueta do dia mostra a estação do 1.º serviço (dia com 2 serviços → errado) — rever com a Escala nova.
+- **Pesquisa de hotel do Apple Maps** → `docs/dev-build.md` item 9 (Google recusado; OpenStreetMap recusado).
+- **Linha do dia de serviço** também no pré-report e em serviço antes da partida (proposta, por decidir).
+- **Atualizar o esboço `design/inicio-v6.html`** com o que mudou (teclas no fundo + documento, mosaicos, "A seguir",
+  pós-voo, linha do dia) — os mockups mandam na hierarquia; e o guião `docs/verificacao-device.md` (pós-voo, em voo).
+**Testado no PC:** `npm test` verde (26 suites) · guardião sem dívida nova. **Não verificado:** os mosaicos alinhados e a
+coluna de hoje do gráfico (último ajuste, passou a meia-noite) · iPhone pequeno · letra dinâmica grande · VoiceOver.
 
 ---
 

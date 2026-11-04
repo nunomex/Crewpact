@@ -49,6 +49,15 @@ eq('multi: extra ainda por vir → ABERTO', dayClosed(D, { ...svc1, extra: [{ re
 eq('multi: todos terminados → fechado', dayClosed(D, { ...svc1, extra: [{ report_time: '12:00', block_on: '14:00' }] }, ms('15:00')), true);
 eq('standby sem block_on nunca fecha o dia', dayClosed(D, { report_time: '06:00' }, ms('20:00')), false);
 
+// ── Sem report (evento do calendário sem RP/C-I) — ESPELHO do dutyToFlight do Início (2026-11-03, achado
+// no iPhone): o serviço existe na mesma; a âncora passa a ser a PARTIDA (nunca se inventa partida − 1 h).
+eq('sem report, com partida → fim = block_on', dutyEndMs(D, { block_off: '14:00', block_on: '15:40' }), ms('15:40'));
+eq('sem report, vira a noite pela partida', dutyEndMs(D, { block_off: '22:45', block_on: '00:30' }), ms('00:30', D, 1));
+eq('primário sem report FECHA o dia quando acaba', dayClosed(D, { block_off: '14:00', block_on: '15:40' }, ms('16:00')), true);
+eq('primário sem report ainda no ar → aberto', dayClosed(D, { block_off: '14:00', block_on: '15:40' }, ms('15:00')), false);
+eq('multi: primário sem report + 2.º com report, ambos acabados → fechado',
+  dayClosed(D, { block_off: '14:00', block_on: '15:40', extra: [{ report_time: '18:00', block_off: '18:45', block_on: '20:30' }] }, ms('21:00')), true);
+
 // ── Estados base ──
 eq('sem calendário e sem voo → setup', crewState({ now: ms('15:00'), hour: 15, todayISO: D, calendarConnected: false }).state, 'setup');
 eq('calendário ligado sem voo → folga', st({}), 'folga');
@@ -74,6 +83,14 @@ eq('dia fechado FORA (nightStop) → pernoita', st({ todayDuty: closedAway, base
 eq('pernoita dá a estação', crewState({ now: ms('21:00'), hour: 21, todayISO: D, calendarConnected: true, todayDuty: closedAway, base: 'LIS' }).nsStation, 'FNC');
 eq('pernoita é noturna', crewState({ now: ms('21:00'), hour: 21, todayISO: D, calendarConnected: true, todayDuty: closedAway, base: 'LIS' }).night, true);
 eq('pós-voo NÃO é noturno', crewState({ now: ms('21:00'), hour: 21, todayISO: D, calendarConnected: true, todayDuty: closedHome, base: 'LIS' }).state, 'posvoo');
+// Dia com 2 serviços: onde o dia ACABA é a estação do serviço que acaba por ÚLTIMO — não a do primário
+// (2026-11-03, iPhone: voo das 14h a acabar em Lisboa + LIS-FNC à noite dava "pós-voo em casa").
+const voltaCasa = { report_time: '06:00', block_on: '10:00', route: 'LIS-OPO-LIS', legs: [{ dep: 'LIS', arr: 'OPO' }, { dep: 'OPO', arr: 'LIS' }] };
+const segundoFora = { report_time: '11:00', block_on: '13:30', route: 'LIS-FNC', legs: [{ dep: 'LIS', arr: 'FNC' }] };
+eq('multi: 1.º acaba em casa, 2.º acaba FORA → pernoita', st({ todayDuty: { ...voltaCasa, extra: [segundoFora] }, base: 'LIS' }), 'pernoita');
+eq('multi: a estação da pernoita é a do 2.º', crewState({ now: ms('15:00'), hour: 15, todayISO: D, calendarConnected: true, todayDuty: { ...voltaCasa, extra: [segundoFora] }, base: 'LIS' }).nsStation, 'FNC');
+eq('multi: 1.º acaba fora, 2.º VOLTA a casa → pós-voo',
+  st({ todayDuty: { ...closedAway, extra: [{ report_time: '11:00', block_on: '13:00', route: 'FNC-LIS', legs: [{ dep: 'FNC', arr: 'LIS' }] }] }, base: 'LIS' }), 'posvoo');
 
 // ── Precedências finas ──
 eq('fechado + report amanhã às 21h → PÓS-VOO ganha à véspera (75>65)',

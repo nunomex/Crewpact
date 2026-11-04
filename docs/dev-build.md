@@ -99,6 +99,16 @@
    data → login → ecrã de reativação → Reativar com a escala intacta. Guião completo:
    `docs/verificacao-device.md` §2.
 
+9. **Hotel da pernoita — pesquisa do Apple Maps** (Nuno, 2026-11-03, no "testar os estados": "no hotel não
+   dá para fazer pesquisa?"). Hoje a `HotelSheet` só tem campos para escrever (nome · telefone · nota) e o
+   "Hotel · mapas" procura no Maps pelo nome escrito (pode falhar). Com o dev build: escrever "Gira…" →
+   hotéis perto do aeroporto da pernoita (`MKLocalSearch`/`MKLocalSearchCompleter`, centrado nas
+   coordenadas da estação, filtro hotel) → tocar guarda nome + telefone + morada (+ o identificador do
+   sítio, para o "Hotel · mapas" abrir EXATAMENTE esse). Módulo Expo nativo pequeno (Swift). Grátis, sem
+   chave, nada passa por nós; continua guardado só no telemóvel. Escrever à mão fica como alternativa.
+   **Recusado:** Google Places (pago; as regras não deixam guardar os dados no telemóvel) · OpenStreetMap
+   já no Expo Go (dados pobres, sem telefone, e deitava-se fora quando isto chegasse).
+
 > Ideias Flighty→crew que NÃO precisavam de dev build (partilha com a família ·
 > "Ano de voo" partilhável · inbound do avião) saíram desta lista — feitas já
 > (2026-07-03). Descartado e registado: Shared with You · Friends' Flights ·
