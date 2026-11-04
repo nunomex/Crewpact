@@ -55,6 +55,10 @@ const POOLS = {
   'folga.night': [
     ['Noite tranquila.', 'Está tudo em dia — dorme sem alarmes.', 'Quiet night.', 'Everything’s in order — sleep with no alarms.'],
   ],
+  // Com serviço amanhã não há "sem alarmes" (auditoria do tripulante, 2026-11-04) — diz-se o report.
+  'folga.nightDuty': [
+    ['Noite tranquila.', 'Report amanhã às {tmwReport}.', 'Quiet night.', 'Report tomorrow at {tmwReport}.', 'amanha'],
+  ],
   // ── AVISO NA VOZ (2026-07-10, ideia do user "gostei disto"): quando a escala mexeu,
   // o bilhete ganha consciência — no REGISTO dele (humano, sem números; a contagem e o
   // toque-para-rever vivem na linha warn sob o Estado). É charme EM CIMA da função, nunca
@@ -177,7 +181,7 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
   else if (state === 'folga') {
     const ic = wx && wx.icon;
     const hasTmwDuty = ctx.tmwReport != null && ctx.tmwReport !== '';
-    if (hour >= 21 || hour < 7) key = 'folga.night';
+    if (hour >= 21 || hour < 7) key = hasTmwDuty ? 'folga.nightDuty' : 'folga.night';
     else if (hasTmwDuty && wx && wx.tmwRain) key = 'folga.rainReport';
     else if (hasTmwDuty && wx && wx.tmwMin != null && wx.tmwMin <= 6) key = 'folga.coldReport';
     else if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 26) key = 'folga.hot';

@@ -131,6 +131,9 @@ eq('férias com sol: zero responsabilidades', vFer, { bold: '24° e zero respons
 // Noite continua a ganhar a TUDO (às 22h com serviço amanhã o estado real já é véspera — sem bilhete)
 const vNightCold = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22, ctx: { tmwReport: '05:30' } });
 eq('noite ganha às frases de decisão', vNightCold.bold, 'Noite tranquila.');
+// Honesto (auditoria do tripulante, 2026-11-04): com serviço amanhã NÃO se diz "dorme sem alarmes" — diz-se o report.
+eq('noite com serviço amanhã → o report, nunca "sem alarmes"', vNightCold.tail, 'Report amanhã às 05:30.');
+eq('noite sem serviço amanhã → "dorme sem alarmes"', stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22 }).tail, 'Está tudo em dia — dorme sem alarmes.');
 
 // ═══ AVISO NA VOZ (2026-07-10, "gostei disto") — o bilhete menciona a escala mexida ═══
 // Registo humano, SEM números (a contagem vive na linha warn); ganha à meteo E à noite;

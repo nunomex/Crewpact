@@ -6,7 +6,7 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO — ACABAR DE "TESTAR OS ESTADOS" (ler isto primeiro)
+## PRÓXIMA SESSÃO — ACABAR DE "TESTAR OS ESTADOS" (ler isto primeiro · atualizado 2026-11-04 01h)
 
 **Modelo:** Opus 5.5 **Alto**. O Nuno escreve **"testar os estados"** → continuar o guião `docs/verificacao-device.md`
 (Início v6) onde parou. **Onde está:** ramo **`inicio-v6`**, com as mudanças desta sessão por gravar (ver abaixo);
@@ -43,8 +43,13 @@ junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` 
   Na disrupção da cabine: "Possível RDP · Cl. 67.ª — reclama no RDF; a base aprova · até 23,00 €" (`liveRdp`, golden
   `test:disruption` 54 com a citação conferida). **Para o advogado:** a empresa pode ler "alterado" como mudança de
   escala; e o n.º 1 diz "119 ou mais" e logo a seguir "superior a 119" (a app usa "119 ou mais").
-**Por ver no iPhone:** o fecho novo + a folha dos Extras · a folga "livre até" · a disrupção (precisa de um atraso
-verdadeiro no voo ao vivo).
+**Vistos ✅ no iPhone:** o fecho novo (Nuno "confirmo") · a folga com as horas ("11 h", "Escala em dia", Próximos serviços sem
+repetir o herói, "Ver o serviço") · as **férias** (25 de 25, "pelos dias de férias que registaste", sem teclas nem cartões).
+**Depois disso (por ver no iPhone):** a folga com "Livre até hoje/amanhã às 06:00" numa linha (partia em 2 ao lado da
+pílula) · o cartão do mês **sem a barra** de dias (também no cartão largo) · a frase da folga à noite com serviço amanhã
+passou a "Noite tranquila. Report amanhã às 08:15." (dizia "dorme sem alarmes"; golden `test:statevoice` 75).
+**Falta ver (próxima sessão):** standby · disrupção e o aviso de RDP (precisam de dados verdadeiros) · doença · o gráfico
+dos 7 dias no pós-voo · a linha do dia de serviço no em voo.
 
 ---
 

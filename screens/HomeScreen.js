@@ -1151,8 +1151,12 @@ export default function HomeScreen({ navigation }) {
     const repTm = next.d.report_time || null;
     return { ...b, lbl: next.days <= 0 && !inHours ? l('Próximo serviço', 'Next duty') : l('Próximo serviço daqui a', 'Next duty in'),
       digits: inHours ? String(untilH) : next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: inHours ? 'h' : next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
-      headline: `${l('Livre até', 'Free until')} ${wdLong(next.iso).toLowerCase()} ${Number(next.iso.slice(8, 10))}${repTm ? ` · report ${repTm}` : ''}`,
-      sub: what, pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null,
+      // Curto para caber ao lado da pílula (iPhone 2026-11-04: partia em 2 e deixava a hora sozinha): < 48 h → "Livre até
+      // hoje/amanhã às 06:00"; mais longe → "Livre até sábado 7" e o report desce para a linha cinzenta.
+      headline: inHours && repTm
+        ? `${l('Livre até', 'Free until')} ${next.days <= 0 ? l('hoje', 'today') : next.days === 1 ? l('amanhã', 'tomorrow') : wdLong(next.iso).toLowerCase()} ${l('às', 'at')} ${repTm}`
+        : `${l('Livre até', 'Free until')} ${wdLong(next.iso).toLowerCase()} ${Number(next.iso.slice(8, 10))}`,
+      sub: [inHours ? null : (repTm ? `report ${repTm}` : null), what].filter(Boolean).join(' · '), pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null,
       rows: demoNext ? [{ key: 'demo', tm: flight.report, ds: String(flight.arrAirport || ''), dy: `${wdShort(flight.dateISO)} ${Number(flight.dateISO.slice(8, 10))}`,
         a11y: `${l('Exemplo', 'Example')}: ${flight.depAirport} → ${flight.arrAirport}, report ${flight.report}` }] : upcomingRows(next.iso),   // sem o do herói (repetia)
       heroISO: demoNext ? null : next.iso };
@@ -1273,7 +1277,7 @@ export default function HomeScreen({ navigation }) {
       // Pós-voo: o € de HOJE vive aqui (deixou de ser uma tecla — era informação com cara de botão).
       const todayTxt = homeState === 'posvoo' && pdToday != null ? `${l('hoje', 'today')} ${eur(pdToday, '+')} · ` : '';
       const mTxt = `${todayTxt}${l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`)}`;
-      pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney), bar: monthPct,
+      pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
         // Em mosaico: o rótulo curto (o mês) e a linha diz o "estimado" e o dia (a barra conta DIAS, não €).
         // Em mosaico: só tipografia — o valor grande, "+€ hoje" a verde, "estimado · dia 3 de 30". Sem barra (contava
         // DIAS ao lado de euros e enganava).
