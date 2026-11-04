@@ -60,15 +60,22 @@ export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
 // "Tenho descanso?" — repouso entre o FIM do serviço anterior e o REPORT do próximo, vs
 // o mínimo (ORO.FTL.235, na base = máx(12 h, duração do serviço anterior)). Consultivo.
 // status: 'ok' | 'bad' | 'neutral' (sem dados para calcular).
-export function restStatus(duties = {}, todayISO, _ref = new Date()) {
+export function restStatus(duties = {}, todayISO, ref = new Date()) {
+  const dt = (iso, hm) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setHours(h || 0, m || 0, 0, 0); return x; };
+  // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus). Antes era o 1.º com
+  // data ≥ hoje — na pernoita/pós-voo era o de HOJE, já acabado, e media-se o repouso ANTES dele.
+  const refMs = +ref;
   let next = null;
-  for (const iso in duties) { const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso < todayISO) continue; if (!next || iso < next.iso) next = { iso, d }; }
+  for (const iso in duties) {
+    const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso < todayISO) continue;
+    if (+dt(iso, d.report_time) <= refMs) continue;   // já começou (ou acabou) → não é o próximo
+    if (!next || iso < next.iso) next = { iso, d };
+  }
   if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
   let prev = null; // serviço IMEDIATAMENTE anterior (adjacência importa p/ o repouso)
   for (const iso in duties) { const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso >= next.iso) continue; if (!prev || iso > prev.iso) prev = { iso, d }; }
   if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
   if (!prev.d.block_on) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
-  const dt = (iso, hm) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setHours(h || 0, m || 0, 0, 0); return x; };
   const prevReport = dt(prev.iso, prev.d.report_time);
   let prevEnd = dt(prev.iso, prev.d.block_on);
   if (prevEnd.getTime() <= prevReport.getTime()) prevEnd = new Date(prevEnd.getTime() + 86400000); // serviço virou a meia-noite

@@ -24,6 +24,30 @@ junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` 
 
 ---
 
+## 2026-11-04 (madrugada) — AUDITORIA DO TRIPULANTE · fecho do mês · RDP confirmado no BTE (Opus 5.5)
+
+**Princípio novo (Nuno):** "todos os estados são informação para os tripulantes — piloto ou cabine". Escrito como
+**princípio 8** em `docs/living-interface.md` §1 (5 perguntas) e aplicado em `docs/auditoria-tripulante.md` (11 estados).
+- **Fecho do mês** (crítica externa, 6 pontos aceites): "Até hoje X € · resto do mês Y €" no lugar de "As parcelas somam o
+  total" (`data/stats.js` monthSplit, golden `test:stats` 173) · Extras abrem a lista do que incluem · 2.º cartão =
+  próximo serviço · "Tempo de voo · últimos 28 dias" com ✈ · teclas Registar um extra · Relatório do mês · Auditoria/Ver a
+  escala · o tempo no topo só na folga e nos estados ao vivo.
+- **Auditoria aplicada:** frases da véspera/pernoita só dizem "verificado/tratado" com o repouso ✓ (golden
+  `test:statevoice` 73) · **a pílula REPOUSO da pernoita/pós-voo media o repouso errado — corrigido** (`data/today.js`
+  restStatus, golden NOVO `test:reststatus`) · disrupção por papel (205 f: comandante vs FO/cabine) + margem com o atraso ·
+  folga "Livre até … · report …" e horas com < 48 h · "Escala em dia" · "Partilhar o voo" · "Ver o serviço" · standby e
+  férias com texto do tripulante.
+- **RDP confirmado no texto oficial:** AE easyJet × SNPVAC, BTE 8/2024, **Cl. 67.ª** (p. 304–305) — descarregado do DRE
+  para `fontes/ae-easyjet/` (SHA-256 no `fontes/README.md`, `.txt` versionado). Mede "o término do tempo de serviço (calços
+  mais 30 minutos)" contra a escala programada e o n.º 3 fala de "atraso" → **um atraso operacional ≥ 119 min conta**.
+  Na disrupção da cabine: "Possível RDP · Cl. 67.ª — reclama no RDF; a base aprova · até 23,00 €" (`liveRdp`, golden
+  `test:disruption` 54 com a citação conferida). **Para o advogado:** a empresa pode ler "alterado" como mudança de
+  escala; e o n.º 1 diz "119 ou mais" e logo a seguir "superior a 119" (a app usa "119 ou mais").
+**Por ver no iPhone:** o fecho novo + a folha dos Extras · a folga "livre até" · a disrupção (precisa de um atraso
+verdadeiro no voo ao vivo).
+
+---
+
 ## 2026-11-03/04 (noite) — "TESTAR OS ESTADOS" NO IPHONE · Início v6 afinado (Opus 5.5)
 
 **Vistos ✅ no iPhone:** configuração (com os 3 passos) · folga (com serviço) · véspera (com e sem report) · hoje

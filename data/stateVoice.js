@@ -95,6 +95,19 @@ const POOLS = {
   pernoita: [
     ['Boa noite em {station}.', 'Está tudo tratado para amanhã.', 'Good night in {station}.', 'Tomorrow’s all set.', 'amanha'],
   ],
+  // Auditoria do tripulante (2026-11-04): "verificado"/"tratado" SÓ com o repouso confirmado (ctx.restOk === true).
+  'vespera.restShort': [
+    ['Repouso curto.', '{restHave} de {restNeed} — fala com a escala.', 'Short rest.', '{restHave} of {restNeed} — talk to crewing.', 'amanha'],
+  ],
+  'vespera.unknown': [
+    ['Dorme bem.', 'Report às {report}.', 'Sleep well.', 'Report at {report}.', 'amanha'],
+  ],
+  'pernoita.restShort': [
+    ['Repouso curto em {station}.', '{restHave} de {restNeed} — fala com a escala.', 'Short rest in {station}.', '{restHave} of {restNeed} — talk to crewing.', 'amanha'],
+  ],
+  'pernoita.unknown': [
+    ['Boa noite em {station}.', 'Descansa.', 'Good night in {station}.', 'Get some rest.', 'amanha'],
+  ],
   ferias: [
     ['Férias a sério.', 'A escala não manda — desfruta.', 'Proper vacation.', 'The roster’s off duty — enjoy.'],
     ['Desliga.', 'A app fica de vigia — tu descansas.', 'Switch off.', 'The app keeps watch — you rest.'],
@@ -131,6 +144,8 @@ const HOJE_COLD_C = 10;
 
 const fill = (s, ctx) => s.replace(/\{(\w+)\}/g, (_, k) => String(ctx[k]));
 const eligible = (s, ctx) => ![...s.matchAll(/\{(\w+)\}/g)].some((m) => ctx[m[1]] == null || ctx[m[1]] === '');
+// As entradas de uma pool que têm todos os dados (para decidir a chave antes do `fit` final).
+const fit2 = (arr, ctx) => (arr || []).filter((e) => eligible(e[0], ctx) && eligible(e[1], ctx));
 
 // stateVoice({ state, lang, dateISO, wx: {c,min,max,icon,wind,tmwMin,tmwRain}, hour,
 //              ctx: {report,station,restUntil,tmwReport} }) → { bold, tail } | null
@@ -184,6 +199,15 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
       else key = rain ? 'hoje.rain' : cold ? 'hoje.cold' : null;
     } else key = null;   // aterrado, ou serviço que não é voo
     if (!key) return null;
+  }
+  // VÉSPERA e PERNOITA: a frase afirma "verificado"/"tratado" só com o repouso confirmado (ctx.restOk === true);
+  // repouso curto → fala do problema; sem saber → não afirma nada (auditoria do tripulante, 2026-11-04).
+  if (state === 'vespera' || state === 'pernoita') {
+    if (ctx.restOk === false) {
+      const short = fit2(POOLS[`${state}.restShort`], { ...ctx });
+      if (short.length) key = `${state}.restShort`;
+      else return null;   // sem os números do repouso não se fala dele por meias palavras — a pílula vermelha diz
+    } else if (ctx.restOk !== true) key = `${state}.unknown`;
   }
   if (state === 'ferias' && key === state) {   // key !== state = o aviso já falou (não se atropela)
     const ic = wx && wx.icon;

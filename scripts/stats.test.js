@@ -369,5 +369,40 @@ eq('fallback: cash 0', ra.aeYtd.cash, 0);
 eq('fallback: eventos 0', ra.aeYtd.events, 0);
 eq('fallback: total base+perDiem inalterado', ra.aeYtd.total, 20100);
 
+// ── monthSplit — "Até hoje · resto do mês" do fecho (Nuno, 2026-11-04) ──
+// A parte VARIÁVEL do mês dividida pela data (serviços e eventos ≤ hoje vs. depois); os FIXOS (base + abono, €/mês)
+// à parte. A MESMA conta do total → fixos + até hoje + resto = total, AO CÊNTIMO, sempre.
+{
+  const { monthSplit } = require(path.resolve('data/stats.js'));
+  const ejC = getAe('easyjet', 'cabin');
+  const HC = [{ category: 'FA', contract: '12/12', from: '0000-01' }];
+  const NOV = {
+    '2026-11-02': { report_time: '07:00', block_off: '07:45', block_on: '11:15', route: 'LIS-FNC-LIS', sectors: 2, kind: 'flight', nightStop: false },
+    '2026-11-20': { report_time: '12:20', block_off: '13:05', block_on: '15:50', route: 'LIS-LGW', sectors: 1, kind: 'flight', nightStop: true },
+  };
+  const EV = [{ type: 'snc', date: '2026-11-02' }, { type: 'ddo', date: '2026-11-25' }];
+  const o = (todayISO) => ({ ym: '2026-11', ae: ejC, crewHistory: HC, events: EV, todayISO, now: new Date('2026-11-04T12:00:00') });
+  const all = monthStats(NOV, o('2026-11-04')).aeMonth;
+  const c2 = (x) => Math.round(x * 100) / 100;
+  const sp = monthSplit(NOV, o('2026-11-04'));
+  eq('split: fixos = base + abono', sp.fixed, c2(all.base + all.cash));
+  eq('split: fixos + até hoje + resto = total (ao cêntimo)', c2(sp.fixed + sp.toDate + sp.rest), all.total);
+  eq('split: total igual ao do monthStats', sp.total, all.total);
+  // Até hoje = o variável do mês SÓ com o que tem data ≤ hoje (o voo de 2 + o SNC de 2).
+  const past = monthStats({ '2026-11-02': NOV['2026-11-02'] }, { ...o('2026-11-04'), events: [EV[0]] }).aeMonth;
+  eq('split: até hoje = variável do serviço e do evento já passados', sp.toDate, c2(past.total - past.base - past.cash));
+  ok('split: há resto (o LGW de 20 e o DDO de 25)', sp.rest > 0);
+  ok('split: até hoje > 0 (o voo de 2 + o SNC)', sp.toDate > 0);
+  const fim = monthSplit(NOV, o('2026-11-30'));
+  eq('split: no último dia, resto = 0', fim.rest, 0);
+  eq('split: no último dia, até hoje = todo o variável', fim.toDate, c2(all.total - all.base - all.cash));
+  const antes = monthSplit(NOV, o('2026-10-31'));
+  eq('split: antes do mês, até hoje = 0', antes.toDate, 0);
+  eq('split: antes do mês, resto = todo o variável', antes.rest, c2(all.total - all.base - all.cash));
+  const mesOnly = monthSplit(NOV, { ...o('2026-11-04'), events: [...EV, { type: 'snc', date: '2026-11' }] });
+  ok('split: evento só com o mês (sem dia) conta como já registado (até hoje)', mesOnly.toDate > sp.toDate && c2(mesOnly.rest) === c2(sp.rest));
+  eq('split: sem acordo → null', monthSplit(NOV, { ym: '2026-11', todayISO: '2026-11-04' }), null);
+}
+
 console.log(`\n${fail === 0 ? '✅' : '❌'}  stats: ${pass} passaram, ${fail} falharam`);
 process.exit(fail === 0 ? 0 : 1);

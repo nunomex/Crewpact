@@ -35,10 +35,11 @@
     "test:audit": "node scripts/audit.test.js",
     "test:career": "node scripts/career.test.js",
     "test:taplimits": "node scripts/ae-tap-limits.test.js",
-    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:disruption && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar && npm run test:validities && npm run test:wx && npm run test:radiation && npm run test:prova && npm run test:audit && npm run test:career && npm run test:taplimits && npm run test:voice && npm run test:crewstate && npm run test:dutyline && npm run test:design",
+    "test": "npm run test:ftl && npm run test:ae && npm run test:pdf && npm run test:stats && npm run test:diff && npm run test:caps && npm run test:export && npm run test:flightdetect && npm run test:zulu && npm run test:record && npm run test:disruption && npm run test:library && npm run test:vigencia && npm run test:flightstatus && npm run test:calendar && npm run test:validities && npm run test:wx && npm run test:radiation && npm run test:prova && npm run test:audit && npm run test:career && npm run test:taplimits && npm run test:voice && npm run test:crewstate && npm run test:reststatus && npm run test:dutyline && npm run test:design",
     "test:voice": "node scripts/statevoice.test.js",
     "test:crewstate": "node scripts/crewstate.test.js",
     "test:dutyline": "node scripts/dutyline.test.js",
+    "test:reststatus": "node scripts/reststatus.test.js",
     "test:design": "node scripts/design.test.js"
   },
   "dependencies": {

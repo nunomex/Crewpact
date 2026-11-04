@@ -130,6 +130,28 @@ check('prova: wordmark + cláusula + valor marcado', html.includes('CREW<i>PACT<
 check('prova: escape do nome', html.includes('Nuno &lt;Silva&gt;'));
 check('prova: método e limitações presentes', html.includes('DETETADA pela aplicação'));
 
+// ── RDP pelo VOO AO VIVO (Cl. 67.ª/1 — lida no BTE 8/2024 p. 304–305, fontes/ae-easyjet/, 2026-11-04) ──
+// O término do tempo de serviço (calços + 30) a ≥ 119 min do programado, no dia da operação, conta — o atraso
+// operacional também (o n.º 3 fala de "atraso"; as exclusões do n.º 2 são da assistência e de códigos do tripulante).
+// O +30 é igual dos dois lados → mede-o o atraso à CHEGADA do último setor. "Antes ou depois" → também adiantado.
+{
+  const { liveRdp } = require(path.resolve('data/disruption.js'));
+  eq('ao vivo: cabine, chegada +125 min → RDP', liveRdp({ isPilot: false, arrDelayMin: 125 }), { type: 'rdp', clause: 'Cl. 67.ª', reason: 'end', dEndMin: 125 });
+  eq('ao vivo: +119 min conta (119 ou mais, n.º 1)', (liveRdp({ isPilot: false, arrDelayMin: 119 }) || {}).type, 'rdp');
+  eq('ao vivo: +118 min não conta', liveRdp({ isPilot: false, arrDelayMin: 118 }), null);
+  eq('ao vivo: chegada ADIANTADA 125 min também conta (antes ou depois)', (liveRdp({ isPilot: false, arrDelayMin: -125 }) || {}).dEndMin, -125);
+  eq('ao vivo: pilotos NÃO têm RDP', liveRdp({ isPilot: true, arrDelayMin: 300 }), null);
+  eq('ao vivo: chamado de assistência → não (n.º 2)', liveRdp({ isPilot: false, arrDelayMin: 200, fromStandby: true }), null);
+  eq('ao vivo: serviço de assistência → não (n.º 2)', liveRdp({ isPilot: false, kind: 'standby_home', arrDelayMin: 200 }), null);
+  eq('ao vivo: setores perdidos/ganhos (desvio) → RDP', liveRdp({ isPilot: false, sectorsChanged: true }), { type: 'rdp', clause: 'Cl. 67.ª', reason: 'sectors' });
+  eq('ao vivo: sem atraso conhecido → nada (nunca se adivinha)', liveRdp({ isPilot: false }), null);
+  // A citação existe, palavra por palavra, no texto oficial guardado.
+  const txt = fs.readFileSync(path.resolve('fontes/ae-easyjet/easyjet-snpvac-2024.txt'), 'utf8').replace(/\s+/g, ' ');
+  check('fonte: Cl. 67.ª n.º 1 literal no BTE', txt.includes('quando o seu tempo de serviço programado tiver sido alterado, no dia da operação, em 119 (cento e dezanove) minutos ou mais'));
+  check('fonte: calços mais 30 minutos', txt.includes('término do tempo de serviço (calços mais 30 (trinta) minutos'));
+  check('fonte: n.º 3 fala de atraso', txt.includes('efetuando serviço de voo com atraso de 2 (duas) horas após a hora confirmada de apresentação'));
+}
+
 console.log(`\ndisrupção — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ RDP ≥119 min no dia (só cabine) · SNC ≥2h nas 48h · assistência excluída · valores do Anexo I.');

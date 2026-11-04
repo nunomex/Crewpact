@@ -281,3 +281,22 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     byKind, days, topDest, aeMonth,
   };
 };
+
+// ── "Até hoje · resto do mês" do fecho (Nuno, 2026-11-04) ──────────────────────────────────────────────────
+// A parte VARIÁVEL do mês dividida pela DATA: o que a escala já tem até hoje (serviços e eventos com data ≤ hoje;
+// um evento só com o mês, sem dia, conta como já registado) e o resto. FIXOS à parte: a base e o abono para falhas
+// (€/mês, Art. 54). É a MESMA conta do total (monthStats), corrida só com o passado; o resto é o total menos isso →
+// fixos + até hoje + resto = total, AO CÊNTIMO (golden test:stats). Nunca "garantido": a app estima, o recibo manda.
+export const monthSplit = (duties = {}, opts = {}) => {
+  const { todayISO } = opts;
+  const all = monthStats(duties, opts).aeMonth;
+  if (!all || !todayISO) return null;
+  const c2 = (x) => Math.round(x * 100) / 100;
+  const pastDuties = Object.fromEntries(Object.entries(duties || {}).filter(([iso]) => iso <= todayISO));
+  const pastEvents = (opts.events || []).filter((e) => e && e.date && (String(e.date).length === 7 || String(e.date) <= todayISO));
+  const past = monthStats(pastDuties, { ...opts, events: pastEvents }).aeMonth;
+  const fixed = c2((all.base || 0) + (all.cash || 0));
+  const variable = c2(all.total - fixed);
+  const toDate = past ? c2(past.total - (past.base || 0) - (past.cash || 0)) : 0;
+  return { fixed, toDate, rest: c2(variable - toDate), total: all.total };
+};

@@ -36,6 +36,16 @@
    rápido em qualquer aba — mini-FABs Pesquisar·Serviço·Simulação·Extra — porque
    a Pesquisa não tinha casa contextual e o acesso-em-qualquer-aba provou valor;
    as casas contextuais FICAM, o FAB é o caminho rápido, nunca o único.)*
+8. **Tudo é do tripulante (Nuno, 2026-11-04).** A app é dirigida a ele — piloto ou tripulante de cabine — e a Living
+   Interface é a experiência DELE: cada estado tem de o envolver. Cada elemento de cada estado passa estas 5 perguntas:
+   1. **Ajuda-o a decidir, agir ou ficar tranquilo AGORA?** Se não, sai (ex.: "🌙 14°" à meia-noite no fecho).
+   2. **Na língua dele** — report, calços, PSV, pernoita, folga, sign-off — nunca a da app ("as parcelas somam o
+      total" era uma verificação de programador, não informação).
+   3. **Serve o piloto e a cabine, cada um no seu:** artigos do acordo (doença Art. 48 pilotos / Art. 61 cabine;
+      per-diem 37.º / 53.º), o RDP só da cabine, a discrição do comandante (205 f) só dos pilotos, papéis
+      (instrutor, CCLT). O que é igual para os dois (FTL, repouso) diz-se igual.
+   4. **Não repete** o que já está no ecrã (tecla = linha do painel; tecla = aba).
+   5. **Honesto:** separa facto de estimativa e nunca inventa (data de pagamento, report, "garantido").
 
 ---
 

@@ -24,14 +24,15 @@ import QuestionDetailSheet from '../components/QuestionDetailSheet';
 import { buildTodayItems } from './hojeItems';
 import { fdpForDuty } from '../ae/tapLimits';
 import { fmtClock } from '../data/tapLimitsText';
-import { monthStats, yearStats } from '../data/stats';
+import { monthStats, yearStats, monthSplit } from '../data/stats';
 import { fetchStationWx, wxDigest, wxIcon, wxSymbol } from '../data/weather';
 import { stateVoice } from '../data/stateVoice';
 import { dutyLine, fmtMargin } from '../data/dutyLine';
 import { crewState } from '../data/crewState';
 import { monthAudit } from '../data/audit';
 import AuditSheet from '../components/AuditSheet';
-import { yearCount } from '../data/aeEvents';
+import { yearCount, eventCounts } from '../data/aeEvents';
+import { liveRdp } from '../data/disruption';
 import { fetchFlightStatus, fetchAircraftStatus, fetchAirportStats, hasDeviation, worstDelay, arrDelayMin, recordBehindLive, settledArrZ, schedArrZ, inboundGap, airportDisruption, activeLegIndex, legNo } from '../data/flightStatus';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import { scheduleWakeUp } from '../data/reminders';
@@ -279,6 +280,9 @@ export default function HomeScreen({ navigation }) {
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
   const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
+  // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
+  // do tripulante, 2026-11-04).
+  const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
@@ -686,6 +690,14 @@ export default function HomeScreen({ navigation }) {
   const voiceLiveOk = !!(flightStatus && !fsDev && !inboundLate);
   const voiceLegalOk = !!(legalIt && legalIt.status === 'ok');
   const voiceDest = (phase === 'pre' || phase === 'duty') && wxDest ? wxDest : null;
+  // O repouso para a frase da véspera/pernoita (auditoria do tripulante, 2026-11-04): a MESMA conta da pílula
+  // REPOUSO ✓/CURTO (restStatus, golden test:reststatus) → "verificado/tratado" só com ela a verde.
+  const restVoice = (() => {
+    const rI = (todayItems || []).find((it) => it.id === 'rest');
+    const r = rI && rI.raw; if (!r || r.status === 'neutral') return { restOk: null };
+    const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+    return { restOk: r.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
+  })();
   const voice = useMemo(() => {
     if (!['folga', 'ferias', 'doenca', 'vespera', 'posvoo', 'pernoita', 'hoje'].includes(homeState)) return null;
     // `tmwReport` = report de AMANHÃ (se houver) → destrava as frases de DECISÃO da meteo (casaco/trânsito).
@@ -695,13 +707,13 @@ export default function HomeScreen({ navigation }) {
     const yearH = homeState === 'folga'
       ? (() => { try { return +(yearStats(duties || {}, { year: Number(todayISO.slice(0, 4)) }).flightMin / 60); } catch { return null; } })()
       : null;
-    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxHere, hour: hourNow, ctx: { report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
+    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxHere, hour: hourNow, ctx: { ...restVoice, report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
       yearHours: yearH, serviceStart: serviceStart || null, companhia: (company && company.name) || null,
       aviso: (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) ? true : null,
       phase: homeState === 'hoje' ? phase : null, liveOk: voiceLiveOk, legalOk: voiceLegalOk,
       dest: voiceDest ? voiceDest.station : null, destC: voiceDest ? voiceDest.c : null,
       destRain: voiceDest ? (voiceDest.icon === 'rain' || voiceDest.icon === 'thunder') : null } });
-  }, [homeState, lang, todayISO, wxHere, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company, phase, voiceLiveOk, voiceLegalOk, voiceDest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [homeState, lang, todayISO, wxHere, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company, phase, voiceLiveOk, voiceLegalOk, voiceDest, restVoice.restOk, restVoice.restHave, restVoice.restNeed]); // eslint-disable-line react-hooks/exhaustive-deps
   // Toque na voz: com destino navega ('escala' → rever alterações · 'numeros' · 'hoje'/'amanha' → o dia).
   const goVoice = (to) => {
     select();
@@ -772,11 +784,38 @@ export default function HomeScreen({ navigation }) {
     } catch { return null; }
   }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
   const monthMoney = monthAe ? monthAe.total : null;
+  // Fecho: a parte variável dividida em "até hoje" e "resto do mês" (a MESMA conta do total — data/stats.js).
+  const monthSplitNow = useMemo(() => {
+    if (homeState !== 'fecho' || !ae || !crewCategory) return null;
+    try {
+      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO });
+    } catch { return null; }
+  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
   const dayOfMonth = new Date().getDate();
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);
   const monthName = new Date().toLocaleDateString(locale, { month: 'long' });
   const monthCap = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  // O que está DENTRO dos "Extras" do fecho (Nuno, 2026-11-04): a MESMA função do total (ae.monthExtras sobre os
+  // eventos do mês) → as linhas somam o valor da parcela. + o que vem da escala (papéis · escritório) e o abono.
+  const extrasItem = (homeState === 'fecho' && monthAe && ae && crewCategory) ? (() => {
+    const ym = todayISO.slice(0, 7);
+    const index = ae.indexFactor ? ae.indexFactor(+todayISO.slice(0, 4)) : 1;
+    const xt = ae.monthExtras ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index, ym }) : null;
+    const kinds = Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS : [];
+    const rows = [];
+    for (const it of (xt && xt.items) || []) {
+      const kd = kinds.find((x) => x.id === it.id);
+      const nm = kd && kd.label ? (kd.label[lang] || kd.label.pt) : it.id;
+      rows.push({ k: `${nm} · ${it.n} × ${eur(it.each)}`, v: eur(it.total) });
+    }
+    if (monthAe.extras) rows.push({ k: l('Da escala (papéis · escritório)', 'From the roster (roles · office)'), v: eur(monthAe.extras) });
+    if (monthAe.cash) rows.push({ k: l('Abono para falhas', 'Cash-handling allowance'), v: eur(monthAe.cash) });
+    const total = (monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0);
+    return { id: 'extras', q: l(`Extras de ${monthName}`, `${monthCap} extras`), answer: eur(total), rows,
+      suggestion: l('Cada linha vem de um registo teu (Evento) ou da escala. Algum a mais? Corrige-o nos Números.', 'Each line comes from an event you logged or from the roster. One too many? Fix it in Numbers.'),
+      navTo: { root: 'Estatísticas', label: l('Abrir os Números', 'Open Numbers') } };
+  })() : null;
   const psvPct = (() => {
     const mx = hmToMin(ndPsvMax); if (!mx) return null;
     const real = hmToMin(liveVerdict ? liveVerdict.realStr : ndPsvActual);
@@ -918,7 +957,9 @@ export default function HomeScreen({ navigation }) {
     return r ? { ...r, reportHm: flight.report, limitHm: psvLatest.replace(/\s*\(\+1\)/, '') } : null;
   })();
   const zuluTxt = (local, z) => (z && local && z !== local ? ` · ${z}Z` : '');
-  const wxHead = wxHere && wxHere.icon ? { icon: wxHere.icon, text: live ? `${wxHere.c}° · ${wxHere.station}` : `${wxHere.c}°` } : null;
+  // O tempo no topo só onde ajuda a decidir (Nuno, 2026-11-04): na folga e nos estados ao vivo (a estação onde estás
+  // ou para onde vais). Fora do fecho, pós-voo, férias, doença e configuração — à meia-noite, "🌙 14°" não decidia nada.
+  const wxHead = (live || homeState === 'folga') && wxHere && wxHere.icon ? { icon: wxHere.icon, text: live ? `${wxHere.c}° · ${wxHere.station}` : `${wxHere.c}°` } : null;
 
   const board = (() => {
     const b = { head: { left: dateLabel, dot: false }, lbl: null, digits: null, unit: null, was: null, dest: null, headline: null, title: null, pill: null, sub: null, prog: null, rows: [], kv: null, heroISO: null, link: null };
@@ -950,7 +991,8 @@ export default function HomeScreen({ navigation }) {
         ? l(`O avião ainda vem a caminho${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · chega ~${inboundInfo.etaZ}Z`, `Your aircraft is still inbound${inbound && inbound.flightIata ? ` (${inbound.flightIata})` : ''} · arrives ~${inboundInfo.etaZ}Z`)
         : [flightStatus && flightStatus.flightIata, flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg].filter(Boolean).join(' · ') || null;
       return { ...b, head: { left: isToday ? l('Partidas · hoje', 'Departures · today') : l('Partidas · amanhã', 'Departures · tomorrow'), dot: true },
-        ...x, dest: routeTxt, sub: why, rows: upcomingRows(flight.dateISO, 1), heroISO: flight.dateISO };
+        // A linha do dia de serviço também aqui: a MARGEM COM O ATRASO (a aterragem estimada vs. o limite do PSV) — auditoria do tripulante.
+        ...x, dest: routeTxt, sub: why, duty: isToday ? dl : null, dutyTxt: isToday && dl ? l('com o atraso', 'with the delay') : null, rows: upcomingRows(flight.dateISO, 1), heroISO: flight.dateISO };
     }
     if (homeState === 'hoje' && flight) {
       const rows = upcomingRows(flight.dateISO);
@@ -961,7 +1003,7 @@ export default function HomeScreen({ navigation }) {
             digits: end || flight.report, headline: psvUntil ? `${l('Se te chamarem agora: PSV até', 'If called now: FDP until')} ~${psvUntil}` : l('À espera de chamada', 'Waiting for a call'),
             // HONESTO: o motor aqui NÃO aplica a 225 (sem `special.preStandby`) — é o PSV máximo a 1 setor contado
             // desde o início do standby. Di-lo e manda confirmar; nunca afirmar que o standby foi descontado.
-            sub: psvUntil ? l('Estimativa: PSV a 1 setor contado desde o início do standby (ORO.FTL.225). Confirma na Simulação.', 'Estimate: 1-sector FDP counted from the start of standby (ORO.FTL.225). Check it in the Simulation.') : null, rows, heroISO: flight.dateISO };
+            sub: psvUntil ? l('Estimativa a 1 setor (225) — confirma na Simulação.', 'Estimate at 1 sector (225) — check it in the Simulation.') : null, rows, heroISO: flight.dateISO };
         }
         if (cdMin != null && cdMin > 0) {
           return { ...b, head: { left: kindLabel, dot: true }, lbl: `${l('Começa daqui a', 'Starts in')} ${durTxt(cdMin)}`, digits: flight.report,
@@ -1054,7 +1096,9 @@ export default function HomeScreen({ navigation }) {
       const retDuty = vacInfo && duties[vacInfo.retISO] && !duties[vacInfo.retISO].deleted ? duties[vacInfo.retISO] : null;
       return { ...b, lbl: l('Férias · ficam no ano', 'Vacation · left this year'), digits: vacInfo ? String(vacInfo.left) : '—', unit: vacInfo ? `${l('de', 'of')} ${vacInfo.quota} ${l('dias', 'days')}` : null,
         headline: vacInfo ? `${l('Regressas', 'Back on')} ${vacInfo.retLabel}` : null,
-        sub: retDuty ? [retDuty.report_time ? `report ${retDuty.report_time}` : null, retDuty.route || (retDuty.kind ? t('duties.kind.' + retDuty.kind, lang) : null)].filter(Boolean).join(' · ') : null };
+        // Honesto (auditoria do tripulante): os dias que ficam vêm dos dias de férias REGISTADOS — di-lo.
+        sub: [retDuty && retDuty.report_time ? `report ${retDuty.report_time}` : null, retDuty ? (retDuty.route || (retDuty.kind ? t('duties.kind.' + retDuty.kind, lang) : null)) : null,
+          vacInfo ? l('pelos dias de férias que registaste', 'by the leave days you logged') : null].filter(Boolean).join(' · ') || null };
     }
     if (homeState === 'doenca') {
       const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Pago pelo acordo (Art. 48)', 'Paid by the agreement (Art. 48)') : l('Do 4.º dia em diante: Segurança Social', 'From day 4: social security')) : l('Regista só os dias pagos (Art. 61)', 'Log only the paid days (Art. 61)');
@@ -1066,14 +1110,17 @@ export default function HomeScreen({ navigation }) {
       const daysTxt = fechoDaysLeft === 0 ? l('fecha hoje', 'closes today') : `${l('fecha em', 'closes in')} ${fechoDaysLeft} ${fechoDaysLeft === 1 ? l('dia', 'day') : l('dias', 'days')}`;
       if (monthAe) {
         return { ...b, lbl: `${monthCap} ${daysTxt} · ${l('estimado', 'estimated')}`, digits: eurBare(monthMoney), unit: '€',
-          headline: l('As parcelas somam o total', 'The parts add up to the total'), sub: l('A app estima; o recibo da companhia manda.', 'The app estimates; the company payslip rules.'),
+          // Até hoje · resto do mês (Nuno, 2026-11-04): o que já está na escala até hoje e o que falta — no lugar de "As
+          // parcelas somam o total" (era uma verificação, não informação). data/stats.js monthSplit, golden test:stats.
+          headline: monthSplitNow ? l(`Até hoje ${eur(monthSplitNow.toDate)} · resto do mês ${eur(monthSplitNow.rest)}`, `So far ${eur(monthSplitNow.toDate)} · rest of the month ${eur(monthSplitNow.rest)}`) : null,
+          sub: l('Variável pela escala; a base é fixa. A app estima; o recibo da companhia manda.', 'Variable from the roster; base pay is fixed. The app estimates; the company payslip rules.'),
           kv: [
             { k: l('Base', 'Base'), v: eur(monthAe.base || 0) },
             monthAe.perDiem ? { k: 'Per-diem', v: eur(monthAe.perDiem) } : null,
             monthAe.nightStops ? { k: l('Pernoitas', 'Night stops'), v: eur(monthAe.nightStops) } : null,
             // Extras = extras + eventos + abono para falhas (o MESMO agrupamento dos Números) — as parcelas
             // têm de SOMAR o total: base + per-diem + pernoitas + extras.
-            ((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) ? { k: 'Extras', v: eur((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) } : null,
+            ((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) ? { k: 'Extras', v: eur((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)), onPress: extrasItem ? () => openItem(extrasItem) : undefined } : null,
           ].filter(Boolean) };
       }
       return { ...b, lbl: `${monthCap} ${daysTxt}`, digits: String(fechoDaysLeft != null ? fechoDaysLeft : '—'), unit: fechoDaysLeft === 1 ? l('dia', 'day') : l('dias', 'days'),
@@ -1083,23 +1130,31 @@ export default function HomeScreen({ navigation }) {
     // Modo EXEMPLO: o voo de amostra não está na escala gravada — a folga lê-o daqui (senão o exemplo mostrava
     // "Sem serviços marcados" ao lado da pílula "Exemplo").
     const demoNext = demoOn && flight ? { iso: flight.dateISO, d: { kind: 'flight', route: (flight.stations || []).join('-'), report_time: flight.report },
-      days: Math.round((new Date(`${flight.dateISO}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000) } : null;
+      days: Math.round((new Date(`${flight.dateISO}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000),
+      startMs: flight.reportDate ? +new Date(flight.reportDate) : (flight.startDate ? +new Date(flight.startDate) : null) } : null;
     const next = demoNext || (() => {
       for (const iso of Object.keys(duties).filter((k) => k >= todayISO).sort()) {
         const mf = dayFlights(iso, duties[iso]).find((f) => f.endDate.getTime() >= now); if (!mf) continue;
         const d = mf.svc;
-        return { iso, d, days: Math.round((new Date(`${iso}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000) };
+        return { iso, d, days: Math.round((new Date(`${iso}T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000),
+          startMs: mf.reportDate ? +mf.reportDate : +mf.startDate };   // o report (sem report: a partida)
       }
       return null;
     })();
     const allOk = !qAlerts.length && !qChips.some((it) => it.status === 'warn');
-    if (!next) return { ...b, headline: l('Sem serviços marcados', 'No duties scheduled'), pill: allOk ? { tone: 'calm', text: l('Em dia', 'Up to date') } : null };
+    if (!next) return { ...b, headline: l('Sem serviços marcados', 'No duties scheduled'), pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null };
     const what = (!next.d.kind || next.d.kind === 'flight') ? (String(next.d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ') || l('Voo', 'Flight')) : t('duties.kind.' + next.d.kind, lang);
-    return { ...b, lbl: next.days <= 0 ? l('Próximo serviço', 'Next duty') : l('Próximo serviço daqui a', 'Next duty in'),
-      digits: next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
-      headline: `${wdLong(next.iso)} ${Number(next.iso.slice(8, 10))} · ${what}`, pill: allOk ? { tone: 'calm', text: l('Em dia', 'Up to date') } : null,
+    // FOLGA (auditoria do tripulante, 2026-11-04): o que um tripulante quer saber num dia livre é ATÉ QUANDO está livre.
+    // Com menos de 48 h, o número é em HORAS ("amanhã às 06:00" era "1 dia" e eram 18 h).
+    const untilH = next.startMs != null ? Math.max(0, Math.floor((next.startMs - now) / 3600000)) : null;
+    const inHours = untilH != null && untilH < 48;
+    const repTm = next.d.report_time || null;
+    return { ...b, lbl: next.days <= 0 && !inHours ? l('Próximo serviço', 'Next duty') : l('Próximo serviço daqui a', 'Next duty in'),
+      digits: inHours ? String(untilH) : next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: inHours ? 'h' : next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
+      headline: `${l('Livre até', 'Free until')} ${wdLong(next.iso).toLowerCase()} ${Number(next.iso.slice(8, 10))}${repTm ? ` · report ${repTm}` : ''}`,
+      sub: what, pill: allOk ? { tone: 'calm', text: l('Escala em dia', 'Roster up to date') } : null,
       rows: demoNext ? [{ key: 'demo', tm: flight.report, ds: String(flight.arrAirport || ''), dy: `${wdShort(flight.dateISO)} ${Number(flight.dateISO.slice(8, 10))}`,
-        a11y: `${l('Exemplo', 'Example')}: ${flight.depAirport} → ${flight.arrAirport}, report ${flight.report}` }] : upcomingRows(null),
+        a11y: `${l('Exemplo', 'Example')}: ${flight.depAirport} → ${flight.arrAirport}, report ${flight.report}` }] : upcomingRows(next.iso),   // sem o do herói (repetia)
       heroISO: demoNext ? null : next.iso };
   })();
 
@@ -1114,8 +1169,22 @@ export default function HomeScreen({ navigation }) {
   if (docAlert) pushSec({ key: 'doc', icon: 'doc', tone: 'red', label: l('Documentos', 'Documents'), text: docAlert.answer, onPress: () => openItem(docAlert) });
   if (homeState === 'disrupcao' && liveVerdict) pushSec({ key: 'psvLive', icon: 'shield', tone: liveVerdict.verdict === 'over' ? 'red' : 'warn',
     label: l('Limites com o atraso', 'Limits with the delay'),
-    text: `PSV ${liveVerdict.projected ? l('projetado ', 'projected ') : ''}${liveVerdict.realStr} ${l('de', 'of')} ${liveVerdict.maxStr}${liveVerdict.verdict === 'over' ? ` · ${l('acima do limite', 'over the limit')}` : liveVerdict.verdict === 'discretion' ? ` · ${l('discrição 205(f)', 'discretion 205(f)')}` : ''}`,
+    text: `PSV ${liveVerdict.projected ? l('projetado ', 'projected ') : ''}${liveVerdict.realStr} ${l('de', 'of')} ${liveVerdict.maxStr}${liveVerdict.verdict === 'over' ? ` · ${l('acima do limite', 'over the limit')}` : liveVerdict.verdict === 'discretion' ? ` · ${isCommander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)')}` : ''}`,
     bar: psvPct, onPress: legalIt ? () => openItem(legalIt) : undefined });
+  // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª, lida no BTE 2026-11-04): o fim do
+  // serviço a ≥ 119 min do programado, medido pela chegada do ÚLTIMO setor no voo ao vivo; desvio/cancelamento = setores
+  // perdidos/ganhos. Candidato, nunca "vais receber": reclama-se no RDF e a base aprova (n.º 7). data/disruption.js liveRdp.
+  if (homeState === 'disrupcao' && ae && typeof ae.rdp === 'function' && crewCategory) {
+    const rdpC = liveRdp({ isPilot, kind: flight && flight.kind, fromStandby: !!(flight && flight.svc && flight.svc.special && flight.svc.special.preStandby),
+      arrDelayMin: trackingLast && fsArr && (fsArr.estimated || fsArr.actual) ? ndArrDelay : null, sectorsChanged: fsDiverted || fsCancelled });
+    if (rdpC) {
+      const v = ae.rdp(crewCategory, todayISO.slice(0, 7));
+      const why = rdpC.reason === 'sectors' ? l('Setores perdidos ou ganhos no dia', 'Sectors lost or gained on the day')
+        : l(`Fim do serviço ${durTxt(Math.abs(rdpC.dEndMin))} ${rdpC.dEndMin > 0 ? 'depois' : 'antes'} do programado`, `Duty ends ${durTxt(Math.abs(rdpC.dEndMin))} ${rdpC.dEndMin > 0 ? 'later' : 'earlier'} than planned`);
+      pushSec({ key: 'rdp', icon: 'doc', label: l('Possível RDP · Cl. 67.ª', 'Possible RDP · Cl. 67'),
+        text: `${why} — ${l('reclama no RDF; a base aprova', 'claim it on the RDF; the base approves')}`, value: v ? `${l('até', 'up to')} ${eur(v)}` : null });
+    }
+  }
   if (homeState !== 'disrupcao' && fsDev) {
     const arrSide = !!(wDelay && wDelay.which === 'arr'); const leg = arrSide ? fsArr : fsDep;
     pushSec({ key: 'fs', icon: 'plane', tone: 'warn', label: String((flightStatus && flightStatus.flightIata) || flightNo || l('Voo', 'Flight')),
@@ -1172,7 +1241,7 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'posvoo' && d7 && d7.limit) {
       const p = Math.min(100, Math.round((d7.done / d7.limit) * 100));
       // "6 h" uma vez só; a lei (ORO.FTL.210) fica a UM toque, nos Números — não no cartão (2026-11-03).
-      pushSec({ key: 'week', icon: 'shield', tone: p >= 85 ? 'warn' : null, label: l('Serviço · 7 dias', 'Duty · 7 days'), text: `${Math.round(d7.done)} h ${l('de', 'of')} ${d7.limit} h`, bar: p,
+      pushSec({ key: 'week', icon: 'shield', tone: p >= 85 ? 'warn' : null, label: l('Serviço · últimos 7 dias', 'Duty · last 7 days'), tileLabel: l('Serviço · 7 dias', 'Duty · 7 days'), text: `${Math.round(d7.done)} h ${l('de', 'of')} ${d7.limit} h`, bar: p,
         // Em mosaico: "6 h de 60" + as 7 barrinhas (uma por dia, do MESMO dayLog que soma o total — ref Jomo).
         tileValue: `${Math.round(d7.done)} h`, tileUnit: `${l('de', 'of')} ${d7.limit}`, tileText: null, tileNoBar: true,
         chart: (() => {
@@ -1194,6 +1263,10 @@ export default function HomeScreen({ navigation }) {
         text: `${audit.count} ${audit.count === 1 ? l('item por confirmar', 'item to confirm') : l('itens por confirmar', 'items to confirm')}${audit.totalEur > 0 ? ` · ≈ ${eur(audit.totalEur)} ${l('em causa', 'at stake')}` : ''}`,
         onPress: () => { select(); setAuditOpen(true); } });
       if (monthAe && monthAe.missing) pushSec({ key: 'miss', icon: 'alert', tone: 'warn', label: 'Per-diem', text: `${monthAe.missing} ${l('voo(s) sem rota — per-diem incompleto', 'flight(s) without a route — per-diem incomplete')}` });
+      // 2.º cartão do fecho (2026-11-04): o próximo serviço — enche o vazio com o que se usa (não com uma data de
+      // pagamento inventada: a app não sabe quando cada companhia paga).
+      const nx = upcomingRows(null, 1)[0];
+      if (nx) pushSec({ key: 'next', icon: 'cal', label: l('Próximo serviço', 'Next duty'), text: [nx.dy, nx.tm && nx.tm !== '—' ? `report ${nx.tm}` : null, nx.ds].filter(Boolean).join(' · '), onPress: nx.onPress });
     }
     // Nunca vazio: o dinheiro do mês (sem acordo modelado → as horas de voo dos últimos 28 dias).
     if (homeState !== 'fecho' && monthMoney != null) {
@@ -1209,7 +1282,7 @@ export default function HomeScreen({ navigation }) {
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     } else if (hasLimitData && f28 && f28.limit) {
       const p = Math.min(100, Math.round((f28.done / f28.limit) * 100));
-      pushSec({ key: 'f28', icon: 'gauge', tone: p >= 85 ? 'warn' : null, label: l('Voo · 28 dias', 'Flight · 28 days'), text: `${Math.round(f28.done)} h ${l('de', 'of')} ${f28.limit} h (ORO.FTL.210)`, value: `${Math.round(f28.done)} h`, bar: p,
+      pushSec({ key: 'f28', icon: 'plane', tone: p >= 85 ? 'warn' : null, label: l('Tempo de voo · últimos 28 dias', 'Flight time · last 28 days'), tileLabel: l('Voo · 28 dias', 'Flight · 28 days'), text: `${Math.round(f28.done)} h ${l('de', 'of')} ${f28.limit} h`, bar: p, tileValue: `${Math.round(f28.done)} h`, tileUnit: `${l('de', 'of')} ${f28.limit}`, tileText: null,
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     }
   }
@@ -1236,7 +1309,7 @@ export default function HomeScreen({ navigation }) {
     servico: (board.heroISO && hasReg(board.heroISO)) ? { id: 'servico', ic: 'cal', lbl: l('Ver o serviço', 'See the duty'), run: () => openDayDetail(board.heroISO) } : null,
     limites: { id: 'limites', ic: 'shield', lbl: homeState === 'disrupcao' ? l('Limites com o atraso', 'Limits with the delay') : l('Limites', 'Limits'), run: openLimits },
     simular: openSimulation ? { id: 'simular', ic: 'gauge', lbl: l('Simular', 'Simulate'), run: () => { select(); openSimulation(); } } : null,
-    partilhar: shareable ? { id: 'partilhar', ic: 'share', lbl: homeState === 'disrupcao' ? l('Avisar a família', 'Tell the family') : phase === 'air' ? l('Partilhar a chegada', 'Share the arrival') : homeState === 'vespera' ? l('Partilhar o voo', 'Share the flight') : l('Família', 'Family'), run: shareNext } : null,
+    partilhar: shareable ? { id: 'partilhar', ic: 'share', lbl: homeState === 'disrupcao' ? l('Avisar a família', 'Tell the family') : phase === 'air' ? l('Partilhar a chegada', 'Share the arrival') : l('Partilhar o voo', 'Share the flight'), run: shareNext } : null,
     hotel: (flight && flight.nightStop && nsHotelStation) ? { id: 'hotel', ic: 'bed', lbl: 'Hotel', run: hotelRun(nsHotel, nsHotelStation), longRun: () => { select(); setHotelOpen(true); } } : null,
     lembrete: wakeAt && wakeMs > now ? { id: 'lembrete', ic: 'bell', lbl: `${l('Lembrete', 'Reminder')} ${wakeAt}`, a11y: l(`Marcar um lembrete para acordar às ${wakeAt}`, `Set a wake-up reminder at ${wakeAt}`), run: wakeRun } : null,
     hotelNs: homeState === 'pernoita' ? { id: 'hotelNs', ic: 'bed', lbl: closeHotel ? l('Hotel · mapas', 'Hotel · maps') : l('Guardar o hotel', 'Save the hotel'), run: hotelRun(closeHotel, closeNsStation), longRun: () => { select(); setHotelOpen(true); } } : null,
@@ -1250,21 +1323,23 @@ export default function HomeScreen({ navigation }) {
     amanha: (() => { const nx = upcomingRows(todayISO, 1)[0]; return nx ? { id: 'amanha', ic: 'cal', lbl: nx.key === isoAdd(todayISO, 1) ? l('Amanhã', 'Tomorrow') : l('Próximo serviço', 'Next duty'), run: () => openDayDetail(nx.key) } : null; })(),
     extra: openExtra ? { id: 'extra', ic: 'plus', lbl: l('Registar um extra', 'Log an extra'), run: () => { select(); openExtra(); } } : null,
     parcelas: { id: 'parcelas', ic: 'stats', lbl: l('Ver nos Números', 'See in Numbers'), run: goStats },
+    relatorio: { id: 'relatorio', ic: 'doc', lbl: l('Relatório do mês', 'Month report'), run: () => { select(); navigation.navigate('Perfil', { screen: 'Relatorios', initial: false }); } },
     auditoria: (audit && audit.count > 0 && !secShow.some((x) => x.key === 'audit')) ? { id: 'auditoria', ic: 'doc', lbl: l('Auditoria', 'Audit'), run: () => { select(); setAuditOpen(true); } } : null,
     ligar: { id: 'ligar', ic: 'cal', lbl: l('Ligar o calendário', 'Connect the calendar'), run: requestAccess },
     pdf: { id: 'pdf', ic: 'doc', lbl: l('Importar o PDF', 'Import the PDF'), run: () => { select(); navigation.navigate('Escala', { screen: 'EscalaMain', params: { pdf: Date.now() } }); } },
     exemplo: { id: 'exemplo', ic: 'play', lbl: l('Ver um exemplo', 'See an example'), run: () => { select(); setCalFlight(DEMO_FLIGHT); } },
   };
   const keyOrder = homeState === 'setup' ? ['ligar', 'pdf', 'exemplo']
-    : homeState === 'folga' ? ['escala', 'limites', 'simular']
+    : homeState === 'folga' ? ['servico', 'limites', 'simular']   // 'Ver o serviço' (era 'Ver a escala' = a aba)
     : homeState === 'vespera' ? ['lembrete', 'limites', 'partilhar', 'servico', 'simular']
-    : homeState === 'disrupcao' ? ['partilhar', 'limites', 'simular', 'escala']
-    : homeState === 'hoje' ? (isNonFlight ? (isStandbyToday ? ['simular', 'limites', 'escala'] : ['servico', 'limites', 'simular']) : ['partilhar', 'limites', 'hotel', 'simular', 'escala'])
+    : homeState === 'disrupcao' ? ['partilhar', 'limites', 'simular', 'servico']
+    : homeState === 'hoje' ? (isNonFlight ? (isStandbyToday ? ['simular', 'limites', 'servico'] : ['servico', 'limites', 'simular']) : ['partilhar', 'limites', 'hotel', 'simular', 'servico'])
     : homeState === 'pernoita' ? ['hotelNs', 'reportAmanha', 'partilharClose', 'simular']
     // Pós-voo: sem "Amanhã" (repetia a 1.ª linha do painel) nem o € como tecla (foi para o cartão do mês).
     // Com o sign-off já registado, a 1.ª tecla já é "Ver o dia" → a 3.ª passa a "Ver a escala".
     : homeState === 'posvoo' ? ['signoff', 'limites', (todayEnded && todayEnded.signOff) ? 'escala' : 'servico']
-    : homeState === 'fecho' ? ['extra', 'parcelas', 'auditoria', 'simular']
+    // Fecho (2026-11-04): sai "Ver nos Números" (repetia a aba); entra o Relatório do mês (PDF/CSV, no Perfil).
+    : homeState === 'fecho' ? ['extra', 'relatorio', 'auditoria', 'escala']
     : [];   // férias · doença
   const keys = keyOrder.map((k) => K[k]).filter(Boolean).slice(0, 3);
 
@@ -1464,7 +1539,7 @@ export default function HomeScreen({ navigation }) {
             <View>
               {board.kv.map((r, i) => (
                 <TouchableOpacity key={r.k} style={[s.row, i < board.kv.length - 1 ? { borderBottomWidth: 1, borderBottomColor: P.line } : null]}
-                  activeOpacity={0.75} onPress={goStats} accessibilityRole="button" accessibilityLabel={`${r.k}: ${r.v}`}>
+                  activeOpacity={0.75} onPress={r.onPress || goStats} accessibilityRole="button" accessibilityLabel={`${r.k}: ${r.v}`}>
                   <Text style={[s.bodyStrong, { flex: 1, color: P.ink }]} numberOfLines={1}>{r.k}</Text>
                   <Text style={[s.rowBig, { color: P.ink }]} numberOfLines={1} allowFontScaling={false}>{r.v}</Text>
                 </TouchableOpacity>

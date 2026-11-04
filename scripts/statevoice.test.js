@@ -69,12 +69,27 @@ check('EN: frase em inglês', /rest|day|sun|clock/.test(vEn.bold + ' ' + vEn.tai
 // ── Estados sem voz / futuros ──
 eq('disrupção não tem voz', stateVoice({ state: 'disrupcao', dateISO: '2026-07-09' }), null);
 eq('desconhecido → null', stateVoice({ state: 'xpto', dateISO: '2026-07-09' }), null);
-const vVes = stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30' } });
-eq('véspera com report (+ destino amanhã)', vVes, { bold: 'Está tudo verificado — dorme.', tail: 'Report às 05:30.', to: 'amanha' });
+// Véspera e pernoita (auditoria do tripulante, 2026-11-04): "verificado"/"tratado" SÓ com o repouso confirmado
+// (ctx.restOk === true). Repouso curto → a frase fala do problema. Sem saber → não afirma nada.
+const vVes = stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30', restOk: true } });
+eq('véspera com report e repouso ✓ (+ destino amanhã)', vVes, { bold: 'Está tudo verificado — dorme.', tail: 'Report às 05:30.', to: 'amanha' });
 eq('véspera SEM report → null (nunca se inventa)', stateVoice({ state: 'vespera', dateISO: '2026-07-09' }), null);
-const vPer = stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC' } });
+eq('véspera com REPOUSO CURTO → fala do problema, nunca "verificado"',
+  stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30', restOk: false, restHave: '10:40', restNeed: '12:00' } }),
+  { bold: 'Repouso curto.', tail: '10:40 de 12:00 — fala com a escala.', to: 'amanha' });
+eq('véspera sem saber o repouso → não afirma "verificado"',
+  stateVoice({ state: 'vespera', dateISO: '2026-07-09', ctx: { report: '05:30' } }),
+  { bold: 'Dorme bem.', tail: 'Report às 05:30.', to: 'amanha' });
+const vPer = stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC', restOk: true } });
 check('pernoita com estação', vPer && vPer.bold.includes('FNC'));
 check('pernoita: destino amanhã', vPer && vPer.to === 'amanha');
+eq('pernoita com repouso ✓ → "tudo tratado"', vPer, { bold: 'Boa noite em FNC.', tail: 'Está tudo tratado para amanhã.', to: 'amanha' });
+eq('pernoita com REPOUSO CURTO → fala do problema',
+  stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC', restOk: false, restHave: '9:20', restNeed: '10:00' } }),
+  { bold: 'Repouso curto em FNC.', tail: '9:20 de 10:00 — fala com a escala.', to: 'amanha' });
+eq('pernoita sem saber o repouso → não afirma "tratado"',
+  stateVoice({ state: 'pernoita', dateISO: '2026-07-09', ctx: { station: 'FNC' } }),
+  { bold: 'Boa noite em FNC.', tail: 'Descansa.', to: 'amanha' });
 const vPos = stateVoice({ state: 'posvoo', dateISO: '2026-07-09', ctx: { restUntil: '08:15' } });
 check('pós-voo: destino hoje', vPos && vPos.to === 'hoje');
 

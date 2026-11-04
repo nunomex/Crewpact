@@ -56,6 +56,20 @@ export const evaluateDisruption = (entry, { isPilot = false } = {}) => {
   return null;
 };
 
+// RDP pelo VOO AO VIVO (Cl. 67.ª/1 — lida no BTE 8/2024 p. 304–305, `fontes/ae-easyjet/`, 2026-11-04): "o término do
+// tempo de serviço (calços mais 30 minutos)" a ≥ 119 min do programado, no dia da operação — o ATRASO operacional
+// conta (o n.º 3 fala de "atraso"; as exclusões do n.º 2 são a assistência e códigos do tripulante LATE/NSO/RCON/UNCT/
+// DECL/RFSD). O +30 é igual dos dois lados → mede-o o atraso à CHEGADA do último setor; "antes ou depois" → também
+// adiantado. Perda/ganho de setores (desvio) também. Só cabine. É um CANDIDATO: reclama-se no RDF e a base aprova
+// (n.º 7) — leitura da app, no pacote "vamos ao advogado" (a empresa pode ler "alterado" como mudança de escala).
+export const liveRdp = ({ isPilot = false, kind = 'flight', fromStandby = false, arrDelayMin = null, sectorsChanged = false } = {}) => {
+  if (isPilot) return null;                                            // pilotos não têm RDP
+  if (fromStandby || /standby/i.test(String(kind || ''))) return null;   // chamado de assistência (n.º 2)
+  if (sectorsChanged) return { type: 'rdp', clause: 'Cl. 67.ª', reason: 'sectors' };
+  if (arrDelayMin == null || Math.abs(arrDelayMin) < 119) return null;
+  return { type: 'rdp', clause: 'Cl. 67.ª', reason: 'end', dEndMin: arrDelayMin };
+};
+
 // Arquivo inteiro → candidatos (cada um = entrada + veredicto do motor).
 export const disruptionCandidates = (log, opts) =>
   (log || []).map((e) => { const v = evaluateDisruption(e, opts); return v ? { ...e, ...v } : null; }).filter(Boolean);

@@ -21,6 +21,9 @@ function detailFor(it, lang) {
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const raw = it.raw || {};
   const out = { verdict: it.answer, bars: [], rows: [], changes: null, advise: it.suggestion || null, navTo: null };
+  // Genérico (2026-11-04, "o que está dentro dos Extras"): quem abre a folha pode trazer as suas linhas e o destino.
+  if (Array.isArray(it.rows)) out.rows.push(...it.rows);
+  if (it.navTo) out.navTo = it.navTo;
   const winBar = (w) => {
     const ratio = w.limit ? w.done / w.limit : 0;
     return {
@@ -103,7 +106,7 @@ function DetailContent({ item, lang, onNav }) {
         <View style={s.panel}>
           {d.rows.map((r, i) => (
             <View key={i} style={[s.prow, i > 0 && s.prowBorder]}>
-              <Text style={s.prowK} numberOfLines={1}>{r.k}</Text>
+              <Text style={s.prowK} numberOfLines={2}>{r.k}</Text>
               <Text style={[s.prowV, r.tone ? { color: rowTone(r.tone) } : null]} numberOfLines={1}>{r.v}</Text>
             </View>
           ))}
