@@ -698,6 +698,8 @@ export default function HomeScreen({ navigation }) {
     const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
     return { restOk: r.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
+  // Último dia de férias (amanhã já não está marcado como férias) → a frase muda para o regresso (golden test:statevoice).
+  const vacLast = homeState === 'ferias' && !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === isoAdd(todayISO, 1));
   const voice = useMemo(() => {
     if (!['folga', 'ferias', 'doenca', 'vespera', 'posvoo', 'pernoita', 'hoje'].includes(homeState)) return null;
     // `tmwReport` = report de AMANHÃ (se houver) → destrava as frases de DECISÃO da meteo (casaco/trânsito).
@@ -707,13 +709,13 @@ export default function HomeScreen({ navigation }) {
     const yearH = homeState === 'folga'
       ? (() => { try { return +(yearStats(duties || {}, { year: Number(todayISO.slice(0, 4)) }).flightMin / 60); } catch { return null; } })()
       : null;
-    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxHere, hour: hourNow, ctx: { ...restVoice, report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
+    return stateVoice({ state: homeState, lang, dateISO: todayISO, wx: wxHere, hour: hourNow, ctx: { ...restVoice, lastVacDay: vacLast, report: (flight && flight.report) || null, station: closeNsStation, restUntil: restUntilHm, tmwReport: (tmwDuty && tmwDuty.report_time) || null,
       yearHours: yearH, serviceStart: serviceStart || null, companhia: (company && company.name) || null,
       aviso: (rosterChanges && rosterChanges.counts && rosterChanges.counts.total) ? true : null,
       phase: homeState === 'hoje' ? phase : null, liveOk: voiceLiveOk, legalOk: voiceLegalOk,
       dest: voiceDest ? voiceDest.station : null, destC: voiceDest ? voiceDest.c : null,
       destRain: voiceDest ? (voiceDest.icon === 'rain' || voiceDest.icon === 'thunder') : null } });
-  }, [homeState, lang, todayISO, wxHere, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company, phase, voiceLiveOk, voiceLegalOk, voiceDest, restVoice.restOk, restVoice.restHave, restVoice.restNeed]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [homeState, lang, todayISO, wxHere, hourNow, flight && flight.report, closeNsStation, restUntilHm, duties, rosterChanges, serviceStart, company, phase, voiceLiveOk, voiceLegalOk, voiceDest, restVoice.restOk, restVoice.restHave, restVoice.restNeed, vacLast]); // eslint-disable-line react-hooks/exhaustive-deps
   // Toque na voz: com destino navega ('escala' → rever alterações · 'numeros' · 'hoje'/'amanha' → o dia).
   const goVoice = (to) => {
     select();
@@ -752,7 +754,13 @@ export default function HomeScreen({ navigation }) {
     let back = todayISO;
     while (days.has(isoAdd(back, 1))) back = isoAdd(back, 1);
     const ret = isoAdd(back, 1);   // regresso = dia seguinte ao último dia consecutivo de férias
-    return { quota, taken, left: Math.max(0, quota - taken), retISO: ret,
+    // O PERÍODO destas férias (crítica externa, 2026-11-04): dá contexto e deixa verificar o desconto do saldo.
+    let start = null;
+    if (days.has(todayISO)) { start = todayISO; while (days.has(isoAdd(start, -1))) start = isoAdd(start, -1); }
+    const MES = lang === 'en' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const dm = (iso) => `${Number(iso.slice(8, 10))} ${MES[Number(iso.slice(5, 7)) - 1]}`;
+    const period = start ? l(`férias de ${dm(start)} a ${dm(back)}`, `leave from ${dm(start)} to ${dm(back)}`) : null;
+    return { quota, taken, left: Math.max(0, quota - taken), retISO: ret, period, lastDay: ret === isoAdd(todayISO, 1),
       retLabel: new Date(ret + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }).replace(/-feira/i, '') };
   })() : null;
   // ── DOENÇA: dia N do episódio + regra de pagamento crew-aware (Art. 48 piloto: dias 1-3; cabine Art. 61) ──
@@ -786,7 +794,7 @@ export default function HomeScreen({ navigation }) {
   const monthMoney = monthAe ? monthAe.total : null;
   // Fecho: a parte variável dividida em "até hoje" e "resto do mês" (a MESMA conta do total — data/stats.js).
   const monthSplitNow = useMemo(() => {
-    if (homeState !== 'fecho' || !ae || !crewCategory) return null;
+    if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
     try {
       return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO });
     } catch { return null; }
@@ -920,7 +928,7 @@ export default function HomeScreen({ navigation }) {
       const isF = !d.kind || d.kind === 'flight';
       // A ROTA inteira, como no eCrew ("LIS–FNC–LIS") — só o destino escondia os setores do meio (LIS-FNC-LIS-OPO-LIS
       // mostrava só FNC). Nuno, 2026-11-04; refs Fly Delta/Air NZ. Sem rota → a estação de fora ou "Voo".
-      const chain = String(d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join('–');
+      const chain = String(d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ');   // a mesma seta do resto do Início (crítica 2026-11-04)
       const ds = isF || (d.kind === 'positioning' && d.route) ? (chain || awayStation(d.route) || l('Voo', 'Flight')) : ((KIND_CODE[lang] || KIND_CODE.pt)[d.kind] || '—');
       // Sem report → "—" na coluna do report (nunca a partida disfarçada de report).
       out.push({ key: iso, tm: d.report_time || '—', ds, dy: `${wdShort(iso)} ${Number(iso.slice(8, 10))}`,
@@ -1096,9 +1104,13 @@ export default function HomeScreen({ navigation }) {
       const retDuty = vacInfo && duties[vacInfo.retISO] && !duties[vacInfo.retISO].deleted ? duties[vacInfo.retISO] : null;
       return { ...b, lbl: l('Férias · ficam no ano', 'Vacation · left this year'), digits: vacInfo ? String(vacInfo.left) : '—', unit: vacInfo ? `${l('de', 'of')} ${vacInfo.quota} ${l('dias', 'days')}` : null,
         headline: vacInfo ? `${l('Regressas', 'Back on')} ${vacInfo.retLabel}` : null,
-        // Honesto (auditoria do tripulante): os dias que ficam vêm dos dias de férias REGISTADOS — di-lo.
-        sub: [retDuty && retDuty.report_time ? `report ${retDuty.report_time}` : null, retDuty ? (retDuty.route || (retDuty.kind ? t('duties.kind.' + retDuty.kind, lang) : null)) : null,
-          vacInfo ? l('pelos dias de férias que registaste', 'by the leave days you logged') : null].filter(Boolean).join(' · ') || null };
+        // O período ("férias de 28 out a 4 nov") no lugar de "pelos dias que registaste": contexto + deixa verificar o saldo.
+        // No último dia o regresso já está nos Próximos serviços (não se repete); a rota com a mesma seta do resto.
+        sub: [...(vacInfo && vacInfo.lastDay ? [] : [retDuty && retDuty.report_time ? `report ${retDuty.report_time}` : null,
+          retDuty ? (retDuty.route ? String(retDuty.route).split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ') : (retDuty.kind ? t('duties.kind.' + retDuty.kind, lang) : null)) : null]),
+          vacInfo && vacInfo.period].filter(Boolean).join(' · ') || null,
+        // No ÚLTIMO dia, os Próximos serviços aparecem (o resto das férias continua sossegado).
+        rows: vacInfo && vacInfo.lastDay ? upcomingRows(todayISO) : [] };
     }
     if (homeState === 'doenca') {
       const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Pago pelo acordo (Art. 48)', 'Paid by the agreement (Art. 48)') : l('Do 4.º dia em diante: Segurança Social', 'From day 4: social security')) : l('Regista só os dias pagos (Art. 61)', 'Log only the paid days (Art. 61)');
@@ -1146,11 +1158,13 @@ export default function HomeScreen({ navigation }) {
     const what = (!next.d.kind || next.d.kind === 'flight') ? (String(next.d.route || '').split(/[^A-Za-z]+/).filter(Boolean).map((x) => x.toUpperCase()).join(' → ') || l('Voo', 'Flight')) : t('duties.kind.' + next.d.kind, lang);
     // FOLGA (auditoria do tripulante, 2026-11-04): o que um tripulante quer saber num dia livre é ATÉ QUANDO está livre.
     // Com menos de 48 h, o número é em HORAS ("amanhã às 06:00" era "1 dia" e eram 18 h).
-    const untilH = next.startMs != null ? Math.max(0, Math.floor((next.startMs - now) / 3600000)) : null;
+    const untilMin = next.startMs != null ? Math.max(0, Math.floor((next.startMs - now) / 60000)) : null;
+    const untilH = untilMin != null ? Math.floor(untilMin / 60) : null;
+    const untilMm = untilMin != null ? untilMin % 60 : 0;   // para quem gere repouso, os minutos contam
     const inHours = untilH != null && untilH < 48;
     const repTm = next.d.report_time || null;
     return { ...b, lbl: next.days <= 0 && !inHours ? l('Próximo serviço', 'Next duty') : l('Próximo serviço daqui a', 'Next duty in'),
-      digits: inHours ? String(untilH) : next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: inHours ? 'h' : next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
+      digits: inHours ? String(untilH) : next.days <= 0 ? l('Hoje', 'Today') : String(next.days), unit: inHours ? (untilMm ? `h ${String(untilMm).padStart(2, '0')}` : 'h') : next.days <= 0 ? null : next.days === 1 ? l('dia', 'day') : l('dias', 'days'),
       // Curto para caber ao lado da pílula (iPhone 2026-11-04: partia em 2 e deixava a hora sozinha): < 48 h → "Livre até
       // hoje/amanhã às 06:00"; mais longe → "Livre até sábado 7" e o report desce para a linha cinzenta.
       headline: inHours && repTm
@@ -1238,8 +1252,14 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'folga' && Number(todayISO.slice(5, 7)) >= 10 && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'vacDays')) {
       const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
       const left = Math.max(0, quota - yearCount(aeEvents || [], todayISO.slice(0, 4), 'vacDays', duties));
-      if (left > 0) pushSec({ key: 'vac', icon: 'sun', label: `${l('Férias', 'Leave')} ${todayISO.slice(0, 4)}`,
-        text: l(`${left === 1 ? 'Fica 1' : `Ficam ${left}`} de ${quota} dias · gozam-se no ano (CT 240.º)`, `${left} of ${quota} days left · taken within the year (Labour Code 240)`),
+      // De NOVEMBRO em diante, laranja (atenção) e quantos dias faltam para o fim do ano (crítica 2026-11-04). Os dias do
+      // ano vêm do AE (easyJet cabine Cl. 72.ª: 25), não dos 22 do Código; gozam-se no ano civil (CT 240.º).
+      const toYearEnd = Math.round((new Date(`${todayISO.slice(0, 4)}-12-31T12:00:00`) - new Date(`${todayISO}T12:00:00`)) / 86400000);
+      const late = Number(todayISO.slice(5, 7)) >= 11;
+      if (left > 0) pushSec({ key: 'vac', icon: 'sun', tone: late ? 'warn' : null, label: `${l('Férias', 'Leave')} ${todayISO.slice(0, 4)}`,
+        text: late
+          ? l(`${left === 1 ? 'Fica 1' : `Ficam ${left}`} de ${quota} dias · o ano acaba daqui a ${toYearEnd} dias (CT 240.º)`, `${left} of ${quota} days left · the year ends in ${toYearEnd} days (Labour Code 240)`)
+          : l(`${left === 1 ? 'Fica 1' : `Ficam ${left}`} de ${quota} dias · gozam-se no ano (CT 240.º)`, `${left} of ${quota} days left · taken within the year (Labour Code 240)`),
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     }
     if (homeState === 'posvoo' && d7 && d7.limit) {
@@ -1276,13 +1296,16 @@ export default function HomeScreen({ navigation }) {
     if (homeState !== 'fecho' && monthMoney != null) {
       // Pós-voo: o € de HOJE vive aqui (deixou de ser uma tecla — era informação com cara de botão).
       const todayTxt = homeState === 'posvoo' && pdToday != null ? `${l('hoje', 'today')} ${eur(pdToday, '+')} · ` : '';
-      const mTxt = `${todayTxt}${l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`)}`;
+      // "Variável até hoje" no lugar de "dia 4 de 30" (crítica 2026-11-04: o total igual dia após dia parecia fixo no código —
+      // é a PREVISÃO do mês inteiro; isto mostra o que já está feito). A mesma conta do fecho (monthSplit).
+      const soFar = monthSplitNow ? `${l('variável até hoje', 'variable so far')} ${eur(monthSplitNow.toDate, '+')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
+      const mTxt = `${todayTxt}${soFar}`;
       pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
         // Em mosaico: o rótulo curto (o mês) e a linha diz o "estimado" e o dia (a barra conta DIAS, não €).
         // Em mosaico: só tipografia — o valor grande, "+€ hoje" a verde, "estimado · dia 3 de 30". Sem barra (contava
         // DIAS ao lado de euros e enganava).
         tileLabel: `${monthCap} · ${l('estimado', 'estimated')}`, tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
-        tileText: l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`), tileNoBar: true,
+        tileText: soFar, tileNoBar: true,
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     } else if (hasLimitData && f28 && f28.limit) {
       const p = Math.min(100, Math.round((f28.done / f28.limit) * 100));

@@ -50,6 +50,14 @@ pílula) · o cartão do mês **sem a barra** de dias (também no cartão largo)
 passou a "Noite tranquila. Report amanhã às 08:15." (dizia "dorme sem alarmes"; golden `test:statevoice` 75).
 **Falta ver (próxima sessão):** standby · disrupção e o aviso de RDP (precisam de dados verdadeiros) · doença · o gráfico
 dos 7 dias no pós-voo · a linha do dia de serviço no em voo.
+**Mais duas críticas externas (Nuno colou, 2026-11-04 ~01h) — aplicado:** férias com o PERÍODO ("férias de 28 out a 4 nov",
+no lugar de "pelos dias que registaste") · ÚLTIMO dia de férias: "Último dia de férias. Amanhã: report às 08:15." (golden
+`test:statevoice` 77) + Próximos serviços, sem repetir o regresso na linha cinzenta (✅ iPhone) · coluna ROTA com "→" (como o
+resto) · folga em "11 h 28" (nunca "11:28", que se lê como hora) · férias por gozar a LARANJA de novembro em diante, com
+"o ano acaba daqui a N dias" · cartão do mês com "variável até hoje +X €" (o total igual dia após dia é a PREVISÃO do mês,
+não um número fixo). **Não era erro:** "25 de 25" no teste (não havia dias de férias registados) e "report daqui a 7 h"
+(o BCN era quinta, a 31 h). **Pendência alargada:** os setores que não encaixam também ENTRE dias (pernoita em LGW e o
+serviço seguinte a partir de LIS, sem posicionamento) — avisar na importação.
 
 ---
 

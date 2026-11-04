@@ -127,6 +127,11 @@ eq('calor ≥26 e sol: pede rua', vHot, { bold: '27° e sol.', tail: 'A folga pe
 // Férias com sol ≥22°
 const vFer = stateVoice({ state: 'ferias', dateISO: '2026-07-09', wx: { c: 24, min: 18, max: 24, icon: 'sun' } });
 eq('férias com sol: zero responsabilidades', vFer, { bold: '24° e zero responsabilidades.', tail: 'Aproveita.' });
+// Último dia de férias com serviço amanhã (crítica externa 2026-11-04): o tom muda — "amanhã voltas", com o report.
+eq('férias: último dia com report amanhã', stateVoice({ state: 'ferias', dateISO: '2026-11-04', wx: { c: 24, min: 18, max: 24, icon: 'sun' }, ctx: { lastVacDay: true, tmwReport: '08:15' } }),
+  { bold: 'Último dia de férias.', tail: 'Amanhã: report às 08:15.', to: 'amanha' });
+eq('férias: último dia SEM serviço amanhã → as frases de sempre', stateVoice({ state: 'ferias', dateISO: '2026-07-09', wx: { c: 24, min: 18, max: 24, icon: 'sun' }, ctx: { lastVacDay: true } }),
+  { bold: '24° e zero responsabilidades.', tail: 'Aproveita.' });
 
 // Noite continua a ganhar a TUDO (às 22h com serviço amanhã o estado real já é véspera — sem bilhete)
 const vNightCold = stateVoice({ state: 'folga', dateISO: '2026-07-09', wx: COLD_TMW, hour: 22, ctx: { tmwReport: '05:30' } });

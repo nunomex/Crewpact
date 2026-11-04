@@ -67,6 +67,10 @@ const POOLS = {
     ['A escala mexeu.', 'Espreita quando puderes — nada entra sem ti.', 'The roster moved.', 'Take a look when you can — nothing lands without you.', 'escala'],
     ['Mexeram na escala.', 'Quando puderes, dá-lhe uma vista de olhos.', 'They touched the roster.', 'Give it a look when you can.', 'escala'],
   ],
+  // Último dia de férias com serviço amanhã: o tom muda (crítica externa, 2026-11-04).
+  'ferias.lastDay': [
+    ['Último dia de férias.', 'Amanhã: report às {tmwReport}.', 'Last day of leave.', 'Tomorrow: report at {tmwReport}.', 'amanha'],
+  ],
   'ferias.aviso': [
     ['A escala mexeu.', 'Sem pressa — espreitas quando voltares.', 'The roster moved.', 'No rush — look when you’re back.', 'escala'],
   ],
@@ -213,6 +217,7 @@ export function stateVoice({ state, lang = 'pt', dateISO = '', wx = null, hour =
       else return null;   // sem os números do repouso não se fala dele por meias palavras — a pílula vermelha diz
     } else if (ctx.restOk !== true) key = `${state}.unknown`;
   }
+  if (state === 'ferias' && key === state && ctx.lastVacDay && ctx.tmwReport) key = 'ferias.lastDay';
   if (state === 'ferias' && key === state) {   // key !== state = o aviso já falou (não se atropela)
     const ic = wx && wx.icon;
     if ((ic === 'sun' || ic === 'cloud-sun') && wx.max != null && wx.max >= 22) key = 'ferias.sun';
