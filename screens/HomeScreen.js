@@ -1311,10 +1311,10 @@ export default function HomeScreen({ navigation }) {
       const soFar = monthSplitNow ? `${l('inclui', 'includes')} ${eur(monthSplitNow.toDate)} ${l('até hoje', 'so far')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
       const mTxt = `${todayTxt}${soFar}`;
       pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
-        // Em mosaico: o rótulo curto (o mês) e a linha diz o "estimado" e o dia (a barra conta DIAS, não €).
-        // Em mosaico: só tipografia — o valor grande, "+€ hoje" a verde, "estimado · dia 3 de 30". Sem barra (contava
-        // DIAS ao lado de euros e enganava).
-        tileLabel: `${monthCap.slice(0, 3)} · ${l('estimado', 'estimated')}`,   // meia largura: "NOVEMBRO · ESTIMADO" cortava (iPhone 2026-11-04) tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
+        // Em mosaico: só tipografia — o rótulo curto ("NOV · ESTIMADO": por extenso cortava em meia largura), o valor
+        // grande, "+€ hoje" a verde, "inclui X € até hoje". Sem barra (contava DIAS ao lado de euros e enganava).
+        tileLabel: `${monthCap.slice(0, 3)} · ${l('estimado', 'estimated')}`,
+        tileDelta: todayTxt ? `${eur(pdToday, '+')} ${l('hoje', 'today')}` : null,
         tileText: soFar, tileNoBar: true,
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     } else if (hasLimitData && f28 && f28.limit) {
@@ -1653,7 +1653,7 @@ export default function HomeScreen({ navigation }) {
                                   {d.pct ? <View style={[s.wkBar, { height: Math.max(3, Math.round((28 * d.pct) / 100)), backgroundColor: d.today ? P.ink : P.greyOnSoft }]} />
                                     : <View style={[s.wkZero, { backgroundColor: P.ghost }]} />}{/* dia sem serviço: traço visível (o line quase desaparecia) */}
                                 </View>
-                                <Text style={[s.wkLbl, { color: d.today ? P.ink : P.greyOnSoft }, d.today ? s.wkLblToday : null]}>{d.lbl}</Text>
+                                <Text style={[s.wkLbl, { color: d.today ? P.ink : P.greyOnSoft }, d.today ? s.wkLblToday : null]} numberOfLines={1} allowFontScaling={false}>{d.lbl}</Text>
                               </View>
                             ))}
                           </View>
@@ -1862,7 +1862,7 @@ const makeSkin = (P) => StyleSheet.create({
   wkTrack: { height: 28, width: 8, justifyContent: 'flex-end' },   // alturas em PONTOS
   wkBar: { width: 8, borderRadius: RADIUS.pill },
   wkZero: { width: 8, height: 2, borderRadius: RADIUS.pill },
-  wkLbl: { ...TXT.caption },
+  wkLbl: { ...TXT.caption, width: 26, textAlign: 'center' },   // mais largo que a coluna (20): "dom"/"qua" partiam em 2 linhas
   wkLblToday: { fontFamily: PELE_FONT.bodyBold },
   // Os 3 passos da configuração (como no 7.º passo: círculo de 28 com o número, título e linha cinzenta)
   steps: { gap: SPACE.md },
