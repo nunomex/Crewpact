@@ -6,21 +6,16 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO — ACABAR DE "TESTAR OS ESTADOS" (ler isto primeiro · atualizado 2026-11-04 01h)
+## PRÓXIMA SESSÃO (ler isto primeiro · atualizado 2026-11-04 ao fim da tarde)
 
-**Modelo:** Opus 5.5 **Alto**. O Nuno escreve **"testar os estados"** → continuar o guião `docs/verificacao-device.md`
-(Início v6) onde parou. **Onde está:** ramo **`inicio-v6`**, com as mudanças desta sessão por gravar (ver abaixo);
-junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` está a `null`.
-**Falta ver no iPhone:**
-1. **Os mosaicos alinhados** (em cima: rótulo · número · delta; em baixo, preso ao fundo: gráfico / "dia 3 de 30") e o
-   **gráfico dos 7 dias com a coluna de hoje** (colunas de largura fixa — a 7.ª saía por baixo do mosaico do mês). Só
-   aparece no pós-voo (precisa de um dia fechado ANTES da meia-noite).
-2. **A linha do dia de serviço** no em voo (nunca chegou a ser vista no iPhone).
-3. "A seguir" com 4+ serviços ("Mais N ⌄") e a descer para 2 linhas quando não cabe (em voo com frase).
-4. Estados por ver: **standby (4) · disrupção (3c, só o esqueleto) · férias · doença · fecho (7)** · configuração "Ver um
-   exemplo" (estado real, conta sem calendário) · folga "sem nada marcado" · vários setores com voo ao vivo (precisa de
-   números de voo verdadeiros).
-**Conta de teste:** a base foi posta em **Lisboa** ("sempre foi esta") nesta sessão — estava em Faro.
+**O Início v6 está no `main`** (o ramo `inicio-v6` juntou-se por avanço direto a 2026-11-04, depois de visto no iPhone em
+todos os estados possíveis; `npm test` verde no `main`). **Por ver:** a disrupção e o aviso de RDP (só com um atraso
+verdadeiro) e uma conta de CABINE (doença Cl. 61.ª, RDP).
+**A seguir, por esta ordem (recomendação aceite pelo Nuno):**
+1. **Citações da cabine** — a Biblioteca escreve "Art." onde o AE SNPVAC usa "Cl." (54, 61, 62, 65, 68, 69…): passagem
+   com teste que confere cada citação em `fontes/ae-easyjet/` (como o da TAP). Opus 5.5 Alto.
+2. **Atualizar o esboço** `design/inicio-v6.html` com tudo o que mudou (placa flutuante, mosaicos, linha do dia, pós-voo…).
+3. **Modo escuro da app toda** — projeto de design, sessão própria em **Opus 5.5 Extra**, refs do Mobbin ecrã a ecrã.
 
 ---
 
