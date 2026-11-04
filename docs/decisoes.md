@@ -12,10 +12,26 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 todos os estados possíveis; `npm test` verde no `main`). **Por ver:** a disrupção e o aviso de RDP (só com um atraso
 verdadeiro) e uma conta de CABINE (doença Cl. 61.ª, RDP).
 **A seguir, por esta ordem (recomendação aceite pelo Nuno):**
-1. **Citações da cabine** — a Biblioteca escreve "Art." onde o AE SNPVAC usa "Cl." (54, 61, 62, 65, 68, 69…): passagem
-   com teste que confere cada citação em `fontes/ae-easyjet/` (como o da TAP). Opus 5.5 Alto.
+1. ~~**Citações da cabine**~~ ✅ FEITO 2026-11-04 (ver a entrada "CITAÇÕES easyJet" abaixo).
 2. **Atualizar o esboço** `design/inicio-v6.html` com tudo o que mudou (placa flutuante, mosaicos, linha do dia, pós-voo…).
 3. **Modo escuro da app toda** — projeto de design, sessão própria em **Opus 5.5 Extra**, refs do Mobbin ecrã a ecrã.
+
+---
+
+## 2026-11-04 (noite) — CITAÇÕES easyJet conferidas no texto oficial (Opus 5.5)
+
+**Novo golden `npm run test:citacoes`** (`scripts/citacoes-easyjet.test.js`, 174 asserções, na cadeia do `npm test`): cada
+citação da Biblioteca, da Prova e dos rótulos dos acordos é procurada em `fontes/ae-easyjet/` — prefixo certo (pilotos SPAC
+numeram por **Artigo** → "Art. N"; cabine SNPVAC por **Cláusula** → "Cl. N.ª"), o artigo/cláusula/ponto do Anexo I existe, e
+o título oficial bate com o assunto. Também confere que cada rótulo citado tem tradução no i18n.
+- **Erro a sério (pilotos):** DDO/IDO citavam "Cl. 68" e WFLY "Cl. 69" — números da CABINE; no SPAC os Arts. 68/69 são
+  férias. Corrigido: DDO/IDO → **Art. 54.º** ("Trabalho em dias de descanso"; valor no Anexo I.13 WIDO), WFLY → **Art. 62.º**
+  ("Contacto em dias de folga", n.º 2). Nenhum valor € mudou.
+- **Cabine:** "Art." → "Cl." em 14 rubricas da Biblioteca, 5 da Prova, nos rótulos do `ae/easyjetSnpvac.js` (+ i18n, chaves pt
+  e valores en juntos) e no comentário de `data/aeEvents.js`. Os números estavam todos certos.
+- **Formulário do serviço:** "Per-diem da rota (Art. 53)" aparecia também aos pilotos → agora Art. 37.º (pilotos) / Cl. 53.ª
+  (cabine). Faltavam traduções de 4 rótulos da cabine (€115/€140 Cl. 68.ª, Cl. 34, Cl. 35) — acrescentadas.
+- `npm test` verde (28 suites) · guardião do design sem dívida nova.
 
 ---
 

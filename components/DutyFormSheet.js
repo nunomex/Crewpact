@@ -319,7 +319,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const kindInfo = form.kind === 'reserve'
     ? l('Disponibilidade · 0 h FTL até ser convertida (ORO.FTL.230)', 'Availability · 0 h FTL until converted (ORO.FTL.230)')
     : (!ae ? null : ({
-        flight:          l('Per-diem da rota (Art. 53)',               'Per diem from route (Art. 53)'),
+        flight:          isPilot ? l('Per-diem da rota (Art. 37.º)', 'Per diem from route (Art. 37)') : l('Per-diem da rota (Cl. 53.ª)', 'Per diem from route (Cl. 53)'),
         standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
         office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
         positioning:     l('Conta para FTL · sem abono (pernoita à parte)', 'Counts for FTL · no allowance (night stop apart)'),

@@ -65,19 +65,19 @@ const AE_PROVAS = {
     cabin: {
       tag: 'AE easyJet · Cabine (SNPVAC)', vig: 'BTE 8/2024 · até 31/01/2027',
       items: {
-        perDiem: { art: 'Art. 53.º', title: { pt: 'Per diem', en: 'Per diem' }, resumo: {
+        perDiem: { art: 'Cl. 53.ª', title: { pt: 'Per diem', en: 'Per diem' }, resumo: {
           pt: 'Por cada setor voado é devido um per diem calculado por bandas de distância de grande círculo (milhas náuticas) entre os aeroportos. A app soma o nominal de cada setor do mês.',
           en: 'Each sector flown earns a per diem set by great-circle distance bands (nautical miles) between the airports. The app adds up each sector’s nominal for the month.' } },
-        pernoita: { art: 'Art. 56.º', title: { pt: 'Pernoita', en: 'Night stop' }, resumo: {
+        pernoita: { art: 'Cl. 56.ª', title: { pt: 'Pernoita', en: 'Night stop' }, resumo: {
           pt: 'Cada paragem nocturna fora de base paga um valor fixo por noite (além do alojamento a cargo da companhia).',
           en: 'Each night stop away from base pays a fixed amount per night (besides company-provided accommodation).' } },
-        doenca: { art: 'Art. 61.º', title: { pt: 'Complemento de doença', en: 'Sick pay top-up' }, resumo: {
+        doenca: { art: 'Cl. 61.ª', title: { pt: 'Complemento de doença', en: 'Sick pay top-up' }, resumo: {
           pt: 'Na doença, a partir do 4.º dia, é devido um complemento de 45% da base diária.',
           en: 'When sick, from the 4th day onwards, a top-up of 45% of the daily base applies.' } },
-        wfly: { art: 'Art. 69.º', title: { pt: 'Folga trabalhada (WFLY)', en: 'Worked day off (WFLY)' }, resumo: {
+        wfly: { art: 'Cl. 69.ª', title: { pt: 'Folga trabalhada (WFLY)', en: 'Worked day off (WFLY)' }, resumo: {
           pt: 'Uma folga publicada trabalhada a pedido da companhia (WFLY) paga 1% da base anual por dia.',
           en: 'A published day off worked at the airline’s request (WFLY) pays 1% of annual base per day.' } },
-        cash: { art: 'Art. 54.º', title: { pt: 'Abono para falhas', en: 'Cash handling allowance' }, resumo: {
+        cash: { art: 'Cl. 54.ª', title: { pt: 'Abono para falhas', en: 'Cash handling allowance' }, resumo: {
           pt: 'Abono para falhas de 5% da base anual, pago 12 vezes por ano.',
           en: 'Cash handling allowance of 5% of annual base, paid 12 times a year.' } },
       },

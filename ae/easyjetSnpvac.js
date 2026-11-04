@@ -39,10 +39,10 @@ export const isAgreementExpired = (ref = new Date()) =>
   +new Date(ref) > +new Date(`${AE_VALID_UNTIL}T23:59:59`);
 
 export const SALARY_INSTALMENTS = 14;   // 14 prestações/ano (2 = férias + Natal)
-export const NIGHT_STOP_EUR = 46;        // Art. 56 / Anexo I.7 — pernoita = €46 FIXOS (≠ pilotos)
+export const NIGHT_STOP_EUR = 46;        // Cl. 56.ª / Anexo I.7 — pernoita = €46 FIXOS (≠ pilotos)
 export const HOLIDAY_DAY_SECTORS = 2;    // Anexo I.3 — dia de férias = 2 setores nominais
 export const OFFICE_SECTORS = 3;         // Anexo I.9 — trabalho em terra = 3 setores nominais
-export const CASH_HANDLING_PCT = 0.05;   // Art. 54 — abono para falhas = 5% da base anual (12×/ano)
+export const CASH_HANDLING_PCT = 0.05;   // Cl. 54.ª — abono para falhas = 5% da base anual (12×/ano)
 export const SNC_EUR = 20;               // Anexo I.10 — alteração de escala curta antecedência
 export const DDO_EUR = 115;              // Anexo I.12 — trabalhar num dia de descanso
 export const IDO_EUR = 140;              // Anexo I.13 — dia de descanso infringido
@@ -51,7 +51,7 @@ export const RDP_FLOOR = { CM: 23, CMP: 23, FA: 18, FA1: 18 };   // Anexo I.11 �
 export const LANGUAGE_3RD = 350;         // Anexo I.5 — 3.ª língua (anual)
 export const LANGUAGE_EXTRA = 50;        // Anexo I.5 — cada língua adicional
 export const BENEFITS_ANNUAL = 425;      // Anexo I.6 — abono para benefícios (desde abr 2025)
-export const SICK_PCT = 0.45;            // Art. 61 — complemento de doença (após 3 dias)
+export const SICK_PCT = 0.45;            // Cl. 61.ª — complemento de doença (após 3 dias)
 export const UPRANKER_SECTOR = 16.27;    // Anexo I.15 — Chefe de Cabine "Upranker" (€/setor, Nov-25)
 export const CCLT_DAY = 25;              // Anexo I.16 — Cabin Crew Line Trainer (€/dia)
 export const CTI_FLEXI_SECTORS = 4;      // Anexo I.16 — CTI-Flexi (4 setores nominais, cat. Chefe)
@@ -65,7 +65,7 @@ export const POSITIONING = {
   FA1: { curto: 10.76, medio: 16.14, longo: 20.18, extra: 33.63 },
 };
 
-// Art. 53 — per diem por setor, por distância de grande círculo (NM). MESMAS bandas
+// Cl. 53.ª — per diem por setor, por distância de grande círculo (NM). MESMAS bandas
 // dos pilotos: curto / médio / longo / extra-longo.
 export const SECTOR_BANDS = [
   { id: 'curto', maxNM: 400,      mult: 0.8 },
@@ -150,14 +150,14 @@ export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
 const r2 = (n) => +(+n).toFixed(2);
 const nomOf = (cat, T = tableAt()) => T.NOMINAL_SECTOR[cat] || 0;
 
-export const cashHandling = (cat, ym) => { const T = tableAt(ym); return r2(T.CASH_HANDLING_PCT * annualBase(cat, T) / 12); };   // Art. 54 — €/mês
-export const holidayDay   = (cat, ym) => { const T = tableAt(ym); return r2(T.HOLIDAY_DAY_SECTORS * nomOf(cat, T)); };            // Art. 60 — €/dia de férias
-export const nightStop    = (_cat, _index, ym) => tableAt(ym).NIGHT_STOP_EUR;         // Art. 56 — pernoita = € FIXOS (assinatura uniforme c/ pilotos/TAP; ignora cat/index)
-export const office       = (cat, ym) => { const T = tableAt(ym); return r2(T.OFFICE_SECTORS * nomOf(cat, T)); };                 // Art. 70 — €/dia em terra
-export const wfly         = (cat, ym) => { const T = tableAt(ym); return r2(T.WFLY_PCT_ANNUAL * annualBase(cat, T)); };           // Art. 69 — €/dia (1% base anual)
-export const rdp          = (cat, ym) => { const T = tableAt(ym); return r2(Math.max(nomOf(cat, T), T.RDP_FLOOR[cat] || 0)); };   // Art. 67 — €/evento
-export const sickDay      = (cat, ym) => { const T = tableAt(ym); return r2(T.SICK_PCT * (annualBase(cat, T) / SALARY_INSTALMENTS) / 30); };  // Art. 61 — €/dia (após 3)
-export const language     = (n = 1, ym) => { const T = tableAt(ym); return n >= 1 ? r2(T.LANGUAGE_3RD + (n - 1) * T.LANGUAGE_EXTRA) : 0; };   // Art. 65 — €/ano
+export const cashHandling = (cat, ym) => { const T = tableAt(ym); return r2(T.CASH_HANDLING_PCT * annualBase(cat, T) / 12); };   // Cl. 54.ª — €/mês
+export const holidayDay   = (cat, ym) => { const T = tableAt(ym); return r2(T.HOLIDAY_DAY_SECTORS * nomOf(cat, T)); };            // Cl. 60.ª — €/dia de férias
+export const nightStop    = (_cat, _index, ym) => tableAt(ym).NIGHT_STOP_EUR;         // Cl. 56.ª — pernoita = € FIXOS (assinatura uniforme c/ pilotos/TAP; ignora cat/index)
+export const office       = (cat, ym) => { const T = tableAt(ym); return r2(T.OFFICE_SECTORS * nomOf(cat, T)); };                 // Cl. 70.ª — €/dia em terra
+export const wfly         = (cat, ym) => { const T = tableAt(ym); return r2(T.WFLY_PCT_ANNUAL * annualBase(cat, T)); };           // Cl. 69.ª — €/dia (1% base anual)
+export const rdp          = (cat, ym) => { const T = tableAt(ym); return r2(Math.max(nomOf(cat, T), T.RDP_FLOOR[cat] || 0)); };   // Cl. 67.ª — €/evento
+export const sickDay      = (cat, ym) => { const T = tableAt(ym); return r2(T.SICK_PCT * (annualBase(cat, T) / SALARY_INSTALMENTS) / 30); };  // Cl. 61.ª — €/dia (após 3)
+export const language     = (n = 1, ym) => { const T = tableAt(ym); return n >= 1 ? r2(T.LANGUAGE_3RD + (n - 1) * T.LANGUAGE_EXTRA) : 0; };   // Cl. 65.ª — €/ano
 export const positioning  = (cat, band = 'medio', ym) => { const t = tableAt(ym).POSITIONING[cat]; return t && t[band] != null ? t[band] : null; };  // Anexo I.18
 export const ctiFlexi     = (cat, ym) => { const T = tableAt(ym); return r2(T.CTI_FLEXI_SECTORS * nomOf(cat, T)); };              // Cl. 35 — €/dia (cat. Chefe)
 export const upranker     = (ym) => tableAt(ym).UPRANKER_SECTOR;                      // Cl. 34 — €/setor (a desempenhar Chefe)
@@ -166,7 +166,7 @@ export const perfBonus    = (cat, { contract = '12/12', index = 1, ym } = {}) =>
   const T = tableAt(ym);
   return r2(annualBase(cat, T) * (T.PERF_BONUS_WEEKS / 52) * contractFactor(contract) * index);
 };
-// Assistência no aeroporto (Art. 58): { called, over4h } → €. "setor médio" = 1,2× nominal.
+// Assistência no aeroporto (Cl. 58.ª): { called, over4h } → €. "setor médio" = 1,2× nominal.
 export const airportStandby = (cat, { called = false, over4h = false, ym } = {}) => {
   const med = 1.2 * nomOf(cat, tableAt(ym));
   return called ? r2(over4h ? med : 0) : r2(over4h ? 2 * med : med);
@@ -224,22 +224,22 @@ export const catalogValue = (id, { category = 'FA', contract = '12/12', index = 
 // = entra no total mensal interligado (computeAeMonth).
 export const CALCS = [
   { id: 'base',     group: 'Base',        linked: true,  label: 'Remuneração base',         sub: 'categoria × contrato ÷ 14' },
-  { id: 'perdiem',  group: 'Por voo',     linked: true,  label: 'Per diem',                 sub: 'Σ setores × nominal (Art. 53)' },
-  { id: 'night',    group: 'Por voo',     linked: true,  label: 'Pernoita',                 sub: '€46 fixos / noite (Art. 56)' },
+  { id: 'perdiem',  group: 'Por voo',     linked: true,  label: 'Per diem',                 sub: 'Σ setores × nominal (Cl. 53.ª)' },
+  { id: 'night',    group: 'Por voo',     linked: true,  label: 'Pernoita',                 sub: '€46 fixos / noite (Cl. 56.ª)' },
   { id: 'pos',      group: 'Por voo',     linked: false, label: 'Posicionamento',           sub: 'tabela cat × distância (Anexo 18)' },
-  { id: 'adty',     group: 'Por voo',     linked: false, label: 'Assistência no aeroporto', sub: 'setor médio (Art. 58)' },
-  { id: 'cash',     group: 'Subsídios',   linked: true,  label: 'Abono para falhas',        sub: '5% base ÷ 12 (Art. 54)' },
-  { id: 'holiday',  group: 'Subsídios',   linked: false, label: 'Dia de férias',            sub: '2 setores nominais (Art. 60)' },
-  { id: 'lang',     group: 'Subsídios',   linked: false, label: 'Domínio de língua',        sub: '€350 + €50/língua (Art. 65)' },
-  { id: 'benefits', group: 'Subsídios',   linked: false, label: 'Abono para benefícios',    sub: '€425/ano (Art. 62)' },
+  { id: 'adty',     group: 'Por voo',     linked: false, label: 'Assistência no aeroporto', sub: 'setor médio (Cl. 58.ª)' },
+  { id: 'cash',     group: 'Subsídios',   linked: true,  label: 'Abono para falhas',        sub: '5% base ÷ 12 (Cl. 54.ª)' },
+  { id: 'holiday',  group: 'Subsídios',   linked: false, label: 'Dia de férias',            sub: '2 setores nominais (Cl. 60.ª)' },
+  { id: 'lang',     group: 'Subsídios',   linked: false, label: 'Domínio de língua',        sub: '€350 + €50/língua (Cl. 65.ª)' },
+  { id: 'benefits', group: 'Subsídios',   linked: false, label: 'Abono para benefícios',    sub: '€425/ano (Cl. 62.ª)' },
   { id: 'bonus',    group: 'Subsídios',   linked: false, label: 'Bónus de performance anual', sub: 'ALVO · estimativa: 2 semanas de base (Cl. 63)' },
-  { id: 'sick',     group: 'Subsídios',   linked: false, label: 'Complemento de doença',    sub: '45% base diária (Art. 61)' },
-  { id: 'snc',      group: 'Perturbação', linked: false, label: 'Alteração curta (SNC)',    sub: '€20/evento (Art. 66)' },
-  { id: 'rdp',      group: 'Perturbação', linked: false, label: 'Irregularidade (RDP)',     sub: '1 setor nominal (Art. 67)' },
-  { id: 'ddo',      group: 'Perturbação', linked: false, label: 'Trabalhar em folga (DDO)', sub: '€115 (Art. 68)' },
-  { id: 'ido',      group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',   sub: '€140 (Art. 68)' },
-  { id: 'wfly',     group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual (Art. 69)' },
-  { id: 'office',   group: 'Funções',     linked: false, label: 'Trabalho em terra',        sub: '3 setores nominais (Art. 70)' },
+  { id: 'sick',     group: 'Subsídios',   linked: false, label: 'Complemento de doença',    sub: '45% base diária (Cl. 61.ª)' },
+  { id: 'snc',      group: 'Perturbação', linked: false, label: 'Alteração curta (SNC)',    sub: '€20/evento (Cl. 66.ª)' },
+  { id: 'rdp',      group: 'Perturbação', linked: false, label: 'Irregularidade (RDP)',     sub: '1 setor nominal (Cl. 67.ª)' },
+  { id: 'ddo',      group: 'Perturbação', linked: false, label: 'Trabalhar em folga (DDO)', sub: '€115 (Cl. 68.ª)' },
+  { id: 'ido',      group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',   sub: '€140 (Cl. 68.ª)' },
+  { id: 'wfly',     group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual (Cl. 69.ª)' },
+  { id: 'office',   group: 'Funções',     linked: false, label: 'Trabalho em terra',        sub: '3 setores nominais (Cl. 70.ª)' },
   // Papéis (vivem em ADDITIONAL_ROLES, filtrados por categoria) — fora do catálogo.
   { id: 'upranker', group: 'Funções',     linked: false, label: 'Upranker',                 sub: '€16,27/setor (Cl. 34)', role: true },
   { id: 'cclt',     group: 'Funções',     linked: false, label: 'CCLT (verificador)',       sub: '€25/dia de treino (Cl. 35)', role: true },
@@ -272,7 +272,7 @@ export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [
 // ── "Extras do mês" — contadores por evento/dia que NÃO se inferem da rota ──
 // Cada um valoriza-se com a calculadora respetiva do Anexo I e SOMA ao total mensal.
 // Por evento/dia → rate cheio. snc auto-preenchível da deteção de alterações (Fase 4).
-// Doença: conta os dias PAGOS (após o 3.º — Art. 61); o utilizador insere só esses. Modelo
+// Doença: conta os dias PAGOS (após o 3.º — Cl. 61.ª); o utilizador insere só esses. Modelo
 // DIFERENTE do piloto: os dias entrados já são os pagos → contam TODOS (o eventCounts NÃO
 // aplica a lógica "1-3 por episódio" quando SICK_FIRST3=false; ver data/aeEvents.js).
 export const SICK_FIRST3 = false;

@@ -24,7 +24,7 @@ const nextISO = (iso) => {
 // SERVIÇO não conta — "efetivamente gozado" (BTE easyJet cabine · piloto "não obstante o gozo
 // de férias"): voaste nesse dia → o suplemento não paga aí, a férias remarca-se para outro dia.
 // `sickFirst3` (default true = modelo PILOTO, Art. 48: paga dias 1-3 de cada episódio). A CABINE
-// (Art. 61) paga "após o 3.º" e o utilizador insere só os dias PAGOS → passa `false` → contam todos.
+// (Cl. 61.ª) paga "após o 3.º" e o utilizador insere só os dias PAGOS → passa `false` → contam todos.
 export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) => {
   const counts = {};
   if (!ym) return counts;
