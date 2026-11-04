@@ -992,7 +992,8 @@ export default function HomeScreen({ navigation }) {
           flightStatus && flightStatus.aircraft && flightStatus.aircraft.reg ? `${l('avião', 'aircraft')} ${flightStatus.aircraft.reg}` : null,
           psvLatest ? `${l('PSV até', 'FDP until')} ${psvLatest}` : null,
           !hasRep ? l('sem hora de report — PSV não calculado', 'no report time — FDP not calculated') : null,
-          flight.nightStop && nsHotelStation ? `${l('pernoita em', 'night stop in')} ${nsHotelStation}` : null].filter(Boolean).join(' · ') || null,
+          // (sem "pernoita em …": a tecla Hotel já o diz, e a linha partia em 2 no iPhone — Nuno, 2026-11-04)
+        ].filter(Boolean).join(' · ') || null,
         rows, heroISO: flight.dateISO };
     }
     if (homeState === 'vespera' && flight) {
@@ -1148,11 +1149,11 @@ export default function HomeScreen({ navigation }) {
     if ((homeState === 'hoje' || homeState === 'vespera') && flight && !isNonFlight && dayPerDiem != null) {
       const ns = flight.nightStop && nsPay != null ? nsPay : null;
       pushSec({ key: 'money', icon: 'wallet', label: homeState === 'vespera' ? l('Ganhos de amanhã', 'Tomorrow’s earnings') : l('Ganhos de hoje', 'Today’s earnings'),
-        text: [`per-diem ${eur(dayPerDiem)}`, ns != null ? `${l('pernoita', 'night stop')} ${eur(ns)}` : null].filter(Boolean).join(' · '), value: eur(dayPerDiem + (ns || 0), '+'),
+        text: [`per-diem ${eur(dayPerDiem)}`, ns != null ? `${l('pernoita', 'night stop')} ${eur(ns)}` : null].filter(Boolean).join(' · '), value: eur(dayPerDiem + (ns || 0), '+'), gain: true,
         onPress: () => { select(); navigation.navigate('Estatísticas'); } });
     }
     if (homeState === 'pernoita') {
-      if (nsPay != null) pushSec({ key: 'ns', icon: 'wallet', label: l('Esta noite', 'Tonight'), text: l('pernoita (acordo)', 'night stop (agreement)'), value: eur(nsPay, '+') });
+      if (nsPay != null) pushSec({ key: 'ns', icon: 'wallet', label: l('Esta noite', 'Tonight'), text: l('pernoita (acordo)', 'night stop (agreement)'), value: eur(nsPay, '+'), gain: true });
       if (wxHere && wxHere.tmwSym) pushSec({ key: 'wxt', icon: wxIcon(wxHere.tmwSym) || 'cloud', label: `${l('Em', 'In')} ${wxHere.station} ${l('amanhã', 'tomorrow')}`, text: [tmwLine(wxHere), range(wxHere.tmwMin, wxHere.tmwMax)].filter(Boolean).join(' · ') });
     }
     // FÉRIAS POR GOZAR (2026-11-03, Nuno "sim"): o saldo do ano vive nos Números; no Início só volta quando
@@ -1510,7 +1511,9 @@ export default function HomeScreen({ navigation }) {
                     const a11y = [lbl, `${val}${x.tileUnit ? ` ${x.tileUnit}` : ''}`, x.tileDelta, txt,
                       x.chart ? x.chart.map((d) => `${d.lbl} ${Math.round(d.h * 10) / 10} h`).join(', ') : null].filter(Boolean).join('. ');
                     const tileProps = x.onPress ? { activeOpacity: 0.8, onPress: x.onPress, accessibilityRole: 'button', accessibilityLabel: a11y } : { accessible: true, accessibilityLabel: a11y };
-                    const tone = x.tone === 'warn' ? P.warn : P.ink;
+                    // Cores (regra 2026-11-04): verde = bom (dinheiro que ENTRA: os +€ do dia — o total do mês fica a tinta,
+                    // é estimativa) · laranja = atenção · tinta = o resto. okText sobre o soft = 5,64:1.
+                    const tone = x.tone === 'warn' ? P.warn : x.gain ? P.okText : P.ink;
                     return (
                       <TileBox key={x.key} style={[s.tile, { backgroundColor: P.soft }]} {...tileProps}>
                         {/* Como os widgets da Apple: o de CIMA alinha com o de cima (rótulo · número · delta) e o de BAIXO
@@ -1570,7 +1573,7 @@ export default function HomeScreen({ navigation }) {
                         </View>
                       ) : null}
                     </View>
-                    {x.value ? <Text style={[s.secVal, { color: P.ink }]} numberOfLines={1} allowFontScaling={false}>{x.value}</Text>
+                    {x.value ? <Text style={[s.secVal, { color: x.gain ? P.okText : P.ink }]} numberOfLines={1} allowFontScaling={false}>{x.value}</Text>
                       : x.onPress ? <Icon name="chevron" size={12} color={P.greyOnSoft} /> : null}
                   </SecBox>
                 );
