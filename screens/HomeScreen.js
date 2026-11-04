@@ -1277,7 +1277,8 @@ export default function HomeScreen({ navigation }) {
         // Em mosaico: "6 h de 60" + as 7 barrinhas (uma por dia, do MESMO dayLog que soma o total — ref Jomo).
         tileValue: `${Math.round(d7.done)} h`, tileUnit: `${l('de', 'of')} ${d7.limit}`, tileText: null, tileNoBar: true,
         chart: (() => {
-          const ini = lang === 'en' ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+          // 3 letras ("Q S S D S T Q" repetia o Q e o S — crítica externa 2026-11-04).
+          const ini = lang === 'en' ? ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] : ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
           const days = [];
           for (let i = 6; i >= 0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
@@ -1306,7 +1307,8 @@ export default function HomeScreen({ navigation }) {
       const todayTxt = homeState === 'posvoo' && pdToday != null ? `${l('hoje', 'today')} ${eur(pdToday, '+')} · ` : '';
       // "Variável até hoje" no lugar de "dia 4 de 30" (crítica 2026-11-04: o total igual dia após dia parecia fixo no código —
       // é a PREVISÃO do mês inteiro; isto mostra o que já está feito). A mesma conta do fecho (monthSplit).
-      const soFar = monthSplitNow ? `${l('variável até hoje', 'variable so far')} ${eur(monthSplitNow.toDate, '+')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
+      // "inclui X até hoje": diz que está DENTRO do total ("variável até hoje" não o dizia — crítica 2026-11-04).
+      const soFar = monthSplitNow ? `${l('inclui', 'includes')} ${eur(monthSplitNow.toDate)} ${l('até hoje', 'so far')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
       const mTxt = `${todayTxt}${soFar}`;
       pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
         // Em mosaico: o rótulo curto (o mês) e a linha diz o "estimado" e o dia (a barra conta DIAS, não €).
@@ -1649,7 +1651,7 @@ export default function HomeScreen({ navigation }) {
                               <View key={d.iso} style={s.wkCol}>
                                 <View style={s.wkTrack}>
                                   {d.pct ? <View style={[s.wkBar, { height: Math.max(3, Math.round((28 * d.pct) / 100)), backgroundColor: d.today ? P.ink : P.greyOnSoft }]} />
-                                    : <View style={[s.wkZero, { backgroundColor: P.line }]} />}
+                                    : <View style={[s.wkZero, { backgroundColor: P.ghost }]} />}   // dia sem serviço: traço visível (o line quase desaparecia)
                                 </View>
                                 <Text style={[s.wkLbl, { color: d.today ? P.ink : P.greyOnSoft }, d.today ? s.wkLblToday : null]}>{d.lbl}</Text>
                               </View>
@@ -1856,7 +1858,7 @@ const makeSkin = (P) => StyleSheet.create({
   tileDelta: { ...TXT.label },
   // As 7 barrinhas da semana (mosaico do serviço · 7 dias): 28 de altura, a de hoje a tinta
   wk: { flexDirection: 'row', justifyContent: 'space-between' },   // 7 colunas de LARGURA FIXA: com flex+gap a 7.ª saía para fora, por baixo do mosaico do mês (iPhone)
-  wkCol: { width: 14, alignItems: 'center', gap: SPACE.xxs },
+  wkCol: { width: 20, alignItems: 'center', gap: SPACE.xxs },   // 7 × 20 cabe nos ~150 pt do mosaico (3 letras)
   wkTrack: { height: 28, width: 8, justifyContent: 'flex-end' },   // alturas em PONTOS
   wkBar: { width: 8, borderRadius: RADIUS.pill },
   wkZero: { width: 8, height: 2, borderRadius: RADIUS.pill },
