@@ -152,6 +152,38 @@ check('prova: método e limitações presentes', html.includes('DETETADA pela ap
   check('fonte: n.º 3 fala de atraso', txt.includes('efetuando serviço de voo com atraso de 2 (duas) horas após a hora confirmada de apresentação'));
 }
 
+// ── SNC A REGISTAR — no máximo UM por serviço (Art. 63.º SPAC · Cl. 66.ª SNPVAC, lidos no BTE 2026-11-04) ──
+// "O pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas antecedentes" → o 1.º
+// "antes" dentro das 48 h vs o último "depois"; ≥ 2 h (início antecipado ou fim atrasado). Achado: o aviso da Escala
+// propunha um SNC por CADA mudança nos 7 dias seguintes, sem 48 h nem 2 h (3 SNC num só serviço de teste).
+{
+  const { sncToRegister } = require(path.resolve('data/disruption.js'));
+  const D = '2026-11-10';
+  const ch = (det, b, a, kind = 'flight') => ({ dutyDate: D, detectedAt: det, before: { report: b[0], end: b[1], sectors: 2, kind }, after: { report: a[0], end: a[1], sectors: 2, kind } });
+  const tres = [
+    ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '13:00']),
+    ch('2026-11-09T14:00', ['08:00', '13:00'], ['08:00', '14:30']),
+    ch('2026-11-09T18:00', ['08:00', '14:30'], ['08:00', '15:00']),
+  ];
+  const r1 = sncToRegister(tres, { isPilot: true });
+  eq('3 mudanças no MESMO serviço → UM SNC', r1.length, 1);
+  eq('… comparado com o planeado a 48 h (fim +3 h)', r1[0] && r1[0].dEndMin, 180);
+  eq('… pilotos: Art. 63.º', r1[0] && r1[0].clause, 'Art. 63.º');
+  eq('cabine: Cl. 66.ª', (sncToRegister(tres, { isPilot: false })[0] || {}).clause, 'Cl. 66.ª');
+  eq('vai e volta (líquido +0:30) → nenhum', sncToRegister([
+    ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '13:00']),
+    ch('2026-11-09T14:00', ['08:00', '13:00'], ['08:00', '12:30']),
+  ], { isPilot: true }).length, 0);
+  eq('já há SNC registado nesse dia → nenhum', sncToRegister(tres, { isPilot: true, events: [{ type: 'snc', date: D }] }).length, 0);
+  eq('mudança a 3 dias (fora das 48 h) → nenhum', sncToRegister([ch('2026-11-07T10:00', ['08:00', '12:00'], ['08:00', '15:00'])], { isPilot: true }).length, 0);
+  eq('assistência → nenhum', sncToRegister([ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '15:00'], 'standby_home')], { isPilot: true }).length, 0);
+  eq('início antecipado 2 h 30 → SNC', (sncToRegister([ch('2026-11-09T10:00', ['08:00', '12:00'], ['05:30', '12:00'])], { isPilot: true })[0] || {}).dStartMin, -150);
+  eq('mudança de 1 h 30 → nenhum', sncToRegister([ch('2026-11-09T10:00', ['08:00', '12:00'], ['08:00', '13:30'])], { isPilot: true }).length, 0);
+  eq('dois serviços com SNC → dois, por data', sncToRegister([...tres, { ...ch('2026-11-10T09:00', ['08:00', '12:00'], ['08:00', '15:00']), dutyDate: '2026-11-11', before: { report: '08:00', end: '12:00', sectors: 2, kind: 'flight' } }], { isPilot: true }).map((x) => x.date), ['2026-11-10', '2026-11-11']);
+  const sp = fs.readFileSync(path.resolve('fontes/ae-easyjet/easyjet-spac-2023.txt'), 'utf8').replace(/\s+/g, ' ');
+  check('fonte: Art. 63.º n.º 4 literal no BTE', sp.includes('O pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas antecedentes'));
+}
+
 console.log(`\ndisrupção — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ RDP ≥119 min no dia (só cabine) · SNC ≥2h nas 48h · assistência excluída · valores do Anexo I.');

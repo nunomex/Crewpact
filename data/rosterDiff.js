@@ -125,6 +125,8 @@ export const diffRoster = ({ incoming = [], duties = {}, window = null } = {}) =
 // cancelamentos ficam de fora (não há prestação clara no Anexo I). Devolve { total, byYm }
 // — por mês do SERVIÇO, porque o SNC pertence ao mês em que o serviço acontece. PURO;
 // quem chama PROPÕE ao utilizador (deteta→confirma — nunca soma sozinho ao salário).
+// ⚠️ NÃO usar para SNC (2026-11-04): conta qualquer mudança a ≤7 dias, sem as 48 h nem as 2 h do AE. O aviso de SNC
+// usa data/disruption.js sncToRegister (um por serviço, golden). Fica só como contagem "alterações próximas".
 export const shortNoticeCandidates = (diff, todayISO, horizonDays = 7) => {
   const out = { total: 0, byYm: {}, dates: [] };
   if (!diff || !todayISO) return out;

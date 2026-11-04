@@ -70,6 +70,38 @@ export const liveRdp = ({ isPilot = false, kind = 'flight', fromStandby = false,
   return { type: 'rdp', clause: 'Cl. 67.ª', reason: 'end', dEndMin: arrDelayMin };
 };
 
+// SNC A REGISTAR — no máximo UM por serviço (Art. 63.º SPAC n.º 4 · Cl. 66.ª SNPVAC n.º 3, lidos no BTE 2026-11-04,
+// `fontes/ae-easyjet/`): "o pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas
+// antecedentes" → junta as alterações do MESMO serviço feitas dentro das 48 h: o "antes" da 1.ª (o plano a 48 h) vs o
+// "depois" da última; SNC se o líquido antecipa o início ≥ 2 h ou atrasa o fim ≥ 2 h (evaluateDisruption: assistência
+// fora; na cabine, a mudança no próprio dia ≥ 119 min é RDP, não SNC). Tira os dias que já têm SNC registado.
+// (Substitui o `shortNoticeCandidates` da Escala, que propunha um SNC por CADA mudança nos 7 dias, sem 48 h nem 2 h.)
+export const sncToRegister = (log = [], { isPilot = false, events = [] } = {}) => {
+  const registered = new Set((events || []).filter((e) => e && e.type === 'snc').map((e) => String(e.date)));
+  const byDuty = new Map();
+  for (const e of log || []) {
+    if (!e || !e.dutyDate || !e.before || !e.after || !e.detectedAt) continue;
+    if (!byDuty.has(e.dutyDate)) byDuty.set(e.dutyDate, []);
+    byDuty.get(e.dutyDate).push(e);
+  }
+  const out = [];
+  for (const [date, list] of byDuty) {
+    if (registered.has(date)) continue;
+    const inWin = list
+      .filter((e) => {
+        const st = hm2min(e.before.report); const det = new Date(String(e.detectedAt));
+        if (st == null || isNaN(det)) return false;
+        const startMs = new Date(`${date}T00:00:00`).getTime() + st * 60000;
+        return det.getTime() <= startMs && startMs - det.getTime() <= 48 * 3600000;
+      })
+      .sort((a, b) => String(a.detectedAt).localeCompare(String(b.detectedAt)));
+    if (!inWin.length) continue;
+    const v = evaluateDisruption({ ...inWin[inWin.length - 1], before: inWin[0].before }, { isPilot });
+    if (v && v.type === 'snc') out.push({ date, clause: v.clause, dStartMin: v.dStartMin, dEndMin: v.dEndMin });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+};
+
 // Arquivo inteiro → candidatos (cada um = entrada + veredicto do motor).
 export const disruptionCandidates = (log, opts) =>
   (log || []).map((e) => { const v = evaluateDisruption(e, opts); return v ? { ...e, ...v } : null; }).filter(Boolean);

@@ -24,6 +24,22 @@ junta-se ao `main` quando os estados estiverem todos vistos. `FORCE_HOME_STATE` 
 
 ---
 
+## 2026-11-04 (tarde) — SNC UM POR SERVIÇO · doença pela lei (Opus 5.5)
+
+- **SNC — erro corrigido (golden primeiro, `test:disruption` 66):** o aviso "Registar +N SNC" depois da importação usava
+  `shortNoticeCandidates` (qualquer mudança a ≤ 7 dias, sem 48 h nem 2 h, sem ver os já registados) → 3 SNC num só serviço
+  de teste. Lei lida no BTE: **Art. 63.º SPAC n.º 4** (BTE 40/2023, agora em `fontes/ae-easyjet/`) e **Cl. 66.ª SNPVAC n.º 3**:
+  "o pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas antecedentes" → **no máximo UM
+  por serviço**, ≥ 2 h, sem assistência. Agora `sncToRegister` (data/disruption.js) no arquivo das mudanças; tira os dias
+  já com SNC. Os SNC de teste a mais apagam-se à mão (a app nunca apaga registos).
+- **Doença:** cabine passa a dizer o que recebe pela **Cl. 61.ª** (era "Art. 61" e uma instrução para a app): dias 1–3 sem
+  complemento; do 4.º, 45 % do salário diário além do subsídio da SS (BTE 8/2024 p. 302). O número sem o "º" gigante:
+  piloto "1 · de 3 pagos" (Art. 48). ✅ no iPhone (conta de teste = PILOTO).
+- **Pendência:** a Biblioteca da cabine escreve "Art." em todas as rubricas (54, 61, 62, 65, 68, 69…) — o AE da cabine usa
+  "Cl." — passagem própria com teste de citações contra `fontes/ae-easyjet/` (como o da TAP).
+
+---
+
 ## 2026-11-04 — A BARRA DE BAIXO COMBINA COM O INÍCIO v6 (Opus 5.5)
 
 Nuno: "o menu da app combina com o layout novo da aba Início?" No essencial sim (paleta, ícones, ponto amarelo = realce,

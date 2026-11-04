@@ -14,7 +14,7 @@ import { select, success } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
 import { requestCalendarAccess } from '../data/calendar';
 import { routeDistancesNM, monthlyPerDiem } from '../data/perdiem';
-import { shortNoticeCandidates } from '../data/rosterDiff';
+import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import { legZulu } from '../data/zulu';
@@ -45,7 +45,10 @@ const REVEAL = 200;   // ao tocar num dia: quanto da folha do dia tem de ficar �
 // para a semana. A escala vem do calendário (criar à mão morreu 2026-07-10); editar = correção (toque longo).
 export default function EscalaScreen({ navigation, route }) {
   const { lang, duties, dayLog, user, company, ae: aeNow, aeAt, homeBaseAt, crewAt, postFlightMin, rosterChanges, checkRosterChanges, liveSync, notify, removeDutyService,
-    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels } = useContext(AppContext);
+    calendarId, setCalendarId, calendarName, setCalendarName, addAeEvents, aeEvents, removeAeEvent, hotels, rosterLog, isPilot } = useContext(AppContext);
+  // O aviso de SNC corre DEPOIS de a importação gravar o arquivo: lê-se sempre a versão mais recente (não a do render).
+  const sncSrc = useRef({ log: [], events: [] });
+  sncSrc.current = { log: rosterLog || [], events: aeEvents || [] };
   const tabSpace = useTabBarSpace();
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -755,16 +758,20 @@ export default function EscalaScreen({ navigation, route }) {
         onDone={({ saved, source }) => {
           if (!saved) return;
           notify(`${saved} ${l('serviços importados', 'duties imported')}${source === 'pdf' ? l(' do PDF', ' from PDF') : l(' do calendário', ' from calendar')}`, null, 'imported');
-          // SNC (deteta→confirma): alterações de ÚLTIMA HORA aplicadas → PROPÕE somar aos Extras. Nunca soma sozinho.
+          // SNC (deteta→confirma): PROPÕE somar aos Extras, nunca soma sozinho. Regra do AE (Art. 63.º SPAC · Cl. 66.ª
+          // SNPVAC, lidos no BTE 2026-11-04): no máximo UM por serviço — o novo serviço vs o planeado 48 h antes, ≥ 2 h;
+          // sem assistência; sem os dias que já têm SNC (data/disruption.js sncToRegister, golden test:disruption).
+          // Antes: um SNC por CADA mudança nos 7 dias seguintes, sem 48 h nem 2 h (3 SNC num só serviço de teste).
           const hasSnc = !!(aeNow && Array.isArray(aeNow.EXTRA_KINDS) && aeNow.EXTRA_KINDS.some((k) => k.id === 'snc'));
           if (!hasSnc || !addAeEvents) return;
-          const cand = shortNoticeCandidates(rosterChanges, today);
-          if (!cand.total) return;
           setTimeout(() => {
+            const list = sncToRegister(sncSrc.current.log, { isPilot: !!isPilot, events: sncSrc.current.events });
+            const cand = { total: list.length, dates: list.map((x) => x.date) };
+            if (!cand.total) return;
             Alert.alert(
               l('Alterações de última hora', 'Short-notice changes'),
-              l(`${cand.total} alteração(ões) a ≤7 dias. Registar como SNC (com o dia de cada uma) nos Extras do mês? Se alguma caiu num dia de folga publicada, marca DDO/WFLY/IDO no próprio serviço.`,
-                `${cand.total} change(s) within ≤7 days. Log as SNC (each with its day) in the month's extras? If any fell on a published day off, mark DDO/WFLY/IDO on the duty itself.`),
+              l(`${cand.total === 1 ? '1 serviço mudou' : `${cand.total} serviços mudaram`} 2 h ou mais nas 48 h antes (${isPilot ? 'Art. 63.º' : 'Cl. 66.ª'}). Registar ${cand.total === 1 ? 'o SNC' : 'os SNC'} nos Extras do mês (um por serviço)? Se caiu num dia de folga publicada, marca DDO/WFLY/IDO no próprio serviço.`,
+                `${cand.total} dut${cand.total === 1 ? 'y' : 'ies'} moved 2 h or more within 48 h (${isPilot ? 'Art. 63' : 'Cl. 66'}). Log the SNC in the month's extras (one per duty)? If it fell on a published day off, mark DDO/WFLY/IDO on the duty itself.`),
               [
                 { text: l('Agora não', 'Not now'), style: 'cancel' },
                 { text: l(`Registar +${cand.total} SNC`, `Log +${cand.total} SNC`), onPress: () => {

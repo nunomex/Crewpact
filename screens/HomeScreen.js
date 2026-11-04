@@ -59,7 +59,7 @@ const SHOW_DEMO_FLIGHT = false;
 // ── DEV: forçar um estado para o ver no iPhone sem esperar pelo gatilho real (a véspera só dispara
 // ≥ 18h). Valores: 'setup' | 'folga' | 'hoje' | 'disrupcao' | 'vespera' | 'posvoo' | 'pernoita' |
 // 'ferias' | 'doenca' | 'fecho' — ou null = estado REAL. Voltar a null depois de ver!
-const FORCE_HOME_STATE = null;
+const FORCE_HOME_STATE = 'doenca';
 // ── AFINAÇÕES visuais (sessão "testar os estados") — números do olho, mexer AQUI.
 const TUNE = {
   live: { size: 104 },                                  // a HORA ao vivo (esboço: 104 pt)
@@ -763,7 +763,7 @@ export default function HomeScreen({ navigation }) {
     return { quota, taken, left: Math.max(0, quota - taken), retISO: ret, period, lastDay: ret === isoAdd(todayISO, 1),
       retLabel: new Date(ret + 'T00:00:00').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }).replace(/-feira/i, '') };
   })() : null;
-  // ── DOENÇA: dia N do episódio + regra de pagamento crew-aware (Art. 48 piloto: dias 1-3; cabine Art. 61) ──
+  // ── DOENÇA: dia N do episódio + regra de pagamento crew-aware (Art. 48 piloto: dias 1-3; cabine Cl. 61.ª: 45 % após o 3.º dia) ──
   const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
   const sickDay = cs.sickDay || 0;
   // ── FECHO DO MÊS: dias que faltam ──
@@ -1113,8 +1113,15 @@ export default function HomeScreen({ navigation }) {
         rows: vacInfo && vacInfo.lastDay ? upcomingRows(todayISO) : [] };
     }
     if (homeState === 'doenca') {
-      const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Pago pelo acordo (Art. 48)', 'Paid by the agreement (Art. 48)') : l('Do 4.º dia em diante: Segurança Social', 'From day 4: social security')) : l('Regista só os dias pagos (Art. 61)', 'Log only the paid days (Art. 61)');
-      return { ...b, lbl: l('Baixa · dia do episódio', 'Sick leave · day of the episode'), digits: lang === 'en' ? String(sickDay) : `${sickDay}.º`, unit: l('dia', 'day'),
+      const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Pago pelo acordo (Art. 48)', 'Paid by the agreement (Art. 48)') : l('Do 4.º dia em diante: Segurança Social', 'From day 4: social security')) 
+        // Cabine easyJet — Cl. 61.ª (BTE 8/2024 p. 302, lida em fontes/ae-easyjet/ a 2026-11-04): complemento de 45 % da
+        // remuneração base diária ao subsídio da SS, APÓS os 3 dias iniciais, só com direito ao subsídio, máx. 90 dias/12 meses.
+        // (Antes: "Regista só os dias pagos (Art. 61)" — citava mal e era uma instrução para a app, não o que ele recebe.)
+        : sickDay <= 3 ? l('Dias 1 a 3: sem complemento do acordo (Cl. 61.ª)', 'Days 1–3: no agreement top-up (Cl. 61)')
+          : l('Do 4.º dia: o acordo junta 45 % do salário diário ao subsídio da Segurança Social (Cl. 61.ª)', 'From day 4: the agreement adds 45% of daily pay to the social-security benefit (Cl. 61)');
+      return { ...b, lbl: l('Baixa · dia do episódio', 'Sick leave · day of the episode'), // O número sem o "º" (a 150 pt desenhava-se enorme e sublinhado); a unidade diz quanto o acordo paga (2026-11-04):
+        // piloto (Art. 48, dias 1-3 de cada episódio) "de 3 pagos" até ao 3.º · depois, e na cabine, "º dia".
+        digits: String(sickDay), unit: sickFirst3 && sickDay <= 3 ? l('de 3 pagos', 'of 3 paid') : l('º dia', 'day'),
         headline: payTxt,
         sub: flight ? `${l('Próximo serviço', 'Next duty')}: ${wdLong(flight.dateISO).toLowerCase()} ${Number(flight.dateISO.slice(8, 10))}${flight.report ? `, report ${flight.report}` : ''} — ${l('se continuares de baixa, avisa a escala', 'if you’re still sick, tell crewing')}` : null };
     }

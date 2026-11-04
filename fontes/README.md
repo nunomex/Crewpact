@@ -9,6 +9,7 @@ existe, palavra por palavra, no texto oficial abaixo, na página indicada.
 | `ae-tap/tap-spac-2023.pdf` | Boletim do Trabalho e Emprego n.º 29, 8 de agosto de 2023 — AE TAP × SPAC (pilotos), revisão global | BTE 262–338 | `f8476cbd6b3f48a5f44d9d7b7fb06d7eb9d1fdb50c1e4ce9f9fcb4b90fc96511` |
 | `ae-tap/tap-snpvac-2024.pdf` | Boletim do Trabalho e Emprego n.º 7, 22 de fevereiro de 2024 — AE TAP × SNPVAC (cabine), revisão global | BTE 271–352 | `941299648718bb2fb6d27c9fb679d72b9dc85935f066ddf71d6e9bb2edba05e6` |
 | `ae-easyjet/easyjet-snpvac-2024.pdf` | Boletim do Trabalho e Emprego n.º 8, 29 de fevereiro de 2024 — AE easyJet × SNPVAC (cabine), revisão global (até 31/01/2027) | PDF 34 p. (a Cl. 67.ª RDP está no BTE 304–305) | `ad08ac22dab5662fbe9b9c91be2a4079473a9f763ab8bc3aaa9352ec8f2c8a6f` |
+| `ae-easyjet/easyjet-spac-2023.pdf` | Boletim do Trabalho e Emprego n.º 40, 29 de outubro de 2023 — AE easyJet × SPAC (pilotos), revisão global | PDF 28 p. (Art. 63.º SNC; Anexo I n.º 12) | `646c4ab87ecb997322f1f8f340300fe41e2688ca09f828d5a845ecda7bea4e22` |
 | `icao/nat-doc-007-v2026-1.pdf` | ICAO, NAT Doc 007 — North Atlantic Operations and Airspace Manual, V.2026-1 (aplicável desde 19 mar 2026), preparado pelo ICAO European and North Atlantic Office | PDF p. 1 e 5 (o `.txt` só tem estas) | `56cf34068cded8888986cef0cbc3d4178769bfb2f811062ef8a9c0f364c2b88f` |
 
 - **Os PDF** ficam só neste PC (`.gitignore`). São os ficheiros oficiais publicados no Diário da República
