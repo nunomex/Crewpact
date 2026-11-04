@@ -311,7 +311,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const flightNs = isFlight && isNightStop(form.route, base, form.sectors);   // pernoita = acaba fora da base (recurso: paridade)
   const manualNs = canNightStop && !!form.nightStop;
   const hasNs = flightNs || manualNs;
-  // Valor € da pernoita (Art. 39, igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
+  // Valor € da pernoita (pilotos Art. 39.º · cabine Cl. 56.ª; igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
   // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
   const catForm = crewAt(form.date || isoDay()).category;   // categoria EM VIGOR no mês da duty (effective-dated)
   const nsEur = (hasNs && ae && ae.nightStop && catForm) ? ae.nightStop(catForm) : null;
