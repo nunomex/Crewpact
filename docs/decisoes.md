@@ -21,7 +21,8 @@ verificadores cada); agrupados, cerca de 70 problemas.
    8. Dúvidas → advogado.
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
-**Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite):
+**Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
+pesquisar, com onde procurar e onde entra no código, está em **`docs/pesquisa-pendente.md`**.
 (1) Apresentação cabine vs pilotos (ORO.FTL.205(c)): só no Manual de Operações (EASA FAQ 47585: "defined by the operator
 in the Operations manual"); não é público. AE TAP pilotos Cl. 18.ª dá só o MÍNIMO dos pilotos (60/75/60 min, BTE 29/2023 p. 297).
 (2) Desconto da pausa do repartido (CS FTL.1.220(b)): só no OM; mínimo 30 min (EASA FAQ 47627). AE TAP cabine Cl. 4.ª n.º 16
