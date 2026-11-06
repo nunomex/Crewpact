@@ -27,15 +27,33 @@ const fmtDelta = (min) => { const a = Math.abs(min); const h = Math.floor(a / 60
 export const evaluateDisruption = (entry, { isPilot = false } = {}) => {
   if (!entry || !entry.before || !entry.after || !entry.dutyDate || !entry.detectedAt) return null;
   const b = entry.before, a = entry.after;
-  // Chamado/alterado a partir de ASSISTÊNCIA → não devido (Cl. 67.ª/2 · 66.ª/3 · Art. 63.º/4).
-  if (/standby/i.test(String(b.kind || ''))) return null;
   const bStart = hm2min(b.report), aStart = hm2min(a.report);
-  const bEnd = dutyEndMin(b), aEnd = dutyEndMin(a);
+  // O fim do serviço medido desde a apresentação (um fim antes da apresentação é no dia seguinte): calços 22:00 → 00:30 é um
+  // atraso de 2 h 30, não −21 h 30 (auditoria A-067, bloco 6). Pilotos Art. 63.º, n.º 1 · cabine Cl. 66.ª e 67.ª.
+  const endAbs = (v, start) => { const e = dutyEndMin(v); if (e == null) return null; return start != null && e - POST_BLOCK_MIN < start ? e + 1440 : e; };
+  const bEnd = endAbs(b, bStart), aEnd = endAbs(a, aStart != null ? aStart : bStart);
   const dStart = bStart != null && aStart != null ? aStart - bStart : null;
   const dEnd = bEnd != null && aEnd != null ? aEnd - bEnd : null;
   const sectorsChanged = b.sectors != null && a.sectors != null && b.sectors !== a.sectors;
   const det = new Date(String(entry.detectedAt));
   if (isNaN(det)) return null;
+  // Chamado/alterado a partir de ASSISTÊNCIA → não devido (Cl. 67.ª/2 · 66.ª/3 · Art. 63.º/4) — salvo, nos PILOTOS, o Art. 63.º,
+  // n.º 10 (auditoria A-054/A-066/A-215, bloco 6): a) "Quando uma assistência consta na escala e, nas 48 horas seguintes à sua
+  // hora de início, esta for antecipada por qualquer periodo de tempo" → SNC; b) na assistência em casa, "a hora de comunicação
+  // mais cedo atribuída a uma mudança de serviço é 90 minutos após o início do serviço de assistência original. A marcação uma
+  // hora de apresentação mais cedo será considerada como uma alteração de escala com curta antecedência". A chamada DURANTE a
+  // assistência (n.º 4) fica de fora: só contam as mudanças vistas antes do início. A cabine (Cl. 66.ª) não tem esta regra.
+  if (/standby/i.test(String(b.kind || ''))) {
+    if (!isPilot || bStart == null || aStart == null) return null;
+    const startMs = new Date(`${entry.dutyDate}T00:00:00`).getTime() + bStart * 60000;
+    const within48 = det.getTime() <= startMs && startMs - det.getTime() <= 48 * 3600000;
+    if (!within48) return null;
+    const toStandby = /standby/i.test(String(a.kind || ''));
+    if (aStart < bStart || (b.kind === 'standby_home' && !toStandby && aStart < bStart + 90)) {
+      return { type: 'snc', clause: 'Art. 63.º, n.º 10', dStartMin: dStart, dEndMin: dEnd, sectorsChanged };
+    }
+    return null;
+  }
 
   // RDP (SÓ cabine, Cl. 67.ª/1): alteração NO DIA DA OPERAÇÃO com |Δ fim do tempo de
   // serviço| ≥ 119 min — "e também incluirá perda ou ganho de setores".
@@ -165,7 +183,9 @@ export const evaluateStability = (entry, { isPilot = false } = {}) => {
   const b = entry.before, a = entry.after;
   if (/standby/i.test(String(b.kind || ''))) return null;   // assistência/reserva = a exceção legal
   const bStart = hm2min(b.report), aStart = hm2min(a.report);
-  const bEnd = hm2min(b.end), aEnd = hm2min(a.end);
+  // Fim depois da meia-noite = dia seguinte (a mesma correção do SNC, A-067).
+  const rawEnd = (v, start) => { const e = hm2min(v.end); return e == null ? null : (start != null && e < start ? e + 1440 : e); };
+  const bEnd = rawEnd(b, bStart), aEnd = rawEnd(a, aStart != null ? aStart : bStart);
   const dStart = bStart != null && aStart != null ? aStart - bStart : null;
   const dEnd = bEnd != null && aEnd != null ? aEnd - bEnd : null;
   const sectorsChanged = b.sectors != null && a.sectors != null && b.sectors !== a.sectors;

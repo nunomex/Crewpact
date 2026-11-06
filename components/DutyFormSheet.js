@@ -12,7 +12,7 @@ import { isNightStop } from '../data/rosterImport';
 import { simulateDuty, issueText } from '../data/simulation';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
-import { routeDistancesNM } from '../data/perdiem';
+import { routeDistancesNM, serviceMoney, aeIndex } from '../data/perdiem';
 import { computeDuty } from '../ftl';
 import { airportZulu } from '../data/zulu';
 import { DUTY_KINDS } from '../data/duties';
@@ -54,7 +54,7 @@ const dhTailOnOf = (legs) => {
 };
 const formSignOff = (d) => { const so = (d && d.signOff) || ''; return so && so === dhTailOnOf(d && d.legs) ? '' : so; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false, trainingType: null };
 // Aeronave do 1.º leg (auto-fill por deteção). Vive em `legs[0].aircraft`.
 const legAircraft = (d) => (d && Array.isArray(d.legs) && d.legs[0] && d.legs[0].aircraft) || '';
 // Legs com horas por setor para o form. Migração de duties ANTIGAS (só block_off/on, sem off/on
@@ -74,6 +74,45 @@ const seedLegs = (d) => {
 // Tipos NÃO-VOO onde PODES acabar fora da base e pernoitar (decisão do user) → toggle manual de
 // pernoita. Standby de casa (estás em casa) e escritório (estás na base) ficam de fora. Voo = auto.
 const NIGHTSTOP_KINDS = ['positioning', 'training', 'standby_airport'];
+// O que cada tipo de serviço paga, pelo acordo de cada um (auditoria A-097/A-111/A-208, bloco 6: o formulário dizia "sem abono" a
+// quem tem pagamento, e mostrava à TAP e à cabine as regras dos pilotos easyJet).
+const kindInfoOf = (ae, isPilot, cat, date, l, fmt) => {
+  if (ae.PER_DIEM_BY_DAY && ae.GROUND_PER_DIEM) return {   // TAP pilotos (Cl. 9.ª)
+    flight: l('Per diem A no dia (Cl. 9.ª) — coluna pela operação: médio ou longo curso', 'Per diem A for the day (Cl. 9) — column by operation: medium or long haul'),
+    positioning: l('Dead-head — per diem A no dia (Cl. 9.ª, n.º 1, a))', 'Dead-head — per diem A for the day (Cl. 9(1)(a))'),
+    standby_airport: l('Per diem A no dia (Cl. 9.ª, n.º 1, a), ii))', 'Per diem A for the day (Cl. 9(1)(a)(ii))'),
+    standby_home: l('Conta para FTL · sem per diem (Cl. 9.ª)', 'Counts for FTL · no per diem (Cl. 9)'),
+    training: l('Simulador como aluno: per diem A · refrescamento: per diem B (Cl. 9.ª)', 'Simulator as trainee: per diem A · refresher: per diem B (Cl. 9)'),
+    office: l('Conta para FTL · sem per diem (Cl. 9.ª)', 'Counts for FTL · no per diem (Cl. 9)'),
+  };
+  if (ae.PER_DIEM_BY_DAY) return {   // TAP cabine (Cl. 7.ª e 8.ª)
+    flight: l('Ajuda de custo AC1 no dia (Cl. 7.ª)', 'AC1 allowance for the day (Cl. 7)'),
+    positioning: l('DHC — AC1 no dia (Cl. 7.ª)', 'DHC — AC1 for the day (Cl. 7)'),
+    standby_airport: l('Complemento × 2 se não fores chamado (Cl. 8.ª, n.º 2)', 'Supplement × 2 if not called (Cl. 8(2))'),
+    standby_home: l('Complemento extraordinário (Cl. 8.ª, n.º 1, b))', 'Extra supplement (Cl. 8(1)(b))'),
+    training: l('Complemento na formação presencial (Cl. 8.ª, n.º 1, h)) · e-learning à parte', 'Supplement for classroom training (Cl. 8(1)(h)) · e-learning apart'),
+    office: l('Complemento — deslocação às instalações (Cl. 8.ª, n.º 1, d))', 'Supplement — trip to company premises (Cl. 8(1)(d))'),
+  };
+  if (ae.POSITIONING_BY_TABLE) {   // cabine easyJet
+    const r = ae.positioningRange ? ae.positioningRange(cat, date) : null;
+    return {
+      flight: l('Per-diem da rota (Cl. 53.ª)', 'Per diem from route (Cl. 53)'),
+      standby_airport: l('Setor médio · conforme a duração e se fores chamado (Cl. 58.ª)', 'Medium sector · by length and call-out (Cl. 58)'),
+      office: l('3 setores nominais (Cl. 70.ª)', '3 nominal sectors (Cl. 70)'),
+      positioning: r ? l(`Pela duração da viagem: ${fmt(r.min)} a ${fmt(r.max)} (Anexo I.18)`, `By trip length: ${fmt(r.min)} to ${fmt(r.max)} (App. I.18)`) : l('Pela duração da viagem (Anexo I.18)', 'By trip length (App. I.18)'),
+      standby_home: l('Conta para FTL · sem abono AE', 'Counts for FTL · no AE allowance'),
+      training: l('Conta para FTL · sem abono AE (pernoita fora da base, sim)', 'Counts for FTL · no AE allowance (night away from base, yes)'),
+    };
+  }
+  return {   // pilotos easyJet
+    flight: l('Per-diem da rota (Art. 37.º)', 'Per diem from route (Art. 37)'),
+    standby_airport: l('1 a 2 setores nominais · ADTY (Anexo I.5)', '1 to 2 nominal sectors · ADTY (App. I.5)'),
+    office: l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
+    positioning: l('Os setores pelas bandas do per diem (Art. 44.º) · pernoita à parte', 'Sectors by per diem bands (Art. 44) · night stop apart'),
+    standby_home: l('Conta para FTL · sem abono AE', 'Counts for FTL · no AE allowance'),
+    training: l('Formando em terra/simulador: 3 setores nominais (Art. 43.º)', 'Ground/sim trainee: 3 nominal sectors (Art. 43)'),
+  };
+};
 
 // Pele: o form deixou de seguir o tema (é sempre a pele clara). Mapa de cores com os MESMOS
 // nomes que o render/estilos já usam (C.text, C.sub, C.ink…) → os campos ficam pele sem mexer neles.
@@ -186,13 +225,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: formSignOff(d), role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: formSignOff(d), role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning, trainingType: d.trainingType || null }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: formSignOff(c), role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: formSignOff(c), role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning, trainingType: c.trainingType || null });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
-  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: formSignOff(svc), role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning });
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: formSignOff(svc), role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning, trainingType: svc.trainingType || null });
   // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
   // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
@@ -338,23 +377,16 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const manualNs = canNightStop && !!form.nightStop;
   const hasNs = flightNs || manualNs;
   // Valor € da pernoita (pilotos Art. 39.º · cabine Cl. 56.ª; igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
-  // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
+  // €46 fixos. Com o índice do mês (o IPC dos pilotos easyJet desde fev-2025): o mesmo valor que entra no total (L10, bloco 6).
   const catForm = crewAt(form.date || isoDay()).category;   // categoria EM VIGOR no mês da duty (effective-dated)
   // TAP (Cl. 7.ª/9.ª): num dia com voo paga-se a AC1/per diem A e não a estadia — a AC2/B é só dos dias de estadia sem voo,
   // contados no mês (perdiem.tapCalendarDays). Por isso o serviço não mostra "+ estadia" (auditoria A-109/A-186, bloco 5).
-  const nsEur = (hasNs && ae && ae.nightStop && catForm && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(catForm, 1, form.date || isoDay()) : null;
+  const nsEur = (hasNs && ae && ae.nightStop && catForm && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(catForm, aeIndex(ae, form.date || isoDay()), form.date || isoDay()) : null;
   const nsLaw = ae && ae.PER_DIEM_BY_DAY ? l('estadia nos dias sem voo', 'stay on days without flights') : (isPilot ? l('abono AE (Art. 39.º)', 'AE allowance (Art. 39)') : l('abono AE (Cl. 56.ª)', 'AE allowance (Cl. 56)'));
   // Reserva (230) é FTL-universal (0h, mostra a todos); o resto é info AE (só com `ae`).
   const kindInfo = form.kind === 'reserve'
     ? l('Disponibilidade · 0 h FTL até ser convertida (ORO.FTL.230)', 'Availability · 0 h FTL until converted (ORO.FTL.230)')
-    : (!ae ? null : ({
-        flight:          isPilot ? l('Per-diem da rota (Art. 37.º)', 'Per diem from route (Art. 37)') : l('Per-diem da rota (Cl. 53.ª)', 'Per diem from route (Cl. 53)'),
-        standby_airport: l('+2 setores nominais · ADTY (Anexo I.5)',   '+2 nominal sectors · ADTY (App. I.5)'),
-        office:          l('+1,5 setores nominais · OFC4 (Anexo I.14)', '+1.5 nominal sectors · OFC4 (App. I.14)'),
-        positioning:     l('Conta para FTL · sem abono (pernoita à parte)', 'Counts for FTL · no allowance (night stop apart)'),
-        standby_home:    l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
-        training:        l('Conta para FTL · sem abono AE',            'Counts for FTL · no AE allowance'),
-      })[form.kind] || null);
+    : (!ae ? null : (kindInfoOf(ae, isPilot, catForm, form.date || isoDay(), l, (n) => { const [i, d] = Number(n).toFixed(2).split('.'); return lang === 'en' ? `€${i}.${d}` : `${i},${d} €`; })[form.kind] || null));
   // ── Setores (legs = FONTE das horas): off/on por setor. block_off/on + Block hours DERIVAM. ──
   // sectorRows = vista materializada dos legs alinhada à rota/nº de setores (dep/arr da rota,
   // off/on dos legs). A edição escreve em `form.legs` (setSectorTime).
@@ -464,13 +496,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     return { base: base.fdp.maxFdpStr, eff: eff.fdp.notAllowed ? null : eff.fdp.maxFdpStr, notAllowed: !!eff.fdp.notAllowed };
   }, [isFlight, form.report, lastOn, opRows.length, special, isPilot]);
 
-  // Per-diem AE deste voo (preview ao vivo por baixo da Rota).
+  // Per-diem AE deste voo (preview ao vivo por baixo da Rota) — a MESMA função e o MESMO índice do total do mês (L10, bloco 6).
   const routePd = useMemo(() => {
     const r = (form.route || '').trim();
     if (!ae || !catForm || !r) return null;
     const dists = routeDistancesNM(r);
     if (!dists.length || dists.some((x) => x == null)) return { ok: false };
-    return { ok: true, eur: ae.perDiem(catForm, dists, 1, crewAt(formDate).fleet, formDate) };
+    return { ok: true, eur: serviceMoney(ae, catForm, { kind: 'flight', route: r }, { date: formDate, fleet: crewAt(formDate).fleet }).perDiem };
   }, [ae, catForm, form.route, crewFleet, formDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmtPd = (n) => {
@@ -533,6 +565,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       officeType: form.kind === 'office' ? (form.officeType || null) : null,
       // Formação e-learning (sem pagamento variável, Art. 43) — só marca no kind training.
       eLearning: form.kind === 'training' ? !!form.eLearning : false,
+      // TAP pilotos (Cl. 9.ª): simulador como aluno = per diem A; refrescamento = B. Sem o tipo, a app conta o B (certo).
+      trainingType: form.kind === 'training' && !form.eLearning ? (form.trainingType || null) : null,
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -803,9 +837,25 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
             : l('Formação em terra/simulador — 3 setores nominais ao formando (Art. 43).', 'Ground/sim training — 3 nominal sectors to the trainee (Art. 43).')}</Text>
         </View>
       ) : null}
+      {form.kind === 'training' && !form.role && ae && ae.GROUND_PER_DIEM ? (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.lbl}>{l('Tipo de formação', 'Training type')}</Text>
+          <SegRow s={s} value={form.eLearning ? 'elearn' : (form.trainingType || null)} onChange={(v) => { select(); setForm((f) => ({ ...f, eLearning: v === 'elearn', trainingType: v === 'elearn' ? null : v })); }}
+            options={[
+              { id: 'sim', label: l('Simulador (aluno)', 'Simulator (trainee)') },
+              { id: 'ground', label: l('Refrescamento', 'Refresher') },
+              { id: 'elearn', label: 'e-learning' },
+            ]} />
+          <Text style={s.routeHint}>{form.trainingType === 'sim' && !form.eLearning
+            ? l('Simulador como aluno — per diem A (Cl. 9.ª, n.º 1, a)).', 'Simulator as trainee — per diem A (Cl. 9(1)(a)).')
+            : (form.eLearning || form.trainingType === 'ground')
+              ? l('Refrescamento, presencial ou e-learning — per diem B (Cl. 9.ª, n.º 1, b)).', 'Refresher, classroom or e-learning — per diem B (Cl. 9(1)(b)).')
+              : l('Escolhe o tipo: há formação que não paga per diem (Cl. 10.ª) — sem ele a app conta 0 € certo, até ao per diem A.', 'Pick the type: some training pays no per diem (Cl. 10) — without it the app counts €0 certain, up to per diem A.')}</Text>
+        </View>
+      ) : null}
       {form.kind !== 'reserve' && ae && Array.isArray(ae.EXTRA_KINDS) && ae.EXTRA_KINDS.some((k) => k.id === 'ddo') ? (
         <View style={{ marginTop: 16 }}>
-          <Text style={s.lbl}>{l('Este dia era folga publicada?', 'Was this a published day off?')}</Text>
+          <Text style={s.lbl}>{l('Tocou numa folga?', 'Did it touch a day off?')}</Text>
           <SegRow s={s} value={form.dayOffWorked || 'no'} onChange={(v) => { select(); setForm((f) => ({ ...f, dayOffWorked: v === 'no' ? null : v })); }}
             options={[
               { id: 'no', label: l('Não', 'No') },
@@ -813,14 +863,24 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               { id: 'wfly', label: 'WFLY' },
               ...(ae.EXTRA_KINDS.some((k) => k.id === 'ido') ? [{ id: 'ido', label: 'IDO' }] : []),
             ]} />
-          {form.dayOffWorked ? (
-            <Text style={s.routeHint}>{
-              form.dayOffWorked === 'ddo'
-                ? l('Trabalhar em folga escalada (DDO) — soma ao salário do mês.', 'Worked a rostered day off (DDO) — adds to the month pay.')
-                : form.dayOffWorked === 'wfly'
-                ? l('Voluntário em folga (WFLY) — soma ao salário do mês.', 'Volunteered on a day off (WFLY) — adds to the month pay.')
-                : l('Folga infringida (IDO) — trabalho em folga sem o aviso devido; soma ao salário do mês.', 'Infringed day off (IDO) — worked a day off without due notice; adds to the month pay.')}</Text>
-          ) : null}
+          {(() => {
+            // Cada acordo define o seu (auditoria A-026/A-046/A-070/A-206, bloco 6). Pilotos (Anexo I.13): DDO < 90 min dentro da
+            // folga, IDO ≥ 90 min; WFLY = aceitar um serviço num dia de folga (Art. 62.º, n.º 2). Cabine (Cl. 68.ª/69.ª): DDO = o
+            // serviço passou a meia-noite para um dia de descanso (n.º 1); IDO = pernoita não programada numa folga (n.º 3); WFLY =
+            // aceitar trabalhar num dia de descanso escalado.
+            const pilotRule = typeof ae.dayOffKind === 'function';
+            const into = pilotRule && isClock(form.report) ? ae.minutesIntoNextDay({ report_time: form.report, block_on: lastOn || form.on || null, signOff: form.signOff || dhTailOn || null }, postFlightMin) : null;
+            const sug = into ? ae.dayOffKind(into) : null;
+            const txt = !form.dayOffWorked ? null : pilotRule
+              ? ({ ddo: l('Entrou na folga menos de 90 min (DDO, Anexo I.13) — soma ao mês.', 'Under 90 min into the day off (DDO, App. I.13) — adds to the month.'),
+                ido: l('Entrou na folga 90 min ou mais (IDO, Anexo I.13) — soma ao mês.', '90 min or more into the day off (IDO, App. I.13) — adds to the month.'),
+                wfly: l('Aceitaste um serviço num dia de folga (WFLY, Art. 62.º, n.º 2) — soma ao mês.', 'You accepted a duty on a day off (WFLY, Art. 62(2)) — adds to the month.') })[form.dayOffWorked]
+              : ({ ddo: l('O serviço passou a meia-noite e entrou num dia de descanso (DDO, Cl. 68.ª, n.º 1) — soma ao mês.', 'The duty ran past midnight into a rest day (DDO, Cl. 68(1)) — adds to the month.'),
+                ido: l('Pernoita não programada num dia de folga (IDO, Cl. 68.ª, n.º 3) — soma ao mês.', 'Unplanned night stop on a day off (IDO, Cl. 68(3)) — adds to the month.'),
+                wfly: l('Aceitaste trabalhar num dia de descanso escalado (WFLY, Cl. 69.ª) — soma ao mês.', 'You accepted work on a rostered rest day (WFLY, Cl. 69) — adds to the month.') })[form.dayOffWorked];
+            const sugTxt = sug ? l(`O serviço acaba ${into} min depois da meia-noite: se o dia seguinte era folga, é ${sug.toUpperCase()}.`, `The duty ends ${into} min after midnight: if the next day was off, it is ${sug.toUpperCase()}.`) : null;
+            return (txt || sugTxt) ? <Text style={s.routeHint}>{[txt, sugTxt].filter(Boolean).join(' ')}</Text> : null;
+          })()}
         </View>
       ) : null}
       {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {

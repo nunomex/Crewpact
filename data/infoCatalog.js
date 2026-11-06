@@ -25,15 +25,15 @@ export const FTL = { groups: [
 
 export const AE_PILOT = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
-    { v: '38,76', u: '€', name: 'Setor nominal · FO', art: 'Anexo I.2', f: 'A tua unidade de conta. SFO 51,50 · CPT 78,75 · SO 29,36.', ex: 'Quase tudo é múltiplo disto.', long: 'Setor nominal (FO)' },
-    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Art. 36', f: 'Base anual da categoria × fator do contrato, em 14 prestações (12 + férias + Natal).', long: 'Remuneração base' },
+    { v: '38,76', u: '€', name: 'Setor nominal · FO', art: 'Anexo I.2', f: 'A tua unidade de conta (valores de 2024): SFO 51,50 · CPT 78,75 · SO 29,36. Desde fevereiro de 2025, + IPC (2,3 %; mínimo 1 %, máximo 5 %).', ex: 'Quase tudo é múltiplo disto. Os exemplos abaixo são de 2024.', long: 'Setor nominal (FO)' },
+    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Art. 36', f: 'Base anual da categoria × fator do contrato, em 14 prestações: 12 meses + subsídio de férias (junho) + de Natal (novembro), cada um 1/14 mais a média das variáveis.', long: 'Remuneração base' },
   ] },
   { name: 'Por voo', items: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Art. 37', f: 'Σ setores voados × nominal. Bandas: curto 0,8 · médio 1,2 · longo 1,5 · extra 2,5.', ex: 'LIS-OPO-LIS: 2×0,8×38,76 = 62,02 €.' },
     { v: '2', u: 'NS', name: 'Paragem nocturna', art: 'Art. 39', f: '2 setores nominais por noite fora da base, entre voos.', ex: 'FO: 77,52 €.' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Art. 38', f: 'Pagamento fixo por dia de férias, além do salário.', ex: 'FO: 77,52 €/dia.' },
     { v: '1–2', u: 'NS', name: 'Serviço aeroporto (ADTY)', art: 'Art. 40', f: '1 setor (≤4h) ou 2 (>4h / se chamado a voar).' },
-    { v: 'tabela', u: '·', name: 'Posicionamento', art: 'Art. 44', f: '€ por categoria × banda de distância (Anexo I.18).', long: 'Posicionamento por ar/terra' },
+    { v: '×NS', u: '·', name: 'Posicionamento', art: 'Art. 44', f: 'Os setores do posicionamento pelas bandas do per diem, por distância de grande círculo. Não na formação inicial.', ex: 'FO LIS-CDG (médio): 1,2 × 38,76 = 46,51 €.', long: 'Posicionamento por ar/terra' },
   ] },
   { name: 'Terra & formação', items: [
     { v: '3', u: 'NS', name: 'Dever ad-hoc / formação', art: 'Art. 43', f: 'Deveres em terra + formação em terra/simulador (e-learning = 0).', ex: 'FO: 116,28 €.' },
@@ -43,16 +43,16 @@ export const AE_PILOT = { word: 'O teu AE', groups: [
   ] },
   { name: 'Perturbação', items: [
     { v: '60', u: '€', name: 'Alteração de escala (SNC)', art: 'Anexo I.12', f: 'Por evento de alteração de escala com curta antecedência.' },
-    { v: '0,4', u: '%', name: 'Trabalhar em folga (DDO)', art: 'Art. 54', f: '0,4% da base anual.', ex: 'FO: 191 €.' },
-    { v: '0,8', u: '%', name: 'Folga infringida (IDO)', art: 'Art. 54', f: '0,8% da base anual (o dobro do DDO).', ex: 'FO: 382 €.' },
-    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Art. 62', f: '1% da base anual.', ex: 'FO: 477,50 €.' },
+    { v: '0,4', u: '%', name: 'Entrou na folga < 90 min (DDO)', art: 'Art. 54', f: '0,4% da base anual — o serviço entrou menos de 90 min no dia de folga (Anexo I.13).', ex: 'FO: 191,00 €.' },
+    { v: '0,8', u: '%', name: 'Entrou na folga ≥ 90 min (IDO)', art: 'Art. 54', f: '0,8% da base anual — 90 min ou mais dentro do dia de folga (Anexo I.13).', ex: 'FO: 382,00 €.' },
+    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Art. 62', f: '1% da base anual — aceitaste um serviço num dia de folga.', ex: 'FO: 477,50 €.' },
   ] },
   { name: 'Subsídios', items: [
     { v: '60', u: '%', name: 'Complemento de doença', art: 'Anexo I.10', f: '60% da retribuição base diária, dias 1 a 3 de cada episódio.' },
-    { v: '1000', u: '€', name: 'Prestação de benefícios', art: 'Anexo I.8', f: 'Valor anual (FO). CPT 3.500 · SFO 2.000.' },
+    { v: '1000', u: '€', name: 'Prestação complementar anual', art: 'Anexo I.8', f: 'Paga em abril (Art. 45.º): FO e SO 1 000 · SFO 2 000 · CPT 3 500. Proporcional nos PPY, 14-14, 21-7 e 7-7.' },
     { v: '35', u: '%', name: 'Complemento de gravidez', art: 'Anexo I.11', f: '35% da remuneração mensal base.' },
-    { v: '5–15', u: '%', name: 'Prémio de permanência', art: 'Anexo I.9', f: '% da base anual por antiguidade (3.º → 10.º ano).' },
-    { v: '€/ano', u: '·', name: 'Retenção (sazonal)', art: 'Anexo I.15', f: 'Só em contratos sazonais (não estilo de vida).', long: 'Pagamento de retenção' },
+    { v: '5–15', u: '%', name: 'Prémio de permanência', art: 'Anexo I.9', f: 'No mês do aniversário de serviço (Art. 47.º): SFO 5% desde o 3.º · CPT 5% (2.º-4.º), 10% (5.º-9.º), 15% (10.º e seguintes).' },
+    { v: '€/ano', u: '·', name: 'Retenção (sazonal)', art: 'Anexo I.15', f: 'Em maio, só nos PPY que não são estilo de vida: CPT 12 000 · co-pilotos 6 000.', long: 'Pagamento de retenção' },
     { v: '~2 sem', u: '·', name: 'Bónus de performance', art: 'Art. 46', f: 'Alvo ~2 semanas de base · discricionário/estimativa.', long: 'Bónus anual' },
   ] },
 ] };
@@ -60,14 +60,14 @@ export const AE_PILOT = { word: 'O teu AE', groups: [
 export const AE_CABIN = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
     { v: '32,50', u: '€', name: 'Setor nominal · CM', art: 'Anexo I.2', f: 'A tua unidade. FA 21,00 · CMP 24,00 · FA1 13,45.', long: 'Setor nominal (CM)' },
-    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Cl. 50', f: 'Base anual × contrato, em 14 prestações.', long: 'Remuneração base' },
+    { v: '÷14', u: '·', name: 'Remuneração base', art: 'Cl. 50', f: 'Base anual × contrato, em 14 prestações: 12 meses + subsídio de férias (junho, mais a média do variável) + de Natal (novembro) (Cl. 51.ª).', long: 'Remuneração base' },
   ] },
   { name: 'Por voo', items: [
     { v: '×NS', u: '·', name: 'Per diem', art: 'Cl. 53', f: 'Σ setores voados × nominal. Bandas 0,8 · 1,2 · 1,5 · 2,5.' },
     { v: '46', u: '€', name: 'Pernoita', art: 'Cl. 56', f: 'Valor FIXO por noite fora da base (≠ pilotos, que é 2 NS).', ex: '46,00 €/noite.', long: 'Paragem nocturna' },
     { v: '2', u: 'NS', name: 'Dia de férias', art: 'Cl. 60', f: '2 setores nominais por dia de férias.', ex: 'CM: 65,00 €.' },
     { v: '1–2', u: 'NS', name: 'Assistência no aeroporto', art: 'Cl. 58', f: 'ADTY em setores médios, conforme chamado/duração.' },
-    { v: 'tabela', u: '·', name: 'Posicionamento', art: 'Anexo I.18', f: '€ por categoria × banda de distância.', long: 'Posicionamento' },
+    { v: 'tabela', u: '·', name: 'Posicionamento', art: 'Anexo I.18', f: 'Pela duração da viagem, curto · médio · longo: FA 16,00 · 24,00 · 30,00 — CM 26,00 · 39,00 · 48,75 — FA1 10,50 · 15,74 · 19,68. O acordo não diz onde acaba cada um: a app conta o curto e mostra até onde pode ir.', long: 'Posicionamento' },
   ] },
   { name: 'Terra', items: [
     { v: '3', u: 'NS', name: 'Trabalho em terra', art: 'Cl. 70', f: 'Deveres em terra sem per diem/posicionamento (rate único, sem OFC4/8).', ex: 'CM: 97,50 €.' },
@@ -75,14 +75,14 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
   { name: 'Perturbação', items: [
     { v: '20', u: '€', name: 'Alteração de escala (SNC)', art: 'Cl. 66', f: 'Por evento qualificável.' },
     { v: '1', u: 'NS', name: 'Irregularidade (RDP)', art: 'Cl. 67', f: 'Por evento (piso €18 FA / €23 CM).', long: 'Irregularidade de escala' },
-    { v: '115', u: '€', name: 'Trabalhar em folga (DDO)', art: 'Cl. 68', f: 'Valor fixo.' },
-    { v: '140', u: '€', name: 'Folga infringida (IDO)', art: 'Cl. 68', f: 'Valor fixo (mais que o DDO).' },
-    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Cl. 69', f: '1% da base anual.' },
+    { v: '115', u: '€', name: 'Trabalhar em folga (DDO)', art: 'Cl. 68', f: 'O serviço passou a meia-noite e entrou num dia de descanso.' },
+    { v: '140', u: '€', name: 'Folga infringida (IDO)', art: 'Cl. 68', f: 'Pernoita não programada num dia de folga.' },
+    { v: '1', u: '%', name: 'Voluntário em folga (WFLY)', art: 'Cl. 69', f: '1% da base anual — aceitaste trabalhar num dia de descanso escalado.' },
   ] },
   { name: 'Papéis', items: [
     { v: '16,27', u: '€', name: 'Upranker · por setor', art: 'Cl. 34', f: 'A desempenhar Chefe de Cabine, por setor voado.' },
     { v: '25', u: '€', name: 'CCLT · por dia', art: 'Cl. 35', f: 'Verificador de linha, por dia de treino.' },
-    { v: '4', u: 'NS', name: 'CTI-Flexi (instrutor)', art: 'Cl. 35', f: 'Instrutor, por dia (setores nominais de Chefe).' },
+    { v: '4', u: 'NS', name: 'CTI-Flexi (instrutor)', art: 'Cl. 35', f: 'Instrutor, por dia: 4 setores nominais do CHEFE de cabine, seja qual for a tua categoria (130,00 €).' },
   ] },
   { name: 'Subsídios', items: [
     { v: '5', u: '%', name: 'Abono para falhas', art: 'Cl. 54', f: '5% da base anual, 12 prestações.' },
@@ -97,11 +97,12 @@ export const AE_CABIN = { word: 'O teu AE', groups: [
 export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
   { name: 'Base', items: [
     { v: '8 125', u: '€', name: 'Vencimento base · CTE', art: 'Tabela A-3.1', f: 'VB MENSAL (valores-base 2023): CTE 8.125 · OP3C 6.500 · OP3 6.050 · OP2 5.200 · OP1 4.420. O AE atualiza +2% fixo +1% KPI por ano (estimado).', long: 'Vencimento base (2023 + regra anual)' },
-    { v: '2', u: '%', name: 'Vencimento de exercício', art: 'RRRGS', f: '2% do VB, em serviço ativo — soma-se sempre à base.' },
+    { v: '2', u: '%', name: 'Vencimento de exercício', art: 'RRRGS Cl. 4.ª', f: '2% do VB por cada anuidade técnica: a 1.ª no 1 de janeiro depois de 1 ano de casa, depois uma por ano, até 32 (com o exercício efetivo da função).' },
+    { v: '1,5', u: '%', name: 'Vencimento de senioridade', art: 'RRRGS Cl. 5.ª', f: '1,5% do VB por cada ano de companhia — todos os pilotos; vence no mês do aniversário.' },
   ] },
   { name: 'Por dia', items: [
-    { v: '202,50', u: '€', name: 'Per diem A · dia de voo', art: 'Tabela A-3.2', f: 'POR DIA de calendário com voo (não por setor): CTE 300 (WB/LC) · 270 (MC) — OP 225 · 202,50. WB cobra sempre WB.', long: 'Per diem A (OP · MC)' },
-    { v: '135', u: '€', name: 'Per diem B · estadia', art: 'Tabela A-3.2', f: 'Dia de estadia/pernoita fora: CTE 180 · OP 135 (+ hotel pago).' },
+    { v: '202,50', u: '€', name: 'Per diem A · dia de voo', art: 'Tabela A-3.2', f: 'POR DIA de calendário com voo, dead-head, assistência no aeroporto ou simulador como aluno: CTE 300 (WB/LC) · 270 (MC) — OP 225 · 202,50. WB cobra sempre WB; no NB, médio ou longo curso pela área do RUPT (Cl. 32.ª e 37.ª).', long: 'Per diem A (OP · MC)' },
+    { v: '135', u: '€', name: 'Per diem B · estadia', art: 'Tabela A-3.2', f: 'Dia de estadia fora, refrescamento (presencial ou e-learning) ou inspeção médica: CTE 180 · OP 135 (+ hotel pago).' },
     { v: '200', u: '€', name: 'Comando em cruzeiro', art: 'Cl. 11.ª', f: 'Por setor com mais de 3 h a exercer comando em cruzeiro.' },
   ] },
   { name: 'Horas', items: [
@@ -109,7 +110,7 @@ export const AE_TAP_PILOT = { word: 'O teu AE', groups: [
     { v: '6', u: '%', name: 'Hora de voo · Limite 2', art: 'Tabela A-3.3', f: '6% do VB por hora no segundo limite.' },
   ] },
   { name: 'Subsídios & férias', items: [
-    { v: '1,5', u: '%', name: 'Senioridade', art: 'RRRGS', f: '1,5% do VB — comandantes seniores.' },
+    { v: 'RB', u: '·', name: 'Subsídios de férias e Natal', art: 'RRRGS Cl. 7.ª/8.ª', f: 'Cada um = a remuneração base (VB + VE + VS). Natal em dezembro; férias no mês antes do 1.º período de férias.', long: 'Subsídios de férias e Natal' },
     { v: '42', u: 'dias', name: 'Férias', art: 'RUPT Cl. 45.ª', f: '42 dias de CALENDÁRIO por ano civil (piso de 38 mesmo com faltas).' },
   ] },
 ] };
@@ -121,16 +122,17 @@ export const AE_TAP_CABIN = { word: 'O teu AE', groups: [
   { name: 'Por dia', items: [
     { v: '150', u: '€', name: 'Ajuda de custo · dia de voo (AC1)', art: 'Cl. 7.ª', f: 'POR DIA de calendário com serviço de voo/DHC (não por setor).' },
     { v: '80', u: '€', name: 'Estadia / pernoita (AC2)', art: 'Cl. 7.ª', f: 'Por dia de estadia fora ou cancelamento tardio (+ hotel pago).' },
-    { v: '40', u: '€', name: 'Complemento extraordinário', art: 'Cl. 8.ª', f: 'Por dia de assistência.' },
+    { v: '40', u: '€', name: 'Complemento extraordinário', art: 'Cl. 8.ª', f: 'Por dia sem voo: assistência em casa, formação presencial, deslocação às instalações = 40 · assistência no aeroporto não acionada = 2 × (80).' },
   ] },
   { name: 'Horas & funções', items: [
     { v: '2,5', u: '%', name: 'Vencimento horário', art: 'Cl. 14.ª', f: '2,5% do VB por hora acima dos plafonds.' },
-    { v: '8', u: '%', name: 'Adicional de chefia', art: 'Cl. 11.ª', f: '+8% das ajudas de custo do mês (supervisores/chefia).' },
+    { v: '8', u: '%', name: 'Adicional de chefia', art: 'Cl. 11.ª', f: '8% das AC1 + AC2 do mês, pago no mês seguinte (supervisor de cabine).' },
     { v: '1', u: '%', name: 'Senioridade', art: 'Cl. 5.ª', f: '1% do VB por cada anuidade.' },
   ] },
   { name: 'Férias & subsídios', items: [
     { v: '42', u: 'dias', name: 'Férias', art: 'Cl. 23.ª', f: '42 dias de CALENDÁRIO por ano (já incluem 12 de compensação de feriados). 1.º ano: 3 dias/mês, máx. 26.' },
-    { v: 'VB+VS', u: '·', name: 'Subsídios férias/Natal', art: 'Cl. 17.ª/18.ª', f: 'Cada um = vencimento base + senioridade.', long: 'Subsídios de férias e Natal' },
+    { v: 'VB+VS', u: '·', name: 'Subsídios férias/Natal', art: 'Cl. 17.ª/18.ª', f: 'Natal = VB + VS, em dezembro · férias = VB + VS + 675 €, no mês antes das férias.', long: 'Subsídios de férias e Natal' },
+    { v: '83,3', u: '%', name: 'Tempo parcial', art: 'RTTP Cl. 7.ª', f: 'Vencimento e subsídios: 10 meses 83,3% · 9 meses 75% · 8 meses 66,7% · 7 meses 58,3% · 6 meses 50%.' },
   ] },
 ] };
 
@@ -152,7 +154,10 @@ export function domainsFor(P, { ae = null, crewCategory = null } = {}) {
   }
   if (aeId === 'easyjet-spac') {
     const cat = (ae.NOMINAL_SECTOR && ae.NOMINAL_SECTOR[crewCategory] != null) ? crewCategory : 'FO';
-    return [ftl, card('EASYJET · SPAC', eur(ae.NOMINAL_SECTOR[cat]), `setor nominal · ${cat}`, AE_PILOT), fontes('EUR-Lex · EASA · DRE')];
+    // O setor nominal EM VIGOR (com o IPC desde fevereiro de 2025) — o que o motor usa (auditoria A-049, bloco 6).
+    const d = new Date(); const ymNow = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const idx = ae.indexFactor ? ae.indexFactor(ymNow) : 1;
+    return [ftl, card('EASYJET · SPAC', eur(+(ae.NOMINAL_SECTOR[cat] * idx).toFixed(2)), `setor nominal · ${cat}${idx > 1 ? ' · com o IPC' : ''}`, AE_PILOT), fontes('EUR-Lex · EASA · DRE')];
   }
   if (aeId === 'tap-spac') {
     const row = crewCategory === 'CTE' ? 'CTE' : 'OP';

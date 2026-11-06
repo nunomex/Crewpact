@@ -12,7 +12,7 @@
 // de haver "C/C", o supervisor passa a S/C 1..S/C 7. Per-diem e pernoita = "ajudas de
 // custo complementares" POR DIA DE CALENDÁRIO (cl. 7.ª), não por setor.
 
-import { pickTable } from './tables';
+import { pickTable, ymParts, ymShift, vacationPayYm, admissionShare, beforeStart } from './tables';
 
 export const AE_ID = 'tap-snpvac';
 export const AE_LABEL = 'TAP · SNPVAC (cabine)';
@@ -59,11 +59,14 @@ export const AE_VALID_UNTIL = '2026-12-31';
 export const isAgreementExpired = (ref = new Date()) =>
   +new Date(ref) > +new Date(`${AE_VALID_UNTIL}T23:59:59`);
 
-// Regime full-time (sem tabela de fração part-time publicada no RRRGS).
-export const CONTRACTS = ['12/12'];
-export const CONTRACT_FACTOR = { '12/12': 1 };
-export const CONTRACT_LABEL = { '12/12': 'Tempo inteiro' };
-export const CONTRACT_LABEL_EN = { '12/12': 'Full-time' };
+// Regimes: tempo inteiro e o tempo parcial do RTTP (BTE 7/2024, PDF p. 55 | BTE p. 325), Cl. 7.ª: "O valor do vencimento fixo
+// mensal, do subsídio de férias e do subsídio de Natal (...) será reduzido de forma proporcional (...): a) 10 meses por ano -
+// 83,3 %; b) 9 meses por ano - 75 %; c) 8 meses por ano - 66,7 %; d) 7 meses por ano - 58,3 %; e, e) 6 meses por ano - 50 %"
+// (auditoria A-096). As ajudas de custo pagam-se pelos dias de serviço, como a tempo inteiro.
+export const CONTRACTS = ['12/12', 'TP 10', 'TP 9', 'TP 8', 'TP 7', 'TP 6'];
+export const CONTRACT_FACTOR = { '12/12': 1, 'TP 10': 0.833, 'TP 9': 0.75, 'TP 8': 0.667, 'TP 7': 0.583, 'TP 6': 0.5 };
+export const CONTRACT_LABEL = { '12/12': 'Tempo inteiro', 'TP 10': 'Tempo parcial · 10 meses', 'TP 9': 'Tempo parcial · 9 meses', 'TP 8': 'Tempo parcial · 8 meses', 'TP 7': 'Tempo parcial · 7 meses', 'TP 6': 'Tempo parcial · 6 meses' };
+export const CONTRACT_LABEL_EN = { '12/12': 'Full-time', 'TP 10': 'Part-time · 10 months', 'TP 9': 'Part-time · 9 months', 'TP 8': 'Part-time · 8 months', 'TP 7': 'Part-time · 7 months', 'TP 6': 'Part-time · 6 months' };
 export const contractFactor = (c) => CONTRACT_FACTOR[c] != null ? CONTRACT_FACTOR[c] : 1;
 export const contractLabel = (c, lang = 'pt') =>
   (lang === 'en' ? CONTRACT_LABEL_EN : CONTRACT_LABEL)[c] || c || '';
@@ -101,11 +104,43 @@ const withT = (ym, fn) => { const T = tableAt(ym); return T ? fn(T) : null; };
 
 const vbOf = (cat, index = 1, T = tableAt()) => (T && T.VB[cat] != null ? T.VB[cat] * index : null);
 
-// Remuneração base mensal (€) = VB × fração do contrato. VB já é MENSAL (cl. 3.ª); `index` aceite por paridade (default 1).
+// VENCIMENTO DE SENIORIDADE (auditoria L4: A-093/A-190, bloco 6). Cl. 3.ª, n.º 1: "O vencimento fixo mensal é constituído
+// pelo vencimento base (VB) e pelo vencimento de senioridade (VS)". Cl. 5.ª, n.º 1: a) "Cada anuidade vence no primeiro dia do
+// mês em que é completado cada ano de antiguidade ao serviço"; b) "O valor de cada anuidade é o correspondente à categoria e
+// escalão possuídos na data do vencimento, constante da tabela salarial em vigor a cada momento"; n.º 2: "Cada anuidade
+// corresponderá a 1 % do vencimento base em vigor a cada momento". A antiguidade sai da data de entrada (`serviceStart`); a
+// categoria de cada aniversário, da linha do tempo do perfil (`history`: [{category, from}]; antes do 1.º período, a 1.ª
+// categoria). Sem data de entrada → `unknown` (o vencimento fica só o VB e a app diz que falta). Licenças sem retribuição (n.º 1,
+// c)) a app não sabe.
+const catAt = (history, ym, fallback) => {
+  const h = Array.isArray(history) ? history.filter((x) => x && x.category && x.from).slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) : [];
+  if (!h.length) return fallback;
+  let pick = h[0];
+  for (const x of h) if (String(x.from).slice(0, 7) <= ym) pick = x;
+  return pick.category;
+};
+// A "antiguidade ao serviço" (n.º 1, a)) é a da Cl. 14.ª, n.º 3 do clausulado geral: "contada a partir da data do primeiro voo de
+// largada para a profissão" (revisão independente do bloco 6). Com `largada` conta dela; senão da data de entrada e diz-o
+// (`fromEntry`): as anuidades podem vencer uns meses depois.
+export const seniority = (cat, { ym, serviceStart = null, largada = null, history = null, index = 1 } = {}) => {
+  const T = tableAt(ym), p = ymParts(ym), s = ymParts(largada || serviceStart);
+  if (!T || !p || !s) return { vs: 0, anuidades: 0, unknown: true, fromEntry: false };
+  let sum = 0, n = 0, unknown = false;
+  for (let k = 1; (s.y + k) * 12 + s.m <= p.y * 12 + p.m; k++) {
+    const c = catAt(history, `${s.y + k}-${String(s.m).padStart(2, '0')}`, cat);
+    const vb = vbOf(c, index, T);
+    if (vb == null) { unknown = true; continue; }
+    sum += vb; n++;
+  }
+  return { vs: r2(sum / 100), anuidades: n, unknown, fromEntry: !largada };
+};
+// Vencimento fixo mensal (€) = (VB + VS) × fração do contrato. VB já é MENSAL (cl. 3.ª); `index` aceite por paridade.
 // `ym` data o mês (tabela em vigor); sem ele = tabela atual; null sem tabela (ou sem o escalão nesse ano).
-export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym, serviceStart = null, largada = null, history = null } = {}) => {
   const vb = vbOf(cat, index, tableAt(ym));
-  return vb == null ? null : r2(vb * contractFactor(contract));
+  if (vb == null) return null;
+  const sv = (serviceStart || largada) ? seniority(cat, { ym, serviceStart, largada, history, index }) : null;
+  return r2((vb + (sv ? sv.vs : 0)) * contractFactor(contract));
 };
 
 // AC1 (cl. 7.ª, n.º 1) de UM DIA DE CALENDÁRIO com serviço de voo (a começar ou em curso, em funções ou DHC). Conta-se por
@@ -123,7 +158,9 @@ export const nightStop = (cat, _index = 1, ym) => withT(ym, (T) => acOf(T.AC2, c
 // ANO DE ADMISSÃO com regra PRÓPRIA (Cl. 22.ª/2, mais generosa que o CT): 3 dias de
 // férias por cada mês de duração do contrato, até ao máximo de 26 (gozo após 6 meses).
 export const VAC_UNIT = 'calendario';
-export const vacationDays = () => 42;
+// Tempo parcial (RTTP Cl. 5.ª, n.º 2, quadro): 10 meses 35 · 9 meses 32 · 8 meses 28 · 7 meses 25 · 6 meses 21.
+export const VAC_BY_CONTRACT = { 'TP 10': 35, 'TP 9': 32, 'TP 8': 28, 'TP 7': 25, 'TP 6': 21 };
+export const vacationDays = ({ contract = '12/12' } = {}) => (VAC_BY_CONTRACT[contract] != null ? VAC_BY_CONTRACT[contract] : 42);
 export const firstYearVacationDays = (serviceStart, _ref = new Date()) => {
   const m = /^(\d{4})-(\d{2})/.exec(String(serviceStart || ''));
   if (!m) return 26;
@@ -135,17 +172,67 @@ export const vh = (cat, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat
 export const vs = (cat, years = 0, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat, index, T); return vb == null ? null : r2(T.VS_PCT * Math.max(0, years) * vb); });  // senioridade — €/mês
 export const extraord = (ym, cat) => withT(ym, (T) => acOf(T.EXTRAORD, cat));                          // complemento extraordinário — €/dia (cl. 8.ª)
 
+// ── SUBSÍDIOS (auditoria L1: A-095/A-181, bloco 6) ──
+// Natal (Cl. 17.ª): "igual à soma do vencimento base e vencimento de senioridade, a pagar até 15 de dezembro"; no ano de
+// admissão "na proporção do tempo de trabalho prestado". Férias (Cl. 18.ª): "um mês de vencimento fixo mensal" (n.º 2) "acrescido
+// de 675,00 €" (n.º 3), "pago com o vencimento do mês anterior ao do respetivo gozo" (n.º 4) → o mês antes do 1.º dia de férias
+// registado nesse ano; sem férias registadas o mês não se sabe (fica fora dos meses; o ano diz-o — `pendingAnnual`). 2024 (Cl.
+// 39.ª, n.º 2-3): os 675 € "de forma proporcional aos meses remanescentes do ano de 2024" depois da entrada em vigor (1-mar-2024)
+// → 10/12. O tempo parcial reduz os dois subsídios (RTTP Cl. 7.ª).
+const ENTRY_INTO_FORCE = '2024-03';
+const feriasEur = (cat, { year, payYm, contract, index, serviceStart, largada, history }) => {
+  const b = monthlyBase(cat, { contract: '12/12', index, ym: payYm, serviceStart, largada, history });
+  if (b == null) return null;
+  let extra = 675;
+  if (year < 2024 || (`${year}-12` < ENTRY_INTO_FORCE)) extra = 0;
+  else if (year === 2024) extra = 675 * 10 / 12;
+  return r2((b + extra) * contractFactor(contract));
+};
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
+  const p = ymParts(ym);
+  if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
+  const out = [];
+  if (p.m === 12) {
+    const b = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
+    if (b != null) out.push({ id: 'natal', eur: r2(b * admissionShare(serviceStart, p.y)), cite: 'Cl. 17.ª' });
+  }
+  for (const year of [p.y, p.y + 1]) {
+    if (vacationPayYm(events, year) !== ym) continue;
+    const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
+    if (v != null) out.push({ id: 'ferias', eur: v, cite: year === 2024 ? 'Cl. 18.ª e Cl. 39.ª' : 'Cl. 18.ª' });
+  }
+  return out;
+};
+// O subsídio de férias de um ano sem férias registadas: o valor, sem mês (o ano mostra-o à parte).
+export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
+  if (vacationPayYm(events, year)) return [];
+  const ym = `${year}-12`;
+  if (!hasTableFor(cat, ym)) return [];
+  const v = feriasEur(cat, { year, payYm: ym, contract, index, serviceStart, largada, history });
+  return v == null ? [] : [{ id: 'ferias', eur: v, month: null, cite: 'Cl. 18.ª' }];
+};
+
+// Complemento extraordinário (Cl. 8.ª) por dia de calendário sem ajuda de custo maior: a) assistência não acionada no aeroporto e
+// c) a anulada a menos de 1 h 30 = "duas vezes o complemento" (n.º 2); b) assistência em casa, d) deslocação às instalações por
+// ordem da empresa, g) medicina do trabalho, h) formação presencial = uma vez. "Prevalecerá o pagamento do valor superior" (n.º 3).
+export const EXTRAORD_FROM_ROSTER = true;
+// Adicional de chefia (Cl. 11.ª): 8 % das AC1 + AC2 do mês, "atribuído no mês seguinte", ao supervisor de cabine (e ao chefe de
+// cabine até 31-12-2025).
+export const isChefia = (cat) => /^SC/.test(String(cat || ''));
+
 // Estimativa mensal de apoio (€): base + AC1 dos voos + AC2 das pernoitas.
-export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
+export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym, serviceStart = null, largada = null, history = null } = {}) => {
   if (!hasTableFor(category, ym)) return null;   // sem tabela (ou sem o escalão) nesse mês → o mês não dá €
-  const base = monthlyBase(category, { contract, index, ym });
+  const base = monthlyBase(category, { contract, index, ym, serviceStart, largada, history });
   const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, undefined, ym), 0));
   const nightTotal = r2(nightStops * nightStop(category, 1, ym));
   const extras = 0;   // sem prestação por setor nominal
   const variable = r2(perDiemTotal + nightTotal + extras);
+  const sv = seniority(category, { ym, serviceStart, largada, history, index });   // sem largada: conta da entrada (fromEntry)
   return {
     category, contract, base, perDiem: perDiemTotal, nightStops: nightTotal, extras,
     variable, total: r2(base + variable),
+    seniority: { vs: sv.vs, anuidades: sv.anuidades, unknown: !!sv.unknown, fromEntry: !!sv.fromEntry },
   };
 };
 
@@ -155,11 +242,11 @@ export const CALCS = [
   { id: 'perdiem',  group: 'Por voo',   linked: true,  label: 'Ajuda de custo (AC1)',      sub: '150 €/dia de voo (2026, cl. 7.ª)' },
   { id: 'night',    group: 'Por voo',   linked: true,  label: 'Pernoita / estadia (AC2)',  sub: '80 €/dia (2026, cl. 7.ª)' },
   { id: 'vh',       group: 'Por voo',   linked: false, label: 'Vencimento horário',        sub: '2,5% do VB/hora acima do plafond (cl. 14.ª)' },
-  { id: 'extraord', group: 'Subsídios', linked: false, label: 'Complemento extraordinário', sub: '40 €/dia · assistências (2026, cl. 8.ª)' },
-  { id: 'vs',       group: 'Subsídios', linked: false, label: 'Vencimento de senioridade', sub: '1%/ano de antiguidade (cl. 5.ª)' },
-  { id: 'natal',    group: 'Subsídios', linked: false, label: 'Subsídio de Natal',         sub: 'VB + VS (cl. 17.ª)' },
-  { id: 'ferias',   group: 'Subsídios', linked: false, label: 'Subsídio de férias',        sub: 'VB + VS (cl. 18.ª)' },
-  { id: 'chefia',   group: 'Funções',   linked: false, label: 'Adicional de chefia',       sub: '+8% das ajudas de custo do mês (cl. 11.ª)', when: ({ category }) => /^SC/.test(category) },
+  { id: 'extraord', group: 'Subsídios', linked: true,  label: 'Complemento extraordinário', sub: '40 €/dia · assistência em casa, formação, instalações; 2× assistência no aeroporto (cl. 8.ª)' },
+  { id: 'vs',       group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1% do VB por anuidade (cl. 5.ª)' },
+  { id: 'natal',    group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'VB + VS, em dezembro (cl. 17.ª)' },
+  { id: 'ferias',   group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'VB + VS + 675 €, no mês antes das férias (cl. 18.ª)' },
+  { id: 'chefia',   group: 'Funções',   linked: true,  label: 'Adicional de chefia',       sub: '8% das AC1 + AC2 do mês, pago no seguinte (cl. 11.ª)', when: ({ category }) => /^SC/.test(category) },
 ];
 
 export const catalogFor = (category, contract = '12/12', opts = {}) =>
@@ -177,8 +264,8 @@ export const catalogValue = (id, { category = 'CAB3', contract = '12/12', index 
     case 'vh':       return vh(category, index);
     case 'extraord': return extraord(undefined, category);
     case 'vs':       return vs(category, years, index);
-    case 'natal':    return r2(monthlyBase(category, { contract, index }) + vs(category, years, index));   // VB + VS
-    case 'ferias':   return r2(monthlyBase(category, { contract, index }) + vs(category, years, index));   // VB + VS
+    case 'natal':    return r2((monthlyBase(category, { index }) + vs(category, years, index)) * contractFactor(contract));          // VB + VS (Cl. 17.ª)
+    case 'ferias':   return r2((monthlyBase(category, { index }) + vs(category, years, index) + 675) * contractFactor(contract));    // VB + VS + 675 € (Cl. 18.ª)
     case 'chefia':   return null;                       // depende do total de AC do mês
     default:         return null;
   }

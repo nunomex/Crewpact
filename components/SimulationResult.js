@@ -9,7 +9,7 @@ import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { simulateDuty, issueText } from '../data/simulation';
-import { sectorDistancesNM } from '../data/perdiem';
+import { serviceMoney } from '../data/perdiem';
 import { validityLabel, refOfDay, validitySummary } from '../data/validities';
 import { AppContext } from '../data/appContext';
 import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
@@ -44,12 +44,15 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const replacing = !!(duty.duty_date && duties && duties[duty.duty_date] && !duties[duty.duty_date].deleted);
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
+  // A MESMA função e o MESMO índice do total do mês (serviceMoney): per diem, posicionamento (Art. 44.º · Anexo I.18 — A-259) e
+  // pernoita; TAP por dia (bloco 5/6).
   let perDiem = null, nsEur = null;
-  if (ae && cat && isFlight && duty.route) {
-    const dists = sectorDistancesNM(duty);
-    if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(cat, dists, 1, crewAt(duty.duty_date).fleet || crewFleet);
+  if (ae && cat) {
+    const mny = serviceMoney(ae, cat, duty, { date: duty.duty_date, fleet: crewAt(duty.duty_date).fleet || crewFleet });
+    const pd = (mny.perDiem || 0) + (mny.positioning || 0);
+    if (mny.perDiem != null || mny.positioning != null) perDiem = +pd.toFixed(2);
+    nsEur = mny.nightStop;
   }
-  if (duty.nightStop && ae && ae.nightStop && cat && !ae.PER_DIEM_BY_DAY) nsEur = ae.nightStop(cat, 1, duty.duty_date);   // TAP: estadia só nos dias sem voo (bloco 5)
 
   // ── helpers ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dd] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dd}` : `${g},${dd} €`; };

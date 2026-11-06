@@ -6,7 +6,7 @@
 // Módulo PURO (sem React Native) — testável por golden. Estimativa de apoio;
 // NÃO substitui o processamento salarial oficial. Categorias: FA1, FA, CMP, CM.
 
-import { pickTable } from './tables';
+import { pickTable, ymParts, admissionShare, beforeStart } from './tables';
 
 export const AE_ID = 'easyjet-snpvac';
 export const AE_LABEL = 'Easyjet · SNPVAC (cabine)';
@@ -64,13 +64,19 @@ export const CCLT_DAY = 25;              // Anexo I.16 — Cabin Crew Line Train
 export const CTI_FLEXI_SECTORS = 4;      // Anexo I.16 — CTI-Flexi (4 setores nominais, cat. Chefe)
 export const PERF_BONUS_WEEKS = 2;       // Cl. 63 — bónus anual (alvo): 2 semanas de base (1 semana = base anual/52)
 
-// Anexo I.18 — Posicionamento (€), por categoria × banda de distância (Nov-2025).
+// Anexo I.18 — Posicionamento (€): "Os pagamentos realizados por posicionamento variam em função da duração da viagem"
+// (Cl. 57.ª, n.º 1). A tabela tem 3 linhas e 3 colunas (BTE 8/2024, PDF p. 33 | BTE p. 315), sem data própria: Tripulante de
+// cabine 1.º ano 10,50 / 15,74 / 19,68 · Tripulante de cabine 16,00 / 24,00 / 30,00 · Chefe de cabine 26,00 / 39,00 / 48,75
+// (auditoria A-004/A-022: o módulo tinha valores que não estão no anexo, uma linha CMP e uma coluna 'extra'). O AE não diz onde
+// acaba o curto nem onde começa o longo (duração em horas): o certo é o CURTO (o mínimo de qualquer posicionamento) e diz-se o
+// intervalo até ao LONGO. O chefe de cabine em período experimental (CMP) é chefe de cabine (Cl. 33.ª, n.º 7) → a linha do
+// chefe (leitura da app; pacote do advogado).
 export const POSITIONING = {
-  CM:  { curto: 26.00, medio: 39.00, longo: 48.75, extra: 81.25 },
-  CMP: { curto: 19.20, medio: 28.80, longo: 36.00, extra: 60.00 },
-  FA:  { curto: 16.80, medio: 25.20, longo: 31.50, extra: 52.50 },
-  FA1: { curto: 10.76, medio: 16.14, longo: 20.18, extra: 33.63 },
+  CM:  { curto: 26.00, medio: 39.00, longo: 48.75 },
+  FA:  { curto: 16.00, medio: 24.00, longo: 30.00 },
+  FA1: { curto: 10.50, medio: 15.74, longo: 19.68 },
 };
+const POS_ROW = { CM: 'CM', CMP: 'CM', FA: 'FA', FA1: 'FA1' };
 
 // Cl. 53.ª — per diem por setor, por distância de grande círculo (NM). MESMAS bandas
 // dos pilotos: curto / médio / longo / extra-longo.
@@ -240,8 +246,13 @@ export const sickDay      = (cat, ym, contract = '12/12', fullShare) => {
   return b == null || !T ? null : r2(T.SICK_PCT * b / 30);
 };
 export const language     = (n = 1, ym) => withT(ym, (T) => (n >= 1 ? r2(T.LANGUAGE_3RD + (n - 1) * T.LANGUAGE_EXTRA) : 0));   // Cl. 65.ª — €/ano
-export const positioning  = (cat, band = 'medio', ym) => withT(ym, (T) => { const t = T.POSITIONING[cat]; return t && t[band] != null ? t[band] : null; });  // Anexo I.18
-export const ctiFlexi     = (cat, ym) => withT(ym, (T) => r2(T.CTI_FLEXI_SECTORS * nomOf(cat, T)));              // Cl. 35 — €/dia (cat. Chefe)
+export const positioning  = (cat, band = 'curto', ym) => withT(ym, (T) => { const t = T.POSITIONING[POS_ROW[cat]]; return t && t[band] != null ? t[band] : null; });  // Anexo I.18 — €/posicionamento
+// O posicionamento da cabine paga-se pela tabela do Anexo I.18 (não pelos setores): `positioningRange` = { min (curto), max (longo) }.
+export const POSITIONING_BY_TABLE = true;
+export const positioningRange = (cat, ym) => { const min = positioning(cat, 'curto', ym), max = positioning(cat, 'longo', ym); return min == null ? null : { min, max }; };
+// Anexo I.16: "4 (quatro) setores nominais devidos para a categoria de chefe de cabine" — o setor do CHEFE, seja qual for a
+// categoria de quem dá a formação (auditoria A-001/A-015).
+export const ctiFlexi     = (_cat, ym) => withT(ym, (T) => r2(T.CTI_FLEXI_SECTORS * nomOf('CM', T)));             // €/dia
 export const upranker     = (ym) => withT(ym, (T) => T.UPRANKER_SECTOR);                      // Cl. 34 — €/setor (a desempenhar Chefe)
 export const cclt         = (ym) => withT(ym, (T) => T.CCLT_DAY);                             // Cl. 35 — €/dia de treino (Verificador de Linha)
 export const perfBonus    = (cat, { contract = '12/12', index = 1, ym } = {}) => withT(ym, (T) => {    // Cl. 63 — bónus anual (alvo = 2 semanas)
@@ -288,7 +299,7 @@ export const catalogValue = (id, { category = 'FA', contract = '12/12', index = 
     case 'base':     return monthlyBase(category, { contract, index });
     case 'perdiem':  return null;                       // depende da rota do mês
     case 'night':    return NIGHT_STOP_EUR;
-    case 'pos':      return positioning(category, 'medio');
+    case 'pos':      return positioning(category, 'curto');
     case 'adty':     return airportStandby(category);
     case 'cash':     return cashHandling(category);
     case 'holiday':  return holidayDay(category);
@@ -315,7 +326,7 @@ export const CALCS = [
   { id: 'base',     group: 'Base',        linked: true,  label: 'Remuneração base',         sub: 'categoria × contrato ÷ 14' },
   { id: 'perdiem',  group: 'Por voo',     linked: true,  label: 'Per diem',                 sub: 'Σ setores × nominal (Cl. 53.ª)' },
   { id: 'night',    group: 'Por voo',     linked: true,  label: 'Pernoita',                 sub: '€46 fixos / noite (Cl. 56.ª)' },
-  { id: 'pos',      group: 'Por voo',     linked: false, label: 'Posicionamento',           sub: 'tabela cat × distância (Anexo 18)' },
+  { id: 'pos',      group: 'Por voo',     linked: true,  label: 'Posicionamento',           sub: 'pela duração da viagem: curto a longo (Anexo I.18)' },
   { id: 'adty',     group: 'Por voo',     linked: false, label: 'Assistência no aeroporto', sub: 'setor médio (Cl. 58.ª)' },
   { id: 'cash',     group: 'Subsídios',   linked: true,  label: 'Abono para falhas',        sub: '5% base ÷ 12 (Cl. 54.ª)' },
   { id: 'holiday',  group: 'Subsídios',   linked: false, label: 'Dia de férias',            sub: '2 setores nominais (Cl. 60.ª)' },
@@ -358,6 +369,34 @@ export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [
     variable, total: +(base + cash + variable).toFixed(2),
     baseRange: baseRange(category, { contract, index, ym, fullShare }),   // 9/3 e sazonais sem datas: o mês é incerto
   };
+};
+
+// ── SUBSÍDIOS DE FÉRIAS E DE NATAL (auditoria L1: A-007/A-021/A-181, bloco 6) ──
+// Cl. 50.ª, n.º 1: 14 prestações, "2 (duas) correspondem aos subsídios de férias e de Natal". Cl. 51.ª: pagos "em junho e
+// novembro, respetivamente, e (...) proporcionalmente nos anos de contratação e cessação" (n.º 1); férias = "um mês de salário
+// base (1/14 da remuneração base anual) acrescido de uma média do pagamento variável do tripulante («CPV/crew variable pay») e
+// 1/14 do subsídio de idioma" (n.º 2); Natal = "exclusivamente a um mês de retribuição base (1/14 da remuneração base anual)
+// acrescido de 1/14 do subsídio de idioma quando aplicável" (n.º 3); no ano da contratação, as férias "proporcional e pago em
+// junho. Os restantes meses serão pagos no mês de janeiro seguinte" (n.º 4). Intermitente 9/3: "com base na média dos valores
+// de retribuição base recebidos nos últimos 12 (doze) meses" (Cl. 48.ª, n.º 9) → a média do ano (o fator do contrato).
+// A parte CERTA é o 1/14 da base. A média do variável (o acordo não diz que rubricas entram no CPV) e o 1/14 do subsídio de
+// idioma (a app não sabe as línguas) ficam de fora e o item diz isso (`incomplete`) — nunca um número inventado.
+const SUB_NOTE = {
+  ferias: { pt: 'Sem a média do pagamento variável (o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },
+  natal: { pt: 'Sem o 1/14 do subsídio de idioma, se o tiveres.', en: 'Without 1/14 of the language allowance, if you get it.' },
+};
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null } = {}) => {
+  const p = ymParts(ym);
+  if (!p || beforeStart(serviceStart, ym)) return [];
+  const sub = (refYm) => { const a = annualBase(cat, tableAt(refYm), refYm); return a == null ? null : (a * contractFactor(contract) * index) / SALARY_INSTALMENTS; };
+  const out = [];
+  const push = (id, v, share) => { if (v != null && share > 0) out.push({ id, eur: r2(v * share), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª' }); };
+  const s = ymParts(serviceStart);
+  if (p.m === 11) push('natal', sub(ym), admissionShare(serviceStart, p.y, 12));
+  if (p.m === 6) push('ferias', sub(ym), (s && s.y === p.y) ? Math.max(0, 7 - s.m) / 12 : 1);
+  // Janeiro: "os restantes meses" do ano da contratação (julho a dezembro, ou desde a entrada se foi depois de junho).
+  if (p.m === 1 && s && s.y === p.y - 1) push('ferias', sub(`${p.y - 1}-12`), (13 - Math.max(7, s.m)) / 12);
+  return out;
 };
 
 // ── "Extras do mês" — contadores por evento/dia que NÃO se inferem da rota ──

@@ -21,3 +21,32 @@ export const pickTable = (versions, ym) => {
   for (const v of versions) { if (v.from <= key) cur = v; }
   return cur;
 };
+
+// ── Ajudas partilhadas pelos subsídios e prestações anuais (auditoria, bloco 6) ──
+// 'AAAA-MM…' → { y, m } (ou null).
+export const ymParts = (x) => { const mm = /^(\d{4})-(\d{2})/.exec(String(x || '')); return mm ? { y: +mm[1], m: +mm[2] } : null; };
+// Mês n meses depois/antes de 'AAAA-MM'.
+export const ymShift = (ym, n) => {
+  const p = ymParts(ym); if (!p) return null;
+  const t = p.y * 12 + (p.m - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+};
+// O mês ANTES do primeiro dia de férias (evento `vacDays`) do ano `year` — o mês em que a TAP paga o subsídio de férias
+// (pilotos Cl. 7.ª, n.º 3 · cabine Cl. 18.ª, n.º 4: "com o vencimento do mês anterior ao do respetivo gozo"). null sem férias.
+export const vacationPayYm = (events, year) => {
+  const first = (events || []).filter((e) => e && e.type === 'vacDays' && String(e.date).slice(0, 4) === String(year))
+    .map((e) => String(e.date)).sort()[0];
+  return first ? ymShift(first.slice(0, 7), -1) : null;
+};
+// Fração do ano de ADMISSÃO paga num subsídio "proporcional nos anos de contratação" (meses desde o da entrada, inclusive,
+// até `toMonth`): a data de entrada guarda-se ao mês (dia 1), por isso o mês da entrada conta inteiro.
+export const admissionShare = (serviceStart, year, toMonth = 12) => {
+  const s = ymParts(serviceStart);
+  if (!s || s.y !== year) return 1;
+  return Math.max(0, toMonth - s.m + 1) / 12;
+};
+// Antes da entrada na companhia? (o mês `ym` é anterior ao da data de entrada)
+export const beforeStart = (serviceStart, ym) => {
+  const s = ymParts(serviceStart), p = ymParts(ym);
+  return !!(s && p && (p.y * 12 + p.m) < (s.y * 12 + s.m));
+};

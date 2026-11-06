@@ -16,7 +16,7 @@
 // (default = (1.03)^(ano-2023), EDITÁVEL, sempre marcado "estimado"). Per-diem (A-3.2) e
 // comando em cruzeiro NÃO são indexados (tabelas inalteradas) → golden e exatos.
 
-import { pickTable } from './tables';
+import { pickTable, ymParts, vacationPayYm, admissionShare, beforeStart } from './tables';
 
 export const AE_ID = 'tap-spac';
 export const AE_LABEL = 'TAP · SPAC (pilotos)';
@@ -36,8 +36,9 @@ export const categoryLabel = (id, lang = 'pt') =>
 
 // Tabela A-3.1 — Vencimento de categoria (VB), EUR/mês, valores-BASE 2023 (golden, BTE).
 export const VB_2023 = { CTE: 8125, OP3C: 6500, OP3: 6050, OP2: 5200, OP1: 4420 };
-export const VE_PCT = 0.02;    // Vencimento de exercício = 2% do VB (sempre, serviço ativo)
-export const VS_PCT = 0.015;   // Vencimento de senioridade = 1,5% do VB (comandantes seniores)
+export const VE_PCT = 0.02;    // Vencimento de exercício = 2% do VB POR ANUIDADE TÉCNICA (Cl. 4.ª; Tabela A-3.1), até 32
+export const VS_PCT = 0.015;   // Vencimento de senioridade = 1,5% do VB POR ANO de antiguidade de companhia (Cl. 5.ª), TODOS os pilotos
+export const VE_MAX = 32;      // Cl. 4.ª, n.º 3: "não pode exceder 32"
 
 // ── Atualização anual do VB (regra do AE + os ADIAMENTOS de 2024/2025) ──────
 // O VB 2023 é o único publicado. `index` escala-o pelos DEGRAUS EM VIGOR no ano.
@@ -79,11 +80,11 @@ export const PER_DIEM = {
   CTE: { A_lc: 300, A_mc: 270, B: 180 },   // WB/LC-NB · MC-NB · WB/NB
   OP:  { A_lc: 225, A_mc: 202.50, B: 135 },
 };
-// ⚠️ HEURÍSTICA (NÃO golden): o BTE escolhe a coluna A pela FROTA do piloto (WB vs NB) e
-// operação, não pela distância. Sem atributo de frota no perfil, inferimos a coluna pelo setor
-// mais longo do dia. Correto no caso comum (NB europeu → MC-NB; WB → voos longos → WB/LC), mas
-// SUB-modela um piloto de WB que faça um setor curto (a regra é "WB cobra sempre WB"). O 2000 NM
-// NÃO vem da fonte — é o limiar-proxy do modelo.
+// Coluna do per diem A (Tabela A-3.2): o piloto de WB cobra sempre WB; o de NB "é remunerado de acordo com a operação que
+// realize" — médio curso (RUPT Cl. 32.ª, n.º 1: pontos entre 23°N e 75°N e 35°W e 25°E, e diferença de longitude entre a
+// partida e o local do repouso ≤ 30°) ou longo curso (Cl. 37.ª, n.º 1: fora dessa área). A operação decide-se em perdiem.js
+// (isMediumHaul de ae/tapLimits.js, a mesma regra dos limites; auditoria A-112). Os 2000 NM ficam SÓ para quando falta a posição
+// de um aeroporto (estimativa, não vem da fonte).
 export const LC_THRESHOLD_NM = 2000;
 
 // Frota do piloto — o TAP distingue WB (wide-body) vs NB (narrow-body) p/ a COLUNA de
@@ -127,30 +128,72 @@ export const PER_DIEM_BY_DAY = true;
 const vbOf = (cat, index = 1, T = tableAt()) => (T.VB[cat] || 0) * index;
 const rowOf = (cat, T = tableAt()) => (cat === 'CTE' ? T.PER_DIEM.CTE : T.PER_DIEM.OP);
 
-// Remuneração base mensal (€) = VB × índice × (1 + VE 2%) × fração do contrato. VS (1,5%,
-// só comandantes seniores) fica à parte (depende de antiguidade). VB já é MENSAL (≠ easyJet,
-// que divide o anual por 14); os subsídios de férias/Natal são prestações à parte.
-// `ym` data o mês (tabela em vigor); sem ele = tabela atual.
-export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
+// REMUNERAÇÃO BASE (auditoria L3/L4: A-107/A-108/A-190, bloco 6). Cl. 2.ª, n.º 1: "A remuneração base mensal (RB) é constituída
+// pelo vencimento de categoria (VB), pelo vencimento de exercício (VE) e pelo vencimento de senioridade (VS)".
+//  · VE (Cl. 4.ª): "o produto do número de anuidades técnicas na função pelo respetivo valor inscrito na tabela" (2 % do VB);
+//    "A primeira anuidade técnica vence-se após ser completado 1 ano de antiguidade de serviço, no dia 1 de janeiro
+//    imediatamente seguinte" (n.º 5), as outras "em 1 de janeiro de cada ano" (n.º 7), no máximo 32 (n.º 3). A data de entrada
+//    guarda-se ao mês: o ano completa-se no ano a seguir ao da entrada, e a 1.ª anuidade vence no 1 de janeiro depois desse
+//    (nunca antes). Supõe o exercício efetivo da função em cada ano (75 % da média de horas, Cl. 6.ª), que a app não sabe: o
+//    recibo diz as anuidades (estimativa, como o VB atualizado).
+//  · VS (Cl. 5.ª): "o produto do valor inscrito na tabela (...) pelo número de anos de antiguidade de companhia", 1,5 % do VB,
+//    para todos os pilotos; "Cada senioridade vence-se no dia 1 do mês em que se completa cada ano de antiguidade" (n.º 2).
+//  · Anuidades "na função" (n.º 1, 2 e 10; revisão independente do bloco 6): a de 1 de janeiro do ano y é da função exercida no
+//    ano anterior (a categoria em dezembro de y − 1, pela linha do tempo `history`) — quem passa a comandante num ano vence a
+//    1.ª de CTE no 1 de janeiro seguinte (n.º 10). Com mais de 32, ficam as mais recentes (n.º 4). Cada uma vale 2 % do VB da
+//    categoria da sua função, na tabela em vigor — a valorização das anuidades da função antiga é leitura da app (advogado).
+//  · A antiguidade de serviço conta-se da LARGADA ("Largada conjunta": a 1.ª largada individual em linha do curso). A app guarda
+//    a data de entrada; com `largada` conta dela, senão da entrada e diz-o (`fromEntry`) — os aniversários podem vencer depois.
+// Sem data nenhuma → `unknown` (fica só o VB e a app diz que falta).
+const catAt = (history, ym, fallback) => {
+  const h = Array.isArray(history) ? history.filter((x) => x && x.category && x.from).slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) : [];
+  if (!h.length) return fallback;
+  let pick = h[0];
+  for (const x of h) if (String(x.from).slice(0, 7) <= ym) pick = x;
+  return pick.category;
+};
+export const seniority = (cat, { ym, serviceStart = null, largada = null, history = null, index = 1 } = {}) => {
+  const T = tableAt(ym), p = ymParts(ym), s = ymParts(largada || serviceStart);
+  if (!T || !p || !s || T.VB[cat] == null) return { ve: 0, vs: 0, anuidades: 0, anos: 0, unknown: true, fromEntry: false };
+  const vb = vbOf(cat, index, T);
+  const anos = Math.max(0, Math.floor(((p.y * 12 + p.m) - (s.y * 12 + s.m)) / 12));
+  const list = [];
+  for (let y = s.y + 2; y <= p.y; y++) list.push(catAt(history, `${y - 1}-12`, cat));
+  const kept = list.slice(-VE_MAX);
+  let veSum = 0;
+  for (const c of kept) { const v = vbOf(c, index, T); veSum += (v || vb); }
+  return { ve: r2((veSum * 2) / 100), vs: r2((vb * anos * 15) / 1000), anuidades: kept.length, anos, unknown: false, fromEntry: !largada };
+};
+// RB (€) = VB + VE + VS, × fração do contrato. VB já é MENSAL (≠ easyJet, que divide o anual por 14); os subsídios de férias e
+// de Natal vêm à parte (annualItems). `ym` data o mês (tabela em vigor); sem ele = tabela atual.
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym, serviceStart = null, largada = null, history = null } = {}) => {
   const T = tableAt(ym);
-  if (!T) return null;   // sem tabela nesse mês
-  return r2(vbOf(cat, index, T) * (1 + T.VE_PCT) * contractFactor(contract));
+  if (!T || T.VB[cat] == null) return null;   // sem tabela nesse mês
+  const sv = seniority(cat, { ym, serviceStart, largada, history, index });
+  return r2((vbOf(cat, index, T) + sv.ve + sv.vs) * contractFactor(contract));
 };
 
-// Per diem (€) de UM dia de serviço de voo (Tabela A-3.2). distancesNM = setores do dia
-// (a app passa 1 duty/dia). TAP paga POR DIA, não por setor → devolve UM valor de Per diem A.
-// `fleet`: 'WB' cobra SEMPRE a coluna WB/LC-NB (regra "WB cobra sempre WB"); 'NB'/ausente
-// cobra por operação (long-courier ≥ LC_THRESHOLD → WB/LC-NB; senão MC-NB). Não indexado.
-export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym) => {
+// Per diem A (€) de UM dia de calendário (Tabela A-3.2). TAP paga POR DIA, não por setor → UM valor. `fleet` 'WB' cobra sempre a
+// coluna WB/LC-NB; NB cobra pela operação: `longHaul` true/false (área do RUPT, decidida em perdiem.js); sem ela (falta a posição
+// de um aeroporto) → o setor mais longo contra os 2000 NM (estimativa). Sem voo efetivo (assistência, simulador, DH sem rota): "o
+// per diem é pago em função da frota a que o piloto pertence (WB/NB)" (nota da A-3.2) → `longHaul` false no NB. Não indexado.
+export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym, { longHaul } = {}) => {
   if (!distancesNM || !distancesNM.length) return 0;
   const T = tableAt(ym);
   if (!T) return null;
   const row = rowOf(cat, T);
   if (fleet === 'WB') return row.A_lc;
+  if (longHaul === true) return row.A_lc;
+  if (longHaul === false) return row.A_mc;
   const valids = distancesNM.map(Number).filter((d) => isFinite(d) && d > 0);
   const maxNM = valids.length ? Math.max(...valids) : 0;
   return maxNM >= T.LC_THRESHOLD_NM ? row.A_lc : row.A_mc;
 };
+// Per diem B (Cl. 9.ª, n.º 1, b)): estadia, refrescamento (presencial ou e-learning) e inspeções médicas.
+export const perDiemB = (cat, ym) => { const T = tableAt(ym); return T ? rowOf(cat, T).B : null; };
+// Os dias que pagam A ou B sem voo (Cl. 9.ª, n.º 1): a) ii) assistência no aeroporto e a) i) simulador como aluno → A; b) ii)
+// refrescamento (presencial ou e-learning) → B. Uma formação sem o tipo marcado: B é certo, A possível. Contam-se em perdiem.js.
+export const GROUND_PER_DIEM = true;
 
 // Pernoita: TAP NÃO tem abono de pernoita em dinheiro. A estadia rende Per diem B (coluna
 // WB/NB) + hotel pago pela empresa. Modelamos a pernoita = Per diem B (CTE 180 / OP 135).
@@ -163,35 +206,61 @@ export const VAC_UNIT = 'calendario';
 export const vacationDays = () => 42;
 
 export const comando = (ym) => { const T = tableAt(ym); return T ? T.COMANDO_EUR : null; };
-export const vs = (cat, index = 1, ym) => { const T = tableAt(ym); return !T ? null : r2(T.VS_PCT * vbOf(cat, index, T)); };   // senioridade — €/mês
+export const vs = (cat, index = 1, ym, years = 1) => { const T = tableAt(ym); return !T ? null : r2(T.VS_PCT * Math.max(0, years) * vbOf(cat, index, T)); };   // senioridade — €/mês (por ano de companhia)
+
+// ── SUBSÍDIOS (auditoria L1: A-118/A-181, bloco 6) ──
+// Natal (Cl. 8.ª): "igual ao da remuneração base mensal (...) a pagar até 15 de dezembro"; "No ano da admissão (...) na proporção
+// do tempo de trabalho prestado" (n.º 2). Férias (Cl. 7.ª, n.º 2-3): a RB, "pago de uma só vez, antes do início do 1.º período de
+// férias, com o vencimento do mês anterior ao do respetivo gozo" → o mês antes do 1.º dia de férias registado; sem férias
+// registadas o mês não se sabe (fica fora dos meses; o ano diz-o — `pendingAnnual`).
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
+  const p = ymParts(ym);
+  if (!p || beforeStart(serviceStart, ym) || !hasTableFor(cat, ym)) return [];
+  const out = [];
+  const rb = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
+  if (rb == null) return out;
+  if (p.m === 12) out.push({ id: 'natal', eur: r2(rb * admissionShare(serviceStart, p.y)), cite: 'Cl. 8.ª' });
+  if ([p.y, p.y + 1].some((y) => vacationPayYm(events, y) === ym)) out.push({ id: 'ferias', eur: rb, cite: 'Cl. 7.ª' });
+  return out;
+};
+export const pendingAnnual = (cat, { year, contract = '12/12', index = 1, serviceStart = null, largada = null, history = null, events = [] } = {}) => {
+  if (vacationPayYm(events, year)) return [];
+  const rb = monthlyBase(cat, { contract, index, ym: `${year}-12`, serviceStart, largada, history });
+  return rb == null ? [] : [{ id: 'ferias', eur: rb, month: null, cite: 'Cl. 7.ª' }];
+};
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.
 export const hourly = (cat, limit = 1, index = 1, ym) => { const T = tableAt(ym); return T ? r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, T)) : null; };
 
 // Estimativa mensal de apoio (€): base (VB+VE) + per diems do mês + pernoitas (Per diem B).
 //   duties = array de serviços (cada um = array de distâncias NM das pernas do dia).
 //   nightStops = nº de pernoitas; extraSectors = ignorado (TAP não usa setor nominal).
-export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, fleet, ym } = {}) => {
+export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, fleet, ym, serviceStart = null, largada = null, history = null } = {}) => {
   if (!hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá €
-  const base = monthlyBase(category, { contract, index, ym });
-  const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, fleet, ym), 0));
+  const base = monthlyBase(category, { contract, index, ym, serviceStart, largada, history });
+  // Cada dia: um array de distâncias, ou { dists, longHaul } (a operação do dia, decidida em perdiem.js).
+  const perDiemTotal = r2(duties.reduce((s, d) => s + (Array.isArray(d) ? perDiem(category, d, 1, fleet, ym) : perDiem(category, d.dists, 1, fleet, ym, { longHaul: d.longHaul })), 0));
   const nightTotal = r2(nightStops * nightStop(category, 1, ym));
   const extras = 0;   // TAP não tem prestação por setor nominal (escritório/ADTY cobertos por per diem A)
   const variable = r2(perDiemTotal + nightTotal + extras);
+  const sv = seniority(category, { ym, serviceStart, largada, history, index });
   return {
     category, contract, base, perDiem: perDiemTotal, nightStops: nightTotal, extras,
     variable, total: r2(base + variable),
+    seniority: { ve: sv.ve, vs: sv.vs, anuidades: sv.anuidades, anos: sv.anos, unknown: sv.unknown, fromEntry: sv.fromEntry },
   };
 };
 
 // Catálogo de cálculos do AE de PILOTO (página Cálculos). `linked` = entra no total mensal.
 export const CALCS = [
-  { id: 'base',    group: 'Base',      linked: true,  label: 'Remuneração base',          sub: 'VB + VE 2% · regra AE (índice)' },
+  { id: 'base',    group: 'Base',      linked: true,  label: 'Remuneração base',          sub: 'VB + VE (2% por anuidade técnica) + VS (1,5% por ano) · cl. 2.ª' },
   { id: 'perdiem', group: 'Por voo',   linked: true,  label: 'Per diem',                  sub: 'por dia · frota/operação (A-3.2)' },
   { id: 'night',   group: 'Por voo',   linked: true,  label: 'Pernoita (estadia)',        sub: 'per diem B · CTE 180 / OP 135 (A-3.2)' },
   { id: 'comando', group: 'Por voo',   linked: false, label: 'Comando em cruzeiro',       sub: '200 €/setor > 3h (cl. 11.ª)' },
   { id: 'hourly1', group: 'Por voo',   linked: false, label: 'Hora de voo (Limite 1)',    sub: '3% do VB/hora (A-3.3)' },
   { id: 'hourly2', group: 'Por voo',   linked: false, label: 'Hora de voo (Limite 2)',    sub: '6% do VB/hora acima do plafond (A-3.3)' },
-  { id: 'vs',      group: 'Subsídios', linked: false, label: 'Vencimento de senioridade', sub: '1,5% do VB · comandantes seniores', when: ({ category }) => category === 'CTE' },
+  { id: 'vs',      group: 'Subsídios', linked: true,  label: 'Vencimento de senioridade', sub: '1,5% do VB por ano de companhia (cl. 5.ª)' },
+  { id: 'natal',   group: 'Subsídios', linked: true,  label: 'Subsídio de Natal',         sub: 'a remuneração base, em dezembro (cl. 8.ª)' },
+  { id: 'ferias',  group: 'Subsídios', linked: true,  label: 'Subsídio de férias',        sub: 'a remuneração base, no mês antes das férias (cl. 7.ª)' },
 ];
 
 // Catálogo aplicável a uma categoria/contrato (esconde papéis e itens `when` falsos).
@@ -203,7 +272,7 @@ export const ADDITIONAL_ROLES = [];
 export const additionalRolesFor = () => [];
 
 // Valor (€) de um cálculo do catálogo — para o ecrã Cálculos. null = depende do voo/mês.
-export const catalogValue = (id, { category = 'OP3', contract = '12/12', index = 1 } = {}) => {
+export const catalogValue = (id, { category = 'OP3', contract = '12/12', index = 1, years = 1 } = {}) => {
   switch (id) {
     case 'base':    return monthlyBase(category, { contract, index });
     case 'perdiem': return null;                       // depende da rota do mês
@@ -211,7 +280,9 @@ export const catalogValue = (id, { category = 'OP3', contract = '12/12', index =
     case 'comando': return COMANDO_EUR;
     case 'hourly1': return hourly(category, 1, index);
     case 'hourly2': return hourly(category, 2, index);
-    case 'vs':      return vs(category, index);
+    case 'vs':      return vs(category, index, undefined, years);
+    case 'natal':   return monthlyBase(category, { contract, index });
+    case 'ferias':  return monthlyBase(category, { contract, index });
     default:        return null;
   }
 };

@@ -17,11 +17,10 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 3 (limites TAP e validades) FEITO a 2026-11-06** — ver a entrada "BLOCO 3" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 4 (importação da escala) FEITO a 2026-11-06** — ver a entrada "BLOCO 4" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 5 (dinheiro a mais, M1–M11) FEITO a 2026-11-06** — ver a entrada "BLOCO 5" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
+**Bloco 6 (dinheiro a menos, L1–L13) FEITO a 2026-11-06** — ver a entrada "BLOCO 6" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-6. **Dinheiro a menos (L1–L13)** — **Opus 5.5 Alto, sessão nova:** subsídios, posicionamento (Art. 44.º e Anexo I.18), VE/VS da
-   TAP, L10/L13 do import (A-239, A-235), o CTI-Flexi da cabine (A-001) e, do bloco 5, a assistência não acionada da TAP a 2×
-   o complemento (Cl. 8.ª/2) e o per diem A/B da TAP noutros serviços (simulador, refrescamento, médicas) · 7. Textos e
-   citações · 8. Dúvidas → advogado (A-240, A-241 e as do bloco 5). Fora dos blocos: A-249 a A-251 (formulário manual).
+7. **Textos e citações (nível 4)** — Opus 5.5 Alto, sessão nova: alargar o `test:citacoes` à TAP e ao FTL · 8. Dúvidas →
+   advogado (A-240, A-241 e as dos blocos 5 e 6). Fora dos blocos: A-249 a A-251 (formulário manual).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
 **Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
@@ -37,6 +36,84 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 6: o dinheiro a menos, L1–L13 (Opus 5.5)
+
+Golden primeiro (`scripts/dinheiro-menos.test.js`, 204, a 33.ª suite, `npm run test:dinheiro-menos`): cada valor sai do texto
+oficial e o teste confirma a frase em `fontes/` (as linhas com acentos decompostos do BTE normalizam-se). `npm test` verde (33
+suites); pacote iOS gerado sem erros. O L12 já tinha ficado no bloco 4. Achados fechados: L1–L11 e L13 (A-001, A-004, A-007,
+A-015, A-021, A-022, A-026, A-033, A-039, A-040, A-043, A-044, A-046, A-049, A-050, A-054, A-063, A-065 a A-068, A-070, A-071,
+A-091, A-093, A-095 a A-097, A-099, A-107, A-108, A-111, A-112, A-118, A-181, A-183, A-188 a A-191, A-193, A-196, A-206, A-208,
+A-209, A-215, A-225, A-235 em parte, A-239, A-259, A-274).
+- **Peças novas do motor:** `annualItems` em cada acordo (o que cai num mês certo: subsídios, prestação de abril, permanência,
+  retenção) somado no `monthlyAe` (`annual`, `annualItems`) e nos Números/Início; `seniority` na TAP (VE e VS); `positioningOf`;
+  `awayNights` (a noite de cada dia que acaba fora + a estadia até ao serviço seguinte que parte dali); `serviceMoney` (o € de
+  UM serviço, com o índice do mês — os ecrãs deixaram de fazer contas à parte); `aeIndex`; `dayOffKind`/`minutesIntoNextDay`
+  (pilotos); `pendingAnnual` (TAP: o subsídio de férias sem mês); ajudas em `ae/tables.js` (`ymShift`, `vacationPayYm`,
+  `admissionShare`, `beforeStart`). `monthlyAe`, `aeMonthTotal`, `monthStats`, `yearStats` e `payStatus` aceitam
+  `serviceStart`, `history`, `events` e `lifestyle`.
+- **L1 subsídios:** easyJet (pilotos e cabine) 1/14 em junho e novembro, proporcional no ano da contratação; a média das
+  variáveis (o acordo não diz que rubricas) e o 1/14 do subsídio de idioma (a app não sabe as línguas) ficam de fora e a linha
+  diz "parte certa". Cabine no ano da contratação: junho paga os meses até junho, janeiro seguinte o resto (Cl. 51.ª/4). Pilotos
+  contratados depois de junho: férias em dezembro (o Art. 36.º/2 manda a diferença desse ano para dezembro). 9/3: a média do
+  ano. TAP: Natal em dezembro (pilotos RB; cabine VB + VS), férias no mês antes do 1.º dia de férias registado (cabine + 675 €;
+  2024: 675 × 10/12, Cl. 39.ª); sem férias registadas, os Números dizem o valor e pedem as férias.
+- **L2 posicionamento:** pilotos easyJet pelos setores (bandas do per diem, Art. 44.º); cabine easyJet pela tabela do Anexo
+  I.18 (corrigida: 3 linhas × 3 colunas, sem CMP nem 'extra') — conta o curto (o mínimo) e mostra até ao longo (o acordo não
+  define as durações); o CMP usa a linha do chefe (Cl. 33.ª/7). TAP: o dia de DHC já era AC1/per diem A (bloco 5). Cada DH
+  dentro de um serviço de voo também paga. O formulário deixou de dizer "sem abono".
+- **L3/L4 TAP:** pilotos RB = VB + VE (2 % × anuidades técnicas: a 1.ª no 1 de janeiro depois do ano completo, máx. 32) + VS
+  (1,5 % × anos de companhia, todos os pilotos); cabine VB + VS (1 % por anuidade, à categoria de cada aniversário, pela linha
+  do tempo). Sem a data de entrada: só o VB e os Números dizem que falta.
+- **L5 TAP:** pilotos — assistência no aeroporto e simulador como aluno = A (coluna da frota); refrescamento/e-learning = B;
+  formação sem o tipo = B certo, A possível (`perDiemMax`); o formulário pergunta o tipo (simulador · refrescamento ·
+  e-learning, campo `trainingType`); médio/longo curso pela área do RUPT (`isMediumHaul`, a mesma regra dos limites; os 2000 NM
+  só sem a posição de um aeroporto). Cabine — complemento da escala (aeroporto não acionado 2 × 40 €; casa, formação presencial,
+  escritório 40 €; prevalece o maior, também sobre a AC2); chefia 8 % das AC1 + AC2 do mês anterior (S/C); tempo parcial do RTTP
+  (`TP 10` … `TP 6`, 83,3 % … 50 %, vencimento e subsídios; férias pelo quadro).
+- **L6** CTI-Flexi = 4 NS do chefe para todos · **L7** DDO/IDO: pilotos pelos 90 min (o formulário sugere pela hora do fim),
+  cabine pela Cl. 68.ª/69.ª (textos por acordo) · **L8** férias 14-14 = 14, 21-7 = 21, 7-7 = 18 · **L9** SNC: pilotos com
+  assistência antecipada ou trocada por serviço antes de início + 90 min (Art. 63.º/10); fim depois da meia-noite (SNC, RDP e
+  a estabilidade da TAP) · **L10** índice do mês em todos os valores por serviço (Detalhe, Escala, formulário, importação,
+  Simulação, Início, Auditoria; o cartão da Biblioteca mostra o NS com o IPC) · **L11** pilotos easyJet: prestação complementar
+  em abril (× contrato nos PPY/14-14/21-7/7-7; o 5/4 inteira), prémio de permanência no mês do aniversário, retenção em maio
+  (PPY não estilo de vida, contrato a 31 de agosto do ano anterior); o bónus (discricionário) não entra · **L13** noites fora
+  com a estadia; posicionamento que acaba fora marca pernoita (importação, com a base e a rota).
+- **Revisão independente** (2.º agente, só com o código e as fontes): 7 erros, todos corrigidos no mesmo dia (golden 216) — o
+  € da TAP por serviço em vez de por dia (2 voos no dia = 2 AC1 na importação; um serviço a cruzar a meia-noite = um só A); a
+  formação dos pilotos TAP sem tipo dava o B como certo (Cl. 10.ª/2 d): há formação sem per diem → 0 certo, até ao A; o
+  formulário mostrava "Refrescamento" e gravava nada); o VE ignorava a mudança de função (Cl. 4.ª/10: CTE desde maio de 2025 →
+  14 anuidades de OP + 1 de CTE); um aeroporto desconhecido tirava a AC1/A do dia inteiro; a antiguidade da TAP conta-se da
+  LARGADA (cabine Cl. 14.ª/3; pilotos "largada conjunta"), não da entrada — o motor aceita `largada` e diz quando contou da
+  entrada (`fromEntry`; os Números avisam); faltavam dependências (Início e Números ficavam com valores antigos ao mudar a
+  data de entrada); a TAP mostrava "N paragens" ao lado do € das estadias. Também: a chefia pela categoria do mês das ajudas; o
+  complemento registado à mão num dia de e-learning volta a contar.
+- **Decisão pendente do Nuno:** um campo "data da largada" no Perfil para a TAP (as anuidades e a senioridade contam dela) —
+  sessão de design, Mobbin primeiro. Até lá conta-se da entrada, com o aviso.
+- **Goldens antigos acertados à lei:** TAP pilotos (a base sem antiguidade = só o VB; VS para todos; assistência no aeroporto
+  paga A), estatísticas (subsídio de Natal no fecho e no ano; a TAP do ano da mudança com Natal 8/12), doença do mês inteiro
+  passou para outubro (em novembro entra o subsídio de Natal).
+- **Pendências (para o advogado):** o corte do subsídio de Natal numa baixa longa (CT art. 263.º, não está em `fontes/pt`); a
+  divisão junho/janeiro das férias da cabine no ano da contratação; as férias dos pilotos contratados depois de junho em
+  dezembro; o CMP na linha do chefe no Anexo I.18; a Cl. 68.ª/1 da cabine (DDO ou IDO?); a 1.ª anuidade técnica da TAP com a
+  entrada em janeiro (a app conta o 1 de janeiro do ano a seguir ao ano completo); o 5/4 nas férias; da revisão: o valor das
+  anuidades técnicas da função antiga (a app usa o VB da categoria de então, na tabela atual); a retenção do PPY 9/12 inteira ou
+  proporcional (Art. 25.º/21 a)); o subsídio de férias da TAP no ano de admissão ("ajustado à totalidade dos dias de férias");
+  as noites dos pilotos easyJet de estadia e depois de um posicionamento (Art. 39.º "entre serviços de voo").
+- **Pendências (produto/código):** a média das variáveis nos subsídios easyJet (que rubricas e que período); o subsídio de
+  idioma (campo no Perfil); a saída da companhia (subsídios proporcionais no ano da cessação); TAP: a e-learning da cabine
+  (145 € por 8 h, Cl. 13.ª), os atos médicos (não há tipo de serviço), a AC2 por cancelamento tardio, os 20 % do DHC fora de
+  C/CL (a app não sabe a classe), a prestação complementar dos pilotos (Cl. 10.ª) e o exercício efetivo do VE (o recibo diz as
+  anuidades: campo no Perfil, com Mobbin); WFLY + DDO no mesmo serviço (Cl. 67.ª/5: o modelo guarda um por dia); a formação
+  fora da base da cabine na importação (o toggle à mão existe); a formação inicial (Art. 39.º/44.º, Cl. 57.ª/2) a app não
+  sabe.
+- **Ver no iPhone:** Números de junho e novembro (linha "Subsídios"), do ano (14/14) e de abril (prestação, piloto); fecho do
+  Início em novembro (linha do subsídio de Natal); um posicionamento (Detalhe, Escala, Simulação — cabine com o intervalo);
+  uma conta TAP piloto (RB com anuidades; formação com o tipo) e TAP cabine (VS, complemento de uma assistência, S/C com
+  chefia, tempo parcial no Perfil); o formulário de um piloto easyJet com um voo que acaba depois da meia-noite (sugestão DDO/IDO);
+  uma estadia de 2 noites (Pernoitas = 2).
 
 ---
 

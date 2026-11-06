@@ -201,7 +201,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 5 · Quanto recebo? (só AE)
-  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents });
+  const pay = payStatus({ duties, ae, crewCategory, crewContract, crewFleet, aeEvents, serviceStart: ctx.serviceStart, crewHistory: ctx.crewHistory, lifestyle: ctx.lifestyle });
   if (pay) {
     items.push({
       id: 'pay',

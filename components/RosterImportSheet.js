@@ -13,7 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync 
 // expo-pdf-text-extract é NATIVO (não existe em Expo Go) → require LAZY dentro de pickPdf,
 // para o arranque da app NÃO rebentar em Expo Go (só se avalia ao escolher um PDF).
 import { airportCoord } from '../data/airports';
-import { sectorDistancesNM } from '../data/perdiem';
+import { serviceMoney } from '../data/perdiem';
 import DutyFormSheet from './DutyFormSheet';
 import Eyebrow from './Eyebrow';
 import SheetHeader from './SheetHeader';
@@ -159,9 +159,19 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const dt = c.duty.duty_date;
     const aeD = dt ? aeAt(dt) : ae;
     const catD = dt ? crewAt(dt).category : crewCategory;
-    if (aeD && catD) { const ds = sectorDistancesNM(c.duty).filter((nm) => nm != null); if (ds.length) perDiem = aeD.perDiem(catD, ds, 1, dt ? crewAt(dt).fleet : crewFleet, dt); }   // só os setores voados (o DH não, E2)
-    // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
-    const nsEur = (c.duty.nightStop && aeD && aeD.nightStop && catD && !aeD.PER_DIEM_BY_DAY) ? aeD.nightStop(catD, 1, dt) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
+    // O € do dia pela MESMA função do total do mês (serviceMoney: o índice do mês, o posicionamento, os serviços extra do dia —
+    // auditoria A-239, bloco 6). Pernoita À PARTE do per-diem.
+    let nsEur = null;
+    if (aeD && catD) {
+      const fl = dt ? crewAt(dt).fleet : crewFleet;
+      const day = [c.duty, ...(Array.isArray(c.duty.extra) ? c.duty.extra : [])];
+      for (const sv of day) {
+        const mny = serviceMoney(aeD, catD, sv, { date: dt, fleet: fl, daySvcs: day });
+        const add = (mny.perDiem || 0) + (mny.positioning || 0);
+        if (add) perDiem = +((perDiem || 0) + add).toFixed(2);
+        if (mny.nightStop != null) nsEur = mny.nightStop;
+      }
+    }
     return { kind: 'ready', perDiem, badAp: null, nsEur };
   };
   // "Substitui o teu manual": uma alteração/conflito cujo dia já tinha um serviço MANUAL

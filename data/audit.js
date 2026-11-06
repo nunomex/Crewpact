@@ -41,7 +41,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
     const marked = svcs.some((s) => s && (s.nightStop || s.night_stop));
     // TAP: a estadia é dos dias SEM voo (Cl. 7.ª/9.ª) — num dia com voo não há AC2/B "esquecido" (A-088, bloco 5).
     if (station && !marked && typeof ae.nightStop === 'function' && !ae.PER_DIEM_BY_DAY) {
-      const eur = r2(ae.nightStop(cat, 1, ym));
+      const eur = r2(ae.nightStop(cat, ae.indexFactor ? ae.indexFactor(ym) : 1, ym));   // o índice do mês (L10, bloco 6)
       if (eur > 0) items.push({ id: `ns-${date}`, kind: 'nightstop', date, station, eur, provaId: 'pernoita' });
     }
 
@@ -56,7 +56,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
       routeDates.push(date);
       if (typeof ae.perDiem === 'function') {
         // banda MÍNIMA plausível: distâncias de 1 NM (o "≥" do mockup — nunca precisão fingida)
-        routeEurMin += r2(ae.perDiem(cat, Array(sectors).fill(1), 1, fleet, ym));
+        routeEurMin += r2(ae.perDiem(cat, Array(sectors).fill(1), ae.indexFactor ? ae.indexFactor(ym) : 1, fleet, ym));
       }
     }
   }
@@ -76,7 +76,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
     const key = `${c.type}|${date}`;
     if (registered.has(key) || seen.has(key)) continue;   // já registado / duplicado → não repete
     seen.add(key);
-    const eur = (typeof ae.monthExtras === 'function') ? r2((ae.monthExtras(cat, { [c.type]: 1 }, { ym }) || {}).total) : 0;
+    const eur = (typeof ae.monthExtras === 'function') ? r2((ae.monthExtras(cat, { [c.type]: 1 }, { ym, index: ae.indexFactor ? ae.indexFactor(ym) : 1 }) || {}).total) : 0;
     items.push({ id: key, kind: c.type, date, clause: c.clause || null, eur: eur > 0 ? eur : null, provaId: null });
   }
 

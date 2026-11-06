@@ -13,8 +13,7 @@ import { select, warning, success } from '../data/haptics';
 import { AppContext, isoDay, toZulu } from '../data/appContext';
 import { ftlForDuty, fatigueFromDuty } from '../ftl';
 import { unknownsText } from '../data/ftlUnknowns';
-import { sectorDistanceNM } from '../data/airports';
-import { roleEurFor } from '../data/perdiem';
+import { roleEurFor, serviceMoney } from '../data/perdiem';
 import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
 import ProvaSheet from '../components/ProvaSheet';
@@ -154,41 +153,15 @@ export default function DutyDetailScreen({ route, navigation }) {
     <View style={s.aeVal}><View style={s.aeTag}><Text style={s.aeTagT}>AE</Text></View><Text style={s.rowV} numberOfLines={1}>{v}</Text></View>
   );
 
-  // ── Per-diem (motor AE) — só voo, piloto AE, rota completa ──
+  // ── € do serviço (motor AE) — a MESMA função e o MESMO índice do total do mês (data/perdiem.js serviceMoney; auditoria L2,
+  // L5 e L10, bloco 6): per diem, posicionamento, pernoita e o dia sem voo (formação, escritório, assistência; TAP por dia).
   const stations = String(duty.route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
   const catD = crewAt(date).category;   // categoria EM VIGOR no mês desta duty (effective-dated)
-  let perDiem = null;
-  if (ae && catD && isFlight && stations.length >= 2) {
-    const dists = []; let ok = true;
-    for (let i = 0; i + 1 < stations.length; i++) {
-      const nm = sectorDistanceNM(stations[i], stations[i + 1]);
-      if (nm == null) { ok = false; break; }
-      dists.push(nm);
-    }
-    if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, crewAt(date).fleet, date);
-  }
-  const nsEur = (duty.nightStop && ae && ae.nightStop && catD && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(catD, 1, date) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
-  // € do dia NÃO-VOO (auditoria 2026-07-11) — as MESMAS regras do motor mensal: treino
-  // presencial piloto = 3 NS (e-learning/cabine = 0) · terra OFC4/OFC8 (cabine rate único) ·
-  // ADTY pela matriz do Anexo I.5. AE sem o item → nada (não se inventa prestação).
-  const svcEur = (() => {
-    if (!ae || !catD || isFlight) return null;
-    if (kind === 'training') return (!duty.eLearning && ae.adhoc) ? { lbl: l('Formação (Art. 43)', 'Training (Art. 43)'), eur: ae.adhoc(catD, 1, date) } : null;
-    if (kind === 'office') {
-      if (duty.officeType === 'ofc8' && ae.office8) return { lbl: l('Dia de escritório (OFC8)', 'Office day (OFC8)'), eur: ae.office8(catD, 1, date) };
-      if (ae.office4) return { lbl: l('Dia de escritório (OFC4)', 'Office day (OFC4)'), eur: ae.office4(catD, 1, date) };
-      return ae.office ? { lbl: l('Trabalho em terra (Art. 70)', 'Ground duty (Art. 70)'), eur: ae.office(catD, date) } : null;
-    }
-    if (kind === 'standby_airport' && ae.airportStandby) {
-      const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(x || ''); return mm ? +mm[1] * 60 + +mm[2] : null; };
-      const r = m(duty.report_time), e = m(duty.block_on);
-      const dm = (r != null && e != null) ? (e >= r ? e - r : e + 1440 - r) : null;
-      const called = [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])].some((x) => x && (x.kind || 'flight') === 'flight');
-      const eur = ae.airportStandby(catD, { called, over4h: dm != null && dm >= 240, ym: date });   // sem horas → o garantido (< 4 h), A-220
-      return eur > 0 ? { lbl: 'ADTY (Anexo I.5)', eur } : null;
-    }
-    return null;
-  })();
+  const money = (ae && catD) ? serviceMoney(ae, catD, duty, { date, fleet: crewAt(date).fleet, daySvcs: [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])] }) : null;
+  const perDiem = money ? money.perDiem : null;
+  const nsEur = money ? money.nightStop : null;   // TAP: estadia só nos dias sem voo (bloco 5) — serviceMoney não a dá por serviço
+  const svcEur = money && money.other && money.other.eur != null ? { lbl: money.other.lbl[lang === 'en' ? 'en' : 'pt'], eur: money.other.eur, max: money.other.max } : null;
+  const posEur = money && money.positioning != null ? { eur: money.positioning, max: money.positioningMax } : null;
 
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const fmtDate = (iso) => {
@@ -446,13 +419,14 @@ export default function DutyDetailScreen({ route, navigation }) {
         <Sec icon="wallet">{l('Pagamento · detalhes', 'Pay · details')}</Sec>
         <Panel rows={[
           (perDiem != null) && { k: l('Per-diem (AE)', 'Per diem'), v: `+${fmtEur0(perDiem)}`, color: PELE.ok, prova: provaFor('perDiem', provaCtx) },
-          (svcEur != null) && { k: svcEur.lbl, v: `+${fmtEur0(svcEur.eur)}`, color: PELE.ok },
+          (svcEur != null) && { k: svcEur.lbl, v: svcEur.max > svcEur.eur ? `+${fmtEur0(svcEur.eur)} ${l('a', 'to')} ${fmtEur0(svcEur.max)}` : `+${fmtEur0(svcEur.eur)}`, color: PELE.ok },
+          (posEur != null) && { k: l('Posicionamento', 'Positioning'), v: posEur.max > posEur.eur ? `+${fmtEur0(posEur.eur)} ${l('a', 'to')} ${fmtEur0(posEur.max)}` : `+${fmtEur0(posEur.eur)}`, color: PELE.ok },
           duty.sectors && { k: l('Setores', 'Sectors'), v: String(duty.sectors) },
           duty.nightStop && { k: l('Paragem nocturna', 'Night stop'), v: nsEur != null ? `+${fmtEur0(nsEur)}` : l('Sim', 'Yes'), color: nsEur != null ? PELE.ok : null, prova: provaFor('pernoita', provaCtx) },
           (() => {
             const role = duty.role || (duty.instructor ? 'instr' : null);
             if (!role || !ae) return null;
-            const eur = roleEurFor(ae, catD, role, duty.sectors);
+            const eur = roleEurFor(ae, catD, role, duty.sectors, date);   // a tabela do mês do serviço
             const def = (ae.ADDITIONAL_ROLES || []).find((r) => r.id === role);
             const lbl = (def && def.label && (def.label[lang] || def.label.pt)) || role;
             return { k: lbl, v: eur > 0 ? `+${fmtEur0(eur)}` : l('sem prestação no AE', 'no AE item'), color: eur > 0 ? PELE.ok : null };

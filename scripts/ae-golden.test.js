@@ -317,8 +317,9 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('ADTY mês: voo c/ preStandby 5h aeroporto = 2 NS', monthlyAe(viaSpecial, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
   // CABINE (Art. 58): matriz em setores MÉDIOS — CM não-chamado ≥4h = 2×1,2×32,50 = 78 € (não 2 NS=65).
   eq('ADTY mês cabine: 2 setores MÉDIOS (78 €)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CM', '12/12', cabin, { ym: '2026-06' }).extras, 78);
-  // TAP: o AE não tem o item ADTY → não se inventa prestação (total = base).
-  eq('TAP mês: standby aeroporto sem prestação (total = base)', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8287.50);
+  // TAP pilotos: "Deslocação para serviço de assistência no aeroporto" = per diem A (RRRGS Cl. 9.ª, n.º 1, a), ii); bloco 6) —
+  // sem voo efetivo, a coluna da frota (NB → 270). Base sem a data de entrada = só o VB (8 125).
+  eq('TAP mês: assistência no aeroporto = per diem A', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).total, 8395);
 }
 
 // ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY/IDO por condição ──
@@ -523,10 +524,11 @@ eq('TAP VB OP1 2023', tapPilot.VB_2023.OP1, 4420);
 eq('TAP categorias', tapPilot.CATEGORIES.join(','), 'CTE,OP3C,OP3,OP2,OP1');
 eq('TAP categoria CTE pt', tapPilot.categoryLabel('CTE', 'pt'), 'Comandante');
 eq('TAP categoria OP1 en', tapPilot.categoryLabel('OP1', 'en'), 'First Officer 1');
-// Base mensal = VB × (1 + VE 2%) (índice 1 = 2023)
-eq('TAP base CTE (VB+VE, 2023)', tapPilot.monthlyBase('CTE'), 8287.50);   // 8125×1.02
-eq('TAP base OP1 (VB+VE, 2023)', tapPilot.monthlyBase('OP1'), 4508.40);   // 4420×1.02
-eq('TAP base OP3 (VB+VE, 2023)', tapPilot.monthlyBase('OP3'), 6171.00);   // 6050×1.02
+// RB = VB + VE (2 % por anuidade técnica) + VS (1,5 % por ano), RRRGS Cl. 2.ª, 4.ª e 5.ª (bloco 6). Sem a data de entrada não há
+// anuidades nem anos → só o VB (índice 1 = 2023). As contas com antiguidade estão no test:dinheiro-menos.
+eq('TAP base CTE (sem antiguidade = VB, 2023)', tapPilot.monthlyBase('CTE'), 8125);
+eq('TAP base OP1 (sem antiguidade = VB, 2023)', tapPilot.monthlyBase('OP1'), 4420);
+eq('TAP base OP3 (sem antiguidade = VB, 2023)', tapPilot.monthlyBase('OP3'), 6050);
 // Per diem (Tabela A-3.2) — por dia, coluna por operação (MC-NB < 2000NM ≤ WB/LC-NB). Não indexado.
 eq('TAP per diem CTE médio-courier (500NM)', tapPilot.perDiem('CTE', [500]), 270);
 eq('TAP per diem CTE long-courier (3000NM)', tapPilot.perDiem('CTE', [3000]), 300);
@@ -554,11 +556,11 @@ eq('TAP senioridade CTE (1,5% VB)', tapPilot.vs('CTE'), 121.88);    // 0.015×81
 // Estimativa mensal (base + per diem + pernoita)
 {
   const r = tapPilot.computeAeMonth({ category: 'CTE', duties: [[500]], nightStops: 1 });
-  eq('TAP mês CTE: base', r.base, 8287.50);
+  eq('TAP mês CTE: base', r.base, 8125);
   eq('TAP mês CTE: per diem', r.perDiem, 270);
   eq('TAP mês CTE: pernoita', r.nightStops, 180);
   eq('TAP mês CTE: variável', r.variable, 450);
-  eq('TAP mês CTE: total', r.total, 8737.50);
+  eq('TAP mês CTE: total', r.total, 8575);
 }
 // Índice = degraus EM VIGOR no ano (adiamentos 2024/2025 jan→31-dez, assembleia 22-03-2024)
 eq('TAP index 2023 = 1', tapPilot.indexFactor(2023), 1);
@@ -570,17 +572,18 @@ eq('TAP index 2030 ainda congelado', tapPilot.indexFactor(2030), 1.092727);
 eq('TAP 2024 NÃO estimado (vigora a tabela golden 2023)', tapPilot.isIndexEstimated(2024), false);
 eq('TAP 2025 estimado (degrau aplicado)', tapPilot.isIndexEstimated(2025), true);
 eq('TAP index 2023 não estimado', tapPilot.isIndexEstimated(2023), false);
-eq('TAP base CTE indexada 2026', tapPilot.monthlyBase('CTE', { index: tapPilot.indexFactor(2026) }), 9055.98);  // 8125×1.092727×1.02
+eq('TAP base CTE indexada 2026', tapPilot.monthlyBase('CTE', { index: tapPilot.indexFactor(2026) }), 8878.41);  // 8125×1.092727 (sem antiguidade)
 eq('TAP vigência até dez-2026', tapPilot.AE_VALID_UNTIL, '2026-12-31');
 eq('TAP não expirado em jun-2026', tapPilot.isAgreementExpired(new Date('2026-06-23')), false);
 eq('TAP expirado em jan-2027', tapPilot.isAgreementExpired(new Date('2027-01-02')), true);
 // Catálogo + papéis + extras
-eq('TAP catalogValue base CTE', tapPilot.catalogValue('base', { category: 'CTE' }), 8287.50);
+eq('TAP catalogValue base CTE', tapPilot.catalogValue('base', { category: 'CTE' }), 8125);
 eq('TAP catalogValue night CTE', tapPilot.catalogValue('night', { category: 'CTE' }), 180);
 eq('TAP catalogValue perdiem = null', tapPilot.catalogValue('perdiem', { category: 'CTE' }), null);
 eq('TAP catalogValue vs CTE', tapPilot.catalogValue('vs', { category: 'CTE' }), 121.88);
-eq('TAP catálogo: VS só CTE', tapPilot.catalogFor('CTE').map((c) => c.id).includes('vs'), true);
-eq('TAP catálogo: VS escondido p/ OP1', tapPilot.catalogFor('OP1').map((c) => c.id).includes('vs'), false);
+// VS para TODOS os pilotos (Cl. 5.ª: "anos de antiguidade de companhia"; Tabela A-3.1) — não só comandantes (auditoria A-108).
+eq('TAP catálogo: VS do CTE', tapPilot.catalogFor('CTE').map((c) => c.id).includes('vs'), true);
+eq('TAP catálogo: VS também do OP1', tapPilot.catalogFor('OP1').map((c) => c.id).includes('vs'), true);
 eq('TAP sem papéis adicionais', tapPilot.additionalRolesFor('CTE').length, 0);
 eq('TAP extras comando×2', tapPilot.monthExtras('CTE', { comandoSectors: 2 }).total, 400);
 eq('TAP extras horas L1×1 CTE', tapPilot.monthExtras('CTE', { hoursL1: 1 }).total, 243.75);

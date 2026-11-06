@@ -8,7 +8,7 @@ import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
-import { sectorDistancesNM } from '../data/perdiem';
+import { serviceMoney, aeIndex, annualLabel } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
 import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
 import { restUntilAfter } from '../data/today';
@@ -281,7 +281,7 @@ export default function HomeScreen({ navigation }) {
   };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify, lifestyle } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -304,8 +304,8 @@ export default function HomeScreen({ navigation }) {
       over: r.status === 'excede', excess: r.value - r.limit };
   }, [duties, ae, base, isPilot, todayISO, crewFleet]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')
@@ -565,8 +565,8 @@ export default function HomeScreen({ navigation }) {
   // Per-diem do DIA (todos os setores da rota).
   let dayPerDiem = null;
   if (flight && ae && crewCategory && flight.route) {
-    const dists = sectorDistancesNM(flight);
-    if (dists.length && !dists.some((x) => x == null)) dayPerDiem = ae.perDiem(crewCategory, dists, 1, crewFleet);
+    // O MESMO valor que entra no mês (o índice do mês incluído — auditoria L10, bloco 6).
+    dayPerDiem = serviceMoney(ae, crewCategory, flight, { date: flight.dateISO || todayISO, fleet: crewFleet }).perDiem;
   }
   const loadingFlight = !flight && syncing && !syncDone && calOk;
   const isNonFlight = !!(flight && flight.kind && flight.kind !== 'flight');
@@ -743,8 +743,7 @@ export default function HomeScreen({ navigation }) {
     ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
   let pdToday = null;
   if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
-    const dists = sectorDistancesNM(todayEnded);
-    if (dists.length && !dists.some((x) => x == null)) pdToday = ae.perDiem(crewCategory, dists, 1, crewFleet);
+    pdToday = serviceMoney(ae, crewCategory, todayEnded, { date: todayISO, fleet: crewFleet }).perDiem;   // índice do mês (L10)
   }
   // Acordar sugerido (véspera): report − 75 min (estimativa: vestir + caminho).
   const wakeMs = (homeState === 'vespera' && reportMs != null) ? reportMs - TUNE.wakeBefore * 60000 : null;
@@ -753,7 +752,7 @@ export default function HomeScreen({ navigation }) {
   // ── PERNOITA: hotel da estação (catálogo local) + abono da noite (ae.nightStop, Art. 39) ──
   const closeHotel = closeNsStation ? (hotels || {})[closeNsStation] : null;
   // TAP: a noite depois de um dia de voo não paga estadia nesse dia (Cl. 7.ª/9.ª; bloco 5) → sem "+ €" aqui.
-  const nsPay = (ae && ae.nightStop && crewCategory && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(crewCategory, 1, todayISO) : null;
+  const nsPay = (ae && ae.nightStop && crewCategory && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(crewCategory, aeIndex(ae, todayISO), todayISO) : null;   // índice do mês (L10)
   // ── FÉRIAS: saldo do ano (Art. 238.º CT) + dia de regresso (fim do bloco consecutivo) ──
   const vacInfo = (homeState === 'ferias') ? (() => {
     const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
@@ -795,10 +794,10 @@ export default function HomeScreen({ navigation }) {
   const monthAe = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
-      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents });
+      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, lifestyle });
       return (st0 && st0.aeMonth) || null;
     } catch { return null; }
-  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
+  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, lifestyle]);
   const monthMoney = monthAe ? monthAe.total : null;
   // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
   const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
@@ -807,9 +806,9 @@ export default function HomeScreen({ navigation }) {
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
     try {
-      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO });
+      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, lifestyle });
     } catch { return null; }
-  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
+  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, lifestyle]);
   const dayOfMonth = new Date().getDate();
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);
@@ -1149,6 +1148,9 @@ export default function HomeScreen({ navigation }) {
             { k: l('Base', 'Base'), v: eur(monthAe.base || 0) },
             monthAe.perDiem ? { k: 'Per-diem', v: eur(monthAe.perDiem) } : null,
             monthAe.nightStops ? { k: l('Pernoitas', 'Night stops'), v: eur(monthAe.nightStops) } : null,
+            monthAe.positioning ? { k: monthAe.positioningMax > monthAe.positioning ? l(`Posicionamento (até ${eur(monthAe.positioningMax)})`, `Positioning (up to ${eur(monthAe.positioningMax)})`) : l('Posicionamento', 'Positioning'), v: eur(monthAe.positioning) } : null,
+            // Subsídios e prestações que caem neste mês (bloco 6): cada um na sua linha.
+            ...(monthAe.annualItems || []).map((it) => ({ k: annualLabel(it, lang), v: eur(it.eur) })),
             // Extras = extras + eventos + abono para falhas (o MESMO agrupamento dos Números) — as parcelas
             // têm de SOMAR o total: base + per-diem + pernoitas + extras.
             ((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) ? { k: 'Extras', v: eur((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)), onPress: extrasItem ? () => openItem(extrasItem) : undefined } : null,

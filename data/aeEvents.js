@@ -75,6 +75,12 @@ export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) =
     if (!d || d.deleted) return false;
     return [d, ...(Array.isArray(d.extra) ? d.extra : [])].some((s) => s && ((s.kind || 'flight') === 'flight' || s.kind === 'positioning'));
   };
+  // Dias que a escala já paga pela Cl. 8.ª (assistência, escritório, formação presencial) — o e-learning não (revisão do bloco 6).
+  const autoPaid = (date) => {
+    const d = duties && duties[date];
+    if (!d || d.deleted) return false;
+    return [d, ...(Array.isArray(d.extra) ? d.extra : [])].some((s) => s && (s.kind === 'standby_airport' || s.kind === 'standby_home' || s.kind === 'office' || (s.kind === 'training' && !s.eLearning)));
+  };
   const sickDated = new Set();
   for (const e of events) {
     if (!e || !e.type || !e.date) continue;
@@ -83,7 +89,9 @@ export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) =
     if (!isMonthOnly && e.type === 'instructorDays' && instrByRole(e.date)) continue;   // já pago pelo papel do serviço
     // TAP cabine: num dia de calendário com voo ou DHC paga-se a AC1 e "prevalecerá o pagamento do valor superior" (Cl. 7.ª,
     // n.º 3 e Cl. 8.ª, n.º 3) — a AC1 é sempre maior do que o complemento extraordinário → não conta (revisão do bloco 5).
-    if (!isMonthOnly && e.type === 'extraordDays' && flewOn(e.date)) continue;
+    // Desde o bloco 6 o complemento das assistências, da formação e das deslocações sai da própria escala (perdiem.monthlyAe):
+    // num dia com qualquer serviço o registo à mão também não conta outra vez.
+    if (!isMonthOnly && e.type === 'extraordDays' && (flewOn(e.date) || autoPaid(e.date))) continue;
     if (e.type === 'sickDays' && !isMonthOnly) { sickDated.add(e.date); continue; }
     if (String(e.date).slice(0, 7) === ym || (isMonthOnly && e.date === ym)) add(e.type);
   }

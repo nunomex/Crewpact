@@ -174,16 +174,19 @@ eq('aeAt maio/2025 = easyJet cabine', aeAtL1('2025-05').AE_ID, 'easyjet-snpvac')
 eq('aeAt maio/2026 = TAP cabine', aeAtL1('2026-05').AE_ID, 'tap-snpvac');
 // Ano de 2026 somado MÊS A MÊS: jan–abr easyJet FA (base 1346,57 + abono 78,55) · mai–dez TAP CAB2 (1627,02).
 const NOW_DEC = new Date('2026-12-15T12:00:00');
-const ySplit = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC });
+// A data de entrada é a da TAP (maio de 2026): o subsídio de Natal da TAP em dezembro é proporcional (Cl. 17.ª, n.º 2: "No ano
+// de admissão (...) na proporção do tempo de trabalho prestado") → 1 627,02 × 8/12 = 1 084,68 € (bloco 6).
+const ySplit = yearStats({}, { year: 2026, aeAt: aeAtL1, crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' });
 eq('ano 2026 com mudança: base = 4×1346,57 + 8×1627,02', ySplit.aeYtd.base, 18402.44);
 eq('ano 2026 com mudança: abono só nos meses easyJet (4×78,55)', ySplit.aeYtd.cash, 314.2);
-eq('ano 2026 com mudança: total', ySplit.aeYtd.total, 18716.64);
+eq('ano 2026 com mudança: subsídio de Natal da TAP, proporcional', ySplit.aeYtd.annual, 1084.68);
+eq('ano 2026 com mudança: total', ySplit.aeYtd.total, 19801.32);
 // Sem a linha do tempo (o comportamento antigo): o ano inteiro calculado com a TAP.
 const yOld = yearStats({}, { year: 2026, ae: getAe('tap', 'cabin'), crewHistory: [{ category: 'CAB2', contract: '12/12', from: '2026-05' }], now: NOW_DEC });
 eq('sem linha do tempo: 12×1627,02 (o erro que a linha corrige)', yOld.aeYtd.base, 19524.24);
 // O Ano bate com a soma dos Meses (cada mês com o SEU acordo).
 let sumMonths = 0;
-for (let mo = 1; mo <= 12; mo++) { const ym = `2026-${String(mo).padStart(2, '0')}`; sumMonths += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC }).aeMonth.total; }
+for (let mo = 1; mo <= 12; mo++) { const ym = `2026-${String(mo).padStart(2, '0')}`; sumMonths += monthStats({}, { ym, ae: aeAtL1(ym), crewHistory: L1.crewHistory, now: NOW_DEC, serviceStart: '2026-05-01' }).aeMonth.total; }
 eq('ano = soma dos meses (com mudança de companhia)', +sumMonths.toFixed(2), ySplit.aeYtd.total);
 // Mudar para uma companhia SEM AE modelado: os meses novos ficam sem dinheiro, os antigos mantêm-se.
 const L2 = startEmployment(L0, { company: 'hifly', crewType: 'cabin', category: null, base: 'LIS', from: '2026-05' });
@@ -371,8 +374,8 @@ eq('fallback: eventos 0', ra.aeYtd.events, 0);
 eq('fallback: total base+perDiem inalterado', ra.aeYtd.total, 20100);
 
 // ── monthSplit — "Até hoje · resto do mês" do fecho (Nuno, 2026-11-04) ──
-// A parte VARIÁVEL do mês dividida pela data (serviços e eventos ≤ hoje vs. depois); os FIXOS (base + abono, €/mês)
-// à parte. A MESMA conta do total → fixos + até hoje + resto = total, AO CÊNTIMO, sempre.
+// A parte VARIÁVEL do mês dividida pela data (serviços e eventos ≤ hoje vs. depois); os FIXOS (base + abono, €/mês, e os
+// subsídios do mês — em novembro o de Natal, bloco 6) à parte. A MESMA conta do total → fixos + até hoje + resto = total, AO CÊNTIMO, sempre.
 {
   const { monthSplit } = require(path.resolve('data/stats.js'));
   const ejC = getAe('easyjet', 'cabin');
@@ -386,20 +389,21 @@ eq('fallback: total base+perDiem inalterado', ra.aeYtd.total, 20100);
   const all = monthStats(NOV, o('2026-11-04')).aeMonth;
   const c2 = (x) => Math.round(x * 100) / 100;
   const sp = monthSplit(NOV, o('2026-11-04'));
-  eq('split: fixos = base + abono', sp.fixed, c2(all.base + all.cash));
+  eq('split: fixos = base + abono + subsídio de Natal', sp.fixed, c2(all.base + all.cash + all.annual));
+  eq('split: novembro traz o subsídio de Natal (1/14 de 18 852)', all.annual, 1346.57);
   eq('split: fixos + até hoje + resto = total (ao cêntimo)', c2(sp.fixed + sp.toDate + sp.rest), all.total);
   eq('split: total igual ao do monthStats', sp.total, all.total);
   // Até hoje = o variável do mês SÓ com o que tem data ≤ hoje (o voo de 2 + o SNC de 2).
   const past = monthStats({ '2026-11-02': NOV['2026-11-02'] }, { ...o('2026-11-04'), events: [EV[0]] }).aeMonth;
-  eq('split: até hoje = variável do serviço e do evento já passados', sp.toDate, c2(past.total - past.base - past.cash));
+  eq('split: até hoje = variável do serviço e do evento já passados', sp.toDate, c2(past.total - past.base - past.cash - past.annual));
   ok('split: há resto (o LGW de 20 e o DDO de 25)', sp.rest > 0);
   ok('split: até hoje > 0 (o voo de 2 + o SNC)', sp.toDate > 0);
   const fim = monthSplit(NOV, o('2026-11-30'));
   eq('split: no último dia, resto = 0', fim.rest, 0);
-  eq('split: no último dia, até hoje = todo o variável', fim.toDate, c2(all.total - all.base - all.cash));
+  eq('split: no último dia, até hoje = todo o variável', fim.toDate, c2(all.total - all.base - all.cash - all.annual));
   const antes = monthSplit(NOV, o('2026-10-31'));
   eq('split: antes do mês, até hoje = 0', antes.toDate, 0);
-  eq('split: antes do mês, resto = todo o variável', antes.rest, c2(all.total - all.base - all.cash));
+  eq('split: antes do mês, resto = todo o variável', antes.rest, c2(all.total - all.base - all.cash - all.annual));
   const mesOnly = monthSplit(NOV, { ...o('2026-11-04'), events: [...EV, { type: 'snc', date: '2026-11' }] });
   ok('split: evento só com o mês (sem dia) conta como já registado (até hoje)', mesOnly.toDate > sp.toDate && c2(mesOnly.rest) === c2(sp.rest));
   eq('split: sem acordo → null', monthSplit(NOV, { ym: '2026-11', todayISO: '2026-11-04' }), null);

@@ -288,7 +288,8 @@ has('Cl. 66.ª/3', CAB, 'O pagamento será devido comparando o novo serviço com
 {
   const { payStatus } = R('data/today.js');
   // Mês inteiro de baixa (CT art. 255.º): "Quanto recebo?" dá 0 €, não a base.
-  const ps = payStatus({ duties: {}, ae: pil, crewCategory: 'FO', crewContract: '12/12', aeEvents: days('2026-10-20', 42), now: new Date('2026-11-20T12:00:00') });
+  // (Outubro: em novembro entra o subsídio de Natal, bloco 6 — o seu corte numa baixa longa é dúvida do advogado.)
+  const ps = payStatus({ duties: {}, ae: pil, crewCategory: 'FO', crewContract: '12/12', aeEvents: days('2026-09-20', 42), now: new Date('2026-10-20T12:00:00') });
   eq('mês inteiro de baixa: quanto recebo = 0 €', ps.total, 0);
   // Sem valor na tabela: o item fica "sem valor", fora da soma (nunca 0,00 € como se fosse o valor).
   const so = pil.monthExtras('SO', { vacDays: 3 }, { ym: '2024-03' });

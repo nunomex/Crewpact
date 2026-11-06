@@ -6,7 +6,7 @@
 // É uma ESTIMATIVA DE APOIO ao piloto; NÃO substitui o processamento salarial
 // oficial da companhia. Categorias: CPT, SFO, FO, SO.
 
-import { pickTable } from './tables';
+import { pickTable, ymParts, admissionShare, beforeStart } from './tables';
 
 export const AE_ID = 'easyjet-spac';
 export const AE_LABEL = 'Easyjet · SPAC (pilotos)';
@@ -129,11 +129,36 @@ export const loyaltyPct = (cat, years = 0) => {
   return 0;
 };
 
-// Férias/ano (Art. 68.º, BTE 40/2023): 12/12 = 25 dias; restantes modalidades
-// PROPORCIONAIS (nº 1), arredondadas ao inteiro mais próximo (regra do nº 6-a).
+// Férias/ano (Art. 68.º, BTE 40/2023): 12/12 = 25 dias; PPY 8/12 = 17 (Art. 24.º, n.º 15) e PPY 9/12 = 19 (Art. 25.º, n.º 16).
+// 14-14, 21-7 e 7-7: o QUADRO do Art. 66.º (PDF p. 21 | BTE p. 69): "14-14 5 14 12 51 %", "21-7 8 21 18 74 %", "7-7 1 18 0
+// 71 %" — a coluna Férias (auditoria A-044/A-068: a app fazia 25 × % → 13 e 19). As restantes (5/4): proporcionais (n.º 1),
+// arredondadas ao inteiro mais próximo (n.º 6-a) — o 5/4 está nas dúvidas do advogado.
 // O ano de admissão é proporcional nos termos da lei (nº 2) — camada da lei no resolver.
 export const VAC_FULL_DAYS = 25;
-export const vacationDays = ({ contract = '12/12' } = {}) => Math.round(VAC_FULL_DAYS * contractFactor(contract));
+export const VAC_BY_CONTRACT = { 'PPY 8/12': 17, 'PPY 9/12': 19, '14-14': 14, '21-7': 21, '7-7': 18 };
+export const vacationDays = ({ contract = '12/12' } = {}) =>
+  (VAC_BY_CONTRACT[contract] != null ? VAC_BY_CONTRACT[contract] : Math.round(VAC_FULL_DAYS * contractFactor(contract)));
+
+// DDO e IDO dos PILOTOS (Anexo I.13, PDF p. 28 | BTE p. 76): "IDO = O tempo de folga do piloto é ≥ 90 minutos no dia de folga"
+// · "DDO = O tempo de folga do piloto é ≥ 0 mins, mas < 90 mins no dia de folga" (Art. 54.º). Não é a regra da cabine
+// (auditoria A-046/A-070/A-206). `minutesIntoNextDay` = quanto do serviço caiu no dia seguinte (o fim é o sign-off, ou os calços
+// + o pós-voo); 0 se acaba no próprio dia.
+export const dayOffKind = (minIntoDayOff) => {
+  const n = Number(minIntoDayOff);
+  if (!(n > 0)) return null;
+  return n >= 90 ? 'ido' : 'ddo';
+};
+export const minutesIntoNextDay = (svc, postFlightMin = 0) => {
+  const m = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(String(x || '')); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
+  const r = m(svc && svc.report_time);
+  if (r == null) return null;
+  const so = m(svc.signOff), bo = m(svc.block_on);
+  if (so == null && bo == null) return null;
+  let end = so != null ? so : bo;
+  if (end < r) end += 1440;
+  if (so == null) end += postFlightMin || 0;
+  return Math.max(0, end - 1440);
+};
 
 // Art. 46 — bónus de performance anual (discricionário, pago em dezembro): % da base
 // anual por categoria. ALVO ("on target") / MÁXIMO: CPT 10/20 · SFO 10/20 · FO 7,5/15
@@ -181,8 +206,8 @@ export const TABLE_VERSIONS = [
 export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
 export const hasTableFor = (cat, ym) => { const T = tableAt(ym); return !!T && T.BASE_ANNUAL[cat] != null; };
 
-// Pagamento base mensal (€) = anual × fração do contrato / 14 (mês normal;
-// junho/novembro recebem o dobro). Opções: `contract` (modalidade, default 12/12)
+// Pagamento base mensal (€) = anual × fração do contrato / 14 (o subsídio de férias e o de Natal vêm à parte, em junho e
+// novembro: annualItems). Opções: `contract` (modalidade, default 12/12)
 // e `index` (indexação 2025+, ex.: 1.03 para +3%; default 1 = valores de 2024).
 export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
   const T = tableAt(ym);
@@ -200,6 +225,11 @@ export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
   const mult = (distancesNM || []).reduce((s, d) => s + sectorMult(d), 0);
   return +(mult * nom).toFixed(2);
 };
+
+// Posicionamento (Art. 44.º): "um pagamento de acordo com os flight duty periods, conforme os setores desse servico (sector com
+// base na distância de grande círculo do setor)" → as bandas do per diem (Art. 37.º) sobre os setores do posicionamento
+// (auditoria A-039/A-063/A-188). "Não será devido durante a formação inicial (curso de type rating)" — a app não sabe; fica dito.
+export const POSITIONING_BY_SECTOR = true;
 
 // Estimativa mensal de apoio (€): base + per diems do mês + paragens nocturnas + extras.
 //   duties = array de serviços; cada serviço = array de distâncias (NM) das suas pernas.
@@ -264,6 +294,46 @@ export const airportStandby = (cat, { called = false, over4h = false, index = 1,
   return over4h ? r2(2 * ns) : r2(ns);
 };
 
+// ── PRESTAÇÕES QUE CAEM NUM MÊS CERTO (auditoria L1 e L11: A-040/A-050/A-065/A-181/A-183, bloco 6) ──
+//  · Subsídios (Art. 36.º, n.º 1 e 2): "pagas em junho e novembro respetivamente (...) proporcionalmente nos anos de
+//    contratação e cessação" e "correspondem a um mês de remuneração base (i.e. 1/14 da remuneração base anual), acrescido da
+//    média das prestações variáveis e das prestações permanentes pagas mensalmente". A parte certa é o 1/14; a média das
+//    variáveis o acordo não define (que rubricas, que período) → fica de fora e o item diz isso (`incomplete`). No ano da
+//    contratação, quem entra depois de junho recebe as férias com a retribuição de dezembro (o n.º 2 manda a diferença das
+//    férias desse ano para dezembro) — leitura da app, pacote do advogado.
+//  · Prestação complementar anual (Art. 45.º; Anexo I.8): "em uma só prestação no mês de abril de cada ano"; proporcional nos
+//    PPY (Art. 24.º, n.º 14; Art. 25.º, n.º 15) e no 14-14, 21-7 e 7-7 (Art. 66.º, n.º 1: "incluindo (...) prestação
+//    complementar anual"). O 5/4 reduz só a base (Art. 59.º) → inteira.
+//  · Prémio de permanência (Art. 47.º; Anexo I.9): "no mês em que o piloto elegível complete o seu aniversário de serviço",
+//    % da base paga anualmente; "a tempo parcial (...) de forma proporcional" (n.º 4).
+//  · Retenção (Art. 24.º, n.º 20; Art. 25.º; Anexo I.15): PPY que não seja opção de estilo de vida, "no processamento salarial
+//    de maio, iniciando-se em maio de 2024", com contrato "a 31 de agosto do ano anterior ao do pagamento" (alínea c)).
+//  · O bónus de performance (Art. 46.º) é discricionário: não entra.
+const BENEFITS_PRORATA = ['PPY 9/12', 'PPY 8/12', '14-14', '21-7', '7-7'];
+const SUB_NOTE = { pt: 'Sem a média das prestações variáveis (o acordo não diz que rubricas nem que período).', en: 'Without the average of variable pay (the agreement does not say which items or period).' };
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, lifestyle = false } = {}) => {
+  const p = ymParts(ym), T = tableAt(ym);
+  if (!p || !T || T.BASE_ANNUAL[cat] == null || beforeStart(serviceStart, ym)) return [];
+  const f = contractFactor(contract);
+  const sub = (T.BASE_ANNUAL[cat] * f * index) / SALARY_INSTALMENTS;
+  const s = ymParts(serviceStart);
+  const admY = !!(s && s.y === p.y);
+  const out = [];
+  const add = (id, eur, extra = {}) => { if (eur > 0) out.push({ id, eur: r2(eur), ...extra }); };
+  if (p.m === 6 && !(admY && s.m > 6)) add('ferias', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º' });
+  if (p.m === 12 && admY && s.m > 6) add('ferias', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º, n.º 2' });
+  if (p.m === 11) add('natal', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º' });
+  if (p.m === 4) add('benefits', (T.BENEFITS_ANNUAL[cat] || 0) * (BENEFITS_PRORATA.includes(contract) ? f : 1), { cite: 'Art. 45.º' });
+  if (s && p.m === s.m && p.y > s.y) {
+    const pct = loyaltyPct(cat, p.y - s.y);
+    if (pct) add('loyalty', pct * T.BASE_ANNUAL[cat] * index * f, { years: p.y - s.y, cite: 'Art. 47.º' });
+  }
+  if (p.m === 5 && p.y >= 2024 && isSeasonalContract(contract) && !lifestyle && s && (s.y * 12 + s.m) <= ((p.y - 1) * 12 + 8)) {
+    add('retention', T.RETENTION_EUR[cat] || 0, { cite: 'Art. 24.º, n.º 20' });
+  }
+  return out;
+};
+
 // Catálogo de cálculos do AE de PILOTO (para listar na página Cálculos). `linked`
 // = entra no total mensal interligado (computeAeMonth).
 export const CALCS = [
@@ -273,18 +343,18 @@ export const CALCS = [
   { id: 'vac',     group: 'Por voo',     linked: false, label: 'Dia de férias',             sub: '2 setores nominais (Art. 38)' },
   { id: 'adhoc',   group: 'Por voo',     linked: false, label: 'Dever ad-hoc',              sub: '3 setores nominais (Art. 43)' },
   { id: 'snc',     group: 'Perturbação', linked: false, label: 'Alteração de escala (SNC)', sub: '€60/evento' },
-  { id: 'ddo',     group: 'Perturbação', linked: false, label: 'Trabalhar em folga (DDO)',  sub: '0,4% base anual' },
-  { id: 'ido',     group: 'Perturbação', linked: false, label: 'Folga infringida (IDO)',    sub: '0,8% base anual' },
+  { id: 'ddo',     group: 'Perturbação', linked: false, label: 'Entrou na folga < 90 min (DDO)', sub: '0,4% base anual (Anexo I.13)' },
+  { id: 'ido',     group: 'Perturbação', linked: false, label: 'Entrou na folga ≥ 90 min (IDO)', sub: '0,8% base anual (Anexo I.13)' },
   { id: 'wfly',    group: 'Perturbação', linked: false, label: 'Voluntário em folga (WFLY)', sub: '1% base anual' },
   { id: 'sick',    group: 'Subsídios',   linked: false, label: 'Complemento de doença',     sub: '60% base diária (dias 1-3)' },
   { id: 'instr',   group: 'Funções',     linked: false, label: 'Instrutor / verificador',   sub: '€120/dia', role: true },
   { id: 'adty',    group: 'Por voo',     linked: false, label: 'Serviço de aeroporto (ADTY)', sub: '1-2 setores nominais · conforme serviço (Anexo I.5)' },
   { id: 'office4', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC4)',   sub: '1,5 setores nominais (Anexo I.14)' },
   { id: 'office8', group: 'Funções',     linked: false, label: 'Dia de escritório (OFC8)',   sub: '3 setores nominais (Anexo I.14)' },
-  { id: 'benefits',  group: 'Subsídios', linked: false, label: 'Prestação de benefícios',    sub: '€/ano por categoria (Anexo I.8)' },
+  { id: 'benefits',  group: 'Subsídios', linked: true,  label: 'Prestação complementar anual', sub: 'em abril · €/ano por categoria (Art. 45.º, Anexo I.8)' },
   { id: 'pregnancy', group: 'Subsídios', linked: false, label: 'Complemento de gravidez',    sub: '35% da base mensal (Anexo I.11)' },
-  { id: 'retention', group: 'Subsídios', linked: false, label: 'Retenção (contrato sazonal)', sub: '€/ano · só sazonal, não estilo de vida (Anexo I.15 / Art. 66.9)', when: ({ contract, lifestyle }) => isSeasonalContract(contract) && !lifestyle },
-  { id: 'loyalty',   group: 'Subsídios', linked: false, label: 'Prémio de permanência',      sub: '% da base anual por antiguidade (Anexo I.9)', when: ({ category }) => loyaltyPct(category, 99) > 0 },
+  { id: 'retention', group: 'Subsídios', linked: true,  label: 'Retenção (contrato sazonal)', sub: 'em maio · só sazonal, não estilo de vida (Anexo I.15 / Art. 24.º, n.º 20)', when: ({ contract, lifestyle }) => isSeasonalContract(contract) && !lifestyle },
+  { id: 'loyalty',   group: 'Subsídios', linked: true,  label: 'Prémio de permanência',      sub: 'no mês do aniversário · % da base anual (Art. 47.º, Anexo I.9)', when: ({ category }) => loyaltyPct(category, 99) > 0 },
   { id: 'bonus',     group: 'Subsídios', linked: false, label: 'Bónus de performance anual',  sub: 'ALVO · estimativa — varia (Art. 46)' },
 ];
 
@@ -357,8 +427,8 @@ export const EXTRA_KINDS = [
   { id: 'adhocDays',      calc: 'adhoc',      per: 'day',   label: { pt: 'Dias ad-hoc',                  en: 'Ad-hoc days' } },
   { id: 'vacDays',        calc: 'vacDay',     per: 'day',   label: { pt: 'Dias de férias',               en: 'Leave days' } },
   { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença',               en: 'Sick days' } },   // Art. 48 — 1-3 por EPISÓDIO (limitado no eventCounts); SEM teto de mês
-  { id: 'ddo',            calc: 'ddo',        per: 'event', label: { pt: 'Trabalhar em folga (DDO)',     en: 'Worked day off (DDO)' } },
-  { id: 'ido',            calc: 'ido',        per: 'event', label: { pt: 'Folga infringida (IDO)',       en: 'Infringed day off (IDO)' } },
+  { id: 'ddo',            calc: 'ddo',        per: 'event', label: { pt: 'Entrou na folga menos de 90 min (DDO)', en: 'Under 90 min into day off (DDO)' } },
+  { id: 'ido',            calc: 'ido',        per: 'event', label: { pt: 'Entrou na folga 90 min ou mais (IDO)',  en: '90 min or more into day off (IDO)' } },
   { id: 'wfly',           calc: 'wfly',       per: 'event', label: { pt: 'Voluntário em folga (WFLY)',   en: 'Volunteer day off (WFLY)' } },
   { id: 'snc',            calc: 'snc',        per: 'event', label: { pt: 'Alteração de escala (SNC)',     en: 'Short-notice change (SNC)' }, auto: true },
 ];

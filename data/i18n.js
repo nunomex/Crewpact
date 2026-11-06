@@ -168,6 +168,24 @@ export const VALUE_I18N = {
   '€16,27/setor (Cl. 34)': '€16.27/sector (Cl. 34)', '€25/dia de treino (Cl. 35)': '€25/training day (Cl. 35)',
   '€25 / dia (Cl. 35)': '€25 / day (Cl. 35)',
   '4 setores nominais (Cl. 35)': '4 nominal sectors (Cl. 35)',
+  // Bloco 6 da auditoria (dinheiro a menos)
+  'Entrou na folga < 90 min (DDO)': 'Under 90 min into day off (DDO)', 'Entrou na folga ≥ 90 min (IDO)': '90 min or more into day off (IDO)',
+  '0,4% base anual (Anexo I.13)': '0.4% annual base (App. I.13)', '0,8% base anual (Anexo I.13)': '0.8% annual base (App. I.13)',
+  'Prestação complementar anual': 'Annual supplementary payment',
+  'em abril · €/ano por categoria (Art. 45.º, Anexo I.8)': 'in April · €/year by rank (Art. 45, App. I.8)',
+  'em maio · só sazonal, não estilo de vida (Anexo I.15 / Art. 24.º, n.º 20)': 'in May · seasonal only, not lifestyle (App. I.15 / Art. 24(20))',
+  'no mês do aniversário · % da base anual (Art. 47.º, Anexo I.9)': 'in the anniversary month · % of annual base (Art. 47, App. I.9)',
+  'pela duração da viagem: curto a longo (Anexo I.18)': 'by trip length: short to long (App. I.18)',
+  'VB + VE (2% por anuidade técnica) + VS (1,5% por ano) · cl. 2.ª': 'VB + VE (2% per technical year) + VS (1.5% per year) · cl. 2',
+  '1,5% do VB por ano de companhia (cl. 5.ª)': '1.5% of VB per year of service (cl. 5)',
+  'a remuneração base, em dezembro (cl. 8.ª)': 'the base pay, in December (cl. 8)',
+  'a remuneração base, no mês antes das férias (cl. 7.ª)': 'the base pay, the month before your leave (cl. 7)',
+  '1% do VB por anuidade (cl. 5.ª)': '1% of VB per year of service (cl. 5)',
+  'VB + VS, em dezembro (cl. 17.ª)': 'VB + VS, in December (cl. 17)',
+  'VB + VS + 675 €, no mês antes das férias (cl. 18.ª)': 'VB + VS + €675, the month before your leave (cl. 18)',
+  '8% das AC1 + AC2 do mês, pago no seguinte (cl. 11.ª)': '8% of the month’s AC1 + AC2, paid the next month (cl. 11)',
+  '40 €/dia · assistência em casa, formação, instalações; 2× assistência no aeroporto (cl. 8.ª)': '€40/day · home standby, training, company premises; 2× airport standby (cl. 8)',
+  'Subsídio de Natal': 'Christmas allowance', 'Subsídio de férias': 'Holiday allowance', 'Vencimento de senioridade': 'Seniority pay',
 };
 
 export const STRINGS = {

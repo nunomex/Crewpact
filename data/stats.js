@@ -3,7 +3,7 @@
 // ganhos pelo MESMO caminho da vista Mês (monthlyAe mês a mês + eventos do mês via
 // ae.monthExtras) — Ano = soma dos Meses. Fonte: o store cru `duties` (não o dayLog
 // do motor FTL), para contar TUDO o que está na escala, importado ou manual.
-import { monthlyPerDiem, monthlyAe } from './perdiem';
+import { monthlyPerDiem, monthlyAe, awayNights } from './perdiem';
 import { eventCounts } from './aeEvents';
 import { resolveCrew } from './crewHistory';
 import { restAfterDuty } from '../ftl';
@@ -40,7 +40,7 @@ export const availableYears = (duties = {}) => {
 };
 
 // Agrega o ano `year`. now = referência (meses decorridos p/ a base AE; testável).
-export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null } = {}) => {
+export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, lifestyle = false } = {}) => {
   const y = String(year || now.getFullYear());
   const months = Array.from({ length: 12 }, () => ({ flightMin: 0, dutyMin: 0, sectors: 0, count: 0 }));
   const byKind = {}; STAT_KINDS.forEach((k) => { byKind[k] = 0; });
@@ -60,7 +60,6 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
     // A EASA conta por PERÍODO DE SERVIÇO (ORO.FTL.210): horas/voo/setores/tipo somam a
     // primária + TODOS os `extra` do dia (multi-serviço). Pernoita fica day-level (1 noite/dia).
     const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
-    if (svcs.some((s) => s && s.nightStop)) nightStops++;
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
@@ -89,6 +88,8 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
     }
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
+  // Noites fora da base: a noite de cada dia que acaba fora + a estadia até ao serviço seguinte que parte dali (bloco 6, L13).
+  nightStops = awayNights(duties, null).filter((d) => d.startsWith(y + '-')).length;
 
   // AE YTD (estimativa) — só companhias AE com categoria. A categoria escala o AE inteiro
   // e é EFFECTIVE-DATED: somamos MÊS A MÊS com a categoria/contrato que valia em cada mês
@@ -115,6 +116,8 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
     const index = lastAe && lastAe.indexFactor ? lastAe.indexFactor(`${y}-12`) : 1;   // o índice do fim do ano (só para mostrar)
     let estimated = false;
     let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0, noTable = false, uncertain = false;
+    let posY = 0, annualY = 0, incomplete = false, seniorityUnknown = false;
+    const annualItemsY = [];
     for (let mo = 0; mo < monthsElapsed; mo++) {
       const ym = `${y}-${String(mo + 1).padStart(2, '0')}`;
       const ae = monthsAe[mo];   // o AE DESTE mês (sombra intencional: o resto do ciclo usa-o)
@@ -124,11 +127,14 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       const { category: catM, contract: ctrM, fleet: fleetM } = resolveCrew(history, ym);   // posto DESSE mês (categoria, contrato, frota)
       if (!catM) continue;
       if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
-      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet });   // à categoria e à frota desse mês (frota → coluna A no TAP)
+      const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet, serviceStart, history, events, lifestyle });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
         if (m.baseRange) uncertain = true;
+        if (m.seniority && m.seniority.unknown) seniorityUnknown = true;
         baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
+        posY += m.positioning || 0; annualY += m.annual || 0;
+        (m.annualItems || []).forEach((it) => { annualItemsY.push({ ...it, ym }); if (it.incomplete) incomplete = true; });
         wrY += m.withRoute; missY += m.missing;
       } else {
         const b = ae.monthlyBase(catM, { contract: ctrM, index, ym }) || 0;
@@ -141,9 +147,17 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
         if (xt && xt.total) { eventsY += xt.total; totalY += xt.total; }
       }
     }
+    // O subsídio de férias da TAP sem férias registadas no ano: o mês não se sabe (fica fora dos meses; diz-se à parte).
+    const lastYm = `${y}-${String(Math.max(1, monthsElapsed)).padStart(2, '0')}`;
+    const lastCrew = resolveCrew(history, lastYm);
+    const pendAe = monthsAe[monthsElapsed - 1] || null;
+    const pendingAnnual = (pendAe && typeof pendAe.pendingAnnual === 'function' && lastCrew.category && monthsElapsed === 12)
+      ? pendAe.pendingAnnual(lastCrew.category, { year: +y, contract: lastCrew.contract || '12/12', index: pendAe.indexFactor ? pendAe.indexFactor(lastYm) : 1, serviceStart, history, events })
+      : [];
     aeYtd = {
       base: +baseY.toFixed(2), cash: +cashY.toFixed(2), perDiem: +perDiemY.toFixed(2),
       nightStops: +nightY.toFixed(2), extras: +extrasY.toFixed(2), events: +eventsY.toFixed(2),
+      positioning: +posY.toFixed(2), annual: +annualY.toFixed(2), annualItems: annualItemsY, incomplete, pendingAnnual, seniorityUnknown,
       total: +totalY.toFixed(2), monthsElapsed, index,
       estimated, noTable, uncertain,
       withRoute: wrY, missing: missY,
@@ -188,7 +202,7 @@ const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 // vista de Mês das Estatísticas. `days` = horas de voo por dia (gráfico diário); `aeMonth`
 // = ganhos estimados do mês (base + per-diem + pernoita, via monthlyAe, à categoria/contrato
 // EFFECTIVE-DATED desse mês). Módulo PURO (testável por golden).
-export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null } = {}) => {
+export const monthStats = (duties = {}, { ym, ae = null, category = null, contract = '12/12', crewHistory = null, fleet = null, postFlightMin = 0, events = [], now = new Date(), baseAt = null, serviceStart = null, lifestyle = false } = {}) => {
   const [Y, M] = String(ym || '').split('-').map(Number);
   const y = Y || now.getFullYear();
   const m0 = M ? M - 1 : now.getMonth();
@@ -210,7 +224,6 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     if (dn != null) dutyDayNums.push(dn);
     // Primária + extra (ORO.FTL.210 conta por serviço); pernoita day-level (1 noite/dia).
     const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
-    if (svcs.some((s) => s && s.nightStop)) nightStops++;
     for (const s of svcs) {
       if (!s) continue;
       const kind = s.kind || 'flight';
@@ -240,6 +253,7 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     }
   }
   const topDest = Object.entries(dest).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([code, n]) => ({ code, n }));
+  nightStops = awayNights(duties, ymStr).length;   // noites fora (bloco 6, L13)
 
   // Folgas no mês = dias DECORRIDOS do mês − dias com serviço (mês corrente: até hoje).
   const cy = now.getFullYear(), cm = now.getMonth();
@@ -272,12 +286,14 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
   const resolved = history.length ? resolveCrew(history, ymStr) : { category: null, contract: '12/12' };
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
     const index = ae.indexFactor ? ae.indexFactor(ymStr) : 1;   // por MÊS (A-041)
-    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet });   // frota DESSE mês; null sem tabela
+    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet, serviceStart, history, events, lifestyle });   // frota DESSE mês; null sem tabela
     const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr, contract: resolved.contract || '12/12' }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {
       base: m.base, cash: m.cashHandling || 0, perDiem: m.perDiem, nightStops: m.nightStops,
       extras: m.extras || 0, events: eventsEur, total: +((m.total || 0) + eventsEur).toFixed(2),
+      positioning: m.positioning || 0, positioningMax: m.positioningMax || 0, annual: m.annual || 0, annualItems: m.annualItems || [],
+      chefia: m.chefia || 0, perDiemMax: m.perDiemMax || null, seniority: m.seniority || null,
       withRoute: m.withRoute, missing: m.missing,
       estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(ymStr)) && index > 1,
       baseRange: m.baseRange || null,   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta
@@ -307,8 +323,9 @@ export const monthSplit = (duties = {}, opts = {}) => {
   const pastDuties = Object.fromEntries(Object.entries(duties || {}).filter(([iso]) => iso <= todayISO));
   const pastEvents = (opts.events || []).filter((e) => e && e.date && (String(e.date).length === 7 || String(e.date) <= todayISO));
   const past = monthStats(pastDuties, { ...opts, events: pastEvents }).aeMonth;
-  const fixed = c2((all.base || 0) + (all.cash || 0));
+  // Fixos: a base, o abono e os subsídios/prestações do mês (caem no mês, não dependem dos dias).
+  const fixed = c2((all.base || 0) + (all.cash || 0) + (all.annual || 0));
   const variable = c2(all.total - fixed);
-  const toDate = past ? c2(past.total - (past.base || 0) - (past.cash || 0)) : 0;
+  const toDate = past ? c2(past.total - (past.base || 0) - (past.cash || 0) - (past.annual || 0)) : 0;
   return { fixed, toDate, rest: c2(variable - toDate), total: all.total };
 };

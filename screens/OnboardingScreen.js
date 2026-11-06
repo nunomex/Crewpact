@@ -183,7 +183,7 @@ export default function OnboardingScreen() {
         sub: beforeHasAe && ae
           ? l(`Até aí, a app calcula com o acordo da ${beforeName}. A partir daí, com o da ${newName}. A antiguidade também conta deste mês.`, `Until then, the app uses the ${beforeName} agreement. From then on, the ${newName} one. Seniority also counts from this month.`)
           : l(`Até aí, os meses ficam com a ${beforeName}. A partir daí, contam com a ${newName}.`, `Until then, months stay with ${beforeName}. From then on, they count with ${newName}.`) }
-      : { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus: without it, your pay is incomplete. Month and year are enough.') },
+      : { q: l('Na companhia desde?', 'With the airline since?'), sub: l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough.') },
   };
   const idx = Math.min(step, flow.length - 1);
   const field = flow[idx];

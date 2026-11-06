@@ -97,10 +97,11 @@ export const dutyFromActivity = (act, base = null) => {
     sectors,
     flight_minutes: timesOk ? flightMin : 0,
     route,
-    // Pernoita = NOITE FORA DA BASE (Art. 39/56): o serviço de voo acaba num aeroporto ≠ base. Sem base/rota → recurso pela
-    // paridade dos setores. Um posicionamento sozinho não marca pernoita (a do piloto é dúvida — Art. 39.º "entre serviços de
-    // voo" —, a da cabine fica para o bloco do dinheiro, L13).
-    nightStop: kind === 'flight' ? isNightStop(route, base, sectors) : false,
+    // Pernoita = NOITE FORA DA BASE (Art. 39/56): o serviço acaba num aeroporto ≠ base. Sem base/rota → recurso pela paridade
+    // dos setores. O posicionamento que acaba fora também (cabine Cl. 56.ª: "em voo, formação e outras funções"; pilotos Art.
+    // 44.º: "posicionamentos com paragens noturnas"; auditoria A-033/A-274, bloco 6) — mas só com a base e a rota (sem setores
+    // operados, a paridade não diz nada).
+    nightStop: kind === 'flight' ? isNightStop(route, base, sectors) : (!!(base && route) && isNightStop(route, base, sectors)),
     // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
     // só o essencial por leg — flightNo + aeroportos + horas planeadas (+ `dh` no posicionamento).
     legs: legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: timesOk ? (l.depTime || null) : null, on: timesOk ? (l.arrTime || null) : null, offZ: timesOk ? (l.depTimeZ || null) : null, onZ: timesOk ? (l.arrTimeZ || null) : null, ...(l.dh ? { dh: true } : {}) })),
@@ -142,7 +143,7 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
 // Duty SEM-VOO do calendário/PDF { dateISO, start, end, kind } → linha de duty. O kind
 // já vem do item (rosterCodes, por companhia). Sem setores/voo. `end` null (o PDF não o trouxe) → `block_on` null → o
 // candidato fica a corrigir (missingOf), nunca pronto e fora dos 210 (A-220).
-export const dutyFromNonFlight = (it) => {
+export const dutyFromNonFlight = (it, base = null) => {
   if (!it || !it.dateISO) return null;
   return {
     duty_date: it.dateISO,
@@ -153,6 +154,8 @@ export const dutyFromNonFlight = (it) => {
     sectors: 0,
     flight_minutes: 0,
     route: it.route || null,
+    // Posicionamento que acaba fora da base = noite fora (Cl. 56.ª; Art. 44.º — bloco 6, L13). Só com a base e a rota.
+    ...(it.kind === 'positioning' && base && it.route && isNightStop(it.route, base, 0) ? { nightStop: true } : {}),
     // Sinais de €€ do AE lidos do calendário/PDF (e-learning paga 0 · OFC8 paga 3 NS).
     ...(it.eLearning ? { eLearning: true } : {}),
     ...(it.officeType ? { officeType: it.officeType } : {}),
@@ -233,7 +236,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     return cand;
   };
   for (const act of activities) { const d = dutyFromActivity(act, bAt(act && act.dateISO)); const c = make(d, d ? d.kind : 'flight'); if (c) out.push(c); }
-  for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
+  for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf, base), nf.kind); if (c) out.push(c); }
   // O serviço a que falta uma hora vai para a frente; EXISTE → classify a 3 vias (changed/conflict/same).
   for (const c of out) {
     const p = promoteMissing(c.duty, c.kind);

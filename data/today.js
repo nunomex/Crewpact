@@ -326,20 +326,23 @@ export function rosterStatus(rosterChanges) {
 
 // "Quanto recebo?" — total estimado do mês + a decomposição (só companhias AE).
 // `aeEvents` = extras como EVENTOS DATADOS → contados p/ o mês (doença por episódio).
-export function payStatus({ duties = {}, ae, crewCategory, crewContract, crewFleet, aeEvents, now = new Date() } = {}) {
+export function payStatus({ duties = {}, ae, crewCategory, crewContract, crewFleet, aeEvents, now = new Date(), serviceStart = null, crewHistory = null, lifestyle = false } = {}) {
   if (!ae || !crewCategory) return null;
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const index = ae.indexFactor ? ae.indexFactor(ym) : 1;   // por mês: o IPC dos pilotos easyJet conta desde 1-fev-2025 (A-041)
-  const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet });
+  const more = { serviceStart, history: crewHistory, events: aeEvents || [], lifestyle };   // subsídios, antiguidade (bloco 6)
+  const m = monthlyAe(duties, crewCategory, crewContract || '12/12', ae, { ym, index, fleet: crewFleet, ...more });
   if (!m && ae.hasTableFor && !ae.hasTableFor(crewCategory, ym)) return null;   // sem tabela nesse mês → sem "quanto recebo"
-  const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index, ym });
-  const tot = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, ae ? ae.SICK_FIRST3 !== false : true), fleet: crewFleet });
+  const base = m ? m.base : ae.monthlyBase(crewCategory, { contract: crewContract || '12/12', index, ym, serviceStart, history: crewHistory });
+  const tot = aeMonthTotal(duties, crewCategory, crewContract || '12/12', ae, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, ae ? ae.SICK_FIRST3 !== false : true), fleet: crewFleet, ...more });
   const total = tot != null ? tot : base;   // 0 € é um valor (o mês inteiro de baixa, CT art. 255.º) — revisão do bloco 5
   return {
     id: 'pay', status: 'neutral', base, total, variable: +(total - base).toFixed(2),
     baseRange: m ? m.baseRange || null : null,   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta
     perDiem: m ? m.perDiem : 0, nightStops: m ? m.nightStops : 0, extras: m ? m.extras : 0,
+    positioning: m ? m.positioning || 0 : 0, annual: m ? m.annual || 0 : 0, annualItems: m ? m.annualItems || [] : [],
     manualExtras: +(total - (m ? m.total : base)).toFixed(2),
+    variableOnly: +(total - base - (m ? m.annual || 0 : 0)).toFixed(2),
     meta: m ? { withRoute: m.withRoute, missing: m.missing, count: m.count, officeDays: m.officeDays, adtyDays: m.adtyDays, nightStopDays: m.nightStopDays } : null,
     expired: !!(ae.isAgreementExpired && ae.isAgreementExpired(now)), contract: crewContract || '12/12', ym,
   };

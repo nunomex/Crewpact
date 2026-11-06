@@ -13,7 +13,7 @@ import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext, isoDay } from '../data/appContext';
 import { requestCalendarAccess } from '../data/calendar';
-import { sectorDistancesNM, monthlyPerDiem } from '../data/perdiem';
+import { monthlyAe, serviceMoney, aeIndex, awayNights } from '../data/perdiem';
 import { sncToRegister } from '../data/disruption';
 import { nightStopStation, hotelMapsUrl } from '../data/hotels';
 import HotelSheet from '../components/HotelSheet';
@@ -240,9 +240,11 @@ export default function EscalaScreen({ navigation, route }) {
   // Resumo do mês numa linha: serviços (a MESMA regra do stats.js) · pernoitas · per-diem.
   const serviceCount = monthDutyDays.length;
   const catYm = crewAt(ym).category;
-  const pd = (ae && catYm) ? monthlyPerDiem(duties, catYm, ae, { ym, fleet: crewAt(ym).fleet }) : null;
-  const perDiemTotal = pd ? pd.total : null;
-  const nightCount = monthDutyDays.reduce((n, iso) => n + (duties[iso].nightStop ? 1 : 0), 0);
+  // O per-diem do mês pelo MESMO caminho dos Números (monthlyAe, com o índice do mês — auditoria A-193, bloco 6) e as noites
+  // fora pela mesma conta (a estadia inteira, L13).
+  const pdM = (ae && catYm) ? monthlyAe(duties, catYm, crewAt(ym).contract || '12/12', ae, { ym, index: aeIndex(ae, ym), fleet: crewAt(ym).fleet }) : null;
+  const perDiemTotal = pdM ? pdM.perDiem : null;
+  const nightCount = awayNights(duties, ym).length;
 
   const kindLabel = (kind) => (kind === 'flight' ? l('Voo', 'Flight') : t('duties.kind.' + kind, lang));
 
@@ -442,28 +444,12 @@ export default function EscalaScreen({ navigation, route }) {
       const canExpand = idx === 0;
       const collapsed = legs.length > 3 && !(secExpand && canExpand);
       const shown = collapsed ? legs.slice(0, 3) : legs;
-      let perDiem = null;
-      if (aeD && catD && isFlight) { const dists = sectorDistancesNM(d); if (dists.length && !dists.some((x) => x == null)) perDiem = aeD.perDiem(catD, dists, 1, crewAt(sel).fleet, sel); }
-      const nsEur = (d.nightStop && aeD && aeD.nightStop && catD && !aeD.PER_DIEM_BY_DAY) ? aeD.nightStop(catD, 1, sel) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
-      // € do dia NÃO-VOO — as MESMAS regras do motor mensal (treino piloto = 3 NS, Art. 43 · terra OFC4/OFC8 ·
-      // ADTY pela matriz do Anexo I.5). AE sem o item → nada (não se inventa prestação).
-      const svcEur = (() => {
-        if (!aeD || !catD || isFlight) return null;
-        if (kind === 'training') return (!d.eLearning && aeD.adhoc) ? { lbl: l('formação', 'training'), eur: aeD.adhoc(catD, 1, sel) } : null;
-        if (kind === 'office') {
-          if (d.officeType === 'ofc8' && aeD.office8) return { lbl: 'OFC8', eur: aeD.office8(catD, 1, sel) };
-          if (aeD.office4) return { lbl: 'OFC4', eur: aeD.office4(catD, 1, sel) };
-          return aeD.office ? { lbl: l('terra', 'ground'), eur: aeD.office(catD, sel) } : null;
-        }
-        if (kind === 'standby_airport' && aeD.airportStandby) {
-          const r = clkMin(d.report_time), e = clkMin(d.block_on);
-          const dm = (r != null && e != null) ? (e >= r ? e - r : e + 1440 - r) : null;
-          const called = services.some((x) => x && (x.kind || 'flight') === 'flight');
-          const eur = aeD.airportStandby(catD, { called, over4h: dm != null && dm >= 240, ym: sel });   // sem horas → o garantido (< 4 h), A-220
-          return eur > 0 ? { lbl: 'ADTY', eur } : null;
-        }
-        return null;
-      })();
+      // € do serviço: a MESMA função e o MESMO índice do total do mês (serviceMoney; auditoria L2, L5 e L10, bloco 6).
+      const money = (aeD && catD) ? serviceMoney(aeD, catD, d, { date: sel, fleet: crewAt(sel).fleet, daySvcs: services }) : null;
+      const perDiem = money ? money.perDiem : null;
+      const nsEur = money ? money.nightStop : null;   // TAP: estadia só nos dias sem voo (bloco 5)
+      const svcEur = money && money.other && money.other.eur != null ? { lbl: money.other.lbl[lang === 'en' ? 'en' : 'pt'], eur: money.other.eur } : null;
+      const posEur = money && money.positioning != null ? money.positioning : null;
       const so = clkMin(d.signOff), onM = clkMin(d.block_on), rm = clkMin(d.report_time);
       const end = so != null ? so : (onM != null ? onM + (isFlight ? pf : 0) : null);   // débrief só em voo (235c)
       const endsNext = end != null && rm != null && (end % 1440) < rm;
@@ -477,6 +463,8 @@ export default function EscalaScreen({ navigation, route }) {
         perDiem != null ? `${l('per-diem', 'per diem')} ${fmtEur(perDiem)}` : null,
         svcEur != null ? `${svcEur.lbl} ${fmtEur(svcEur.eur)}` : null,
         nsEur != null ? `${l('pernoita', 'night stop')} ${fmtEur(nsEur)}` : null,
+        money && money.dayCounted ? l('ajuda já contada no dia', 'allowance already counted for the day') : null,
+        posEur != null ? `${l('posicionamento', 'positioning')} ${fmtEur(posEur)}${money.positioningMax > posEur ? ` ${l('a', 'to')} ${fmtEur(money.positioningMax)}` : ''}` : null,
       ].filter(Boolean);
       return (
         <View key={`svc${idx}`} style={s.card}>
@@ -531,7 +519,7 @@ export default function EscalaScreen({ navigation, route }) {
                 <Text style={s.moneyLbl}>{multi ? l('Ganhos do serviço', 'Service earnings') : l('Ganhos do dia', 'Day earnings')}</Text>
                 <Text style={s.rowCaption}>{payParts.join(' · ')}</Text>
               </View>
-              <Text style={s.moneyTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0) + (svcEur ? svcEur.eur : 0))}</Text>
+              <Text style={s.moneyTotal}>+{fmtEur((perDiem || 0) + (nsEur || 0) + (svcEur ? svcEur.eur : 0) + (posEur || 0))}</Text>
             </View>
           ) : null}
 

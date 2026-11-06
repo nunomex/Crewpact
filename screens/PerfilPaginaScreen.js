@@ -127,7 +127,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
     return (
       <Pagina {...back}
         title={l(`Na ${coName} desde`, `With ${coName} since`)}
-        lead={l('A antiguidade paga o prémio de permanência: sem ela, o salário sai incompleto. Mês e ano chegam.', 'Seniority pays the loyalty bonus: without it, your pay is incomplete. Month and year are enough.')}
+        lead={l('A antiguidade entra no salário (anuidades, senioridade, prémio de permanência, subsídios do 1.º ano — conforme o acordo): sem ela, sai incompleto. Mês e ano chegam.', 'Seniority goes into your pay (service-year pay, long-service award, first-year allowances — depending on the agreement): without it, your pay is incomplete. Month and year are enough.')}
         footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === startYm} />}>
         <MonthYearWheel value={startYm || null} onChange={setYm} lang={lang} />
         <Text style={[P.foot, s.gap]}>{l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')}</Text>

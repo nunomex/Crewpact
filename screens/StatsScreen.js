@@ -13,6 +13,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import useEnter from '../hooks/useEnter';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { yearStats, monthStats, availableYears, ANNUAL_FLIGHT_LIMIT_H, STAT_KINDS } from '../data/stats';
+import { annualLabel } from '../data/perdiem';
 import { yearRadiation, RADIATION_LIMITS_MSV } from '../data/radiation';
 import { provaFor } from '../data/prova';
 import ProvaSheet from '../components/ProvaSheet';
@@ -65,7 +66,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, lifestyle } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -123,9 +124,9 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt }),
-    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents], // eslint-disable-line react-hooks/exhaustive-deps
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, lifestyle })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, lifestyle }),
+    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -187,12 +188,30 @@ export default function StatsScreen({ navigation }) {
   const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${l('faltam as datas de atividade', 'activity dates missing')})` : (isYear && A.uncertain ? ` · ${l('incerto (faltam as datas de atividade)', 'uncertain (activity dates missing)')}` : '');
   const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
   // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
+  // TAP: o subsídio de férias paga-se no mês antes das férias; sem férias registadas o mês não se sabe (fica fora da soma).
+  const pendTxt = (isYear && A.pendingAnnual && A.pendingAnnual.length)
+    ? l(`Subsídio de férias de ${fmtEur0(A.pendingAnnual[0].eur)}: entra no mês antes das tuas férias — regista-as para ele aparecer.`, `Holiday allowance of ${fmtEur0(A.pendingAnnual[0].eur)}: paid the month before your leave — log your leave for it to show.`)
+    : null;
+  // TAP: sem a data de entrada não há anuidades nem senioridade (Cl. 4.ª/5.ª) — diz-se que falta.
+  const senTxt = (A.seniority && A.seniority.unknown) || (isYear && A.seniorityUnknown)
+    ? l('Sem a data de entrada na companhia: a base fica sem as anuidades e a senioridade. Junta-a no Perfil.', 'No company start date: the base leaves out service-year pay. Add it in Profile.')
+    : (A.seniority && A.seniority.fromEntry && (A.seniority.anuidades || A.seniority.anos))
+      ? l('Anuidades contadas desde a entrada na companhia; o acordo conta-as desde a largada — se foi depois, vencem mais tarde.', 'Service years counted from your company start; the agreement counts them from your first line release — if later, they fall due later.')
+      : null;
   const noTableTxt = (ae && !aeBlock) ? l('Sem valores do acordo para este período: a tabela publicada só começa depois, ou ainda não estavas na companhia.', 'No agreement values for this period: the published table starts later, or you had not joined yet.') : (isYear && A.noTable ? l('Há meses deste ano sem tabela do acordo: não entram na soma.', 'Some months this year have no agreement table: they are left out.') : null);
   const moneyOpts = [
     { k: 'total', nm: l('Total', 'Total'), ic: 'stats', val: total },
     { k: 'base', nm: l('Base', 'Base'), ic: 'wallet', val: A.base || 0, sub: baseSub },
     (A.perDiem > 0) && { k: 'diem', nm: l('Per diem', 'Per diem'), ic: 'plane', val: A.perDiem, sub: `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}` },
-    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
+    // TAP: a estadia paga-se nos dias SEM voo (Cl. 7.ª/9.ª) — as noites fora não são o número de AC2/B (revisão do bloco 6).
+    (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: (ae && ae.PER_DIEM_BY_DAY) ? l('estadia nos dias sem voo (Cl. 7.ª/9.ª)', 'stay on days without flights (Cl. 7/9)') : `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
+    // Posicionamento (bloco 6): pilotos pelos setores (Art. 44.º); cabine pela tabela do Anexo I.18 — o acordo não diz onde acaba
+    // o curto, por isso conta o curto e diz-se até onde pode ir.
+    (A.positioning > 0) && { k: 'pos', nm: l('Posicionamento', 'Positioning'), ic: 'plane', val: A.positioning, sub: (!isYear && A.positioningMax > A.positioning) ? l(`o curto; até ${fmtEur0(A.positioningMax)} conforme a duração da viagem (Anexo I.18)`, `short rate; up to ${fmtEur0(A.positioningMax)} by trip length (App. I.18)`) : l('posicionamentos do período', 'positioning in the period') },
+    // Subsídios e prestações que caem no período (bloco 6): Natal, férias, prestação de abril, permanência, retenção.
+    (A.annual > 0) && { k: 'subs', nm: l('Subsídios', 'Allowances'), ic: 'wallet', val: A.annual, sub: [
+      ...new Set((A.annualItems || []).map((it) => annualLabel(it, lang))),
+    ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') },
     (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') },
   ].filter(Boolean);
 
@@ -380,6 +399,8 @@ export default function StatsScreen({ navigation }) {
                 : l('A tua segurança · janelas FTL · agora', 'Your safety · FTL windows · now')}</Text>
             </View>
             {mode === 'money' && noTableTxt ? <Text style={s.dsub}>{noTableTxt}</Text> : null}
+            {mode === 'money' && senTxt ? <Text style={s.dsub}>{senTxt}</Text> : null}
+            {mode === 'money' && pendTxt ? <Text style={s.dsub}>{pendTxt}</Text> : null}
 
             {/* ── DIAL adaptativo ── */}
             <Animated.View style={[s.money, seg(2)]}>
