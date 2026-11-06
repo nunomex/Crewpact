@@ -51,7 +51,7 @@ const MONS = {
 };
 
 export default function RelatoriosScreen({ navigation }) {
-  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, aeAt, crewAt, crewCategory, crewHistory, companyHistory, baseHistory, airlines, bases, serviceStart, base, postFlightMin } = useContext(AppContext);
+  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, aeAt, crewAt, crewCategory, crewHistory, companyHistory, baseHistory, airlines, bases, serviceStart, base, postFlightMin, homeBaseAt } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -123,10 +123,12 @@ export default function RelatoriosScreen({ navigation }) {
   // IGNORA o seletor de período (carreira é sempre tudo); a linha "desde X · Y h" torna
   // isso auto-evidente. Gate = ter registos, seja qual for o perfil (universal).
   const career = useMemo(() => {
+    // Só o que já aconteceu (auditoria A-260): os voos planeados não são carreira.
+    const t = new Date(); const todayIso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     let min = 0, first = null;
     for (const date of Object.keys(duties || {}).sort()) {
       const d = duties[date];
-      if (!d || d.deleted) continue;
+      if (!d || d.deleted || date > todayIso) continue;
       if (!first) first = date;
       for (const sv of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
         if (sv && (sv.kind || 'flight') === 'flight') min += sv.flight_minutes || 0;
@@ -199,6 +201,8 @@ export default function RelatoriosScreen({ navigation }) {
         } else {
           const model = buildRecordModel({
             duties: dutiesInPeriod, dayLog,
+            // Serviço até ao sign-off/pós-voo e o repouso que houve até ao serviço seguinte, mesmo fora do período (A-168).
+            postFlightMin: postFlightMin || 0, isPilot, baseAt: homeBaseAt, allDuties: duties,
             name: recForm.name, crewId: recForm.crewId,
             operator: company?.name || '', email: user?.email || '',
             generatedAt: new Date().toLocaleString(locale),

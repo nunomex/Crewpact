@@ -2,7 +2,7 @@
 // HTML para PDF assinável. Módulo PURO (sem expo) — testável por golden. A geração
 // do PDF em si vive em data/pdf.js (expo-print). O operador continua obrigado aos
 // seus próprios registos: este documento é um apoio individual ao tripulante.
-import { computeDuty, computeDutyTime, computeFlightTime, minToHhmm } from '../ftl';
+import { ftlForDuty, restAfterDuty, computeDutyTime, computeFlightTime, minToHhmm } from '../ftl';
 
 import { BRAND } from './constants';
 // Escape de HTML — toda a entrada dinâmica passa por aqui (nome, ID, operador…).
@@ -49,29 +49,58 @@ const WIN = {
 // (PSV/serviço/repouso) — fonte única de verdade.
 export const buildRecordModel = ({
   duties = {}, dayLog = {}, name = '', crewId = '', operator = '', email = '', generatedAt = null,
+  postFlightMin = 0, isPilot = false, baseAt = null, allDuties = null,
 } = {}) => {
   // Uma linha por PERÍODO DE SERVIÇO (não por dia): a EASA conta serviços (ORO.FTL.245/210),
   // por isso um dia com 2 serviços rende 2 linhas. Serviços do dia = primária + `extra`,
-  // ordenados pelo report; cada um recalculado pelo motor (fonte única de verdade).
+  // ordenados pelo report; cada um recalculado pelo motor (ftlForDuty, o mesmo do dayLog).
+  // Auditoria A-168 — ORO.FTL.245(a)(1): "o início, a duração e o fim de cada período de serviço e de cada PSV" e
+  // "os períodos de repouso". Por isso: Serviço = até ao sign-off (ou calços + pós-voo), não o PSV; Repouso = o que
+  // HOUVE até ao report seguinte (em instantes), não o mínimo exigido; sem setores não há PSV nem vermelho.
+  const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : baseAt);
+  const at = (iso, hm, add = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + add); x.setHours(h || 0, m || 0, 0, 0); return x; };
+  const hm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  const svcOf = (d) => [d, ...(Array.isArray(d.extra) ? d.extra : [])]
+    .filter((sv) => sv && sv.kind !== 'reserve' && (sv.report_time || sv.block_on || sv.flight_minutes > 0))
+    .sort((a, b) => String(a.report_time || '').localeCompare(String(b.report_time || '')));
+  // Início e fim de cada serviço em instantes (para o repouso real entre eles, também fora do período).
+  const timeline = (map) => Object.entries(map || {})
+    .filter(([, d]) => d && !d.deleted)
+    .flatMap(([date, d]) => svcOf(d).map((sv) => {
+      if (!sv.report_time) return null;
+      const ra = restAfterDuty(sv, { postFlightMin, isPilot, base: baseOf(date), date });
+      const start = at(date, sv.report_time);
+      let end = ra ? at(date, hm(ra.endMin)) : null;
+      if (end && +end <= +start) end = at(date, hm(ra.endMin), 1);
+      return { sv, start, end };
+    }).filter(Boolean))
+    .sort((a, b) => +a.start - +b.start);
+  const tl = timeline(allDuties || duties);
+  const restAfter = (sv) => {
+    const i = tl.findIndex((x) => x.sv === sv);
+    if (i < 0 || !tl[i].end || !tl[i + 1]) return '—';
+    const m = Math.round((+tl[i + 1].start - +tl[i].end) / 60000);
+    return m >= 0 ? hm(m) : '—';
+  };
   const svcRow = (date, d, idx, nSvc) => {
-    const r = computeDuty({ state: 'acc', report: d.report_time, end: d.block_on, sectors: d.sectors || 0, inBase: true });
+    const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date }) : null;
+    const fdpOk = !!(r && r.isFdp && d.block_on);
+    const over = fdpOk && !!(r.discretion ? r.discretion.over : r.fdp.over);
     return {
       date: nSvc > 1 ? `${date} (${idx + 1}/${nSvc})` : date,
       report: d.report_time || '—', off: d.block_off || '—', on: d.block_on || '—',
       sectors: d.sectors || 0, flightMin: d.flight_minutes || 0,
-      fdp: r.fdp.actualFdpStr || '—',
-      duty: r.dutyPeriodStr || r.fdp.actualFdpStr || '—',
-      rest: r.rest.restStr || (r.rest.restMin != null ? minToHhmm(r.rest.restMin) : '—'),
-      over: !!r.fdp.over,
+      fdp: fdpOk ? (r.fdp.actualFdpStr || '—') : '—',
+      duty: (r && d.block_on && r.dutyPeriodStr) || '—',
+      rest: restAfter(d),
+      over,
     };
   };
   const rows = Object.entries(duties)
     .filter(([, d]) => d && !d.deleted)
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
     .flatMap(([date, d]) => {
-      const services = [d, ...(Array.isArray(d.extra) ? d.extra : [])]
-        .filter((sv) => sv && sv.report_time && sv.block_on)
-        .sort((a, b) => String(a.report_time).localeCompare(String(b.report_time)));
+      const services = svcOf(d);
       return services.map((sv, idx) => svcRow(date, sv, idx, services.length));
     });
 

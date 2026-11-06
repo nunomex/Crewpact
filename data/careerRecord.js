@@ -7,6 +7,7 @@
 // carreira é experiência, não salário. Os números por ano saem do MESMO yearStats das
 // Estatísticas (ae:null) — o logbook bate com a app por construção.
 import { yearStats, availableYears } from './stats';
+import { dayFtlFromDuties } from '../ftl';
 import { esc } from './ftlRecord';
 
 import { BRAND } from './constants';
@@ -28,6 +29,20 @@ export const buildCareerModel = ({
   postFlightMin = 0, generatedAt = null, now = new Date(), baseAt = null,
   companyHistory = [], baseHistory = [], companyName = null, baseName = null,
 } = {}) => {
+  // Só o que JÁ aconteceu (auditoria A-260): o documento é assinado e "reflete" a carreira — um voo planeado para
+  // daqui a um mês não é carreira, nem um ano futuro que só tem a escala.
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const todayIso = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const all = duties;
+  duties = {};
+  for (const k of Object.keys(all || {})) if (all[k] && !all[k].deleted && k <= todayIso) duties[k] = all[k];
+  // Serviço como no motor FTL (A-264): standby em casa a 25 % (CS FTL.1.225(b)(3)), reserva a 0 (230(b)), standby
+  // colado a um voo dentro do voo, e um voo sem report com o serviço estimado — a mesma conta dos 210.
+  const ftlDutyMin = (date) => {
+    const d = duties[date];
+    const e = d ? dayFtlFromDuties([d, ...(Array.isArray(d.extra) ? d.extra : [])], { postFlightMin, date }) : null;
+    return e ? (e.servicoMin || 0) : 0;
+  };
   const dates = Object.keys(duties)
     .filter((d) => duties[d] && !duties[d].deleted)
     .sort();
@@ -38,9 +53,10 @@ export const buildCareerModel = ({
   const nowY = String(now.getFullYear());
   const years = availableYears(duties).slice().reverse().map((y) => {
     const st = yearStats(duties, { year: y, ae: null, postFlightMin, now });
+    const dutyMin = dates.filter((d) => d.startsWith(y + '-')).reduce((s, d) => s + ftlDutyMin(d), 0);
     return {
       year: y,
-      days: st.count, sectors: st.sectors, flightMin: st.flightMin, dutyMin: st.dutyMin,
+      days: st.count, sectors: st.sectors, flightMin: st.flightMin, dutyMin,
       nightStops: st.nightStops,
       // Marcas de ano PARCIAL (honestidade em-linha): o ano onde a cobertura começa a
       // meio ("desde MAR") e o ano corrente ainda a decorrer ("até JUL").
@@ -299,7 +315,7 @@ export const careerHtml = (model, lang = 'pt', fontsCss = '', categoryLabel = nu
   <div class="rule"></div>
 
   <div class="sum">
-    <div class="si"><span class="sv">${fmtInt(totals.flightMin / 60, lang)}</span><div class="sl">${esc(L.flightH)}</div></div>
+    <div class="si"><span class="sv">${fmtInt(Math.floor(totals.flightMin / 60), lang)}</span><div class="sl">${esc(L.flightH)}</div></div>
     <div class="si"><span class="sv">${fmtInt(totals.sectors, lang)}</span><div class="sl">${esc(L.sectors)}</div></div>
     <div class="si"><span class="sv">${fmtInt(totals.days, lang)}</span><div class="sl">${esc(L.dutyDays)}</div></div>
     <div class="si"><span class="sv">${fmtInt(destinations.count, lang)}</span><div class="sl">${esc(L.airports)}</div></div>

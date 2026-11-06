@@ -194,6 +194,32 @@ const htmlE = careerHtml(mE, 'pt');
 ok('vazio: documento rende com "Sem registos"', htmlE.includes('Sem registos'));
 ok('vazio: sem NaN no documento', !htmlE.includes('NaN'));
 
+// ── Auditoria 2026-11-06 (A-260, A-264, A-271): o PDF assinável só conta o que já aconteceu, o serviço pesa como no
+// motor FTL (standby em casa 25 %, reserva 0 — CS FTL.1.225(b)(3), 230(b)) e as horas do herói batem com a tabela. ──
+{
+  const NOW2 = new Date('2026-11-06T12:00:00');
+  const dz = {
+    '2026-11-02': { report_time: '06:00', block_off: '06:30', block_on: '09:00', sectors: 2, flight_minutes: 120, route: 'LIS-FNC-LIS', kind: 'flight' },
+    '2026-12-20': { report_time: '06:00', block_off: '06:30', block_on: '13:00', sectors: 2, flight_minutes: 360, route: 'LIS-TLV-LIS', kind: 'flight' },
+    '2027-01-05': { report_time: '06:00', block_off: '06:30', block_on: '11:00', sectors: 2, flight_minutes: 240, route: 'LIS-LGW-LIS', kind: 'flight' },
+  };
+  const mz = buildCareerModel({ duties: dz, now: NOW2 });
+  eq('A-260: só o voado até hoje (2:00)', mz.years.map((r) => [r.year, r.flightMin]), [['2026', 120]]);
+  eq('A-260: totais sem o planeado', mz.totals.flightMin, 120);
+  eq('A-260: destinos só do voado (FNC, LIS; com o planeado seriam 4)', mz.destinations.count, 2);
+  const dk = {
+    '2026-03-02': { report_time: '06:00', block_on: '18:00', sectors: 0, kind: 'standby_home' },
+    '2026-03-03': { report_time: '06:00', block_on: '18:00', sectors: 0, kind: 'reserve' },
+    '2026-03-04': { report_time: '06:00', block_on: '12:00', sectors: 0, kind: 'standby_airport' },
+  };
+  eq('A-264: serviço pesa como no FTL (3 + 0 + 6 = 9 h)', buildCareerModel({ duties: dk, now: NOW2 }).totals.dutyMin, 540);
+  // A-271: 74 070 min = 1 234:30 → o herói diz 1 234 horas (floor), como a tabela e o cartão dos Relatórios.
+  const dh = {}; for (let i = 0; i < 30; i++) dh[`2025-${String(1 + Math.floor(i / 3)).padStart(2, '0')}-${String(1 + (i % 3) * 9).padStart(2, '0')}`] = { report_time: '06:00', block_on: '08:00', sectors: 1, flight_minutes: i === 0 ? 74070 - 29 * 2469 : 2469, route: 'LIS-OPO', kind: 'flight' };
+  const mh = buildCareerModel({ duties: dh, now: NOW2 });
+  eq('A-271: total 74 070 min', mh.totals.flightMin, 74070);
+  ok('A-271: o herói arredonda para baixo (1 234, não 1 235)', careerHtml(mh, 'pt').includes('>1 234<') && !careerHtml(mh, 'pt').includes('>1 235<'));
+}
+
 console.log(`\nprocesso de carreira — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ Logbook honesto: cobertura em 3 camadas, yearStats como fonte, € fora do documento.');
