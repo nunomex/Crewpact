@@ -8,8 +8,8 @@ import Icon from './Icon';
 import IconButton from './IconButton';
 import PeleSide from './PeleSide';
 import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE } from '../data/constants';
-import { prospectiveDuty, isNightStop } from '../data/rosterImport';
-import { unknownsText } from '../data/ftlUnknowns';
+import { isNightStop } from '../data/rosterImport';
+import { simulateDuty, issueText } from '../data/simulation';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
 import { routeDistancesNM } from '../data/perdiem';
@@ -406,17 +406,37 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     return (aug || del || sb || discOn || fcReport || extOn) ? { augmented: aug, delayedFrom: del, delayed1: second ? del1 : null, notice2: second ? notice2 : null, preStandby: sb, discretion: discOn || null, fcReport, plannedExt: extOn || null } : null;
   }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, del1, notice2, sbOn, sbType, sbH, discOn, extOn]);
 
+  // Projeção ao vivo = a Simulação (data/simulation.js, auditoria dos cálculos bloco 2): o serviço entra na escala e verifica-se
+  // o PSV do seu bloco do dia, o repouso antes e depois, a recuperação, as noites seguidas, todos os períodos do 210 e, na TAP,
+  // o acordo. O dia hipotético: candidato do import = o dia que ele traz · "+ serviço" = junta-se aos do dia · editar um extra
+  // = fica no lugar dele · senão fica no lugar do serviço principal (os outros serviços do dia continuam a contar).
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
-    return prospectiveDuty({
-      duty_date: form.date, report_time: form.report,
+    const svc = {
+      duty_date: form.date, report_time: form.report, kind: 'flight',
       block_off: firstOff, block_on: lastOn,
       sectors: sectorRows.length, flight_minutes: blockMin, signOff: form.signOff || null,
       route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
       legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
-    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin, splitAdminMin, duties });   // + base → 12h/10h por localização real (235) + 205(c)
-  }, [isFlight, form, dayLog, postFlightMin, isPilot, special, accOn, base]); // eslint-disable-line react-hooks/exhaustive-deps
+      ...(candidate ? { extra: Array.isArray(candidate.extra) ? candidate.extra : [] } : {}),
+    };
+    const mode = append ? 'append' : (editExtra != null ? { replaceExtra: editExtra } : 'replace');
+    const isTapAt = (iso) => { const a = aeAt(iso); return !!a && /^tap/.test(String(a.AE_ID || '')); };
+    return simulateDuty(svc, {
+      duties, dayLog, postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode,
+      tap: { isTapAt, crewType: isPilot ? 'pilot' : 'cabin', fleetAt: (iso) => ((crewAt(iso) || {}).fleet || crewFleet || null) },
+    });
+  }, [isFlight, form, dayLog, duties, postFlightMin, isPilot, special, accOn, base, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
+  // O período mais apertado de cada limite do 210 que contém o dia (como no resultado da Simulação).
+  const projLimits = useMemo(() => {
+    if (!prospect) return '';
+    const hm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+    const lim = (n) => (n === 1000 ? (lang === 'en' ? '1,000' : '1 000') : String(n));
+    const lbl = (w) => (w.id === 'year' ? l('ano', 'year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} d`);
+    const tS = prospect.tightest && prospect.tightest.servico, tV = prospect.tightest && prospect.tightest.voo;
+    return [tS && `${t('duties.projDuty', lang)} ${hm(tS.doneMin)}/${lim(tS.limit)} h (${lbl(tS)})`, tV && `${t('duties.projFlight', lang)} ${hm(tV.doneMin)}/${lim(tV.limit)} h (${lbl(tV)})`].filter(Boolean).join(' · ');
+  }, [prospect, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
   const psvPreview = useMemo(() => {
@@ -443,13 +463,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`;
   };
 
-  const h1n = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
   const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
-  const issueLbl = (it) => it.type === 'fdp' ? t('duties.issueFdp', lang) : it.type === 'duty28' ? t('duties.issueDuty28', lang) : it.type === 'flight28' ? t('duties.issueFlight28', lang)
-    : it.type === 'fdpUncertain' ? l(`Incerto — falta ${unknownsText(it.unknowns, 'pt')}`, `Uncertain — missing ${unknownsText(it.unknowns, 'en')}`)
-    : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('Standby acima de 16 h', 'Standby over 16 h') : it.kind === 'awake' ? l('Standby + PSV acima de 18 h acordado', 'Standby + FDP over 18 h awake') : l('Standby + PSV acima de 16 h', 'Standby + FDP over 16 h'))
-    : '';
+  // Os mesmos textos do resultado da Simulação (data/simulation.js); "Incerto —" à frente do que depende de um facto.
+  const issueLbl = (it) => { const x = issueText(it, lang, form.date); return it.level === 'unc' ? l(`Incerto — ${x}`, `Uncertain — ${x}`) : x; };
 
   const fmtDate = (iso) => {
     if (!iso) return '';
@@ -966,13 +983,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           ) : null}
         </View>
       ) : null}
-      {isFlight && prospect ? (
+      {isFlight && prospect && prospect.verdict !== 'none' ? (
         <View style={[s.proj, prospect.ok ? s.projOk : s.projWarn]}>
           <View style={s.projHead}>
             <Icon name={prospect.ok ? 'check' : 'alert'} size={15} color={prospect.ok ? C.ok : C.warn} />
             <Text style={s.projTitle}>{prospect.ok ? t('duties.projOk', lang) : t('duties.projWarn', lang)}</Text>
           </View>
-          <Text style={s.projMeta}>{t('duties.projDuty', lang)} {h1n(prospect.servico28)}/190 h · {t('duties.projFlight', lang)} {h1n(prospect.voo28)}/100 h</Text>
+          <Text style={s.projMeta}>{projLimits}</Text>
           {prospect.fatigue ? (
             <View style={s.fatRow}>
               <View style={[s.fatDot, { backgroundColor: fatigueColor(prospect.fatigue.band) }]} />

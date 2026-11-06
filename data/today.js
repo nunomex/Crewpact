@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd, isFdpDuty } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -71,36 +71,54 @@ export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
 // Os serviços da escala com início e fim em INSTANTES (Date), e o mínimo depois de cada um (restAfterDuty). A reserva
 // não é serviço para o 235 (CS FTL.1.230(b)).
 const restServices = (duties = {}, ctx = {}) => {
-  const { postFlightMin = 0, isPilot = false, base = null, baseAt = null } = ctx || {};
+  const { postFlightMin = 0, isPilot = false, base = null, baseAt = null, from = null, to = null } = ctx || {};
   const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
   const at = (iso, hm, addDays = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + addDays); x.setHours(h || 0, m || 0, 0, 0); return x; };
   const hm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   const svcs = [];
   for (const iso in duties) {
     const d = duties[iso]; if (!d || d.deleted) continue;
+    if ((from && iso < from) || (to && iso > to)) continue;   // janela opcional (a Simulação só precisa dos dias à volta)
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
       if (!s || !s.report_time || s.kind === 'reserve') continue;
       const start = at(iso, s.report_time);
       const ra = restAfterDuty(s, { postFlightMin, isPilot, base: baseOf(iso), date: iso, inBase: ctx && ctx.inBase === false ? false : true });
       let end = null;
       if (ra) { end = at(iso, hm(ra.endMin)); if (+end <= +start) end = at(iso, hm(ra.endMin), 1); }
-      svcs.push({ iso, s, start, end, ra });
+      svcs.push({ iso, s, start, end, ra, fdp: isFdpDuty(s) });
     }
+  }
+  // Por ordem cronológica: o rotationNights anda para trás e para a frente pelo índice (antes ficava pela ordem das chaves
+  // do mapa, que é a ordem em que os dias foram guardados).
+  svcs.sort((a, b) => +a.start - +b.start);
+  // BLOCOS (revisão do bloco 2, 2026-11-06): dois serviços do MESMO dia com menos do que o mínimo de repouso entre eles não
+  // têm um período de repouso no meio — são um só PSV repartido (CS FTL.1.220: "the break on the ground within the FDP"; o
+  // mesmo critério do dayFtlFromDuties). O "período de serviço precedente" do ORO.FTL.235(a)(1) é então o bloco inteiro.
+  // `blk` = o índice do 1.º serviço do bloco; `bStart` = o início do bloco.
+  for (let i = 0; i < svcs.length; i++) {
+    const v = svcs[i], p = svcs[i - 1];
+    const joined = !!(p && p.iso === v.iso && p.end && p.ra && Math.round((+v.start - +p.end) / 60000) < p.ra.requiredMin);
+    v.blk = joined ? p.blk : i;
+    v.bStart = joined ? p.bStart : v.start;
   }
   return svcs;
 };
+// O bloco tem um PSV? ORO.FTL.235(a)/(b): o repouso mínimo é "antes de um PSV" — antes de um escritório, de uma formação ou
+// de um standby em casa a lei não fixa um mínimo.
+const blockHasFdp = (svcs, v) => svcs.some((x) => x.blk === v.blk && x.fdp);
 const before = (svcs, t) => svcs.filter((v) => +v.start < +t).sort((a, b) => +b.start - +a.start);
 
 // O mínimo DEPOIS de `prev` (ORO.FTL.235 + 205(d)): o serviço ou o piso; se `prev` foi prolongado, +2 h quando o repouso
 // ANTES dele também teve as +2 h (opção i), senão +4 h (ii); +4 h também quando o seguinte é prolongado (205(d)(2)).
 const requirementAfter = (svcs, prev, next = null) => {
-  const prevDutyMin = Math.round((+prev.end - +prev.start) / 60000);
+  const bs = (v) => v.bStart || v.start;   // o período de serviço conta desde o início do BLOCO (repartido)
+  const prevDutyMin = Math.round((+prev.end - +bs(prev)) / 60000);
   const { floorMin } = prev.ra;
   let requiredMin = Math.max(prevDutyMin, floorMin), extOption = null;
   if (prev.ra.extended) {
-    const pp = before(svcs, prev.start)[0] || null;
-    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +pp.start) / 60000), pp.ra.floorMin) : null;
-    const preRest = pp && pp.end ? Math.round((+prev.start - +pp.end) / 60000) : null;
+    const pp = before(svcs, bs(prev))[0] || null;
+    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +bs(pp)) / 60000), pp.ra.floorMin) : null;
+    const preRest = pp && pp.end ? Math.round((+bs(prev) - +pp.end) / 60000) : null;
     extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
     if (next && next.ra && next.ra.extended) extOption = 'consecutive';
     requiredMin += extOption === 'i' ? 120 : 240;
@@ -136,16 +154,19 @@ const rotationNights = (svcs, prev, next = null) => {
 
 export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const svcs = restServices(duties, ctx);
-  // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus).
+  // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus) e que COMEÇA um bloco: a 2.ª
+  // metade de um repartido é o mesmo serviço, não há um repouso antes dela.
   const refMs = +ref;
   let next = null;
-  for (const v of svcs) { if (v.iso < todayISO || +v.start <= refMs) continue; if (!next || +v.start < +next.start) next = v; }
+  for (const v of svcs) { if (v.iso < todayISO || +v.start <= refMs || +v.bStart !== +v.start) continue; if (!next || +v.start < +next.start) next = v; }
   if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
   // O ANTERIOR: o último a começar antes do próximo (a adjacência importa p/ o repouso).
   const prev = before(svcs, next.start)[0] || null;
   if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
   if (!prev.end) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
+  // Antes de um serviço que não é PSV a lei não fixa mínimo (ORO.FTL.235(a)/(b): "antes de um PSV").
+  if (!blockHasFdp(svcs, next)) return { id: 'rest', status: 'ok', kind: 'notFdp', actualMin, requiredMin: null, prevIso: prev.iso, nextIso: next.iso };
   const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, prev, next);
   const nightsRequired = rotationNights(svcs, prev, next);
   const nightsActual = nightsRequired ? localNightsIn(prev.end, next.start) : null;
@@ -155,6 +176,41 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
     prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
     nightsRequired: nightsRequired || null, nightsActual,
   };
+}
+
+// O repouso ANTES e DEPOIS de um serviço da escala (o que `pick(s, iso)` escolher) — a Simulação (auditoria A-242). A regra é a
+// do restStatus: o mínimo é o período de serviço anterior (o BLOCO, se for repartido) ou 12 h (base) / 10 h (fora), com os pisos
+// de 14 h e os prolongamentos, e as noites locais na base depois de uma rotação com fuso (CS 235(b)(3)). Mede-se à volta do
+// BLOCO do serviço: antes do 1.º serviço do bloco e depois do último (os do mesmo bloco são um só PSV — julga-os o PSV do dia).
+// Devolve null se o serviço não estiver na escala; senão { before, after, need } — `before`/`after` = null sem vizinho, ou
+//   { status: 'ok'|'bad'|'unc'|'na', actualMin, requiredMin, floorMin, prevDutyMin, prevIso, nextIso, place, reason,
+//     extOption, nightsRequired, nightsActual } ('unc' = o serviço anterior não tem fim conhecido; 'na' = o seguinte não é
+//   PSV, a lei não fixa mínimo); `need` = o mínimo a seguir ao bloco (como o "Repouso até"): { requiredMin, nightsRequired }.
+export function restAround(duties = {}, pick, ctx = {}) {
+  const svcs = restServices(duties, ctx);
+  const me = svcs.find((v) => pick(v.s, v.iso));
+  if (!me) return null;
+  const blk = svcs.filter((v) => v.blk === me.blk);
+  const first = blk[0], last = blk[blk.length - 1];
+  const prev = before(svcs, first.start)[0] || null;
+  const next = svcs.find((v) => v.blk !== me.blk && +v.start > +last.start) || null;
+  const pair = (a, b) => {
+    const base = { prevIso: a.iso, nextIso: b.iso, place: a.ra ? (a.ra.inBase ? 'base' : 'away') : null };
+    if (!a.end) return { ...base, status: 'unc', kind: 'noPrevEnd' };
+    const actualMin = Math.round((+b.start - +a.end) / 60000);
+    if (!blockHasFdp(svcs, b)) return { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
+    const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, a, b);
+    const nightsRequired = rotationNights(svcs, a, b);
+    const nightsActual = nightsRequired ? localNightsIn(a.end, b.start) : null;
+    const short = actualMin < requiredMin || (nightsRequired > 0 && nightsActual < nightsRequired);
+    return { ...base, status: short ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin, reason: a.ra.reason, extOption, nightsRequired: nightsRequired || null, nightsActual };
+  };
+  let need = null;
+  if (last.end) {
+    const { requiredMin } = requirementAfter(svcs, last, null);
+    need = { requiredMin, nightsRequired: rotationNights(svcs, last, null) || null };
+  }
+  return { before: prev ? pair(prev, first) : null, after: next ? pair(last, next) : null, need };
 }
 
 // "Repouso até": o fim do último serviço de `iso` + o mínimo a seguir — a MESMA regra do restStatus (a pílula e esta
@@ -177,18 +233,23 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
 // Pesquisa de 2026-11-06: nenhuma fonte oficial encontrada para a ANAC (TAP, Hi Fly), a Austro Control (easyJet Europe)
 // nem a IAA (Ryanair) — só uma tabela secundária. Por isso `disruptiveType` só vem preenchido com uma fonte oficial;
 // sem ela avaliam-se os dois tipos e um aviso que só um dá fica INCERTO ("a lei é que manda").
-export function recoveryStatus(duties = {}, todayISO, ctx = {}) {
+// Todos os avisos de recuperação da escala, com `uncertain` quando só um dos dois tipos de horário os dá (o recoveryStatus e a
+// Simulação usam este). `ctx` = { postFlightMin, base, baseAt, disruptiveType }.
+export function recoveryIssues(duties = {}, ctx = {}) {
   const { postFlightMin = 0, base = null, baseAt = null, disruptiveType = null } = ctx || {};
   const known = disruptiveType === 'early' || disruptiveType === 'late' ? disruptiveType : null;
   const run = (type) => computeRecovery(duties, { postFlightMin, base, baseAt, type }).issues;
   const key = (x) => `${x.type}|${x.date}`;
-  let issues;
-  if (known) issues = run(known);
-  else {
-    const e = run('early'), l = run('late');
-    const lk = new Set(l.map(key)), ek = new Set(e.map(key));
-    issues = [...e.map((x) => ({ ...x, uncertain: !lk.has(key(x)) })), ...l.filter((x) => !ek.has(key(x))).map((x) => ({ ...x, uncertain: true }))];
-  }
+  if (known) return run(known).map((x) => ({ ...x, uncertain: false }));
+  const e = run('early'), l = run('late');
+  const lk = new Set(l.map(key)), ek = new Set(e.map(key));
+  return [...e.map((x) => ({ ...x, uncertain: !lk.has(key(x)) })), ...l.filter((x) => !ek.has(key(x))).map((x) => ({ ...x, uncertain: true }))];
+}
+
+export function recoveryStatus(duties = {}, todayISO, ctx = {}) {
+  const known = ctx && (ctx.disruptiveType === 'early' || ctx.disruptiveType === 'late');
+  // Com o tipo conhecido os avisos são certos (sem a marca `uncertain`, como antes).
+  const issues = recoveryIssues(duties, ctx).map((x) => (known ? (({ uncertain: _u, ...y }) => y)(x) : x));
   const add = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n, 12); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
   const lo = add(todayISO, -1), hi = add(todayISO, 14);
   const near = issues.filter((x) => x.date >= lo && x.date <= hi).sort((a, b) => (a.date < b.date ? -1 : 1));

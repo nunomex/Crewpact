@@ -28,9 +28,9 @@ import { computeFlightTime } from './calculators/flightTimeCalculator';
 import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
 import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
-import { validateLimits, computeDutyTime } from './validators/validateLimits';
+import { validateLimits, computeDutyTime, limitsAround } from './validators/validateLimits';
 import { entryMin } from './calculators/cumulativeCalculator';
-import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN, SPLIT_MIN_BREAK_H } from './rules/fdpRules';
+import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN, SPLIT_MIN_BREAK_H, isFdpDuty } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
@@ -397,10 +397,7 @@ const acclimOf = (duty, { base, date, duties }) => {
 // escritório e posicionamento isolado NÃO são PSV (auditoria A-166/A-247): contam para o 210 e para o repouso, mas
 // a tabela do Quadro 2 não os julga. O standby de aeroporto SEM alojamento é "serviço no aeroporto" e o PSV conta
 // desde a apresentação (ORO.FTL.225(d)) — continua julgado (o lado seguro).
-export const isFdpDuty = (duty = {}) => {
-  const k = duty.kind || 'flight';
-  return k === 'flight' || (k === 'standby_airport' && !duty.accommodation);
-};
+// (a definição vive em ftl/rules/fdpRules.js — o motor de recuperação também a usa)
 
 // Base vs FORA da base (ORO.FTL.235): decide o repouso mínimo (12h base / 10h fora) e a fronteira
 // rest/split. Deriva do ÚLTIMO aeroporto REAL (legs > rota) vs a base do tripulante — NUNCA por
@@ -762,23 +759,27 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
   const all = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
   if (!all.length) return null;
+  // `opts.withBlocks` (Simulação, auditoria A-248): junta os blocos de PSV do dia, cada um com os seus serviços, para o herói
+  // mostrar o PSV do bloco do serviço simulado — o mesmo cálculo do veredicto. Não vai para o dayLog (fica fora por omissão).
+  const withB = (entry, blks) => (opts.withBlocks ? { ...entry, blocks: blks } : entry);
+  const blk1 = (p) => [{ psv: p.entry.psv, members: [p.duty] }];
   // Serviços SEM report (A-161): somam ao 210 (voo sempre; serviço estimado), mas não entram nos blocos de PSV nem no
   // repouso — não se sabe quando começaram.
   const noRep = all.filter((p) => !p.duty.report_time);
   const paired = all.filter((p) => p.duty.report_time);
   const extraMin = (key) => noRep.reduce((s, p) => s + entryMin(p.entry, key), 0);
   if (!paired.length) {
-    if (noRep.length === 1) return noRep[0].entry;
+    if (noRep.length === 1) return withB(noRep[0].entry, []);
     const sMin = extraMin('servico'), vMin = extraMin('voo');
-    return { ...noRep[0].entry, servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, parts: noRep.map((p) => p.entry.psv) };
+    return withB({ ...noRep[0].entry, servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, parts: noRep.map((p) => p.entry.psv) }, []);
   }
   // Ordena cronologicamente pelo report → os serviços do dia ficam por ordem (1.º, 2.º, …).
   paired.sort((a, b) => (parseHhmm(a.duty.report_time) ?? 0) - (parseHhmm(b.duty.report_time) ?? 0));
   const entries = paired.map((p) => p.entry);
-  if (entries.length === 1 && !noRep.length) return entries[0];
+  if (entries.length === 1 && !noRep.length) return withB(entries[0], blk1(paired[0]));
   if (entries.length === 1) {
     const sMin = entryMin(entries[0], 'servico') + extraMin('servico'), vMin = entryMin(entries[0], 'voo') + extraMin('voo');
-    return { ...entries[0], servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, servicoEst: true, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv) };
+    return withB({ ...entries[0], servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, servicoEst: true, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv) }, blk1(paired[0]));
   }
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
   // Base vs fora do INTERVALO = onde o serviço ANTERIOR acabou (é aí que repousas). Local fiável
@@ -841,11 +842,11 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const last = blockEntries[blockEntries.length - 1];
   // `parts` = PSV por SERVIÇO (para o registo 245, uma linha por serviço); a legalidade do dia
   // vem do FDP combinado (worst). São coisas diferentes de propósito num split-duty.
-  return {
+  return withB({
     src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv,
     servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, servicoEst: noRep.length ? true : undefined,
     rest: last.rest, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv), between, split, restShort,
-  };
+  }, blocks.map((blk, i) => ({ psv: blockEntries[i].psv, members: blk.map((p) => p.duty) })));
 };
 
 // Assinatura (hash curto) de tudo o que decide a entrada derivada de um dia: a versão do motor, o contexto (pós-voo,
@@ -919,13 +920,13 @@ export const fatigueFromDuty = (d, { restMin = null, consecutiveDisruptive = 0 }
 };
 
 export {
-  computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits,
+  computeFdp, computeFdpByBand, computeRest, computeFlightTime, computeDutyTime, validateLimits, limitsAround,
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
   computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
   computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence, computeRecovery, localNightsIn, nthLocalNightEnd,
   computeFatigue,
-  withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel,
+  withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, isFdpDuty,
   DUTY_WINDOWS, FLIGHT_WINDOWS, QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 };
 export * from './utils/time';

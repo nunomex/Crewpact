@@ -1,7 +1,7 @@
 // Importação de escala: atividade do calendário (getDutiesInRange) → linha de `duty`
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
-import { dayFtlFromDuties, computeDutyTime, computeFlightTime, ftlForDuty, fatigueFromDuty } from '../ftl';
+import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
 import { airportCoord } from './airports';
 
@@ -33,6 +33,7 @@ export const isNightStop = (route, base, sectors) => {
 
 // Serviço-irmão (forma de `extra`): normaliza uma duty-row para os campos de um serviço do dia.
 // Partilhado por buildImportCandidates (merge do sheet) e buildIncoming (merge da auto-deteção).
+const isoOfDate = (t) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null, ...(d.eLearning ? { eLearning: true } : {}), ...(d.officeType ? { officeType: d.officeType } : {}) });
 
 // Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
@@ -67,8 +68,10 @@ export const dutyFromActivity = (act, base = null) => {
   };
 };
 
-// Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
-// no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
+// Validação prospetiva LEVE do import (estado ok/aviso de cada candidato): legalidade do PSV + se, ao incluí-la no dia, algum
+// período do ORO.FTL.210 que contém o dia passa o limite (todos: 7/14/28 dias de serviço, 28 dias, ano e 12 meses de voo, para
+// trás e para a frente — auditoria A-165). dayLog = store FTL atual. A pergunta completa da Simulação ("posso aceitar?", com o
+// repouso antes e depois, a recuperação e as noites seguidas) vive em data/simulation.js; o import passa para ela no bloco 4.
 export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null, { cabinGapMin, splitAdminMin, duties = null } = {}) => {
   // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
   // `base` → repouso 12h/10h por localização real (ORO.FTL.235) e a fronteira rest/split.
@@ -76,14 +79,14 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída
-  const duty28 = computeDutyTime(hypo, refDate).find(w => w.id === '28d');
-  const flight28 = computeFlightTime(hypo, refDate).find(w => w.id === '28d');
+  const wins = limitsAround(hypo, duty.duty_date || isoOfDate(refDate));
+  const duty28 = wins.find((w) => w.key === 'servico' && w.id === '28d');
+  const flight28 = wins.find((w) => w.key === 'voo' && w.id === '28d');
   const issues = [];
   if (ftl.psv.over) issues.push({ type: 'fdp' });
   // "A lei é que manda": sem um facto de que a lei precisa, nem "dentro" nem "excede" — incerto, com o que falta.
   else if (ftl.psv.uncertain) issues.push({ type: 'fdpUncertain', unknowns: ftl.psv.unknowns || [] });
-  if (duty28 && duty28.over) issues.push({ type: 'duty28', done: duty28.done, limit: duty28.limit });
-  if (flight28 && flight28.over) issues.push({ type: 'flight28', done: flight28.done, limit: flight28.limit });
+  for (const w of wins) if (w.over) issues.push({ type: 'limit', key: w.key, id: w.id, doneMin: w.doneMin, limitMin: w.limitMin, overMin: w.overMin, from: w.from, to: w.to });
   // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
   // O mesmo cálculo do dayLog (ftlForDuty). Limite COMBINADO do standby (CS FTL.1.225): standby + PSV REAL > 16 h
   // (aeroporto) / > 18 h acordado (casa) / standby > 16 h → aviso separado do PSV-over.

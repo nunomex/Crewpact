@@ -609,7 +609,11 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Prospetivo: legal isolada → ok', prospectiveDuty(duty, {}).ok, true);
   // Prospetivo: 28d já a 188h de serviço → incluir a duty (7h) passa 190h → aviso.
   const p = prospectiveDuty(duty, { '2026-05-20': { servico: 188 } });
-  eq('Prospetivo: excede 190h/28d', p.issues.some(i => i.type === 'duty28'), true);
+  eq('Prospetivo: excede 190h/28d', p.issues.some(i => i.type === 'limit' && i.key === 'servico' && i.id === '28d'), true);
+  // Auditoria A-165: TODOS os períodos que contêm o dia — também os de 7 dias que acabam DEPOIS dele (ORO.FTL.210(a)(1)).
+  const fwd7 = {}; for (let k = 2; k <= 6; k++) fwd7[`2026-06-0${k}`] = { servicoMin: 11 * 60 };   // 55:00 nos 5 dias seguintes
+  const p7 = prospectiveDuty(duty, fwd7);   // + o serviço de 1 de junho (05:00–12:00 = 7:00) → 1 a 7 de junho = 62:00
+  eq('Prospetivo: 60 h em 7 dias para a frente', p7.issues.some(i => i.type === 'limit' && i.key === 'servico' && i.id === '7d'), true);
   // Pernoita = NOITE FORA DA BASE (Art. 39/56), com base conhecida; sem base/rota → paridade.
   eq('NS: acaba fora (LIS-OPO, base LIS)', isNightStop('LIS-OPO', 'LIS', 1), true);
   eq('NS: volta à base (LIS-OPO-LIS, base LIS)', isNightStop('LIS-OPO-LIS', 'LIS', 2), false);

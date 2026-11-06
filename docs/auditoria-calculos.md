@@ -14,6 +14,13 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > A-151 (recuperação, 2 dias locais, 72 h na mudança de base), A-154 (2.ª notificação), A-156/A-178 (apresentação dos pilotos
 > para a cabine), A-158 (desconto do OM no repartido), A-171 (tempo decorrido) e as noites na base do A-150/A-169. Para o
 > advogado: A-173 e as leituras da CS 220(d)/(e) e da 2.ª notificação. Factos a pesquisar: `docs/pesquisa-pendente.md`.
+>
+> **Bloco 2 (Simulação, S7) feito a 2026-11-06:** A-242, A-243, A-244, A-245, A-165, A-258 e o que faltava do A-248 (o herói
+> com o mesmo resultado do veredicto, e a extensão do repartido arredondada para baixo). O motor novo é `data/simulation.js`
+> (golden `scripts/simulation.test.js`); a projeção do formulário usa-o também. A importação ficou com a verificação leve
+> (agora com todos os períodos do 210); o resto passa para ela no bloco 4. A revisão independente do bloco corrigiu também o
+> "Tenho descanso?" do Início (repouso depois de um repartido = o bloco inteiro; sem mínimo antes de um serviço que não é PSV).
+> Detalhe em `docs/decisoes.md`. Próximo: bloco 3.
 
 ## Como se fez
 

@@ -29,7 +29,7 @@ export const computeFdp = ({ state = 'acc', reportMin = null, endMin = null, sec
     else { baseMin = m; maxFdpMin = m; }
   } else {
     baseMin = baseMaxFdpMin(state, reportMin, sectors);
-    extMin = state === 'acc' ? splitExtensionFromCountedMin(splitCountedBreakMin(splitBreakH * 60, splitBreakStartMin, accommodation, splitAdminMin)) : 0;
+    extMin = state === 'acc' ? splitExtensionFromCountedMin(splitCountedBreakMin(Math.round(splitBreakH * 60), splitBreakStartMin, accommodation, splitAdminMin)) : 0;
     maxFdpMin = baseMin + extMin;
   }
   const actualFdpMin = endMin != null ? durationMin(reportMin, endMin) : null;

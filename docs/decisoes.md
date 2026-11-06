@@ -13,11 +13,11 @@ cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler p
 `docs/auditoria-calculos-achados.md` (A-001…A-300). 300 achados: **143 erros, 100 riscos e 43 dúvidas confirmados** (2
 verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
+**Bloco 2 (Simulação) FEITO a 2026-11-06** — ver a entrada "BLOCO 2" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-2. **Simulação (S7)** — já usa o `ftlForDuty` (o mesmo cálculo do dayLog, com intervalo/incerto, 205(d), aclimatação); falta
-   ligar-lhe o repouso antes (`restStatus`), a recuperação (`computeRecovery`), o dia somado em vez de substituído, os 4
-   setores em noites seguidas, todas as janelas do 210 e os limites da TAP. **Opus 5.5 Extra, sessão nova.**
-3. Limites TAP (S11) e validades (S12) · 4. Importação (S6 do lado do import: A-220–A-228, M12, L12) · 5. Dinheiro a mais (M1–M11,
+3. **Limites TAP (S11) e validades (S12)** — incluir o A-253 (a Simulação avalia as validades HOJE, não no dia do serviço:
+   `SimulationResult.js`, `validityStatus(v.expiry)` sem data). **Opus 5.5 Extra, sessão nova.**
+4. Importação (S6 do lado do import: A-220–A-228, M12, L12; e passar o `buildImportCandidates` para o `simulateDuty`) · 5. Dinheiro a mais (M1–M11,
    primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
    8. Dúvidas → advogado.
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
@@ -35,6 +35,46 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 2: a Simulação ("Posso aceitar?") verifica tudo (Opus 5.5 Extra)
+
+Golden primeiro (`scripts/simulation.test.js`, 77, a 30.ª suite), escrito a partir de `fontes/ftl/`; `npm test` verde; pacote
+iOS gerado sem erros. Achados fechados: A-242, A-243, A-244, A-245, A-165, A-258 e o resto do A-248.
+- **Motor novo `data/simulation.js` → `simulateDuty`**: o serviço entra na escala e verifica-se, com os MESMOS cálculos do
+  Início: o PSV do seu bloco do dia (o herói mostra esse mesmo resultado), os outros dias que muda (ex.: o 3.º prolongamento
+  em 7 dias), o repouso antes e depois, a recuperação (36 h com 2 noites locais, 168 h, 60 h, 2 dias locais, mudança de base —
+  só os avisos que o simulado cria ou que caem no dia), 4 setores em noites seguidas, TODOS os períodos do 210 que contêm o dia
+  (para trás e para a frente; ano civil; 12 meses) e, na TAP, o limite do acordo (o mais apertado dá a hora-limite de calços) e
+  as outras regras do acordo que o simulado muda. O resultado e a projeção do formulário usam-no (os mesmos textos, `issueText`).
+- **Dia ocupado = TROCAR (decisão do Nuno):** o preenchido fica no lugar do serviço guardado; os outros serviços do dia contam.
+  O resumo diz "no lugar do serviço guardado". O motor já sabe juntar (`mode: 'append'`) — a UI fica para depois, com o Mobbin.
+- **"Quanto falta aos limites?"** mostra o período mais apertado de cada limite que contém o dia, em h:mm (ex.: "Serviço
+  52:30/60 h (7 d)"); **"Descanso mínimo a seguir?"** usa a regra do "Repouso até" do Início.
+- **Extensão do repartido para baixo** (CS FTL.1.220(c), "up to 50 %"): 4:15 contáveis → +2:07 (era +2:08); as contas em
+  minutos inteiros (as horas decimais perdiam 1 minuto).
+- **Revisão independente (um 2.º agente, contra o texto oficial) — corrigido no mesmo dia, também no Início:**
+  - Depois de um PSV REPARTIDO, o "período de serviço precedente" é o do bloco inteiro (ORO.FTL.235(a)(1)). O "Tenho
+    descanso?" media só o último serviço. O golden A-160 (b) mudou: 06:00–10:00 + 18:00–23:30 → mínimo 17:30 (era 12:00).
+  - O mínimo de 12 h/10 h é "antes de um PSV" (ORO.FTL.235(a)/(b)). Antes de um escritório, formação ou standby em casa a
+    lei não fixa mínimo. O Início diz "sem mínimo (não é voo)". A noite local da CS 235(a)(1) é "between the 2 FDPs".
+  - Duas noites com noites livres pelo meio, sem recuperação entre elas → INCERTO (o texto não define "consecutive").
+  - Entre as duas metades de um repartido, o "Tenho descanso?" olha para o serviço seguinte, não para a 2.ª metade.
+- **A importação** (`prospectiveDuty`, estado ok/aviso de cada candidato) ficou com a verificação leve, mas já com todos os
+  períodos do 210. O repouso, a recuperação e as noites passam para ela no bloco 4.
+
+**Para o advogado:** o que é "consecutive night duties" (CS FTL.1.205(a)(1)) — noites em dias seguidos? quebra-as uma
+recuperação? e com noites livres pelo meio? (a app: seguidas = excede; com recuperação = não; com noites livres = incerto).
+**Pendências:** UI "Juntar ao dia" na Simulação (com o Mobbin) · o import passa para o `simulateDuty` (bloco 4) · os períodos do
+210 com serviços sem apresentação ("estimados") não dão "incerto" (bloco 4) · os 4 setores em noites seguidas ainda não entram
+no "Dentro dos limites?" do Início nem no import · na TAP a Simulação demora ~45 ms no PC por cálculo (as regras do acordo
+correm duas vezes); quando a TAP abrir, guardar o cálculo da escala sem o simulado.
+**Por ver no iPhone:** Simulação num dia livre e num dia com serviço ("no lugar do serviço guardado"; simular o guardado sem
+mudar nada = o mesmo do Início) · repouso antes curto (ex.: serviço até às 23:30 e simulado às 05:00 → "Excede · repouso antes
+5:00 de 12:00") · o serviço de amanhã fica curto ("repouso antes de DD/MM") · "Quanto falta aos limites?" com o período mais
+apertado · "Descanso mínimo a seguir?" · a projeção do formulário com os mesmos avisos · Início: "Tenho descanso?" depois de
+um repartido e antes de um escritório.
 
 ---
 

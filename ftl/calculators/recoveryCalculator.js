@@ -13,6 +13,7 @@
 // como livres; fora dele não se sabe (não se avisa).
 import { classifyDisruptive } from './disruptiveCalculator';
 import { parseHhmm } from '../utils/time';
+import { isFdpDuty } from '../rules/fdpRules';
 
 const H = 3600000;
 export const RECOVERY_MIN_MS = 36 * H;
@@ -76,7 +77,7 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
       const endMin = endClk % 1440;
       const dis = classifyDisruptive({ reportMin: rep, endMin, type });
       const dep = Array.isArray(s.legs) && s.legs.length ? s.legs[0].dep : String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean)[0];
-      rows.push({ date, start, end, ...dis, kind: s.kind || 'flight', depAtBase: !dep || !baseOf(date) ? null : String(dep).toUpperCase() === baseOf(date) });
+      rows.push({ date, start, end, ...dis, kind: s.kind || 'flight', fdp: isFdpDuty(s), depAtBase: !dep || !baseOf(date) ? null : String(dep).toUpperCase() === baseOf(date) });
     }
   }
   rows.sort((a, b) => +a.start - +b.start);
@@ -109,6 +110,7 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
   for (const g of gaps) {
     const prev = rows[g.i - 1], next = rows[g.i];
     if (!(prev.night || prev.lateFinish) || !next.earlyStart) continue;
+    if (!prev.fdp || !next.fdp) continue;     // "the rest period between the 2 FDPs" — só entre dois PSV
     if (next.depAtBase === false) continue;   // fora da base, a regra não se aplica
     if (g.nights < 1) issues.push({ type: 'transitionNight', date: next.date });
   }

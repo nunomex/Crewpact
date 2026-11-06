@@ -150,6 +150,9 @@ export function buildTodayItems(ctx, lang) {
     } else if (rest.status === 'bad') {
       answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
       suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');
+    } else if (rest.kind === 'notFdp') {
+      // ORO.FTL.235(a)/(b): o mínimo é "antes de um PSV" — antes de um escritório, formação ou standby em casa não há.
+      answer = `${hhmm(rest.actualMin)} ${l('antes do report · sem mínimo (não é voo)', 'before report · no minimum (not a flight duty)')}`;
     } else {
       answer = `${l('Sim', 'Yes')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
     }

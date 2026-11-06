@@ -8,25 +8,21 @@ import SheetHeader from './SheetHeader';
 import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
-import { prospectiveDuty } from '../data/rosterImport';
-import { ftlForDuty } from '../ftl';
-import { unknownsText } from '../data/ftlUnknowns';
+import { simulateDuty, issueText } from '../data/simulation';
 import { routeDistancesNM } from '../data/perdiem';
 import { validityStatus, validityLabel } from '../data/validities';
 import { AppContext } from '../data/appContext';
 import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
 
-const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-
 // Resultado da SIMULAÇÃO (não grava nada). Calcula, para o serviço hipotético, as mesmas
-// perguntas do Briefing/Início — FTL universal (legal · PSV · fadiga · limites 28 d · descanso)
+// perguntas do Briefing/Início — FTL universal (PSV · repouso antes e depois · recuperação · noites seguidas · todos os
+// limites do 210 · fadiga · descanso; na TAP, o acordo) — data/simulation.js
 // + as CONSCIENTES DO PERFIL (per-diem por tipo/categoria/contrato; validades por piloto/cabine).
 // Pele nova (2026-07-10): página paper + Barlow; crew-aware marcado a AMARELO-soft (a marca).
 export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const { lang, dayLog, duties, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, cabinGapMin, splitAdminMin, base: baseNow, validities } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
-  const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const [advOpen, setAdvOpen] = useState(false); // "Avançado · casos especiais (FTL)" — reusa os calculadores da lei
 
   if (!duty) return <Modal visible={visible} animationType="slide" transparent />;
@@ -36,16 +32,16 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const cat = crewAt(duty.duty_date).category;
   // O acordo e a base DESSE dia (linha do tempo do contrato) — uma simulação num mês antigo usa os de então.
   const ae = duty.duty_date ? aeAt(duty.duty_date) : aeNow;
-  const base = duty.duty_date ? homeBaseAt(duty.duty_date) : baseNow;
 
-  // Serviço pós-voo (débrief) — sign-off real ou default do perfil. SÓ voo (235c).
-  const onM = clk(duty.block_on), soM = clk(duty.signOff);
-  const pf = !isFlight ? 0 : (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
-
-  // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
-  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base, { cabinGapMin, splitAdminMin, duties });
-  const sp = duty.special || {};
-  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin, duties });   // o mesmo cálculo do dayLog
+  // "Posso aceitar?" (auditoria dos cálculos, bloco 2): o serviço entra na escala e verifica-se tudo o que a lei pede — PSV do
+  // seu bloco do dia, repouso antes e depois, recuperação, noites seguidas, todos os períodos do 210 e, na TAP, o acordo.
+  // Trocar (decisão do Nuno, 2026-11-06): num dia com serviço, o simulado fica no lugar do guardado e os outros do dia contam.
+  const isTapAt = (iso) => { const a = iso ? aeAt(iso) : aeNow; return !!a && /^tap/.test(String(a.AE_ID || '')); };
+  const sim = simulateDuty(duty, {
+    duties, dayLog, postFlightMin: postFlightMin || 0, isPilot, base: baseNow, baseAt: homeBaseAt, cabinGapMin, splitAdminMin, mode: 'replace',
+    tap: { isTapAt, crewType: isPilot ? 'pilot' : 'cabin', fleetAt: (iso) => ((crewAt(iso) || {}).fleet || crewFleet || null) },
+  });
+  const replacing = !!(duty.duty_date && duties && duties[duty.duty_date] && !duties[duty.duty_date].deleted);
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;
@@ -57,20 +53,15 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
 
   // ── helpers ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dd] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dd}` : `${g},${dd} €`; };
-  const h1 = (v) => (Number(v) || 0).toLocaleString(locale, { maximumFractionDigits: 1 });
+  const hm = (min) => { const x = Math.max(0, Math.round(min || 0)); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+  const limTxt = (n) => (n === 1000 ? (lang === 'en' ? '1,000' : '1 000') : String(n));
+  const winLbl = (w) => (w.id === 'year' ? l('ano', 'year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} d`);
   const fatLbl = (b) => b === 'high' ? l('Alta', 'High') : b === 'elevated' ? l('Elevada', 'Elevated') : b === 'low' ? l('Baixa', 'Low') : l('Moderada', 'Moderate');
   const toneC = (tn) => tn === 'red' ? P.red : tn === 'warn' ? P.warn : tn === 'green' ? P.ok : P.ink;
   const fatTone = (b) => b === 'high' ? 'red' : b === 'elevated' ? 'warn' : b === 'low' ? 'green' : 'warn';
 
-  // ── Veredicto: estás legal? ──
-  // "A lei é que manda": só com factos em falta (nenhum limite certamente passado) → INCERTO, com o que falta.
-  const onlyUnc = prosp.ok === false && prosp.issues.length > 0 && prosp.issues.every((i) => i.type === 'fdpUncertain');
-  const verdict = onlyUnc ? 'unc' : prosp.ok === false ? 'bad' : prosp.ok === true ? 'ok' : 'none';
-  const issueTxt = (it) => it.type === 'fdp' ? (d && d.fdp.excessStr ? l(`PSV excede o máximo em ${d.fdp.excessStr}`, `FDP over the max by ${d.fdp.excessStr}`) : l('PSV excede o máximo', 'FDP over the max'))
-    : it.type === 'duty28' ? l('serviço acima de 190 h/28 d', 'duty over 190 h/28 d')
-    : it.type === 'flight28' ? l('voo acima de 100 h/28 d', 'flight over 100 h/28 d')
-    : it.type === 'fdpUncertain' ? l(`falta saber ${unknownsText(it.unknowns, 'pt')}`, `missing ${unknownsText(it.unknowns, 'en')}`)
-    : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h')) : '';
+  // ── Veredicto: dentro, excede ou incerto ("a lei é que manda": só factos em falta, nenhum limite certamente passado) ──
+  const verdict = sim.verdict;
 
   // ── HERÓI de poster (mockup design/simulacao-poster.html, aprovado 2026-07-15 — 2 rondas):
   // a simulação é um "e-se" do Início e fala a MESMA língua: fantasma + palavra + kick.
@@ -93,27 +84,40 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // e o esquema aprovado da companhia pode ser diferente. "Dentro" / "Excede" dizem o mesmo, com verdade.
   const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : verdict === 'unc' ? l('Incerto', 'Uncertain') : l('E se…', 'What if…');
   const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : verdict === 'unc' ? P.warn : P.grey;
-  const reasons = (verdict === 'bad' || verdict === 'unc') ? prosp.issues.map(issueTxt).filter(Boolean) : [];
-  // Só um PSV (com setores) tem rácio e hora-limite de calços (ORO.FTL.105(12); auditoria A-247).
-  const psvRatio = (d && d.isFdp && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
-  const latest = d && d.isFdp && d.latestOnBlockStr ? `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}` : null;
+  // As razões: primeiro as que excedem, depois as que dependem de um facto.
+  const reasons = (verdict === 'bad' || verdict === 'unc')
+    ? [...sim.issues.filter((i) => i.level === 'bad'), ...sim.issues.filter((i) => i.level !== 'bad')].map((i) => issueText(i, lang, duty.duty_date)).filter(Boolean)
+    : [];
+  // Só um PSV (com setores) tem rácio e hora-limite de calços (ORO.FTL.105(12); auditoria A-247) — do MESMO resultado do
+  // veredicto (A-248); a hora-limite é a mais apertada entre a EASA e o acordo (A-258).
+  const ps = sim.psv;
+  const psvRatio = (ps && ps.fdp && ps.result && ps.max) ? `${ps.result} / ${ps.max}` : null;
+  const latest = ps && ps.fdp && ps.latest ? `${ps.latest}${ps.latestNextDay ? ' (+1)' : ''}` : null;
   // Kick em texto plano (para o VoiceOver ler o herói como UMA frase). Com "Dentro", a frase completa-o.
   const kickPlain = verdict === 'bad' ? reasons.join(' · ')
     : verdict === 'unc' ? l(`a lei depende de um dado: ${reasons.join(' · ')}`, `the law depends on a fact: ${reasons.join(' · ')}`)
     : verdict === 'ok' ? (psvRatio
       ? l(`dos limites · PSV ${psvRatio}${latest ? ` · calços até às ${latest}` : ''}`, `the limits · FDP ${psvRatio}${latest ? ` · on-blocks by ${latest}` : ''}`)
-      : l('do máximo e dos limites de 28 d', 'the max and the 28-day limits'))
+      : l('dos limites', 'the limits'))
     : l('Preenche a apresentação e as horas — o veredicto aparece aqui', 'Fill the report and the times — the verdict shows up here');
 
   // ── Perguntas/respostas (o PSV MORREU da pilha — o herói responde-lhe; um dado, uma casa) ──
   const items = [];
-  if (prosp.fatigue) {
-    items.push({ icon: 'heart', q: l('Como fica a fadiga?', 'How is fatigue?'), a: `${fatLbl(prosp.fatigue.band)} · ${prosp.fatigue.score}`, tone: fatTone(prosp.fatigue.band), bar: Math.min(100, prosp.fatigue.score) });
+  if (sim.fatigue) {
+    items.push({ icon: 'heart', q: l('Como fica a fadiga?', 'How is fatigue?'), a: `${fatLbl(sim.fatigue.band)} · ${sim.fatigue.score}`, tone: fatTone(sim.fatigue.band), bar: Math.min(100, sim.fatigue.score) });
   }
-  items.push({ icon: 'stats', q: l('Quanto falta aos limites?', 'How much until the limits?'), sub: '28 d',
-    adv: `${l('Serviço', 'Duty')} ${h1(prosp.servico28)}/190 h  ·  ${l('Voo', 'Flight')} ${h1(prosp.voo28)}/100 h` });
-  if (d && d.rest && d.rest.restStr) {
-    items.push({ icon: 'bed', q: l('Descanso mínimo a seguir?', 'Min rest after?'), a: d.rest.restStr });
+  // O período mais apertado de cada limite que contém o dia (ORO.FTL.210: 7/14/28 dias, ano, 12 meses — auditoria A-165).
+  const tS = sim.tightest.servico, tV = sim.tightest.voo;
+  if (tS || tV) {
+    const anyOver = !!((tS && tS.over) || (tV && tV.over));
+    items.push({ icon: 'stats', q: l('Quanto falta aos limites?', 'How much until the limits?'), a: anyOver ? l('Excede', 'Over') : null, tone: anyOver ? 'red' : null,
+      adv: [tS && `${l('Serviço', 'Duty')} ${hm(tS.doneMin)}/${limTxt(tS.limit)} h (${winLbl(tS)})`, tV && `${l('Voo', 'Flight')} ${hm(tV.doneMin)}/${limTxt(tV.limit)} h (${winLbl(tV)})`].filter(Boolean).join('  ·  ') });
+  }
+  // O mínimo a seguir — a regra do "Repouso até" do Início (ORO.FTL.235 + prolongamento + noites locais depois de fusos).
+  const need = sim.rest && sim.rest.need;
+  if (need && need.requiredMin != null) {
+    items.push({ icon: 'bed', q: l('Descanso mínimo a seguir?', 'Min rest after?'), a: hm(need.requiredMin),
+      adv: need.nightsRequired ? l(`E ${need.nightsRequired} noites locais na base (CS FTL.1.235(b)(3)).`, `And ${need.nightsRequired} local nights at base (CS FTL.1.235(b)(3)).`) : null });
   }
   if (ae && (perDiem != null || nsEur != null)) {
     const total = (perDiem || 0) + (nsEur || 0);
@@ -132,7 +136,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
       adv: l(`Documentos de ${isPilot ? 'piloto' : 'cabine'}.`, `${isPilot ? 'Pilot' : 'Cabin'} documents.`) });
   }
 
-  const summary = `${isFlight ? (duty.route || l('Voo', 'Flight')) : l('Serviço', 'Duty')} · ${duty.sectors ? `${duty.sectors} ${l('setores', 'sectors')} · ` : ''}${l('apres.', 'rep.')} ${duty.report_time || '—'}`;
+  const summary = `${isFlight ? (duty.route || l('Voo', 'Flight')) : l('Serviço', 'Duty')} · ${duty.sectors ? `${duty.sectors} ${l('setores', 'sectors')} · ` : ''}${l('apres.', 'rep.')} ${duty.report_time || '—'}${replacing ? l(' · no lugar do serviço guardado', ' · instead of the saved duty') : ''}`;
   const crewTxt = `${isPilot ? l('Piloto', 'Pilot') : l('Cabine', 'Cabin')}${cat ? ` · ${(ae && ae.categoryLabel) ? ae.categoryLabel(cat, lang) : cat}` : ''}${crewContract ? ` · ${(ae && ae.contractLabel) ? ae.contractLabel(crewContract, lang) : crewContract}` : ''}`;
 
   return (
@@ -164,7 +168,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
           </View>
 
           <View style={s.crew}><Icon name={isPilot ? 'plane' : 'fam'} size={14} color={P.ink} /><Text style={s.crewTxt} numberOfLines={1}>{crewTxt}</Text></View>
-          <Text style={s.sum} numberOfLines={1}>{summary}</Text>
+          <Text style={s.sum} numberOfLines={2}>{summary}</Text>
 
           {/* Perguntas → respostas */}
           {items.map((it, i) => (

@@ -44,8 +44,8 @@ export const fmtBandRange = (b) => String(b).split('–').map((s) => `${s.slice(
 // de faixa). Pausa LÍQUIDA = bruta − 30 min (220(b)); estende se a líquida ≥ 3 h. Sem saber o alojamento nem a
 // hora, só conta até 6 h (CS 220(e)(2), auditoria A-153).
 export const splitExtensionMin = (breakH) => {
-  const net = breakH * 60 - SPLIT_ADMIN_MIN;
-  return net >= SPLIT_MIN_BREAK_H * 60 ? Math.round(Math.min(net, SPLIT_BASIC_CAP_MIN) * SPLIT_EXT_FACTOR) : 0;
+  const net = Math.round(breakH * 60) - SPLIT_ADMIN_MIN;   // minutos inteiros: as horas decimais dão 245,999… min
+  return net >= SPLIT_MIN_BREAK_H * 60 ? Math.floor(Math.min(net, SPLIT_BASIC_CAP_MIN) * SPLIT_EXT_FACTOR) : 0;
 };
 
 // Alojamento na pausa (CS FTL.1.220(d)(e)): 'suitable' (adequado: quarto) · 'basic' (há alojamento, mas não adequado)
@@ -72,7 +72,18 @@ export const splitCountedBreakMin = (breakMin, breakStartMin = null, accommodati
   const woclOv = woclOverlapMin(s, (s + capped) % 1440);   // exclui a parte no WOCL (com a volta da meia-noite)
   return Math.max(0, capped - woclOv);
 };
-export const splitExtensionFromCountedMin = (countedBreakMin) => Math.round(countedBreakMin * SPLIT_EXT_FACTOR);
+// CS FTL.1.220(c): "may be increased by UP TO 50 % of the break" — ao minuto, para baixo (auditoria A-248: 4:15 contáveis dão
+// 2:07:30 → 2:07; arredondar para cima dava 30 s acima do que a lei permite).
+export const splitExtensionFromCountedMin = (countedBreakMin) => Math.floor(Math.round(countedBreakMin) * SPLIT_EXT_FACTOR);
+
+// O serviço é um PSV? ORO.FTL.105(12): o PSV "inclui um setor ou série de setores". Standby em casa, formação, escritório e
+// posicionamento isolado NÃO são PSV (auditoria A-166/A-247). O standby de aeroporto SEM alojamento é "serviço no aeroporto" e
+// o PSV conta desde a apresentação (ORO.FTL.225(d)). Usada pelo motor (ftl/index.js), pelo repouso (235: "antes de um PSV") e
+// pela transição da CS FTL.1.235(a)(1) ("between the 2 FDPs").
+export const isFdpDuty = (duty = {}) => {
+  const k = (duty && duty.kind) || 'flight';
+  return k === 'flight' || (k === 'standby_airport' && !duty.accommodation);
+};
 
 // CS FTL.1.205(d)(3): teto de setores do prolongamento conforme a sobreposição
 // ao WOCL — sem sobreposição: 5 · até 2 h: 4 · mais de 2 h: 2.
