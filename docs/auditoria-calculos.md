@@ -8,6 +8,12 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > A-262, A-264, A-265, A-271, A-289 a A-293. Ficou de fora: A-256 (dúvida, para o Nuno) e os riscos A-151, A-152, A-154, A-156,
 > A-158, A-170, A-171, A-173, A-178 e A-179, além da parte do A-150/A-169 sobre o estado de aclimatação e as noites na base.
 > O detalhe e o que falta ver no iPhone estão em `docs/decisoes.md` (2026-11-06). Próximo: bloco 2 (Simulação).
+>
+> **Depois, no mesmo dia ("a lei é que manda"):** sem um facto de que a lei precisa, a app dá um intervalo e "incerto" (nunca um
+> valor por omissão). Ficaram feitos também A-256 (prolongamento planeado), A-152/A-170 (hora de referência e Quadro 1/3),
+> A-151 (recuperação, 2 dias locais, 72 h na mudança de base), A-154 (2.ª notificação), A-156/A-178 (apresentação dos pilotos
+> para a cabine), A-158 (desconto do OM no repartido), A-171 (tempo decorrido) e as noites na base do A-150/A-169. Para o
+> advogado: A-173 e as leituras da CS 220(d)/(e) e da 2.ª notificação. Factos a pesquisar: `docs/pesquisa-pendente.md`.
 
 ## Como se fez
 

@@ -14,8 +14,9 @@ cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler p
 verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-2. **Simulação (S7)** — já usa o `ftlForDuty` (o mesmo cálculo do dayLog); falta o repouso antes, a recuperação (36 h/168 h),
-   o dia somado em vez de substituído, os 4 setores em noites seguidas, todas as janelas do 210 e os limites da TAP. **Opus 5.5 Extra.**
+2. **Simulação (S7)** — já usa o `ftlForDuty` (o mesmo cálculo do dayLog, com intervalo/incerto, 205(d), aclimatação); falta
+   ligar-lhe o repouso antes (`restStatus`), a recuperação (`computeRecovery`), o dia somado em vez de substituído, os 4
+   setores em noites seguidas, todas as janelas do 210 e os limites da TAP. **Opus 5.5 Extra, sessão nova.**
 3. Limites TAP (S11) e validades (S12) · 4. Importação (S6 do lado do import: A-220–A-228, M12, L12) · 5. Dinheiro a mais (M1–M11,
    primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
    8. Dúvidas → advogado.
@@ -57,10 +58,14 @@ O Nuno recusou os valores por omissão "pelo lado seguro" do bloco 1. 7 commits 
 - **235(d) recuperação:** 36 h com 2 noites locais, ≤ 168 h, 60 h depois de 4 irregulares, tardio→matinal com noite
   local; no "Tenho descanso?". Tipo matinal/tardio desconhecido (≠ easyJet) → incerto.
 
-**Falta (próximo passo):** aclimatação no longo curso (Quadro 1 → B/D/X, Quadro 3) e as noites locais na base depois de
-rotações com fuso (CS 235(b)(3)(i)/(4)); os 2 dias locais duas vezes por mês e as 72 h depois de mudar de base (235(d)/(e));
-a 2.ª notificação do adiamento (CS 205(d)(1)(ii)). Para o advogado: as duas leituras da CS 220(d)/(e); o serviço que passa a
-meia-noite nas janelas de 7 dias (dias civis ou 168 h).
+**Feito depois (mesmo dia, 6 commits `6868725` … `fee412c`):** aclimatação no longo curso (Quadro 1 → B/D/X, Quadro 3; a
+referência é a última apresentação a ≤ 2 h da base, 6 dias para trás; sem histórico → intervalo); noites locais na base
+depois de rotações com 4 h ou mais e 3 noites entre rotações oeste/leste (CS 235(b)(3)(i)/(4)); 2 dias locais duas vezes por
+mês (235(d)); 72 h com 3 noites ao mudar de base (CS FTL.1.200(b)); 2.ª notificação do adiamento (CS 205(d)(1)(ii)); o tipo
+matinal/tardio só com fonte oficial (a easyJet deixou de ser assumida); pós-voo da TAP pelo AE (30 min).
+**Ponto 4 completo.** Para o advogado: as duas leituras da CS 220(d)/(e); o serviço que passa a meia-noite nas janelas de
+7 dias (dias civis ou 168 h); que hora adiada conta no máximo depois de uma 2.ª alteração.
+**Limite assumido (escrito no código):** a aclimatação de partida é a da base (rotações que saem da base e voltam a ela).
 **Por ver no iPhone (além da lista do bloco 1):** "Incerto" no Início/Detalhe/Simulação; os campos novos (pilotos,
 apresentação dos pilotos, alojamento por responder, prolongamento planeado); "dentro, com prolongamento".
 
