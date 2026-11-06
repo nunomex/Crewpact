@@ -6,15 +6,37 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 
 ---
 
-## PRÓXIMA SESSÃO (ler isto primeiro · atualizado 2026-11-04 ao fim da tarde)
+## PRÓXIMA SESSÃO (ler isto primeiro · atualizado 2026-11-06)
 
-**O Início v6 está no `main`** (o ramo `inicio-v6` juntou-se por avanço direto a 2026-11-04, depois de visto no iPhone em
-todos os estados possíveis; `npm test` verde no `main`). **Por ver:** a disrupção e o aviso de RDP (só com um atraso
-verdadeiro) e uma conta de CABINE (doença Cl. 61.ª, RDP).
-**A seguir, por esta ordem (recomendação aceite pelo Nuno):**
-1. ~~**Citações da cabine**~~ ✅ FEITO 2026-11-04 (ver a entrada "CITAÇÕES easyJet" abaixo).
-2. **Atualizar o esboço** `design/inicio-v6.html` com tudo o que mudou (placa flutuante, mosaicos, linha do dia, pós-voo…).
-3. **Modo escuro da app toda** — projeto de design, sessão própria em **Opus 5.5 Extra**, refs do Mobbin ecrã a ecrã.
+**Auditoria dos cálculos FEITA → corrigir.** O Nuno: "é crucial todos os cálculos e contas estarem certos, no tripulante de
+cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler primeiro), detalhe em
+`docs/auditoria-calculos-achados.md` (A-001…A-300). 300 achados: **143 erros, 100 riscos e 43 dúvidas confirmados** (2
+verificadores cada); agrupados, cerca de 70 problemas.
+**A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
+1. **Segurança, motor FTL** (S1–S10, S13): repouso a bordo classe 3 dos pilotos, teto da cabine, standby + 16 h, repouso desde os
+   calços, acumulados arredondados, serviços sem apresentação fora dos 210, prolongamento, split duty, registo 245. **Opus 5.5 Extra.**
+2. Simulação (S7) · 3. Limites TAP (S11) e validades (S12) · 4. Importação (S6, M12, L12) · 5. Dinheiro a mais (M1–M11, primeiro
+   a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
+   8. Dúvidas → advogado.
+**Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
+**Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-04 a 06 — AUDITORIA DOS CÁLCULOS contra o texto oficial (Opus 5.5 · UltraCode)
+
+- **Fontes FTL novas em `fontes/ftl/`:** Reg. (UE) 83/2014 (PT e EN, do Cellar, porque a EUR-Lex recusa descargas automáticas),
+  CS-FTL.1 inicial (ED 2014/002/R) e a Alteração 1 (ED 2023/023/R), com SHA-256 e marcas de página. Um auditor conferiu o
+  consolidado do 965/2012 de 25-05-2026: desde 2014 a subparte FTL só mudou no âmbito e na definição de tempo de voo (nenhum limite).
+  O PDF PT original tem o Quadro 1 corrompido (só B e ≥48); vale o EN e o consolidado.
+- **Workflow `auditoria-calculos`** (617 agentes, 3 retomas por limite do plano): 11 auditores por área + 5 que o crítico de
+  completude pediu (importação, simulação, PDFs/radiação, validades, Biblioteca/Prova); cada achado com 2 verificadores
+  (texto oficial + código em node).
+- **O que está certo:** os números de hoje das tabelas principais (bases, setores nominais, bandas, pernoita, DDO/IDO/WFLY, SNC,
+  RDP, matrizes ADTY, Quadros 1–4 do FTL, tabela de repouso a bordo da cabine) e o eixo piloto/cabine (nenhum valor trocado).
+- **O que está errado:** as regras, o que falta modelar e os textos. Ver o relatório.
+- **Não conferido:** nada no iPhone; IPC do INE, SMN e RMMG (não estão em `fontes/`); escalas reais eCrew/PDF; interpretações da EASA.
+- Nada corrigido ainda. Ficheiros por gravar: `docs/auditoria-calculos*.md`, `fontes/ftl/`, `fontes/README.md`.
 
 ---
 

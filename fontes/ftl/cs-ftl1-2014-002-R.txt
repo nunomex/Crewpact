@@ -1,0 +1,547 @@
+=====[PDF p.1]=====
+                                                                                                                        Annex to ED Decision 2014/002/R
+
+              European Aviation Safety Agency
+
+    Certification Specifications
+                        and
+
+            Guidance Material
+                        for
+
+   Commercial Air Transport by
+   Aeroplane — Scheduled and
+
+           Charter Operations
+
+                   CS-FTL.1
+
+                                                         Initial Issue
+                                                     31 January 20141
+
+1  For the date of entry into force of this Amendment, kindly refer to Decision 2014/002/R in the Official
+
+   Publication of the Agency
+=====[PDF p.2]=====
+                                              CS-FTL.1 — CONTENTS
+                                                        CONTENTS
+
+CS-FTL.1 — Commercial Air Transport by Aeroplane — Scheduled and
+                                               Charter Operations
+
+BOOK 1 – CERTIFICATION SPECIFICATIONS
+CS FTL.1.100 Applicability ............................................................................. 4
+CS FTL.1.200 Home base ............................................................................... 4
+CS FTL.1.205 Flight duty period (FDP) .......................................................... 4
+CS FTL.1.220 Split duty ................................................................................. 8
+CS FTL.1.225 Standby.................................................................................... 8
+CS FTL.1.230 Reserve .................................................................................... 9
+CS FTL.1.235 Rest periods ............................................................................. 9
+
+BOOK 2 – GUIDANCE MATERIAL
+GM1 CS FTL.1.200 Home base ..................................................................... 13
+GM1 CS FTL.1.205(a)(2) Flight duty period (FDP) ....................................... 13
+GM1 CS FTL.1.205(c)(1)(ii) Flight Duty Period (FDP).................................. 13
+GM2 CS FTL.1.205(c)(1)(ii) Flight Duty Period (FDP).................................. 13
+GM1 CS FTL.1.205(d) Flight Duty Period (FDP) ........................................... 13
+GM1 CS FTL.1.220(b) Split duty .................................................................. 14
+GM1 CS FTL.1.225 Standby .......................................................................... 14
+GM1 CS FTL.1.225(b) Standby ..................................................................... 14
+GM1 CS FTL.1.225(b)(2) Standby ................................................................ 14
+GM1 CS FTL.1.230 Reserve .......................................................................... 14
+GM2 CS FTL.1.230 Reserve .......................................................................... 14
+GM1 CS FTL.1.230(c) Reserve ..................................................................... 15
+GM1 CS FTL.1.235(b)(3) Rest periods ......................................................... 15
+
+                                                                                                                                          2 of 15
+=====[PDF p.3]=====
+                  CS-FTL.1
+                    Book 1
+
+   Certification Specifications
+
+Commercial Air Transport by
+Aeroplane — Scheduled and
+
+        Charter Operations
+
+                                                                                                                                             3 of 15
+=====[PDF p.4]=====
+                                                    CS-FTL.1 — BOOK 1
+CS FTL.1.100 Applicability
+These Certification Specifications are applicable to commercial air transport by
+aeroplanes for scheduled and charter operations, excluding emergency medical service
+(EMS), air taxi and single pilot operations.
+CS FTL.1.200 Home base
+(a) The home base is a single airport location assigned with a high degree of
+
+        permanence.
+(b) In the case of a change of home base, the first recurrent extended recovery rest
+
+        period prior to starting duty at the new home base is increased to 72 hours,
+        including 3 local nights. Travelling time between the former home base and the
+        new home base is positioning.
+CS FTL.1.205 Flight duty period (FDP)
+(a) Night duties under the provisions of ORO.FTL.205(b) and (d) comply with the
+        following:
+        (1) When establishing the maximum FDP for consecutive night duties, the
+
+                 number of sectors is limited to 4 sectors per duty.
+        (2) The operator applies appropriate fatigue risk management to actively manage
+
+                 the fatiguing effect of night duties of more than 10 hours in relation to the
+                 surrounding duties and rest periods.
+(b) Extension of FDP without in-flight rest
+The extension of FDP without in-flight rest under the provisions of ORO.FTL.205(d)(5) is
+limited to the values specified in the table below.
+
+                                                                                                                                             4 of 15
+=====[PDF p.5]=====
+                  CS-FTL.1 — BOOK 1
+
+Maximum daily FDP with extension
+
+Starting time of FDP 1–2 sectors                    3 sectors       4 sectors     5 sectors
+                                        (in hours)  (in hours)     (in hours)    (in hours)
+                                                                 Not allowed   Not allowed
+0600–0614  Not allowed Not allowed                               12:15         11:45
+                                                                 12:30         12:00
+0615–0629  13:15                                    12:45        12:45         12:15
+                                                                 13:00         12:30
+0630–0644  13:30                                    13:00        12:45         Not allowed
+
+0645–0659  13:45                                    13:15
+
+0700–1329  14:00                                    13:30
+
+1330–1359  13:45                                    13:15
+
+1400–1429  13:30                                    13:00        12:30         Not allowed
+1430–1459  13:15                                    12:45        12:15         Not allowed
+1500–1529  13:00                                    12:30        12:00         Not allowed
+1530–1559  12:45                                    Not allowed  Not allowed   Not allowed
+1600–1629  12:30                                    Not allowed  Not allowed   Not allowed
+1630–1659  12:15                                    Not allowed  Not allowed   Not allowed
+1700–1729  12:00                                    Not allowed  Not allowed   Not allowed
+1730–1759  11:45                                    Not allowed  Not allowed   Not allowed
+1800–1829  11:30                                    Not allowed  Not allowed   Not allowed
+1830–1859  11:15                                    Not allowed  Not allowed   Not allowed
+1900–0359  Not allowed                              Not allowed  Not allowed   Not allowed
+0400–0414  Not allowed                              Not allowed  Not allowed   Not allowed
+0415–0429  Not allowed                              Not allowed  Not allowed   Not allowed
+0430–0444  Not allowed                              Not allowed  Not allowed   Not allowed
+0445–0459  Not allowed                              Not allowed  Not allowed   Not allowed
+0500–0514  Not allowed                              Not allowed  Not allowed   Not allowed
+0515–0529  Not allowed                              Not allowed  Not allowed   Not allowed
+0530–0544  Not allowed                              Not allowed  Not allowed   Not allowed
+0545–0559  Not allowed                              Not allowed  Not allowed   Not allowed
+
+                                                                               5 of 15
+=====[PDF p.6]=====
+                                                    CS-FTL.1 — BOOK 1
+
+(c) Extension of FDP due to in-flight rest
+        In-flight rest facilities in accordance with ORO.FTL.205(e)(iii) fulfil the following
+        minimum standards:
+
+— ‘Class 1 rest facility’ means a bunk or other surface that allows for a flat or near
+        flat sleeping position. It reclines to at least 80° back angle to the vertical and is
+        located separately from both the flight crew compartment and the passenger cabin
+        in an area that allows the crew member to control light, and provides isolation from
+        noise and disturbance;
+
+— ‘Class 2 rest facility’ means a seat in an aircraft cabin that reclines at least 45°
+        back angle to the vertical, has at least a pitch of 55 inches (137,5 cm), a seat
+        width of at least 20 inches (50 cm) and provides leg and foot support. It is
+        separated from passengers by at least a curtain to provide darkness and some
+        sound mitigation, and is reasonably free from disturbance by passengers or crew
+        members;
+
+— ‘Class 3 rest facility’ means a seat in an aircraft cabin or flight crew compartment
+        that reclines at least 40° from the vertical, provides leg and foot support and is
+        separated from passengers by at least a curtain to provide darkness and some
+        sound mitigation, and is not adjacent to any seat occupied by passengers.
+        (1) The extension of FDP with in-flight rest under the provisions of
+                 ORO.FTL.205(e) complies with the following:
+                 (i) the FDP is limited to 3 sectors; and
+                 (ii) the minimum in-flight rest period is a consecutive 90-minute period for
+                         each crew member and 2 consecutive hours for the flight crew members
+                         at control during landing.
+        (2) The maximum daily FDP under the provisions of ORO.FTL.205 (e) may be
+                 extended due to in-flight rest for flight crew:
+                 (i) with one additional flight crew member:
+                         (A) up to 14 hours with class 3 rest facilities;
+                         (B) up to 15 hours with class 2 rest facilities; or
+                         (C) up to 16 hours with class 1 rest facilities;
+                 (ii) with two additional flight crew members:
+                         (A) up to 15 hours with class 3 rest facilities;
+                         (B) up to 16 hours with class 2 rest facilities; or
+                         (C) up to 17 hours with class 1 rest facilities.
+
+                                                                                                                                             6 of 15
+=====[PDF p.7]=====
+                   CS-FTL.1 — BOOK 1
+
+(3) The minimum in-flight rest for each cabin crew member is:
+
+Maximum extended FDP Minimum in-flight rest (in hours)
+
+                   Class 1  Class 2                     Class 3
+
+up to 14:30 hrs    1:30     1:30                        1:30
+
+14:31 – 15:00 hrs  1:45     2:00                        2:20
+
+15:01 – 15:30 hrs  2:00     2:20                        2:40
+
+15:31 – 16:00 hrs  2:15     2:40                        3:00
+
+16:01 – 16:30 hrs  2:35     3:00                        Not allowed
+
+16:31 – 17:00 hrs  3:00     3:25                        Not allowed
+
+17:01 – 17:30 hrs  3:25     Not allowed                 Not allowed
+
+17:31 – 18:00 hrs  3:50     Not allowed                 Not allowed
+
+        (4) The limits specified in (2) may be increased by 1 hour for FDPs that include 1
+                 sector of more than 9 hours of continuous flight time and a maximum of 2
+                 sectors.
+
+        (5) All time spent in the rest facility is counted as FDP.
+
+        (6) The minimum rest at destination is at least as long as the preceding duty
+                 period, or 14 hours, whichever is greater.
+
+        (7) A crew member does not start a positioning sector to become part of this
+                 operating crew on the same flight.
+
+(d) Unforeseen circumstances in flight operations — delayed reporting
+
+        (1) The operator may delay the reporting time in the event of unforeseen
+                 circumstances, if procedures for delayed reporting are established in the
+                 operations manual. The operator keeps records of delayed reporting. Delayed
+                 reporting procedures establish a notification time allowing a crew member to
+                 remain in his/her suitable accommodation when the delayed reporting
+                 procedure is activated. In such a case, if the crew member is informed of the
+                 delayed reporting time, the FDP is calculated as follows:
+
+                 (i) one notification of a delay leads to the calculation of the maximum FDP
+                         according to (iii) or (iv);
+
+                 (ii) if the reporting time is further amended, the FDP starts counting 1 hour
+                         after the second notification or at the original delayed reporting time if
+                         this is earlier;
+
+                 (iii) when the delay is less than 4 hours, the maximum FDP is calculated
+                         based on the original reporting time and the FDP starts counting at the
+                         delayed reporting time;
+
+                                                                     7 of 15
+=====[PDF p.8]=====
+                                                    CS-FTL.1 — BOOK 1
+
+                 (iv) when the delay is 4 hours or more, the maximum FDP is calculated
+                         based on the more limiting of the original or the delayed reporting time
+                         and the FDP starts counting at the delayed reporting time;
+
+                 (v) as an exception to (i) and (ii), when the operator informs the crew
+                         member of a delay of 10 hours or more in reporting time and the crew
+                         member is not further disturbed by the operator, such delay of 10 hours
+                         or more counts as a rest period.
+
+CS FTL.1.220 Split duty
+The increase of limits on flight duty, under the provisions of ORO.FTL.220, complies with
+the following:
+
+(a) The break on the ground within the FDP has a minimum duration of 3 consecutive
+        hours.
+
+(b) The break excludes the time allowed for post and pre-flight duties and travelling.
+        The minimum total time for post and pre-flight duties and travelling is 30 minutes.
+        The operator specifies the actual times in its operations manual.
+
+(c) The maximum FDP specified in ORO.FTL.205(b) may be increased by up to 50 % of
+        the break.
+
+(d) Suitable accommodation is provided either for a break of 6 hours or more or for a
+        break that encroaches the window of circadian low (WOCL).
+
+(e) In all other cases:
+        (1) accommodation is provided; and
+        (2) any time of the actual break exceeding 6 hours or any time of the break that
+                 encroaches the WOCL does not count for the extension of the FDP.
+
+(f) Split duty cannot be combined with in-flight rest.
+
+CS FTL.1.225 Standby
+The modification of limits on flight duty, duty and rest periods under the provisions of
+ORO.FTL.225 complies with the following:
+(a) Airport standby
+
+        (1) If not leading to the assignment of an FDP, airport standby is followed by a
+                 rest period as specified in ORO.FTL.235.
+
+        (2) If an assigned FDP starts during airport standby, the following applies:
+                 (i) the FDP counts from the start of the FDP. The maximum FDP is reduced
+                         by any time spent on standby in excess of 4 hours;
+                 (ii) the maximum combined duration of airport standby and assigned FDP
+                         as specified in ORO.FTL.205(b) and (d) is 16 hours.
+
+(b) Standby other than airport standby:
+        (1) the maximum duration of standby other than airport standby is 16 hours;
+        (2) The operator’s standby procedures are designed to ensure that the
+                 combination of standby and FDP do not lead to more than 18 hours awake
+                 time;
+
+                                                                                                                                             8 of 15
+=====[PDF p.9]=====
+                                                    CS-FTL.1 — BOOK 1
+
+        (3) 25 % of time spent on standby other than airport standby counts as duty
+                 time for the purpose of ORO.FTL.210;
+
+        (4) standby is followed by a rest period in accordance with ORO.FTL.235;
+        (5) standby ceases when the crew member reports at the designated reporting
+
+                 point;
+        (6) if standby ceases within the first 6 hours, the maximum FDP counts from
+
+                 reporting;
+        (7) if standby ceases after the first 6 hours, the maximum FDP is reduced by the
+
+                 amount of standby time exceeding 6 hours;
+        (8) if the FDP is extended due to in-flight rest according to CS FTL.1.205(c), or to
+
+                 split duty according to CS FTL.1.220, the 6 hours of paragraph (6) and (7)
+                 are extended to 8 hours;
+        (9) if standby starts between 23:00 and 07:00, the time between 23:00 and
+                 07:00 does not count towards the reduction of the FDP under (6), (7) and (8)
+                 until the crew member is contacted by the operator; and
+        (10) the response time between call and reporting time established by the
+                 operator allows the crew member to arrive from his/her place of rest to the
+                 designated reporting point within a reasonable time.
+
+CS FTL.1.230 Reserve
+The operator assigns duties to a crew member on reserve under the provisions of
+ORO.FTL.230 complying with the following:
+
+(a) An assigned FDP counts from the reporting time.
+(b) Reserve times do not count as duty period for the purpose of ORO.FTL.210 and
+
+        ORO.FTL.235.
+(c) The operator defines the maximum number of consecutive reserve days within the
+
+        limits of ORO.FTL.235(d).
+(d) To protect an 8-hour sleep opportunity, the operator rosters a period of 8 hours,
+
+        taking into account fatigue management principles, for each reserve day during
+        which a crew member on reserve is not contacted by the operator.
+
+CS FTL.1.235 Rest periods
+(a) Disruptive schedules
+
+        (1) If a transition from a late finish/night duty to an early start is planned at
+                 home base, the rest period between the 2 FDPs includes 1 local night.
+
+        (2) If a crew member performs 4 or more night duties, early starts or late
+                 finishes between 2 extended recovery rest periods as defined in
+                 ORO.FTL.235(d), the second extended recovery rest period is extended to 60
+                 hours.
+
+(b) Time zone differences
+        (1) For the purpose of ORO.FTL.235(e)(1), ‘rotation’ is a series of duties,
+                 including at least one flight duty, and rest period out of home base, starting
+                 at home base and ending when returning to home base for a rest period
+
+                                                                                                                                             9 of 15
+=====[PDF p.10]=====
+     CS-FTL.1 — BOOK 1
+
+        where the operator is no longer responsible for the accommodation of the
+        crew member.
+
+(2) The operator monitors rotations and combinations of rotations in terms of
+        their effect on crew member fatigue, and adapts the rosters as necessary.
+
+(3) Time zone differences are compensated by additional rest, as follows:
+
+        (i) At home base, if a rotation involves a 4 hour time difference or more,
+                 the minimum rest is as specified in the following table.
+
+Minimum local nights of rest at home base to compensate for time zone
+differences
+
+Maximum time difference (h)     Time elapsed (h) since reporting for
+between reference time and      the first FDP in a rotation involving at
+local time where a crew member  least 4 hour time difference to the
+rests during a rotation         reference time
+
+                                < 48 48 – 71:59 72 – 95:59 ≥96
+
+≤6                              2  2  3  3
+
+≤9                              2  3  3  4
+
+≤12                             2  3  4  5
+
+                 (ii) Away from home base, if an FDP involves a 4-hour time difference or
+                         more, the minimum rest following that FDP is at least as long as the
+                         preceding duty period, or 14 hours, whichever is greater. By way of
+                         derogation from point (b)(3)(i) and only once between 2 recurrent
+                         extended recovery rest periods as specified in ORO.FTL.235(d), the
+                         minimum rest provided under this point (b)(3)(ii) may also apply to
+                         home base if the operator provides suitable accommodation to the crew
+                         member.
+
+        (4) In case of an Eastward-Westward or Westward-Eastward transition, at least 3
+                 local nights of rest at home base are provided between alternating rotations.
+
+        (5) The monitoring of combinations of rotations is conducted under the operator’s
+                 management system provisions.
+
+(c) Reduced rest
+
+        (1) The minimum reduced rest periods under reduced rest arrangements are 12
+                 hours at home base and 10 hours out of base.
+
+        (2) Reduced rest is used under fatigue risk management.
+
+        (3) The rest period following the reduced rest is extended by the difference
+                 between the minimum rest period specified in ORO.FTL.235(a) or (b) and the
+                 reduced rest.
+
+                                         10 of 15
+=====[PDF p.11]=====
+                                           CS-FTL.1 — BOOK 1
+(4) The FDP following the reduced rest is reduced by the difference between the
+
+        minimum rest period specified in ORO.FTL.235(a) or (b) as applicable and the
+        reduced rest.
+(5) There is a maximum of 2 reduced rest periods between 2 recurrent extended
+        recovery rest periods specified in accordance with ORO.FTL.235(d).
+
+                                                                                                                                 11 of 15
+=====[PDF p.12]=====
+                CS-FTL.1
+                  Book 2
+
+         Guidance Material
+Commercial Air Transport by
+Aeroplane — Scheduled and
+
+        Charter Operations
+
+                                                                                                                                     12 of 15
+=====[PDF p.13]=====
+                                                    CS-FTL.1 — BOOK 2
+
+GM1 CS FTL.1.200 Home base
+TRAVELLING TIME
+Crew members should consider making arrangements for temporary accommodation
+closer to their home base if the travelling time from their residence to their home base
+usually exceeds 90 minutes.
+
+GM1 CS FTL.1.205(a)(2) Flight duty period (FDP)
+NIGHT DUTIES – APPROPRIATE FATIGUE RISK MANAGEMENT
+(a) When rostering night duties of more than 10 hours (referred to below as ‘long night
+
+        duties’), it is critical for the crew member to obtain sufficient sleep before such
+        duties when he/she is adapted to being awake during day time hours at the local
+        time where he/she is acclimatised. To optimise alertness on long night duties, the
+        likelihood of obtaining sleep as close as possible to the start of the FDP should be
+        considered, when rostering rest periods before long night duties, by providing
+        sufficient time to the crew member to adapt to being awake during the night.
+        Rostering practices leading to extended wakefulness before reporting for such
+        duties should be avoided. Fatigue risk management principles that could be applied
+        to the rostering of long night duties may include:
+        (1) avoiding long night duties after extended recovery rest periods
+        (2) progressively delaying the rostered ending time of the FDPs preceding long
+
+                 night duties;
+        (3) starting a block of night duties with a shorter FDP; and
+        (4) avoiding the sequence of early starts and long night duties.
+(b) Fatigue risk management principles may be applied to the rostering of long night
+        duties by means of:
+        (1) considering operator or industry operational experience and data collected on
+
+                 similar operations;
+        (2) evidence-based scheduling practices; and
+        (3) bio-mathematical models.
+
+GM1 CS FTL.1.205(c)(1)(ii) Flight Duty Period (FDP)
+IN-FLIGHT REST
+In-flight rest should be taken during the cruise phase of the flight.
+
+GM2 CS FTL.1.205(c)(1)(ii) Flight Duty Period (FDP)
+IN-FLIGHT REST
+In-flight rest periods should be allocated in order to optimise the alertness of those flight
+crew members at control during landing.
+
+GM1 CS FTL.1.205(d) Flight Duty Period (FDP)
+DELAYED REPORTING
+
+                                                                                                                                           13 of 15
+=====[PDF p.14]=====
+                                                    CS-FTL.1 — BOOK 2
+
+Operator procedures for delayed reporting should:
+(a) specify a contacting mode;
+(b) establish minimum and maximum notification times; and
+(c) avoid interference with sleeping patterns when possible.
+
+GM1 CS FTL.1.220(b) Split duty
+POST, PRE-FLIGHT DUTY AND TRAVELLING TIMES
+The operator should specify post and pre-flight duty and travelling times taking into
+account aircraft type, type of operation and airport conditions.
+
+GM1 CS FTL.1.225 Standby
+MINIMUM REST AND STANDBY
+(a) If airport or other standby initially assigned is reduced by the operator during
+
+        standby that does not lead to an assignment to a flight duty period, the minimum
+        rest requirements specified in ORO.FTL.235 should apply.
+(b) If a minimum rest period as specified in ORO.FTL.235 is provided before reporting
+        for the duty assigned during the standby, this time period should not count as
+        standby duty.
+(c) Standby other than airport standby counts (partly) as duty for the purpose of
+        ORO.FTL.210 only. If a crew member receives an assignment during standby other
+        than airport standby, the actual reporting time at the designated reporting point
+        should be used for the purpose of ORO.FTL.235.
+
+GM1 CS FTL.1.225(b) Standby
+STANDBY OTHER THAN AIRPORT STANDBY NOTIFICATION
+Operator procedures for the notification of assigned duties during standby other than
+airport standby should avoid interference with sleeping patterns if possible.
+
+GM1 CS FTL.1.225(b)(2) Standby
+AWAKE TIME
+Scientific research shows that continuous awake in excess of 18 hours can reduce the
+alertness and should be avoided.
+
+GM1 CS FTL.1.230 Reserve
+RESERVE NOTIFICATION
+Operator procedures for the notification of assigned duties during reserve should avoid
+interference with sleeping patterns if possible.
+
+GM2 CS FTL.1.230 Reserve
+NOTIFICATION IN ADVANCE
+
+                                                                                                                                           14 of 15
+=====[PDF p.15]=====
+                                                    CS-FTL.1 — BOOK 2
+The minimum 'at least 10 hours' between the notification of an assignment for any duty
+and reporting for that duty during reserve may include the period of 8 hours during
+which a crew member on reserve is not contacted by the operator.
+GM1 CS FTL.1.230(c) Reserve
+RECURRENT EXTENDED RECOVERY REST
+ORO.FTL.235(d) applies to a crew member on reserve.
+GM1 CS FTL.1.235(b)(3) Rest periods
+TIME ELAPSED SINCE REPORTING
+The time elapsed since reporting for a rotation involving at least a 4-hour time difference
+to the reference time stops counting when the crew member returns to his/her home
+base for a rest period during which the operator is no longer responsible for the
+accommodation of the crew member.
+
+                                                                                                                                           15 of 15
+

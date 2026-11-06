@@ -1,0 +1,307 @@
+=====[PDF p.1]=====
+                                     Annex I to ED Decision 2023/023/R
+                                     ‘CS-FTL.1, Issue 1 — Amendment 1’
+
+The text of the amendment is arranged to show deleted, new or amended text as shown below:
+(a) deleted text is struck through;
+(b) new or amended text is highlighted in blue;
+(c) an ellipsis ‘[…]’ indicates that the rest of the text is unchanged.
+
+Annex I to ED Decision 2023/023/R  Page 1 of 7
+=====[PDF p.2]=====
+The Annex to Decision 2014/002/R of 31 January 2014 of the Executive Director of the Agency is
+amended as follows:
+
+CS FTL.1.205 Flight duty period (FDP)
+
+(a) Night duties and late finish duties under the provisions of points ORO.FTL.205 (b) and (d)
+       comply with the following:
+
+       (1) When establishing the maximum FDP for consecutive night duties, the number of
+               sectors is limited to 4 sectors per duty.
+
+       (2) The operator applies appropriate fatigue risk management (appropriate FRM) to
+               actively manage the fatiguing effect of night duties of more than 10 hours and late
+               finish duties in relation to the surrounding duties and rest periods.
+
+       (3) When planning and implementing appropriate FRM measures to reduce fatigue
+               during night duties, the operator distinguishes between the following subtypes of
+               night duties and ranks them based on the probability of occurrence of high levels of
+               fatigue at Top of Descent (TOD):
+
+               (1) FDPs with a start time between 02:00 and 04:59;
+
+               (2) FDPs with an end time between 02:00 and 05:59 and a start time at 01:59 or
+                       earlier; and
+
+               (3) FDPs with an end time at 06:00 or later and a start time at 01:59 or earlier.
+[…]
+
+GM1 CS FTL.1.205(a)(2) Flight duty period (FDP)
+
+APPROPRIATE FATIGUE RISK MANAGEMENT (APPROPRIATE FRM)
+
+The term ‘appropriate FRM’ is a term chosen to refer to a set of principles and tools that support
+the operator and their operational personnel in managing particular fatigue hazards and
+associated risks through the safety risk management (SRM) process within the operator’s
+management system, in full compliance with the duty time, flight time limits and rest
+requirements defined by Subpart ORO.FTL.
+
+It should be distinguished from the fully-fledged fatigue risk management (FRM) system
+described under ORO.FTL.120.
+
+An FRM system under ORO.FTL.120 is a scientifically based, data-driven complement or
+alternative to the prescriptive regulation of flight and duty time and rest requirements, which
+manages crew fatigue in a flexible manner with due consideration to the risk exposure and the
+nature of operations. Operators need such FRM system when deviating from the certification
+specifications or when applying a mix of prescriptive rules and flexible arrangements.
+
+Conversely, an ‘appropriate FRM’ concept supports implementation of the rules and is applied
+without deviating from them.
+
+Annex I to ED Decision 2023/023/R                      Page 2 of 7
+=====[PDF p.3]=====
+These two distinct methods are also supported by ICAO (ref.: ICAO Doc 9966).
+
+GM2 CS FTL.1.205(a)(2) Flight duty period (FDP)
+
+NIGHT DUTIES AND LATE FINISH DUTIES — APPROPRIATE FATIGUE RISK MANAGEMENT
+(APPROPRIATE FRM)
+
+(a) The operator should apply appropriate FRM to night duties and late finish duties:
+
+       (1) in the safety risk management process by assessing fatigue-related hazards in
+               relation to a particular duty and mitigating fatigue-related risks and consequences
+               to an acceptable level or to a level as low as reasonably practicable; and
+
+       (2) in the crew rostering process by applying scientifically based principles.
+
+(b) For the purpose of applying appropriate FRM, the operator should monitor night duties
+       and late finish duties, and collect data by means of:
+
+       (1) crew fatigue reports;
+
+       (2) fatigue metrics and associated targets and thresholds;
+
+       (3) proactive fatigue data collection tools, such as but not limited to sleep–wake diaries
+               or fatigue survey questionnaires, to collect relevant data to feed its fatigue risk
+               assessment process;
+
+       (4) fatigue predictive tools, such as but not limited to the Prior Sleep Wake Model
+               (described in GM5 CS FTL.1.205(a)(2));
+
+       (5) the safety assurance process.
+
+(c) The operator should describe in the operations manual the responsibilities of the
+       management, crew and crew-rostering personnel for the implementation of appropriate
+       FRM to night duties and late finish duties.
+
+(d) The operator should provide personalised and context-specific training to its crew on
+       fatigue-mitigation strategies, especially on how to obtain more sleep prior to night duties
+       and late finish duties, e.g. by providing advice regarding exposure to daylight, sleep,
+       physical activity, and nutrition.
+
+GM13 CS FTL.1.205(a)(2) Flight duty period (FDP)
+
+NIGHT DUTIES AND LATE FINISH DUTIES — APPROPRIATE FATIGUE RISK MANAGEMENT
+(APPROPRIATE FRM)
+
+(a) When rostering night duties of more than 10 hours (referred to below as ‘long night
+       duties’), it is critical for the crew member to obtain sufficient sleep before such duties when
+       he/she he or she is adapted to being awake during daytime hours at the local time where
+       he/she he or she is acclimatised. To optimise alertness during on long night duties, the
+       likelihood of obtaining sleep as close as possible to the start of the FDP should be
+       considered, when rostering rest periods before long night duties, by providing sufficient
+       time to the crew member to adapt to being awake during the night. Rostering practices
+       leading to extended wakefulness before reporting for night duties should be avoided.
+
+Annex I to ED Decision 2023/023/R  Page 3 of 7
+=====[PDF p.4]=====
+       Appropriate Fatigue fatigue risk management principles and tools that could be applied to
+       the rostering of long night duties may include:
+
+       (1) avoiding long night duties after extended recovery rest periods;
+
+       (2) progressively delaying the rostered ending time of the FDPs preceding long night
+               duties; and
+
+       (3) starting a block of night duties with a shorter FDP; and
+
+       (43) avoiding the sequence of early starts and long night duties.
+
+(b) Fatigue risk management principles may be applied to the rostering of long night duties by
+       means of:
+
+       (1) considering operator or industry operational experience and data collected on
+               similar operations;
+
+       (2) evidence-based scheduling practices; and
+
+       (3) bio-mathematical models.
+
+(b) When rostering late finish duties, sleep deprivation may arise, leading to the onset of
+       fatigue. To optimise crew alertness during late finish duties, the operator should avoid
+       rostering practices that may lead to sleep debt prior to the reporting for late finish duties.
+
+(c) Obtaining sufficient sleep is a shared responsibility between the operator and its crew
+       members.
+
+       (1) The operator could implement various measures, such as:
+
+               (i) identifying those night duties or late finish duties that are safety critical;
+
+               (ii) communicating on the use of available rest facilities at the main base;
+
+               (iii) promoting the optimum use of sleep opportunities among their crew, in
+                       particular before crew reporting for night duties or late finish duties;
+
+               (iv) where possible, providing suitable accommodation at or near the crew
+                       reporting point, or use augmented crew.
+
+       (2) For crew members, it is important to make optimum use of sleep opportunities, as
+               applicable:
+
+               (i) in the afternoon, prior to a night duty;
+
+               (ii) prior to a late finish duty;
+
+               (iii) during FDPs with in-flight rest;
+
+               (iv) during a long turnaround.
+
+Annex I to ED Decision 2023/023/R  Page 4 of 7
+=====[PDF p.5]=====
+GM4 CS FTL.1.205(a)(2) Flight duty period (FDP)
+
+CONSECUTIVE NIGHT DUTIES AND CONSECUTIVE LATE FINISH DUTIES — APPROPRIATE FATIGUE
+RISK MANAGEMENT (APPROPRIATE FRM)
+
+Appropriate FRM that may be applied to consecutive night duties or consecutive late finish duties
+include:
+
+(1) rostering a block of identical duties (late finish duties or night duties) rather than rostering
+       mixed duties;
+
+(2) starting a block of late finish duties or night duties with a shorter FDP;
+
+(3) rostering not more than one transition between two different types of disruptive duties,
+       between two extended recovery rest periods.
+
+GM5 CS FTL.1.205(a)(2) Flight duty period (FDP)
+
+APPROPRIATE FATIGUE RISK MANAGEMENT (APPROPRIATE FRM) — THE PRIOR SLEEP WAKE
+MODEL
+
+(a) The Prior Sleep Wake model (PSWM) is a simple method that may be used among other
+       methods to predict the likelihood of accumulating fatigue or sleep debt and to assess crew
+       fitness for duty, based on scientific evidence and principles.
+
+       Most evidence suggests that to maintain optimum performance, health, and well-being,
+       individuals should get between 7 and 9 hours of sleep during a 24-hour period.
+
+       Many studies have investigated how decreasing levels of sleep and increasing time awake
+       affects performance. In general, research has found that performance begins to become
+       impaired after getting less than 5 hours of sleep over a 24-hour period. Performance also
+       becomes impaired if sleep consistently falls below 6 hours per night on an ongoing basis.
+
+       Sleepiness is related to factors such as the time of day, the time since awakening and the
+       duration of prior sleep. As prior sleep decreases and time awake increases, the likelihood
+       of fatigue-related symptoms, errors, and incidents also increases.
+
+       The PSWM allows the operator to set minimum and maximum thresholds for sleep and
+       time awake, according to the specific work risk profile of the crew members concerned, to
+       determine whether they have obtained sufficient sleep and are by inference fit for duty.
+       These thresholds should not be treated as targets.
+
+       The PSWM also allows crew members to calculate for themselves how much sleep they
+       have had and how long it has been since their last sleep period. The operator may decide
+       that crew members, after assessing their own fitness for duty, report to their supervisor
+       when they do not meet the relevant thresholds. This simple and practical process can flag
+       sleepiness and fatigue before they lead to a safety issue.
+
+       When crew members report to a supervisor that they have had insufficient sleep, it is
+       important that clear procedures be in place to manage the risk in a consistent manner.
+
+Annex I to ED Decision 2023/023/R  Page 5 of 7
+=====[PDF p.6]=====
+The PSWM has limitations which operators and crew members need to be aware of. The
+model does not account for crew circadian rhythm, workload and sleep quality, to name a
+few. Therefore, where used, the PSWM may be one element of the appropriate FRM, but
+not the only element. Operators and crew members may use complementary methods and
+tools to validate predictions about fatigue made by the PSWM or alternative methods and
+tools having similar characteristics.
+
+(b) The prior sleep–wake score is calculated by means of the following table:
+
+                                   Calculating prior sleep–wake                 Score
+
+Step 1: Sleep in prior 24 hours (*)
+
+Sleep                              2 hrs 3 hrs 4 hrs 5+ hrs
+
+Points                             12  8  4                      0
+
+Step 2: Sleep in prior 48 hours (*)
+
+Sleep                              8 hrs 9 hrs 10 hrs 11 hrs 12+ hrs
+
+Points                             8   6  4                      2  0
+
+Step 3: Predicted hours awake since last sleep until end of duty (**)
+If sleep hours in Step 2 are more than hours awake, score = 0.
+
+If less, add 1 point per hour awake more than sleep in Step 2.
+
+                                                                         Total
+
+(*) Sleep in prior 24 (48) hours means the sleep duration in the 24 (48) hours prior to the
+start of a rostered duty period. Sleep in this context is a sleep period during a continuous,
+uninterrupted and defined rest period, following a duty or prior to a duty, during which a
+crew member is free of all duties, standby and reserve. It excludes in-flight rest and
+controlled rest.
+
+(**) Predicted hours awake refer to the period from wake-up from the last sleep period
+to the end of the rostered duty period.
+
+(c) Fitness for duty is assessed by means of the following table:
+
+Total score from Risk level            Approved controls
+the previous table
+
+0       Acceptable No additional controls necessary except in the
+
+                                       presence of higher-level indicators of fatigue (i.e.
+
+                                       symptoms, errors, or incidents).
+
+1–4     Minor                          Inform line supervisor and document in daily
+
+                                       logbook. Self-monitor for fatigue-related symptoms
+
+                                       and apply individual controls such as strategic use of
+
+Annex I to ED Decision 2023/023/R                                                      Page 6 of 7
+=====[PDF p.7]=====
+                                   caffeine, task rotation, working in pairs, additional
+                                   rest breaks.
+
+5–8  Moderate Inform local manager and document in a fatigue
+
+                                   report. Implement additional fatigue controls such
+
+                                   as task reallocation, napping, and increased level of
+
+                                   peer and supervisory monitoring.
+
+9+   Significant Call manager before driving to work. Document in a
+
+                                   fatigue report on next work shift. Do not engage in
+
+                                   safety-critical tasks (including driving to work), and
+
+                                   do not return to work until sufficiently rested as per
+
+                                   sleep/time awake rules.
+
+Annex I to ED Decision 2023/023/R                                    Page 7 of 7
+
