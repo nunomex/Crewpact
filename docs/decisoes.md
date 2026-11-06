@@ -39,7 +39,7 @@ leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos par
 
 ## 2026-11-06 (noite) — AUDITORIA, BLOCO 3, os pendentes (o Nuno: "tenta corrigir isto")
 
-`npm test` verde (limites TAP 568); pacote iOS gerado sem erros.
+`npm test` verde (limites TAP 572); pacote iOS gerado sem erros.
 - **Jornal Oficial (era para o advogado):** as 37 citações das validades, em pt e en, foram conferidas no PRÓPRIO ato publicado
   no JO de onde vem cada secção (a marca ▼/► da versão consolidada diz qual) — todas lá estão. Tabela em `fontes/README.md`.
 - **Hora de referência da cabine no médio curso (era para o advogado):** o AE resolve-a — a Cl. 4.ª, n.º 14 define "Hora de
@@ -63,9 +63,11 @@ leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos par
 - **Revisão independente — 5 erros, corrigidos:** o ecrã das horas mostrava o voo da meia-noite todo num dia (agora o
   intervalo, "Incerto · pode chegar a X"); o P28 contava voos saídos de assistências, que não são do planeamento (Cl. 15.ª, n.º 3);
   férias/doença pelo meio davam falso "folga-24h"; a assistência ativada contava duas vezes (acaba na apresentação: pilotos
-  Cl. 19.ª, n.º 4; cabine Cl. 17.ª, n.º 5 a)); o A-138 dava "excede" por uma só leitura. **Riscos que ficam:** a tabela geotime
-  do ROV; o mês do P28 (mês de calendário pela Cl. 11.ª, n.º 1); o 5.º dia com assistência pode ser "dentro" se a alínea a)
-  valer para o voo da assistência; o P38 também corre em rotações de médio curso (já era assim).
+  Cl. 19.ª, n.º 4; cabine Cl. 17.ª, n.º 5 a)); o A-138 dava "excede" por uma só leitura. **Depois, relidos no AE (o Nuno: "pesquisa novamente"):** o mês
+  do P28 é o de calendário (Cl. 19.ª, n.º 16: "por cada mês de calendário ... em sede de planeamento mensal publicado"); o voo
+  saído da assistência do 5.º dia segue só a alínea b) (a regra própria dele — a a) deixá-la-ia sem efeito); o P38 vale com as duas
+  rotações de longo curso (Cl. 39.ª, "Rotações no longo-curso"), com uma de médio curso dá "incerto". **Fica só a tabela geotime
+  do ROV** (Cl. 43.ª, n.º 5): não está publicada (pesquisa na internet sem resultado); a app segue a definição do AE (Cl. 6.ª, n.º 53).
 
 ---
 

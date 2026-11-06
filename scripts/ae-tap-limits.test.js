@@ -882,7 +882,16 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
   days('2026-04-06', 4).forEach((d) => { c5[d] = F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS'); });
   c5['2026-04-10'] = { ...S('standby_airport', '08:00', '12:00'), extra: [F('12:00', '12:30', '19:00', 2, 'LIS-OPO-LIS')] };
   const f5 = rule(run('cabin', c5), 'C11').findings.filter((x) => x.date === '2026-04-10');
-  eq('A-141 5.º dia com assistência, calços às 19h00: não excede pelas 18h00; incerto', [f5.some((x) => x.reason === 'quinto-dia-18h' && x.status === 'excede'), (f5.find((x) => x.reason === 'quinto-dia-assistencia') || {}).status], [false, 'incerto']);
+  eq('A-141 5.º dia, voo saído da assistência com calços às 19h00: só a alínea b) (chegada até às 20h00) → sem achado', f5.length, 0);
+  const c5b = { ...c5, '2026-04-10': { ...S('standby_airport', '08:00', '12:00'), extra: [F('12:00', '12:30', '20:30', 2, 'LIS-OPO-LIS')] } };
+  eq('A-141 voo da assistência com chegada às 20h30 → excede (alínea b))', rule(run('cabin', c5b), 'C11').findings.some((x) => x.reason === 'quinto-dia-assistencia-20h' && x.status === 'excede'), true);
+  // P38 — a Cl. 39.ª é das "Rotações no longo-curso": com uma rotação de médio curso, "incerto".
+  const p38 = run('pilot', {
+    '2026-01-12': FZ('08:00', [['LIS', 'FCO', '09:00', '12:00']]), '2026-01-13': FZ('14:00', [['FCO', 'LIS', '15:00', '18:00']]),
+    '2026-01-15': FZ('10:00', [['LIS', 'LAX', '11:00', '23:00']]), '2026-01-17': FZ('22:00', [['LAX', 'LIS', '23:00', '10:00']]),
+  });
+  const f38 = rule(p38, 'P38').findings[0];
+  eq('P38 pernoita em FCO (médio curso) e depois LAX, 9 h de diferença, 1 dia de folga → incerto (não excede)', f38 && [f38.status, f38.reason], ['incerto', 'rotacao-medio-curso']);
 }
 
 console.log(`\nlimites de escala TAP — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

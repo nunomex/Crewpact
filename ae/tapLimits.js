@@ -259,9 +259,11 @@ export const TAP_RULES = [
       ['Frota A330 - 80 horas (block time).', 295],
       ['Para efeitos dos limites do número anterior não é considerado o tempo de atividade em simulador na função de instrutor ou de verificador.', 295],
       ['O disposto nos números 9 a 13 e 16 a 18 da cláusula 15.ª do presente regulamento entra em vigor a partir de 1 de agosto de 2023;', 311],
+      ['A cada piloto, pode ser marcado, por cada mês de calendário, um bloco de assistências de até um máximo de 6 dias em sede de planeamento mensal publicado', 298],
+      ['com a antecedência mínima de 15 dias em relação ao início do mês respetivo.', 293],
     ],
     conventions: [
-      { pt: 'Mês = o mês do planeamento mensal, publicado antes do "início do mês respetivo" (Cl. 11.ª, n.º 1): o mês de calendário; o tempo de voo reparte-se pelos dias (Cl. 6.ª, n.º 9). Os voos que saíram de uma assistência não eram do planeamento (Cl. 15.ª, n.º 3): só na conta maior.', en: 'Month = the month of the monthly roster, published before the "start of the respective month" (Cl. 11, no. 1): the calendar month; flight time is split by day (Cl. 6, no. 9). Flights that came from a standby were not in the roster (Cl. 15, no. 3): only in the larger count.' },
+      { pt: 'Mês = o mês do planeamento mensal: o AE liga-o ao mês de calendário ("por cada mês de calendário ... em sede de planeamento mensal publicado", Cl. 19.ª, n.º 16), publicado antes do "início do mês respetivo" (Cl. 11.ª, n.º 1) — não as 4 semanas da Cl. 6.ª, n.º 16; o tempo de voo reparte-se pelos dias (Cl. 6.ª, n.º 9). Os voos que saíram de uma assistência não eram do planeamento (Cl. 15.ª, n.º 3): só na conta maior.', en: 'Month = the month of the monthly roster: the CLA ties it to the calendar month ("for each calendar month ... in the published monthly roster", Cl. 19, no. 16), published before the "start of the respective month" (Cl. 11, no. 1) — not the 4 weeks of Cl. 6, no. 16; flight time is split by day (Cl. 6, no. 9). Flights that came from a standby were not in the roster (Cl. 15, no. 3): only in the larger count.' },
       { pt: 'Frota A320 = narrow-body e A330 = wide-body, pela frota da linha do tempo; sem a frota (ou com as duas no mês), as duas leituras: "Excede" só acima das 80 h.', en: 'A320 fleet = narrow-body and A330 = wide-body, from the fleet timeline; without the fleet (or with both in the month), both readings: "Exceeds" only above 80 h.' },
       { pt: 'O simulador não tem tempo de voo na escala: fica de fora, como no n.º 10.', en: 'The simulator has no flight time in the roster: it stays out, as in no. 10.' },
     ],
@@ -523,7 +525,7 @@ export const TAP_RULES = [
       { pt: 'O AE não diz de onde contam os "7 dias consecutivos" da folga semanal (Cl. 4.ª, n.º 12): a app aplica o limite que o AE escreve, 5 dias seguidos (Cl. 20.ª, n.º 4), e o mínimo de 13 por trimestre (C14).', en: 'The CLA does not say where the "7 consecutive days" of the weekly day off start (Cl. 4, no. 12): the app applies the limit the CLA writes, 5 consecutive days (Cl. 20, no. 4), and the 13 per quarter minimum (C14).' },
       { pt: 'O "término" do serviço de voo = calços + 30 min (Cl. 4.ª, n.º 44).', en: 'Flight duty "end" = on-blocks + 30 min (Cl. 4, no. 44).' },
       { pt: 'Um dia livre de 24 h não é folga semanal (48 h, Cl. 4.ª, n.º 12): contados "entre 2 períodos de folga semanal", mais de 5 dias de trabalho só por essa leitura → "incerto".', en: 'A 24 h free day is not a weekly day off (48 h, Cl. 4, no. 12): counted "between 2 weekly rest periods", more than 5 working days only in that reading → "uncertain".' },
-      { pt: 'No 5.º dia com assistência, a alínea b) deixa a chegada até às 20h00; a a) diz término até às 18h00: entre as duas, "incerto".', en: 'On day 5 with standby, point b) allows arrival up to 20:00; point a) says end by 18:00: between the two, "uncertain".' },
+      { pt: 'O serviço atribuído a partir da assistência do 5.º dia segue só a alínea b) (chegada até às 20h00): é a regra própria dele, e a a) (término até às 18h00) deixá-la-ia sem efeito. Os outros serviços do 5.º dia seguem a a).', en: 'A duty assigned from the day-5 standby follows only point b) (arrival by 20:00): it is its own rule, and point a) (end by 18:00) would leave it without effect. Other day-5 duties follow point a).' },
     ],
   },
   {
@@ -1548,9 +1550,14 @@ const checkP38 = (svcs, rots, absent) => {
       if (fl) nLen += fl.blocks.reduce((t, [a, b]) => t + Math.max(0, Math.floor((b - a) / DAY)), 0);
       if (fs) nStr += fs.blocks.reduce((t, [a, b]) => t + Math.max(0, Math.floor((b - a) / DAY)), 0);
     }
-    const status = dLen >= 8 && nLen < 6 ? 'excede' : nStr < 6 ? 'incerto' : 'dentro';
+    // A Cl. 39.ª chama-se "Rotações no longo-curso": com as duas rotações de longo curso, a regra vale; com uma de médio curso
+    // (ex.: pernoita em ATH e depois ORD), o AE não diz se vale → "incerto", nunca "excede".
+    const bothLc = !!(r1.lc && r2.lc);
+    let status = dLen >= 8 && nLen < 6 ? 'excede' : nStr < 6 ? 'incerto' : 'dentro';
+    let reason = status === 'incerto' ? 'leituras' : null;
+    if (!bothLc && status === 'excede') { status = 'incerto'; reason = 'rotacao-medio-curso'; }
     out.push({ date: r2.first.date, after: r1.last.date, at: A, to: B, diff: dLen, ...(dStr !== dLen ? { diffStr: dStr } : {}),
-      value: nLen, ...(nStr !== nLen ? { valueStr: nStr } : {}), limit: 6, lc: true, status, ...(status === 'incerto' ? { reason: 'leituras' } : {}) });
+      value: nLen, ...(nStr !== nLen ? { valueStr: nStr } : {}), limit: 6, lc: true, status, ...(reason ? { reason } : {}) });
   }
   return out;
 };
@@ -1773,12 +1780,11 @@ const checkC11 = (svcs, blocks = [], absent = new Set()) => {
     if (run.length >= 5) {
       const d5 = run[4];
       const day = svcs.filter((s) => s.dn === d5 && !s.incomplete);
-      const sbDay = day.some((x) => isStandby(x.kind));
       for (const s of day.filter((x) => x.kind === 'flight')) {
-        if (sbDay) {
-          // b): com assistência no 5.º dia, chegada até às 20h00; a a) (término até às 18h00) é a outra leitura (A-141).
+        // A-141: a alínea b) é a regra PRÓPRIA do serviço atribuído a partir da assistência do 5.º dia (chegada até às 20h00).
+        // Se a a) (término até às 18h00) também lhe valesse, a b) nunca teria efeito — por isso, para esse serviço, só a b).
+        if (standbyBefore(svcs, s)) {
           if (s.end > d5 * DAY + 1200) out.push({ date: isoOf(d5), value: s.end, limit: d5 * DAY + 1200, status: 'excede', reason: 'quinto-dia-assistencia-20h' });
-          else if (s.workEnd > d5 * DAY + 1080) out.push({ date: isoOf(d5), value: s.workEnd, limit: d5 * DAY + 1080, status: 'incerto', reason: 'quinto-dia-assistencia' });
         } else if (s.workEnd > d5 * DAY + 1080) out.push({ date: isoOf(d5), value: s.workEnd, limit: d5 * DAY + 1080, status: 'excede', reason: 'quinto-dia-18h' });
         if (s.mc === false && s.startsAtBase && s.endsAtBase) out.push({ date: isoOf(d5), status: 'excede', reason: 'quinto-dia-lc-ida-volta' });
       }
