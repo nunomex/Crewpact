@@ -549,6 +549,9 @@ const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
   const T = require(path.resolve('data/tapLimitsText.js'));
   eq('frase: 84 h formata sem casas', T.fmtHours(5040, 'pt'), '84 h');
   eq('frase: 84,1 h em pt e 84.1 h em en', [T.fmtHours(5046, 'pt'), T.fmtHours(5046, 'en')], ['84,1 h', '84.1 h']);
+  // Auditoria A-136: 90:01 de voo em 28 dias com o estado Excede não pode ler-se "90 h (máx. 90 h)".
+  eq('frase: excesso de 1 min mostra h:mm', T.describe('P25', { status: 'excede', value: 5401, limit: 5400, window: '28d' }, 'pt').say.includes('90:01'), true);
+  eq('frase: sem excesso fica em horas', T.describe('P25', { status: 'dentro', value: 5040, limit: 5400, window: '28d' }, 'pt').say.includes('84 h'), true);
   eq('frase: dia da semana', T.fmtDay('2026-11-02', 'pt'), 'seg 2 nov');
   eq('frase: trimestre', T.windowLabel({ window: 'trimestre', period: '2026-T4' }, 'pt'), 'Trimestre (out–dez)');
   const N = () => F('20:00', '20:30', '23:10', 2, 'LIS-OPO-LIS');

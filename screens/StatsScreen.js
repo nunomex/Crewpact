@@ -140,9 +140,16 @@ export default function StatsScreen({ navigation }) {
   const limits = useMemo(() => {
     const flight = computeFlightTime(dayLog);   // voo: 100 h/28 d · ano civil · 12 meses
     const duty = computeDutyTime(dayLog);       // serviço: 60/110/190 h em 7/14/28 dias
-    const has = Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0));
+    const has = Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0) || (d?.vooMin > 0) || (d?.servicoMin > 0));
     return { rows: [...flight.map((w) => ({ ...w, grp: 'voo' })), ...duty.map((w) => ({ ...w, grp: 'serv' }))], has };
   }, [dayLog]);
+  // Limites do ORO.FTL.210 em minutos inteiros (auditoria A-172/A-262): a folga nunca se arredonda para cima, e um
+  // excesso de minutos não pode aparecer como "60 / 60 h" — mostra-se em h:mm.
+  const hmS = (m) => `${Math.floor(Math.max(0, m) / 60)}:${String(Math.max(0, m) % 60).padStart(2, '0')}`;
+  const doneTxt = (w) => (w.over && Math.round(w.done) <= w.limit) ? hmS(w.doneMin) : String(Math.round(w.done));
+  const leftTxt = (w) => (w.over
+    ? `${l('excede', 'over by')} ${hmS(w.overMin)}`
+    : `${l('faltam', 'left')} ${w.headroomMin >= 60 ? `${Math.floor(w.headroomMin / 60)} h` : hmS(w.headroomMin)}`);
   const limLabel = (w) => w.id === 'year' ? l('Ano civil', 'Calendar year') : w.id === '12m' ? l('12 meses', '12 months') : `${w.days} ${l('dias', 'days')}`;
   const shortLim = (w) => `${w.grp === 'voo' ? l('Voo', 'Flt') : l('Serv', 'Duty')} ${w.id === 'year' ? l('ano', 'yr') : w.id === '12m' ? '12m' : `${w.days}d`}`;
 
@@ -159,7 +166,10 @@ export default function StatsScreen({ navigation }) {
   const monthAbbr = (i) => new Date(2020, i, 1).toLocaleDateString(locale, { month: 'short' }).replace('.', '').slice(0, 3);
   const kindLabel = (k) => t('duties.kind.' + k, lang);
 
-  const flightRatio = Math.min(1, st.flightHours / ANNUAL_FLIGHT_LIMIT_H);
+  // 900 h no ano civil (ORO.FTL.210(b)(2)) em minutos: a barra pára nos 100 %, o texto não (A-262).
+  const yearFlightGap = { over: st.flightMin > ANNUAL_FLIGHT_LIMIT_H * 60, overMin: Math.max(0, st.flightMin - ANNUAL_FLIGHT_LIMIT_H * 60), headroomMin: Math.max(0, ANNUAL_FLIGHT_LIMIT_H * 60 - st.flightMin) };
+  const flightPct = Math.floor((st.flightMin / (ANNUAL_FLIGHT_LIMIT_H * 60)) * 100);
+  const flightRatio = Math.min(1, st.flightMin / (ANNUAL_FLIGHT_LIMIT_H * 60));
   const chartData = isYear ? st.months : st.days;   // 12 meses · ou dias do mês
   const maxBar = Math.max(1, ...chartData.map((m) => m.flightMin));
   const kindsPresent = STAT_KINDS.filter((k) => st.byKind[k] > 0);
@@ -390,7 +400,7 @@ export default function StatsScreen({ navigation }) {
                   <>
                     <Text style={s.dlab}>{selSafe ? `${selSafe.w.grp === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${limLabel(selSafe.w)}` : ''}</Text>
                     <Text style={[s.dvalS, { color: barColor(selSafe ? selSafe.r : 0) }]} allowFontScaling={false}>{Math.round((selSafe ? selSafe.r : 0) * 100)}%</Text>
-                    <Text style={s.dsub}>{selSafe ? `${Math.round(selSafe.done)} / ${Math.round(selSafe.limit)} h · ` : ''}<Text style={s.dsubB}>{l('faltam', 'left')} {selSafe ? Math.max(0, Math.round(selSafe.limit - selSafe.done)) : 0} h</Text></Text>
+                    <Text style={s.dsub}>{selSafe ? `${doneTxt(selSafe.w)} / ${Math.round(selSafe.limit)} h · ` : ''}<Text style={s.dsubB}>{selSafe ? leftTxt(selSafe.w) : ''}</Text></Text>
                   </>
                 )}
               </View>
@@ -459,7 +469,7 @@ export default function StatsScreen({ navigation }) {
                 <View style={s.btTop}><View style={s.btIc}><Icon name="plane" size={19} color={PELE.ink} /></View><Text style={s.btIdx}>{idx.voo}</Text></View>
                 <Text style={s.btName}>{l('Voo', 'Flight')}</Text>
                 <Text style={s.btKey}>{fmtH(st.flightHours)}</Text>
-                <Text style={s.btCap}>{isYear ? `${Math.round(flightRatio * 100)}% ${l('do teto', 'of cap')}` : `${l('em', 'in')} ${monthName.toLowerCase()}`}</Text>
+                <Text style={s.btCap}>{isYear ? `${flightPct}% ${l('do teto', 'of cap')}` : `${l('em', 'in')} ${monthName.toLowerCase()}`}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={s.btile} activeOpacity={0.85} onPress={() => openSheet('corpo')}>
@@ -529,12 +539,12 @@ export default function StatsScreen({ navigation }) {
                 <View key={o.k} style={s.win}>
                   <View style={s.winHead}>
                     <Text style={s.winName}>{limLabel(o.w)}</Text>
-                    <Text style={s.winVal}><Text style={s.winValB}>{Math.round(o.done)}</Text> / {Math.round(o.limit)} h</Text>
+                    <Text style={s.winVal}><Text style={s.winValB}>{doneTxt(o.w)}</Text> / {Math.round(o.limit)} h</Text>
                   </View>
                   <GrowBar ratio={o.r} color={barColor(o.r)} track={s.track} fill={s.fill} delay={100 + i * 40} />
                   <View style={s.winFoot}>
                     <Text style={[s.pct, { color: barColor(o.r) }]}>{Math.round(o.r * 100)}%</Text>
-                    <Text style={s.lft}>{l('faltam', 'left')} {Math.max(0, Math.round(o.limit - o.done))} h</Text>
+                    <Text style={s.lft}>{leftTxt(o.w)}</Text>
                   </View>
                 </View>
               ))}
@@ -556,11 +566,11 @@ export default function StatsScreen({ navigation }) {
         </View>
         <View style={s.vhero}>
           <Text style={s.vbig}><CountUp value={st.flightHours} format={(n) => n.toLocaleString(locale, { maximumFractionDigits: 1 })} style={s.vbig} delay={120} /><Text style={s.vbigU}> h</Text></Text>
-          {isYear ? <View style={s.vpct}><Text style={s.vpctN}>{Math.round(flightRatio * 100)}%</Text><Text style={s.vpctL}>{l('do teto', 'of cap')}</Text></View> : null}
+          {isYear ? <View style={s.vpct}><Text style={s.vpctN}>{flightPct}%</Text><Text style={s.vpctL}>{l('do teto', 'of cap')}</Text></View> : null}
         </View>
         {isYear ? <GrowBar ratio={flightRatio} color={PELE.ink} track={s.vbar} fill={s.vbarFill} /> : null}
         <View style={s.vmeta}>
-          <Text style={s.lft}>{isYear ? `${l('faltam', 'left')} ${Math.max(0, Math.round(ANNUAL_FLIGHT_LIMIT_H - st.flightHours))} h` : `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}`}</Text>
+          <Text style={s.lft}>{isYear ? leftTxt(yearFlightGap) : `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}`}</Text>
           {isYear ? <Text style={s.lft}>{l('teto', 'cap')} {nf(ANNUAL_FLIGHT_LIMIT_H)} h · ORO.FTL.210 b</Text> : null}
         </View>
 

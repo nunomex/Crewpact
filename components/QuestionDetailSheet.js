@@ -24,12 +24,15 @@ function detailFor(it, lang) {
   // Genérico (2026-11-04, "o que está dentro dos Extras"): quem abre a folha pode trazer as suas linhas e o destino.
   if (Array.isArray(it.rows)) out.rows.push(...it.rows);
   if (it.navTo) out.navTo = it.navTo;
+  // Minutos inteiros (auditoria A-172): o excesso mostra-se em h:mm — "+0 h" escondia 10 min acima do limite.
+  const hmQ = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
   const winBar = (w) => {
     const ratio = w.limit ? w.done / w.limit : 0;
+    const over = w.over != null ? w.over : ratio > 1;
     return {
       k: `${w.key === 'voo' ? l('Voo', 'Flight') : l('Serviço', 'Duty')} · ${w.days} d`,
-      label: `${r0(w.done)} / ${r0(w.limit)} h`, tone: ratioTone(ratio), fill: Math.min(100, ratio * 100),
-      tag: ratio > 1 ? `+${r0(w.done - w.limit)} h` : null,
+      label: `${over && w.doneMin != null ? hmQ(w.doneMin) : r0(w.done)} / ${r0(w.limit)} h`, tone: over ? 'red' : ratioTone(ratio), fill: Math.min(100, ratio * 100),
+      tag: over ? (w.overMin != null ? `+${hmQ(w.overMin)}` : `+${r0(w.done - w.limit)} h`) : null,
     };
   };
   if (it.id === 'legal' || it.id === 'headroom') {

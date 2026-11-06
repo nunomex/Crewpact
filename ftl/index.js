@@ -27,6 +27,7 @@ import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
 import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime } from './validators/validateLimits';
+import { entryMin } from './calculators/cumulativeCalculator';
 import { withinBand, fmtBandRange, bandRangeMins } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
@@ -38,7 +39,8 @@ import { airportOffsetMin } from '../data/zulu';
 // versão um registo foi computado e possa re-avaliar SÓ os afetados. REGRA: incrementar
 // SEMPRE que uma regra/tabela FTL ou um cálculo muda (mesmo correção de bug). Pré-requisito
 // da errata fina — hoje só CARIMBA (a deteção de afetados e o recompute vêm depois).
-export const ENGINE_VERSION = 1;
+// v2 (2026-11-06): auditoria dos cálculos, bloco 1 — as entradas v1 recalculam-se sozinhas (reconcileDayLog).
+export const ENGINE_VERSION = 2;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
 // input: { state, report, end?, sectors, splitBreakH?, inBase?, postFlightMin? }
@@ -299,11 +301,34 @@ export const ftlForDuty = (duty = {}, { state = 'acc', inBase = true, base = nul
   return { ...d, isFdp, kind, pf, inBase: ib, extUsed, tzDiffH };
 };
 
+// Entrada do dayLog de um serviço SEM hora de report (ver dutyToFtlDay). null se não houver nada para contar.
+const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
+  const isFl = (duty.kind || 'flight') === 'flight';
+  const vooMin = Math.round(duty.flight_minutes || 0);
+  const off = parseHhmm(duty.block_off != null ? duty.block_off : (Array.isArray(duty.legs) && duty.legs.length ? duty.legs[0].off : null));
+  const on = parseHhmm(duty.block_on);
+  const so = parseHhmm(duty.signOff);
+  const end = so != null ? so : on;
+  const pf = (isFl && so == null) ? (postFlightMin || 0) : 0;
+  const span = (off != null && end != null) ? durationMin(off, end) : (vooMin || 0);
+  const servicoMin = Math.max(span, vooMin) + pf;
+  if (!vooMin && !servicoMin) return null;
+  return {
+    src: 'duty', engineVer: ENGINE_VERSION, servicoEst: true,
+    psv: { result: null, max: null, over: false, excess: null, latest: null, latestNextDay: false, extended: false, noReport: true, fdp: isFl, kind: duty.kind || null, ts: Date.now() },
+    servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, rest: {},
+  };
+};
+
 export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null } = {}) => {
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
-  if (!duty.report_time || !duty.block_on) return null;
+  // Sem hora de report (o calendário nem sempre traz "RP"): o TEMPO DE VOO conta sempre (ORO.FTL.105(13) não depende
+  // da apresentação) e o serviço conta, pelo menos, de calços a calços + pós-voo, marcado como ESTIMADO. Só o PSV
+  // fica por calcular (auditoria A-161: o dia inteiro, voo incluído, saía dos 210).
+  if (!duty.report_time) return noReportEntry(duty, { postFlightMin });
+  if (!duty.block_on) return null;
   const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date });
   inBase = d.inBase;
   const sp = duty.special || {};
@@ -323,8 +348,9 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   const sbExtraMin = (sp225 && sp225.standbyH > 0)
     ? computeStandby({ type: sp225.type, standbyH: sp225.standbyH }).dutyCountMin
     : 0;
-  const servicoH = toH(baseServicoMin + sbExtraMin);
-  const vooH = duty.flight_minutes ? toH(duty.flight_minutes) : 0;
+  // Em MINUTOS inteiros (auditoria A-148): a soma das janelas faz-se ao minuto; as horas ficam só para a vista.
+  const servicoMin = Math.round(baseServicoMin + sbExtraMin);
+  const vooMin = Math.round(duty.flight_minutes || 0);
   const place = inBase ? 'base' : 'away';
   const repMin = parseHhmm(duty.report_time), endMin = parseHhmm(duty.block_on);
   // Prolongamento PLANEADO (CS FTL.1.205(d)(1)): o PSV planeado excede o BÁSICO mas cabe
@@ -367,8 +393,8 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       disc205f: disc205 ? { used: disc205.used, over: disc205.over, maxStr: disc205.maxStr, extStr: disc205.extStr } : undefined,
       standby: sbAcc || undefined,
     },
-    servico: servicoH,
-    voo: vooH,
+    servicoMin, servico: servicoMin / 60,
+    vooMin, voo: vooMin / 60,
     rest: { [place]: d.rest.restMin != null ? toH(d.rest.restMin) : 0, [`${place}Prev`]: fullServicoH, ts: Date.now() },
   };
 };
@@ -459,12 +485,26 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const gapInBase0 = (prev) => { const away = endsAwayReliable(prev, opts.base); return away == null ? (opts.inBase !== false) : !away; };
   const arr = foldStandbyIntoFlight(Array.isArray(list) ? list : [list], gapInBase0, opts.postFlightMin || 0);
   // Mantém a duty CRUA ao lado do registo FTL (precisa-se das horas p/ o repouso entre serviços).
-  const paired = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
-  if (!paired.length) return null;
+  const all = arr.map((d) => ({ duty: d, entry: dutyToFtlDay(d, opts) })).filter((p) => p.entry);
+  if (!all.length) return null;
+  // Serviços SEM report (A-161): somam ao 210 (voo sempre; serviço estimado), mas não entram nos blocos de PSV nem no
+  // repouso — não se sabe quando começaram.
+  const noRep = all.filter((p) => !p.duty.report_time);
+  const paired = all.filter((p) => p.duty.report_time);
+  const extraMin = (key) => noRep.reduce((s, p) => s + entryMin(p.entry, key), 0);
+  if (!paired.length) {
+    if (noRep.length === 1) return noRep[0].entry;
+    const sMin = extraMin('servico'), vMin = extraMin('voo');
+    return { ...noRep[0].entry, servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, parts: noRep.map((p) => p.entry.psv) };
+  }
   // Ordena cronologicamente pelo report → os serviços do dia ficam por ordem (1.º, 2.º, …).
   paired.sort((a, b) => (parseHhmm(a.duty.report_time) ?? 0) - (parseHhmm(b.duty.report_time) ?? 0));
   const entries = paired.map((p) => p.entry);
-  if (entries.length === 1) return entries[0];
+  if (entries.length === 1 && !noRep.length) return entries[0];
+  if (entries.length === 1) {
+    const sMin = entryMin(entries[0], 'servico') + extraMin('servico'), vMin = entryMin(entries[0], 'voo') + extraMin('voo');
+    return { ...entries[0], servicoMin: sMin, servico: sMin / 60, vooMin: vMin, voo: vMin / 60, servicoEst: true, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv) };
+  }
   const r1 = (n) => +(Number(n) || 0).toFixed(1);
   // Base vs fora do INTERVALO = onde o serviço ANTERIOR acabou (é aí que repousas). Local fiável
   // (ORO.FTL.235: 12h base / 10h fora); desconhecido → default conservador (na base).
@@ -514,8 +554,9 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
     return dutyToFtlDay(combined, opts) || blk[0].entry;
   };
   const blockEntries = blocks.map(blockEntry);
-  const servico = r1(blockEntries.reduce((s, e) => s + (e.servico || 0), 0));
-  const voo = r1(blockEntries.reduce((s, e) => s + (e.voo || 0), 0));
+  // Minutos inteiros (A-148): somam-se os blocos e os serviços sem report.
+  const servicoMin = blockEntries.reduce((s, e) => s + entryMin(e, 'servico'), 0) + extraMin('servico');
+  const vooMin = blockEntries.reduce((s, e) => s + entryMin(e, 'voo'), 0) + extraMin('voo');
   // PSV do dia = o PIOR bloco (legalidade sobre os FDP combinados): prioriza o que EXCEDE.
   const excMin = (p) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String((p && p.excess) || '')); return m ? (+m[1]) * 60 + (+m[2]) : 0; };
   const worst = blockEntries.reduce((a, b) => {
@@ -525,32 +566,50 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
   const last = blockEntries[blockEntries.length - 1];
   // `parts` = PSV por SERVIÇO (para o registo 245, uma linha por serviço); a legalidade do dia
   // vem do FDP combinado (worst). São coisas diferentes de propósito num split-duty.
-  return { src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv, servico, voo, rest: last.rest, parts: entries.map((e) => e.psv), between, split, restShort };
+  return {
+    src: 'duty', engineVer: ENGINE_VERSION, psv: worst.psv,
+    servicoMin, servico: servicoMin / 60, vooMin, voo: vooMin / 60, servicoEst: noRep.length ? true : undefined,
+    rest: last.rest, parts: [...entries, ...noRep.map((p) => p.entry)].map((e) => e.psv), between, split, restShort,
+  };
 };
 
-// Reconstrói as entradas FTL DERIVADAS (src:'duty') em FALTA no `dayLog`, a partir
-// das duties (escala). FILL-ONLY: só preenche dias AUSENTES — nunca toca em entradas
-// existentes (manuais OU derivadas), logo é idempotente e não destrói histórico. Serve
-// a migração do histórico FTL para um dispositivo NOVO / após reinstalar (as duties
-// sincronizam do servidor, mas o dayLog é local). Duties apagadas/sem horas são
-// ignoradas. Devolve a MESMA referência se nada faltar (não dispara re-render).
+// Assinatura (hash curto) de tudo o que decide a entrada derivada de um dia: a versão do motor, o contexto (pós-voo,
+// tripulação, base desse dia) e os campos dos serviços. Muda qualquer um → a entrada recalcula-se (auditoria A-174).
+const djb2 = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; return h.toString(36); };
+const DUTY_SIG_FIELDS = ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'kind', 'signOff', 'special', 'legs', 'route', 'accommodation', 'splitBreakH', 'splitBreakStart'];
+const pickSig = (s) => (s ? DUTY_SIG_FIELDS.map((k) => (s[k] === undefined ? null : s[k])) : null);
+export const dayLogSig = (d, { postFlightMin = 0, isPilot = false, base = null } = {}) =>
+  djb2(JSON.stringify([ENGINE_VERSION, postFlightMin || 0, !!isPilot, base || null, pickSig(d), (d && Array.isArray(d.extra)) ? d.extra.map(pickSig) : null]));
+
+// Mantém as entradas FTL DERIVADAS (src:'duty') do `dayLog` em dia com as duties (escala):
+//  • preenche os dias em FALTA (dispositivo novo / após reinstalar: as duties vêm do servidor, o dayLog é local);
+//  • RECALCULA as derivadas cuja assinatura mudou — o motor foi corrigido, mudou o pós-voo, a base ou o tipo de
+//    tripulante, ou a duty chegou do servidor diferente (auditoria A-174: só se preenchia, e os dias guardados
+//    ficavam com o cálculo antigo para sempre);
+//  • NUNCA toca nas entradas manuais (sem src 'duty').
+// Idempotente: devolve a MESMA referência se nada mudar (não dispara re-render).
 // `baseAt(date)` (linha do tempo do contrato, 2026-11-03) = a base EM VIGOR nesse dia — uma
 // transferência não muda o "na base / fora" (12 h / 10 h, ORO.FTL.235) dos dias antigos.
 export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null } = {}) => {
   let next = dayLog, changed = false;
+  const put = (date, entry) => { if (!changed) { next = { ...dayLog }; changed = true; } if (entry) next[date] = entry; else delete next[date]; };
   for (const date in duties) {
     const d = duties[date];
-    if (!d || d.deleted || dayLog[date]) continue;   // só dias em falta (e não-apagados)
+    if (!d || d.deleted) continue;
+    const cur = dayLog[date];
+    if (cur && cur.src !== 'duty') continue;          // manual → nunca se toca
+    const baseD = typeof baseAt === 'function' ? baseAt(date) : base;
+    const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD });
+    if (cur && cur.sig === sig) continue;              // já em dia
     // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
       legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: typeof baseAt === 'function' ? baseAt(date) : base, date });
-    if (!entry) continue;                              // sem report/block_on → não deriva
-    if (!changed) { next = { ...dayLog }; changed = true; }
-    next[date] = entry;
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date });
+    if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
+    put(date, { ...entry, sig });
   }
   return next;
 };

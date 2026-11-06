@@ -101,7 +101,8 @@ export function buildTodayItems(ctx, lang) {
       suggestion = l('Limite cumulativo ultrapassado — não aceites mais serviço nesta janela. Confirma com a companhia.',
         'Cumulative limit exceeded — don\'t accept more in this window. Confirm with the company.');
     } else {
-      answer = `${catLabel(head.cat, lang)} · ${winLbl(head.windowId, head.days, lang)}: ${l('faltam', 'left')} ${Math.round(head.headroom)} h ${l('de', 'of')} ${Math.round(head.limit)} h`;
+      // Minutos inteiros, nunca arredondados para cima (A-172): "faltam 0:30", não "faltam 1 h".
+      answer = `${catLabel(head.cat, lang)} · ${winLbl(head.windowId, head.days, lang)}: ${l('faltam', 'left')} ${hhmm(head.headroomMin)} ${l('de', 'of')} ${Math.round(head.limit)} h`;
       if (head.status === 'warn') {
         suggestion = l(`Estás a ${Math.round(head.ratio * 100)}% — um serviço longo nesta janela pode ultrapassar o limite.`,
           `You're at ${Math.round(head.ratio * 100)}% — a long duty in this window may exceed the limit.`);
@@ -201,7 +202,7 @@ export function buildTodayItems(ctx, lang) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
         : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver') ? l('Excede', 'Over') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
-      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
+      case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? `${Math.floor(r.headroomMin / 60)}h` : hhmm(r.headroomMin)) };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
       case 'roster':    return { topic: l('Escala', 'Roster'), short: r.kind === 'none' ? l('Em dia', 'Up to date') : `${r.counts ? r.counts.total : 0} ${l('mud.', 'chg')}` };

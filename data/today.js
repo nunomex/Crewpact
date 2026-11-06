@@ -8,7 +8,7 @@ import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
 const hasFtlData = (dayLog) =>
-  Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0));
+  Object.values(dayLog || {}).some((d) => (d?.voo > 0) || (d?.servico > 0) || (d?.vooMin > 0) || (d?.servicoMin > 0));
 
 const worstByRatio = (windows) =>
   windows.reduce((a, b) => (b.ratio > a.ratio ? b : a), { ratio: -1 });
@@ -32,14 +32,15 @@ export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
 // "Quanto me falta para o limite?" — pior janela por rácio + todas as janelas com a
 // folga (limite − feito) calculada, para o detalhe mostrar a tabela completa.
 export function headroomStatus(dayLog = {}, ref = new Date()) {
+  // Em minutos inteiros (auditoria A-172): a folga nunca se arredonda para cima; "ultrapassado" = acima do limite.
   const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)]
-    .map((w) => ({ ...w, headroom: Math.max(0, w.limit - w.done) }));
+    .map((w) => ({ ...w, headroom: w.headroomMin / 60 }));
   if (!hasFtlData(dayLog)) return { id: 'headroom', status: 'neutral', kind: 'noData', windows };
   const w = worstByRatio(windows);
-  const status = w.ratio >= 1 ? 'bad' : w.ratio >= 0.85 ? 'warn' : 'ok';
+  const status = w.over ? 'bad' : w.ratio >= 0.85 ? 'warn' : 'ok';
   return {
     id: 'headroom', status, cat: w.key, windowId: w.id, days: w.days,
-    done: w.done, limit: w.limit, headroom: Math.max(0, w.limit - w.done), ratio: w.ratio, windows,
+    done: w.done, doneMin: w.doneMin, limit: w.limit, headroom: w.headroomMin / 60, headroomMin: w.headroomMin, overMin: w.overMin, ratio: w.ratio, windows,
   };
 }
 

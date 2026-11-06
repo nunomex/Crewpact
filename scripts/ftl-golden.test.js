@@ -664,6 +664,54 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('sem datas (base de hoje = OPO): fevereiro dava "na base" (o erro)', Object.keys(rOld['2026-02-10'].rest).includes('base'), true);
 }
 
+// ─────────── Auditoria 2026-11-06 · bloco 1 · ACUMULADOS 210 em minutos (S5, S6; A-148, A-161, A-172, A-174) ───────────
+{
+  const { reconcileDayLog, dayFtlFromDuties } = ftl;
+  const ref = new Date(2026, 10, 28, 12);   // 28 nov 2026
+  const iso = (d) => `2026-11-${String(d).padStart(2, '0')}`;
+  // A-148: 20 serviços de 9:32 (06:00 → sign-off 15:32) em 28 dias = 190:40 → EXCEDE as 190 h (a app somava 190,0 h).
+  const d20 = {}; for (let i = 1; i <= 20; i++) d20[iso(i)] = { report_time: '06:00', block_on: '15:00', signOff: '15:32', sectors: 2, flight_minutes: 300 };
+  const log20 = reconcileDayLog(d20, {});
+  const w28 = computeDutyTime(log20, ref).find((w) => w.id === '28d');
+  eq('A-148: 20 × 9:32 = 11 440 min', w28.doneMin, 11440);
+  eq('A-148: 190:40 > 190 h → excede', w28.over, true);
+  // A-172: 5 × 12:02 em 7 dias = 60:10 > 60 h → excede.
+  const d5 = {}; for (let i = 22; i <= 26; i++) d5[iso(i)] = { report_time: '06:00', block_on: '18:02', sectors: 2 };
+  const w7 = computeDutyTime(reconcileDayLog(d5, {}), ref).find((w) => w.id === '7d');
+  eq('A-172: 5 × 12:02 = 60:10 → excede', w7.over, true);
+  eq('A-172: margem nunca negativa nem arredondada para cima', w7.headroomMin, 0);
+  // Com 59:30 feitos, a margem é 0:30 (a app dizia "faltam 1 h").
+  const w7b = computeDutyTime({ [iso(28)]: { servicoMin: 3570, servico: 59.5 } }, ref).find((w) => w.id === '7d');
+  eq('A-172: 59:30 → faltam 30 min', w7b.headroomMin, 30);
+  // Entradas antigas (só horas) continuam a contar.
+  eq('dayLog antigo (horas) ainda soma', computeDutyTime({ [iso(28)]: { servico: 10 } }, ref).find((w) => w.id === '7d').doneMin, 600);
+  // A-161: um voo sem hora de report não desaparece dos 210. 20 × LIS-FNC-LIS de 5:30 sem "RP" = 110 h de voo > 100 h.
+  const dNo = {}; for (let i = 1; i <= 20; i++) dNo[iso(i)] = { report_time: null, block_off: '07:00', block_on: '13:00', sectors: 2, flight_minutes: 330, kind: 'flight' };
+  const logNo = reconcileDayLog(dNo, {});
+  const f28 = computeFlightTime(logNo, ref).find((w) => w.id === '28d');
+  eq('A-161: voo sem report conta o tempo de voo (110 h)', f28.doneMin, 6600);
+  eq('A-161: 110 h > 100 h → excede', f28.over, true);
+  eq('A-161: serviço estimado = calços a calços (6 h)', logNo[iso(1)].servicoMin, 360);
+  eq('A-161: marcado como estimado', logNo[iso(1)].servicoEst, true);
+  eq('A-161: sem PSV calculado', logNo[iso(1)].psv.result, null);
+  // Num dia com um serviço com report e outro sem: o PSV vem do que tem report; os minutos somam.
+  const mix = dayFtlFromDuties([
+    { report_time: '06:00', block_on: '10:00', sectors: 2, flight_minutes: 180, kind: 'flight' },
+    { report_time: null, block_off: '15:00', block_on: '17:00', sectors: 1, flight_minutes: 120, kind: 'flight' },
+  ]);
+  eq('Misto: PSV do serviço com report', mix.psv.result, '04:00');
+  eq('Misto: voo soma os dois (5 h)', mix.vooMin, 300);
+  // A-174: as entradas derivadas recalculam-se quando o motor, o pós-voo ou o serviço mudam; as manuais nunca.
+  const dOne = { [iso(10)]: { report_time: '06:00', block_on: '14:00', sectors: 2, flight_minutes: 300 } };
+  const stale = { [iso(10)]: { src: 'duty', engineVer: 1, servico: 7.9, voo: 5 } };
+  const re = reconcileDayLog(dOne, stale, { postFlightMin: 30 });
+  eq('A-174: entrada antiga recalculada (8:30 com o pós-voo)', re[iso(10)].servicoMin, 510);
+  eq('A-174: idempotente (ref igual à 2.ª passagem)', reconcileDayLog(dOne, re, { postFlightMin: 30 }) === re, true);
+  const re45 = reconcileDayLog(dOne, re, { postFlightMin: 45 });
+  eq('A-174: muda o pós-voo (45 min) → recalcula', re45[iso(10)].servicoMin, 525);
+  eq('A-174: manual nunca é tocada', reconcileDayLog(dOne, { [iso(10)]: { src: 'manual', servico: 3 } })[iso(10)].servico, 3);
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).

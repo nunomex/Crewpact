@@ -106,6 +106,9 @@ export const clauseShort = (id) => { const r = ruleById(id); return r ? r.clause
 export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
   const l = L(lang);
   const H = (m) => fmtHours(m, lang);
+  // Valor e limite: se o valor passa o limite mas, arredondado à décima, parece igual, os dois vão em h:mm
+  // (auditoria A-136: "90 h de voo em 28 dias (máx. 90 h)" com o estado Excede).
+  const VL = (v, lim) => ((v != null && lim != null && v > lim && H(v) === H(lim)) ? [fmtDur(v), fmtDur(lim)] : [H(v), H(lim)]);
   const day = (iso) => fmtDay(iso, lang);
   const unc = f.status === 'incerto';
   switch (id) {
@@ -116,14 +119,16 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
     case 'P33': {
       const span = f.from ? l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`) : '';
       if (f.status === 'incerto') return { say: l(`Até ${H(f.value)} de acréscimos com reforço em 4 semanas: passa as 20 h numa leitura do AE`, `Up to ${H(f.value)} of augmented-crew increases in 4 weeks: over 20 h in one reading of the CLA`), det: span };
-      return { say: l(`${H(f.value)} de acréscimos com reforço em 4 semanas (máx. ${H(f.limit)})`, `${H(f.value)} of augmented-crew increases in 4 weeks (max. ${H(f.limit)})`), det: span };
+      const [v33, l33] = VL(f.value, f.limit);
+      return { say: l(`${v33} de acréscimos com reforço em 4 semanas (máx. ${l33})`, `${v33} of augmented-crew increases in 4 weeks (max. ${l33})`), det: span };
     }
     case 'P25': case 'P26': case 'C34': {
       const kind = id === 'P25' ? 'voo' : id === 'P26' ? 'trabalho' : (KIND_OF_WINDOW[f.window] === 'voo' ? 'voo' : 'servico');
       const what = { voo: l('de voo', 'of flight time'), trabalho: l('de trabalho', 'of work'), servico: l('de serviço', 'of duty') }[kind];
       const span = f.period ? periodLabel(f.period, lang) : f.window === '364d' ? l('52 semanas', '52 weeks') : f.window.startsWith('7d') ? l('7 dias', '7 days') : l('28 dias', '28 days');
       const where = f.period ? l(`em ${span}`, `in ${span}`) : l(`em ${span}`, `in ${span}`);
-      return { say: l(`${H(f.value)} ${what} ${where} (máx. ${H(f.limit)})`, `${H(f.value)} ${what} ${where} (max. ${H(f.limit)})`),
+      const [vH, lH] = VL(f.value, f.limit);
+      return { say: l(`${vH} ${what} ${where} (máx. ${lH})`, `${vH} ${what} ${where} (max. ${lH})`),
         det: f.from ? l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`) : '' };
     }
     case 'P27': case 'C23':
