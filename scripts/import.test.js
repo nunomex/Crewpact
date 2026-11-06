@@ -286,9 +286,11 @@ A07:00 - A08:45`);
   eq('A-229 LVE de 10 a 14 com horas: 5 dias', vacationDatesFromEvent(ev('LVE', '2026-04-10T00:00:00', '2026-04-14T23:59:00'), codes).length, 5);
   eq('A-229 SICK com horas num só dia: 1 dia', sickDatesFromEvent(ev('SICK', '2026-04-03T06:00:00', '2026-04-03T14:00:00'), codes), ['2026-04-03']);
   const sick = ['2026-04-03', '2026-04-04', '2026-04-05', '2026-04-06', '2026-04-07'];
-  eq('A-229 cabine: só os dias 4 e 5 do episódio', paidSickDays(sick, { sickFirst3: false }), ['2026-04-06', '2026-04-07']);
+  // Bloco 5: a cabine também regista o episódio INTEIRO — o motor paga do 4.º dia (Cl. 61.ª) e tira a base de todos os dias
+  // de baixa (Código do Trabalho, art. 255.º); registar só os pagos escondia a base que sai.
+  eq('A-229 cabine: o episódio inteiro (o motor paga do 4.º dia)', paidSickDays(sick, { sickFirst3: false }), sick);
   eq('A-229 pilotos: o episódio inteiro (o motor paga os dias 1 a 3)', paidSickDays(sick, { sickFirst3: true }), sick);
-  eq('A-229 cabine, dois episódios (3 dias e 5 dias)', paidSickDays(['2026-05-03', '2026-05-04', '2026-05-05', '2026-05-10', '2026-05-11', '2026-05-12', '2026-05-13', '2026-05-14'], { sickFirst3: false }), ['2026-05-13', '2026-05-14']);
+  eq('A-229 cabine, dois episódios: todos os dias', paidSickDays(['2026-05-03', '2026-05-04', '2026-05-05', '2026-05-10', '2026-05-11', '2026-05-12', '2026-05-13', '2026-05-14'], { sickFirst3: false }).length, 8);
   // Formação de 2.ª 09:00 a 4.ª 17:00 num só evento: um serviço por dia; as horas de cada dia não estão no evento → a corrigir.
   const tr = mapNonFlightDays(ev('SEP TRAINING LGW', '2026-04-20T09:00:00', '2026-04-22T17:00:00'), codes);
   eq('A-229 formação de 3 dias: 3 serviços', tr.map((x) => [x.dateISO, x.start, x.end, !!x.multiDay]), [['2026-04-20', '09:00', null, true], ['2026-04-21', null, null, true], ['2026-04-22', null, '17:00', true]]);

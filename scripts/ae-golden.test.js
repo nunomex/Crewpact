@@ -219,7 +219,8 @@ eq('Cabine CCLT (€/dia)', cabin.cclt(), 25);
 eq('Cabine papéis FA (upranker+CTI)', cabin.additionalRolesFor('FA').map((r) => r.id).join(','), 'upranker,cti');
 eq('Cabine papéis FA1 (upranker+CTI)', cabin.additionalRolesFor('FA1').map((r) => r.id).join(','), 'upranker,cti');
 eq('Cabine papéis CM (CCLT+CTI, sem upranker)', cabin.additionalRolesFor('CM').map((r) => r.id).join(','), 'cclt,cti');
-eq('Cabine papéis CMP (upranker+CCLT+CTI)', cabin.additionalRolesFor('CMP').map((r) => r.id).join(','), 'upranker,cclt,cti');
+// O CMP já é chefe de cabine: o upranker é o assistente que voa como chefe (Cl. 34.ª/3; auditoria A-009, bloco 5).
+eq('Cabine papéis CMP (CCLT+CTI, sem upranker)', cabin.additionalRolesFor('CMP').map((r) => r.id).join(','), 'cclt,cti');
 
 // ── Estado do AE — 3 estados honestos (modeled / pending / none) ──
 eq('aeStatus easyJet piloto = modeled', aeStatus({ company: { slug: 'easyjet', rule_type: 'AE' }, crewType: 'pilot' }), 'modeled');
@@ -322,12 +323,16 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
 
 // ── PAPÉIS por serviço (Funções, pagos como a lei define) + DDO/WFLY/IDO por condição ──
 {
+  // Art. 42.º: o instrutor é pago "por cada dia (...) em terra, incluindo em simulador" — num voo de linha, 0 € (A-045, bloco 5).
   const fl = { report_time: '06:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS', instructor: true };
   const m = monthlyAe({ '2026-06-10': fl }, 'FO', '12/12', ae, { ym: '2026-06' });
-  eq('Papel: instructor legado → +€120 nos extras (Art. 42)', m.extras, 120);
-  eq('Papel: dia auto contado da escala', m.instructorDaysAuto, 1);
+  eq('Papel: instrutor num VOO → 0 € (Art. 42.º: só em terra)', m.extras, 0);
   eq('Papel: per-diem do voo mantém-se', m.perDiem, 62.02);
-  eq('Papel: role=instr (novo campo) → igual', monthlyAe({ '2026-06-10': { ...fl, instructor: false, role: 'instr' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 120);
+  const tr = { report_time: '09:00', block_on: '13:00', kind: 'training', instructor: true };
+  const mt = monthlyAe({ '2026-06-10': tr }, 'FO', '12/12', ae, { ym: '2026-06' });
+  eq('Papel: instructor legado em formação → +€120 nos extras (Art. 42)', mt.extras, 120);
+  eq('Papel: dia auto contado da escala', mt.instructorDaysAuto, 1);
+  eq('Papel: role=instr (novo campo) → igual', monthlyAe({ '2026-06-10': { ...tr, instructor: false, role: 'instr' } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 120);
   eq('Papel: sem marca → 0', monthlyAe({ '2026-06-10': { ...fl, instructor: false } }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);
   // TAP: o AE não tem o item instrutor → nada derivado (não se inventa prestação).
   eq('Papel TAP: sem item no AE → 0 dias auto', monthlyAe({ '2026-06-10': fl }, 'CTE', '12/12', tapPilot, { ym: '2026-06' }).instructorDaysAuto, 0);
@@ -376,7 +381,8 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   const sick = ['2026-06-10', '2026-06-11', '2026-06-12', '2026-06-13', '2026-06-20'].map((d) => ev(d, 'sickDays'));
   eq('Doença: episódio de 4 dias paga 3 + episódio de 1 paga 1', eventCounts(sick, '2026-06').sickDays, 4);
   // Cabine (Art. 61, "após o 3.º"): os dias entrados JÁ são os pagos → contam TODOS (sickFirst3=false).
-  eq('Doença cabine: dias pagos contam TODOS (após 3.º)', eventCounts(sick, '2026-06', null, false).sickDays, 5);
+  // Cabine (Cl. 61.ª, bloco 5): regista-se o episódio inteiro; paga-se do 4.º dia → episódio de 4 dias paga 1, o de 1 dia nada.
+  eq('Doença cabine: paga do 4.º dia de cada episódio', eventCounts(sick, '2026-06', null, false).sickDays, 1);
   // Episódio a CAVALO de 2 meses: 30/06+01/07+02/07+03/07 → paga 30/06 (jun) e 01-02/07 (jul).
   const sickX = ['2026-06-30', '2026-07-01', '2026-07-02', '2026-07-03'].map((d) => ev(d, 'sickDays'));
   eq('Doença: episódio cruza o mês (jun=1)', eventCounts(sickX, '2026-06').sickDays, 1);
@@ -448,8 +454,10 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
 
 // ── Indexação 2025+ (Anexo I.1/I.2): piso 1% / teto 5%, IPC oficial 2,4% (BTE/INE) ──
 eq('index 2024 = 1', ae.indexFactor(2024), 1);
-eq('index 2025 = IPC 2,4% (BTE/INE)', ae.indexFactor(2025), 1.024);
-eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.024);
+// IPC = 2,3 % (média de 12 meses até nov-2024, INE via DREM — fontes/pt/ipc-2024-11.txt; A-042, bloco 5). Por mês: desde fev-2025.
+eq('index 2025 = IPC 2,3 % (INE)', ae.indexFactor(2025), 1.023);
+eq('index 2026 = mantém 2025 (sem degrau)', ae.indexFactor(2026), 1.023);
+eq('index jan-2025 = 1 (o IPC conta a partir de 1-fev-2025)', ae.indexFactor('2025-01'), 1);
 eq('index 2025 com IPC oficial 3%', ae.indexFactor(2025, { ipc2025: 0.03 }), 1.03);
 eq('index 2025 IPC 8% → teto 5%', ae.indexFactor(2025, { ipc2025: 0.08 }), 1.05);
 eq('index 2025 IPC 0,5% → piso 1%', ae.indexFactor(2025, { ipc2025: 0.005 }), 1.01);
@@ -457,7 +465,7 @@ eq('index estimado 2024 = false', ae.isIndexEstimated(2024), false);
 eq('index estimado 2025 = false (IPC oficial confirmado)', ae.isIndexEstimated(2025), false);
 eq('index estimado 2025 c/ ipc:null = true (ramo estimativa)', ae.isIndexEstimated(2025, { ipc2025: null }), true);
 eq('index estimado 2025 c/ IPC = false', ae.isIndexEstimated(2025, { ipc2025: 0.03 }), false);
-eq('base CPT indexada 2025 (×1.024)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8923.43);  // 122000×1.024/14
+eq('base CPT indexada 2025 (×1,023)', ae.monthlyBase('CPT', { index: ae.indexFactor(2025) }), 8914.71);  // 122000×1.023/14
 
 // ── Vigência do AE (BTE 40/2023): expira 31 jan 2026 → valores de 2026 são referência ──
 eq('AE vigência até jan-2026', ae.AE_VALID_UNTIL, '2026-01-31');
@@ -674,7 +682,7 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
   const { pickTable } = require(path.resolve('ae/tables.js'));
   const vs = [{ from: '2024-02-01', v: 1 }, { from: '2025-11-01', v: 2 }];
   eq('tables: sem data → última', pickTable(vs).v, 2);
-  eq('tables: antes da 1.ª → clamp à 1.ª', pickTable(vs, '2023-06').v, 1);
+  eq('tables: antes da 1.ª → sem tabela (null, auditoria A-019, bloco 5)', pickTable(vs, '2023-06'), null);
   eq('tables: mês do from (dia 1) → nova', pickTable(vs, '2025-11').v, 2);
   eq('tables: véspera do degrau → antiga', pickTable(vs, '2025-10-31').v, 1);
   eq('tables: mês do 1.º from → 1.ª', pickTable(vs, '2024-02').v, 1);
@@ -690,18 +698,20 @@ eq('TAP cabine vigência até dez-2026', tapCabin.AE_VALID_UNTIL, '2026-12-31');
     eq(`${name}: TABLE_VERSIONS existe (≥1)`, tv.length >= 1, true);
     eq(`${name}: from válido (AAAA-MM-DD)`, /^\d{4}-\d{2}-\d{2}$/.test((tv[0] || {}).from || ''), true);
     eq(`${name}: tableAt() = última entrada`, typeof m.tableAt === 'function' ? m.tableAt() : undefined, tv[tv.length - 1]);
-    // IDENTIDADE (1 versão): ym no passado/futuro = sem ym, cêntimo a cêntimo.
+    // IDENTIDADE dentro da ÚLTIMA tabela: um mês de 2026 = sem ym, cêntimo a cêntimo. Antes da 1.ª tabela: sem valor (null,
+    // bloco 5 — os meses de 2024/25 têm as suas tabelas, testadas no golden test:dinheiro).
     const cat = m.CATEGORIES[0];
-    eq(`${name}: monthlyBase invariante ao ym`, m.monthlyBase(cat, { ym: '2023-01' }), m.monthlyBase(cat, {}));
+    eq(`${name}: monthlyBase de 2026-06 = a atual`, m.monthlyBase(cat, { ym: '2026-06' }), m.monthlyBase(cat, {}));
+    eq(`${name}: antes da 1.ª tabela → null`, m.monthlyBase(cat, { ym: '2020-01' }), null);
     const mo = (ym) => m.computeAeMonth({ category: cat, duties: [[500], [1200]], nightStops: 1, ym });
-    eq(`${name}: computeAeMonth invariante ao ym (total)`, mo('2024-03').total, mo(undefined).total);
-    eq(`${name}: computeAeMonth invariante ao ym (variável)`, mo('2030-06').variable, mo(undefined).variable);
+    eq(`${name}: computeAeMonth de 2026-06 = o atual (total)`, mo('2026-06').total, mo(undefined).total);
+    eq(`${name}: computeAeMonth no futuro = o atual (variável)`, mo('2030-06').variable, mo(undefined).variable);
   }
-  // monthExtras invariante ao ym (contadores próprios de cada AE).
-  eq('easyJet piloto: extras invariantes ao ym', ae.monthExtras('CPT', { ddo: 1 }, { ym: '2024-01' }).total, ae.monthExtras('CPT', { ddo: 1 }).total);
-  eq('easyJet cabine: extras invariantes ao ym', cabin.monthExtras('CM', { rdp: 1 }, { ym: '2024-01' }).total, cabin.monthExtras('CM', { rdp: 1 }).total);
-  eq('TAP piloto: extras invariantes ao ym', tapPilot.monthExtras('CTE', { comandoSectors: 1 }, { ym: '2024-01' }).total, tapPilot.monthExtras('CTE', { comandoSectors: 1 }).total);
-  eq('TAP cabine: extras invariantes ao ym', tapCabin.monthExtras('CAB3', { vhHours: 1 }, { ym: '2024-01' }).total, tapCabin.monthExtras('CAB3', { vhHours: 1 }).total);
+  // monthExtras de 2026 = o atual (contadores próprios de cada AE).
+  eq('easyJet piloto: extras de 2026-06 = os atuais', ae.monthExtras('CPT', { ddo: 1 }, { ym: '2026-06' }).total, ae.monthExtras('CPT', { ddo: 1 }).total);
+  eq('easyJet cabine: extras de 2026-06 = os atuais', cabin.monthExtras('CM', { rdp: 1 }, { ym: '2026-06' }).total, cabin.monthExtras('CM', { rdp: 1 }).total);
+  eq('TAP piloto: extras de 2026-06 = os atuais', tapPilot.monthExtras('CTE', { comandoSectors: 1 }, { ym: '2026-06' }).total, tapPilot.monthExtras('CTE', { comandoSectors: 1 }).total);
+  eq('TAP cabine: extras de 2026-06 = os atuais', tapCabin.monthExtras('CAB3', { vhHours: 1 }, { ym: '2026-06' }).total, tapCabin.monthExtras('CAB3', { vhHours: 1 }).total);
 }
 
 // ── Resumo ──

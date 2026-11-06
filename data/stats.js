@@ -112,19 +112,21 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
   const anyAe = typeof aeAt === 'function' ? monthsAe.some(Boolean) : !!(ae && typeof ae.monthlyBase === 'function');
   if (anyAe && history.length) {
     const lastAe = [...monthsAe].reverse().find(Boolean) || ae;
-    const index = lastAe && lastAe.indexFactor ? lastAe.indexFactor(+y) : 1;   // indexação 2025+ por ano (Anexo I)
+    const index = lastAe && lastAe.indexFactor ? lastAe.indexFactor(`${y}-12`) : 1;   // o índice do fim do ano (só para mostrar)
     let estimated = false;
-    let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0;
+    let baseY = 0, cashY = 0, perDiemY = 0, nightY = 0, extrasY = 0, eventsY = 0, totalY = 0, wrY = 0, missY = 0, noTable = false, uncertain = false;
     for (let mo = 0; mo < monthsElapsed; mo++) {
       const ym = `${y}-${String(mo + 1).padStart(2, '0')}`;
       const ae = monthsAe[mo];   // o AE DESTE mês (sombra intencional: o resto do ciclo usa-o)
       if (!ae) continue;
-      const index = ae.indexFactor ? ae.indexFactor(+y) : 1;
-      if (ae.isIndexEstimated && ae.isIndexEstimated(+y) && index > 1) estimated = true;
+      const index = ae.indexFactor ? ae.indexFactor(ym) : 1;   // por MÊS: o IPC dos pilotos easyJet conta desde 1-fev-2025 (A-041)
+      if (ae.isIndexEstimated && ae.isIndexEstimated(ym) && index > 1) estimated = true;
       const { category: catM, contract: ctrM, fleet: fleetM } = resolveCrew(history, ym);   // posto DESSE mês (categoria, contrato, frota)
       if (!catM) continue;
+      if (ae.hasTableFor && !ae.hasTableFor(catM, ym)) { noTable = true; continue; }   // sem tabela nesse mês: não soma (bloco 5)
       const m = monthlyAe(duties, catM, ctrM || '12/12', ae, { ym, index, fleet: fleetM || fleet });   // à categoria e à frota desse mês (frota → coluna A no TAP)
       if (m) {
+        if (m.baseRange) uncertain = true;
         baseY += m.base || 0; cashY += m.cashHandling || 0; perDiemY += m.perDiem || 0;
         nightY += m.nightStops || 0; extrasY += m.extras || 0; totalY += m.total || 0;
         wrY += m.withRoute; missY += m.missing;
@@ -135,7 +137,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
         if (pd) { perDiemY += pd.total; totalY += pd.total; wrY += pd.withRoute; missY += pd.missing; }
       }
       if (ae.monthExtras) {
-        const xt = ae.monthExtras(catM, eventCounts(events, ym, duties, ae.SICK_FIRST3 !== false), { index, ym });
+        const xt = ae.monthExtras(catM, eventCounts(events, ym, duties, ae.SICK_FIRST3 !== false), { index, ym, contract: ctrM || '12/12' });
         if (xt && xt.total) { eventsY += xt.total; totalY += xt.total; }
       }
     }
@@ -143,7 +145,7 @@ export const yearStats = (duties = {}, { year, ae = null, aeAt = null, category 
       base: +baseY.toFixed(2), cash: +cashY.toFixed(2), perDiem: +perDiemY.toFixed(2),
       nightStops: +nightY.toFixed(2), extras: +extrasY.toFixed(2), events: +eventsY.toFixed(2),
       total: +totalY.toFixed(2), monthsElapsed, index,
-      estimated,
+      estimated, noTable, uncertain,
       withRoute: wrY, missing: missY,
     };
   }
@@ -269,15 +271,16 @@ export const monthStats = (duties = {}, { ym, ae = null, category = null, contra
     : (category ? [{ category, contract: contract || '12/12', from: '0000-01' }] : []);
   const resolved = history.length ? resolveCrew(history, ymStr) : { category: null, contract: '12/12' };
   if (ae && resolved.category && typeof ae.monthlyBase === 'function') {
-    const index = ae.indexFactor ? ae.indexFactor(y) : 1;
-    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet });   // frota DESSE mês
-    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr }) : null;
+    const index = ae.indexFactor ? ae.indexFactor(ymStr) : 1;   // por MÊS (A-041)
+    const m = monthlyAe(duties, resolved.category, resolved.contract || '12/12', ae, { ym: ymStr, index, fleet: resolved.fleet || fleet });   // frota DESSE mês; null sem tabela
+    const xt = ae.monthExtras ? ae.monthExtras(resolved.category, eventCounts(events, ymStr, duties, ae.SICK_FIRST3 !== false), { index, ym: ymStr, contract: resolved.contract || '12/12' }) : null;
     const eventsEur = xt ? +(+xt.total).toFixed(2) : 0;
     if (m) aeMonth = {
       base: m.base, cash: m.cashHandling || 0, perDiem: m.perDiem, nightStops: m.nightStops,
       extras: m.extras || 0, events: eventsEur, total: +((m.total || 0) + eventsEur).toFixed(2),
       withRoute: m.withRoute, missing: m.missing,
-      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(y)) && index > 1,
+      estimated: !!(ae.isIndexEstimated && ae.isIndexEstimated(ymStr)) && index > 1,
+      baseRange: m.baseRange || null,   // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta
     };
   }
 

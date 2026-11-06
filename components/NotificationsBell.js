@@ -45,7 +45,7 @@ export default function NotificationsBell({ variant = 'bell', night = false }) {
     const aeM = aeAt ? aeAt(ym) : ae;   // o acordo da companhia desse mês (linha do tempo do contrato)
     if (aeM && crewAt) {
       const at = crewAt(ym);
-      const index = aeM.indexFactor ? aeM.indexFactor(+ym.slice(0, 4)) : 1;
+      const index = aeM.indexFactor ? aeM.indexFactor(ym) : 1;   // por mês (A-041)
       const tot = at && at.category ? aeMonthTotal(duties, at.category, at.contract || '12/12', aeM, { ym, index, extras: eventCounts(aeEvents || [], ym, duties, aeM.SICK_FIRST3 !== false), fleet: at.fleet || crewFleet }) : null;
       if (tot != null) totalEur = `${tot.toFixed(2).replace('.', ',')} €`;
     }

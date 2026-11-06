@@ -54,24 +54,32 @@ export const isSeasonalContract = (c) => SEASONAL_CONTRACTS.includes(c);
 // ── Indexação 2025+ (Anexo I.1/I.2) ──────────────────────────────────────────
 // Os valores em tabela são "a partir de 1 fev 2024". A partir de 1 fev 2025 a base
 // E o setor nominal são indexados ao IPC do INE (média de 12 meses até nov 2024),
-// com PISO de 1% e TETO de 5%. Valor oficial do INE (média 12m até nov-2024) = 2,4%,
-// confirmado contra o BTE 40/2023 → IPC_2025 = 0.024 (ver isIndexEstimated).
+// com PISO de 1% e TETO de 5%. A média dos 12 meses até novembro de 2024 no País = 2,3 % (fontes/pt/ipc-2024-11.txt: DREM,
+// 11-12-2024, com o valor do INE; auditoria A-042 — antes estava 2,4 %, a média do ano civil). → IPC_2025 = 0.023.
 // O AE termina em 31 jan 2026, pelo que não há degrau de 2026 (mantém-se o de 2025).
 export const INDEX_BASE_YEAR = 2024;   // ano dos valores do Anexo I em tabela
 export const IPC_FLOOR = 0.01;         // mín. garantido
 export const IPC_CAP = 0.05;           // máx.
-export const IPC_2025 = 0.024;         // IPC oficial confirmado — BTE 40/2023 (média 12m até nov-2024, INE = 2,4%)
+export const IPC_2025 = 0.023;         // média de 12 meses até nov-2024 no País (INE, via DREM 11-12-2024) — fontes/pt/ipc-2024-11.txt
+export const INDEX_FROM = '2025-02';   // Anexo I.1/I.2: "A partir de 1 fevereiro de 2025" (auditoria A-041/A-072/A-185)
 
-// Fator multiplicativo a aplicar aos valores de 2024 num dado ano. < 2025 → 1.
-// ≥ 2025 → 1 + IPC (limitado a [1%, 5%]). `ipc2025` injeta o valor oficial quando conhecido.
-export const indexFactor = (year, { ipc2025 = IPC_2025 } = {}) => {
-  if ((+year || INDEX_BASE_YEAR) < 2025) return 1;
+// Fator a aplicar aos valores de 2024 num MÊS ('YYYY-MM' ou data): antes de fevereiro de 2025 → 1; desde aí → 1 + IPC
+// (limitado a [1 %, 5 %]). Um ANO sozinho (número ou 'YYYY', chamadas antigas) conta como o ano todo ≥ 2025 — os ecrãs
+// passam o mês. `ipc2025` injeta o valor oficial quando conhecido.
+const ymKey = (when) => {
+  const s = String(when == null ? '' : when);
+  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+  const y = +s || INDEX_BASE_YEAR;
+  return y >= 2025 ? `${y}-12` : `${y}-01`;
+};
+export const indexFactor = (when, { ipc2025 = IPC_2025 } = {}) => {
+  if (ymKey(when) < INDEX_FROM) return 1;
   const ipc = Math.min(IPC_CAP, Math.max(IPC_FLOOR, ipc2025 == null ? IPC_FLOOR : ipc2025));
   return +(1 + ipc).toFixed(6);
 };
 // true quando o fator usa o piso-placeholder (IPC oficial por confirmar) → estimativa.
-export const isIndexEstimated = (year, { ipc2025 = IPC_2025 } = {}) =>
-  (+year || INDEX_BASE_YEAR) >= 2025 && ipc2025 == null;
+export const isIndexEstimated = (when, { ipc2025 = IPC_2025 } = {}) =>
+  ymKey(when) >= INDEX_FROM && ipc2025 == null;
 
 // Vigência do AE (BTE 40/2023): 1 fev 2023 → 31 jan 2026. Depois disto os valores de
 // tabela passam a REFERÊNCIA até novo acordo (não há degrau de indexação para 2026).
@@ -99,7 +107,7 @@ export const SNC_EUR = 60;              // alteração de escala a curto prazo (
 export const DDO_PCT_ANNUAL = 0.004;    // trabalhar em dia de descanso (0,4% base anual)
 export const IDO_PCT_ANNUAL = 0.008;    // dia de descanso infringido (0,8% base anual)
 export const WFLY_PCT_ANNUAL = 0.01;    // voluntário em dia de folga (1% base anual)
-export const INSTRUCTOR_EUR = 120;      // instrutor/verificador (€/dia)
+export const INSTRUCTOR_EUR = 120;      // instrutor/verificador (€/dia) — Art. 42.º: "por cada dia (...) em terra, incluindo em simulador"
 export const SICK_PCT = 0.60;           // Art. 48 / Anexo I.10 — doença = 60% base diária (DIAS 1-3; ≠ cabine que é 45% após o 3.º)
 
 // Anexo I.8 — Prestação de benefícios (€/ano), a partir de 1 abr 2024.
@@ -147,31 +155,48 @@ export const sectorMult = (distNM) =>
   (SECTOR_BANDS.find((b) => Number(distNM) <= b.maxNM) || SECTOR_BANDS[SECTOR_BANDS.length - 1]).mult;
 
 // ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
-// Cada entrada = os VALORES do Anexo I com efeitos a partir de `from` (fonte BTE).
-// UMA entrada hoje (o degrau "1 fev 2024" — nenhum número sem fonte, Constituição §6);
-// revisão/novo AE ACRESCENTA entrada, nunca reescreve. A indexação IPC (`index`) é
-// ORTOGONAL: multiplica os valores de 2024 desta tabela (regra do próprio AE), não
-// é um degrau de tabela. O motor mensal resolve por `ym`; sem `ym` → a última.
-export const TABLE_VERSIONS = [{
-  from: '2024-02-01', label: 'Anexo I · degrau 1-fev-2024 (BTE 40/2023)',
+// Cada entrada = os VALORES do Anexo I com efeitos a partir de `from` (BTE 40/2023, PDF p. 26-28 | BTE p. 74-76;
+// fontes/ae-easyjet/). Revisão/novo AE ACRESCENTA entrada, nunca reescreve. A indexação IPC (`index`) é ORTOGONAL: multiplica
+// os valores de 2024 (regra do próprio AE, desde fevereiro de 2025 — indexFactor), não é um degrau de tabela. O motor mensal
+// resolve por `ym`; sem `ym` → a última; ANTES de setembro de 2023 → null, "sem tabela" (auditoria A-052/A-072/A-185, bloco 5).
+const FEB_2024 = {
   BASE_ANNUAL, NOMINAL_SECTOR, SECTOR_BANDS, NIGHT_STOP_SECTORS, VAC_DAY_SECTORS,
   ADHOC_SECTORS, SNC_EUR, DDO_PCT_ANNUAL, IDO_PCT_ANNUAL, WFLY_PCT_ANNUAL,
   INSTRUCTOR_EUR, SICK_PCT, BENEFITS_ANNUAL, OFFICE4_SECTORS, OFFICE8_SECTORS,
-  PREGNANCY_PCT, RETENTION_EUR, PERF_BONUS_TARGET, PERF_BONUS_MAX,
-}];
+  PREGNANCY_PCT, RETENTION_EUR, PERF_BONUS_TARGET, PERF_BONUS_MAX, VAC_DAY_EUR: null,
+};
+// Anexo I.3 "Pagamento de dias de férias · Até 31 de março de 2024": CPT 130,00 € · SFO 83,00 € · FO 68,00 € · SO sem valor;
+// "A partir de abril de 2024": 2 sectores nominais.
+const VAC_EUR_TO_MAR_2024 = { CPT: 130, SFO: 83, FO: 68 };
+export const TABLE_VERSIONS = [
+  // Anexo I.1/I.2 "A partir de 1 de setembro de 2023": CPT 115 000 · SFO 66 000 · FO 46 000 · SO 38 500 · NS 74,00 / 46,38 /
+  // 37,63 / 29,36.
+  { from: '2023-09-01', label: 'Anexo I · 1 de setembro de 2023 (BTE 40/2023)', ...FEB_2024,
+    BASE_ANNUAL: { CPT: 115000, SFO: 66000, FO: 46000, SO: 38500 },
+    NOMINAL_SECTOR: { CPT: 74.00, SFO: 46.38, FO: 37.63, SO: 29.36 },
+    VAC_DAY_SECTORS: null, VAC_DAY_EUR: VAC_EUR_TO_MAR_2024 },
+  { from: '2024-02-01', label: 'Anexo I · 1 de fevereiro de 2024 (BTE 40/2023)', ...FEB_2024, VAC_DAY_SECTORS: null, VAC_DAY_EUR: VAC_EUR_TO_MAR_2024 },
+  { from: '2024-04-01', label: 'Anexo I · férias a 2 setores nominais desde abril de 2024', ...FEB_2024 },
+];
 export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+export const hasTableFor = (cat, ym) => { const T = tableAt(ym); return !!T && T.BASE_ANNUAL[cat] != null; };
 
 // Pagamento base mensal (€) = anual × fração do contrato / 14 (mês normal;
 // junho/novembro recebem o dobro). Opções: `contract` (modalidade, default 12/12)
 // e `index` (indexação 2025+, ex.: 1.03 para +3%; default 1 = valores de 2024).
-export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) =>
-  +(((tableAt(ym).BASE_ANNUAL[cat] || 0) * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
+  const T = tableAt(ym);
+  if (!T || T.BASE_ANNUAL[cat] == null) return null;   // sem tabela nesse mês
+  return +((T.BASE_ANNUAL[cat] * contractFactor(contract) * index) / SALARY_INSTALMENTS).toFixed(2);
+};
 
 // Per diem (€) de UM serviço de voo: soma dos multiplicadores dos setores × setor nominal.
 // distancesNM = array de distâncias de grande círculo (NM), uma por perna/setor.
 // (4.º arg `fleet` ignorado — paridade de interface com a TAP; 5.º = `ym`.)
 export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
-  const nom = (tableAt(ym).NOMINAL_SECTOR[cat] || 0) * index;
+  const T = tableAt(ym);
+  if (!T) return null;
+  const nom = (T.NOMINAL_SECTOR[cat] || 0) * index;
   const mult = (distancesNM || []).reduce((s, d) => s + sectorMult(d), 0);
   return +(mult * nom).toFixed(2);
 };
@@ -182,6 +207,7 @@ export const perDiem = (cat, distancesNM = [], index = 1, _fleet, ym) => {
 //   (ad-hoc, dias de escritório, etc.). `index` aplica a indexação 2025+.
 export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
   const T = tableAt(ym);
+  if (!T || !hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá €
   const nom = (T.NOMINAL_SECTOR[category] || 0) * index;
   const base = monthlyBase(category, { contract, index, ym });   // só a base é proporcional ao contrato
   const perDiemTotal = +(duties.reduce((s, legs) => s + perDiem(category, legs, index, undefined, ym), 0)).toFixed(2);
@@ -197,34 +223,42 @@ export const computeAeMonth = ({ category = 'FO', contract = '12/12', duties = [
 // ── Calculadoras individuais (Anexo I) — cada prestação do AE, à parte ──
 // Todas aceitam `ym` opcional no fim (mês a que o cálculo respeita); sem ele = tabela atual.
 const r2 = (n) => +(+n).toFixed(2);
-const nomOf = (cat, index = 1, T = tableAt()) => (T.NOMINAL_SECTOR[cat] || 0) * index;
-const baOf = (cat, T = tableAt()) => T.BASE_ANNUAL[cat] || 0;
+const nomOf = (cat, index = 1, T = tableAt()) => ((T && T.NOMINAL_SECTOR[cat]) || 0) * index;
+const baOf = (cat, T = tableAt()) => (T && T.BASE_ANNUAL[cat]) || 0;
+const withT = (ym, fn) => { const T = tableAt(ym); return T ? fn(T) : null; };   // sem tabela nesse mês → null (não há valor)
 
-export const nightStop  = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.NIGHT_STOP_SECTORS * nomOf(cat, index, T)); };  // Art. 39 — €/paragem
-export const vacDay     = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VAC_DAY_SECTORS * nomOf(cat, index, T)); };      // Art. 38 — €/dia de férias
-export const adhoc      = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.ADHOC_SECTORS * nomOf(cat, index, T)); };        // Art. 43 — €/dever ad-hoc
-export const instructor = (ym) => tableAt(ym).INSTRUCTOR_EUR;                                // €/dia de instrução
-export const snc        = (ym) => tableAt(ym).SNC_EUR;                                       // €/evento (alteração de escala)
-export const ddo        = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.DDO_PCT_ANNUAL * baOf(cat, T) * index); };   // Art. — 0,4% base anual
-export const ido        = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.IDO_PCT_ANNUAL * baOf(cat, T) * index); };   // Art. — 0,8% base anual
-export const wfly       = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.WFLY_PCT_ANNUAL * baOf(cat, T) * index); };  // Art. — 1% base anual
-export const sickDay    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.SICK_PCT * (baOf(cat, T) * index / SALARY_INSTALMENTS) / 30); };  // 60% base diária (dias 1-3)
-export const benefits   = (cat, ym) => tableAt(ym).BENEFITS_ANNUAL[cat] || 0;          // Anexo I.8 — €/ano
-export const office4    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.OFFICE4_SECTORS * nomOf(cat, index, T)); }; // Anexo I.14 — OFC4 (1,5 NS)
-export const office8    = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.OFFICE8_SECTORS * nomOf(cat, index, T)); }; // Anexo I.14 — OFC8 (3 NS)
-export const pregnancy  = (cat, { contract = '12/12', index = 1, ym } = {}) => r2(tableAt(ym).PREGNANCY_PCT * monthlyBase(cat, { contract, index, ym }));  // Anexo I.11 — €/mês
-export const retention  = (cat, ym) => tableAt(ym).RETENTION_EUR[cat] || 0;            // Anexo I.15 — €/ano (sazonal)
+export const nightStop  = (cat, index = 1, ym) => withT(ym, (T) => r2(T.NIGHT_STOP_SECTORS * nomOf(cat, index, T)));  // Art. 39 — €/paragem
+// Dia de férias (Anexo I.3): até 31-mar-2024 € fixos por categoria (o SO sem valor → null); depois 2 setores nominais.
+export const vacDay     = (cat, index = 1, ym) => withT(ym, (T) => {
+  if (T.VAC_DAY_EUR) return T.VAC_DAY_EUR[cat] != null ? T.VAC_DAY_EUR[cat] : null;
+  return r2(T.VAC_DAY_SECTORS * nomOf(cat, index, T));
+});
+export const adhoc      = (cat, index = 1, ym) => withT(ym, (T) => r2(T.ADHOC_SECTORS * nomOf(cat, index, T)));        // Art. 43 — €/dever ad-hoc
+export const instructor = (ym) => withT(ym, (T) => T.INSTRUCTOR_EUR);                                // €/dia de instrução (em terra ou simulador)
+export const snc        = (ym) => withT(ym, (T) => T.SNC_EUR);                                       // €/evento (alteração de escala)
+// DDO/IDO/WFLY (Anexo I.13: "% salário base anual") e doença (Anexo I.10: "60 % da retribuição base diária") — proporcionais
+// ao contrato: Art. 24.º, n.º 14 ("redução proporcional de todos os termos e condições face a um trabalhador a tempo
+// completo") e Art. 66.º, n.º 1 (auditoria A-060/A-078/A-084, bloco 5). O texto do I.13 não diz se é a base da tabela ou a
+// do piloto: a app usa a do contrato, a que não promete a mais — pacote do advogado.
+export const ddo        = (cat, index = 1, ym, contract = '12/12') => withT(ym, (T) => r2(T.DDO_PCT_ANNUAL * baOf(cat, T) * index * contractFactor(contract)));   // 0,4 % base anual
+export const ido        = (cat, index = 1, ym, contract = '12/12') => withT(ym, (T) => r2(T.IDO_PCT_ANNUAL * baOf(cat, T) * index * contractFactor(contract)));   // 0,8 % base anual
+export const wfly       = (cat, index = 1, ym, contract = '12/12') => withT(ym, (T) => r2(T.WFLY_PCT_ANNUAL * baOf(cat, T) * index * contractFactor(contract)));  // 1 % base anual
+export const sickDay    = (cat, index = 1, ym, contract = '12/12') => withT(ym, (T) => r2(T.SICK_PCT * (baOf(cat, T) * index * contractFactor(contract) / SALARY_INSTALMENTS) / 30));  // 60 % base diária (dias 1-3)
+export const benefits   = (cat, ym) => withT(ym, (T) => T.BENEFITS_ANNUAL[cat] || 0);          // Anexo I.8 — €/ano
+export const office4    = (cat, index = 1, ym) => withT(ym, (T) => r2(T.OFFICE4_SECTORS * nomOf(cat, index, T))); // Anexo I.14 — OFC4 (1,5 NS)
+export const office8    = (cat, index = 1, ym) => withT(ym, (T) => r2(T.OFFICE8_SECTORS * nomOf(cat, index, T))); // Anexo I.14 — OFC8 (3 NS)
+export const pregnancy  = (cat, { contract = '12/12', index = 1, ym } = {}) => withT(ym, (T) => { const b = monthlyBase(cat, { contract, index, ym }); return b == null ? null : r2(T.PREGNANCY_PCT * b); });  // Anexo I.11 — €/mês
+export const retention  = (cat, ym) => withT(ym, (T) => T.RETENTION_EUR[cat] || 0);            // Anexo I.15 — €/ano (sazonal)
 export const loyalty    = (cat, { years = 0, contract = '12/12', index = 1, ym } = {}) =>  // Anexo I.9 — €/ano (antiguidade)
-  r2(loyaltyPct(cat, years) * baOf(cat, tableAt(ym)) * index * contractFactor(contract));
+  withT(ym, (T) => r2(loyaltyPct(cat, years) * baOf(cat, T) * index * contractFactor(contract)));
 // Art. 46 — bónus de performance anual (€/ano). `max` → teto; default = alvo.
-export const perfBonus  = (cat, { contract = '12/12', index = 1, max = false, ym } = {}) => {
-  const T = tableAt(ym);
-  return r2(((max ? T.PERF_BONUS_MAX[cat] : T.PERF_BONUS_TARGET[cat]) || 0) * baOf(cat, T) * index * contractFactor(contract));
-};
+export const perfBonus  = (cat, { contract = '12/12', index = 1, max = false, ym } = {}) => withT(ym, (T) =>
+  r2(((max ? T.PERF_BONUS_MAX[cat] : T.PERF_BONUS_TARGET[cat]) || 0) * baOf(cat, T) * index * contractFactor(contract)));
 // Anexo I.5 — serviço em aeroporto (ADTY). Devolve só o ABONO de reserva (€); o
 // per-diem dos voos operados é somado à parte. Não chamado: <4h=1×NS, ≥4h=2×NS;
 // chamado: <4h=0 (só per-diem do voo), ≥4h=2×NS. (Piloto usa setor NOMINAL, ≠ cabine.)
 export const airportStandby = (cat, { called = false, over4h = false, index = 1, ym } = {}) => {
+  if (!tableAt(ym)) return null;
   const ns = nomOf(cat, index, tableAt(ym));
   if (called) return over4h ? r2(2 * ns) : 0;
   return over4h ? r2(2 * ns) : r2(ns);
@@ -310,41 +344,68 @@ export const catalogValue = (id, { category = 'FO', contract = '12/12', index = 
 //  • instrutor é UNIVERSAL (qualquer categoria qualificada — Art. 42; corrige o
 //    gating por categoria) · snc é auto-preenchível da deteção de alterações (Fase 4)
 //  • doença só conta dias 1-3 (cap) — depois é Segurança Social (Art. 48).
-export const SICK_FIRST3 = true;   // Art. 48 — paga dias 1-3 de CADA episódio (lógica no eventCounts)
+export const SICK_FIRST3 = true;   // Art. 48 — paga dias 1-3 de CADA episódio (lógica no eventCounts); a base sai em todos (CT 255.º)
+export const SICK_HINT = {
+  pt: 'Regista todos os dias da baixa. O acordo paga 60 % da base do dia nos dias 1 a 3 de cada episódio; do 4.º dia em diante só a Segurança Social (Art. 48.º). Nos dias de baixa a empresa não paga a base (Código do Trabalho, art. 255.º); o subsídio da Segurança Social não entra na conta.',
+  en: 'Log every sick day. The agreement pays 60 % of the daily base on days 1 to 3 of each episode; from the 4th day only Social Security (Art. 48). On sick days the company does not pay the base (Labour Code, art. 255); the Social Security benefit is not in this estimate.',
+};
+// Papéis pagos POR DIA (Art. 42.º: instrutor "por cada dia"): uma vez por dia. E o instrutor só em terra ou simulador.
+export const DAILY_ROLES = ['instr'];
+export const GROUND_ONLY_ROLES = ['instr'];
 export const EXTRA_KINDS = [
   { id: 'instructorDays', calc: 'instructor', per: 'day',   label: { pt: 'Dias de instrutor',            en: 'Instructor days' } },
   { id: 'adhocDays',      calc: 'adhoc',      per: 'day',   label: { pt: 'Dias ad-hoc',                  en: 'Ad-hoc days' } },
   { id: 'vacDays',        calc: 'vacDay',     per: 'day',   label: { pt: 'Dias de férias',               en: 'Leave days' } },
-  { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença (1-3)',         en: 'Sick days (1-3)' } },   // Art. 48 — 1-3 por EPISÓDIO (limitado no eventCounts); SEM teto de mês
+  { id: 'sickDays',       calc: 'sickDay',    per: 'day',   label: { pt: 'Dias de doença',               en: 'Sick days' } },   // Art. 48 — 1-3 por EPISÓDIO (limitado no eventCounts); SEM teto de mês
   { id: 'ddo',            calc: 'ddo',        per: 'event', label: { pt: 'Trabalhar em folga (DDO)',     en: 'Worked day off (DDO)' } },
   { id: 'ido',            calc: 'ido',        per: 'event', label: { pt: 'Folga infringida (IDO)',       en: 'Infringed day off (IDO)' } },
   { id: 'wfly',           calc: 'wfly',       per: 'event', label: { pt: 'Voluntário em folga (WFLY)',   en: 'Volunteer day off (WFLY)' } },
   { id: 'snc',            calc: 'snc',        per: 'event', label: { pt: 'Alteração de escala (SNC)',     en: 'Short-notice change (SNC)' }, auto: true },
 ];
-// € por unidade de cada extra (categoria + indexação). Por-evento → sem fração de contrato.
+// € por unidade de cada extra (categoria + indexação + contrato nas percentagens da base).
 const EXTRA_VALUE = {
   instructorDays: (cat, index, ym) => instructor(ym),
   adhocDays:  (cat, index, ym) => adhoc(cat, index, ym),
   vacDays:    (cat, index, ym) => vacDay(cat, index, ym),
-  sickDays:   (cat, index, ym) => sickDay(cat, index, ym),
-  ddo:        (cat, index, ym) => ddo(cat, index, ym),
-  ido:        (cat, index, ym) => ido(cat, index, ym),
-  wfly:       (cat, index, ym) => wfly(cat, index, ym),
+  sickDays:   (cat, index, ym, c) => sickDay(cat, index, ym, c),
+  ddo:        (cat, index, ym, c) => ddo(cat, index, ym, c),
+  ido:        (cat, index, ym, c) => ido(cat, index, ym, c),
+  wfly:       (cat, index, ym, c) => wfly(cat, index, ym, c),
   snc:        (cat, index, ym) => snc(ym),
+};
+const daysInYm = (ym) => { const [y, m] = String(ym || '').split('-').map(Number); return y && m ? new Date(Date.UTC(y, m, 0)).getUTCDate() : 31; };
+// A base que sai nos dias de baixa (Código do Trabalho, art. 255.º, n.º 2, a); fontes/pt/codigo-trabalho-2009.txt): base do
+// mês ÷ 30 por dia (a "retribuição base diária" do Anexo I.10; o próprio AE divide "a remuneração mensal por 30" nas férias
+// não gozadas — convenção, pacote do advogado). O mês inteiro de baixa tira a base toda, e nunca mais do que ela.
+export const sickAbsenceEur = (cat, n, { contract = '12/12', index = 1, ym } = {}) => {
+  const b = monthlyBase(cat, { contract, index, ym });
+  if (b == null || !n) return 0;
+  return n >= daysInYm(ym) ? b : Math.min(b, r2((b * n) / 30));
 };
 // Valoriza os contadores → { items: [{id, n, each, total}], total }. counts = mapa
 // { <id>: nº }. Negativos/decimais → saneados; cap aplicado (ex.: doença ≤ 3).
 // `ym` data o mês → tabela em vigor nesse mês.
-export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
+export const monthExtras = (cat, counts = {}, { index = 1, ym, contract = '12/12' } = {}) => {
   const items = []; let total = 0;
   for (const k of EXTRA_KINDS) {
     let n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (k.cap) n = Math.min(n, k.cap);
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
+    const raw = EXTRA_VALUE[k.id](cat, index, ym, contract);
+    // Sem valor na tabela desse mês (ex.: dia de férias do SO antes de abril de 2024; o complemento da TAP de 2023): o item
+    // fica com each null, "sem valor", e fora da soma — nunca 0,00 € em silêncio (revisão do bloco 5).
+    if (raw == null) { items.push({ id: k.id, calc: k.calc, n, each: null, total: 0, noValue: true }); continue; }
+    const each = raw;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;
+  }
+  // `sickAbsentDays` (eventCounts) → item NEGATIVO: a base que sai nos dias de baixa.
+  const na = Math.max(0, Math.floor(+counts.sickAbsentDays || 0));
+  if (na) {
+    const ded = sickAbsenceEur(cat, na, { contract, index, ym });
+    const b = monthlyBase(cat, { contract, index, ym });
+    if (ded) { items.push({ id: 'sickAbsence', calc: 'sickAbsence', n: na, each: b == null ? 0 : -r2(b / 30), total: -ded }); total -= ded; }
   }
   return { items, total: r2(total) };
 };

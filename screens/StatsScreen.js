@@ -183,13 +183,17 @@ export default function StatsScreen({ navigation }) {
   const A = aeBlock || {};
   const total = A.total || 0;
   const extrasSum = (A.extras || 0) + (A.events || 0) + (A.cash || 0);
-  const baseSub = isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`;
+  // 9/3 e sazonais sem as datas de atividade: a base do mês é incerta (Cl. 48.ª/80.ª; bloco 5) — diz-se o intervalo.
+  const baseUnc = !isYear && A.baseRange ? ` · ${l('incerto', 'uncertain')}: ${fmtEur0(A.baseRange.min)} ${l('a', 'to')} ${fmtEur0(A.baseRange.max)} (${l('faltam as datas de atividade', 'activity dates missing')})` : (isYear && A.uncertain ? ` · ${l('incerto (faltam as datas de atividade)', 'uncertain (activity dates missing)')}` : '');
+  const baseSub = (isYear ? `${l('salário base acumulado', 'accrued base salary')} · ${st.aeYtd?.monthsElapsed || 0} ${l('meses', 'months')}` : `${l('salário base', 'base salary')} · ${monthName}`) + baseUnc;
+  // Mês sem tabela do acordo (antes da 1.ª tabela publicada, ou antes da admissão): não há € — diz-se porquê (bloco 5).
+  const noTableTxt = (ae && !aeBlock) ? l('Sem valores do acordo para este período: a tabela publicada só começa depois, ou ainda não estavas na companhia.', 'No agreement values for this period: the published table starts later, or you had not joined yet.') : (isYear && A.noTable ? l('Há meses deste ano sem tabela do acordo: não entram na soma.', 'Some months this year have no agreement table: they are left out.') : null);
   const moneyOpts = [
     { k: 'total', nm: l('Total', 'Total'), ic: 'stats', val: total },
     { k: 'base', nm: l('Base', 'Base'), ic: 'wallet', val: A.base || 0, sub: baseSub },
     (A.perDiem > 0) && { k: 'diem', nm: l('Per diem', 'Per diem'), ic: 'plane', val: A.perDiem, sub: `${st.flights} ${l('voos', 'flights')} · ${st.sectors} ${l('setores', 'sectors')}` },
     (A.nightStops > 0) && { k: 'pern', nm: l('Pernoitas', 'Night stops'), ic: 'bed', val: A.nightStops, sub: `${st.nightStops} ${l('paragens nocturnas', 'night stops')}` },
-    (extrasSum > 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença)', 'roster (roles · OFC) + events (DDO · sick)') },
+    (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') },
   ].filter(Boolean);
 
   // Janelas FTL como opções do dial da Segurança (filtradas pelo âmbito Mês/Ano; a 28 d de serviço = sempre).
@@ -375,6 +379,7 @@ export default function StatsScreen({ navigation }) {
                 ? `${l('Os teus ganhos · estimados', 'Your earnings · estimated')} ${isYear ? l('no ano', 'this year') : `${l('em', 'in')} ${monthName.toLowerCase()}`}`
                 : l('A tua segurança · janelas FTL · agora', 'Your safety · FTL windows · now')}</Text>
             </View>
+            {mode === 'money' && noTableTxt ? <Text style={s.dsub}>{noTableTxt}</Text> : null}
 
             {/* ── DIAL adaptativo ── */}
             <Animated.View style={[s.money, seg(2)]}>

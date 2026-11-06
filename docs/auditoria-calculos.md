@@ -38,6 +38,14 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > per-diem e no formulário, o prolongamento planeado, avisos em dias guardados, o sign-off de um DH, mudanças falsas nos dados
 > antigos), corrigidos no mesmo dia. Ficam para os blocos seguintes A-235 (L13), A-239 (L10), A-240 e A-241 (dúvidas) e, fora
 > dos blocos, A-249 a A-251 (formulário manual). Detalhe em `docs/decisoes.md`. Próximo: bloco 5 (dinheiro a mais).
+>
+> **Bloco 5 (dinheiro a mais, M1–M11) feito a 2026-11-06:** A-002, A-003, A-005, A-006, A-009, A-016 a A-020, A-023, A-024,
+> A-041, A-042, A-045, A-047, A-052, A-060, A-064, A-072, A-076, A-078, A-079, A-084, A-088, A-089, A-092, A-109, A-110, A-182,
+> A-184 a A-187, A-192, A-194, A-203, A-204 e A-219. Decisão do Nuno ("faz como diz a lei"): nos dias de baixa a base sai
+> (Código do Trabalho, art. 255.º, n.º 2, a); fontes em `fontes/pt/`). O IPC de 2025 é 2,3 % (DREM, com o valor do INE). 9/3 e
+> sazonais: o mês é "incerto" até haver as datas de atividade. Antes da 1.ª tabela de cada acordo, "sem tabela" (sem €). A
+> revisão independente apanhou 6 erros, corrigidos no mesmo dia. Golden novo `test:dinheiro`. Detalhe e pendências em
+> `docs/decisoes.md`. Próximo: bloco 6 (dinheiro a menos).
 
 ## Como se fez
 

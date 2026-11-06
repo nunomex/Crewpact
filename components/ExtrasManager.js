@@ -7,18 +7,27 @@ import PeleSheet from './PeleSheet';
 import Icon from './Icon';
 import { AppContext } from '../data/appContext';
 import { eventDateLabel } from '../data/aeEvents';
+import { extrasMonthEur } from '../data/perdiem';
 import { PELE as P, PELE_FONT as F } from '../data/constants';
 import { success, warning } from '../data/haptics';
 
 export default function ExtrasManager({ visible, onClose, onAdd }) {
-  const { lang, ae, aeAt, crewAt, aeEvents, removeAeEvent, addAeEvents, notify } = useContext(AppContext);
+  const { lang, ae, aeAt, crewAt, aeEvents, duties, removeAeEvent, addAeEvents, notify } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
 
   const kindLabel = (type) => {
     const k = ae && Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS.find((x) => x.id === type) : null;
     return (k && k.label && (k.label[lang] || k.label.pt)) || type;
   };
-  const rate = (type, date) => { const ym = date ? String(date).slice(0, 7) : null; const cat = ym ? crewAt(ym).category : null; const a = ym ? aeAt(ym) : ae; return (a && a.monthExtras && cat) ? a.monthExtras(cat, { [type]: 1 }, { ym }).total : null; };   // categoria, AE da companhia E tabela EFETIVOS nesse mês (crewAt + aeAt + linha do tempo)
+  // € de UM evento (categoria, contrato, AE e tabela desse mês). A doença não tem valor por linha: depende do dia do episódio
+  // e a base do dia sai (Código do Trabalho, art. 255.º) — o que entra está no total do mês.
+  const rate = (type, date) => {
+    if (type === 'sickDays') return null;
+    const ym = date ? String(date).slice(0, 7) : null; const at = ym ? crewAt(ym) : {}; const a = ym ? aeAt(ym) : ae;
+    if (!(a && a.monthExtras && at.category)) return null;
+    const it = a.monthExtras(at.category, { [type]: 1 }, { ym, index: a.indexFactor ? a.indexFactor(ym) : 1, contract: at.contract || '12/12' }).items[0];
+    return it && it.each != null ? it.total : null;   // sem valor na tabela desse mês → sem €
+  };
   const fmtEur = (n) => {
     if (n == null) return '—';
     const [i, d] = Number(n).toFixed(2).split('.');
@@ -30,7 +39,13 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
     () => (aeEvents || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))),
     [aeEvents],
   );
-  const total = useMemo(() => events.reduce((sum, e) => sum + (rate(e.type, e.date) || 0), 0), [events]);   // eslint-disable-line
+  // "Soma ao mês" = os extras que entram NESTE mês, pelo mesmo caminho do total (perdiem.extrasMonthEur; auditoria A-194).
+  const nowYm = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+  const monthLbl = new Date(`${nowYm}-15T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long' });
+  const total = useMemo(() => {
+    const a = aeAt ? aeAt(nowYm) : ae; const at = crewAt ? crewAt(nowYm) : {};
+    return extrasMonthEur(a, at.category, aeEvents || [], nowYm, { duties, index: a && a.indexFactor ? a.indexFactor(nowYm) : 1, contract: at.contract || '12/12' });
+  }, [aeEvents, duties, ae]);   // eslint-disable-line
 
   // DESFAZER (mockup design/desfazer.html, 2026-07-15): o × apagava SEM rede nenhuma —
   // um dedo escorregado e o € do mês mudava em silêncio. Continua a 1 toque, mas o toast
@@ -60,7 +75,7 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
             <View key={e.id} style={[s.row, i > 0 && s.rowB]}>
               <View style={{ flex: 1 }}>
                 <Text style={s.rn}>{kindLabel(e.type)}</Text>
-                <Text style={s.rd}>{eventDateLabel(e.date, lang)} · {fmtEur(rate(e.type, e.date))}</Text>
+                <Text style={s.rd}>{eventDateLabel(e.date, lang)}{rate(e.type, e.date) != null ? ` · ${fmtEur(rate(e.type, e.date))}` : ''}</Text>
               </View>
               <TouchableOpacity onPress={() => del(e.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button" accessibilityLabel={l('Apagar extra', 'Delete extra')}>
                 <Icon name="trash" size={17} color={P.red} />
@@ -70,9 +85,9 @@ export default function ExtrasManager({ visible, onClose, onAdd }) {
         )}
       </ScrollView>
 
-      {events.length > 0 ? (
+      {events.length > 0 && total != null ? (
         <View style={s.totalRow}>
-          <Text style={s.totalK}>{l('Soma ao mês', 'Adds to the month')}</Text>
+          <Text style={s.totalK}>{l(`Entra em ${monthLbl}`, `Adds to ${monthLbl}`)}</Text>
           <Text style={s.totalV} allowFontScaling={false}>{fmtEur(total)}</Text>
         </View>
       ) : null}

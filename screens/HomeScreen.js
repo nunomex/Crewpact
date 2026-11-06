@@ -752,7 +752,8 @@ export default function HomeScreen({ navigation }) {
   const restItem = questionItems.find((it) => it.id === 'rest') || null;
   // ── PERNOITA: hotel da estação (catálogo local) + abono da noite (ae.nightStop, Art. 39) ──
   const closeHotel = closeNsStation ? (hotels || {})[closeNsStation] : null;
-  const nsPay = (ae && ae.nightStop && crewCategory) ? ae.nightStop(crewCategory) : null;
+  // TAP: a noite depois de um dia de voo não paga estadia nesse dia (Cl. 7.ª/9.ª; bloco 5) → sem "+ €" aqui.
+  const nsPay = (ae && ae.nightStop && crewCategory && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(crewCategory, 1, todayISO) : null;
   // ── FÉRIAS: saldo do ano (Art. 238.º CT) + dia de regresso (fim do bloco consecutivo) ──
   const vacInfo = (homeState === 'ferias') ? (() => {
     const quota = Math.max(1, Math.floor(+vacationDaysYear) || 22);
@@ -799,6 +800,9 @@ export default function HomeScreen({ navigation }) {
     } catch { return null; }
   }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO]);
   const monthMoney = monthAe ? monthAe.total : null;
+  // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
+  const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
+  const estLbl = monthUnc ? l('incerto', 'uncertain') : l('estimado', 'estimated');
   // Fecho: a parte variável dividida em "até hoje" e "resto do mês" (a MESMA conta do total — data/stats.js).
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
@@ -815,14 +819,15 @@ export default function HomeScreen({ navigation }) {
   // eventos do mês) → as linhas somam o valor da parcela. + o que vem da escala (papéis · escritório) e o abono.
   const extrasItem = (homeState === 'fecho' && monthAe && ae && crewCategory) ? (() => {
     const ym = todayISO.slice(0, 7);
-    const index = ae.indexFactor ? ae.indexFactor(+todayISO.slice(0, 4)) : 1;
-    const xt = ae.monthExtras ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index, ym }) : null;
+    const index = ae.indexFactor ? ae.indexFactor(ym) : 1;   // por mês (A-041)
+    const xt = ae.monthExtras ? ae.monthExtras(crewCategory, eventCounts(aeEvents || [], ym, duties, ae.SICK_FIRST3 !== false), { index, ym, contract: crewContract || '12/12' }) : null;
     const kinds = Array.isArray(ae.EXTRA_KINDS) ? ae.EXTRA_KINDS : [];
     const rows = [];
     for (const it of (xt && xt.items) || []) {
       const kd = kinds.find((x) => x.id === it.id);
-      const nm = kd && kd.label ? (kd.label[lang] || kd.label.pt) : it.id;
-      rows.push({ k: `${nm} · ${it.n} × ${eur(it.each)}`, v: eur(it.total) });
+      const nm = it.id === 'sickAbsence' ? l('Base dos dias de baixa (CT art. 255.º)', 'Base on sick days (Labour Code art. 255)')
+        : kd && kd.label ? (kd.label[lang] || kd.label.pt) : it.id;
+      rows.push({ k: it.each == null ? `${nm} · ${it.n} · ${l('sem valor na tabela', 'no value in the table')}` : `${nm} · ${it.n} × ${eur(it.each)}`, v: it.each == null ? '—' : eur(it.total) });
     }
     if (monthAe.extras) rows.push({ k: l('Da escala (papéis · escritório)', 'From the roster (roles · office)'), v: eur(monthAe.extras) });
     if (monthAe.cash) rows.push({ k: l('Abono para falhas', 'Cash-handling allowance'), v: eur(monthAe.cash) });
@@ -1120,7 +1125,7 @@ export default function HomeScreen({ navigation }) {
         rows: vacInfo && vacInfo.lastDay ? upcomingRows(todayISO) : [] };
     }
     if (homeState === 'doenca') {
-      const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Pago pelo acordo (Art. 48)', 'Paid by the agreement (Art. 48)') : l('Do 4.º dia em diante: Segurança Social', 'From day 4: social security')) 
+      const payTxt = sickFirst3 ? (sickDay <= 3 ? l('Dias 1 a 3: o acordo paga 60 % da base do dia (Art. 48.º)', 'Days 1–3: the agreement pays 60% of the daily base (Art. 48)') : l('Do 4.º dia em diante: só a Segurança Social (Art. 48.º)', 'From day 4: social security only (Art. 48)')) 
         // Cabine easyJet — Cl. 61.ª (BTE 8/2024 p. 302, lida em fontes/ae-easyjet/ a 2026-11-04): complemento de 45 % da
         // remuneração base diária ao subsídio da SS, APÓS os 3 dias iniciais, só com direito ao subsídio, máx. 90 dias/12 meses.
         // (Antes: "Regista só os dias pagos (Art. 61)" — citava mal e era uma instrução para a app, não o que ele recebe.)
@@ -1135,7 +1140,7 @@ export default function HomeScreen({ navigation }) {
     if (homeState === 'fecho') {
       const daysTxt = fechoDaysLeft === 0 ? l('fecha hoje', 'closes today') : `${l('fecha em', 'closes in')} ${fechoDaysLeft} ${fechoDaysLeft === 1 ? l('dia', 'day') : l('dias', 'days')}`;
       if (monthAe) {
-        return { ...b, lbl: `${monthCap} ${daysTxt} · ${l('estimado', 'estimated')}`, digits: eurBare(monthMoney), unit: '€',
+        return { ...b, lbl: `${monthCap} ${daysTxt} · ${estLbl}`, digits: eurBare(monthMoney), unit: '€',
           // Até hoje · resto do mês (Nuno, 2026-11-04): o que já está na escala até hoje e o que falta — no lugar de "As
           // parcelas somam o total" (era uma verificação, não informação). data/stats.js monthSplit, golden test:stats.
           headline: monthSplitNow ? l(`Até hoje ${eur(monthSplitNow.toDate)} · resto do mês ${eur(monthSplitNow.rest)}`, `So far ${eur(monthSplitNow.toDate)} · rest of the month ${eur(monthSplitNow.rest)}`) : null,
@@ -1315,8 +1320,9 @@ export default function HomeScreen({ navigation }) {
       // é a PREVISÃO do mês inteiro; isto mostra o que já está feito). A mesma conta do fecho (monthSplit).
       // "inclui X até hoje": diz que está DENTRO do total ("variável até hoje" não o dizia — crítica 2026-11-04).
       const soFar = monthSplitNow ? `${l('inclui', 'includes')} ${eur(monthSplitNow.toDate)} ${l('até hoje', 'so far')}` : l(`dia ${dayOfMonth} de ${daysInMonth}`, `day ${dayOfMonth} of ${daysInMonth}`);
-      const mTxt = `${todayTxt}${soFar}`;
-      pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${l('estimado', 'estimated')}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
+      const uncTxt = monthUnc ? ` · ${l('base de', 'base')} ${eur(monthUnc.min)} ${l('a', 'to')} ${eur(monthUnc.max)}` : '';
+      const mTxt = `${todayTxt}${soFar}${uncTxt}`;
+      pushSec({ key: 'month', icon: 'wallet', label: `${monthCap} · ${estLbl}`, text: mTxt.charAt(0).toUpperCase() + mTxt.slice(1), value: eur(monthMoney),   // sem a barra: contava DIAS ao lado de euros e enganava (2026-11-04)
         // Em mosaico: só tipografia — o rótulo curto ("NOV · ESTIMADO": por extenso cortava em meia largura), o valor
         // grande, "+€ hoje" a verde, "inclui X € até hoje". Sem barra (contava DIAS ao lado de euros e enganava).
         tileLabel: `${monthCap.slice(0, 3)} · ${l('estimado', 'estimated')}`,

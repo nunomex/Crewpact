@@ -49,7 +49,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
     const dists = sectorDistancesNM(duty);
     if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(cat, dists, 1, crewAt(duty.duty_date).fleet || crewFleet);
   }
-  if (duty.nightStop && ae && ae.nightStop && cat) nsEur = ae.nightStop(cat);
+  if (duty.nightStop && ae && ae.nightStop && cat && !ae.PER_DIEM_BY_DAY) nsEur = ae.nightStop(cat, 1, duty.duty_date);   // TAP: estadia só nos dias sem voo (bloco 5)
 
   // ── helpers ──
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dd] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dd}` : `${g},${dd} €`; };

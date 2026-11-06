@@ -218,7 +218,16 @@ export default function EscalaScreen({ navigation, route }) {
   const extraKindOf = (tp) => extraKinds.find((k) => k.id === tp) || null;
   const isAbsence = (tp) => tp === 'vacDays' || tp === 'sickDays';
   const extraLabel = (tp) => { const k = extraKindOf(tp); return (k && k.label && (k.label[lang] || k.label.pt)) || tp; };
-  const extraEur = (tp, cat, iso) => (ae && ae.monthExtras && cat) ? ae.monthExtras(cat, { [tp]: 1 }, { ym: iso ? String(iso).slice(0, 7) : undefined }).total : null;
+  // A doença não tem valor por dia: depende do dia do episódio (Art. 48.º / Cl. 61.ª) e a base do dia sai (CT art. 255.º) —
+  // o que entra está no total do mês (revisão do bloco 5). Os outros: o acordo, o contrato e o índice DESSE mês.
+  const extraEur = (tp, cat, iso) => {
+    if (tp === 'sickDays') return null;
+    const ymX = iso ? String(iso).slice(0, 7) : undefined;
+    const aX = ymX ? aeAt(ymX) : ae;
+    if (!(aX && aX.monthExtras && cat)) return null;
+    const it = aX.monthExtras(cat, { [tp]: 1 }, { ym: ymX, index: aX.indexFactor && ymX ? aX.indexFactor(ymX) : 1, contract: (ymX && crewAt(ymX).contract) || '12/12' }).items[0];
+    return it && it.each != null ? it.total : null;
+  };
   const absCode = (tp) => (tp === 'vacDays' ? l('FÉR', 'LVE') : l('DOE', 'SCK'));
   const dayAbs = {};   // iso → 1.º evento de AUSÊNCIA desse dia
   const dayOv = {};    // iso → eventos de PAGAMENTO sobre um dia TRABALHADO (snc/rdp)
@@ -435,7 +444,7 @@ export default function EscalaScreen({ navigation, route }) {
       const shown = collapsed ? legs.slice(0, 3) : legs;
       let perDiem = null;
       if (aeD && catD && isFlight) { const dists = sectorDistancesNM(d); if (dists.length && !dists.some((x) => x == null)) perDiem = aeD.perDiem(catD, dists, 1, crewAt(sel).fleet, sel); }
-      const nsEur = (d.nightStop && aeD && aeD.nightStop && catD) ? aeD.nightStop(catD, 1, sel) : null;
+      const nsEur = (d.nightStop && aeD && aeD.nightStop && catD && !aeD.PER_DIEM_BY_DAY) ? aeD.nightStop(catD, 1, sel) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
       // € do dia NÃO-VOO — as MESMAS regras do motor mensal (treino piloto = 3 NS, Art. 43 · terra OFC4/OFC8 ·
       // ADTY pela matriz do Anexo I.5). AE sem o item → nada (não se inventa prestação).
       const svcEur = (() => {

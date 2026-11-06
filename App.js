@@ -34,7 +34,7 @@ import { mapUser } from './data/auth';
 import { fetchProfile, fetchAirlines, fetchBases, fetchCountries } from './data/db';
 import { getAeForProfile, aeStatus as aeStatusFor } from './ae';
 import { capabilitiesFor, resolvePostFlight, resolveVacationDays } from './data/capabilities';
-import { migrateCrew, resolveCrew, migrateCompany, resolveCompany, migrateBase, resolveBase, coveredBy } from './data/crewHistory';
+import { migrateCrew, resolveCrew, migrateCompany, resolveCompany, migrateBase, resolveBase, coveredBy, startsAfter } from './data/crewHistory';
 import { fetchDuties, upsertDuty, deleteDuty } from './data/duties';
 import { getDutiesInRange, getNonFlightInRange } from './data/calendar';
 import { buildIncoming } from './data/rosterImport';
@@ -974,7 +974,11 @@ export default function App() {
     return r.company ? r : { company: profile?.company || null, crewType };
   };
   // O VÍNCULO desse mês decide se o AE conta (agência/independente → não); "abrangido" não tem datas.
+  // Antes da ADMISSÃO (o 1.º período da linha da companhia, ou o início de serviço) não há contrato → não há € desse mês
+  // (auditoria A-182, bloco 5). O FTL não usa isto (a regra "antes do 1.º vale o 1.º" continua para o resto).
   const aeAt = (when) => {
+    const wYm = String(when || nowYm).slice(0, 7);
+    if (companyHistory.length ? startsAfter(companyHistory, wYm) : (serviceStart && wYm < String(serviceStart).slice(0, 7))) return null;
     const r = companyAt(when);
     if (!coveredBy(r.employment || employment, aeCoveredOverride)) return null;
     const sameCo = r.company === profile?.company || (company && (r.company === company.id || r.company === company.slug));

@@ -21,7 +21,7 @@ import { AppContext } from '../data/appContext';
 import { buildRecordModel, recordHtml } from '../data/ftlRecord';
 import { buildCareerModel, careerHtml } from '../data/careerRecord';
 import { printToPdfAndShare } from '../data/pdf';
-import { disruptionCandidates, stabilityCandidates } from '../data/disruption';
+import { disruptionsByDuty, stabilityCandidates } from '../data/disruption';
 
 // Fontes da pele embebidas nos PDFs — módulo partilhado (245 + disrupção).
 import { warmFontsCss, fontsCssNow } from '../data/pdfFonts';
@@ -95,7 +95,7 @@ export default function RelatoriosScreen({ navigation }) {
   const hasDisruption = !!(ae && ae.SNC_EUR != null);
   const disCands = useMemo(() => {
     if (!hasDisruption) return [];
-    return disruptionCandidates(rosterLog, { isPilot }).filter((c) => {
+    return disruptionsByDuty(rosterLog, { isPilot }).filter((c) => {   // um por serviço (bloco 5)
       const d = String(c.dutyDate);
       return d >= period.start && d < period.end;
     });

@@ -13,8 +13,8 @@ import { PELE as P, PELE_FONT as F } from '../data/constants';
 // dever ad-hoc/dia de escritório inteiro (Art. 43 = OFC8, 3 NS — marca-se como serviço `office`
 // dia-inteiro) — marca-se no FORM do serviço desse dia (evita o duplo caminho) e fica FORA daqui.
 // Tipos POR-DIA (férias/doença) aceitam um BLOCO "de–até" → grava UM evento por dia
-// (o modelo não muda: a gestão mostra/apaga dia a dia; a doença por episódio do Art. 48
-// recebe os dias consecutivos como espera). Duplicados (tipo+dia) não gravam.
+// (o modelo não muda: a gestão mostra/apaga dia a dia; a doença regista-se INTEIRA e o motor paga os dias que o acordo
+// paga — Art. 48.º pilotos, Cl. 61.ª cabine — e tira a base dos dias de baixa). Duplicados (tipo+dia) não gravam.
 const DUTY_CONDITION_TYPES = new Set(['ddo', 'wfly', 'ido', 'instructorDays', 'adhocDays']);
 
 export default function ExtraEventSheet({ visible, onClose }) {
@@ -72,7 +72,10 @@ export default function ExtraEventSheet({ visible, onClose }) {
   const eachYm = (iso || isoDay()).slice(0, 7);
   const eachCat = crewAt(eachYm).category;   // categoria EFETIVA-DATADA no mês do evento (não a plana)
   const eachAe = aeAt(eachYm);   // o acordo da companhia desse mês (linha do tempo do contrato)
-  const each = (type && eachAe && eachAe.monthExtras && eachCat) ? eachAe.monthExtras(eachCat, { [type]: 1 }, { ym: eachYm }).total : null;
+  const eachCtr = crewAt(eachYm).contract || '12/12';
+  const eachIt = (type && eachAe && eachAe.monthExtras && eachCat) ? eachAe.monthExtras(eachCat, { [type]: 1 }, { ym: eachYm, index: eachAe.indexFactor ? eachAe.indexFactor(eachYm) : 1, contract: eachCtr }).items[0] : null;
+  const each = eachIt && eachIt.each != null ? eachIt.total : null;   // sem valor na tabela desse mês → sem €
+  const sickHint = eachAe && eachAe.SICK_HINT ? (eachAe.SICK_HINT[lang] || eachAe.SICK_HINT.pt) : null;   // a regra do PRÓPRIO acordo
   const fmtEur = (n) => { if (n == null) return '—'; const [i, dec] = Number(n).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${dec}` : `${g},${dec} €`; };
 
   const save = () => {
@@ -129,13 +132,13 @@ export default function ExtraEventSheet({ visible, onClose }) {
           ) : null}
           {attempted && iso && allDates.length > 0 && fresh.length === 0 ? <Text style={s.err}>{l('Já registado — esse(s) dia(s) já tem(êm) este extra.', 'Already logged — those day(s) already have this extra.')}</Text> : null}
 
-          {/* Preview €: bloco de férias = N × dia (exato); DOENÇA não multiplica — o Art. 48
-              só paga os dias 1-3 de cada episódio, o motor conta isso ao somar o mês. */}
-          {each != null && fresh.length > 1
-            ? (type === 'sickDays'
-              ? <Text style={s.each}>{fresh.length} {l('dias · pagam-se os dias 1-3 de cada episódio (Art. 48)', 'days · days 1-3 of each episode are paid (Art. 48)')} · {fmtEur(each)}/{l('dia', 'day')}</Text>
-              : <Text style={s.each}>{fresh.length} {l('dias', 'days')} × {fmtEur(each)} = {fmtEur(each * fresh.length)}</Text>)
-            : each != null ? <Text style={s.each}>{l('Vale', 'Worth')} {fmtEur(each)}{type === 'sickDays' ? l(' · dias 1-3 de cada episódio (Art. 48)', ' · days 1-3 of each episode (Art. 48)') : ''}</Text> : null}
+          {/* Preview €: bloco de férias = N × dia (exato). DOENÇA não multiplica: o acordo paga só alguns dias de cada episódio
+              e a base do dia sai em todos — o motor conta isso ao somar o mês; aqui diz-se a regra do acordo. */}
+          {type === 'sickDays'
+            ? (sickHint ? <Text style={s.hint}>{sickHint}</Text> : null)
+            : each != null && fresh.length > 1
+              ? <Text style={s.each}>{fresh.length} {l('dias', 'days')} × {fmtEur(each)} = {fmtEur(each * fresh.length)}</Text>
+              : each != null ? <Text style={s.each}>{l('Vale', 'Worth')} {fmtEur(each)}</Text> : null}
           {dupCount > 0 ? <Text style={s.hint}>{dupCount} {l('dia(s) já registado(s) — não duplico.', 'day(s) already logged — not duplicating.')}</Text> : null}
           {vacYear ? (
             <Text style={[s.hint, vacAfter > vacQuota && { color: P.red }]}>

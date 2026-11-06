@@ -167,7 +167,7 @@ export default function DutyDetailScreen({ route, navigation }) {
     }
     if (ok && dists.length) perDiem = ae.perDiem(catD, dists, 1, crewAt(date).fleet, date);
   }
-  const nsEur = (duty.nightStop && ae && ae.nightStop && catD) ? ae.nightStop(catD, 1, date) : null;
+  const nsEur = (duty.nightStop && ae && ae.nightStop && catD && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(catD, 1, date) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
   // € do dia NÃO-VOO (auditoria 2026-07-11) — as MESMAS regras do motor mensal: treino
   // presencial piloto = 3 NS (e-learning/cabine = 0) · terra OFC4/OFC8 (cabine rate único) ·
   // ADTY pela matriz do Anexo I.5. AE sem o item → nada (não se inventa prestação).

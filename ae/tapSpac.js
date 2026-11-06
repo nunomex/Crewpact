@@ -53,7 +53,7 @@ export const INDEX_LAST_YEAR = 2026;   // fim da vigência (31-12-2026) — a in
 export const ANNUAL_RAISE = 0.03;      // +2% fixo + 1% KPI (melhor evidência pública)
 // Degraus EM VIGOR durante o ano (adiamentos incluídos): ≤2024 → 0 · 2025 → 1 · ≥2026 → 3.
 export const indexFactor = (year, { raise = ANNUAL_RAISE } = {}) => {
-  const y = +year || INDEX_BASE_YEAR;
+  const y = +String(year == null ? '' : year).slice(0, 4) || INDEX_BASE_YEAR;   // aceita o ano ou o mês (YYYY-MM)
   const steps = y <= 2024 ? 0 : (y === 2025 ? 1 : 3);
   return steps ? +Math.pow(1 + raise, steps).toFixed(6) : 1;
 };
@@ -119,6 +119,10 @@ export const TABLE_VERSIONS = [{
   VB: VB_2023, VE_PCT, VS_PCT, PER_DIEM, LC_THRESHOLD_NM, COMANDO_EUR,
 }];
 export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+export const hasTableFor = (cat, ym) => { const T = tableAt(ym); return !!T && T.VB[cat] != null; };
+// Per diem A (Cl. 9.ª, n.º 1, a)) por DIA DE CALENDÁRIO com serviço de voo a começar ou em curso (ou deslocação); per diem B
+// por dia de estadia sem A (n.º 2: "prevalecerá e será aplicado o disposto na alínea a)"). Conta-se em perdiem.monthlyAe.
+export const PER_DIEM_BY_DAY = true;
 
 const vbOf = (cat, index = 1, T = tableAt()) => (T.VB[cat] || 0) * index;
 const rowOf = (cat, T = tableAt()) => (cat === 'CTE' ? T.PER_DIEM.CTE : T.PER_DIEM.OP);
@@ -129,6 +133,7 @@ const rowOf = (cat, T = tableAt()) => (cat === 'CTE' ? T.PER_DIEM.CTE : T.PER_DI
 // `ym` data o mês (tabela em vigor); sem ele = tabela atual.
 export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
   const T = tableAt(ym);
+  if (!T) return null;   // sem tabela nesse mês
   return r2(vbOf(cat, index, T) * (1 + T.VE_PCT) * contractFactor(contract));
 };
 
@@ -139,6 +144,7 @@ export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => 
 export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym) => {
   if (!distancesNM || !distancesNM.length) return 0;
   const T = tableAt(ym);
+  if (!T) return null;
   const row = rowOf(cat, T);
   if (fleet === 'WB') return row.A_lc;
   const valids = distancesNM.map(Number).filter((d) => isFinite(d) && d > 0);
@@ -148,7 +154,7 @@ export const perDiem = (cat, distancesNM = [], _index = 1, fleet, ym) => {
 
 // Pernoita: TAP NÃO tem abono de pernoita em dinheiro. A estadia rende Per diem B (coluna
 // WB/NB) + hotel pago pela empresa. Modelamos a pernoita = Per diem B (CTE 180 / OP 135).
-export const nightStop = (cat, _index = 1, ym) => rowOf(cat, tableAt(ym)).B;
+export const nightStop = (cat, _index = 1, ym) => { const T = tableAt(ym); return T ? rowOf(cat, T).B : null; };
 
 // Férias/ano (RUPT Cl. 45.ª, BTE 29/2023): 42 dias de CALENDÁRIO por ano civil
 // (unidade ≠ easyJet, que conta dias úteis). Piso de 38 por perda com faltas (Cl. 33.ª).
@@ -156,15 +162,16 @@ export const nightStop = (cat, _index = 1, ym) => rowOf(cat, tableAt(ym)).B;
 export const VAC_UNIT = 'calendario';
 export const vacationDays = () => 42;
 
-export const comando = (ym) => tableAt(ym).COMANDO_EUR;
-export const vs = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * vbOf(cat, index, T)); };   // senioridade — €/mês
+export const comando = (ym) => { const T = tableAt(ym); return T ? T.COMANDO_EUR : null; };
+export const vs = (cat, index = 1, ym) => { const T = tableAt(ym); return !T ? null : r2(T.VS_PCT * vbOf(cat, index, T)); };   // senioridade — €/mês
 // Vencimento horário (Tabela A-3.3): 3% do VB/hora (Limite 1) ou 6% (Limite 2). Escala com o VB.
-export const hourly = (cat, limit = 1, index = 1, ym) => r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, tableAt(ym)));
+export const hourly = (cat, limit = 1, index = 1, ym) => { const T = tableAt(ym); return T ? r2((limit === 2 ? 0.06 : 0.03) * vbOf(cat, index, T)) : null; };
 
 // Estimativa mensal de apoio (€): base (VB+VE) + per diems do mês + pernoitas (Per diem B).
 //   duties = array de serviços (cada um = array de distâncias NM das pernas do dia).
 //   nightStops = nº de pernoitas; extraSectors = ignorado (TAP não usa setor nominal).
 export const computeAeMonth = ({ category = 'OP3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, fleet, ym } = {}) => {
+  if (!hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá €
   const base = monthlyBase(category, { contract, index, ym });
   const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, fleet, ym), 0));
   const nightTotal = r2(nightStops * nightStop(category, 1, ym));

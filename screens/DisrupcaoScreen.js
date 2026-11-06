@@ -17,7 +17,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, success } from '../data/haptics';
 import { AppContext } from '../data/appContext';
-import { disruptionCandidates, disruptionDelta, disruptionHtml } from '../data/disruption';
+import { disruptionsByDuty, disruptionDelta, disruptionHtml } from '../data/disruption';
 import { printToPdfAndShare } from '../data/pdf';
 import { warmFontsCss, fontsCssNow } from '../data/pdfFonts';
 
@@ -46,7 +46,8 @@ export default function DisrupcaoScreen({ navigation }) {
   const monthLabel = `${MONS[lg][pDate.getMonth()]} ${pDate.getFullYear()}`;
 
   // Candidatos do mês (motor puro sobre o arquivo) + valores crew-aware do AE (Anexo I).
-  const all = useMemo(() => disruptionCandidates(rosterLog, { isPilot }), [rosterLog, isPilot]);
+  // Um SNC e um RDP por serviço: o plano contra o serviço final (Art. 63.º/4 · Cl. 66.ª/3 · Cl. 67.ª/1; auditoria A-024, bloco 5).
+  const all = useMemo(() => disruptionsByDuty(rosterLog, { isPilot }), [rosterLog, isPilot]);
   const cands = useMemo(() => all.filter((c) => String(c.dutyDate).slice(0, 7) === ym), [all, ym]);
   const archivedMonth = useMemo(() => (rosterLog || []).filter((e) => String(e.dutyDate).slice(0, 7) === ym).length, [rosterLog, ym]);
   // Valores do Anexo I já MODELADOS no AE (effective-dated): snc(ym) · rdp(cat, ym) =

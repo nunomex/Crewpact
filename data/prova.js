@@ -102,11 +102,11 @@ const AE_PROVAS = {
       tag: 'AE TAP · Cabine (SNPVAC)', vig: 'BTE 7/2024 · até 31/12/2026',
       items: {
         perDiem: { art: 'Cl. 7.ª (AC1)', title: { pt: 'Ajuda de custo (AC1)', en: 'Per diem (AC1)' }, resumo: {
-          pt: 'Por cada DIA com serviço de voo é devida a ajuda de custo AC1 — valor único diário, independente do número de setores.',
-          en: 'Each DAY with flight duty earns the AC1 allowance — a single daily amount, regardless of the number of sectors.' } },
+          pt: 'Por cada DIA DE CALENDÁRIO (hora da base) com um serviço de voo ou DHC a começar ou em curso é devida a AC1 — uma por dia, com um ou vários serviços.',
+          en: 'Each CALENDAR DAY (base time) with a flight duty or DHC starting or under way earns the AC1 — one per day, with one or several duties.' } },
         pernoita: { art: 'Cl. 7.ª (AC2)', title: { pt: 'Estadia (AC2)', en: 'Night stop (AC2)' }, resumo: {
-          pt: 'Cada dia com pernoita fora de base paga a estadia AC2, além do alojamento a cargo da companhia.',
-          en: 'Each day with a night stop away from base pays the AC2 allowance, besides company-provided accommodation.' } },
+          pt: 'A AC2 paga os dias de estadia fora da base SEM voo. Num dia com voo paga-se só a AC1: no mesmo dia prevalece o valor superior (n.º 3).',
+          en: 'The AC2 pays stay days away from base WITHOUT a flight. On a day with a flight only the AC1 is paid: on the same day the higher amount prevails (no. 3).' } },
         base: { art: 'Cl. 3.ª', title: { pt: 'Vencimento base', en: 'Base salary' }, resumo: {
           pt: 'O vencimento base é mensal, por categoria, conforme a tabela do acordo.',
           en: 'Base salary is monthly, per category, as per the agreement’s table.' } },

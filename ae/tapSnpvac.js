@@ -71,31 +71,52 @@ export const contractLabel = (c, lang = 'pt') =>
 const r2 = (n) => +(+n).toFixed(2);
 
 // ── LINHA DO TEMPO DAS TABELAS (effective-dating, à crewHistory) ─────────────
-// Cada entrada = os VALORES publicados com efeitos a partir de `from` (fonte BTE).
-// UMA entrada hoje (a coluna 2026 do RRRGS — nenhum número sem fonte, Constituição
-// §6; o BTE 7/2024 TEM colunas 2024/2025 → podem entrar como entradas históricas
-// quando forem transcritas da fonte). `VB` = a tabela do degrau (aqui, coluna 2026).
-export const TABLE_VERSIONS = [{
-  from: '2026-01-01', label: 'RRRGS cl. 3.ª/7.ª/8.ª · coluna 2026 (BTE 7/2024)',
-  NMW_MONTHLY, VB: VB_2026, AC1_DAY, AC2_DAY, EXTRAORD_DAY, VS_PCT, VH_PCT, CHEFIA_PCT,
-}];
+// Cada entrada = os VALORES publicados com efeitos a partir de `from` (BTE 7/2024, RRRGS Cl. 3.ª, 7.ª e 8.ª, PDF p. 38-41;
+// fontes/ae-tap/). As ajudas de custo por categoria: `{ CAB0, rest }` (rest = "CAB 1 a S/C 3"). Antes de novembro de 2023 →
+// null, "sem tabela" (auditoria A-092/A-184, bloco 5).
+//  · Cl. 3.ª, coluna "2024/2025 *" ("* Retroativo a 1 de novembro de 2023"): os escalões de então eram CAB 0-5, C/C 1-3 e
+//    S/C 1-3, e em 2026 passam a CAB 0-5 e S/C 1-7. Os CAB têm o mesmo nome; os S/C de 2026 não correspondem um a um aos
+//    C/C e S/C antigos → sem valor (null) para um S/C antes de 2026 (a app não inventa a correspondência).
+//  · Cl. 7.ª, n.º 4: AC1 "CAB 0 67,50 € | 72,50 €" e "CAB 1 a S/C 3 135,00 € | 145,00 €" (2023*/2024 | 2025); AC2 CAB 0
+//    40,00 €, CAB 1 a S/C 3 80,00 € nos dois anos. Cl. 8.ª, n.º 4: complemento extraordinário CAB 0 20,00 € (2024, 2025),
+//    CAB 1 a S/C 3 40,00 €; a coluna de 2024 não é retroativa (Cl. 2.ª do clausulado geral: as tabelas "produzirão efeitos
+//    a 1 de janeiro de cada ano") → em novembro e dezembro de 2023 o complemento fica sem valor.
+const VB_2024 = { CAB0: 885.50, CAB1: 1124.70, CAB2: 1506.50, CAB3: 1871.05, CAB4: 2080.35, CAB5: 2182.70 };
+const T_NOV_2023 = {
+  NMW_MONTHLY: null, VB: VB_2024, AC1: { CAB0: 67.50, rest: 135 }, AC2: { CAB0: 40, rest: 80 }, EXTRAORD: null,
+  VS_PCT, VH_PCT, CHEFIA_PCT,
+};
+export const TABLE_VERSIONS = [
+  { from: '2023-11-01', label: 'RRRGS cl. 3.ª/7.ª · 2024/2025, retroativo a 1-nov-2023 (BTE 7/2024)', ...T_NOV_2023 },
+  { from: '2024-01-01', label: 'RRRGS cl. 8.ª · complemento de 2024', ...T_NOV_2023, EXTRAORD: { CAB0: 20, rest: 40 } },
+  { from: '2025-01-01', label: 'RRRGS cl. 7.ª/8.ª · coluna 2025 (BTE 7/2024)', ...T_NOV_2023,
+    AC1: { CAB0: 72.50, rest: 145 }, EXTRAORD: { CAB0: 20, rest: 40 } },
+  { from: '2026-01-01', label: 'RRRGS cl. 3.ª/7.ª/8.ª · coluna 2026 (BTE 7/2024)',
+    NMW_MONTHLY, VB: VB_2026, AC1: { rest: AC1_DAY }, AC2: { rest: AC2_DAY }, EXTRAORD: { rest: EXTRAORD_DAY }, VS_PCT, VH_PCT, CHEFIA_PCT },
+];
 export const tableAt = (ym) => pickTable(TABLE_VERSIONS, ym);
+export const hasTableFor = (cat, ym) => { const T = tableAt(ym); return !!T && T.VB[cat] != null; };
+const acOf = (row, cat) => (row ? (row[cat] != null ? row[cat] : row.rest) : null);
+const withT = (ym, fn) => { const T = tableAt(ym); return T ? fn(T) : null; };
 
-const vbOf = (cat, index = 1, T = tableAt()) => (T.VB[cat] || 0) * index;
+const vbOf = (cat, index = 1, T = tableAt()) => (T && T.VB[cat] != null ? T.VB[cat] * index : null);
 
-// Remuneração base mensal (€) = VB × fração do contrato. VB já é MENSAL (cl. 3.ª); valores
-// de 2026 já publicados → `index` aceite por paridade mas default 1 (sem indexação/derivação).
-// `ym` data o mês (tabela em vigor); sem ele = tabela atual.
-export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) =>
-  r2(vbOf(cat, index, tableAt(ym)) * contractFactor(contract));
+// Remuneração base mensal (€) = VB × fração do contrato. VB já é MENSAL (cl. 3.ª); `index` aceite por paridade (default 1).
+// `ym` data o mês (tabela em vigor); sem ele = tabela atual; null sem tabela (ou sem o escalão nesse ano).
+export const monthlyBase = (cat, { contract = '12/12', index = 1, ym } = {}) => {
+  const vb = vbOf(cat, index, tableAt(ym));
+  return vb == null ? null : r2(vb * contractFactor(contract));
+};
 
-// Per diem (€) de UM dia de serviço de voo = AC1 (cl. 7.ª), POR DIA, valor único 2026 (150 €).
-// distancesNM só serve para saber se houve voo nesse dia (a app passa 1 duty/dia).
+// AC1 (cl. 7.ª, n.º 1) de UM DIA DE CALENDÁRIO com serviço de voo (a começar ou em curso, em funções ou DHC). Conta-se por
+// dia em perdiem.monthlyAe (PER_DIEM_BY_DAY); `distancesNM` só diz se houve voo.
+export const PER_DIEM_BY_DAY = true;
 export const perDiem = (cat, distancesNM = [], _index = 1, _fleet, ym) =>
-  (distancesNM && distancesNM.length) ? tableAt(ym).AC1_DAY : 0;
+  withT(ym, (T) => ((distancesNM && distancesNM.length) ? acOf(T.AC1, cat) : 0));
 
-// Pernoita = AC2 "Estadia" (cl. 7.ª), POR DIA, 80 € (2026) + hotel pago pela empresa.
-export const nightStop = (cat, _index = 1, ym) => tableAt(ym).AC2_DAY;
+// AC2 "Estadia" (cl. 7.ª, n.º 2, b)), por dia de calendário de estadia SEM AC1 nesse dia (n.º 3: "prevalecerá o pagamento de
+// valor superior" — a AC1 é sempre maior). + hotel pago pela empresa.
+export const nightStop = (cat, _index = 1, ym) => withT(ym, (T) => acOf(T.AC2, cat));
 
 // Férias/ano (Cl. 23.ª, BTE 7/2024): 42 dias de CALENDÁRIO por ano civil — já INCLUEM
 // 12 dias de compensação de feriados (unidade ≠ easyJet, que conta dias úteis).
@@ -110,12 +131,13 @@ export const firstYearVacationDays = (serviceStart, _ref = new Date()) => {
 };
 
 // Vencimentos por função/hora.
-export const vh = (cat, index = 1, ym) => { const T = tableAt(ym); return r2(T.VH_PCT * vbOf(cat, index, T)); };               // €/hora acima do plafond
-export const vs = (cat, years = 0, index = 1, ym) => { const T = tableAt(ym); return r2(T.VS_PCT * Math.max(0, years) * vbOf(cat, index, T)); };  // senioridade — €/mês
-export const extraord = (ym) => tableAt(ym).EXTRAORD_DAY;                          // complemento extraordinário — €/dia
+export const vh = (cat, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat, index, T); return vb == null ? null : r2(T.VH_PCT * vb); });               // €/hora acima do plafond
+export const vs = (cat, years = 0, index = 1, ym) => withT(ym, (T) => { const vb = vbOf(cat, index, T); return vb == null ? null : r2(T.VS_PCT * Math.max(0, years) * vb); });  // senioridade — €/mês
+export const extraord = (ym, cat) => withT(ym, (T) => acOf(T.EXTRAORD, cat));                          // complemento extraordinário — €/dia (cl. 8.ª)
 
 // Estimativa mensal de apoio (€): base + AC1 dos voos + AC2 das pernoitas.
 export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym } = {}) => {
+  if (!hasTableFor(category, ym)) return null;   // sem tabela (ou sem o escalão) nesse mês → o mês não dá €
   const base = monthlyBase(category, { contract, index, ym });
   const perDiemTotal = r2(duties.reduce((s, legs) => s + perDiem(category, legs, 1, undefined, ym), 0));
   const nightTotal = r2(nightStops * nightStop(category, 1, ym));
@@ -153,7 +175,7 @@ export const catalogValue = (id, { category = 'CAB3', contract = '12/12', index 
     case 'perdiem':  return null;                       // depende da rota do mês
     case 'night':    return nightStop(category);
     case 'vh':       return vh(category, index);
-    case 'extraord': return EXTRAORD_DAY;
+    case 'extraord': return extraord(undefined, category);
     case 'vs':       return vs(category, years, index);
     case 'natal':    return r2(monthlyBase(category, { contract, index }) + vs(category, years, index));   // VB + VS
     case 'ferias':   return r2(monthlyBase(category, { contract, index }) + vs(category, years, index));   // VB + VS
@@ -168,7 +190,7 @@ export const EXTRA_KINDS = [
   { id: 'vhHours',      calc: 'vh',       per: 'hour', label: { pt: 'Horas acima do plafond',                 en: 'Hours over plafond' } },
 ];
 const EXTRA_VALUE = {
-  extraordDays: (cat, index, ym) => extraord(ym),
+  extraordDays: (cat, index, ym) => extraord(ym, cat),
   vhHours: (cat, index, ym) => vh(cat, index, ym),
 };
 export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
@@ -176,7 +198,11 @@ export const monthExtras = (cat, counts = {}, { index = 1, ym } = {}) => {
   for (const k of EXTRA_KINDS) {
     const n = Math.max(0, Math.floor(+counts[k.id] || 0));
     if (!n) continue;
-    const each = EXTRA_VALUE[k.id](cat, index, ym) || 0;
+    const raw = EXTRA_VALUE[k.id](cat, index, ym);
+    // Sem valor na tabela desse mês (ex.: dia de férias do SO antes de abril de 2024; o complemento da TAP de 2023): o item
+    // fica com each null, "sem valor", e fora da soma — nunca 0,00 € em silêncio (revisão do bloco 5).
+    if (raw == null) { items.push({ id: k.id, calc: k.calc, n, each: null, total: 0, noValue: true }); continue; }
+    const each = raw;
     const sub = r2(each * n);
     items.push({ id: k.id, calc: k.calc, n, each, total: sub });
     total += sub;

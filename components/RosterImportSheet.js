@@ -43,7 +43,7 @@ const demoCands = () => {
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
   const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
-  // Doença: pilotos registam o episódio (Art. 48.º); a cabine só os dias pagos (do 4.º, Cl. 61.ª) — paidSickDays.
+  // Doença: o episódio inteiro, pilotos e cabine (bloco 5) — o motor paga os dias do acordo e tira a base dos dias de baixa.
   const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -161,7 +161,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
     const catD = dt ? crewAt(dt).category : crewCategory;
     if (aeD && catD) { const ds = sectorDistancesNM(c.duty).filter((nm) => nm != null); if (ds.length) perDiem = aeD.perDiem(catD, ds, 1, dt ? crewAt(dt).fleet : crewFleet, dt); }   // só os setores voados (o DH não, E2)
     // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
-    const nsEur = (c.duty.nightStop && aeD && aeD.nightStop && catD) ? aeD.nightStop(catD, 1, dt) : null;
+    const nsEur = (c.duty.nightStop && aeD && aeD.nightStop && catD && !aeD.PER_DIEM_BY_DAY) ? aeD.nightStop(catD, 1, dt) : null;   // TAP: estadia só nos dias sem voo (bloco 5)
     return { kind: 'ready', perDiem, badAp: null, nsEur };
   };
   // "Substitui o teu manual": uma alteração/conflito cujo dia já tinha um serviço MANUAL
@@ -344,14 +344,14 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                   </View>
                 </TouchableOpacity>
               ) : null}
-              {/* DOENÇA (SICK) — a par das férias: sugerida como episódio Art. 48; gravar é teu. */}
+              {/* DOENÇA (SICK) — a par das férias: sugerida como episódio; gravar é teu. */}
               {sickDates.length ? (
                 <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setSickSel((v) => !v)}
                   accessibilityRole="checkbox" accessibilityState={{ checked: sickSel }}>
                   <View style={[s.vacTick, sickSel && s.vacTickOn]}>{sickSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.vacT}>{l(`Doença no calendário: ${sickDates.length} dia(s)`, `Sick days in the calendar: ${sickDates.length} day(s)`)}</Text>
-                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {sickFirst3 ? l('registar como episódio de doença', 'log as a sick episode') : l('só os dias pagos, do 4.º dia (Cl. 61.ª)', 'paid days only, from day 4 (Cl. 61)')}</Text>
+                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {l('registar como episódio de doença', 'log as a sick episode')}</Text>
                   </View>
                 </TouchableOpacity>
               ) : null}

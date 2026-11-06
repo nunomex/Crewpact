@@ -80,3 +80,20 @@ Os prazos das validades (`data/validities.js`) saem daqui. Cada prazo guarda a c
   versão consolidada com outra marca: ao atualizar os extratos, repetir a conferência.
 - **O que não está aqui:** as Instruções Técnicas da ICAO (prazo da formação em mercadorias perigosas, para onde remete a
   ORO.GEN.110 j)) não são públicas — a app pede a data do certificado.
+
+## Lei portuguesa (`pt/`) — auditoria dos cálculos, bloco 5 (6 de novembro de 2026)
+
+O que os acordos de empresa mandam buscar à lei geral. O teste `scripts/dinheiro.test.js` (`npm run test:dinheiro`) confere
+cada frase no texto e calcula com ela.
+
+| Ficheiro | Documento | Para quê |
+|---|---|---|
+| `pt/codigo-trabalho-2009.txt` | Código do Trabalho (Lei n.º 7/2009, DR 1.ª série n.º 30, 12-02-2009), arts. 249.º, 255.º e 271.º — redação original | a falta por doença "determina a perda de retribuição" (art. 255.º, n.º 2, a)): nos dias de baixa a base sai |
+| `pt/rmmg.txt` | DL 107/2023 (2024: € 820), DL 112/2024 (2025: € 870,00), DL 139/2025 (2026: € 920,00) | a base do tripulante de cabine do 1.º ano da easyJet ("Salário mínimo nacional (SMN)", Anexo I.1) |
+| `pt/ipc-2024-11.txt` | DREM, "Preços em foco — novembro de 2024" (11-12-2024), com o valor nacional do INE: 2,3 % | a indexação dos pilotos easyJet desde 1-fev-2025 (Anexo I.1/I.2) |
+
+- São **extratos literais** (pdftotext) dos PDF oficiais; cada ficheiro diz de onde veio e o SHA-256 do PDF. Os PDF não
+  se guardam no repositório.
+- **O que falta:** o Código do Trabalho na versão consolidada da DRE (o art. 255.º, n.º 2, a) não mudou desde 2009, mas
+  confirmar antes de publicar — pacote do advogado) e o destaque do próprio INE sobre o IPC (a página do INE não deixa
+  descarregar sem navegador).

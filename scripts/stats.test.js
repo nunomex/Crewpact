@@ -240,7 +240,8 @@ eq('coveredBy: empresa não abrangida', coveredBy('employee', false), false);
 const aeAtV = (ym) => { const r = resolveCompany(CH2, ym); return coveredBy(r.employment, true) ? getAe(r.company, r.crewType) : null; };
 const FA = [{ category: 'FA', contract: '12/12', from: '2018-05' }];
 eq('vínculo datado: 2024 (agência) sem salário do AE', yearStats({}, { year: 2024, aeAt: aeAtV, crewHistory: FA, now: NOW_DEC }).aeYtd, null);
-eq('vínculo datado: 2025 (empresa) 12×1346,57', yearStats({}, { year: 2025, aeAt: aeAtV, crewHistory: FA, now: NOW_DEC }).aeYtd.base, 16158.84);
+// 2025 com as tabelas do Anexo I de cada mês (bloco 5, A-019): jan = fev-2024 (16 870 / 14 = 1 205,00) · fev-out = fev-2025 (18 214 / 14 = 1 301,00) · nov-dez = nov-2025 (1 346,57).
+eq('vínculo datado: 2025 (empresa) com a tabela de cada mês', yearStats({}, { year: 2025, aeAt: aeAtV, crewHistory: FA, now: NOW_DEC }).aeYtd.base, 15607.14);
 // Mudar de companhia mantém o vínculo indicado; correção do vínculo só na companhia atual.
 const LV = startEmployment({ crewHistory: FA, companyHistory: CH2, baseHistory: [] }, { company: 'tap', crewType: 'cabin', category: 'CAB2', employment: 'agency', base: 'LIS', from: '2026-05' });
 eq('mudei com vínculo: maio/2026 TAP por agência', resolveCompany(LV.companyHistory, '2026-05').employment, 'agency');

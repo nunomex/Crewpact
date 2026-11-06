@@ -1,0 +1,24 @@
+Código do Trabalho, aprovado pela Lei n.º 7/2009, de 12 de fevereiro (Diário da República, 1.ª série, n.º 30, 12-02-2009).
+Extrato literal (pdftotext) do PDF oficial: https://files.diariodarepublica.pt/1s/2009/02/03000/0092601029.pdf
+SHA-256 do PDF: 96f014b61e0775f9ff3960a1a28c397c4b1ac8415a6aa4de06bf5beeeb3b1aa9 (descarregado a 6 de novembro de 2026).
+Redação original. Conferir na versão consolidada da DRE antes de publicar (pacote do advogado).
+
+=====[Artigo 249.º · DR p. 976-977]=====
+Artigo 249.º
+Tipos de falta
+1 — A falta pode ser justificada ou injustificada. 2 — São consideradas faltas justificadas:
+d) A motivada por impossibilidade de prestar trabalho devido a facto não imputável ao trabalhador, nomeadamente observância de prescrição médica no seguimento de recurso a técnica de procriação medicamente assistida, doença, acidente ou cumprimento de obrigação legal;
+
+=====[Artigo 255.º · DR p. 977-978]=====
+Artigo 255.º
+Efeitos de falta justificada
+1 — A falta justificada não afecta qualquer direito do trabalhador, salvo o disposto no número seguinte.
+2 — Sem prejuízo de outras disposições legais, determinam a perda de retribuição as seguintes faltas justificadas:
+a) Por motivo de doença, desde que o trabalhador beneficie de um regime de segurança social de protecção na doença;
+b) Por motivo de acidente no trabalho, desde que o trabalhador tenha direito a qualquer subsídio ou seguro;
+
+=====[Artigo 271.º · DR p. 979]=====
+Artigo 271.º
+Cálculo do valor da retribuição horária
+1 — O valor da retribuição horária é calculado segundo a seguinte fórmula:
+(Rm × 12):(52 × n)

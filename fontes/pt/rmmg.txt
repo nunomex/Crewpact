@@ -1,0 +1,24 @@
+Retribuição mínima mensal garantida (RMMG, o "salário mínimo nacional" — Código do Trabalho, art. 273.º, n.º 1), território continental.
+É a base do tripulante de cabine do 1.º ano da easyJet (Anexo I.1: "Salário mínimo nacional (SMN)").
+Extratos literais (pdftotext) dos decretos-lei. Descarregados a 6 de novembro de 2026.
+
+=====[Decreto-Lei n.º 107/2023 · RMMG de 2024]=====
+Fonte: https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/legislacao/diplomas_legislativos/Documents/Decreto_Lei_107_2023.pdf (SHA-256 08b0ad916f5d86ea814648b3039da9a0d445400026c32f0ca56e3082bc8aba65)
+O presente decreto-lei procede à atualização do valor da retribuição mínima mensal garantida (RMMG) a
+partir de 1 de janeiro de 2024.
+O presente decreto-lei é aplicável a todo o território continental.
+O valor da RMMG a que se refere o n.º 1 do artigo 273.º do Código do Trabalho, aprovado em anexo à Lei
+n.º 7/2009, de 12 de fevereiro, na sua redação atual, é de € 820.
+
+=====[Decreto-Lei n.º 112/2024 · RMMG de 2025]=====
+Fonte: https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/legislacao/diplomas_legislativos/Documents/Decreto_Lei_112_2024.pdf (SHA-256 d66d94a019a4c4b2decebab621ed1339c83c04458c688f60f284c5bc637cce44)
+partir de 1 de janeiro de 2025.
+O presente decreto-lei é aplicável a todo o território continental.
+O valor da RMMG a que se refere o n.º 1 do artigo 273.º do Código do Trabalho, aprovado em anexo à
+Lei n.º 7/2009, de 12 de fevereiro, na sua redação atual, é de € 870,00.
+
+=====[Decreto-Lei n.º 139/2025 · RMMG de 2026]=====
+Fonte: https://www.dgert.gov.pt/wp-content/uploads/2026/05/Decreto-Lei-n.o-139_2025_RMMG.pdf (SHA-256 8cacf181840def630f07706ebd3024dc96f4d8291636079fe056c48011f33258)
+o presente decreto-lei determina o aumento da RMMG para € 920,00, com efeitos a partir de 1 de janeiro
+O valor da RMMG a que se refere o n.º 1 do artigo 273.º do Código do Trabalho, aprovado em anexo
+à Lei n.º 7/2009, de 12 de fevereiro, na sua redação atual, é de € 920,00.

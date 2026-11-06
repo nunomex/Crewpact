@@ -70,6 +70,51 @@ export const liveRdp = ({ isPilot = false, kind = 'flight', fromStandby = false,
   return { type: 'rdp', clause: 'Cl. 67.ª', reason: 'end', dEndMin: arrDelayMin };
 };
 
+// SNC e RDP POR SERVIÇO (auditoria A-024/A-076, bloco 5) — o ecrã Disrupção, os Relatórios e a Auditoria do mês contavam
+// um candidato por CADA alteração. A lei compara o serviço final com UM plano:
+//  · SNC (Art. 63.º, n.º 4 pilotos · Cl. 66.ª, n.º 3 cabine): "comparando o novo serviço com o planeado em escala nas 48
+//    horas antecedentes" → as alterações feitas nas 48 h: o "antes" da 1.ª contra o "depois" da última; um por serviço.
+//  · RDP (Cl. 67.ª, n.º 1, só cabine): o fim "de acordo com a escala de serviço programada" no dia da operação → as
+//    alterações desse dia: o "antes" da 1.ª contra o "depois" da última; um por serviço.
+// Na cabine, as alterações do próprio dia são do RDP (não entram na conta do SNC). Devolve candidatos com a forma do
+// disruptionCandidates (entrada + veredicto), ordenados por data.
+const inWindow48 = (e) => {
+  const st = hm2min(e.before && e.before.report); const det = new Date(String(e.detectedAt));
+  if (st == null || isNaN(det)) return false;
+  const startMs = new Date(`${e.dutyDate}T00:00:00`).getTime() + st * 60000;
+  return det.getTime() <= startMs && startMs - det.getTime() <= 48 * 3600000;
+};
+export const disruptionsByDuty = (log = [], { isPilot = false } = {}) => {
+  const byDuty = new Map();
+  for (const e of log || []) {
+    if (!e || !e.dutyDate || !e.before || !e.after || !e.detectedAt) continue;
+    if (!byDuty.has(e.dutyDate)) byDuty.set(e.dutyDate, []);
+    byDuty.get(e.dutyDate).push(e);
+  }
+  const out = [];
+  const merge = (list) => ({ ...list[list.length - 1], before: list[0].before, id: `${list[0].id || list[0].detectedAt}+${list.length}` });
+  for (const [date, raw] of byDuty) {
+    const list = raw.slice().sort((a, b) => String(a.detectedAt).localeCompare(String(b.detectedAt)));
+    const sameDay = (e) => String(e.detectedAt).slice(0, 10) === date;
+    const sncList = list.filter((e) => inWindow48(e) && (isPilot || !sameDay(e)));
+    if (sncList.length) {
+      const m = merge(sncList);
+      const v = evaluateDisruption(m, { isPilot });
+      if (v && v.type === 'snc') out.push({ ...m, ...v });
+    }
+    if (!isPilot) {
+      const rdpList = list.filter(sameDay);
+      if (rdpList.length) {
+        const m = merge(rdpList);
+        const v = evaluateDisruption(m, { isPilot });
+        if (v && v.type === 'rdp') out.push({ ...m, ...v });
+        else if (v && v.type === 'snc' && !out.some((c) => c.dutyDate === date && c.type === 'snc')) out.push({ ...m, ...v });   // antecipação ≥ 2 h no próprio dia (dentro das 48 h)
+      }
+    }
+  }
+  return out.sort((a, b) => String(a.dutyDate).localeCompare(String(b.dutyDate)));
+};
+
 // SNC A REGISTAR — no máximo UM por serviço (Art. 63.º SPAC n.º 4 · Cl. 66.ª SNPVAC n.º 3, lidos no BTE 2026-11-04,
 // `fontes/ae-easyjet/`): "o pagamento será devido comparando o novo serviço com o planeado em escala nas 48 horas
 // antecedentes" → junta as alterações do MESMO serviço feitas dentro das 48 h: o "antes" da 1.ª (o plano a 48 h) vs o

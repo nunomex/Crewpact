@@ -15,7 +15,7 @@
 
 import { nightStopStation } from './hotels';
 import { sectorDistancesNM } from './perdiem';
-import { disruptionCandidates } from './disruption';
+import { disruptionsByDuty } from './disruption';
 
 const r2 = (n) => +(+n || 0).toFixed(2);
 
@@ -39,7 +39,8 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
     // Pernoita por marcar (day-level, como a flag): acaba fora E nenhum serviço tem a marca.
     const station = nightStopStation(d, base);
     const marked = svcs.some((s) => s && (s.nightStop || s.night_stop));
-    if (station && !marked && typeof ae.nightStop === 'function') {
+    // TAP: a estadia é dos dias SEM voo (Cl. 7.ª/9.ª) — num dia com voo não há AC2/B "esquecido" (A-088, bloco 5).
+    if (station && !marked && typeof ae.nightStop === 'function' && !ae.PER_DIEM_BY_DAY) {
       const eur = r2(ae.nightStop(cat, 1, ym));
       if (eur > 0) items.push({ id: `ns-${date}`, kind: 'nightstop', date, station, eur, provaId: 'pernoita' });
     }
@@ -68,7 +69,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
   const hasKind = (t) => kinds.some((k) => k && k.id === t);
   const registered = new Set((events || []).filter((e) => e && (e.type === 'snc' || e.type === 'rdp')).map((e) => `${e.type}|${e.date}`));
   const seen = new Set();
-  for (const c of disruptionCandidates(rosterLog, { isPilot })) {
+  for (const c of disruptionsByDuty(rosterLog, { isPilot })) {   // um SNC/RDP por serviço, o plano contra o final (A-024/A-076)
     const date = c.dutyDate;
     if (!date || !String(date).startsWith(prefix)) continue;
     if (!hasKind(c.type)) continue;                       // AE sem crédito deste tipo (ex.: TAP) → fora

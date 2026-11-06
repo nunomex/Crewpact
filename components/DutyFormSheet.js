@@ -340,7 +340,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // Valor € da pernoita (pilotos Art. 39.º · cabine Cl. 56.ª; igual p/ qualquer tipo): piloto = ae.nightStop(cat); cabine =
   // €46 fixos. index=1, igual ao per-diem do preview (a indexação só entra no cálculo mensal).
   const catForm = crewAt(form.date || isoDay()).category;   // categoria EM VIGOR no mês da duty (effective-dated)
-  const nsEur = (hasNs && ae && ae.nightStop && catForm) ? ae.nightStop(catForm) : null;
+  // TAP (Cl. 7.ª/9.ª): num dia com voo paga-se a AC1/per diem A e não a estadia — a AC2/B é só dos dias de estadia sem voo,
+  // contados no mês (perdiem.tapCalendarDays). Por isso o serviço não mostra "+ estadia" (auditoria A-109/A-186, bloco 5).
+  const nsEur = (hasNs && ae && ae.nightStop && catForm && !ae.PER_DIEM_BY_DAY) ? ae.nightStop(catForm, 1, form.date || isoDay()) : null;
+  const nsLaw = ae && ae.PER_DIEM_BY_DAY ? l('estadia nos dias sem voo', 'stay on days without flights') : (isPilot ? l('abono AE (Art. 39.º)', 'AE allowance (Art. 39)') : l('abono AE (Cl. 56.ª)', 'AE allowance (Cl. 56)'));
   // Reserva (230) é FTL-universal (0h, mostra a todos); o resto é info AE (só com `ae`).
   const kindInfo = form.kind === 'reserve'
     ? l('Disponibilidade · 0 h FTL até ser convertida (ORO.FTL.230)', 'Availability · 0 h FTL until converted (ORO.FTL.230)')
@@ -757,7 +760,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <View style={{ flex: 1 }}>
             <Text style={[s.nsCardT, flightNs ? null : { color: C.sub }]}>{flightNs ? l('Pernoita', 'Night stop') : l('Sem pernoita', 'No night stop')}</Text>
             <Text style={s.nsHint}>{flightNs
-              ? l(`Setores ímpares (${form.sectors}) → acabas fora da base · abono AE (Art. 39)`, `Odd sectors (${form.sectors}) → ends away from base · AE allowance (Art. 39)`)
+              ? l(`Setores ímpares (${form.sectors}) → acabas fora da base · ${nsLaw}`, `Odd sectors (${form.sectors}) → ends away from base · ${nsLaw}`)
               : l(`Setores pares (${form.sectors}) → ida-e-volta à base`, `Even sectors (${form.sectors}) → round trip to base`)}</Text>
           </View>
           {flightNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
@@ -767,7 +770,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         <View style={[s.nsRow, { marginTop: 14 }]}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={s.lbl}>{l('Pernoita', 'Night stop')}</Text>
-            <Text style={s.nsHint}>{l('Liga se pernoitares fora da base · abono AE (Art. 39)', 'Turn on if you overnight away from base · AE allowance (Art. 39)')}</Text>
+            <Text style={s.nsHint}>{l(`Liga se pernoitares fora da base · ${nsLaw}`, `Turn on if you overnight away from base · ${nsLaw}`)}</Text>
           </View>
           {manualNs && nsEur != null ? <Text style={s.nsEur}>+{fmtPd(nsEur)}</Text> : null}
           <Switch value={!!form.nightStop} onValueChange={(v) => { select(); setForm((f) => ({ ...f, nightStop: v })); }}
@@ -821,7 +824,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
         </View>
       ) : null}
       {(isFlight || form.kind === 'training') && ae && ae.additionalRolesFor ? (() => {
-        const roles = ae.additionalRolesFor(crewCategory, { instructorRated }) || [];
+        // Instrutor dos pilotos easyJet: "em terra, incluindo em simulador" (Art. 42.º) → não aparece num voo (A-045, bloco 5).
+        const groundOnly = new Set(ae.GROUND_ONLY_ROLES || []);
+        const roles = (ae.additionalRolesFor(crewCategory, { instructorRated }) || []).filter((r) => form.kind === 'training' || !groundOnly.has(r.id));
         if (!roles.length) return null;
         return (
           <View style={{ marginTop: 16 }}>

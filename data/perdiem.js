@@ -1,6 +1,7 @@
 // Per diem do AE a partir das rotas das duties. Liga as distâncias de aeroporto
 // (data/airports.js) às bandas/setores nominais do módulo AE (ae/*). Módulo PURO.
 import { sectorDistanceNM } from './airports';
+import { eventCounts } from './aeEvents';
 
 // Distâncias (NM) por setor a partir de uma rota "LIS-OPO-LIS".
 // [] se a rota for inválida; um elemento pode ser null (aeroporto desconhecido).
@@ -56,7 +57,7 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
       const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       // `fleet` (TAP: WB/NB → coluna A); `date` = tabela do AE em vigor NESSE dia (linha do tempo).
-      total += ae.perDiem(category, dists, index, fleet, date);
+      total += ae.perDiem(category, dists, index, fleet, date) || 0;   // sem tabela nesse mês → 0
       withRoute++;
     }
   }
@@ -71,7 +72,9 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
   if (!ae || !category || !ae.SECTOR_BANDS) return null;
   const bands = ae.SECTOR_BANDS;
   // Setor nominal do MÊS pedido (linha do tempo das tabelas); sem tableAt = tabela plana.
-  const noms = (ae.tableAt ? ae.tableAt(ym).NOMINAL_SECTOR : ae.NOMINAL_SECTOR) || ae.NOMINAL_SECTOR;
+  const tbl = ae.tableAt ? ae.tableAt(ym) : null;
+  if (ae.tableAt && !tbl) return null;   // sem tabela nesse mês
+  const noms = (tbl ? tbl.NOMINAL_SECTOR : ae.NOMINAL_SECTOR) || ae.NOMINAL_SECTOR;
   const nominal = ((noms && noms[category]) || 0) * index;
   const byBand = {};
   bands.forEach((b) => { byBand[b.id] = 0; });
@@ -113,6 +116,79 @@ export const roleEurFor = (ae, category, role, sectors = 0, ym) => {
   return 0;
 };
 
+// ── TAP: as ajudas de custo contam-se por DIA DE CALENDÁRIO (auditoria A-088/A-089/A-109/A-110/A-186/A-187/A-204, bloco 5) ──
+// Cabine, RRRGS Cl. 7.ª: AC1 "Por cada dia de calendário (das 0h00 às 23h59, horas locais da base), em que seja realizado um
+// ou mais serviços de voo ou em que esteja em curso a realização de um serviço de voo em funções ou DHC/extracrew"; o serviço
+// acaba "após trinta minutos decorridos da imobilização definitiva da aeronave" (n.º 1, a)); AC2 por dia de "Estadia" (n.º 2,
+// b)); no mesmo dia "prevalecerá o pagamento de valor superior" (n.º 3). Pilotos, Cl. 9.ª: per diem A por dia de calendário
+// com "Apresentação ou deslocação para um ou mais serviços de voo (...) ou em que esteja em curso a realização de um serviço
+// de voo"; per diem B por "Permanência em estadia"; no mesmo dia prevalece o A (n.º 2).
+// Logo: um dia com voo (ou DHC) começado ou em curso → 1 A/AC1, por muitos serviços que tenha; os dias SEM voo entre um
+// serviço que acaba fora da base (pernoita) e o serviço seguinte, que parte desse mesmo aeroporto → B/AC2. Sem o serviço
+// seguinte (ou sem rotas que encadeiem) não se contam dias de estadia: nunca a mais. As horas são as da escala (a app
+// não tem a hora da base em cada perna); o fim é o sign-off, ou os calços + 30 min.
+const isoAdd = (iso, n) => {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+};
+const clockMin = (x) => { const mm = /^(\d{1,2}):([0-5]\d)$/.exec(String(x || '')); return mm ? (+mm[1]) * 60 + (+mm[2]) : null; };
+const codesOf = (route) => String(route || '').split('-').map((c) => c.trim().toUpperCase()).filter(Boolean);
+export const tapCalendarDays = (duties = {}, ym) => {
+  const flightDay = new Map();   // date → distâncias (NM) dos serviços que tocam esse dia
+  const svcs = [];
+  let missing = 0, withRoute = 0;
+  const dates = Object.keys(duties || {}).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && duties[d] && !duties[d].deleted).sort();
+  for (const date of dates) {
+    const d = duties[date];
+    const list = [d, ...(Array.isArray(d.extra) ? d.extra : [])].filter(Boolean)
+      .sort((a, b) => (clockMin(a.report_time) ?? 0) - (clockMin(b.report_time) ?? 0));
+    const dayNight = list.some((s) => s.nightStop);
+    list.forEach((s, i) => {
+      const kind = s.kind || 'flight';
+      if (kind !== 'flight' && kind !== 'positioning') return;
+      let dists = kind === 'flight' ? sectorDistancesNM(s) : routeDistancesNM(s.route);
+      if (kind === 'flight') {
+        if (!dists.length || dists.some((x) => x == null)) { if (String(date).startsWith(ym)) missing++; return; }
+        if (String(date).startsWith(ym)) withRoute++;
+      } else {
+        dists = dists.filter((x) => x != null);
+        if (!dists.length) dists = [0];   // DHC sem distância: conta o dia (o valor sai da coluna de médio curso)
+      }
+      // Dias em que o serviço está "em curso": do dia da apresentação ao do fim (sign-off, ou calços + 30 min).
+      const r = clockMin(s.report_time);
+      const so = clockMin(s.signOff), bo = clockMin(s.block_on);
+      let span = 0;
+      if (r != null && (so != null || bo != null)) {
+        const end = so != null ? so + (so < r ? 1440 : 0) : bo + (bo < r ? 1440 : 0) + 30;
+        span = Math.floor(end / 1440);
+      }
+      for (let k = 0; k <= span; k++) {
+        const day = isoAdd(date, k);
+        if (!flightDay.has(day)) flightDay.set(day, []);
+        flightDay.get(day).push(...dists);
+      }
+      const codes = codesOf(s.route);
+      svcs.push({ date, endDate: isoAdd(date, span), from: codes[0] || null, to: codes[codes.length - 1] || null, away: dayNight && i === list.length - 1 });
+    });
+  }
+  const stayDays = [];
+  svcs.forEach((sv, i) => {
+    if (!sv.away || !sv.to) return;
+    const next = svcs.slice(i + 1).find((n) => n.date > sv.date);
+    if (!next || next.from !== sv.to) return;   // sem o serviço seguinte que parte dali → não se presume estadia
+    for (let day = isoAdd(sv.endDate, 1); day < next.date; day = isoAdd(day, 1)) {
+      if (!flightDay.has(day)) stayDays.push(day);
+    }
+  });
+  const inYm = (d) => String(d).startsWith(ym);
+  return {
+    flightDays: [...flightDay.entries()].filter(([d]) => inYm(d)).sort(([a], [b]) => a.localeCompare(b)).map(([date, dists]) => ({ date, dists })),
+    stayDays: stayDays.filter(inYm),
+    withRoute, missing,
+  };
+};
+
 // Estimativa mensal AE (€) a partir das duties (kind + rota). É a PONTE entre o
 // modelo da app (1 duty/dia: route + kind) e o `computeAeMonth` do motor. Mapeamento
 // dos kind (em setores nominais, que o motor multiplica pelo NS da categoria):
@@ -128,8 +204,12 @@ export const roleEurFor = (ae, category, role, sectors = 0, ym) => {
 // nightStop?, deleted? } }. Devolve o objeto do motor (base, perDiem, nightStops €,
 // extras, total) + meta { withRoute, missing, count, officeDays, adtyDays, nightStopDays }
 // — ou null se faltar ae/categoria/computeAeMonth.
-export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet } = {}) => {
+export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, fleet, fullShare } = {}) => {
   if (!ae || !category || !ae.computeAeMonth) return null;
+  if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → o mês não dá € (bloco 5)
+  const byDay = !!ae.PER_DIEM_BY_DAY;   // TAP: ajudas de custo por dia de calendário (tapCalendarDays)
+  const dailyRoles = new Set(ae.DAILY_ROLES || []);       // papéis pagos por DIA: uma vez por dia (Art. 42.º; Anexo I.16)
+  const groundOnly = new Set(ae.GROUND_ONLY_ROLES || []); // instrutor dos pilotos easyJet: só em terra/simulador (Art. 42.º)
   // Dia de escritório: piloto OFC4 = 1,5 NS (Anexo I.14); cabine = 3 NS (Art. 70) — só tem
   // OFFICE_SECTORS, não OFC4/8 → sem o fallback pagava €0 ao dia de terra da cabine.
   const office4 = ae.OFFICE4_SECTORS || ae.OFFICE_SECTORS || 0;
@@ -149,7 +229,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     count++;
     // Primária + extra (ORO.FTL.210/Cl.52 contam por serviço). Pernoita day-level (Art. 39 = 2×NS, 1 noite/dia).
     const svcs = [d, ...(Array.isArray(d.extra) ? d.extra : [])];
-    if (svcs.some((s) => s && s.nightStop)) nightStops++;
+    if (!byDay && svcs.some((s) => s && s.nightStop)) nightStops++;
+    const rolesPaidToday = new Set();
     const dayHasFlight = svcs.some((s) => s && (s.kind || 'flight') === 'flight');
     const dayHasSb = svcs.some((s) => s && s.kind === 'standby_airport');
     // Dia de FOLGA PUBLICADA trabalhado (condição no serviço): DDO (escalado), WFLY
@@ -186,8 +267,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       if (kind === 'flight' || kind === 'training') {
         const role = s.role || (s.instructor ? 'instr' : null);
         if (role) {
-          const eur = roleEurFor(ae, category, role, s.sectors, date);
-          if (eur > 0) { instrEur += eur; instructorDaysAuto++; }
+          // Instrutor (pilotos easyJet, Art. 42.º): "por cada dia que os pilotos com a qualificação executem tais funções em
+          // terra, incluindo em simulador" → 0 num voo, e uma vez por dia (auditoria A-045/A-064/A-079).
+          const paid = !(groundOnly.has(role) && kind !== 'training') && !(dailyRoles.has(role) && rolesPaidToday.has(role));
+          const eur = paid ? roleEurFor(ae, category, role, s.sectors, date) : 0;
+          if (eur > 0) { instrEur += eur; instructorDaysAuto++; if (dailyRoles.has(role)) rolesPaidToday.add(role); }
         } else if (kind === 'training' && !s.eLearning && ae.ADHOC_SECTORS) {
           // FORMANDO em formação de terra/simulador = 3 NS (Art. 43 piloto; só e-learning=0).
           // Gated em ae.ADHOC_SECTORS: só o piloto tem o item — a cabine (Cl.70 NÃO cobre
@@ -204,17 +288,25 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index, ym: date });
         adtyDays++;
       }
+      if (byDay) continue;   // TAP: os dias de calendário contam-se à parte (tapCalendarDays)
       const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
       flights.push(dists);
       withRoute++;
     }
   }
-  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet, ym });
+  if (byDay) {
+    const td = tapCalendarDays(duties, ym || '');
+    td.flightDays.forEach((f) => flights.push(f.dists));
+    nightStops = td.stayDays.length;
+    withRoute = td.withRoute; missing = td.missing;
+  }
+  const month = ae.computeAeMonth({ category, contract, duties: flights, nightStops, extraSectors, index, fleet, ym, fullShare });
+  if (!month) return null;
   // DDO/WFLY/IDO derivados das condições — valorizados pelo monthExtras do próprio AE (a
   // lei). AE sem o item (ex. TAP) → monthExtras ignora a chave → 0 (não se inventa prestação).
   const condEur = (ddoDaysAuto || wflyDaysAuto || idoDaysAuto) && ae.monthExtras
-    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index, ym }).total).toFixed(2)
+    ? +(ae.monthExtras(category, { ddo: ddoDaysAuto, wfly: wflyDaysAuto, ido: idoDaysAuto }, { index, ym, contract, fullShare }).total).toFixed(2)
     : 0;
   const plusEur = +(adtyEur + instrEur + condEur).toFixed(2);
   if (plusEur) {
@@ -229,10 +321,21 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare } = {}) => {
   if (!ae || !category) return null;
-  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet });
-  const baseTotal = m ? m.total : (ae.monthlyBase ? ae.monthlyBase(category, { contract, index, ym }) : 0);
-  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym }) : null;
+  if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → sem €
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare });
+  const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare }) || 0) : 0);
+  const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym, contract, fullShare }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);
+};
+
+// € dos EXTRAS (eventos) que entram num mês — o MESMO caminho do total do mês (eventCounts + ae.monthExtras): só os eventos
+// desse mês, a doença pela regra do acordo, a base que sai nos dias de baixa, as ausências em dias com serviço fora
+// (auditoria A-194, bloco 5: o "Soma ao mês" somava os eventos de todos os meses a valor cheio). null sem acordo/categoria.
+export const extrasMonthEur = (ae, category, events = [], ym, { duties = null, index = 1, contract = '12/12', fullShare } = {}) => {
+  if (!ae || !ae.monthExtras || !category || !ym) return null;
+  if (ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;
+  const counts = eventCounts(events || [], ym, duties, ae.SICK_FIRST3 !== false);
+  return ae.monthExtras(category, counts, { index, ym, contract, fullShare }).total;
 };

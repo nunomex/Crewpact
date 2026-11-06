@@ -9,15 +9,15 @@
 //  • sem data → a ÚLTIMA entrada (o "hoje" — o que os ecrãs de Cálculos mostram);
 //  • 'AAAA-MM' → resolve pelo dia 1 desse mês (um degrau a meio do mês só conta
 //    no mês seguinte — os degraus reais publicam-se a dia 1);
-//  • data anterior à 1.ª entrada → a 1.ª (clamp: não há valores mais antigos
-//    modelados; é o comportamento de sempre, agora explícito).
+//  • data anterior à 1.ª entrada → null: SEM TABELA (auditoria A-019/A-184, bloco 5). Antes devolvia a 1.ª
+//    (um mês de 2023 saía com os valores de 2025); quem chama mostra "sem tabela" e não dá €.
 // Módulo PURO — testável por golden (test:ae / test:vigencia).
 export const pickTable = (versions, ym) => {
   if (!Array.isArray(versions) || !versions.length) return null;
   let key = String(ym || '').slice(0, 10);
   if (!key) return versions[versions.length - 1];
   if (key.length === 7) key = `${key}-01`;
-  let cur = versions[0];
+  let cur = null;
   for (const v of versions) { if (v.from <= key) cur = v; }
   return cur;
 };

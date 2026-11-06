@@ -16,11 +16,12 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 2 (Simulação) FEITO a 2026-11-06** — ver a entrada "BLOCO 2" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 3 (limites TAP e validades) FEITO a 2026-11-06** — ver a entrada "BLOCO 3" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 4 (importação da escala) FEITO a 2026-11-06** — ver a entrada "BLOCO 4" abaixo. Falta vê-lo no iPhone (lista na entrada).
+**Bloco 5 (dinheiro a mais, M1–M11) FEITO a 2026-11-06** — ver a entrada "BLOCO 5" abaixo. Falta vê-lo no iPhone e as pendências da entrada.
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-5. **Dinheiro a mais (M1–M11)** — **Opus 5.5 Alto, sessão nova.** Primeiro a doença da cabine (M1: o import já só sugere os
-   dias pagos; falta o registo manual em bloco) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento — Art. 44.º e Anexo
-   I.18 —, VE/VS da TAP, e L10/L13 do import: A-239, A-235) · 7. Textos e citações · 8. Dúvidas → advogado (A-240, A-241).
-   Fora dos blocos: A-249 a A-251 (formulário manual: ordem das pernas e fusos no "Detetar").
+6. **Dinheiro a menos (L1–L13)** — **Opus 5.5 Alto, sessão nova:** subsídios, posicionamento (Art. 44.º e Anexo I.18), VE/VS da
+   TAP, L10/L13 do import (A-239, A-235), o CTI-Flexi da cabine (A-001) e, do bloco 5, a assistência não acionada da TAP a 2×
+   o complemento (Cl. 8.ª/2) e o per diem A/B da TAP noutros serviços (simulador, refrescamento, médicas) · 7. Textos e
+   citações · 8. Dúvidas → advogado (A-240, A-241 e as do bloco 5). Fora dos blocos: A-249 a A-251 (formulário manual).
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
 **Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
@@ -36,6 +37,69 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 5: o dinheiro a mais, M1–M11 (Opus 5.5)
+
+Golden primeiro (`scripts/dinheiro.test.js`, 128, a 32.ª suite, `npm run test:dinheiro`): cada valor sai do texto oficial e
+o teste confirma a frase em `fontes/`. Fontes novas em **`fontes/pt/`**: Código do Trabalho (art. 255.º), salário mínimo
+2024–2026 (DL 107/2023, 112/2024, 139/2025) e o IPC de nov-2024 (2,3 %, DREM com o valor do INE). `npm test` verde (32
+suites); pacote iOS gerado sem erros. Achados fechados: M1–M11 (A-002, A-003, A-005, A-006, A-009, A-016 a A-020, A-023,
+A-024, A-041, A-042, A-045, A-047, A-052, A-060, A-064, A-072, A-076, A-078, A-079, A-084, A-088, A-089, A-092, A-109, A-110,
+A-182, A-184 a A-187, A-192, A-194, A-203, A-204, A-219).
+- **Decisões do Nuno:** doença — "faz como diz a lei": nos dias de baixa a empresa NÃO paga a base (Código do Trabalho, art.
+  255.º, n.º 2, a): a falta por doença "determina a perda de retribuição"), pilotos e cabine; 9/3 e sazonais — "faz como
+  achares melhor, e seguir a lei": o motor aceita as datas de atividade (`fullShare`) e, sem elas, o mês é a média com
+  "incerto" e o intervalo. O campo das datas no Perfil fica para uma sessão de design (Mobbin primeiro).
+- **Doença (M1, M2):** regista-se SEMPRE o episódio inteiro (à mão e na importação — o bloco 4 tirava os 3 primeiros dias da
+  cabine; deixou de tirar). O motor (`eventCounts`) conta os dias PAGOS pela regra do acordo — pilotos: dias 1 a 3 a 60 %
+  (Art. 48.º; do 4.º em diante só a Segurança Social) · cabine: do 4.º dia, 45 %, até 90 dias nos 12 meses para trás (Cl.
+  61.ª; "12 meses em cada ano civil" → a leitura que nunca paga mais, advogado) — e TODOS os dias de baixa (`sickAbsentDays`)
+  tiram a base do dia (base ÷ 30; o mês inteiro tira a base toda). Exemplo: FO com 10 dias de baixa em out-2025 → 2 535,45 €
+  (a app dava 3 702,12 €). O subsídio da Segurança Social não entra (a app diz isso). Textos da regra vêm do acordo (`SICK_HINT`).
+- **Contratos parciais (M3):** abono para falhas e doença da cabine pela base do contrato (9/3: a fórmula do Anexo I.4); o
+  WFLY da cabine fica a tempo inteiro (Anexo I.14 o diz). Pilotos: DDO/IDO/WFLY e doença × fator do contrato (Art. 24.º/14,
+  66.º/1 — a que não promete a mais; advogado).
+- **9/3 e sazonais (M11):** `monthlyBase(..., { fullShare })` 100 %/25 % (9/3) ou 100 %/50 %/75 % (sazonais); sem datas,
+  `baseRange` {min, max} → Números, Início e "Quanto recebo?" dizem "incerto" com o intervalo.
+- **Tabelas dos meses passados (M4):** easyJet cabine fev-2024, abr-2024 (SNC), fev-2025, abr-2025 (benefícios 425 €),
+  nov-2025; FA1 = salário mínimo de cada ano. Pilotos easyJet set-2023, fev-2024, abr-2024 (férias a 2 NS; antes € fixos e o
+  SO sem valor); o IPC por MÊS (desde fev-2025) e 2,3 % (era 2,4 %). TAP cabine nov-2023 (VB 2024/2025 e AC), 2024
+  (complemento), 2025; os S/C de 2026 não correspondem aos C/C e S/C antigos → sem valor antes de 2026. ANTES da 1.ª tabela
+  → `null`, "sem tabela" (o `pickTable` deixou de usar a 1.ª): o mês não dá € e os Números dizem porquê.
+- **Antes da admissão (M5):** `aeAt` dá null antes do 1.º período da linha da companhia (ou do início de serviço) → sem €.
+- **TAP por dia de calendário (M6):** `tapCalendarDays` — um AC1/per diem A por dia com voo ou DHC a começar ou em curso
+  (fim = sign-off ou calços + 30 min), por muitos serviços que tenha; AC2/B só nos dias SEM voo entre um serviço que acaba
+  fora e o seguinte que parte dali. O "+ estadia" desapareceu dos dias de voo (formulário, Detalhe, Escala, Importação,
+  Simulação, Início, radar da Auditoria) e a Prova diz a regra. O complemento extraordinário não conta num dia com AC1.
+- **Instrutor (M7):** pilotos easyJet só em formação (terra/simulador), uma vez por dia; o formulário já não o oferece num voo.
+  Os papéis por dia da cabine (CCLT, CTI) também uma vez por dia. **Upranker (M8):** só FA1 e FA.
+- **"Soma ao mês" (M9):** `extrasMonthEur` — os extras que entram no mês corrente, pelo caminho do total ("Entra em <mês>").
+- **SNC/RDP (M10):** `disruptionsByDuty` — um SNC e um RDP por serviço, o plano contra o final, no ecrã Disrupção, nos
+  Relatórios e na Auditoria (a Escala já fazia assim).
+- **Sem valor ≠ 0 €:** um item sem valor na tabela desse mês fica "sem valor", fora da soma.
+- **Revisão independente** (2.º agente, só com o código e as fontes): 6 erros, todos corrigidos no mesmo dia — o mês inteiro
+  de baixa mostrava a base no "Quanto recebo?"; a Escala mostrava o complemento cheio em cada dia de doença; o Início sem o
+  "incerto" do 9/3; "sem valor" a 0,00 €; o complemento extraordinário da TAP somado à AC1; a linha da base dos dias de baixa
+  com o código interno.
+- **Pendências (do bloco e da revisão):**
+  - **Dados antigos de cabine** gravados só com os dias pagos (bloco 4) perdem mais 3 dias ao serem lidos agora. Só há dados
+    de teste: apagar e reimportar a doença de teste. Antes de haver contas reais não é preciso migração.
+  - **Para o advogado:** a leitura dos 12 meses do teto; a base ÷ 30 por dia de baixa; DDO/IDO/WFLY dos pilotos parciais ×
+    fator; o SNC da cabine contado antes das mudanças do próprio dia (mudança em D-1 desfeita em D dá SNC + RDP); o FA1 de
+    fev-2024 impresso "1345,00 €" (usado 13,45 €).
+  - **Mês da admissão:** quem entra a meio do mês recebe o mês inteiro na app (o `serviceStart` tem o dia) — proporcional ou "incerto".
+  - **Abono dos 9/3 e sazonais** com as datas: fica na média do ano (Cl. 54.ª: 12 prestações); o Anexo I.4 deixa dúvida.
+  - **TAP:** dias de estadia perdem-se se depois do voo houver outro serviço no mesmo dia; as horas da escala podem vir na hora
+    do destino (a lei conta na hora da base). TAP doente: a Cl. 20.ª assegura a retribuição líquida (a app não tira a base —
+    a TAP não tem eventos de doença).
+  - **FA1 em 2027:** fica "sem tabela" até se juntar o salário mínimo de 2027 a `fontes/pt/rmmg.txt` e `NMW_BY_YEAR`.
+  - **Perfil:** o campo das datas de atividade (9/3/sazonais), com Mobbin.
+- **Ver no iPhone:** Números de um mês de 2024/2025 (valores da tabela da altura) e de antes de fev-2024 ("sem valores do
+  acordo"); uma baixa de 5 dias numa conta de cabine (Extras, Início "dia N do episódio", total do mês com a base a sair); um
+  FA 9/3 (Início e Números com "incerto"); o formulário de um voo de um comandante instrutor (sem o papel de instrutor); o
+  ecrã Disrupção com duas alterações ao mesmo serviço (1 candidato); "Extras do mês" ("Entra em novembro").
 
 ---
 

@@ -128,6 +128,14 @@ export const addEmploymentChange = (history, { employment, from, correct = false
   const fixed = seeded.map((p) => (p.from >= m ? { ...p, employment } : p));
   return fixed.filter((p, i) => !(i > 0 && sameCo(fixed[i - 1], p)));
 };
+// O mês `ym` é ANTES do 1.º período da linha (antes da admissão)? Para o € (auditoria A-182, bloco 5): sem contrato nesse
+// mês não há remuneração ("A remuneração é paga até ao último dia útil do mês a que se reporta", Cl. 50.ª cabine; Art. 36.º
+// pilotos: os subsídios "proporcionalmente nos anos de contratação"). A regra "antes do 1.º vale o 1.º" fica só para o FTL.
+// Linha vazia → false (não se sabe).
+export const startsAfter = (history, ym) => {
+  const h = normCompany(history);
+  return h.length ? ymOf(ym) < h[0].from : false;
+};
 // Mês de entrada na companhia ATUAL (o início do último período). Linha vazia → '2000-01'.
 export const companyStartYm = (history) => {
   const h = normCompany(history);
