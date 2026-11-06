@@ -476,11 +476,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
 // mostrarem o MESMO número. `monthlyAe.total` já inclui base + abono (cabine, UMA vez)
 // + per-diem + pernoita + escritório/ADTY; somamos só os EXTRAS manuais do mês.
 // extras = mapa de contadores { <id>: n }. Devolve número (€), ou null sem ae/categoria.
-export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, history = null, events = [], lifestyle = false } = {}) => {
+export const aeMonthTotal = (duties = {}, category, contract = '12/12', ae, { ym = null, index = 1, extras = {}, fleet, fullShare, serviceStart = null, largada = null, history = null, events = [], lifestyle = false } = {}) => {
   if (!ae || !category) return null;
   if (ym && ae.hasTableFor && !ae.hasTableFor(category, ym)) return null;   // sem tabela nesse mês → sem €
-  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, history, events, lifestyle });
-  const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare, serviceStart, history }) || 0) : 0);
+  const m = monthlyAe(duties, category, contract, ae, { ym, index, fleet, fullShare, serviceStart, largada, history, events, lifestyle });
+  const baseTotal = m ? m.total : (ae.monthlyBase ? (ae.monthlyBase(category, { contract, index, ym, fullShare, serviceStart, largada, history }) || 0) : 0);
   const xt = ae.monthExtras ? ae.monthExtras(category, extras, { index, ym, contract, fullShare }) : null;
   return +(baseTotal + (xt ? xt.total : 0)).toFixed(2);
 };

@@ -28,7 +28,7 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const kind = route?.params?.kind;
   const ctx = useContext(AppContext);
   const { lang, ae, company, crewCategory, crewContract, crewFleet, crewHistory, postFlightMin, postFlightSource,
-    vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, base, bases, countries, lifestyle,
+    vacationDaysYear, vacationSource, employment, aeCovered, serviceStart, largada, base, bases, countries, lifestyle,
     instructorRated, lockEnabled, remindersOn, toggleReminders, setLang, baseHistory, companyHistory, homeBaseAt, companyAt } = ctx;
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const A = usePerfilActions();
@@ -41,7 +41,8 @@ export default function PerfilPaginaScreen({ route, navigation }) {
   const startYm = serviceStart ? String(serviceStart).slice(0, 7) : '';
   const [selCrew, setSelCrew] = useState(kind === 'contrato' ? (crewContract || '12/12') : kind === 'frota' ? (crewFleet || 'NB') : crewCategory);
   const [from, setFrom] = useState(currentYmNow());
-  const [ym, setYm] = useState(startYm);
+  const largadaYm = largada ? String(largada).slice(0, 7) : '';
+  const [ym, setYm] = useState(kind === 'largada' ? largadaYm : startYm);
   const [query, setQuery] = useState('');
   // Base e vínculo em dois passos (linha do tempo do contrato, esboço design/linha-do-tempo.html, aprovado):
   // a lista → "desde quando?" (mudei a partir de um mês · sempre foi assim).
@@ -131,6 +132,24 @@ export default function PerfilPaginaScreen({ route, navigation }) {
         footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === startYm} />}>
         <MonthYearWheel value={startYm || null} onChange={setYm} lang={lang} />
         <Text style={[P.foot, s.gap]}>{l('Roda ou toca no mês e no ano em que entraste.', 'Spin or tap the month and year you joined.')}</Text>
+      </Pagina>
+    );
+  }
+
+  // ── Largada (TAP) — a antiguidade de serviço conta-se do 1.º voo de largada (cabine Cl. 14.ª, n.º 3; pilotos "largada
+  // conjunta"): as anuidades e a senioridade vencem nos aniversários dela. A mesma página da antiguidade (roda + Guardar). ──
+  if (kind === 'largada') {
+    const beforeEntry = !!(startYm && /^\d{4}-\d{2}$/.test(ym) && ym < startYm);   // a largada não pode ser antes da entrada
+    const save = () => { A.saveLargada(ym === largadaYm ? largada : `${ym}-01`); goBack(); };
+    return (
+      <Pagina {...back}
+        title={l('Largada', 'Line release')}
+        lead={l('O acordo conta as anuidades e a senioridade a partir do teu primeiro voo de largada, não da entrada na companhia. Sem esta data, a app conta da entrada. Mês e ano chegam.', 'The agreement counts service-year pay from your first line release flight, not from joining. Without this date, the app counts from joining. Month and year are enough.')}
+        footer={<PrimaryButton label={l('Guardar', 'Save')} onPress={save} disabled={!/^\d{4}-\d{2}$/.test(ym) || ym === largadaYm || beforeEntry} />}>
+        <MonthYearWheel value={largadaYm || startYm || null} onChange={setYm} lang={lang} />
+        <Text style={[P.foot, s.gap]}>{beforeEntry
+          ? l('A largada não pode ser antes da entrada na companhia.', 'The release cannot be before you joined.')
+          : l('Roda ou toca no mês e no ano do teu primeiro voo de largada.', 'Spin or tap the month and year of your first line release flight.')}</Text>
       </Pagina>
     );
   }

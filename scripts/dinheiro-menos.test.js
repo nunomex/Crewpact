@@ -158,6 +158,14 @@ has('RTTP Cl. 7.ª (83,3 %)', TAPC, 'a) 10 meses por ano - 83,3 %');
   eq('TAP RTTP 10 meses: vencimento', tapC.monthlyBase('CAB3', { ym: '2026-02', contract: 'TP 10', serviceStart: '2026-01-01', history: H }), 1683.27);
   eq('TAP RTTP contratos', tapC.CONTRACTS, ['12/12', 'TP 10', 'TP 9', 'TP 8', 'TP 7', 'TP 6']);
   eq('TAP RTTP 6 meses: 21 dias de férias', tapC.vacationDays({ contract: 'TP 6' }), 21);
+  // Com a data da LARGADA (Cl. 14.ª, n.º 3: a antiguidade de serviço "contada a partir da data do primeiro voo de largada"):
+  // entrou em março de 2016, largada em julho de 2016 → em maio de 2026 a 10.ª anuidade ainda não venceu (vence em julho).
+  has('TAP cabine Cl. 14.ª/3 (largada)', TAPC, 'A antiguidade de serviço é contada a partir da data do primeiro voo de largada para a profissão');
+  const lg = { serviceStart: '2016-03-01', largada: '2016-07-01', history: H };
+  eq('TAP CAB3 mai-2026 com largada: 9 anuidades', [tapC.seniority('CAB3', { ym: '2026-05', ...lg }).anuidades, tapC.seniority('CAB3', { ym: '2026-05', ...lg }).fromEntry], [9, false]);
+  eq('TAP CAB3 mai-2026 com largada: chega aos Números', monthStats({}, { ym: '2026-05', ae: tapC, crewHistory: H, ...lg }).aeMonth.base, 2202.6);
+  const { payStatus } = R('data/today.js');
+  eq('TAP CAB3 mai-2026 com largada: chega ao "Quanto recebo?"', payStatus({ duties: {}, ae: tapC, crewCategory: 'CAB3', crewHistory: H, serviceStart: '2016-03-01', largada: '2016-07-01', now: new Date('2026-05-15T12:00:00') }).base, 2202.6);
   // Sem a data de entrada: VS desconhecido → o motor diz que falta (não inventa 0 em silêncio).
   eq('TAP sem data de entrada: VS desconhecido', tapC.seniority('CAB3', { ym: '2026-12' }).unknown, true);
 }

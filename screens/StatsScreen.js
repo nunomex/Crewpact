@@ -66,7 +66,7 @@ function MonthBar({ ratio, color, delay }) {
 // Estatísticas (PELE) — dial adaptativo no topo (Ganhos com AE · Segurança sem AE) + cards que
 // abrem folhas de detalhe. Re-skin: TODOS os cálculos (data/stats.js · ftl · AE) ficam intactos.
 export default function StatsScreen({ navigation }) {
-  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, lifestyle } = useContext(AppContext);
+  const { lang, duties, dayLog, ae: aeNow, aeAt, crewAt, companyHistory, companyAt, airlines, homeBaseAt, crewCategory, crewContract, crewFleet, postFlightMin, crewHistory, company, aeEvents, vacationDaysYear, user, isPilot, base, rosterLog, serviceStart, largada, lifestyle } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const tabSpace = useTabBarSpace();
@@ -124,9 +124,9 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, lifestyle })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, lifestyle }),
-    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, largada, lifestyle })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt, serviceStart, largada, lifestyle }),
+    [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, serviceStart, largada, lifestyle], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Saldo de férias do ANO (direito anual, Art. 238.º CT) — HONESTO: só dias efetivamente gozados
@@ -196,7 +196,7 @@ export default function StatsScreen({ navigation }) {
   const senTxt = (A.seniority && A.seniority.unknown) || (isYear && A.seniorityUnknown)
     ? l('Sem a data de entrada na companhia: a base fica sem as anuidades e a senioridade. Junta-a no Perfil.', 'No company start date: the base leaves out service-year pay. Add it in Profile.')
     : (A.seniority && A.seniority.fromEntry && (A.seniority.anuidades || A.seniority.anos))
-      ? l('Anuidades contadas desde a entrada na companhia; o acordo conta-as desde a largada — se foi depois, vencem mais tarde.', 'Service years counted from your company start; the agreement counts them from your first line release — if later, they fall due later.')
+      ? l('Anuidades contadas desde a entrada na companhia; o acordo conta-as desde a largada. Junta a data da largada no Perfil.', 'Service years counted from your company start; the agreement counts them from your first line release. Add your release date in Profile.')
       : null;
   const noTableTxt = (ae && !aeBlock) ? l('Sem valores do acordo para este período: a tabela publicada só começa depois, ou ainda não estavas na companhia.', 'No agreement values for this period: the published table starts later, or you had not joined yet.') : (isYear && A.noTable ? l('Há meses deste ano sem tabela do acordo: não entram na soma.', 'Some months this year have no agreement table: they are left out.') : null);
   const moneyOpts = [

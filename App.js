@@ -731,6 +731,8 @@ export default function App() {
           const crewCategory = resolved.crewCategory || localProfile?.crewCategory || user.crewCategory || null;
           const crewContract = resolved.crewContract || localProfile?.crewContract || user.crewContract || null;
           const serviceStart = resolved.serviceStart || localProfile?.serviceStart || user.serviceStart || null;
+          // TAP: a antiguidade de serviço conta-se da LARGADA (cabine Cl. 14.ª, n.º 3; pilotos "largada conjunta") — anuidades e senioridade.
+          const largada = resolved.largada || localProfile?.largada || user.largada || null;
           const base = resolved.base || localProfile?.base || user.base || null;
           // PPY como estilo de vida (Art. 66.9) → sem retenção. Metadata/cache (≠ tabela profiles).
           const lifestyle = resolved.lifestyle ?? localProfile?.lifestyle ?? user.lifestyle ?? false;
@@ -757,7 +759,7 @@ export default function App() {
           // suave: sem linha guardada → 1 período com o valor atual → todos os meses como antes.
           const companyHistory = migrateCompany({ companyHistory: resolved.companyHistory || localProfile?.companyHistory || user.companyHistory, company: resolved.company, crewType: resolved.crewType || 'cabin', employment, serviceStart });
           const baseHistory = migrateBase({ baseHistory: resolved.baseHistory || localProfile?.baseHistory || user.baseHistory, base, serviceStart });
-          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
+          setProfile({ company: resolved.company, crewType: resolved.crewType || 'cabin', crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, serviceStart, largada, base, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered });
           setOnboarded(true);
         } else {
           setOnboarded(false);
@@ -933,6 +935,7 @@ export default function App() {
   // Antiguidade: guardamos a DATA de início (metadata, estável) e derivamos os anos
   // completos de serviço — alimenta o prémio de permanência (AE piloto, Anexo I.9).
   const serviceStart = profile?.serviceStart || null;  // 'AAAA-MM-DD'
+  const largada = profile?.largada || null;            // 'AAAA-MM-DD' — TAP: anuidades e senioridade contam daqui (bloco 6)
   // LINHA DO TEMPO DO CONTRATO (2026-11-03): a companhia e a base também têm datas — três linhas
   // separadas (categoria/contrato · companhia+tipo · base). `base` = a base EM VIGOR hoje;
   // `homeBaseAt(dia|mês)` = a de outro mês (repouso 12 h/10 h, pernoitas, Auditoria).
@@ -1088,7 +1091,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, cabinGapMin, splitAdminMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, cabinGapMin, splitAdminMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, largada, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

@@ -281,7 +281,7 @@ export default function HomeScreen({ navigation }) {
   };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify, lifestyle } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, largada, rosterLog, notify, lifestyle } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -304,8 +304,8 @@ export default function HomeScreen({ navigation }) {
       over: r.status === 'excede', excess: r.value - r.limit };
   }, [duties, ae, base, isPilot, todayISO, crewFleet]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, crewHistory, serviceStart, largada, lifestyle, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')
@@ -794,10 +794,10 @@ export default function HomeScreen({ navigation }) {
   const monthAe = useMemo(() => {
     if (!ae || !crewCategory) return null;
     try {
-      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, lifestyle });
+      const st0 = monthStats(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, serviceStart, largada, lifestyle });
       return (st0 && st0.aeMonth) || null;
     } catch { return null; }
-  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, lifestyle]);
+  }, [duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, largada, lifestyle]);
   const monthMoney = monthAe ? monthAe.total : null;
   // 9/3 e sazonais sem as datas de atividade (Cl. 48.ª/80.ª): o mês é INCERTO — diz-se, com o intervalo da base (bloco 5).
   const monthUnc = monthAe && monthAe.baseRange ? monthAe.baseRange : null;
@@ -806,9 +806,9 @@ export default function HomeScreen({ navigation }) {
   const monthSplitNow = useMemo(() => {
     if (!ae || !crewCategory) return null;   // fecho (título) + o cartão do mês em todos os estados
     try {
-      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, lifestyle });
+      return monthSplit(duties, { ym: todayISO.slice(0, 7), ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, todayISO, serviceStart, largada, lifestyle });
     } catch { return null; }
-  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, lifestyle]);
+  }, [homeState, duties, ae, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents, todayISO, serviceStart, largada, lifestyle]);
   const dayOfMonth = new Date().getDate();
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const monthPct = Math.round((dayOfMonth / daysInMonth) * 100);

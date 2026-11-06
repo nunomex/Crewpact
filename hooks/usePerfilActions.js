@@ -89,6 +89,8 @@ export default function usePerfilActions() {
     }
     set({ serviceStart: val });
   };
+  // Data da largada (TAP: as anuidades e a senioridade contam dela — Cl. 14.ª, n.º 3) — 'AAAA-MM-DD' ou null.
+  const saveLargada = (val) => set({ largada: val || null });
 
   // Categoria/contrato EFFECTIVE-DATED: a mudança ACRESCENTA um período "a partir de" um mês →
   // os meses anteriores ficam congelados (a categoria escala o AE inteiro; não se reescreve o passado).
@@ -121,6 +123,6 @@ export default function usePerfilActions() {
   return {
     showLifestyle, showInstructor, showFleet, companyHasAe, hasVacExtra,
     saveInstructor, saveFleet, saveLifestyle, savePostFlight, saveVacDays, saveEmployment, saveAeCovered,
-    saveBase, saveServiceStart, applyCrew, toggleLock,
+    saveBase, saveServiceStart, saveLargada, applyCrew, toggleLock,
   };
 }

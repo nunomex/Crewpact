@@ -43,7 +43,7 @@ function Linha({ icon, label, value, valueColor, dot, onPress, last, danger }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded } = useContext(AppContext);
+  const { user, company, crewType, ae, caps, aeStatus, employment, aeCovered, duties, dayLog, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, crewHistory, companyHistory, baseHistory, serviceStart, largada, serviceYears, base, baseObj, bases, countries, lifestyle, instructorRated, aeExtras, aeEvents, setProfile, lang, setLang, lockEnabled, setLockEnabled, remindersOn, toggleReminders, logout, setUser, setOnboarded } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const tabSpace = useTabBarSpace();
   const perfilScrollRef = useRef(null);
@@ -175,6 +175,10 @@ export default function SettingsScreen({ navigation }) {
   const startTxt = serviceStart
     ? new Date(`${String(serviceStart).slice(0, 10)}T00:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' })
     : l('Por definir', 'Not set');
+  // TAP: a data da largada (anuidades e senioridade contam dela). Sem ela, a app conta da entrada e avisa.
+  const largadaTxt = largada
+    ? new Date(`${String(largada).slice(0, 10)}T00:00:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-PT', { month: 'long', year: 'numeric' })
+    : l('Por definir', 'Not set');
   const employmentTxt = { employee: l('Empresa', 'Employee'), agency: l('Agência', 'Agency'), independent: l('Independente', 'Independent') }[employment || 'employee'];
 
   // RGPD — exportar TODOS os meus dados num JSON (conta+perfil+escala+FTL+AE),
@@ -183,7 +187,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const json = dataExportJson({
         account: { email: user?.email, name: user?.name },
-        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, base, serviceStart, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered },
+        profile: { company: company?.slug || null, crewType, crewCategory, crewContract, crewFleet, crewHistory, companyHistory, baseHistory, base, serviceStart, largada, lifestyle, instructorRated, postFlightMin, vacationDaysYear, employment, aeCovered },
         duties, dayLog, aeExtras, aeEvents,
       });
       await Share.share({ message: json, title: 'CrewPact — ' + l('os meus dados', 'my data') });
@@ -265,6 +269,7 @@ export default function SettingsScreen({ navigation }) {
             {A.showFleet ? <Linha icon="plane" label={l('Frota', 'Fleet')} value={crewFleet || 'NB'} onPress={() => page('frota')} /> : null}
             {companyBases.length ? <Linha icon="pin" label={l('Base', 'Base')} value={base ? `${base} · ${baseCityName(base, baseObj?.city, lang)}` : l('Por definir', 'Not set')} onPress={() => page('base')} /> : null}
             {ae ? <Linha icon="cal" label={l('Na companhia desde', 'With the airline since')} value={startTxt} onPress={() => page('inicio')} /> : null}
+            {ae && typeof ae.seniority === 'function' ? <Linha icon="cal" label={l('Largada', 'Line release')} value={largadaTxt} dot={largada ? null : PELE.warn} onPress={() => page('largada')} /> : null}
             <Linha icon="sync" label={l('Mudar de companhia', 'Change airline')} value={company?.name || ''} onPress={() => { select(); setOnboarded(false); }} last />
           </View>
         </Animated.View>
