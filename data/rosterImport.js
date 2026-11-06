@@ -69,10 +69,10 @@ export const dutyFromActivity = (act, base = null) => {
 
 // Validação prospetiva: "posso aceitar esta duty?". Legalidade do PSV + se, ao incluí-la
 // no dia, os acumulados de 28 dias (210) passam o limite. dayLog = store FTL atual.
-export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null, { cabinGapMin, splitAdminMin } = {}) => {
+export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null, { cabinGapMin, splitAdminMin, duties = null } = {}) => {
   // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
   // `base` → repouso 12h/10h por localização real (ORO.FTL.235) e a fronteira rest/split.
-  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin }); // { psv, servico, voo, rest, parts } ou null
+  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin, duties }); // { psv, servico, voo, rest, parts } ou null
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída
@@ -87,7 +87,7 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
   // O mesmo cálculo do dayLog (ftlForDuty). Limite COMBINADO do standby (CS FTL.1.225): standby + PSV REAL > 16 h
   // (aeroporto) / > 18 h acordado (casa) / standby > 16 h → aviso separado do PSV-over.
-  const d = ftlForDuty(duty, { postFlightMin, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin });
+  const d = ftlForDuty(duty, { postFlightMin, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin, duties });
   if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
   if (ftl.psv && ftl.psv.sbOver) issues.push({ type: 'standby', kind: 'maxStandby' });   // standby em casa > 16 h (225(b)(1))
   const fatigue = d && d.isFdp ? fatigueFromDuty(d) : null;
@@ -147,7 +147,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     const prev = byDate.get(date);
     if (prev) {
       prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
-      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin });
+      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin, duties });
       prev.multi = (prev.duty.extra.length + 1);
       // Re-classifica o DIA COMPLETO (primária + extra) face ao guardado: um serviço a mais/menos
       // face ao guardado é uma mudança (o classify agora é multi-serviço). Novo dia → só legalidade.
@@ -157,7 +157,7 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     }
     const ex = duties[date];
     const exists = !!(ex && !ex.deleted);
-    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin });
+    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin, duties });
     // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
     let status = 'ok', diff = [];
     if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }

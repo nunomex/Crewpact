@@ -111,6 +111,14 @@ eq('205(d): sem saber o repouso antes → +4 h = 17:30 → curto com 16:00', pic
   '2026-11-11': { report_time: '12:30', block_on: '15:00' },
 }, T2, at(T2, '21:00'))), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 960, requiredMin: 1050 });
 
+// ORO.FTL.205(d)(2): entre dois PSV prolongados seguidos, os repousos adicionais pré e pós-voo são consecutivos →
+// +2 h (depois do 1.º) + 2 h (antes do 2.º) = +4 h. 07:00 → 20:30 (13:30 de serviço) duas vezes: 13:30 + 4:00 = 17:30.
+eq('205(d)(2): dois prolongamentos seguidos → +4 h', pick(restStatus({
+  '2026-11-09': { report_time: '06:00', block_on: '10:00' },
+  '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
+  '2026-11-11': { report_time: '14:00', block_on: '03:30', sectors: 1 },
+}, T2, at(T2, '21:00'))).requiredMin, 1050);
+
 // "A lei é que manda": falta um facto → o "Dentro dos limites?" diz incerto (nem "sim" nem "não"), com o que falta.
 {
   const lg = legalStatus({ psv: { result: '14:00', max: '13:00', maxHi: '14:45', uncertain: true, unknowns: ['accommodation'] } }, {});

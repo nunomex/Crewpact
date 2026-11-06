@@ -789,6 +789,46 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eqj('220(b): OM 30 min → 14:45', [spOm(30).psv.max, spOm(30).psv.exact], ['14:45', true]);
 }
 
+// ─────────── ORO.FTL.205(d): o prolongamento PLANEADO é legal quando cumpre as condições (auditoria A-256) ───────────
+// "Os prolongamentos devem ser planeados com antecedência" (205(d)(3)): a escala publicada (o `snap`) é esse plano.
+// Um PSV escalado acima do Quadro 2 que cabe na tabela da CS FTL.1.205(b), sem repouso a bordo nem repartido
+// (205(d)(4)), e no máximo 2 vezes em 7 dias (205(d)(1)) → DENTRO, com o prolongamento.
+{
+  const { dutyToFtlDay, reconcileDayLog, ftlForDuty } = ftl;
+  const ext = (o = {}) => ({ report_time: '07:00', block_on: '20:30', sectors: 1, flight_minutes: 600, ...o });
+  const snapOf = (x) => ({ report_time: x.report_time, block_on: x.block_on, sectors: x.sectors, kind: 'flight' });
+  const D = '2026-11-20';
+  const planned = ext(); planned.snap = snapOf(planned);
+  const ok = ftlForDuty(planned, { duties: { [D]: planned }, date: D });
+  eq('205(d): planeado na escala → dentro', ok.fdp.over, false);
+  eq('205(d): o máximo é o do prolongamento (14:00)', ok.fdp.maxFdpStr, '14:00');
+  eq('205(d): calços até às 21:00', ok.latestOnBlockStr, '21:00');
+  eq('205(d): é um prolongamento', ok.extUsed, true);
+  eq('205(d): repouso a seguir +2 h (15:30)', ok.rest.restStr, '15:30');
+  // Sem plano (posto à mão, sem snap nem a marca): acima do Quadro 2 → excede (não é prolongamento planeado).
+  eq('205(d): sem plano → excede', ftlForDuty(ext(), { duties: { [D]: ext() }, date: D }).fdp.over, true);
+  // A marca "prolongamento planeado" num serviço posto à mão.
+  const mk = ext({ special: { plannedExt: true } });
+  eq('205(d): marcado como planeado → dentro', ftlForDuty(mk, { duties: { [D]: mk }, date: D }).fdp.over, false);
+  // 3 prolongamentos em 7 dias: o 3.º excede (205(d)(1) "não mais do que duas vezes").
+  const tri = { '2026-11-16': planned, '2026-11-18': planned, [D]: planned };
+  eq('205(d)(1): o 3.º em 7 dias → excede', ftlForDuty(planned, { duties: tri, date: D }).fdp.over, true);
+  eq('205(d)(1): o 3.º em 7 dias → a razão', ftlForDuty(planned, { duties: tri, date: D }).extRefused, '2in7');
+  eq('205(d)(1): o 2.º em 7 dias → dentro', ftlForDuty(planned, { duties: tri, date: '2026-11-18' }).fdp.over, false);
+  eq('205(d)(1): 7 dias depois já não conta', ftlForDuty(planned, { duties: { '2026-11-13': planned, '2026-11-12': planned, [D]: planned }, date: D }).fdp.over, false);
+  // 205(d)(4): não se junta a repouso a bordo nem a repartido.
+  const withSplit = ext({ accommodation: 'basic', legs: [{ off: '07:30', on: '09:00' }, { off: '13:00', on: '20:30' }] }); withSplit.snap = snapOf(withSplit);
+  eq('205(d)(4): com repartido não é prolongamento', ftlForDuty(withSplit, { duties: { [D]: withSplit }, date: D, splitAdminMin: 30 }).extUsed, false);
+  // Acima da tabela do prolongamento (14:30 > 14:00) → excede.
+  const over = ext({ block_on: '21:30' }); over.snap = snapOf(over);
+  eq('205(d): acima do prolongamento → excede', ftlForDuty(over, { duties: { [D]: over }, date: D }).fdp.over, true);
+  // O dayLog resolve-o também (reconcileDayLog passa a escala).
+  eq('205(d): no dayLog → dentro', reconcileDayLog({ [D]: planned }, {})[D].psv.over, false);
+  eq('205(d): no dayLog → prolongado', reconcileDayLog({ [D]: planned }, {})[D].psv.extended, true);
+  // Sem a escala à volta (chamadas antigas) → não se resolve: continua acima do Quadro 2.
+  eq('205(d): sem a escala → excede (como antes)', dutyToFtlDay(planned).psv.over, true);
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).

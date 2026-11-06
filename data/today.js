@@ -19,7 +19,7 @@ const worstByRatio = (windows) =>
 export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
   const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)];
   const psv = ftlSnap?.psv || null;
-  const psvData = psv ? { result: psv.result, max: psv.max, maxHi: psv.maxHi || null, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
+  const psvData = psv ? { result: psv.result, max: psv.max, maxHi: psv.maxHi || null, extended: !!psv.extended && !psv.over, extRefused: psv.extRefused || null, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
   if (psv && psv.over) return { id: 'legal', status: 'bad', kind: 'psvOver', excess: psv.excess ?? null, psv: psvData, windows };
   // "A lei é que manda": falta um facto de que a lei precisa e o PSV fica entre o garantido e o possível → incerto.
   if (psv && psv.uncertain) return { id: 'legal', status: 'warn', kind: 'psvUncertain', unknowns: psv.unknowns || [], psv: psvData, windows };
@@ -107,6 +107,8 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
     const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +pp.start) / 60000), pp.ra.floorMin) : null;
     const preRest = pp && pp.end ? Math.round((+prev.start - +pp.end) / 60000) : null;
     extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
+    // 205(d)(2): o seguinte também é prolongado → os +2 h depois deste e os +2 h antes dele somam-se (consecutivos).
+    if (next.ra && next.ra.extended) extOption = 'consecutive';
     requiredMin += extOption === 'i' ? 120 : 240;
   }
   return {

@@ -155,6 +155,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // airport" (225(d)) e o PSV conta desde o report. Um só estado, dois artigos.
   const [accOn, setAccOn] = useState(false);
   const [discOn, setDiscOn] = useState(false);      // discrição do comandante USADA (ORO.FTL.205(f)) — só voo
+  const [extOn, setExtOn] = useState(false);        // prolongamento PLANEADO pela companhia (ORO.FTL.205(d)) — serviços à mão
   // Semeia os toggles a partir do `special` guardado (edição / troca de dia).
   const syncSpecial = (sp) => {
     sp = sp || {};
@@ -166,6 +167,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
     setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
     setDiscOn(!!sp.discretion);
+    setExtOn(!!sp.plannedExt);
     setAdvOpen(!!(sp.augmented || sp.delayedFrom != null || sp.preStandby || sp.discretion));
   };
 
@@ -209,7 +211,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, extOn, legInput]);
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
   // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
@@ -398,8 +400,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const del = (delOn && isClock(delFrom)) ? delFrom : null;
     const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
     const fcReport = (!isPilot && isClock(fcRep)) ? fcRep : null;
-    return (aug || del || sb || discOn || fcReport) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null, fcReport } : null;
-  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, discOn]);
+    return (aug || del || sb || discOn || fcReport || extOn) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null, fcReport, plannedExt: extOn || null } : null;
+  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, discOn, extOn]);
 
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
@@ -410,7 +412,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
       legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
-    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin, splitAdminMin });   // + base → 12h/10h por localização real (235) + 205(c)
+    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin, splitAdminMin, duties });   // + base → 12h/10h por localização real (235) + 205(c)
   }, [isFlight, form, dayLog, postFlightMin, isPilot, special, accOn, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
@@ -913,6 +915,19 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                       ? l('Sem alojamento, a pausa em terra não estende o PSV (CS FTL.1.220(e)(1)). Um café, a sala da porta ou o avião não contam.', 'Without accommodation the ground break does not extend the FDP (CS FTL.1.220(e)(1)). A café, the gate lounge or the aircraft do not count.')
                       : l('Por responder. Com uma pausa em terra de 3 h ou mais, a lei depende disto: sem resposta, a app dá o mínimo garantido e, perto do limite, "incerto".', 'Not answered. With a ground break of 3 h or more, the law depends on this: without an answer the app gives the guaranteed minimum and, near the limit, "uncertain".')}</Text>
               </View>
+              <View style={[s.advRow, s.advDivider]}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={s.advTit}>{l('Prolongamento planeado pela companhia', 'Extension planned by the company')}</Text>
+                  <Text style={s.advSub}>ORO.FTL.205(d)</Text>
+                </View>
+                <Switch value={extOn} onValueChange={(v) => { select(); setExtOn(v); }}
+                  trackColor={{ true: C.ink, false: C.line }} thumbColor={PELE.paper} ios_backgroundColor={C.line} />
+              </View>
+              {extOn ? (
+                <View style={s.advInset}>
+                  <Text style={s.advHint}>{l('Só se a escala já trazia este PSV acima do máximo normal (planeado com antecedência, 205(d)(3)). Vale até ao máximo da tabela de prolongamento, no máximo 2 vezes em 7 dias, e o repouso a seguir sobe 2 h (ou 4 h). Os serviços importados da escala já o sabem sozinhos.', 'Only if the roster already had this FDP above the normal max (planned in advance, 205(d)(3)). Valid up to the extension table, at most twice in 7 days, and the next rest goes up by 2 h (or 4 h). Imported duties already know it.')}</Text>
+                </View>
+              ) : null}
               <View style={[s.advRow, s.advDivider]}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={s.advTit}>{l('Discrição do comandante usada', "Commander's discretion used")}</Text>

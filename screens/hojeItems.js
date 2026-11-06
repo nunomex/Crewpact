@@ -68,8 +68,11 @@ export function buildTodayItems(ctx, lang) {
         'The TAP agreement counts flight duty to 30 min after on-blocks. See the duty detail and confirm with the company.');
     } else if (legal.kind === 'psvOver') {
       answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${legal.excess})` : '');
-      suggestion = l('Reduzir o serviço ou, se aplicável, recorrer a prolongamento (máx 2 em 7 dias). Confirma sempre com a companhia.',
-        'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
+      suggestion = (legal.psv && legal.psv.extRefused === '2in7')
+        ? l('Seria o 3.º prolongamento em 7 dias: o ORO.FTL.205(d)(1) só permite 2. Confirma com a companhia.',
+          'It would be the 3rd extension in 7 days: ORO.FTL.205(d)(1) allows only 2. Confirm with the company.')
+        : l('Reduzir o serviço ou, se aplicável, recorrer a prolongamento (máx 2 em 7 dias). Confirma sempre com a companhia.',
+          'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
     } else if (legal.kind === 'psvUncertain') {
       answer = l('Incerto — depende de um dado que falta', 'Uncertain — it depends on a missing fact')
         + (legal.psv && legal.psv.max && legal.psv.maxHi ? ` · PSV ${legal.psv.result} (${legal.psv.max}–${legal.psv.maxHi})` : '');
@@ -89,7 +92,9 @@ export function buildTodayItems(ctx, lang) {
       // A hora-limite de calços primeiro (é como o tripulante pensa: "tenho até às 19:00").
       const lat = legal.psv && legal.psv.latest
         ? ` · ${l('calços até às', 'on-blocks by')} ${legal.psv.latest}${legal.psv.latestNextDay ? ` (+1)` : ''}${legal.psv.source === 'AE' ? l(' (acordo)', ' (agreement)') : ''}` : '';
-      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : ''));
+      answer = l('Sim, dentro dos limites', 'Yes, within limits') + (lat || (legal.psv && legal.psv.result ? ` · PSV ${legal.psv.result}/${legal.psv.max}` : ''))
+        + (legal.psv && legal.psv.extended ? l(' · com prolongamento (ORO.FTL.205(d))', ' · with extension (ORO.FTL.205(d))') : '');
+      if (legal.psv && legal.psv.extended) suggestion = l('Prolongamento planeado: o repouso a seguir sobe 2 h (ou 4 h, se o de antes não teve as 2 h a mais).', 'Planned extension: the next rest goes up by 2 h (or 4 h, if the one before did not have the extra 2 h).');
     }
     // Nunca "legal/ilegal": a app estima, nunca declara legalidade (termos §3; o esquema da companhia prevalece).
     items.push({ id: 'legal', q: l('Dentro dos limites?', 'Within limits?'), status: legal.status, answer, suggestion, raw: legal });

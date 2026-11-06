@@ -83,7 +83,7 @@ export const buildRecordModel = ({
     return m >= 0 ? hm(m) : '—';
   };
   const svcRow = (date, d, idx, nSvc) => {
-    const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin, splitAdminMin }) : null;
+    const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin, splitAdminMin, duties: allDuties || duties }) : null;
     const fdpOk = !!(r && r.isFdp && d.block_on);
     const over = fdpOk && !!(r.discretion ? r.discretion.over : r.fdp.over);
     const uncertain = fdpOk && !over && !!(r.discretion ? r.discretion.uncertain : r.fdp.uncertain);

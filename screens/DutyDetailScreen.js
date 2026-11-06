@@ -109,7 +109,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   // base/fora pela localização real e a tripulação DESSE dia. `pf` (acima) fica para a linha do débrief.
   // ORO.FTL.205(c): a cabine (dessa data) leva a apresentação dos pilotos — do serviço, ou desconhecida.
   const gapD = isPilotD ? undefined : (ctxAll.cabinGapMin !== undefined ? ctxAll.cabinGapMin : null);
-  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
+  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin, duties });
   const fat = (d && hasEnd && d.isFdp) ? fatigueFromDuty(d) : null;
   // Não é PSV (standby em casa, formação, escritório, standby de aeroporto com alojamento) → nunca "excede" o Quadro 2.
   const over = !(d && d.isFdp) ? false : !!(d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
@@ -362,6 +362,9 @@ export default function DutyDetailScreen({ route, navigation }) {
                   : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
                 color: d.discretion.over ? PELE.red : PELE.warn },
               (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
+              // ORO.FTL.205(d): prolongamento planeado e dentro das condições; ou recusado (3.º em 7 dias / sem plano).
+              (!sbAccD && d.extUsed && !over) && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('planeado · repouso a seguir +2 h (ou +4 h)', 'planned · next rest +2 h (or +4 h)') },
+              (!sbAccD && over && d.extRefused === '2in7') && { k: l('Prolongamento (205(d))', 'Extension (205(d))'), v: l('3.º em 7 dias — o limite é 2', '3rd in 7 days — the limit is 2'), color: PELE.red },
               // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
               (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },

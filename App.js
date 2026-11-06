@@ -403,10 +403,11 @@ export default function App() {
       report_time: fields.report_time, block_off: fields.block_off, block_on: fields.block_on,
       sectors: fields.sectors, flight_minutes: fields.flight_minutes, kind: fields.kind, signOff: fields.signOff, special: fields.special,
       legs: fields.legs, route: fields.route, accommodation: fields.accommodation,   // split (legs) + base/fora (rota) + alojamento (220 d/e)
+      snap: ('snap' in fields) ? fields.snap : (dutiesRef.current?.[date]?.snap || null),   // a escala publicada: o plano do 205(d)
     };
     const effExtra = ('extra' in fields) ? fields.extra : (dutiesRef.current?.[date]?.extra || null);
     const entry = dayFtlFromDuties([primary, ...((effExtra && effExtra.length) ? effExtra : [])],
-      { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin, splitAdminMin });   // pós-voo EFETIVO (user>OM>assumido) + base DESSE dia p/ 12h/10h (235) + data (fusos) + 205(c)
+      { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin, splitAdminMin, duties: dutiesRef.current || {} });   // pós-voo EFETIVO (user>OM>assumido) + base DESSE dia p/ 12h/10h (235) + data (fusos) + 205(c)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -429,10 +430,10 @@ export default function App() {
     role: f.role || null, dayOffWorked: f.dayOffWorked || null, officeType: f.officeType || null, eLearning: !!f.eLearning, source,
   });
   // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).
-  const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
+  const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation, snap: cur.snap || null });
   // Recalcula o FTL do dia (primária + extra) e grava no dayLog.
   const recomputeDay = (date, cur, extra) => {
-    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin, splitAdminMin });
+    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin, splitAdminMin, duties: dutiesRef.current || {} });
     setDayLog(prev => (entry ? { ...prev, [date]: entry } : prev));
   };
   // Adicionar um SERVIÇO ao dia (2.º+ período) — a EASA conta por SERVIÇO, não por dia (210).

@@ -29,7 +29,7 @@ import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime } from './validators/validateLimits';
 import { entryMin } from './calculators/cumulativeCalculator';
-import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN } from './rules/fdpRules';
+import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN, SPLIT_MIN_BREAK_H } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
@@ -365,15 +365,63 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     splitAdminMin: ctx.splitAdminMin,   // CS 220(b): o tempo do OM — null = desconhecido (App), undefined = 30
   };
   let d = computeDuty(args);
-  // Prolongamento PLANEADO (ORO.FTL.205(d)): o PSV excede o básico mas cabe no prolongado, numa faixa que o permite.
-  // Da escala não se distingue planeado de excesso; marca-se quando CABE no prolongamento (conta para os "2 em 7 dias")
-  // e o repouso a seguir sobe 2 h (205(d)(1)(i)). Não conta com discrição declarada nem fora de um PSV.
-  const repMin = parseHhmm(duty.report_time);
-  const extFdp = repMin != null ? computeFdp({ state, reportMin: repMin, sectors: duty.sectors || 0, extended: true }) : null;
-  const extUsed = isFdp && !sp.discretion && !!d.fdp.over && !!extFdp && !extFdp.notAllowed
-    && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
-  if (extUsed) d = computeDuty({ ...args, restExtended: true });
-  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, tzDiffH };
+  // Prolongamento sem repouso a bordo (ORO.FTL.205(d), auditoria A-256): o PSV excede o Quadro 2 mas cabe na tabela da
+  // CS FTL.1.205(b) (hora, setores e o teto de setores pelo WOCL de 205(d)(3)), sem repouso a bordo nem repartido
+  // (205(d)(4)) e sem discrição declarada. É LEGAL quando foi PLANEADO com antecedência (205(d)(3) — a escala publicada,
+  // o `snap`, ou a marca `special.plannedExt`) e não passa de 2 em 7 dias (205(d)(1)). Para o decidir é preciso a
+  // escala à volta (`ctx.duties` + `ctx.date`); sem ela (chamadas antigas) fica como antes: acima do máximo.
+  const ef = extFitOf(duty, d, { state, isFdp, sp, der });
+  let extUsed = false, extRefused = null;
+  if (ef.fits) {
+    if (ctx.duties && ctx.date) {
+      if (!extPlannedOf(duty, state)) extRefused = 'notPlanned';
+      else if (1 + extCountBefore(ctx.duties, ctx.date, state) > EXT_MAX_PER_7D) { extUsed = true; extRefused = '2in7'; }
+      else { extUsed = true; d = computeDuty({ ...args, extended: true }); }   // legal: o máximo é o do prolongamento
+    } else extUsed = true;   // sem a escala: marca-se (conta para os 2 em 7 dias) e o repouso sobe; o veredicto não muda
+    // Planeado mas recusado, ou sem a escala para decidir: o máximo fica o do Quadro 2 e o repouso a seguir sobe na mesma.
+    if (extUsed && (extRefused !== null || !(ctx.duties && ctx.date))) d = computeDuty({ ...args, restExtended: true });
+  }
+  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH };
+};
+
+// O PSV cabe no prolongamento (ORO.FTL.205(d) + CS FTL.1.205(b))? Só com o máximo exato, acima do Quadro 2.
+const extFitOf = (duty, d, { state, isFdp, sp, der }) => {
+  if (!isFdp || sp.discretion || sp.augmented || !d.fdp.exact || !d.fdp.over) return { fits: false };
+  if ((duty.splitBreakH || der.splitBreakH || 0) >= SPLIT_MIN_BREAK_H) return { fits: false };   // 205(d)(4)
+  const rep = parseHhmm(duty.report_time), end = parseHhmm(duty.block_on);
+  if (rep == null || end == null) return { fits: false };
+  const e = computeFdp({ state, reportMin: rep, endMin: end, sectors: duty.sectors || 0, extended: true });
+  return { fits: !e.notAllowed && e.maxFdpMin != null && d.fdp.actualFdpMin <= e.maxFdpMin, maxMin: e.maxFdpMin };
+};
+// Planeado com antecedência (205(d)(3)): a escala PUBLICADA (snap) já trazia um PSV acima do Quadro 2 dentro do
+// prolongamento, ou o tripulante marcou-o (serviços postos à mão).
+const extPlannedOf = (duty, state = 'acc') => {
+  if (duty.special && duty.special.plannedExt) return true;
+  const s = duty.snap;
+  if (!s || !s.report_time || !s.block_on) return false;
+  const rep = parseHhmm(s.report_time), end = parseHhmm(s.block_on);
+  if (rep == null || end == null) return false;
+  const b = computeFdp({ state, reportMin: rep, endMin: end, sectors: s.sectors || duty.sectors || 0 });
+  const e = computeFdp({ state, reportMin: rep, endMin: end, sectors: s.sectors || duty.sectors || 0, extended: true });
+  return !!b.over && !e.notAllowed && e.maxFdpMin != null && b.actualFdpMin <= e.maxFdpMin;
+};
+// Quantos prolongamentos planeados nos 6 dias ANTES de `date` (o próprio serviço conta-se à parte: pode ser o simulado).
+// O 3.º numa janela de 7 dias é o que passa o limite ("não mais do que duas vezes em cada período de 7 dias
+// consecutivos"): qualquer janela com 3 contém o mais recente e os outros dois nos 6 dias antes dele.
+const EXT_MAX_PER_7D = 2;
+const extCountBefore = (duties, date, state = 'acc') => {
+  const [y, m, dd] = String(date).split('-').map(Number);
+  let n = 0;
+  for (let k = 1; k <= 6; k++) {
+    const t = new Date(y, m - 1, dd - k, 12);
+    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    const x = duties[iso];
+    if (!x || x.deleted || !x.report_time || !x.block_on) continue;
+    const dx = computeDuty({ state, report: x.report_time, end: x.block_on, sectors: x.sectors || 0 });
+    const derx = splitFromLegs(x.legs);
+    if (extFitOf(x, dx, { state, isFdp: isFdpDuty(x), sp: x.special || {}, der: derx }).fits && extPlannedOf(x, state)) n++;
+  }
+  return n;
 };
 
 // Entrada do dayLog de um serviço SEM hora de report (ver dutyToFtlDay). null se não houver nada para contar.
@@ -395,7 +443,7 @@ const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
   };
 };
 
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin, splitAdminMin } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin, splitAdminMin, duties = null } = {}) => {
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
@@ -404,7 +452,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // fica por calcular (auditoria A-161: o dia inteiro, voo incluído, saía dos 210).
   if (!duty.report_time) return noReportEntry(duty, { postFlightMin });
   if (!duty.block_on) return null;
-  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin, splitAdminMin });
+  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin, splitAdminMin, duties });
   inBase = d.inBase;
   const sp = duty.special || {};
   if (d.fdp.actualFdpMin == null) return null;
@@ -468,7 +516,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       latest: sbAcc ? null : d.latestOnBlockStr, latestNextDay: sbAcc ? false : d.latestOnBlockNextDay,
       over: sbAcc ? false : (disc205 ? disc205.over : d.fdp.over),
       excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
-      extended: usedExtension, ts: Date.now(),
+      extended: usedExtension, extRefused: d.extRefused || undefined, ts: Date.now(),
       disc205f: disc205 ? { used: disc205.used, over: disc205.over, maxStr: disc205.maxStr, extStr: disc205.extStr } : undefined,
       standby: sbAcc || undefined,
     },
@@ -655,10 +703,23 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
 // Assinatura (hash curto) de tudo o que decide a entrada derivada de um dia: a versão do motor, o contexto (pós-voo,
 // tripulação, base desse dia) e os campos dos serviços. Muda qualquer um → a entrada recalcula-se (auditoria A-174).
 const djb2 = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; return h.toString(36); };
-const DUTY_SIG_FIELDS = ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'kind', 'signOff', 'special', 'legs', 'route', 'accommodation', 'splitBreakH', 'splitBreakStart'];
+const DUTY_SIG_FIELDS = ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'kind', 'signOff', 'special', 'legs', 'route', 'accommodation', 'splitBreakH', 'splitBreakStart', 'snap'];
 const pickSig = (s) => (s ? DUTY_SIG_FIELDS.map((k) => (s[k] === undefined ? null : s[k])) : null);
 export const dayLogSig = (d, { postFlightMin = 0, isPilot = false, base = null, cabinGapMin, splitAdminMin } = {}) =>
   djb2(JSON.stringify([ENGINE_VERSION, postFlightMin || 0, !!isPilot, base || null, cabinGapMin === undefined ? 'na' : cabinGapMin, splitAdminMin === undefined ? 'na' : splitAdminMin, pickSig(d), (d && Array.isArray(d.extra)) ? d.extra.map(pickSig) : null]));
+
+// Assinatura dos 6 dias antes de `date` (para os prolongamentos: "não mais do que duas vezes em 7 dias").
+const nbrSig = (duties, date) => {
+  const [y, m, dd] = String(date).split('-').map(Number);
+  const parts = [];
+  for (let k = 1; k <= 6; k++) {
+    const t = new Date(y, m - 1, dd - k, 12);
+    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    const x = duties[iso];
+    parts.push(x && !x.deleted ? [pickSig(x), x.snap || null] : null);
+  }
+  return djb2(JSON.stringify(parts));
+};
 
 // Mantém as entradas FTL DERIVADAS (src:'duty') do `dayLog` em dia com as duties (escala):
 //  • preenche os dias em FALTA (dispositivo novo / após reinstalar: as duties vêm do servidor, o dayLog é local);
@@ -679,16 +740,18 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     if (cur && cur.src !== 'duty') continue;          // manual → nunca se toca
     const baseD = typeof baseAt === 'function' ? baseAt(date) : base;
     const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin, splitAdminMin });
-    if (cur && cur.sig === sig) continue;              // já em dia
+    // Um prolongamento (205(d)) depende também dos 6 dias antes (os "2 em 7 dias"): recalcula se eles mudarem.
+    if (cur && cur.sig === sig && (cur.nsig === undefined || cur.nsig === nbrSig(duties, date))) continue;   // já em dia
     // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
     const primary = {
       report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
       legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
+      snap: d.snap || null,                                           // a escala publicada: o plano do 205(d)
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin });
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin, duties });
     if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
-    put(date, { ...entry, sig });
+    put(date, { ...entry, sig, ...(entry.psv && entry.psv.extended ? { nsig: nbrSig(duties, date) } : {}) });
   }
   return next;
 };
