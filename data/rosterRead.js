@@ -21,7 +21,7 @@ export const importWindow = () => {
 // Candidatos do import + férias e doença detetadas (só os dias que ainda não têm evento).
 // { ok:false } = sem permissão ou calendário inexistente.
 // `baseAt(dia)` = a base em vigor nesse dia (linha do tempo do contrato) — a leitura vai 12 meses atrás.
-export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [] }) {
+export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [], isPilot = false, cabinGapMin }) {
   const { start, end, fwdStart } = importWindow();
   const [fl, nf] = await Promise.all([
     getDutiesInRange(start, end, companySlug, calendarId),
@@ -29,7 +29,7 @@ export async function readCalendarRoster({ companySlug, calendarId, duties = {},
   ]);
   if (!fl.ok && !nf.ok) return { ok: false, cands: [], vacDates: [], sickDates: [] };
   const window = { start: isoDay(fwdStart), end: isoDay(end) };
-  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt });
+  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin });
   const has = (type, d) => (aeEvents || []).some((e) => e && e.type === type && e.date === d);
   return {
     ok: true,

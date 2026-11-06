@@ -727,6 +727,59 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('A-174: manual nunca é tocada', reconcileDayLog(dOne, { [iso(10)]: { src: 'manual', servico: 3 } })[iso(10)].servico, 3);
 }
 
+// ─────────── "A lei é que manda" (2026-11-06): sem um facto de que a lei precisa → INTERVALO, nunca um valor inventado ───────────
+// O motor devolve o máximo GARANTIDO (maxFdpMin, o que a lei dá em qualquer caso) e o máximo POSSÍVEL (maxHiMin).
+// Dentro do garantido → dentro; acima do possível → excede; no meio → INCERTO (falta o facto).
+{
+  const { dayFtlFromDuties } = ftl;
+  const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
+  // ORO.FTL.205(e)/CS 205(c): a cabine com repouso a bordo sem os pilotos extra, a classe deles e o seu repouso.
+  // Garantido: +1 piloto, classe 3, 1:30 → 14:00. Possível: +2 pilotos, classe 1, repouso que chega → 17:00 (classe 2 da cabine: até 17:00).
+  const cabNo = (end) => computeDuty({ state: 'acc', report: '06:00', end, sectors: 2, augmented: { restClass: 'c2' }, isPilot: false });
+  eq('Cabine sem dados: garantido 14:00', cabNo('20:00').fdp.maxFdpStr, '14:00');
+  eq('Cabine sem dados: possível 17:00', cabNo('20:00').fdp.maxHiStr, '17:00');
+  eq('Cabine sem dados: não é exato', cabNo('20:00').fdp.exact, false);
+  eqj('Cabine sem dados: 14:00 → dentro', [cabNo('20:00').fdp.over, cabNo('20:00').fdp.uncertain], [false, false]);
+  eqj('Cabine sem dados: 15:00 → incerto', [cabNo('21:00').fdp.over, cabNo('21:00').fdp.uncertain], [false, true]);
+  eqj('Cabine sem dados: 17:30 → excede 0:30 (acima do possível)', [cabNo('23:30').fdp.over, cabNo('23:30').fdp.excessStr], [true, '00:30']);
+  eqj('Cabine sem dados: o que falta', cabNo('21:00').fdp.unknowns, ['augmented']);
+  // Com os dados todos → exato (o caso A-146).
+  eq('Cabine com dados: exato', computeDuty({ state: 'acc', report: '10:00', end: '02:00', sectors: 1, augmented: { restClass: 'c1', additionalCrew: 1, fcRestClass: 'c2', cabinRestMin: 240 }, longestSectorMin: M('9:40') }).fdp.exact, true);
+  // CS 205(c)(4) com o setor desconhecido (null): garantido sem a hora a mais, possível com ela.
+  const pUnk = computeDuty({ state: 'acc', report: '06:00', end: '22:30', sectors: 1, augmented: { restClass: 'c1', additionalCrew: 1 }, isPilot: true, longestSectorMin: null });
+  eqj('Piloto, setor desconhecido: 16:00 a 17:00', [pUnk.fdp.maxFdpStr, pUnk.fdp.maxHiStr], ['16:00', '17:00']);
+  eq('Piloto, setor desconhecido: 16:30 → incerto', pUnk.fdp.uncertain, true);
+
+  // ORO.FTL.205(c): o PSV máximo da cabine baseia-se na hora de apresentação DOS PILOTOS, e pode subir pela diferença
+  // (até 1 h); o PSV conta desde a apresentação da cabine (auditoria A-156/A-178).
+  const cab = (report, end, gap) => computeDuty({ state: 'acc', report, end, sectors: 2, isPilot: false, cabinReportGapMin: gap });
+  eq('205(c): cabine 06:45, pilotos 07:00 → 13:00 + 0:15 = 13:15', cab('06:45', '19:00', 15).fdp.maxFdpStr, '13:15');
+  eq('205(c): cabine 13:25, pilotos 13:35 → 12:45 + 0:10 = 12:55', cab('13:25', '01:00', 10).fdp.maxFdpStr, '12:55');
+  eq('205(c): calços até às 02:20', cab('13:25', '01:00', 10).latestOnBlockStr, '02:20');
+  eq('205(c): pilotos 1:30 depois → faixa das 09:30 (13:00) + 1 h no máximo = 14:00', cab('08:00', '20:00', 90).fdp.maxFdpStr, '14:00');
+  eq('205(c): mesma hora → Quadro 2', cab('08:00', '20:00', 0).fdp.maxFdpStr, '13:00');
+  // Sem a hora dos pilotos (null): os pilotos podem ter-se apresentado até 1 h depois → intervalo.
+  // 08:00: garantido 13:00 (mesma hora), possível 14:00 (1 h depois). 13:30 de PSV → incerto (a app dizia "excede").
+  eqj('205(c) sem hora dos pilotos, 08:00: 13:00 a 14:00', [cab('08:00', '21:30', null).fdp.maxFdpStr, cab('08:00', '21:30', null).fdp.maxHiStr], ['13:00', '14:00']);
+  eq('205(c) sem hora dos pilotos, 08:00: 13:30 → incerto', cab('08:00', '21:30', null).fdp.uncertain, true);
+  eqj('205(c) sem hora dos pilotos, 08:00: 12:30 → dentro', [cab('08:00', '20:30', null).fdp.over, cab('08:00', '20:30', null).fdp.uncertain], [false, false]);
+  // 13:25: com os pilotos às 13:30 a lei dá 12:45 + 0:05 = 12:50 → o garantido é 12:50, não as 13:00 da hora da cabine.
+  eq('205(c) sem hora dos pilotos, 13:25: garantido 12:50', cab('13:25', '01:00', null).fdp.maxFdpStr, '12:50');
+  eq('205(c) sem hora dos pilotos, 13:25: possível 13:30', cab('13:25', '01:00', null).fdp.maxHiStr, '13:30');
+  // Os pilotos (isPilot) e as calculadoras (sem o parâmetro) não mudam.
+  eq('Piloto: a sua própria hora', computeDuty({ state: 'acc', report: '13:25', end: '01:00', sectors: 2, isPilot: true }).fdp.exact, true);
+
+  // CS FTL.1.220(e)(1): o alojamento na pausa decide a extensão. Sem resposta ('unknown') → intervalo.
+  // 06:00, 2 setores, pausa 08:00 → 12:00 (4 h, 3:30 líquidas): sem alojamento 13:00; com quarto 13:00 + 1:45 = 14:45.
+  const legs = [{ off: '06:00', on: '08:00' }, { off: '12:00', on: '20:00' }];
+  const sp = (acc) => dayFtlFromDuties([{ report_time: '06:00', block_on: '20:00', sectors: 2, legs, accommodation: acc }]);
+  eqj('220: alojamento por responder → 13:00 a 14:45', [sp(undefined).psv.max, sp(undefined).psv.maxHi], ['13:00', '14:45']);
+  eqj('220: por responder, 14:00 → incerto (não "excede")', [sp(undefined).psv.over, sp(undefined).psv.uncertain], [false, true]);
+  eqj('220: sem alojamento dito ("none") → excede 1:00', [sp('none').psv.over, sp('none').psv.excess], [true, '01:00']);
+  eqj('220: com alojamento → exato 14:45, dentro', [sp('basic').psv.max, sp('basic').psv.over, !!sp('basic').psv.uncertain], ['14:45', false, false]);
+  eq('220: registo antigo (false) = por responder', sp(false).psv.uncertain, true);
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).
@@ -896,7 +949,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Split ilegal: excede → over', splitBad.psv.over, true);
   eq('Split ilegal: excesso +01:00', splitBad.psv.excess, '01:00');
   eq('Split ilegal: serviço (210) conta a pausa → 17h', splitBad.servico, 17);
-  eq('Split sem alojamento: máx 13:00, excede 4:00', dayFtlFromDuties(splitPair(false)).psv.excess, '04:00');
+  eq('Split sem alojamento (dito): máx 13:00, excede 4:00', dayFtlFromDuties(splitPair('none')).psv.excess, '04:00');
   eq('Split ilegal: voo = 5h (a pausa não é voo)', splitBad.voo, 5);
   eq('Split ilegal: flag split exposto', splitBad.split, true);
   // Split que CABE: 2 serviços curtos com pausa de 3h30 → FDP combinado 09:00→14:30 = 5h30 << máx → legal.
@@ -927,7 +980,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const legDay = dayFtlFromDuties([legDuty]);
   eq('Split das legs: máx estende para 14:45', legDay.psv.max, '14:45');
   eq('Split das legs: 14:00 ≤ 14:45 → LEGAL', legDay.psv.over, false);
-  eq('Split das legs sem alojamento: 13:00 → excede', dayFtlFromDuties([{ ...legDuty, accommodation: false }]).psv.over, true);
+  eq('Split das legs sem alojamento (dito): 13:00 → excede', dayFtlFromDuties([{ ...legDuty, accommodation: 'none' }]).psv.over, true);
   // A MESMA duty SEM legs (sem info da pausa) → falso-ilegal 14:00 > 13:00 → prova que a derivação é o que salva.
   eq('Sem legs → falso-ilegal (14:00 > 13:00)', dayFtlFromDuties([{ report_time: '06:00', block_on: '20:00', sectors: 2 }]).psv.over, true);
   // Turnaround CURTO (<3h): pausa 2h (08:00→10:00) → NÃO é split, sem extensão (máx = base).
@@ -958,7 +1011,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   ];
   eq('Split 8h alojamento não adequado: máx 16:00', dayFtlFromDuties(mk('basic'), {}).psv.max, '16:00');
   eq('Split 8h alojamento não adequado: 16:30 > 16:00 → over', dayFtlFromDuties(mk('basic'), {}).psv.over, true);
-  eq('Split 8h SEM alojamento: sem extensão (13:00)', dayFtlFromDuties(mk(false), {}).psv.max, '13:00');
+  eq('Split 8h SEM alojamento (dito): sem extensão (13:00)', dayFtlFromDuties(mk('none'), {}).psv.max, '13:00');
   eq('Split 8h COM alojamento: máx 16:45 (pausa toda conta)', dayFtlFromDuties(mk(true), {}).psv.max, '16:45');
   eq('Split 8h COM alojamento: 16:30 ≤ 16:45 → legal', dayFtlFromDuties(mk(true), {}).psv.over, false);
 }

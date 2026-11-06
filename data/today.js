@@ -19,8 +19,10 @@ const worstByRatio = (windows) =>
 export function legalStatus(ftlSnap = {}, dayLog = {}, ref = new Date()) {
   const windows = [...computeDutyTime(dayLog, ref), ...computeFlightTime(dayLog, ref)];
   const psv = ftlSnap?.psv || null;
-  const psvData = psv ? { result: psv.result, max: psv.max, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
+  const psvData = psv ? { result: psv.result, max: psv.max, maxHi: psv.maxHi || null, over: !!psv.over, excess: psv.excess ?? null, latest: psv.latest || null, latestNextDay: !!psv.latestNextDay } : null;
   if (psv && psv.over) return { id: 'legal', status: 'bad', kind: 'psvOver', excess: psv.excess ?? null, psv: psvData, windows };
+  // "A lei é que manda": falta um facto de que a lei precisa e o PSV fica entre o garantido e o possível → incerto.
+  if (psv && psv.uncertain) return { id: 'legal', status: 'warn', kind: 'psvUncertain', unknowns: psv.unknowns || [], psv: psvData, windows };
   // Standby fora do aeroporto acima de 16 h (CS FTL.1.225(b)(1)) — não é PSV, mas tem limite próprio.
   if (psv && psv.sbOver) return { id: 'legal', status: 'bad', kind: 'standbyOver', psv: psvData, windows };
   const overWin = windows.find((w) => w.over);

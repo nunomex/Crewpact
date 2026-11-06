@@ -4,6 +4,7 @@
 import { catLabel } from '../data/extras';
 import { t } from '../data/i18n';
 import { legalStatus, headroomStatus, nextDutyStatus, restStatus, rosterStatus, payStatus } from '../data/today';
+import { unknownsText } from '../data/ftlUnknowns';
 import { validityStatus, validityLabel, sortValidities, isNoExpiryType } from '../data/validities';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
@@ -69,6 +70,11 @@ export function buildTodayItems(ctx, lang) {
       answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${legal.excess})` : '');
       suggestion = l('Reduzir o serviço ou, se aplicável, recorrer a prolongamento (máx 2 em 7 dias). Confirma sempre com a companhia.',
         'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
+    } else if (legal.kind === 'psvUncertain') {
+      answer = l('Incerto — depende de um dado que falta', 'Uncertain — it depends on a missing fact')
+        + (legal.psv && legal.psv.max && legal.psv.maxHi ? ` · PSV ${legal.psv.result} (${legal.psv.max}–${legal.psv.maxHi})` : '');
+      suggestion = l(`Para a lei decidir, falta: ${unknownsText(legal.unknowns, 'pt')}. Indica-o no serviço.`,
+        `For the law to decide, missing: ${unknownsText(legal.unknowns, 'en')}. Add it to the duty.`);
     } else if (legal.kind === 'standbyOver') {
       answer = l('Não — standby acima de 16 h', 'No — standby over 16 h');
       suggestion = l('O standby fora do aeroporto tem no máximo 16 h (CS FTL.1.225(b)(1)). Confirma com a companhia.',
@@ -201,7 +207,7 @@ export function buildTodayItems(ctx, lang) {
     switch (it.id) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
-        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver') ? l('Excede', 'Over') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver') ? l('Excede', 'Over') : r.kind === 'psvUncertain' ? l('Incerto', 'Uncertain') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
       case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : (r.headroomMin >= 60 ? `${Math.floor(r.headroomMin / 60)}h` : hhmm(r.headroomMin)) };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };

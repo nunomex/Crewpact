@@ -1,11 +1,11 @@
 {
- "gerado": "2026-11-04",
+ "gerado": "2026-11-06",
  "total": {
   "tipoFora": 217,
   "tipoMenor11": 108,
   "espacoFora": 432,
   "raioFora": 57,
-  "corSolta": 63,
+  "corSolta": 62,
   "ionicons": 10,
   "iconeNavSolto": 3,
   "amareloTexto": 4
@@ -226,7 +226,7 @@
    "tipoMenor11": 8,
    "espacoFora": 57,
    "raioFora": 11,
-   "corSolta": 10,
+   "corSolta": 9,
    "ionicons": 0,
    "iconeNavSolto": 1,
    "amareloTexto": 0

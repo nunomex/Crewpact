@@ -12,6 +12,7 @@ import { t } from '../data/i18n';
 import { select, warning, success } from '../data/haptics';
 import { AppContext, isoDay, toZulu } from '../data/appContext';
 import { ftlForDuty, fatigueFromDuty } from '../ftl';
+import { unknownsText } from '../data/ftlUnknowns';
 import { sectorDistanceNM } from '../data/airports';
 import { roleEurFor } from '../data/perdiem';
 import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
@@ -106,7 +107,9 @@ export default function DutyDetailScreen({ route, navigation }) {
     : (ctxAll.postFlightMin || 0);
   // O MESMO cálculo do dayLog e do Início (ftlForDuty, auditoria A-175): pós-voo, casos especiais, split das legs,
   // base/fora pela localização real e a tripulação DESSE dia. `pf` (acima) fica para a linha do débrief.
-  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD });
+  // ORO.FTL.205(c): a cabine (dessa data) leva a apresentação dos pilotos — do serviço, ou desconhecida.
+  const gapD = isPilotD ? undefined : (ctxAll.cabinGapMin !== undefined ? ctxAll.cabinGapMin : null);
+  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD });
   const fat = (d && hasEnd && d.isFdp) ? fatigueFromDuty(d) : null;
   // Não é PSV (standby em casa, formação, escritório, standby de aeroporto com alojamento) → nunca "excede" o Quadro 2.
   const over = !(d && d.isFdp) ? false : !!(d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
@@ -341,13 +344,13 @@ export default function DutyDetailScreen({ route, navigation }) {
               (hasEnd && d.fdp.actualFdpStr) && { k: sbAccD ? l('Duração', 'Duration') : l('FDP realizado', 'Actual FDP'), v: d.fdp.actualFdpStr, color: over ? PELE.red : null },
               aeStricter
                 ? { k: l('PSV máx (FDP)', 'FDP max'), v: fmtDur(aeOnBlockMax), node: aeTagged(fmtDur(aeOnBlockMax)), prova: aePsvProva }
-                : (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
+                : (!sbAccD && d.fdp.maxFdpStr) && { k: l('PSV máx (FDP)', 'FDP max'), v: d.fdp.exact === false ? `${d.fdp.maxFdpStr}–${d.fdp.maxHiStr}` : d.fdp.maxFdpStr, prova: provaFor('psvMax', provaCtx) },
               // A hora-limite de calços (2026-11-03): o número que toda a concorrência mostra primeiro —
               // o tripulante pensa em horas do relógio. Mesma hora da apresentação; +1 = dia seguinte.
               aeStricter
                 ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`,
                     node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
-                : (!sbAccD && d.latestOnBlockStr) && { k: l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
+                : (!sbAccD && d.latestOnBlockStr) && { k: d.fdp.exact === false ? l('Calços até às (garantido)', 'On-blocks by (guaranteed)') : l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
               aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
               aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`,
                 node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`), prova: aeRestProva },
@@ -359,6 +362,8 @@ export default function DutyDetailScreen({ route, navigation }) {
                   : l(`usada — dentro da margem (até ${d.discretion.maxStr}) · reportável`, `used — within the margin (up to ${d.discretion.maxStr}) · reportable`),
                 color: d.discretion.over ? PELE.red : PELE.warn },
               (over && d.fdp.excessStr) && { k: l('Excesso', 'Excess'), v: d.fdp.excessStr, color: PELE.red },
+              // "A lei é que manda": entre o garantido e o possível, a lei depende de um dado que falta → incerto.
+              (!sbAccD && !over && d.fdp.uncertain) && { k: l('Incerto', 'Uncertain'), v: l(`falta ${unknownsText(d.fdp.unknowns, 'pt')}`, `missing ${unknownsText(d.fdp.unknowns, 'en')}`), color: PELE.warn },
               (hasEnd && d.rest && d.rest.restStr) && { k: l('Repouso mínimo após', 'Min rest after'), v: d.rest.restStr, prova: provaFor('repouso', provaCtx) },
               fat && { k: l('Fadiga', 'Fatigue'), node: fatPill },
             ]} />
@@ -455,7 +460,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
             <Panel rows={duty.extra.map((sv, i) => {
-              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD });
+              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD });
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
               const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
               return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };

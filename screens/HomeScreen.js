@@ -280,7 +280,7 @@ export default function HomeScreen({ navigation }) {
   };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -517,7 +517,7 @@ export default function HomeScreen({ navigation }) {
   const cdMin = cdTarget != null ? Math.round((cdTarget - now) / 60000) : null;
 
   // PSV máx: com serviço registado nesse dia, exato; senão estima pelo voo (1 setor, não alimenta veredictos).
-  let ndPsvMax = null, ndPsvActual = null, ndSectors = null, ndDuty = null;
+  let ndPsvMax = null, ndPsvActual = null, ndSectors = null, ndDuty = null, ndPsvHi = null;
   if (flight) {
     const reg = flight.svc || null;   // o serviço deste voo (num dia com 2, o 2.º — não o primário)
     if (flight.demo) {
@@ -526,8 +526,8 @@ export default function HomeScreen({ navigation }) {
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
       // Serviço REGISTADO: o MESMO cálculo do dayLog (ftlForDuty: pós-voo, casos especiais, base/fora, split).
       // Um serviço que não é PSV (standby em casa, formação, escritório) não tem PSV máximo (ORO.FTL.105(12)).
-      const d = ftlForDuty(reg, { postFlightMin, isPilot, base: flight.dateISO ? homeBaseAt(flight.dateISO) : base });
-      if (d && d.isFdp) { ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndSectors = reg.sectors || null; ndDuty = d; }
+      const d = ftlForDuty(reg, { postFlightMin, isPilot, base: flight.dateISO ? homeBaseAt(flight.dateISO) : base, date: flight.dateISO || null, cabinGapMin });
+      if (d && d.isFdp) { ndPsvMax = d.fdp.maxFdpStr; ndPsvHi = d.fdp.exact === false ? d.fdp.maxHiStr : null; ndPsvActual = d.fdp.actualFdpStr; ndSectors = reg.sectors || null; ndDuty = d; }
     } else if (flight.report) {
       // Só com apresentação REAL do calendário — não inventa dep − 1 h.
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1, isPilot });
@@ -727,7 +727,7 @@ export default function HomeScreen({ navigation }) {
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
   const closeD = (todayEnded && !closeMulti) ? (() => {
     try {
-      const r = ftlForDuty(todayEnded, { postFlightMin, isPilot, base: homeBaseAt(todayISO) });
+      const r = ftlForDuty(todayEnded, { postFlightMin, isPilot, base: homeBaseAt(todayISO), date: todayISO, cabinGapMin });
       return r && r.isFdp ? r : null;   // escritório/formação/standby em casa não são PSV (ORO.FTL.105(12))
     } catch { return null; }
   })() : null;
@@ -1025,7 +1025,7 @@ export default function HomeScreen({ navigation }) {
         return { ...b, head: { left: `${l('Em voo', 'In flight')}${fno ? ` · ${String(fno).toUpperCase()}` : ''}`, dot: true },
           lbl: `${l('Aterras daqui a', 'Landing in')} ${durTxt(minsTo(arrMs))}`, digits: arrHm || '—', dest: routeTxt, pill: fsPill,
           duty: dl,
-          prog: dl ? null : { pct: sectorPct || 0, left: `${depHm || '—'} ${legDep}`, mid: psvRunning && ndPsvMax ? `PSV ${psvRunning} ${l('de', 'of')} ${ndPsvMax}` : (secTxt || ''), right: `${arrHm || '—'} ${legArr}` },
+          prog: dl ? null : { pct: sectorPct || 0, left: `${depHm || '—'} ${legDep}`, mid: psvRunning && ndPsvMax ? `PSV ${psvRunning} ${l('de', 'of')} ${ndPsvMax}${ndPsvHi ? `–${ndPsvHi}` : ''}` : (secTxt || ''), right: `${arrHm || '—'} ${legArr}` },
           dutyTxt: dl ? [psvRunning && ndPsvMax ? `PSV ${psvRunning} ${l('de', 'of')} ${ndPsvMax}` : null, secTxt].filter(Boolean).join(' · ') : null,
           rows, heroISO: flight.dateISO };
       }
@@ -1193,7 +1193,7 @@ export default function HomeScreen({ navigation }) {
   if (docAlert) pushSec({ key: 'doc', icon: 'doc', tone: 'red', label: l('Documentos', 'Documents'), text: docAlert.answer, onPress: () => openItem(docAlert) });
   if (homeState === 'disrupcao' && liveVerdict) pushSec({ key: 'psvLive', icon: 'shield', tone: liveVerdict.verdict === 'over' ? 'red' : 'warn',
     label: l('Limites com o atraso', 'Limits with the delay'),
-    text: `PSV ${liveVerdict.projected ? l('projetado ', 'projected ') : ''}${liveVerdict.realStr} ${l('de', 'of')} ${liveVerdict.maxStr}${liveVerdict.verdict === 'over' ? ` · ${l('acima do limite', 'over the limit')}` : liveVerdict.verdict === 'discretion' ? ` · ${isCommander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)')}` : ''}`,
+    text: `PSV ${liveVerdict.projected ? l('projetado ', 'projected ') : ''}${liveVerdict.realStr} ${l('de', 'of')} ${liveVerdict.maxStr}${liveVerdict.verdict === 'over' ? ` · ${l('acima do limite', 'over the limit')}` : liveVerdict.verdict === 'uncertain' ? ` · ${l('incerto — falta um dado no serviço', 'uncertain — a fact is missing in the duty')}` : liveVerdict.verdict === 'discretion' ? ` · ${isCommander ? l('discrição tua (205 f): até +2 h', 'your discretion (205 f): up to +2 h') : l('só com a discrição do comandante (205 f)', 'only with the commander’s discretion (205 f)')}` : ''}`,
     bar: psvPct, onPress: legalIt ? () => openItem(legalIt) : undefined });
   // POSSÍVEL RDP (só cabine, só com o acordo que o tem — easyJet × SNPVAC Cl. 67.ª, lida no BTE 2026-11-04): o fim do
   // serviço a ≥ 119 min do programado, medido pela chegada do ÚLTIMO setor no voo ao vivo; desvio/cancelamento = setores

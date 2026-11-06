@@ -406,7 +406,7 @@ export default function App() {
     };
     const effExtra = ('extra' in fields) ? fields.extra : (dutiesRef.current?.[date]?.extra || null);
     const entry = dayFtlFromDuties([primary, ...((effExtra && effExtra.length) ? effExtra : [])],
-      { postFlightMin, isPilot, base: homeBaseAt(date), date });   // pós-voo EFETIVO (user>OM>assumido) + base DESSE dia p/ 12h/10h (235) + data (fusos)
+      { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin });   // pós-voo EFETIVO (user>OM>assumido) + base DESSE dia p/ 12h/10h (235) + data (fusos) + 205(c)
     setDayLog(prev => {
       if (entry) return { ...prev, [date]: entry };
       if (prev[date]?.src === 'duty') { const n = { ...prev }; delete n[date]; return n; }
@@ -432,7 +432,7 @@ export default function App() {
   const primaryOf = (cur) => ({ report_time: cur.report_time, block_off: cur.block_off, block_on: cur.block_on, sectors: cur.sectors, flight_minutes: cur.flight_minutes, kind: cur.kind, signOff: cur.signOff, special: cur.special, legs: cur.legs, route: cur.route, accommodation: cur.accommodation });
   // Recalcula o FTL do dia (primária + extra) e grava no dayLog.
   const recomputeDay = (date, cur, extra) => {
-    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base: homeBaseAt(date), date });
+    const entry = dayFtlFromDuties([primaryOf(cur), ...(extra || [])], { postFlightMin, isPilot, base: homeBaseAt(date), date, cabinGapMin });
     setDayLog(prev => (entry ? { ...prev, [date]: entry } : prev));
   };
   // Adicionar um SERVIÇO ao dia (2.º+ período) — a EASA conta por SERVIÇO, não por dia (210).
@@ -868,7 +868,7 @@ export default function App() {
   // (não toca em registos manuais nem nos derivados existentes; ref igual = no-op).
   useEffect(() => {
     if (!loadedUserId || !dutiesHydrated.current) return;
-    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base, baseAt: homeBaseAt }));
+    setDayLog(prev => reconcileDayLog(duties, prev, { postFlightMin, isPilot, base, baseAt: homeBaseAt, cabinGapMin }));
     // deps em profile.* (não na const postFlightMin, declarada ABAIXO — a dep array avalia
     // no render = TDZ); company muda a resolução OM/assumido → também é dep.
   }, [duties, loadedUserId, profile?.postFlightMin, profile?.company]); // isPilot/postFlightMin lidos por closure
@@ -903,6 +903,10 @@ export default function App() {
   // Papel da tripulação (onboarding → profiles.crew_type): adapta motor/UI.
   const crewType = profile?.crewType || 'cabin';   // 'cabin' | 'pilot'
   const isPilot = crewType === 'pilot';
+  // ORO.FTL.205(c): o PSV máximo da cabine baseia-se na apresentação DOS PILOTOS. Sem a diferença do Manual de
+  // Operações da companhia, é DESCONHECIDA (null) → o motor dá o garantido e, perto do limite, "incerto"; cada serviço
+  // pode trazer a hora dos pilotos (special.fcReport). Pilotos: não se aplica (undefined).
+  const cabinGapMin = isPilot ? undefined : null;
   const crewCategory = profile?.crewCategory || null;  // CPT|SFO|FO|SO (pilotos com AE)
   const crewContract = profile?.crewContract || null;  // modalidade de contrato (AE) — ATUAL
   const crewFleet = profile?.crewFleet || null;        // frota WB/NB (só AE com `FLEETS`, ex. TAP) → coluna per-diem
@@ -1069,7 +1073,7 @@ export default function App() {
     user, setUser: handleSetUser, logout,
     suppressAuth,
     profile, setProfile,
-    airlines, bases, countries, company, crewType, isPilot, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
+    airlines, bases, countries, company, crewType, isPilot, cabinGapMin, crewCategory, crewContract, crewFleet, postFlightMin, postFlightSource, vacationDaysYear, vacationSource, employment, aeCovered: aeCoveredOverride, covered, crewHistory, crewAt, companyHistory, baseHistory, companyAt, aeAt, homeBaseAt, serviceStart, serviceYears, base, baseObj, lifestyle, instructorRated, ae, caps, aeStatus,
     aeExtras, setAeExtras,
     aeEvents, addAeEvents, removeAeEvent,
     openExtra: () => setExtraOpen(true),

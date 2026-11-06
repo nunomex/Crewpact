@@ -9,6 +9,7 @@ import IconButton from './IconButton';
 import PeleSide from './PeleSide';
 import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
+import { unknownsText } from '../data/ftlUnknowns';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
 import { routeDistancesNM } from '../data/perdiem';
@@ -119,7 +120,7 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, instructorRated } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, cabinGapMin, instructorRated } = useContext(AppContext);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -140,8 +141,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const [augCrew, setAugCrew] = useState(1);        // pilotos EXTRA (1→3 total, 2→4) — piloto e cabine
   // Só CABINE (auditoria A-146/A-214): o PSV da cabine segue o dos pilotos (CS FTL.1.205(c)(2)) → a classe do
   // repouso DOS PILOTOS e o repouso a bordo da própria cabine (tabela (c)(3)). Vazio → o motor assume o mais restritivo.
-  const [augFcClass, setAugFcClass] = useState('c3');
+  const [augFcClass, setAugFcClass] = useState(null);   // sem valor por omissão: a lei precisa do facto (obrigatório)
   const [augRest, setAugRest] = useState('');
+  // ORO.FTL.205(c), só cabine: a hora de apresentação dos pilotos (o PSV máximo da cabine baseia-se nela). Vazia = desconhecida.
+  const [fcRep, setFcRep] = useState('');
   const [delOn, setDelOn] = useState(false);        // apresentação adiada (205g)
   const [delFrom, setDelFrom] = useState('');       // hora ORIGINAL (a apresentação do form é a adiada)
   const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
@@ -156,7 +159,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const syncSpecial = (sp) => {
     sp = sp || {};
     setAugOn(!!sp.augmented); setAugClass(sp.augmented?.restClass || 'c1'); setAugCrew(sp.augmented?.additionalCrew || 1);
-    setAugFcClass(sp.augmented?.fcRestClass || 'c3');
+    setAugFcClass(sp.augmented?.fcRestClass || null);
+    setFcRep(sp.fcReport || '');
     const cr = sp.augmented?.cabinRestMin;
     setAugRest(cr != null ? `${Math.floor(cr / 60)}:${String(cr % 60).padStart(2, '0')}` : '');
     setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
@@ -200,11 +204,12 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setPhase(isNew ? 'type' : 'form'); setStep(0);
     syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
     const accRaw = candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation));
-    const acc = accRaw === 'basic' ? 'basic' : !!accRaw;   // false | 'basic' | true (adequado) — CS FTL.1.220(d)(e)
+    // 'none' | 'basic' | true (adequado) ditos pelo tripulante — CS FTL.1.220(d)(e); false/vazio = por responder.
+    const acc = (accRaw === 'basic' || accRaw === 'none') ? accRaw : !!accRaw;
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
   // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
@@ -217,7 +222,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const goDate = (delta) => {
     const jump = () => {
       const iso = addDays(form.date, delta);
-      setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(duties[iso]?.accommodation === 'basic' ? 'basic' : !!duties[iso]?.accommodation); setLegInput('');
+      setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn((duties[iso]?.accommodation === 'basic' || duties[iso]?.accommodation === 'none') ? duties[iso].accommodation : !!duties[iso]?.accommodation); setLegInput('');
       setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
       needBaseline.current = true;
     };
@@ -363,8 +368,10 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const fieldOk = {
     report: isClock(form.report),
     sectors: sectorsFilled,
+    // Cabine com repouso a bordo: a lei (ORO.FTL.205(e), CS 205(c)) precisa dos três factos — sem valor por omissão.
+    augData: !!augFcClass && isClock(augRest),
   };
-  const requiredKeys = isFlight ? ['report', 'sectors'] : [];
+  const requiredKeys = isFlight ? ['report', 'sectors', ...((augOn && !isPilot) ? ['augData'] : [])] : [];
   const missing = requiredKeys.filter((k) => !fieldOk[k]);
   // Formato: SÓ os campos que este tipo mostra — validar um campo ESCONDIDO (o sign-off é
   // UI de voo) travava o guardar do não-voo sem nada visível para corrigir.
@@ -390,8 +397,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       : { restClass: augClass, additionalCrew: Number(augCrew), fcRestClass: augFcClass, cabinRestMin: restM };
     const del = (delOn && isClock(delFrom)) ? delFrom : null;
     const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
-    return (aug || del || sb || discOn) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null } : null;
-  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, delOn, delFrom, sbOn, sbType, sbH, discOn]);
+    const fcReport = (!isPilot && isClock(fcRep)) ? fcRep : null;
+    return (aug || del || sb || discOn || fcReport) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null, fcReport } : null;
+  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, discOn]);
 
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
@@ -402,7 +410,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
       legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
-    }, dayLog, null, postFlightMin, isPilot, base);   // + base → 12h/10h por localização real (235)
+    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin });   // + base → 12h/10h por localização real (235) + 205(c)
   }, [isFlight, form, dayLog, postFlightMin, isPilot, special, accOn, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
@@ -434,6 +442,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const fatigueLbl = (b) => t(`duties.fatigue${b.charAt(0).toUpperCase()}${b.slice(1)}`, lang);
   const fatigueColor = (b) => b === 'high' ? (C.bad || C.warn || C.text) : b === 'elevated' ? (C.warn || C.text) : b === 'low' ? (C.ok || C.sub) : C.text;
   const issueLbl = (it) => it.type === 'fdp' ? t('duties.issueFdp', lang) : it.type === 'duty28' ? t('duties.issueDuty28', lang) : it.type === 'flight28' ? t('duties.issueFlight28', lang)
+    : it.type === 'fdpUncertain' ? l(`Incerto — falta ${unknownsText(it.unknowns, 'pt')}`, `Uncertain — missing ${unknownsText(it.unknowns, 'en')}`)
     : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('Standby acima de 16 h', 'Standby over 16 h') : it.kind === 'awake' ? l('Standby + PSV acima de 18 h acordado', 'Standby + FDP over 18 h awake') : l('Standby + PSV acima de 16 h', 'Standby + FDP over 16 h'))
     : '';
 
@@ -475,7 +484,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
       // Alojamento: voo = pausa do split (220 d/e) · standby aeroporto = ORO.FTL.225(e)
       // (sem ele o standby conta como PSV desde o report — 225(d)).
-      accommodation: (isFlight || form.kind === 'standby_airport') ? accOn : false,
+      accommodation: isFlight ? accOn : (form.kind === 'standby_airport' ? accOn === true : false),
       // PAPEL desempenhado (pago como a lei define: instr €/dia Art. 42 · uprank €/setor
       // Cl. 34 · CCLT/CTI €/dia Cl. 35) — voo e formação. Substitui o antigo `instructor`.
       role: (isFlight || form.kind === 'training') ? (form.role || null) : null,
@@ -689,7 +698,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Alojamento disponibilizado', 'Accommodation provided')}</Text>
                   <Text style={s.advSub}>ORO.FTL.225(e)</Text>
                 </View>
-                <Switch value={!!accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                <Switch value={accOn === true} onValueChange={(v) => { select(); setAccOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               <Text style={s.routeHint}>{accOn
@@ -831,9 +840,18 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                       <View style={{ marginTop: SPACE.md }}>
                         <ClockField C={C} s={s} label={l('O teu repouso a bordo (h:mm)', 'Your in-flight rest (h:mm)')} value={augRest} onChange={setAugRest} />
                       </View>
-                      <Text style={s.advHint}>{l('O teu PSV é o dos pilotos, limitado pela tua classe e pelo teu repouso a bordo (CS FTL.1.205(c)). Sem o teu repouso, a app assume o mínimo de 1:30.', 'Your FDP is the pilots\', limited by your class and your in-flight rest (CS FTL.1.205(c)). Without your rest, the app assumes the 1:30 minimum.')}</Text>
+                      <Text style={[s.advHint, (attemptedSave && !fieldOk.augData) && { color: C.bad || PELE.red }]}>{(attemptedSave && !fieldOk.augData)
+                        ? l('Em falta: a classe dos pilotos e o teu repouso a bordo. A lei precisa dos dois para dar o teu PSV máximo.', 'Missing: the pilots\' class and your in-flight rest. The law needs both to give your max FDP.')
+                        : l('O teu PSV é o dos pilotos, limitado pela tua classe e pelo teu repouso a bordo (ORO.FTL.205(e) · CS FTL.1.205(c)).', 'Your FDP is the pilots\', limited by your class and your in-flight rest (ORO.FTL.205(e) · CS FTL.1.205(c)).')}</Text>
                     </>
                   ) : null}
+                </View>
+              ) : null}
+              {!isPilot ? (
+                // ORO.FTL.205(c): o PSV máximo da cabine baseia-se na apresentação DOS PILOTOS (e pode subir pela diferença, até 1 h).
+                <View style={[s.advInset, s.advDivider]}>
+                  <ClockField C={C} s={s} label={l('Apresentação dos pilotos', 'Pilots\' reporting time')} value={fcRep} onChange={setFcRep} />
+                  <Text style={s.advHint}>{l('ORO.FTL.205(c): o teu PSV máximo baseia-se na hora dos pilotos. Sem ela, a app dá o mínimo garantido e, perto do limite, "incerto". Se se apresentam contigo, põe a tua hora.', 'ORO.FTL.205(c): your max FDP is based on the pilots\' time. Without it, the app gives the guaranteed minimum and, near the limit, "uncertain". If they report with you, enter your time.')}</Text>
                 </View>
               ) : null}
               <View style={[s.advRow, s.advDivider]}>
@@ -880,17 +898,20 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               {/* CS FTL.1.220(d)(e): sem alojamento não há extensão; com alojamento não adequado, só até 6 h e fora do
                   WOCL; com alojamento adequado (quarto), a pausa toda. Por omissão: nenhum (auditoria A-257). */}
               <View style={s.advInset}>
-                <SegRow s={s} value={accOn === true ? 'suitable' : accOn === 'basic' ? 'basic' : 'none'}
-                  onChange={(v) => { select(); setAccOn(v === 'suitable' ? true : v === 'basic' ? 'basic' : false); }} options={[
-                    { id: 'none', label: l('Nenhum', 'None') },
-                    { id: 'basic', label: l('Sala', 'Lounge') },
+                <SegRow s={s} value={accOn === true ? 'suitable' : accOn === 'basic' ? 'basic' : accOn === 'none' ? 'none' : null}
+                  onChange={(v) => { select(); setAccOn(v === 'suitable' ? true : v === 'basic' ? 'basic' : 'none'); }} options={[
+                    { id: 'none', label: l('Não houve', 'None') },
+                    { id: 'basic', label: l('Alojamento', 'Accommodation') },
                     { id: 'suitable', label: l('Quarto', 'Room') },
                   ]} />
+                {/* As definições são as da lei (ORO.FTL.105(3) e (4)): o tripulante escolhe pelo que houve de facto. */}
                 <Text style={s.advHint}>{accOn === true
-                  ? l('Alojamento adequado (quarto): a pausa toda estende o PSV, também a parte acima de 6 h e a do WOCL.', 'Suitable accommodation (room): the whole break extends the FDP, including over 6 h and in the WOCL.')
+                  ? l('Quarto (alojamento adequado, ORO.FTL.105(4)): quarto só para ti, com cama, sossegado, com ventilação, luz e temperatura reguláveis, comida e bebida. A pausa toda estende o PSV.', 'Room (suitable accommodation, ORO.FTL.105(4)): a room of your own with a bed, quiet, ventilated, with light and temperature control, food and drink. The whole break extends the FDP.')
                   : accOn === 'basic'
-                    ? l('Alojamento que não é um quarto: só conta até 6 h de pausa, fora das 02:00–05:59.', 'Accommodation that is not a room: only up to 6 h of break counts, outside 02:00–05:59.')
-                    : l('Sem alojamento, a pausa em terra não estende o PSV. Marca o alojamento se o houve (pausa ≥ 3 h).', 'Without accommodation the ground break does not extend the FDP. Mark it if there was one (break ≥ 3 h).')}</Text>
+                    ? l('Alojamento (ORO.FTL.105(3)): local calmo, não aberto ao público, onde se pode dormir, com luz e temperatura reguláveis, lugar para toda a tripulação, comida e bebida. Conta até 6 h de pausa, fora das 02:00–05:59.', 'Accommodation (ORO.FTL.105(3)): a quiet place not open to the public where you can sleep, with light and temperature control, room for the whole crew, food and drink. Up to 6 h of break counts, outside 02:00–05:59.')
+                    : accOn === 'none'
+                      ? l('Sem alojamento, a pausa em terra não estende o PSV (CS FTL.1.220(e)(1)). Um café, a sala da porta ou o avião não contam.', 'Without accommodation the ground break does not extend the FDP (CS FTL.1.220(e)(1)). A café, the gate lounge or the aircraft do not count.')
+                      : l('Por responder. Com uma pausa em terra de 3 h ou mais, a lei depende disto: sem resposta, a app dá o mínimo garantido e, perto do limite, "incerto".', 'Not answered. With a ground break of 3 h or more, the law depends on this: without an answer the app gives the guaranteed minimum and, near the limit, "uncertain".')}</Text>
               </View>
               <View style={[s.advRow, s.advDivider]}>
                 <View style={{ flex: 1, paddingRight: 12 }}>

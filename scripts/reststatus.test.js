@@ -23,7 +23,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { restStatus } = require(path.resolve('data/today.js'));
+const { restStatus, legalStatus } = require(path.resolve('data/today.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -110,6 +110,13 @@ eq('205(d): sem saber o repouso antes → +4 h = 17:30 → curto com 16:00', pic
   '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
   '2026-11-11': { report_time: '12:30', block_on: '15:00' },
 }, T2, at(T2, '21:00'))), { status: 'bad', prevIso: '2026-11-10', nextIso: '2026-11-11', actualMin: 960, requiredMin: 1050 });
+
+// "A lei é que manda": falta um facto → o "Dentro dos limites?" diz incerto (nem "sim" nem "não"), com o que falta.
+{
+  const lg = legalStatus({ psv: { result: '14:00', max: '13:00', maxHi: '14:45', uncertain: true, unknowns: ['accommodation'] } }, {});
+  eq('incerto: estado e o que falta', [lg.status, lg.kind, lg.unknowns], ['warn', 'psvUncertain', ['accommodation']]);
+  eq('excede continua a mandar sobre o incerto', legalStatus({ psv: { over: true, excess: '00:10', uncertain: true } }, {}).kind, 'psvOver');
+}
 
 // Sem próximo serviço futuro → neutro.
 eq('sem próximo → neutro', restStatus({ '2026-11-03': { report_time: '06:00', block_on: '14:00' } }, T, at(T, '20:00')).kind, 'noNext');

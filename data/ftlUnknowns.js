@@ -1,0 +1,11 @@
+// "A lei é que manda" (2026-11-06): quando falta um FACTO de que a lei precisa para dar o PSV máximo, o motor devolve um
+// intervalo e o veredicto fica "incerto". Estes são os nomes desses factos, para a UI dizer O QUE falta (e onde se diz).
+const LBL = {
+  accommodation: { pt: 'o alojamento na pausa em terra (CS FTL.1.220)', en: 'the accommodation during the ground break (CS FTL.1.220)' },
+  augmented: { pt: 'os pilotos extra, a classe do repouso deles e o teu repouso a bordo (CS FTL.1.205(c))', en: 'the additional pilots, their rest class and your in-flight rest (CS FTL.1.205(c))' },
+  longSector: { pt: 'a duração do setor mais longo (CS FTL.1.205(c)(4))', en: 'the length of the longest sector (CS FTL.1.205(c)(4))' },
+  pilotReport: { pt: 'a hora de apresentação dos pilotos (ORO.FTL.205(c))', en: 'the pilots\' reporting time (ORO.FTL.205(c))' },
+};
+
+export const unknownLabel = (u, lang = 'pt') => (LBL[u] ? LBL[u][lang === 'en' ? 'en' : 'pt'] : u);
+export const unknownsText = (list = [], lang = 'pt') => (list || []).map((u) => unknownLabel(u, lang)).join(lang === 'en' ? '; ' : '; ');

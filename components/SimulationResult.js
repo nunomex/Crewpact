@@ -10,6 +10,7 @@ import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { prospectiveDuty } from '../data/rosterImport';
 import { ftlForDuty } from '../ftl';
+import { unknownsText } from '../data/ftlUnknowns';
 import { routeDistancesNM } from '../data/perdiem';
 import { validityStatus, validityLabel } from '../data/validities';
 import { AppContext } from '../data/appContext';
@@ -22,7 +23,7 @@ const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); re
 // + as CONSCIENTES DO PERFIL (per-diem por tipo/categoria/contrato; validades por piloto/cabine).
 // Pele nova (2026-07-10): página paper + Barlow; crew-aware marcado a AMARELO-soft (a marca).
 export default function SimulationResult({ visible, duty, onEdit, onClose }) {
-  const { lang, dayLog, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, base: baseNow, validities } = useContext(AppContext);
+  const { lang, dayLog, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, cabinGapMin, base: baseNow, validities } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -42,9 +43,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const pf = !isFlight ? 0 : (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
 
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
-  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base);
+  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base, { cabinGapMin });
   const sp = duty.special || {};
-  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base });   // o mesmo cálculo do dayLog
+  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base, date: duty.duty_date || null, cabinGapMin });   // o mesmo cálculo do dayLog
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;
@@ -62,10 +63,13 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const fatTone = (b) => b === 'high' ? 'red' : b === 'elevated' ? 'warn' : b === 'low' ? 'green' : 'warn';
 
   // ── Veredicto: estás legal? ──
-  const verdict = prosp.ok === false ? 'bad' : prosp.ok === true ? 'ok' : 'none';
+  // "A lei é que manda": só com factos em falta (nenhum limite certamente passado) → INCERTO, com o que falta.
+  const onlyUnc = prosp.ok === false && prosp.issues.length > 0 && prosp.issues.every((i) => i.type === 'fdpUncertain');
+  const verdict = onlyUnc ? 'unc' : prosp.ok === false ? 'bad' : prosp.ok === true ? 'ok' : 'none';
   const issueTxt = (it) => it.type === 'fdp' ? (d && d.fdp.excessStr ? l(`PSV excede o máximo em ${d.fdp.excessStr}`, `FDP over the max by ${d.fdp.excessStr}`) : l('PSV excede o máximo', 'FDP over the max'))
     : it.type === 'duty28' ? l('serviço acima de 190 h/28 d', 'duty over 190 h/28 d')
     : it.type === 'flight28' ? l('voo acima de 100 h/28 d', 'flight over 100 h/28 d')
+    : it.type === 'fdpUncertain' ? l(`falta saber ${unknownsText(it.unknowns, 'pt')}`, `missing ${unknownsText(it.unknowns, 'en')}`)
     : it.type === 'standby' ? (it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h')) : '';
 
   // ── HERÓI de poster (mockup design/simulacao-poster.html, aprovado 2026-07-15 — 2 rondas):
@@ -87,14 +91,15 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const ghostFs = ghostTxt.length <= 1 ? 148 : ghostTxt.length <= 3 ? 112 : 88;
   // Palavra-veredicto SEM "legal/ilegal" (2026-11-03): a app estima, nunca declara legalidade (termos §3)
   // e o esquema aprovado da companhia pode ser diferente. "Dentro" / "Excede" dizem o mesmo, com verdade.
-  const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : l('E se…', 'What if…');
-  const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey;
-  const reasons = verdict === 'bad' ? prosp.issues.map(issueTxt).filter(Boolean) : [];
+  const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : verdict === 'unc' ? l('Incerto', 'Uncertain') : l('E se…', 'What if…');
+  const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : verdict === 'unc' ? P.warn : P.grey;
+  const reasons = (verdict === 'bad' || verdict === 'unc') ? prosp.issues.map(issueTxt).filter(Boolean) : [];
   // Só um PSV (com setores) tem rácio e hora-limite de calços (ORO.FTL.105(12); auditoria A-247).
   const psvRatio = (d && d.isFdp && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
   const latest = d && d.isFdp && d.latestOnBlockStr ? `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}` : null;
   // Kick em texto plano (para o VoiceOver ler o herói como UMA frase). Com "Dentro", a frase completa-o.
   const kickPlain = verdict === 'bad' ? reasons.join(' · ')
+    : verdict === 'unc' ? l(`a lei depende de um dado: ${reasons.join(' · ')}`, `the law depends on a fact: ${reasons.join(' · ')}`)
     : verdict === 'ok' ? (psvRatio
       ? l(`dos limites · PSV ${psvRatio}${latest ? ` · calços até às ${latest}` : ''}`, `the limits · FDP ${psvRatio}${latest ? ` · on-blocks by ${latest}` : ''}`)
       : l('do máximo e dos limites de 28 d', 'the max and the 28-day limits'))
