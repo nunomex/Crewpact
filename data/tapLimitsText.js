@@ -13,6 +13,22 @@ const L = (lang) => (pt, en) => (lang === 'en' ? en : pt);
 export const NOT_A_PROBLEM = new Set(['longo-curso', 'sem-coluna', 'sem-aeroporto', 'trimestre-incompleto', 'sem-fuso', 'sem-rotacao', 'sem-banda']);
 export const isProblem = (f) => f && (f.status === 'excede' || (f.status === 'incerto' && !NOT_A_PROBLEM.has(f.reason)));
 
+// Médio curso: o que fica em aberto quando o resultado é "incerto" (auditoria dos cálculos, bloco 3).
+const MC_DOUBT = {
+  despertar: (l) => l('Fora da base, se a hora de despertar cair na madrugada o AE só permite 6 h. O despertar depende do tempo de transporte do ROV, que a escala não mostra.', 'Away from base, if the wake-up time falls in the early morning the CLA only allows 6 h. Wake-up depends on the ROV transport time, which the roster does not show.'),
+  'hora-referencia': (l) => l('O quadro está na "hora de referência": a do local onde descansaste (Cl. 23.ª, n.º 3) ou a da base. O AE não diz se o n.º 3 vale no médio curso.', 'The table is in "reference time": where you rested (Cl. 23, no. 3) or base time. The CLA does not say whether no. 3 applies to medium haul.'),
+  'sem-espera': (l) => l('O posicionamento antes conta como serviço de voo; o AE não diz se a espera até à apresentação para o voo também conta.', 'The positioning before counts as flight duty; the CLA does not say whether the wait until reporting for the flight also counts.'),
+  'assistencia-ativacao': (l) => l('Depois de assistência nas instalações, o limite vem da hora a que foste nomeado (Cl. 17.ª, n.º 12 d)), que a escala não mostra.', 'After standby at the premises, the limit comes from the time you were called (Cl. 17, no. 12 d)), which the roster does not show.'),
+  'assistencia-6h': (l) => l('Depois de mais de 6 h de assistência em casa o máximo desce; com descanso a bordo ou split duty, só a partir da 8.ª hora (Cl. 17.ª, n.º 11 f)).', 'After more than 6 h of home standby the maximum drops; with crew rest on board or a split duty, only from the 8th hour (Cl. 17, no. 11 f)).'),
+  'apresentacao-voo': (l) => l('Com um posicionamento antes, o quadro vai pela hora de apresentação: a do posicionamento ou a do voo. O AE não diz qual.', 'With a positioning before, the table goes by report time: the positioning\x27s or the flight\x27s. The CLA does not say which.'),
+  'pos-espera': (l) => l('O posicionamento depois do voo conta a 50 % (Cl. 16.ª, n.º 1 b)); o AE não diz se a espera até ele também conta.', 'The positioning after the flight counts at 50 % (Cl. 16, no. 1 b)); the CLA does not say whether the wait before it also counts.'),
+  'assistencia-contacto': (l) => l('Se foste nomeado de madrugada (2h00–5h59) com 2 h ou menos até à apresentação, o PSV conta desde o contacto (Cl. 17.ª, n.º 11 d)), que a escala não mostra.', 'If you were called in the early morning (02:00–05:59) with 2 h or less before reporting, the FDP counts from the call (Cl. 17, no. 11 d)), which the roster does not show.'),
+  repartido: (l) => l('Só cabe como período de serviço de voo repartido (Cl. 25.ª), e a escala não diz se foi planeado assim.', 'Only fits as a split flight duty period (Cl. 25), and the roster does not say whether it was planned that way.'),
+  'split-duty': (l) => l('Mais de 3 h entre setores é um split duty: só com autorização prévia do SPAC (Cl. 15.ª, n.º 8), que a escala não mostra.', 'More than 3 h between sectors is a split duty: only with prior SPAC authorisation (Cl. 15, no. 8), which the roster does not show.'),
+  'assistencia-16h': (l) => l('Mais de 16 h entre o início da assistência nas instalações e os calços: só com descanso a bordo ou split duty (Cl. 17.ª, n.º 12 e)).', 'More than 16 h between the start of standby at the premises and on-blocks: only with crew rest on board or a split duty (Cl. 17, no. 12 e)).'),
+  leituras: (l) => l('Cabe numa leitura do AE e não na outra.', 'Fits in one reading of the CLA and not in the other.'),
+};
+
 // ── formatos ──
 export const fmtHours = (min, lang = 'pt') => {
   const h = Math.round((min / 60) * 10) / 10;
@@ -135,9 +151,20 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       if (f.limit == null) return { say: f.reason === 'sem-coluna'
         ? l(`Serviço de voo de ${day(f.date)} com 5 ou mais aterragens: o AE não tem coluna, vale a regra europeia`, `Flight duty on ${day(f.date)} with 5 or more landings: no CLA column, EU rules apply`)
         : l(`Serviço de voo de ${day(f.date)}: longo curso, ainda não avaliado`, `Flight duty on ${day(f.date)}: long haul, not assessed yet`), det: '' };
-      if (f.reason === 'media-rotacao') return { say: l(`Rotação com média de ${fmtDur(f.value)} por serviço de voo (máx. 12:00)`, `Rotation averaging ${fmtDur(f.value)} per flight duty (max. 12:00)`), det: l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`) };
+      if (f.reason === 'media-rotacao') {
+        // A média compara-se pela soma (A-131): num excesso nunca se escreve "12:00".
+        const span = l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`);
+        if (f.status === 'excede' && f.sum != null) return { say: l(`Rotação com média acima de 12:00 por serviço de voo (${fmtDur(f.sum)} em ${f.n})`, `Rotation averaging above 12:00 per flight duty (${fmtDur(f.sum)} over ${f.n})`), det: span };
+        return { say: l(`Rotação com média de ${fmtDur(Math.floor(f.value))} por serviço de voo (máx. 12:00)`, `Rotation averaging ${fmtDur(Math.floor(f.value))} per flight duty (max. 12:00)`), det: span };
+      }
+      if (f.status === 'incerto' && MC_DOUBT[f.reason]) {
+        const two = f.limitMax != null ? l(`o AE permite ${fmtDur(f.limit)} ou ${fmtDur(f.limitMax)}`, `the CLA allows ${fmtDur(f.limit)} or ${fmtDur(f.limitMax)}`) : l(`o AE permite ${fmtDur(f.limit)}`, `the CLA allows ${fmtDur(f.limit)}`);
+        return { say: l(`Serviço de voo de ${day(f.date)}: ${fmtDur(f.value)}; ${two}`, `Flight duty on ${day(f.date)}: ${fmtDur(f.value)}; ${two}`), det: MC_DOUBT[f.reason](l) };
+      }
+      if (f.status === 'excede' && f.reason === 'assistencia-22h') return { say: l(`Serviço de voo de ${day(f.date)} acaba mais de 22 h depois do início da assistência`, `Flight duty on ${day(f.date)} ends more than 22 h after the standby started`),
+        det: l('Cl. 17.ª, n.º 11 g) (26 h se a assistência começou entre as 23h00 e as 7h00).', 'Cl. 17, no. 11 g) (26 h if the standby started between 23:00 and 07:00).') };
       return { say: l(`Serviço de voo de ${day(f.date)}: ${fmtDur(f.value)} (o AE permite ${fmtDur(f.limit)})`, `Flight duty on ${day(f.date)}: ${fmtDur(f.value)} (the CLA allows ${fmtDur(f.limit)})`),
-        det: l(`Contado até 30 min depois dos calços. Calços até às ${fmtClock(f.latestOnBlock)}.`, `Counted to 30 min after on-blocks. On-blocks by ${fmtClock(f.latestOnBlock)}.`) };
+        det: l(`Contado até 30 min depois dos calços${f.standbyMin ? `, com ${fmtDur(f.standbyMin)} da assistência no aeroporto (50 %)` : ''}. Calços até às ${fmtClock(f.latestOnBlock)}.`, `Counted to 30 min after on-blocks${f.standbyMin ? `, with ${fmtDur(f.standbyMin)} of airport standby (50 %)` : ''}. On-blocks by ${fmtClock(f.latestOnBlock)}.`) };
     case 'P32': case 'C26': {
       const what = l(`Serviço de voo de ${day(f.date)}`, `Flight duty on ${day(f.date)}`);
       if (f.limit == null) {
@@ -169,6 +196,9 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       if (f.reason === 'sem-base') return { say: l(`Repouso antes de ${day(f.date)}: falta a base para saber onde é o repouso`, `Rest before ${day(f.date)}: base needed to know where rest is`), det: '' };
       if (f.reason === 'sem-transporte') return { say: l(`${lh ? 'Estadia' : 'Night-stop'}${f.where ? ` em ${f.where}` : ''}: falta o tempo de transporte para confirmar`, `${lh ? 'Layover' : 'Night stop'}${f.where ? ` at ${f.where}` : ''}: transport time needed to confirm`),
         det: l(`${day(f.date)} · ${fmtDur(f.value)} entre os calços e a saída; o mínimo sem transporte é ${fmtDur(f.limitStr || f.limit)}.`, `${day(f.date)} · ${fmtDur(f.value)} between on-blocks and departure; the minimum without transport is ${fmtDur(f.limitStr || f.limit)}.`) };
+      if (f.reason === 'simulador') return { say: l(`Repouso antes de ${day(f.date)}: chega se a formação não foi simulador`, `Rest before ${day(f.date)}: enough if the training was not a simulator`),
+        det: l(`${fmtDur(f.value)} entre ${fmtClock(f.fromAt)} e ${fmtClock(f.toAt)}. Depois de simulador entre as 2h00 e as 5h59 de Lisboa, o AE pede mais 2 h (Cl. 34.ª, n.º 2): ${fmtDur(f.limitStr)}. A escala não separa o simulador da formação em sala.`,
+          `${fmtDur(f.value)} between ${fmtClock(f.fromAt)} and ${fmtClock(f.toAt)}. After a simulator between 02:00 and 05:59 Lisbon time the CLA asks 2 h more (Cl. 34, no. 2): ${fmtDur(f.limitStr)}. The roster does not tell a simulator from classroom training.`) };
       if (f.reason === 'leituras') return { say: l(`Repouso antes de ${day(f.date)}: chega numa leitura do AE e não na outra`, `Rest before ${day(f.date)}: enough in one reading of the CLA, not in the other`),
         det: l(`${fmtDur(f.value)} entre ${fmtClock(f.fromAt)} e ${fmtClock(f.toAt)}; o AE pede ${fmtDur(f.limit)} ou ${fmtDur(f.limitStr)}, conforme a leitura${f.atBase === false ? ', sem contar o transporte' : ''}.`,
           `${fmtDur(f.value)} between ${fmtClock(f.fromAt)} and ${fmtClock(f.toAt)}; the CLA requires ${fmtDur(f.limit)} or ${fmtDur(f.limitStr)}, by reading${f.atBase === false ? ', before transport' : ''}.`) };

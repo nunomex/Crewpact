@@ -613,6 +613,179 @@ const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
   eq('C14 escala que não chega ao fim do trimestre: "até agora" (não é veredicto)', q2b && [q2b.status, q2b.reason], ['incerto', 'trimestre-incompleto']);
 }
 
+// ── AUDITORIA DOS CÁLCULOS, BLOCO 3 (2026-11-06) — casos à mão a partir do texto do AE ─────────────
+const POS = (rep, off, on, route) => ({ kind: 'positioning', report_time: rep, block_off: off, block_on: on, sectors: 1, route });
+const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === date && f.reason !== 'media-rotacao') || null;
+
+// A-131 — C23 c): a média compara-se sem arredondar (soma > 12 h × n.º de PSV).
+{
+  const rot = run('cabin', {
+    '2026-04-06': F('09:00', '09:40', '20:30', 1, 'LIS-OPO'),
+    '2026-04-07': F('09:00', '09:40', '20:30', 1, 'OPO-MAD'),
+    '2026-04-08': F('09:00', '09:40', '20:31', 1, 'MAD-LIS'),
+  });
+  const avg = rule(rot, 'C23').findings.find((f) => f.reason === 'media-rotacao');
+  eq('A-131 PSV 12:00 + 12:00 + 12:01 = 36:01 em 3 → média acima de 12 h → excede', avg && [avg.sum, avg.n, avg.status], [2161, 3, 'excede']);
+  const T = require(path.resolve('data/tapLimitsText.js'));
+  eq('A-131 a frase não diz "12:00" num excesso', avg && T.describe('C23', avg, 'pt').say, 'Rotação com média acima de 12:00 por serviço de voo (36:01 em 3)');
+}
+
+// A-130 — C14: a folga de 48 h que atravessa a mudança de trimestre conta (o AE não diz em qual: as duas leituras).
+{
+  const O = () => S('office', '09:00', '17:00');
+  const duties = {};
+  const free = new Set(['2026-03-31', '2026-04-01']);                       // livre de 30 mar 17:00 a 2 abr 09:00 (64 h)
+  for (let k = 0; k < 12; k++) { const d = L.dayNum('2026-04-06') + 7 * k; free.add(L.isoOf(d)); free.add(L.isoOf(d + 1)); }   // 12 folgas dentro do T2
+  days('2026-03-25', 98).forEach((iso) => { if (!free.has(iso)) duties[iso] = O(); });
+  const q2 = rule(run('cabin', duties, { today: '2026-03-25' }), 'C14').findings.find((f) => f.period === '2026-T2');
+  eq('A-130 T2: 13 se a folga conta onde acaba, 12 onde começa → incerto (não excede)', q2 && [q2.value, q2.valueStr, q2.status], [13, 12, 'incerto']);
+}
+
+// A-129 — "consecutivos" pela NOITE que o serviço toca (23h00 do dia D às 6h29 do dia D+1), não pelo dia de início.
+{
+  const a = { '2026-03-02': F('22:00', '22:30', '02:30', 2, 'LIS-OPO-LIS'), '2026-03-04': F('04:00', '04:30', '09:30', 2, 'LIS-OPO-LIS') };
+  ok('A-129 P53 seg 22h00–03h00 e qua 04h00–10h00: noites seg→ter e ter→qua, seguidas, as duas no crítico → excede', has(run('pilot', a), 'P53', 'dois-criticos'));
+  ok('A-129 C36 o mesmo na cabine → excede', has(run('cabin', a), 'C36', 'dois-criticos'));
+  const b = { '2026-03-02': F('04:00', '04:30', '08:30', 2, 'LIS-OPO-LIS'), '2026-03-03': F('23:00', '23:30', '03:30', 2, 'LIS-OPO-LIS') };
+  const fb = rule(run('pilot', b), 'P53').findings.find((f) => f.reason === 'dois-criticos');
+  eq('A-129 seg 04h00 (noite dom→seg) e ter 23h00 (noite ter→qua): a noite seg→ter fica livre → não é excede', fb && fb.status, 'incerto');
+}
+
+// A-122 — o limite de 6 h fora da base olha também para a hora de DESPERTAR: pilotos = apresentação − 30 min (Cl. 6.ª,
+// n.º 25) − transporte; cabine = transporte − 1 h (Cl. 4.ª, n.º 15). O transporte não se vê (ROV), mas os dois sentidos
+// somados não passam 3 h (pilotos Cl. 16.ª, n.º 2; cabine Cl. 6.ª, n.º 2 a)): cada um tem de 1 min a 2h59.
+{
+  const pil = (rep, on) => fdpOn(run('pilot', { '2026-03-02': F('14:00', '14:30', '16:00', 1, 'LIS-FNC'), '2026-03-03': F(rep, '07:30', on, 3, 'FNC-LIS-MAD-LIS') }), 'P27', '2026-03-03');
+  const p1 = pil('06:15', '14:30');
+  eq('A-122 piloto, apresentação fora às 06h15: despertar até às 05h44 → 6 h; TSV 8h45 → excede', p1 && [p1.limit, p1.value, p1.status], [360, 525, 'excede']);
+  const p2 = pil('07:00', '14:30');
+  eq('A-122 piloto às 07h00: o despertar pode cair nas 22h00–6h00 (ou não) → incerto', p2 && [p2.status, p2.reason, p2.limit, p2.limitMax], ['incerto', 'despertar', 360, 720]);
+  const p3 = pil('10:00', '14:30');
+  eq('A-122 piloto às 10h00: despertar depois das 06h00 → o quadro, dentro', p3 && [p3.limit, p3.status], [750, 'dentro']);
+  const cab = (rep, on) => fdpOn(run('cabin', { '2026-04-06': F('14:00', '14:30', '16:00', 1, 'LIS-OPO'), '2026-04-07': F(rep, '07:30', on, 3, 'OPO-LIS-FNC-LIS') }), 'C23', '2026-04-07');
+  const c1 = cab('06:30', '14:00');
+  eq('A-122 cabine, apresentação fora às 06h30: despertar entre 02h31 e 05h29 → 6 h; PSV 8 h → excede', c1 && [c1.limit, c1.status], [360, 'excede']);
+  const c2 = cab('07:30', '14:30');
+  eq('A-122 cabine às 07h30: o despertar pode cair nas 2h00–5h59 → incerto', c2 && [c2.status, c2.reason], ['incerto', 'despertar']);
+  const c3 = cab('10:00', '14:30');
+  eq('A-122 cabine às 10h00: despertar depois das 06h00 → dentro', c3 && c3.status, 'dentro');
+}
+
+// A-123 — cabine, médio curso, com a hora UTC: a janela das 2h00–5h59 na hora LOCAL (Cl. 4.ª, n.º 13) e o quadro na
+// hora de referência (Cl. 23.ª, n.º 3 a) i)) — com a hora da base como segunda leitura.
+{
+  const pdl = run('cabin', {
+    '2026-01-12': FZ('13:00', [['LIS', 'PDL', '14:00', '16:20']]),
+    '2026-01-13': FZ('07:30', [['PDL', 'LIS', '08:30', '10:30'], ['LIS', 'FNC', '11:30', '13:15'], ['FNC', 'LIS', '14:00', '15:45']]),
+  });
+  const f1 = fdpOn(pdl, 'C23', '2026-01-13');
+  eq('A-123 PDL às 06h30 locais (07h30 em Lisboa): despertar nas 2h00–5h59 locais → 6 h → excede', f1 && [f1.limit, f1.status], [360, 'excede']);
+  const zrh = run('cabin', {
+    '2026-01-12': FZ('15:00', [['LIS', 'ZRH', '16:00', '18:30']]),
+    '2026-01-13': FZ('13:30', [['ZRH', 'LIS', '14:30', '17:30'], ['LIS', 'OPO', '19:00', '20:00'], ['OPO', 'LIS', '23:00', '01:00']]),
+  });
+  const f2 = fdpOn(zrh, 'C23', '2026-01-13');
+  eq('A-123 ZRH 14h30 locais (13h30 em Lisboa), PSV 12 h: 12h15 na hora da base, 11h30 na de referência → incerto', f2 && [f2.value, f2.status, f2.reason, f2.limit, f2.limitMax], [720, 'incerto', 'hora-referencia', 690, 735]);
+}
+
+// A-124 — o posicionamento que antecede o voo, sem repouso, entra no período de serviço de voo (pilotos Cl. 16.ª,
+// n.º 1 a); cabine Cl. 28.ª, n.º 2); o limite vem da apresentação para o posicionamento; as aterragens são só as do voo.
+{
+  const day = { '2026-03-02': { ...POS('05:30', '05:45', '07:00', 'LIS-OPO'), extra: [F('08:00', '08:30', '17:45', 3, 'OPO-FNC-OPO-LIS')] } };
+  const p = fdpOn(run('pilot', day), 'P27', '2026-03-02');
+  eq('A-124 piloto: DH 05h30 + voo até às 18h15 = 12h45 contra 10h30; mas o AE não diz se o quadro vai pela apresentação do voo (08h00: 12h30) nem se a espera conta (11h45) → incerto', p && [p.limit, p.limitMax, p.value, p.status, p.reason], [630, 750, 765, 'incerto', 'apresentacao-voo']);
+  const c = fdpOn(run('cabin', day), 'C23', '2026-03-02');
+  eq('A-124 cabine: o PSV todo desde o DH, 12h45 contra 10h30 → excede', c && [c.limit, c.value, c.status], [630, 765, 'excede']);
+}
+
+// A-125 — assistência antes do voo.
+{
+  const pa = fdpOn(run('pilot', { '2026-03-02': { ...S('standby_airport', '06:00', '10:00'), extra: [F('10:00', '10:30', '21:00', 2, 'LIS-OPO-LIS')] } }), 'P27', '2026-03-02');
+  eq('A-125 piloto, assistência no aeroporto 4 h → +50 % (Cl. 19.ª, n.º 7 a)): 11h30 + 2 h = 13h30 > 12h30 → excede', pa && [pa.value, pa.limit, pa.status], [810, 750, 'excede']);
+  const ph = fdpOn(run('pilot', { '2026-03-02': { ...S('standby_home', '06:00', '10:00'), extra: [F('10:00', '10:30', '21:00', 2, 'LIS-OPO-LIS')] } }), 'P27', '2026-03-02');
+  eq('A-125 piloto, assistência em casa não conta para o TSV (n.º 7 b)) → dentro', ph && [ph.value, ph.status], [690, 'dentro']);
+  const ca = fdpOn(run('cabin', { '2026-04-06': { ...S('standby_airport', '06:00', '10:00'), extra: [F('08:00', '08:30', '19:30', 2, 'LIS-OPO-LIS')] } }), 'C23', '2026-04-06');
+  eq('A-125 cabine, nas instalações: o limite vem da hora de ativação (n.º 12 d)), entre 06h00 e 08h00 → 11h00 a 12h30; PSV 12 h → incerto', ca && [ca.status, ca.reason, ca.limit, ca.limitMax], ['incerto', 'assistencia-ativacao', 660, 750]);
+  const ch = fdpOn(run('cabin', { '2026-04-06': { ...S('standby_home', '07:00', '15:00'), extra: [F('14:00', '14:30', '00:30', 2, 'LIS-OPO-LIS')] } }), 'C23', '2026-04-06');
+  eq('A-125 cabine, em casa: apresentação 7 h depois → o máximo desce 1 h (n.º 11 f)), ou nada se houver descanso a bordo (ii)) → incerto', ch && [ch.status, ch.reason, ch.limit, ch.limitMax], ['incerto', 'assistencia-6h', 630, 690]);
+}
+
+// A-126 — dois serviços no mesmo dia: sem repouso pelo meio são UM período de serviço de voo; com repouso, o repouso do AE.
+{
+  const two = (a, b) => ({ '2026-03-02': { ...a, extra: [b] } });
+  const c = fdpOn(run('cabin', two(F('06:00', '06:30', '10:00', 2, 'LIS-OPO-LIS'), F('16:00', '16:30', '20:00', 2, 'LIS-FAO-LIS'))), 'C23', '2026-03-02');
+  eq('A-126 cabine na base: 06h00–20h30 é um só PSV (o intervalo não pode ser na base) → 14h30 > 11 h → excede', c && [c.value, c.limit, c.status], [870, 660, 'excede']);
+  const p = fdpOn(run('pilot', two(F('06:00', '06:30', '09:00', 2, 'LIS-OPO-LIS'), F('13:00', '13:30', '16:30', 2, 'LIS-FAO-LIS'))), 'P27', '2026-03-02');
+  eq('A-126 piloto: 4h30 entre setores = split duty (Cl. 15.ª, n.º 8): só com autorização do SPAC, que a escala não mostra → incerto', p && [p.value, p.status, p.reason], [660, 'incerto', 'split-duty']);
+  const r = rule(run('pilot', two(F('00:30', '01:00', '04:30', 2, 'LIS-OPO-LIS'), F('17:00', '17:30', '21:00', 2, 'LIS-FAO-LIS'))), 'P42').findings.find((f) => f.date === '2026-03-02');
+  eq('A-126 piloto: 13 h entre calços e saída no mesmo dia, na base → 12 h + 2 h (Lisboa 2h00–5h59) + 4 h = 18 h → excede', r && [r.value, r.limit, r.status], [780, 1080, 'excede']);
+}
+
+// A-127 — simulador de noite (pilotos Cl. 34.ª, n.º 2): +2 h de repouso. A escala não separa o simulador da formação
+// em sala: com as 2 h falta, sem elas chega → incerto.
+{
+  const r = rule(run('pilot', { '2026-03-02': S('training', '22:00', '03:00'), '2026-03-03': F('17:00', '18:00', '22:00', 2, 'LIS-OPO-LIS') }), 'P42').findings.find((f) => f.date === '2026-03-03');
+  eq('A-127 formação 22h00–03h00, saída às 18h00 (15 h): 12 + 2 h de transição chega; com +2 h do simulador não → incerto', r && [r.value, r.status, r.reason], [900, 'incerto', 'simulador']);
+}
+
+// A-132 — as horas repartem-se pelos dias de calendário ("Dia - Período de vinte e quatro horas que começa às zero horas
+// locais da base", pilotos Cl. 6.ª, n.º 9; cabine Cl. 4.ª, n.º 9): a parte depois da meia-noite é do dia seguinte.
+{
+  const d = { '2026-03-01': F('22:00', '22:30', '07:30', 2, 'LIS-OPO-LIS') };   // TSV 22h00 → 08h00: 2 h no dia 1, 8 h no dia 2
+  ['2026-03-04', '2026-03-05', '2026-03-06', '2026-03-07'].forEach((x) => { d[x] = S('office', '09:00', '17:00'); });
+  d['2026-03-08'] = S('office', '09:00', '17:01');
+  const f7 = rule(run('pilot', d), 'P26').findings.find((f) => f.window === '7d');
+  eq('A-132 P26 de 2 a 8 mar: 8 h do voo + 40h01 de escritório = 48h01 > 48 h → excede', f7 && [f7.from, f7.to, Math.round(f7.value), f7.status], ['2026-03-02', '2026-03-08', 2881, 'excede']);
+}
+
+// A-128 — depois de um posicionamento: repouso, transição e as +2 h como depois de um voo (pilotos Cl. 8.ª, n.º 1 a) e
+// Cl. 25.ª, n.º 4; cabine Cl. 4.ª, n.º 28 e Cl. 28.ª, n.º 1 a)).
+{
+  const day = { '2026-03-02': POS('10:00', '11:00', '13:00', 'FNC-LIS'), '2026-03-03': F('03:00', '04:00', '08:00', 2, 'LIS-OPO-LIS') };
+  const p = rule(run('pilot', day), 'P42').findings.find((f) => f.date === '2026-03-03');
+  eq('A-128 piloto: DH com chegada às 13h00, saída às 04h00 (15 h) → 12 h + 4 h de transição = 16 h → excede', p && [p.value, p.limit, p.status], [900, 960, 'excede']);
+  const c = rule(run('cabin', day), 'C38').findings.find((f) => f.date === '2026-03-03');
+  eq('A-128 cabine: 13 h + 4 h = 17 h → excede', c && [c.value, c.limit, c.status], [900, 1020, 'excede']);
+}
+
+// ── Revisão independente do bloco 3 (2026-11-06) ──────────────────────────────────────────────────
+{
+  // E1 — entre dias, com 8 h ou mais, é um repouso (curto): a regra do repouso julga-o, não se junta.
+  const e1 = run('cabin', { '2026-05-04': F('14:00', '14:30', '21:30', 2, 'LIS-OPO-LIS'), '2026-05-05': F('07:00', '07:30', '12:00', 3, 'LIS-FAO-LIS-OPO') });
+  const r1 = rule(e1, 'C38').findings.find((f) => f.date === '2026-05-05');
+  eq('E1 cabine: 9 h entre dias → repouso curto (C38 excede), não um período junto', r1 && r1.status, 'excede');
+  // E2 — pilotos: 10h30 de night-stop → repouso curto (P42), sem inventar um período de serviço de voo com a noite lá dentro.
+  const e2 = run('pilot', { '2026-05-04': F('19:00', '19:30', '22:00', 1, 'LIS-OPO'), '2026-05-05': F('09:00', '09:30', '10:30', 1, 'OPO-LIS') });
+  const r2 = rule(e2, 'P42').findings.find((f) => f.date === '2026-05-05');
+  eq('E2 piloto: 10h30 → P42 excede e o serviço de 5 mai é só o seu (2 h)', [r2 && r2.status, (fdpOn(e2, 'P27', '2026-05-05') || {}).value], ['excede', 120]);
+  // E3 — o DH na manhã seguinte, depois de menos de 8 h: o repouso antes dele também se avalia.
+  const day3 = { '2026-05-04': F('14:00', '14:30', '21:30', 2, 'LIS-FAO-OPO'), '2026-05-05': POS('05:30', '05:45', '06:45', 'OPO-LIS') };
+  eq('E3 DH às 05h30 depois de calços às 21h30 → repouso curto (pilotos e cabine)', [(rule(run('pilot', day3), 'P42').findings.find((f) => f.date === '2026-05-05') || {}).status, (rule(run('cabin', day3), 'C38').findings.find((f) => f.date === '2026-05-05') || {}).status], ['excede', 'excede']);
+  // E4 — o DH depois do último voo, no mesmo dia: cabine a 100 % desde os calços + 30 min (Cl. 28.ª, n.º 3); pilotos a 50 % (Cl. 16.ª, n.º 1 b)).
+  const day4 = { '2026-05-04': { ...F('13:00', '13:30', '21:00', 2, 'LIS-OPO-LIS'), extra: [POS('21:45', '22:00', '23:45', 'LIS-FNC')] } };
+  eq('E4 cabine: PSV até à chegada do DH, 13h00 → 23h45 = 10h45', (fdpOn(run('cabin', day4), 'C23', '2026-05-04') || {}).value, 645);
+  eq('E4 piloto: 8h30 + 50 % do DH (ou da espera e do DH) = 9h37', (fdpOn(run('pilot', day4), 'P27', '2026-05-04') || {}).value, 577);
+  // E8 — cabine, assistência em casa até às 15h00, apresentação às 16h00: o tempo de assistência até ao fim marcado é a outra leitura.
+  const e8 = fdpOn(run('cabin', { '2026-05-04': { ...S('standby_home', '07:00', '15:00'), extra: [F('16:00', '16:30', '02:00', 2, 'LIS-OPO-LIS')] } }), 'C23', '2026-05-04');
+  eq('E8 cabine: PSV 10h30 contra 8h00 a 11h00, conforme as leituras → incerto (não excede)', e8 && [e8.status, e8.reason, e8.limitMax], ['incerto', 'assistencia-6h', 660]);
+  // E9 — a média da rotação divide pelos períodos de serviço de voo (Cl. 23.ª, n.º 1 c)).
+  const e9 = run('cabin', {
+    '2026-04-06': F('09:00', '09:40', '20:30', 1, 'LIS-OPO'),
+    '2026-04-07': { ...F('07:00', '07:30', '09:00', 1, 'OPO-MAD'), extra: [F('13:00', '13:30', '18:30', 1, 'MAD-OPO')] },
+    '2026-04-08': F('09:00', '09:40', '20:31', 1, 'OPO-LIS'),
+  });
+  const a9 = rule(e9, 'C23').findings.find((f) => f.reason === 'media-rotacao');
+  eq('E9 três períodos (12:00, 12:00, 12:01), não quatro serviços → excede', a9 && [a9.n, a9.sum, a9.status], [3, 2161, 'excede']);
+  // E5 — pilotos, longo curso, com DH antes: a espera e a hora do quadro ficam em aberto → não é "excede".
+  const dh = FZ('05:00', [['OPO', 'LIS', '05:15', '06:30']], { kind: 'positioning' });
+  const e5 = fdp(run('pilot', { '2026-01-12': { ...dh, extra: [FZ('12:00', [['LIS', 'EWR', '13:00', '21:30']])] } }, { fleetAt: () => 'NB' }), 'P32', '2026-01-12');
+  eq('E5 P32 DH 05h00 + LIS-EWR até às 22h00: 17 h com a espera, 11h30 sem ela → incerto', e5 && e5.status, 'incerto');
+  // E10 — sem as pernas UTC, um voo de uma perna que passa da meia-noite reparte-se pelos dias.
+  const mar = Object.fromEntries(days('2026-03-01', 23).map((d) => [d, F('08:00', '08:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 240 })]));
+  mar['2026-03-31'] = F('22:00', '22:30', '03:00', 1, 'LIS-FNC', { flight_minutes: 270 });
+  ok('E10 C34 março: 92 h + 1h30 do voo de 31 mar = 93h30 → dentro (não 96h30)', !rule(run('cabin', mar), 'C34').findings.some((x) => x.window === 'mes-voo' && x.period === '2026-03'));
+}
+
 console.log(`\nlimites de escala TAP — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
 console.log('✓ Cada citação existe no texto oficial do BTE; os casos batem com o texto.');

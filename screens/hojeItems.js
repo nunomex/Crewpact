@@ -5,7 +5,7 @@ import { catLabel } from '../data/extras';
 import { t } from '../data/i18n';
 import { legalStatus, headroomStatus, nextDutyStatus, restStatus, recoveryStatus, rosterStatus, payStatus } from '../data/today';
 import { unknownsText } from '../data/ftlUnknowns';
-import { validityStatus, validityLabel, sortValidities, isNoExpiryType } from '../data/validities';
+import { validityLabel, sortValidities, validitySummary } from '../data/validities';
 
 // Rótulo de uma janela cumulativa a partir do seu id/days.
 export const winLbl = (id, days, lang) =>
@@ -214,21 +214,21 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 6 · Validades & Documentos (premium) — só o que EXPIRA alarma; referências (licença/CCA) ficam de fora.
-  const trackedVal = (validities || []).filter((v) => !isNoExpiryType(v.type));
-  if (trackedVal.length) {
-    const RANK = { expired: 0, expiring: 1, valid: 2, none: 3 };
-    const withSt = trackedVal.map((v) => ({ ...v, st: validityStatus(v.expiry) }));
-    const worst = withSt.reduce((a, b) => ((RANK[a.st.band] ?? 3) <= (RANK[b.st.band] ?? 3) ? a : b));
-    const status = worst.st.band === 'expired' ? 'bad' : worst.st.band === 'expiring' ? 'warn' : 'ok';
+  const vsum = validitySummary(validities);   // hoje (dias de calendário); sem referências nem o inglês de nível 6
+  if (vsum) {
+    const { worst, withSt, missing } = vsum;
+    const status = worst.st.band === 'expired' ? 'bad' : worst.st.band === 'expiring' || missing ? 'warn' : 'ok';
     let answer, suggestion = null;
     if (worst.st.band === 'expired') {
-      answer = `${validityLabel(worst.type, isPilot, lang)} ${l('expirado', 'expired')}`;
+      answer = `${validityLabel(worst.type, isPilot, lang, worst.program || null)} ${l('expirado', 'expired')}`;
       suggestion = l('Renova com urgência — podes ficar em terra.', 'Renew urgently — you may be grounded.');
     } else if (worst.st.band === 'expiring') {
-      answer = `${validityLabel(worst.type, isPilot, lang)} ${l('expira em', 'expires in')} ${worst.st.days} d`;
+      answer = `${validityLabel(worst.type, isPilot, lang, worst.program || null)} ${l('expira em', 'expires in')} ${worst.st.days} d`;
       suggestion = l('Renova antes de expirar.', 'Renew before it expires.');
     } else {
-      answer = l('Tudo válido', 'All current');
+      // A-285: a app só sabe o que foi registado — nunca "Tudo válido"; e nunca "válido" se faltar a data a algum.
+      answer = missing ? (missing === 1 ? l('Falta 1 data de validade', '1 expiry date missing') : l(`Faltam ${missing} datas de validade`, `${missing} expiry dates missing`)) : l('O que registaste está válido', 'What you registered is current');
+      if (missing) suggestion = l('Escreve a data do documento ou do eCrew.', 'Enter the date from the document or eCrew.');
     }
     items.push({ id: 'validades', q: l('Validades em dia?', 'Documents current?'), status, answer, suggestion, raw: { items: sortValidities(withSt), isPilot, worst: worst.st } });
   }

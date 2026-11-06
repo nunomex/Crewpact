@@ -1,0 +1,323 @@
+Regulamento (UE) n.º 965/2012 (operações aéreas) — Anexo III, Parte-ORO
+CELEX 02012R0965 — versão consolidada de 2026-05-25 — língua: en
+Descarregado a 2026-11-06 do serviço de publicações da UE (Cellar): http://publications.europa.eu/resource/celex/02012R0965-20260525
+EXTRATO LITERAL: só as secções abaixo, copiadas sem mudanças (tirámos só as marcas de alteração da EUR-Lex).
+Aviso da EUR-Lex: a versão consolidada é um instrumento de documentação e não tem efeito jurídico; fazem fé os textos do Jornal Oficial.
+
+=====[ORO.GEN.110]=====
+ORO.GEN.110
+Operator responsibilities
+(a) The operator is responsible for the operation of the aircraft in accordance with Annex IV to Regulation (EC) No 216/2008, as applicable, the relevant requirements of this Annex and its air operator certificate (AOC) or specialised operation authorisation (SPO authorisation) or declaration.
+(b) Every flight shall be conducted in accordance with the provisions of the operations manual.
+(c) The operator shall establish and maintain a system for exercising operational control over any flight operated under the terms of its certificate
+, SPO authorisation ◄
+or declaration. ◄
+(d) The operator shall ensure that its aircraft are equipped and its crews are qualified as required for the area and type of operation.
+(e) The operator shall ensure that all personnel assigned to, or directly involved in, ground and flight operations are properly instructed, have demonstrated their abilities in their particular duties and are aware of their responsibilities and the relationship of such duties to the operation as a whole.
+(f) The operator shall establish procedures and instructions for the safe operation of each aircraft type, containing ground staff and crew member duties and responsibilities, for all types of operation on the ground and in flight. Those procedures and instructions shall not require crew members to perform any activities during critical phases of flight other than those required for the safe operation of the aircraft. Procedures and instructions for a sterile flight crew compartment shall also be included.
+(g) The operator shall ensure that all personnel are made aware that they shall comply with the laws, regulations and procedures of those States in which operations are conducted and that are pertinent to the performance of their duties.
+(h) The operator shall establish a checklist for each aircraft type to be used by crew members in all phases of flight under normal, abnormal and emergency conditions in order to ensure that the operating procedures in the operations manual are followed. The design and the usage of checklists shall observe human factors principles and take into account the latest relevant documentation from the design approval holder.
+(i) The operator shall specify flight planning procedures to provide for the safe conduct of the flight based on considerations of aircraft performance, other operating limitations and relevant expected conditions on the route to be followed and at the aerodromes or operating sites concerned. These procedures shall be included in the operations manual.
+(j) The operator shall establish and maintain dangerous goods training programmes for personnel as required by the technical instructions. Such training programmes shall be commensurate with the responsibilities of personnel. Training programmes of operators performing CAT, whether they transport dangerous goods or not, and of operators conducting operations other than CAT referred to in points (b), (c) and (d) of point ORO.GEN.005 that transport dangerous goods shall be subject to review and approval by the competent authority.
+(k) Notwithstanding point (j), operators conducting commercial operations with either of the following aircraft shall ensure that the flight crew has received an appropriate dangerous goods training or briefing, to enable them to recognise undeclared dangerous goods brought on board by passengers or as cargo:
+(1)
+a single-engined propeller-driven aeroplane having an MCTOM of 5 700 kg or less and an MOPSC of 5 or less, operated in a flight taking off and landing at the same aerodrome or operating site, under VFR by day;
+(2)
+an other-than-complex motor-powered helicopter, single-engined, with an MOPSC of 5 or less, operated in a flight taking off and landing at the same aerodrome or operating site, under VFR by day.
+
+=====[ORO.FC.145]=====
+ORO.FC.145
+Provision of training, checking and assessment
+(a)
+All training, checking and assessment required in this Subpart shall be conducted in accordance with the training programmes and syllabi established by the operator in the operations manual;
+(b)
+When establishing the training programmes and syllabi, the operator shall include the relevant elements defined in the mandatory part of the operational suitability data established in accordance with Regulation (EU) No 748/2012.
+(c)
+For both CAT operations with airplanes and helicopters and IAM operations with VCA, the training and checking programmes, including the syllabi and means to deliver the programme such as individual flight simulation training devices (FSTDs) and other training solutions, shall be approved by the competent authority.
+(d)
+The FSTD used to meet the requirements of this Subpart shall be qualified in accordance with Regulation (EU) No 1178/2011 and it shall replicate the aircraft used by the operator, as far as practicable. Differences between the FSTD and the aircraft shall be described and addressed through a briefing or training, as appropriate.
+(e)
+The operator shall establish a system to adequately monitor changes to the FSTD and to ensure that those changes do not affect the adequacy of the training programmes.
+(f)
+The operator shall monitor the validity of each recurrent training and checking.
+(g)
+The validity periods required in this Subpart shall be counted from the end of the month in which the recency, training or check was completed.
+
+=====[ORO.FC.230]=====
+ORO.FC.230
+Recurrent training and checking
+(a) Each flight crew member shall complete recurrent training and checking relevant to the type or variant, and associated equipment of aircraft on which they operate.
+(b)
+Operator proficiency check
+(1)
+Each flight crew member shall complete operator proficiency checks as part of the normal crew complement.
+(2)
+When the flight crew member will be required to operate under IFR, the operator proficiency check shall be conducted without external visual reference, as appropriate.
+(3)
+The validity period of the operator proficiency check shall be 6 calendar months. For operations under VFR by day of performance class B aeroplanes that are conducted during seasons not longer than 8 consecutive months, one operator proficiency check shall be sufficient. The proficiency check shall be undertaken before commencing CAT operations.
+(c)
+Line check
+Each flight crew member shall complete a line check on the aircraft. The validity period of the line check shall be 12 calendar months.
+(d)
+Emergency and safety equipment training and checking
+Each flight crew member shall complete recurrent training and checking on the location and use of all emergency and safety equipment carried on board the aircraft. The validity period of an emergency and safety equipment training and checking shall be 12 calendar months.
+(e)
+CRM training
+(1)
+Elements of CRM shall be integrated into all appropriate phases of the recurrent training.
+(2)
+Each flight crew member shall undergo specific modular CRM training. All major topics of CRM training shall be covered by distributing modular training sessions as evenly as possible over each 3-year period.
+(f) Each flight crew member shall undergo ground training and flight training in an FSTD or an aircraft, or a combination of FSTD and aircraft training, at least every 12 calendar months.
+
+=====[ORO.FC.231]=====
+ORO.FC.231
+Evidence-based training
+(a)
+EBT PROGRAMME
+(1)
+The operator may substitute the requirements of ORO.FC.230 by establishing, implementing and maintaining a suitable EBT programme approved by the competent authority.
+The operator shall demonstrate its capability to support the implementation of the EBT programme (including an implementation plan) and perform a safety risk assessment demonstrating how an equivalent level of safety is achieved.
+(2)
+The EBT programme shall:
+(i)
+correspond to the size of the operator, and the nature and complexity of its activities, taking into account the hazards and associated risks inherent in those activities;
+(ii)
+ensure pilot competence by assessing and developing pilot competencies required for a safe, effective and efficient operation of aircraft;
+(iii)
+ensure that each pilot is exposed to the assessment and training topics derived in accordance with ORO.FC.232;
+(iv)
+include at least six EBT modules distributed across a 3-year programme; each EBT module shall consist of an evaluation phase and a training phase. The validity period of a EBT module shall be 12 months;
+(A)
+The evaluation phase comprises a line-orientated flight scenario (or scenarios) to assess all competencies and identify individual training needs.
+(B)
+The training phase comprises:
+(a)
+the manoeuvres training phase, comprising training to proficiency in certain defined manoeuvres;
+(b)
+the scenario-based training phase, comprising a line-orientated flight scenario (or scenarios) to develop competencies and address individual training needs.
+The training phase shall be conducted in a timely manner after the evaluation phase.
+(3)
+The operator shall ensure that each pilot enrolled in the EBT programme completes:
+(i)
+a minimum of two EBT modules within the validity period of the type rating, separated by a period of not less than 3 months. The EBT module is completed when:
+(A)
+the content of the EBT programme is completed for that EBT module (exposure of the pilot to the assessment and training topics); and
+(B)
+an acceptable level of performance in all observed competencies has been demonstrated;
+(ii)
+line evaluation(s) of competence; and
+(iii)
+ground training.
+(4)
+The operator shall establish an EBT instructor standardisation and concordance assurance programme to ensure that the instructors involved in EBT are properly qualified to perform their tasks.
+(i)
+All instructors must be subject to this programme;
+(ii)
+The operator shall use appropriate methods and metrics to assess concordance;
+(iii)
+The operator shall demonstrate that the instructors have sufficient concordance.
+(5)
+The EBT programme may include contingency procedures for unforeseen circumstances that could affect the delivery of the EBT modules. The operator shall demonstrate the need for those procedures. The procedures shall ensure that a pilot does not continue line operations if the performance observed was below the minimum acceptable level. They may include:
+(i)
+a different separation period between EBT modules; and
+(ii)
+different order of the phases of the EBT module.
+(b)
+COMPETENCY FRAMEWORK
+The operator shall use a competency framework for all aspects of assessment and training within an EBT programme. The competency framework shall:
+(1)
+be comprehensive, accurate, and usable;
+(2)
+include observable behaviours required for safe, effective and efficient operations;
+(3)
+include a defined set of competencies, their descriptions and their associated observable behaviours.
+(c)
+TRAINING SYSTEM PERFORMANCE
+(1)
+The EBT system performance shall be measured and evaluated through a feedback process in order to:
+(i)
+validate and refine the operator’s EBT programme;
+(ii)
+ascertain that the operator’s EBT programme develops pilot competencies.
+(2)
+The feedback process shall be included in the operator’s management system.
+(3)
+The operator shall develop procedures governing the protection of EBT data.
+(d)
+GRADING SYSTEM
+(1)
+The operator shall use a grading system to assess the pilot competencies. The grading system shall ensure:
+(i)
+a sufficient level of detail to enable accurate and useful measurements of individual performance;
+(ii)
+a performance criterion and a scale for each competency, with a point on the scale which determines the minimum acceptable level to be achieved for the conduct of line operations. The operator shall develop procedures to address low performance of the pilot;
+(iii)
+data integrity;
+(iv)
+data security.
+(2)
+The operator shall verify at regular intervals the accuracy of the grading system against a criterion-referenced system.
+(e)
+SUITABLE TRAINING DEVICES AND VOLUME OF HOURS TO COMPLETE THE OPERATOR’S EBT PROGRAMME
+(1)
+Each EBT module shall be conducted in an FSTD with a qualification level adequate to ensure the correct delivery of the assessment and training topics.
+(2)
+The operator shall provide a sufficient volume of hours in the suitable training device for the pilot to complete the operator’s EBT programme. The criteria to determine the volume of the EBT programme are as follows:
+(i)
+The volume corresponds to the size and complexity of the EBT programme;
+(ii)
+The volume is sufficient to complete the EBT programme;
+(iii)
+The volume ensures an effective EBT programme taking into account the recommendations provided by ICAO, the Agency, and the competent authority;
+(iv)
+The volume corresponds to the technology of the training devices used.
+(f)
+EQUIVALENCY OF MALFUNCTIONS
+(1)
+Each pilot shall receive assessment and training in the management of aircraft system malfunctions.
+(2)
+Aircraft system malfunctions that place a significant demand on a proficient crew shall be organised by reference to the following characteristics:
+(i)
+immediacy;
+(ii)
+complexity;
+(iii)
+degradation of aircraft control;
+(iv)
+loss of instrumentation;
+(v)
+management of consequences.
+(3)
+Each pilot shall be exposed to at least one malfunction for each characteristic at the frequency determined by the table of assessment and training topics.
+(4)
+Demonstrated proficiency in the management of one malfunction is considered equivalent to demonstrated proficiency in the management of other malfunctions with the same characteristics.
+(g)
+EQUIVALENCY OF APPROACHES RELEVANT TO OPERATIONS
+(1)
+The operator shall ensure that each pilot receives regular training in the conduct of approach types and approach methods relevant to operations.
+(2)
+This training shall include approaches that place an additional demand on a proficient crew.
+(3)
+This training shall include the approaches that require specific approval in accordance with Annex V (Part- SPA) to this Regulation.
+(h)
+LINE EVALUATION OF COMPETENCE
+(1)
+Each pilot shall periodically undertake a line evaluation of competence in an aircraft to demonstrate the safe, effective and efficient conduct of normal line operations described in the operations manual.
+(2)
+The validity period of a line evaluation of competence shall be 12 months.
+(3)
+The operator approved for EBT may, with the approval of the competent authority, extend the validity of the line evaluation of competence to:
+(i)
+either 2 years, subject to a risk assessment;
+(ii)
+or 3 years, subject to a feedback process for the monitoring of line operations which identifies threats to the operations, minimises the risks of such threats, and implements measures to manage human error in the operations.
+(4)
+For successful completion of the line evaluation of competence, the pilot shall demonstrate an acceptable level of performance in all observed competencies.
+(i)
+GROUND TRAINING
+(1)
+Every 12 calendar months, each pilot shall undergo:
+(i)
+technical ground training;
+(ii)
+assessment and training on the location and use of all emergency and safety equipment carried on the aircraft.
+(2)
+The operator may, with the approval of the competent authority and subject to a risk assessment, extend the period of assessment and training on the location and use of all emergency and safety equipment carried on the aircraft to 24 months.
+
+=====[ORO.FC.A.245]=====
+ORO.FC.A.245
+Alternative training and qualification programme
+(a) The aeroplane operator having appropriate experience may substitute one or more of the following training and checking requirements for flight crew by an alternative training and qualification programme (ATQP), approved by the competent authority:
+(1)
+set out in point SPA.LVO.120 on flight crew training and qualifications;
+(2)
+set out in point ORO.FC.220 on conversion training and checking;
+(3)
+set out in point ORO.FC.125 on differences training, familiarisation, equipment and procedure training;
+(4)
+set out in point ORO.FC.205 on command course;
+(5)
+set out in point ORO.FC.230 on recurrent training and checking; and
+(6)
+set out in point ORO.FC.240 on operation on more than one type or variant.
+(b) The ATQP shall contain training and checking that establishes and maintains at least an equivalent level of proficiency achieved by complying with the provisions of ORO.FC.220 and ORO.FC.230. The level of flight crew training and qualification proficiency shall be demonstrated prior to being granted the ATQP approval by the competent authority.
+(c) The operator applying for an ATQP approval shall provide the competent authority with an implementation plan, including a description of the level of flight crew training and qualification proficiency to be achieved.
+(d) In addition to the checks required by points ORO.FC.230 and FCL.060 of Annex I (Part-FCL) to Regulation (EU) No 1178/2011, each flight crew member shall complete a line oriented evaluation (LOE) conducted in an FSTD. The validity period of an LOE shall be 12 calendar months. The LOE is completed when both of the following conditions are met:
+(1)
+the syllabus of the LOE is completed; and
+(2)
+the flight crew member has demonstrated an acceptable level of performance.
+(e) After 2 years of operating with an approved ATQP, the operator may, with the approval of the competent authority, extend the validity periods of the checks referred to in point ORO.FC.230 as follows:
+(1)
+Operator proficiency check to 12 calendar months.
+(2)
+Line check to 24 calendar months.
+(3)
+Emergency and safety equipment checking to 24 calendar months.
+(f) Each flight crew member shall undergo specific modular CRM training. All major topics of CRM training shall be covered by distributing modular training sessions as evenly as possible over each 3-year period.
+(g) The ATQP programme shall include 48 hours on an FSTD for each flight crew member, distributed evenly over a 3-year programme. The operator may reduce the number of FSTD hours, but no lower than 36 hours, provided that it demonstrates that the level of safety that is achieved is equivalent to that of the programme the ATQP may substitute in accordance with point (a).
+
+=====[ORO.CC.140]=====
+ORO.CC.140
+Recurrent training
+(a) Each cabin crew member shall complete annually recurrent training and checking.
+(b) Recurrent training shall cover the actions assigned to each member of the cabin crew in normal and emergency procedures and drills relevant to each aircraft type and/or variant to be operated.
+(c) Aircraft type specific training elements:
+(1)
+Recurrent training shall include annually touch-drills by each cabin crew member for simulating the operation of each type or variant of normal and emergency doors and exits for passenger evacuation.
+(2)
+Recurrent training shall also include at intervals not exceeding three years:
+(i)
+operation and actual opening by each cabin crew member, in a representative training device or in the actual aircraft, of each type or variant of normal and emergency exits in the normal and emergency modes;
+(ii)
+actual operation by each cabin crew member, in a representative training device or in the actual aircraft, of the flight crew compartment security door, in both normal and emergency modes, and of the seat and restraint system, and a practical demonstration of the oxygen system equipment relevant to pilot incapacitation;
+(iii)
+demonstration of the operation of all other exits including the flight crew compartment windows; and
+(iv)
+demonstration of the use of the life-raft, or slide raft, where fitted.
+(d) Operator specific training elements:
+(1)
+Recurrent training shall include annually:
+(i)
+by each cabin crew member:
+(A)
+location and handling of all safety and emergency equipment installed or carried on board; and
+(B)
+the donning of life-jackets, portable oxygen and protective breathing equipment (PBE);
+(ii)
+stowage of articles in the passenger compartment;
+(iii)
+procedures related to aircraft surface contamination;
+(iv)
+emergency procedures;
+(v)
+evacuation procedures;
+(vi)
+incident and accident review;
+(vii)
+crew resource management;
+(viii)
+aero-medical aspects and first aid including related equipment;
+(ix)
+security procedures.
+(2)
+Recurrent training shall also include at intervals not exceeding three years:
+(i)
+use of pyrotechnics (actual or representative devices);
+(ii)
+practical demonstration of the use of flight crew checklists;
+(iii)
+realistic and practical training in the use of all fire-fighting equipment, including protective clothing, representative of that carried in the aircraft;
+(iv)
+by each cabin crew member:
+(A)
+extinguishing a fire characteristic of an aircraft interior fire;
+(B)
+donning and use of PBE in an enclosed simulated smoke-filled environment.
+(e) Validity periods:
+(1)
+The annual recurrent training validity period shall be 12 calendar months counted from the end of the month when the check was taken.
+(2)
+If the recurrent training and checking required in (a) are undertaken within the last three calendar months of the validity period, the new validity period shall be counted from the original expiry date.
+(3)
+For the additional triennial training elements specified in (c)(2) and (d)(2), the validity period shall be 36 calendar months counted from the end of the month when the checks were taken.

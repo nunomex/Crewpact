@@ -63,7 +63,7 @@ function detailFor(it, lang) {
   } else if (it.id === 'validades') {
     (raw.items || []).forEach((v) => {
       const band = v.st ? v.st.band : 'none';
-      out.rows.push({ k: validityLabel(v.type, raw.isPilot, lang),
+      out.rows.push({ k: validityLabel(v.type, raw.isPilot, lang, v.program || null),
         v: band === 'expired' ? l('Expirado', 'Expired') : band === 'expiring' ? `${v.st.days} d` : l('Válido', 'Valid'),
         tone: band === 'expired' ? 'bad' : band === 'expiring' ? 'warn' : 'ok' });
     });

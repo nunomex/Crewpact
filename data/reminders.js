@@ -8,7 +8,7 @@
 // ⚠️ A forma do `trigger` pode precisar de ajuste fino no dev build conforme a versão.
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { validityLabel } from './validities';
+import { validityLabel, reminderDate, isNoExpiryType } from './validities';
 import AsyncStorage from './secureStorage';
 
 // Expo Go (SDK 53+): o expo-notifications está AMPUTADO e imprime avisos logo no require —
@@ -149,17 +149,16 @@ export async function syncReminders({ validities = [], isPilot, duties = {}, tod
 
   // ── Validades: 30 d e 7 d antes (09:00) + no dia (09:00) ──
   for (const v of validities) {
-    if (!v || !v.expiry) continue;
-    const exp = new Date(v.expiry + 'T00:00:00');
-    if (isNaN(exp.getTime())) continue;
-    const name = validityLabel(v.type, isPilot, lang);
+    if (!v || !v.expiry || isNoExpiryType(v.type)) continue;
+    const name = validityLabel(v.type, isPilot, lang, v.program || null);
     const points = [
       [30, l('expira em 30 dias', 'expires in 30 days')],
       [7, l('expira em 7 dias', 'expires in 7 days')],
       [0, l('expira hoje', 'expires today')],
     ];
     for (const [daysBefore, label] of points) {
-      const when = atHM(9, 0, new Date(exp.getTime() - daysBefore * 86400000));
+      const when = reminderDate(v.expiry, daysBefore, 9, 0);   // dias de calendário (a hora de verão não muda o dia)
+      if (!when) continue;
       await schedule(when, l('Validade a expirar', 'Document expiring'), `${name} ${label}.`, { kind: 'validity', type: v.type });
     }
   }

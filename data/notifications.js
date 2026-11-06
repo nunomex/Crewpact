@@ -62,7 +62,7 @@ export function buildNotifications(profile, lang = 'pt', opts = {}) {
   if (vits.length) {
     const sig = vits.map((x) => `${x.v.type}:${x.st.band}:${x.v.expiry}`).sort().join(',');
     const expired = vits.filter((x) => x.st.band === 'expired').length;
-    const line = (x) => `${validityLabel(x.v.type, !!opts.isPilot, lang)} — ${x.st.band === 'expired' ? (en ? 'expired' : 'expirado') : (en ? `${x.st.days} d left` : `faltam ${x.st.days} d`)}`;
+    const line = (x) => `${validityLabel(x.v.type, !!opts.isPilot, lang, x.v.program || null)} — ${x.st.band === 'expired' ? (en ? 'expired' : 'expirado') : (en ? `${x.st.days} d left` : `faltam ${x.st.days} d`)}`;
     list.push({
       id: 'docs:' + sig,
       action: 'validades',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback, useMemo } from 'react';
 import { View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet, AppState, Animated, Alert } from 'react-native';
 
 // Acessibilidade: respeita a definição "Texto grande" do sistema, mas limita a
@@ -47,6 +47,7 @@ import { syncReminders, notifyRosterChange, notifyLiveSync, cancelAllReminders, 
 import { legZulu } from './data/zulu';
 import { storedMatchesReal } from './data/flightStatus';
 import { hotelSetCurrent, hotelUpdateAt, hotelAddAsCurrent, hotelMakeCurrent, hotelRemoveAt } from './data/hotels';
+import { lawfulValidities } from './data/validities';
 
 // ── Caixa-negra de crashes (setup sem adb): um erro FATAL de JS fica gravado ANTES de a app
 // morrer e é mostrado num Alert na reabertura seguinte (efeito no App). Sem isto, "a app vai
@@ -904,6 +905,9 @@ export default function App() {
   // Papel da tripulação (onboarding → profiles.crew_type): adapta motor/UI.
   const crewType = profile?.crewType || 'cabin';   // 'cabin' | 'pilot'
   const isPilot = crewType === 'pilot';
+  // As validades COMO DIZ A LEI (auditoria, bloco 3): nos prazos que a lei dá, a validade recalcula-se sempre da data feita
+  // (uma correção chega às já gravadas); um prazo que a app inventava fica "sem data" até o tripulante escrever a do documento.
+  const lawValidities = useMemo(() => lawfulValidities(validities, isPilot), [validities, isPilot]);
   // ORO.FTL.205(c): o PSV máximo da cabine baseia-se na apresentação DOS PILOTOS. Sem a diferença do Manual de
   // Operações da companhia, é DESCONHECIDA (null) → o motor dá o garantido e, perto do limite, "incerto"; cada serviço
   // pode trazer a hora dos pilotos (special.fcReport). Pilotos: não se aplica (undefined).
@@ -1046,12 +1050,12 @@ export default function App() {
       const granted = await requestRemindersPermission();
       if (!granted) return;                       // sem permissão → fica desligado
       setRemindersOn(true);
-      syncReminders({ validities, isPilot, duties, todayISO: isoDay(), lang });
+      syncReminders({ validities: lawValidities, isPilot, duties, todayISO: isoDay(), lang });
     } else { setRemindersOn(false); cancelAllReminders(); }
   };
   useEffect(() => {
-    if (remindersOn) syncReminders({ validities, isPilot, duties, todayISO: isoDay(), lang });
-  }, [remindersOn, validities, duties]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (remindersOn) syncReminders({ validities: lawValidities, isPilot, duties, todayISO: isoDay(), lang });
+  }, [remindersOn, lawValidities, duties]); // eslint-disable-line react-hooks/exhaustive-deps
   // Lembrete para acordar (Início v6): se a escala mudou o report ou apagou o serviço, o lembrete cai —
   // com ou sem o interruptor dos lembretes ligado (foi pedido à mão). Só depois de os dados carregarem.
   useEffect(() => { if (loadedUserId && user?.id && loadedUserId === user.id) validateWakeUp(duties); }, [duties, loadedUserId, user?.id]);
@@ -1083,7 +1087,7 @@ export default function App() {
     openExtra: () => setExtraOpen(true),
     hotels, saveHotel, saveHotelAt, addHotelAlt, makeHotelCurrent, removeHotelAt, removeHotel,
     rosterLog, addRosterLog,
-    validities, addValidity, updateValidity, removeValidity,
+    validities: lawValidities, rawValidities: validities, addValidity, updateValidity, removeValidity,
     remindersOn, toggleReminders,
     lockEnabled, setLockEnabled, locked, setLocked,
     lang, setLang,

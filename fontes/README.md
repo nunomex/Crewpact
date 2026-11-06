@@ -37,3 +37,25 @@ existe, palavra por palavra, no texto oficial abaixo, na página indicada.
   `Accept-Language: por` (ou `eng`) — a EUR-Lex recusa descargas automáticas. O CS-FTL.1 veio da EASA:
   https://www.easa.europa.eu/sites/default/files/dfu/2014-002-R-CS-FTL.1%20-%20Initial%20Issue.pdf e a alteração de 2023 de
   https://www.easa.europa.eu/en/downloads/139089/en. Os `.txt` têm a marca `=====[PDF p.N]=====` em cada página.
+
+## Validades (`eu/`) — auditoria dos cálculos, bloco 3 (6 de novembro de 2026)
+
+Os prazos das validades (`data/validities.js`) saem daqui. Cada prazo guarda a citação literal; o teste
+`scripts/validities.test.js` confere-a no texto, na secção indicada, em português e em inglês.
+
+| Ficheiro | Documento | Secções guardadas |
+|---|---|---|
+| `eu/reg-965-2012-pt.txt` · `-en.txt` | Reg. (UE) n.º 965/2012 (operações aéreas), Anexo III Parte-ORO — consolidado de 25-05-2026 (CELEX 02012R0965-20260525) | ORO.GEN.110, ORO.FC.145, ORO.FC.230, ORO.FC.231 (início), ORO.FC.A.245, ORO.CC.140 |
+| `eu/reg-1178-2011-pt.txt` · `-en.txt` | Reg. (UE) n.º 1178/2011 (tripulações) — Parte-FCL, Parte-MED, Parte-CC, Parte-ARA — consolidado de 30-04-2026 (CELEX 02011R1178-20260430) | FCL.040, FCL.055, FCL.625, FCL.740, FCL.740.A (início), FCL.940, FCL.1025 a), MED.A.045, MED.C.005, CC.CCA.105, ARA.FCL.215 |
+| `eu/reg-2015-1998-pt.txt` · `-en.txt` | Reg. de Execução (UE) 2015/1998 (segurança da aviação), capítulo 11 — consolidado de 01-10-2026 (CELEX 02015R1998-20261001) | 11.2.3.11 (início), 11.4.3 |
+| `eu/reg-1182-71-pt.txt` · `-en.txt` | Reg. (CEE, Euratom) n.º 1182/71 (prazos, datas e termos) — JO L 124 de 8.6.1971 (CELEX 31971R1182) | Artigo 3.º |
+
+- **Como se descarregaram:** do serviço de publicações da UE (Cellar), `http://publications.europa.eu/resource/celex/<CELEX>`
+  com `Accept: application/xhtml+xml` (o 1182/71 em português só existe em `text/html`) e `Accept-Language: por` ou `eng`.
+  A versão consolidada mais recente de cada regulamento saiu da consulta SPARQL do Cellar (`cdm:resource_legal_id_celex`).
+- **São extratos literais:** o HTML passou a texto (um bloco por linha) e guardaram-se só as secções da tabela, sem mudar
+  uma palavra; tiraram-se só as marcas de alteração da EUR-Lex. Cada secção começa por `=====[secção]=====`.
+- **Aviso da EUR-Lex:** as versões consolidadas "não têm efeito jurídico"; fazem fé os textos do Jornal Oficial. Para o
+  advogado: conferir no JO as secções citadas (ver `docs/decisoes.md`).
+- **O que não está aqui:** as Instruções Técnicas da ICAO (prazo da formação em mercadorias perigosas, para onde remete a
+  ORO.GEN.110 j)) não são públicas — a app pede a data do certificado.

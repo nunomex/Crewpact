@@ -14,10 +14,9 @@ cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler p
 verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 2 (Simulação) FEITO a 2026-11-06** — ver a entrada "BLOCO 2" abaixo. Falta vê-lo no iPhone (lista na entrada).
+**Bloco 3 (limites TAP e validades) FEITO a 2026-11-06** — ver a entrada "BLOCO 3" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-3. **Limites TAP (S11) e validades (S12)** — incluir o A-253 (a Simulação avalia as validades HOJE, não no dia do serviço:
-   `SimulationResult.js`, `validityStatus(v.expiry)` sem data). **Opus 5.5 Extra, sessão nova.**
-4. Importação (S6 do lado do import: A-220–A-228, M12, L12; e passar o `buildImportCandidates` para o `simulateDuty`) · 5. Dinheiro a mais (M1–M11,
+4. **Importação** — **Opus 5.5 Extra, sessão nova.** (S6 do lado do import: A-220–A-228, M12, L12; e passar o `buildImportCandidates` para o `simulateDuty`) · 5. Dinheiro a mais (M1–M11,
    primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
    8. Dúvidas → advogado.
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
@@ -35,6 +34,72 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 3: limites TAP e validades "como diz a lei" (Opus 5.5)
+
+Golden primeiro (`scripts/ae-tap-limits.test.js` 526, `scripts/validities.test.js` 211), escrito a partir de `fontes/`;
+`npm test` verde (30 suites); pacote iOS gerado sem erros.
+
+**Validades — decisão do Nuno: "não quero nada inventado. quero que seja como diz a lei" (e o OPC "sempre como diz a lei").**
+- **Fontes novas em `fontes/eu/`** (extratos literais da EUR-Lex, pt e en, ver `fontes/README.md`): Reg. 965/2012 (ORO.FC,
+  ORO.CC, ORO.GEN.110), Reg. 1178/2011 (Parte-FCL, MED, CC, ARA), Reg. 2015/1998 (11.4.3) e Reg. 1182/71 (art. 3.º, prazos).
+  Cada prazo de `data/validities.js` cita o texto; o teste confere cada citação na secção, nas duas línguas.
+- **Três maneiras, pela lei:** calculado da data feita onde a lei dá o prazo (OPC 6 m; line check 12 m; SEP do piloto 12 m;
+  formação anual da cabine 12 m — SEP, CRM, primeiros socorros, segurança; módulos trienais da cabine 36 m; segurança do
+  piloto 5 anos até ao mesmo dia); **data escrita** onde a lei manda escrever a data no documento ou deixa o prazo ao
+  operador (type rating/LPC, IR, inglês e instrutor: ARA.FCL.215 c); médico; passaporte; DG — as Instruções Técnicas da ICAO
+  não são públicas; CRM e primeiros socorros do piloto — o regulamento não lhes dá prazo); **referência** (licença: FCL.040;
+  atestado de cabine: CC.CCA.105).
+- **OPC, line check e SEP do piloto dependem do programa do operador:** regra geral (6/12/12), ATQP com prorrogação aprovada
+  (12/24/24, ORO.FC.A.245 e)) ou EBT (módulo 12 m; line check e SEP valem 12 m mas o operador pode prorrogá-los com aprovação → data do operador, ORO.FC.231 h) e i)). O formulário pergunta;
+  sem programa não há prazo. O antigo "Type rating · OPC/LPC" separou-se em OPC + Type rating · LPC.
+- **Cabine, renovação nos 3 últimos meses** (ORO.CC.140 e) 2)): conta a partir da validade anterior, + 12 meses até ao mesmo dia
+  (1182/71). Campo "Validade anterior"; ao renovar um item guardado a app SUGERE a guardada (só conta se o tripulante a escolher).
+- **Segurança do piloto (AVSEC):** 5 anos até ao mesmo dia; sábado/domingo passa a segunda (1182/71, art. 3.º, n.º 4); feriados: nota.
+- **"Expirado"** só no dia seguinte à validade (dias de calendário, A-281); datas impossíveis recusadas (A-288); lembretes por
+  dias de calendário (A-286); o rótulo da cabine é "Médico" (A-217).
+- **As validades já gravadas passam pela lei ao abrir a app** (`lawfulValidities`): os prazos calculados recalculam-se; um
+  prazo que a app inventava (data feita num tipo de data escrita) fica "sem data" até o tripulante escrever a do documento.
+- **Simulação:** avalia as validades no DIA DO SERVIÇO (A-253, A-280); Início e Simulação dizem "O que registaste está válido"
+  (nunca "Tudo válido", A-285).
+
+**Limites TAP (`ae/tapLimits.js`):**
+- **Período de serviço de voo inteiro (`fdpChainsOf`):** no mesmo dia, menos de 11 h entre serviços = UM período; entre dias,
+  só com menos de 8 h (o repouso mais curto que um AE admite, pilotos Cl. 36.ª) — de 8 h para cima é repouso e a regra do
+  repouso julga-o. Entram o posicionamento antes do voo (A-124), dois voos do mesmo dia (A-126) e o DH depois do último voo no
+  mesmo dia (cabine a 100 % desde calços + 30 min, Cl. 28.ª, n.º 3; pilotos a 50 %, Cl. 16.ª, n.º 1 b)). Pilotos: com e sem a
+  espera entre o DH e a apresentação, e o quadro pela apresentação do DH ou do voo (o AE não diz; também no longo curso); mais de 3 h entre setores = split duty, só com autorização do SPAC
+  (incerto). Cabine: o intervalo não pode ser na base; fora dela, o repartido (Cl. 25.ª) é uma segunda leitura.
+- **Despertar (A-122):** o limite de 6 h fora da base também pela hora de despertar — pilotos apresentação − 30 min − transporte,
+  cabine transporte − 1 h; o transporte não se vê, mas os dois AE limitam os dois sentidos a 3 h → "sim / talvez / não".
+- **Cabine médio curso (A-123):** a janela das 2h00–5h59 na hora local da partida; o quadro na hora da base e na de referência
+  (Cl. 23.ª, n.º 3 — vem depois do longo curso, por isso as duas leituras).
+- **Assistência antes do voo (A-125):** pilotos +50 % da assistência no aeroporto; cabine nas instalações = limite pela hora de
+  ativação (entre o início e a apresentação) + 16 h; em casa = redução depois de 6 h (8 h com descanso a bordo/split) e 22 h.
+- **Repouso:** depois de posicionamento como depois de voo (A-128); +2 h depois de simulador de noite só na leitura estrita
+  (a escala não separa o simulador da sala, A-127); dois serviços de voo no mesmo dia com repouso entre eles (A-126).
+- **Noites "consecutivas"** pela noite que o serviço toca (A-129); **folga que atravessa o trimestre** conta onde acaba ou onde
+  começa (A-130); **média da rotação** pela soma, sem arredondar (A-131); **horas repartidas pelos dias** (A-132).
+- **Início e detalhe do serviço** passam o mapa inteiro ao `fdpForDuty` (antes tiravam os outros serviços do dia).
+- **Revisão independente (2.º agente, só com o código e as fontes) — 13 erros confirmados, corrigidos no mesmo dia:** juntar
+  serviços escondia repousos curtos entre dias (E1–E3: limiar de 8 h entre dias; o DH solto volta ao repouso); DH depois do voo
+  (E4); DH antes no longo curso e o quadro pela apresentação do voo (E5–E7); assistência em casa até ao fim marcado (E8) e o
+  contacto de madrugada (n.º 11 d)); média da rotação por períodos (E9); tempo de voo exato sem pernas UTC (E10); AVSEC ao fim de
+  semana (E11); a nota do EBT dizia o contrário do ORO.FC.231 (E12); datas escritas antigas apagadas (E13); a validade anterior
+  preenchida sozinha (R5); "Desfazer" repunha a vista da lei (R6); o resumo dizia "válido" com datas em falta (R7); rótulos sem
+  o programa (R8). **Riscos que ficam:** R1 pilotos, 50 % da assistência no aeroporto somados ao TSV (Cl. 19.ª, n.os 5 e 7 a)) —
+  advogado; R3 cabine, a meia-noite do "Dia" na hora local do tripulante (a app usa a da base); R4 a fronteira das 22h00/6h00 da
+  Cl. 35.ª, n.º 3 (já era assim).
+
+**Pendente:** o tempo de voo de um voo que passa da meia-noite SEM as horas de cada perna ainda conta no dia em que começa
+(resto do A-132: devia ser "incerto"); A-133 a A-141 (dúvidas de leitura → Nuno/advogado). **Para o advogado:** conferir no
+Jornal Oficial as secções de `fontes/eu/` (a EUR-Lex diz que o consolidado não tem efeito jurídico) e a leitura da Cl. 23.ª,
+n.º 3 (cabine) no médio curso.
+**Ver no iPhone:** formulário das validades (programa do operador, validade anterior, a linha da lei, data escrita); validades
+antigas que ficam "sem data"; "Validades em dia?" da Simulação num serviço futuro; limites TAP com DH antes do voo, dois voos
+no mesmo dia e assistência antes do voo (Início, detalhe, Limites do acordo).
 
 ---
 

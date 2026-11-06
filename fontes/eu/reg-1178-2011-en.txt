@@ -1,0 +1,331 @@
+Regulamento (UE) n.º 1178/2011 (tripulações) — Anexo I Parte-FCL, Anexo IV Parte-MED, Anexo V Parte-CC, Anexo VI Parte-ARA
+CELEX 02011R1178 — versão consolidada de 2026-04-30 — língua: en
+Descarregado a 2026-11-06 do serviço de publicações da UE (Cellar): http://publications.europa.eu/resource/celex/02011R1178-20260430
+EXTRATO LITERAL: só as secções abaixo, copiadas sem mudanças (tirámos só as marcas de alteração da EUR-Lex).
+Aviso da EUR-Lex: a versão consolidada é um instrumento de documentação e não tem efeito jurídico; fazem fé os textos do Jornal Oficial.
+
+=====[FCL.040]=====
+FCL.040
+Exercise of the privileges of licences
+The exercise of the privileges granted by a licence shall be dependent upon the validity of the ratings contained therein, if applicable, and of the medical certificate as appropriate to the privileges exercised.
+
+=====[FCL.055]=====
+FCL.055
+Language proficiency
+(a)
+General. Aeroplane, helicopter, powered-lift aircraft, airship and gyroplane pilots required to use the radio telephone shall not exercise the privileges of their licences and ratings unless they have a language proficiency endorsement on their licence in either in English or the language used for radio communications involved in the flight. The endorsement shall indicate the language, the proficiency level and the validity date, and it shall be obtained in accordance with a procedure established by a competent authority. The minimum acceptable proficiency level is the operational level (Level 4) in accordance with Appendix 2 to this Annex.
+(b)
+The applicant for a language proficiency endorsement shall demonstrate, in accordance with Appendix 2 to this Annex, at least an operational level of language proficiency both in the use of phraseologies and plain language to an assessor certified by a competent authority or a language-testing body approved by a competent authority as applicable. To do so, the applicant shall demonstrate the ability to:
+(1)
+communicate effectively in voice-only and in face-to-face situations;
+(2)
+communicate on common and work-related topics with accuracy and clarity;
+(3)
+use appropriate communicative strategies to exchange messages and to recognise and resolve misunderstandings in a general or work-related context;
+(4)
+handle successfully the linguistic challenges presented by a complication or unexpected turn of events which occurs within the context of a routine work situation or communicative task with which they are otherwise familiar; and
+(5)
+use a dialect or accent which is intelligible to the aeronautical community.
+(c)
+Except for pilots who have demonstrated language proficiency at the expert level (level 6) in accordance with Appendix 2 to this Annex, the language proficiency endorsement shall be re-evaluated every:
+(1)
+4 years, if the level demonstrated is operational level (level 4); or
+(2)
+6 years, if the level demonstrated is extended level (level 5).
+(d)
+Specific requirements for holders of an instrument rating (IR). By way of derogation from the paragraphs above, holders of an IR shall have demonstrated the ability to use the English language at the appropriate proficiency level as defined in Appendix 2 to this Annex.
+(e)
+The demonstration of language proficiency and the use of the English language for IR holders shall be done through a method of assessment established by any competent authority.
+
+=====[FCL.625]=====
+FCL.625
+IR — Validity, revalidation and renewal
+(a) Validity
+An IR shall be valid for 1 year.
+(b) Revalidation
+(1)
+An IR shall be revalidated within the 3 months immediately preceding its expiry date by complying with the revalidation criteria for the relevant aircraft category.
+(2)
+If applicants choose to fulfil the revalidation requirements earlier than prescribed in point (1), the new validity period shall commence from the date of the proficiency check.
+(3)
+Applicants who fail to pass the relevant section of an IR proficiency check before the expiry date of the IR shall exercise the IR privileges only if they have passed the IR proficiency check.
+(4)
+Applicants for the revalidation of an IR shall receive full credits for the proficiency check as required in this Subpart when they complete EBT practical assessment in accordance with Appendix 10 related to the IR at an EBT operator.
+(c) Renewal
+If an IR has expired, in order to renew their privileges, applicants shall comply with all of the following:
+(1)
+in order to determine whether refresher training is necessary for the applicant to reach the level of proficiency needed to pass the instrument element of the skill test in accordance with Appendix 9, they shall undergo an assessment at either of the following organisations:
+(i)
+at an ATO;
+(ii)
+at an EBT operator that is specifically approved for such refresher training;
+(2)
+if deemed necessary by the organisation providing the assessment in accordance with point (1), they shall complete refresher training at that organisation;
+(3)
+after complying with point (1) and, as applicable, point (2), they shall pass a proficiency check in accordance with Appendix 9 or complete EBT practical assessment in accordance with Appendix 10 in the relevant aircraft category. That EBT practical assessment may be combined with the refresher training specified in point (2);
+(4)
+they shall hold the relevant class or type rating unless specified otherwise in this Annex.
+(d) If the IR has not been revalidated or renewed in the preceding 7 years, applicants for the IR shall pass again the IR theoretical knowledge examination and skill test.
+(e) Holders of a valid IR on a pilot licence issued by a third country in accordance with Annex 1 to the Chicago Convention shall be exempted from complying with the requirements in points (c)(1), (c)(2) and (d) when renewing the IR privileges contained in licences issued in accordance with this Annex.
+(f) The proficiency check specified in point (c)(3) may be combined with a proficiency check performed for the renewal of the relevant class or type rating.
+SECTION 2
+Specific requirements for the aeroplane category
+
+=====[FCL.740]=====
+FCL.740
+Validity and renewal of class and type ratings
+(a)
+Validity
+(1)
+The validity period of class and type ratings shall be 1 year, except for single-pilot single-engine class ratings for which the validity period shall be 2 years, unless otherwise determined in the OSD. If pilots choose to fulfil the revalidation requirements earlier than prescribed in points FCL.740.A, FCL.740.H, FCL.740.PL and FCL.740.As, the new validity period shall commence from the date of the proficiency check.
+(2)
+Applicants for the revalidation of a class or type rating shall receive full credits for the proficiency check as required in this Subpart when they complete EBT practical assessment in accordance with Appendix 10 at an operator that has implemented EBT for the relevant class or type rating.
+(b)
+Renewal
+For the renewal of a class or type rating, applicants shall comply with all of the following:
+(1)
+in order to determine whether refresher training is necessary for the applicant to reach the level of proficiency to safely operate the aircraft, they shall undergo an assessment at one of the following:
+(i)
+at an ATO;
+(ii)
+at a DTO or at an ATO, if the expired rating concerned a non-high-performance SEP aeroplane class rating, a TMG class rating or a single-engine type rating for helicopters referred to in point DTO.GEN.110(a)(2)(c) of Annex VIII;
+(iii)
+at a DTO, at an ATO or with an instructor, if the rating expired no more than 3 years ago and the rating concerned a non-high-performance SEP aeroplane class rating or a TMG class rating;
+(iv)
+at an EBT operator that is specifically approved for such refresher training;
+(2)
+if deemed necessary by the organisation or the instructor providing the assessment as per point (1), they shall complete refresher training at that organisation or with that instructor;
+(3)
+after complying with point (1) and, as applicable, point (2), they shall pass a proficiency check in accordance with Appendix 9 or complete EBT practical assessment in accordance with Appendix 10. That EBT practical assessment may be combined with the refresher training specified in point (2).
+By way of derogation from points (b)(1), (b)(2) and (b)(3), pilots holding a flight test rating issued in accordance with point FCL.820 who were involved in the development, certification or production flight tests for an aircraft type and have completed either 50 hours of total flight time or 10 hours of flight time as PIC in test flights in that type during the year prior to the date of their application, shall be entitled to apply for the revalidation or renewal of the relevant type rating.
+Applicants shall be exempted from the requirement in points (b)(1) and (b)(2) if they hold a valid rating for the same class or type of aircraft on a pilot licence issued by a third country in accordance with Annex 1 to the Chicago Convention and if they are entitled to exercise the privileges of that rating.
+(c)
+Pilots who leave an operator’s EBT programme after having failed to demonstrate an acceptable level of competence in accordance with that EBT programme shall not exercise the privileges of that type rating until they have complied with one of the following:
+(1)
+they have completed EBT practical assessment in accordance with Appendix 10;
+(2)
+they have passed a proficiency check in accordance with point FCL.625(c)(3) or point FCL.740(b)(3), as applicable. In such a case, point FCL.625(b)(4) and point FCL.740(a)(2) shall not apply.
+SECTION 2
+Specific requirements for the aeroplane category
+FCL.720.A
+Experience requirements and prerequisites for the issue of class or type ratings — aeroplanes
+Unless otherwise determined in the operational suitability data established in accordance with Annex I (Part-21) to Regulation (EU) No 748/2012 (OSD), applicants for the issue of a class or type rating shall comply with the following experience requirements and prerequisites for the issue of the relevant rating:
+(a) Single-pilot aeroplanes
+(1) Single-pilot multi-engine aeroplanes
+Applicants for the issue of a first class or type rating on a single-pilot multi-engine aeroplane shall have completed at least 70 hours as PIC in aeroplanes.
+(2) Single-pilot high-performance non-complex aeroplanes
+Before starting flight training, applicants for the issue of a class or type rating for a single-pilot aeroplane classified as a high-performance aeroplane shall:
+(i)
+have at least 200 hours of total flying experience, of which 70 hours as PIC in aeroplanes; and
+(ii)
+comply with one of the following requirements:
+(A)
+hold a certificate of satisfactory completion of a course for additional theoretical knowledge undertaken at an ATO; or
+(B)
+have passed the ATPL(A) theoretical knowledge examinations in accordance with this Annex (Part-FCL); or
+(C)
+hold, in addition to a licence issued in accordance with this Annex (Part-FCL), an ATPL(A) or CPL(A)/IR with theoretical knowledge credit for ATPL(A), issued in accordance with Annex 1 to the Chicago Convention.
+(3)
+Single-pilot high-performance complex aeroplanes
+Applicants for the issue of a type rating for a complex single-pilot aeroplane classified as a high-performance aeroplane shall, in addition to meeting the requirements in point (2), comply with all of the following:
+(i)
+they shall hold or have held a single- or multi-engine IR(A), as appropriate and as established in Subpart G;
+(ii)
+for the issue of the first type rating, they shall, before starting the type rating training course, meet the requirements in point (b)(5).
+(b) Multi-pilot aeroplanes
+Applicants for the issue of the first type rating for a multi-pilot aeroplane shall be student pilots currently undergoing training on an MPL training course or shall, before starting the type rating training course, comply with the following requirements:
+(1)
+have at least 70 hours of flight experience as PIC in aeroplanes;
+(2)
+hold or have held a multi-engine IR(A);
+(3)
+have passed the ATPL(A) theoretical knowledge examinations in accordance with this Annex (Part-FCL);
+(4)
+except when the type rating course is combined with an MCC course:
+(i)
+hold a certificate of satisfactory completion of an MCC course in aeroplanes; or
+(ii)
+hold a certificate of satisfactory completion of MCC in helicopters and have more than 100 hours of flight experience as pilots of multi-pilot helicopters; or
+(iii)
+have at least 500 hours as pilots of multi-pilot helicopters; or
+(iv)
+have at least 500 hours as pilots in multi-pilot operations on single-pilot multi-engine aeroplanes, in commercial air transport in accordance with the applicable air operations requirements; and
+(5)
+have completed the training course specified in point FCL.745.A, unless they comply with any of the following:
+(i)
+they completed, within the preceding 3 years, the training and checking in accordance with points ORO.FC.220 or ORO.FC.230 of Annex III (Part-ORO) to Regulation (EU) No 965/2012;
+(ii)
+they have completed the training specified in point FCL.915(e)(1)(ii).
+(c)
+Notwithstanding point FCL.720.A(b), applicants who comply with Section B, point 6(i), of Appendix 9 shall be issued with a type rating with restricted privileges for a multi-pilot aeroplane that allows holders of such a rating to act as cruise relief co-pilots above Flight Level 200, provided that two other members of the crew have a type rating in accordance with point FCL.720.A(b).
+To remove the restriction, applicants shall comply with all of the following:
+(1)
+undergo an assessment at an ATO which shall determine their training needs to have the restriction removed;
+(2)
+based on the assessment specified in point (1), complete, at that ATO, training which shall allow them to reach the level of proficiency to safely operate the aircraft;
+(3)
+after the completion of the training specified in point (2), complete a skill test in accordance with Appendix 9;
+(4)
+after the completion of the skill test specified in point (3), meet one of the following conditions:
+(i)
+comply with point ORO.FC.220(e) of Annex III (Part-ORO) to Regulation (EU) No 965/2012, provided that they meet the experience requirements specified in point FCL.730.A of this Annex;
+(ii)
+complete flight training in the aircraft which includes manoeuvres on take-off, landing and go-around.
+(d)
+When so determined in the OSD, the exercise of the privileges of a type rating may be initially limited to flight under the supervision of an instructor. The flight hours under supervision shall be entered in the pilots' logbook or equivalent record and signed by the instructor. The limitation shall be removed when pilots demonstrate that the hours of flight under supervision required in the OSD have been completed.
+FCL.725.A
+Theoretical knowledge and flight instruction for the issue of class and type ratings — aeroplanes
+Unless otherwise determined in in the operational suitability data established in accordance with Annex I (Part-21) to Regulation (EU) No 748/2012:
+(a)
+for single-pilot multi-engine aeroplanes:
+(1)
+the theoretical knowledge course for a single-pilot multi-engine class rating shall include at least 7 hours of instruction in multi-engine aeroplane operations; and
+(2)
+the flight training course for a single-pilot multi-engine class or type rating shall include at least 2 hours and 30 minutes of dual flight instruction under normal conditions of multi-engine aeroplane operations, and not less than 3 hours 30 minutes of dual flight instruction in engine failure procedures and asymmetric flight techniques.
+(b)
+for single-pilot aeroplanes (sea):
+(1)
+the training course for single-pilot aeroplane (sea) ratings shall include theoretical knowledge and flight instruction; and
+(2)
+the flight training for a class or type rating (sea) for single-pilot aeroplanes (sea) shall include at least 8 hours of dual flight instruction if applicants hold the land version of the relevant class or type rating, or 10 hours if applicants do not hold such a rating; and
+(c)
+for single-pilot non-high-performance complex aeroplanes, single-pilot high-performance complex aeroplanes and multi-pilot aeroplanes, the training courses shall include UPRT theoretical knowledge and flight instruction related to the specificities of the relevant class or type. For the flight instruction, FSTDs may be used in accordance with Section A, point 18 of Appendix 9.
+FCL.730.A
+Specific requirements for pilots undertaking a zero flight time type rating (ZFTT) course — aeroplanes
+(a)
+A pilot undertaking instruction at a ZFTT course shall have completed, on a multi-pilot turbo-jet aeroplane certificated to the standards of CS-25 or equivalent airworthiness code or on a multi-pilot turbo-prop aeroplane having a maximum certificated take-off mass of not less than 10 tonnes or a certificated passenger seating configuration of more than 19 passengers, at least:
+(1)
+if an FFS qualified to level CG, C or interim C is used during the course:
+(i)
+in the case of cruise relief co-pilots, 1 500 hours of flight time;
+(ii)
+in all other cases, 1 500 hours of flight time or 250 route sectors;
+(2)
+if an FFS qualified to level DG or D is used during the course:
+(i)
+in the case of cruise relief co-pilots, 750 hours of flight time;
+(ii)
+in all other cases, 500 hours of flight time or 100 route sectors.
+(b)
+When a pilot is changing from a turbo-prop to a turbo-jet aeroplane or from a turbo-jet to a turbo-prop aeroplane, additional simulator training shall be required.
+FCL.735.A
+Multi-crew cooperation training course — aeroplanes
+(a)
+The MCC training course shall comprise at least:
+(1)
+25 hours of theoretical knowledge instruction and exercises; and
+(2)
+20 hours of practical MCC training, or 15 hours in the case of student pilots attending an ATP integrated course.
+An FNPT II MCC or an FFS shall be used. When the MCC training is combined with initial type rating training, the practical MCC training may be reduced to no less than 10 hours if the same FFS is used for both the MCC and type rating training.
+(b)
+The MCC training course shall be completed within 6 months at an ATO.
+(c)
+Unless the MCC course has been combined with a type rating course, on completion of the MCC training course the applicant shall be given a certificate of completion.
+(d)
+An applicant having completed MCC training for any other category of aircraft shall be exempted from the requirement in (a)(1).
+
+=====[FCL.740.A]=====
+FCL.740.A
+Revalidation of class and type ratings — aeroplanes
+(a)
+Revalidation of multi-engine class ratings and type ratings. For revalidation of multi-engine class ratings and type ratings, the applicant shall:
+(1)
+pass a proficiency check in accordance with Appendix 9 or complete EBT practical assessment in accordance with Appendix 10 in the relevant class or type of aeroplane or an FSTD representing that class or type, within the 3 months immediately preceding the expiry date of the rating; and
+(2)
+complete during the period of validity of the rating, at least:
+(i)
+10 route sectors as pilot of the relevant class or type of aeroplane; or
+(ii)
+1 route sector as pilot of the relevant class or type of aeroplane or FFS, flown with an examiner. This route sector may be flown during the proficiency check.
+(3)
+A pilot working for a commercial air transport operator approved in accordance with the applicable air operations requirements who has passed the operators proficiency check combined with the proficiency check for the revalidation of the class or type rating shall be exempted from complying with the requirement in (2).
+(4)
+The revalidation of a BIR or an IR(A), if held, may be combined with a proficiency check for the revalidation of a class or type rating.
+
+=====[FCL.940]=====
+FCL.940
+Validity of instructor certificates
+With the exception of the MI, and without prejudice to points FCL.900 (b)(1) and FCL.915 (e)(2), instructor certificates shall be valid for a period of 3 years.
+
+=====[FCL.1025]=====
+FCL.1025
+Validity, revalidation and renewal of examiner certificates
+(a) Validity
+An examiner certificate shall be valid for 3 years.
+
+=====[MED.A.045]=====
+MED.A.045
+Validity, revalidation and renewal of medical certificates
+(a)
+Validity
+(1)
+Class 1 medical certificates shall be valid for a period of 12 months.
+(2)
+By derogation from point (1), the period of validity of class 1 medical certificates shall be 6 months for licence holders who:
+(i)
+are engaged in single-pilot commercial air transport operations carrying passengers and have reached the age of 40;
+(ii)
+have reached the age of 60.
+(3)
+Class 2 medical certificates shall be valid for a period of:
+(i)
+60 months, until the licence holder reaches the age of 40. A medical certificate issued prior to the licence holder reaching the age of 40 shall cease to be valid after the licence holder reaches the age of 42;
+(ii)
+24 months, for licence holders aged between 40 and 50. A medical certificate issued prior to the licence holder reaching the age of 50 shall cease to be valid after the licence holder reaches the age of 51;
+(iii)
+12 months, for licence holders aged above 50.
+(4)
+LAPL medical certificates shall be valid for a period of:
+(i)
+60 months, until the licence holder reaches the age of 40. A medical certificate issued prior to the licence holder reaching the age of 40 shall cease to be valid after the licence holder reaches the age of 42;
+(ii)
+24 months, for licence holders aged above 40.
+(5)
+The validity period of a medical certificate, including any associated examination or special investigation, shall be calculated from the date of the aero-medical examination in the case of initial issue and renewal, and from the expiry date of the previous medical certificate in the case of revalidation.
+(b)
+Revalidation
+Aero-medical examinations and assessments, as applicable, for the revalidation of a medical certificate may be undertaken up to 45 days prior to the expiry date of the medical certificate.
+(c)
+Renewal
+(1)
+If the holder of a medical certificate does not comply with point (b), a renewal examination and assessment, as applicable, shall be required.
+(2)
+In the case of class 1 and class 2 medical certificates:
+(i)
+if the medical certificate has expired for less than 2 years, a routine revalidation aero-medical examination shall be performed;
+(ii)
+if the medical certificate has expired for more than 2 years but less than 5 years, the AeMC or AME shall only conduct the renewal aero-medical examination after assessment of the aero-medical records of the applicant;
+(iii)
+if the medical certificate has expired for more than 5 years, the aero-medical examination requirements for initial issue shall apply and the assessment shall be based on the revalidation requirements.
+(3)
+In the case of LAPL medical certificates, the AeMC, AME or GMP shall assess the medical history of the applicant and perform the aero-medical examinations and assessments, as applicable, in accordance with points MED.B.005 and MED.B.095.
+
+=====[MED.C.005]=====
+MED.C.005
+Aero-medical assessments
+(a)
+Cabin crew members shall undergo aero-medical assessments to verify that they are free from any physical or mental illness which might lead to incapacitation or an inability to perform their assigned safety duties and responsibilities.
+(b)
+Each cabin crew member shall undergo an aero-medical assessment before being first assigned to duties on an aircraft, and after that at intervals of maximum 60 months.
+(c)
+Aero-medical assessments shall be conducted by an AME, AeMC, or by an OHMP if the requirements of MED.D.040 are complied with.
+
+=====[CC.CCA.105]=====
+CC.CCA.105 Validity of the cabin crew attestation
+The cabin crew attestation shall be issued with unlimited duration and shall remain valid unless:
+(a)
+it is suspended or revoked by the competent authority; or
+(b)
+its holder has not exercised the associated privileges during the preceding 60 months on at least one aircraft type.
+
+=====[ARA.FCL.215]=====
+ARA.FCL.215
+Validity period
+(a)
+When issuing or renewing a rating or certificate, the competent authority or, in the case of renewal, an examiner specifically authorised by the competent authority, shall extend the validity period until the end of the relevant month.
+(b)
+When revalidating a rating, an instructor or an examiner certificate, the competent authority, or an examiner specifically authorised by the competent authority, shall extend the validity period of the rating or certificate until the end of the relevant month.
+(c)
+The competent authority, or an examiner specifically authorised for that purpose by the competent authority, shall enter the expiry date on the licence or the certificate.
+(d)
+The competent authority may develop procedures to allow privileges to be exercised by the licence or certificate holder for a maximum period of 8 weeks after successful completion of the applicable examination(s), pending the endorsement on the licence or certificate.

@@ -182,6 +182,7 @@ export const servicesOf = (duties = {}, { baseAt = null, crewType = 'cabin' } = 
         airports: aps, base, bo, legs,
         startsAtBase: aps.length >= 2 ? (base ? aps[0] === base : null) : true,
         endsAtBase: aps.length >= 2 ? (base ? aps[aps.length - 1] === base : null) : true,
+        eLearning: !!s.eLearning,
         sectors: isFlight ? (s.sectors || Math.max(0, aps.length - 1)) : 0,
         flightMin: isFlight ? (s.flight_minutes || 0) : 0,
         mc: aps.length >= 2 ? isMediumHaul(aps, crewType) : true,
@@ -242,7 +243,7 @@ export const TAP_RULES = [
     conventions: [
       { pt: 'Mês = 28 dias seguidos e ano = 364 dias seguidos, em janela móvel (D2).', en: 'Month = 28 consecutive days, year = 364 consecutive days, rolling (D2).' },
       { pt: 'O tempo de simulador (n.º 2) ainda não entra: a app não sabe a duração das sessões.', en: 'Simulator time (no. 2) is not counted yet.' },
-      { pt: 'Cada voo conta no dia em que começa.', en: 'Each flight counts on the day it starts.' },
+      { pt: 'O tempo de voo reparte-se pelos dias (Cl. 6.ª, n.º 9): perna a perna, com as horas UTC; sem elas, um voo que passa da meia-noite conta no dia em que começa.', en: 'Flight time is split by day (Cl. 6, no. 9): leg by leg, with UTC times; without them, a flight past midnight counts on its start day.' },
     ],
   },
   {
@@ -261,7 +262,7 @@ export const TAP_RULES = [
       { pt: 'Voo: da apresentação a 30 min depois dos calços (Cl. 6.ª, n.º 40). Posicionamento, solo e formação: a duração toda.', en: 'Flight: report to 30 min after on-blocks (Cl. 6, no. 40). Positioning, ground and training: full duration.' },
       { pt: 'A assistência no aeroporto conta como nas instalações da TAP (50 %).', en: 'Airport standby counts as at TAP premises (50 %).' },
       { pt: 'A reserva de 24 h não entra: o texto não lhe dá peso.', en: '24 h reserve is not counted: the text gives it no weight.' },
-      { pt: 'Ano = 364 dias seguidos (52 semanas, D2). Cada serviço conta no dia em que começa.', en: 'Year = 364 consecutive days (52 weeks, D2). Each service counts on its start day.' },
+      { pt: 'Ano = 364 dias seguidos (52 semanas, D2). O tempo de cada serviço reparte-se pelos dias de calendário (Cl. 6.ª, n.º 9): a parte depois da meia-noite é do dia seguinte.', en: 'Year = 364 consecutive days (52 weeks, D2). Each service\'s time is split by calendar day (Cl. 6, no. 9): the part after midnight belongs to the next day.' },
     ],
   },
   {
@@ -868,25 +869,35 @@ const combineReadings = (s, value, readings) => {
 };
 
 // P32 — pilotos, longo curso (Cl. 43.ª; reforço Cl. 42.ª).
-const lhPilotFdp = (s, rot, fleet) => {
+const lhPilotFdp = (s, rot, fleet, pre = null) => {
   const n = s.sectors || 0;
   if (!n) return null;
   if (s.bo == null) return { status: 'incerto', reason: 'sem-fuso', lc: true };
   if (n > 4) return { status: 'incerto', reason: 'sem-coluna', lc: true };
-  const hour = localClock(s, s.airports[0], s.start);
-  if (hour == null) return { status: 'incerto', reason: 'sem-fuso', lc: true };
-  const row = P32_TABLE.find((r) => hour >= r[0] && hour <= r[1]);
-  const value = s.workEnd - s.start;
+  // Com um posicionamento antes, sem repouso (Cl. 16.ª, n.º 1 a): conta "a 100 %"): o AE não diz se a espera até à
+  // apresentação para o voo conta, nem se o quadro vai pela apresentação do DH ou do voo → as leituras todas.
+  const st = pre ? pre.start : s.start;
+  const hFl = localClock(s, s.airports[0], s.start);
+  if (hFl == null) return { status: 'incerto', reason: 'sem-fuso', lc: true };
+  const hDh = pre && pre.bo != null ? localClock(pre, pre.airports[0], pre.start) : null;
+  const vals = pre ? [s.workEnd - pre.start, (pre.end - pre.start) + (s.workEnd - s.start)] : [s.workEnd - s.start];
+  const hours = pre && hDh != null ? [hDh, hFl] : [hFl];
+  const variants = vals.flatMap((v) => hours.map((h) => ({ v, h })));
+  const value = Math.max(...vals);
   const twoOk = n === 2 && Array.isArray(s.legs) && (s.legs.some((l) => PT_MAINLAND.has(l.dep) && PT_MAINLAND.has(l.arr)) || s.legs[0].block <= 180);
   const canAug = fleet !== 'NB' && (n === 1 || twoOk);
-  const readings = pilotAcclReadings(s, rot).map((accl) => {
-    const L = (accl ? row[2] : row[3])[n - 1];
-    if (L == null) return { accl, hour, limit: null, status: 'incerto', reason: 'sem-valor' };
-    if (value <= L) return { accl, hour, limit: L, status: 'dentro' };
-    if (canAug && value <= L + 300) return { accl, hour, limit: L, status: 'incerto', reason: 'pode-ter-reforco' };
-    return { accl, hour, limit: L, status: 'excede' };
+  const accls = pilotAcclReadings(s, rot);
+  const readings = variants.flatMap(({ v, h: hour }) => {
+    const row = P32_TABLE.find((r) => hour >= r[0] && hour <= r[1]);
+    return accls.map((accl) => {
+      const L = (accl ? row[2] : row[3])[n - 1];
+      if (L == null) return { accl, hour, limit: null, status: 'incerto', reason: 'sem-valor' };
+      if (v <= L) return { accl, hour, limit: L, status: 'dentro' };
+      if (canAug && v <= L + 300) return { accl, hour, limit: L, status: 'incerto', reason: 'pode-ter-reforco' };
+      return { accl, hour, limit: L, status: 'excede' };
+    });
   });
-  return combineReadings(s, value, readings);
+  return combineReadings(pre ? { ...s, start: st } : s, value, readings);
 };
 
 // Cabine, Cl. 23.ª, n.os 3 e 4 — aclimatização. Leituras: { accl: true, hour } | { accl: false } | { accl: null } (fora do quadro).
@@ -924,44 +935,251 @@ const cabinVerdict = (value, n, r) => {
   return { ...r, limit: L, status: 'excede' };                                            // n.º 10: acima do quadro, só com 1 setor
 };
 // C26 — cabine, longo curso.
-const lhCabinFdp = (s, rot) => {
+const lhCabinFdp = (s, rot, pre = null) => {
   const n = s.sectors || 0;
   if (!n) return null;
   if (s.bo == null) return { status: 'incerto', reason: 'sem-fuso', lc: true };
   if (n > 4) return { status: 'incerto', reason: 'sem-coluna', lc: true };
   const a = cabinAcclReadings(s, rot);
   if (!a.readings) return { status: 'incerto', reason: a.reason, lc: true };
-  const value = s.workEnd - s.start;
-  return { ...combineReadings(s, value, a.readings.map((r) => cabinVerdict(value, n, r))), ...(a.diff != null ? { diff: a.diff } : {}) };
+  const st = pre ? pre.start : s.start;                                          // Cl. 28.ª, n.º 2: todo o PSV desde o DH
+  const value = s.workEnd - st;
+  // O quadro é pela "hora de apresentação": a do voo ou a do DH (o AE não diz) → as duas leituras, quando aclimatizado.
+  const hDh = pre && pre.bo != null ? localClock(pre, pre.airports[0], pre.start) : null;
+  const rds = hDh != null ? [...a.readings, ...a.readings.filter((r) => r.accl).map((r) => ({ ...r, hour: hDh }))] : a.readings;
+  return { ...combineReadings(pre ? { ...s, start: st } : s, value, rds.map((r) => cabinVerdict(value, n, r))), ...(a.diff != null ? { diff: a.diff } : {}) };
+};
+
+// ── PERÍODOS DE SERVIÇO DE VOO (auditoria dos cálculos, bloco 3) ─────────────────────────────────
+// O AE conta o serviço de voo "sem período de repouso intermédio" (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 25).
+// Juntam-se num só período (A-124, A-126): no MESMO DIA, os serviços com menos de 11 h entre eles (o repouso mínimo
+// fora da base, pilotos Cl. 25.ª, n.º 2; cabine Cl. 29.ª, n.º 2); entre dias, só com menos de 8 h (o repouso mais curto
+// que um AE admite: pilotos Cl. 36.ª, n.º 1) — de 8 h para cima é um repouso, e o repouso curto julga-o a regra do
+// repouso. Juntam-se o posicionamento que antecede o voo (pilotos Cl. 16.ª, n.º 1 a); cabine Cl. 28.ª, n.º 2) e o que
+// se segue ao último voo no mesmo dia (`post`: pilotos Cl. 16.ª, n.º 1 b), a 50 %; cabine Cl. 28.ª, n.º 3, a 100 %
+// desde os calços + 30 min). Só médio curso (o longo curso tem a aclimatização por serviço; o posicionamento antes
+// dele entra pelo `ctx.pre`).
+export const NO_REST = 660;
+export const NO_REST_ANY = 480;
+const joins = (prev, s) => s.start - prev.workEnd < (s.dn === prev.dn ? NO_REST : NO_REST_ANY);
+const flightish = (x) => x.kind === 'flight' || (x.kind === 'positioning' && (x.airports || []).length >= 2);
+const mergeChain = (parts) => {
+  const first = parts[0], last = parts[parts.length - 1];
+  const fl = parts.filter((x) => x.kind === 'flight');
+  return {
+    ...fl[0], kind: 'flight', chain: parts, date: first.date, dn: first.dn, idx: first.idx,
+    start: first.start, end: last.end, firstOff: first.firstOff, workEnd: last.workEnd,
+    airports: [first.airports[0], ...parts.flatMap((x) => x.airports.slice(1))],
+    bo: parts.every((x) => x.bo != null) ? first.bo : null,
+    legs: parts.every((x) => Array.isArray(x.legs)) ? parts.flatMap((x) => x.legs) : null,
+    startsAtBase: first.startsAtBase, endsAtBase: last.endsAtBase,
+    sectors: fl.reduce((a, x) => a + (x.sectors || 0), 0), flightMin: fl.reduce((a, x) => a + (x.flightMin || 0), 0),
+    mc: parts.some((x) => x.mc === false) ? false : parts.some((x) => x.mc == null) ? null : true,
+  };
+};
+// O posicionamento depois do último voo, no mesmo dia: o período acaba na chegada dele (para o repouso a seguir e as
+// noites); o limite do PSV conta-o pelo AE (`fdpEnd` = o fim do serviço de voo propriamente dito).
+const withPost = (c, post) => {
+  const last = post[post.length - 1];
+  return { ...c, chain: c.chain || [c], post, fdpEnd: c.workEnd, end: last.end, workEnd: last.workEnd, endsAtBase: last.endsAtBase,
+    airports: [...c.airports, ...post.flatMap((x) => x.airports.slice(1))],
+    legs: c.legs && post.every((x) => Array.isArray(x.legs)) ? [...c.legs, ...post.flatMap((x) => x.legs)] : null,
+    bo: c.bo != null && post.every((x) => x.bo != null) ? c.bo : null };
+};
+export const fdpChainsOf = (svcs) => {
+  const out = [];
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    let k = run.length - 1;
+    while (k >= 0 && run[k].kind !== 'flight') k--;                       // posicionamentos depois do último voo: à parte
+    if (k < 0) out.push(...run);
+    else {
+      const head = run.slice(0, k + 1), tail = run.slice(k + 1);
+      const lastF = head[head.length - 1];
+      const post = [];
+      for (const x of tail) { const p = post.length ? post[post.length - 1] : lastF; if (x.dn === lastF.dn && x.start - p.workEnd < NO_REST) post.push(x); else break; }
+      let c = head.length === 1 ? head[0] : mergeChain(head);
+      if (post.length) c = withPost(c, post);
+      out.push(c, ...tail.slice(post.length));
+    }
+    run = [];
+  };
+  for (const s of svcs) {
+    if (s.incomplete || !flightish(s) || s.mc === false) { flush(); out.push(s); continue; }
+    if (run.length && !joins(run[run.length - 1], s)) flush();
+    run.push(s);
+  }
+  flush();
+  return out.sort((a, b) => a.start - b.start || a.idx - b.idx);
+};
+// A assistência de onde saiu um período de serviço de voo: a imediatamente antes, com a apresentação entre o seu
+// início e 1 h depois do seu termo (pilotos Cl. 19.ª, n.os 4 e 6).
+const standbyBefore = (svcs, s) => {
+  const first = s.chain ? s.chain[0] : s;
+  const i = svcs.indexOf(first);
+  const p = i > 0 ? svcs[i - 1] : null;
+  return p && isStandby(p.kind) && !p.incomplete && s.start >= p.start && s.start <= p.end + 60 ? p : null;
+};
+// O posicionamento imediatamente antes de um voo de longo curso, sem repouso pelo meio.
+const positioningBefore = (svcs, s) => {
+  const i = svcs.indexOf(s);
+  const p = i > 0 ? svcs[i - 1] : null;
+  return p && p.kind === 'positioning' && !p.incomplete && s.start - p.end < NO_REST ? p : null;
+};
+
+// O despertar fora da base (A-122). Pilotos: apresentação − 30 min de preparação (Cl. 6.ª, n.º 25) − transporte;
+// cabine: o transporte − 1 h (Cl. 4.ª, n.º 15). O transporte não se vê (ROV), mas os dois sentidos somados não passam
+// 3 h (pilotos Cl. 16.ª, n.º 2; cabine Cl. 6.ª, n.º 2 a)) e nenhum é zero: cada um tem de 1 min a 2h59.
+const PREP_PILOT = 30, WAKE_CABIN = 60, TRANSPORT_MAX = 179;
+const inWin = (c, h0, h1) => (h0 <= h1 ? c >= h0 && c <= h1 : c >= h0 || c <= h1);
+// 'sim' = o despertar cai na janela com qualquer transporte · 'talvez' = com algum · 'nao' = com nenhum.
+const wakeIn = (repAbs, before, h0, h1) => {
+  let any = false, all = true;
+  for (let w = repAbs - before - TRANSPORT_MAX; w <= repAbs - before - 1; w++) { if (inWin(clockOf(w), h0, h1)) any = true; else all = false; }
+  return all ? 'sim' : any ? 'talvez' : 'nao';
+};
+const mcTable = (crewType, clock, n) => {
+  if (crewType === 'pilot') {
+    const row = P27_TABLE.find((r) => clock >= r[0] && clock <= r[1]);
+    return row[0] === 1080 && (n === 3 || n === 4) ? 615 : (n <= 4 ? row[2] : row[3]);   // ** 3 e 4 aterragens
+  }
+  const row = C23_TABLE.find((r) => clock >= r[0] && clock <= r[1]);
+  return row[0] === 1080 && n === 3 ? 615 : row[2];                                          // ** 3 aterragens planeadas
+};
+// As leituras → o veredicto: "excede" só se todas excedem; "dentro" se todas cabem; senão "incerto", com o motivo da
+// primeira dúvida (por esta ordem) que muda o resultado.
+const MC_DOUBTS = ['apresentacao-voo', 'sem-espera', 'pos-espera', 'despertar', 'hora-referencia', 'assistencia-ativacao', 'assistencia-6h', 'assistencia-contacto', 'repartido'];
+// `base` = do início ao fim do serviço de voo propriamente dito: o que o valor tem a mais (assistência, posicionamento
+// depois) sai da hora-limite de calços.
+const mcVerdict = (start0, rs, { sbAdd = 0, flag = null, force = null, base = null } = {}) => {
+  rs.forEach((r) => { r.ex = r.value > r.limit; });
+  let status = rs.every((r) => r.ex) ? 'excede' : rs.every((r) => !r.ex) ? 'dentro' : 'incerto';
+  let reason = null;
+  if (status === 'incerto') {
+    reason = 'leituras';
+    for (const tg of MC_DOUBTS) {
+      const a = rs.filter((r) => r.tags.includes(tg)), b = rs.filter((r) => !r.tags.includes(tg));
+      if (a.length && b.length && (a.some((r) => r.ex) !== b.some((r) => r.ex) || a.every((r) => r.ex) !== b.every((r) => r.ex))) { reason = tg; break; }
+    }
+  }
+  if (force) { status = 'excede'; reason = force; } else if (flag && status === 'dentro') { status = 'incerto'; reason = flag; }
+  const lims = rs.map((r) => r.limit);
+  const limit = Math.min(...lims), limitMax = Math.max(...lims);
+  const value = Math.max(...rs.map((r) => r.value));
+  const extra = base != null ? Math.max(0, value - base) : sbAdd;
+  return { value, limit, ...(limitMax !== limit ? { limitMax } : {}), latestOnBlock: start0 + limit - extra - 30,
+    status, ...(reason ? { reason } : {}), ...(sbAdd ? { standbyMin: sbAdd } : {}) };
+};
+
+// P27 / C23 — médio curso. `s` pode ser um período com várias partes (`s.chain`). ctx.standby = a assistência de onde saiu.
+const mcFdp = (s, crewType, ctx) => {
+  const n = s.sectors || 0;
+  if (!n) return null;
+  if (crewType !== 'pilot' && n > 4) return { status: 'incerto', reason: 'sem-coluna' };
+  const parts = s.chain || [s];
+  const fl = parts.filter((x) => x.kind === 'flight');
+  const pre = parts.filter((x) => x.kind === 'positioning' && x.end <= fl[0].start);
+  const sb = (ctx && ctx.standby) || null;
+  const start0 = s.start;
+  const endF = s.fdpEnd != null ? s.fdpEnd : s.workEnd;                       // fim do serviço de voo (sem o DH depois)
+  const post = s.post || [];
+  const gaps = [];
+  for (let i = 1; i < fl.length; i++) gaps.push({ a: fl[i - 1], b: fl[i] });
+  const rs = [];
+  if (crewType === 'pilot') {
+    // Cl. 19.ª, n.º 7 a): a assistência nas instalações (no aeroporto) conta a 50 % "para todos os limites", até à
+    // apresentação (n.º 4); em casa (b)) não conta para o serviço de voo. O limite vem da apresentação (n.º 5).
+    const sbAdd = sb && sb.kind === 'standby_airport' ? Math.floor(Math.max(0, Math.min(sb.end, start0) - sb.start) / 2) : 0;
+    // Cl. 16.ª, n.º 1 a): o posicionamento antes "conta como tempo de serviço de voo a 100 %"; o AE não diz se a espera
+    // entre a chegada e a apresentação para o voo também conta → as duas leituras.
+    const values = [{ v: endF - start0, tags: [] }];
+    if (pre.length) values.push({ v: pre.reduce((a, x) => a + (x.end - x.start), 0) + (endF - fl[0].start), tags: ['sem-espera'] });
+    // Cl. 16.ª, n.º 1 b): as deslocações depois do serviço de voo contam a 50 % — só o DH, ou também a espera até ele.
+    const posts = post.length ? [{ a: Math.floor(post.reduce((a, x) => a + (x.end - x.start), 0) / 2), tags: [] }, { a: Math.floor((post[post.length - 1].end - endF) / 2), tags: ['pos-espera'] }] : [{ a: 0, tags: [] }];
+    // O quadro vai pela hora de apresentação (Cl. 35.ª): a do DH, ou a do voo ("apresentação ... para executar um
+    // setor", Cl. 6.ª, n.º 40) — o AE não diz qual; e a Cl. 35.ª, n.º 3 (hora da base, Cl. 32.ª, n.º 2): fora da base,
+    // apresentação ou despertar nas 22h00–6h00 → 6 h.
+    const rows = [{ c: clockOf(start0), out: s.startsAtBase === false, wake: true, tags: [] }];
+    if (pre.length) rows.push({ c: clockOf(fl[0].start), out: fl[0].startsAtBase === false, wake: false, tags: ['apresentacao-voo'] });
+    const lims = rows.flatMap((r) => {
+      const L0 = mcTable('pilot', r.c, n);
+      const six = r.out ? (inWin(r.c, 1320, 360) ? 'sim' : r.wake ? wakeIn(start0, PREP_PILOT, 1320, 360) : 'nao') : 'nao';
+      return six === 'sim' ? [{ L: Math.min(L0, 360), tags: r.tags }] : six === 'talvez' ? [{ L: Math.min(L0, 360), tags: [...r.tags, 'despertar'] }, { L: L0, tags: r.tags }] : [{ L: L0, tags: r.tags }];
+    });
+    values.forEach((x) => posts.forEach((p) => lims.forEach((y) => rs.push({ value: x.v + p.a + sbAdd, limit: y.L, tags: [...x.tags, ...p.tags, ...y.tags] }))));
+    // Cl. 15.ª, n.º 8: split duty (intervalos entre setores de mais de 3 h) só com autorização do SPAC.
+    const split = gaps.some((g) => (g.b.firstOff != null ? g.b.firstOff : g.b.start) - g.a.end > 180);
+    return mcVerdict(start0, rs, { sbAdd, flag: split ? 'split-duty' : null, base: endF - start0 });
+  }
+  // ── cabine ──
+  // Cl. 28.ª, n.º 2: todo o PSV desde o DH; n.º 3: o DH depois conta a 100 %, "iniciando-se a contagem 30 (trinta)
+  // minutos após calços" → até à chegada dele.
+  const value = (post.length ? s.workEnd : endF) - start0;
+  const values = [{ v: value, tags: [] }];
+  const dep = s.airports[0];
+  const locAbs = s.bo != null ? localAt(s, dep, start0) : null;                  // hora local onde está (Cl. 4.ª, n.º 13)
+  const locClock = locAbs != null ? clockOf(locAbs) : clockOf(start0);
+  // O quadro está na "hora de referência" (Cl. 23.ª, n.º 1): a da base; depois de descanso num local a ≤ 2 h, a desse
+  // local (n.º 3 a) i)). O n.º 3 vem depois do longo curso: a hora da base fica como segunda leitura.
+  const clocks = [{ c: clockOf(start0), tags: [] }];
+  if (s.startsAtBase === false && locAbs != null) {
+    const d = legalDiffH(s, dep, s.base, start0);
+    if (d != null && d <= 2 && locClock !== clocks[0].c) clocks.push({ c: locClock, tags: ['hora-referencia'] });
+  }
+  // A assistência antes (Cl. 17.ª): nas instalações, o limite vem da hora de ATIVAÇÃO (n.º 12 d)), que a escala não
+  // mostra: entre o início da assistência e a apresentação; em casa, o máximo desce o que passar de 6 h (n.º 11 f)).
+  let base = clocks.map((x) => ({ L: mcTable('cabin', x.c, n), tags: x.tags }));
+  let flag = null, force = null;
+  if (sb && sb.kind === 'standby_airport') {
+    const act = [];
+    for (let a = sb.start; a < Math.min(sb.end, start0); a++) act.push({ L: mcTable('cabin', clockOf(a), n), tags: ['assistencia-ativacao'] });
+    base = [...base, ...act];
+    if (s.end - sb.start > 960) flag = 'assistencia-16h';                         // n.º 12 e) (salvo LDMCR ou split duty)
+  } else if (sb && sb.kind === 'standby_home') {
+    const night = clockOf(sb.start) >= 1380 || clockOf(sb.start) < 420;          // f) i): começou entre as 23h00 e as 7h00
+    // "o tempo que esteve de assistência": até à apresentação, ou só até ao fim marcado (a apresentação pode ser até
+    // 1 h depois do termo, n.º 3 a)) — as duas leituras.
+    const reds = [...new Set([start0, Math.min(sb.end, start0)])].flatMap((until, i) => {
+      const counted = (until - sb.start) - (night ? overlapDaily(sb.start, until, 1380, 1860) : 0);
+      const tg = i ? ['assistencia-6h'] : [];
+      return [{ r: Math.max(0, counted - 360), tags: tg }, { r: Math.max(0, counted - 480), tags: [...tg, 'assistencia-6h'] }];   // f) ii): da 8.ª hora
+    });
+    base = base.flatMap((x) => reds.map((d) => ({ L: x.L - d.r, tags: [...x.tags, ...d.tags] })));
+    if (s.workEnd > sb.start + (night ? 1560 : 1320)) force = 'assistencia-22h';  // g)
+    // d): nomeado no período crítico (2h00–5h59) com 2 h ou menos até à apresentação → o PSV conta desde o contacto,
+    // que a escala não mostra.
+    let first = null;
+    for (let x = start0 - 120; x < start0; x++) if (clockOf(x) >= 120 && clockOf(x) < 360) { first = x; break; }
+    if (first != null) values.push({ v: value + (start0 - first), tags: ['assistencia-contacto'] });
+  }
+  // n.º 1 b): fora da base, apresentação ou despertar (hora local) nas 2h00–5h59 → 6 h, salvo 1 setor direto à base.
+  const six = s.startsAtBase === false && !(n === 1 && s.endsAtBase)
+    ? (inWin(locClock, 120, 359) ? 'sim' : wakeIn(locAbs != null ? locAbs : start0, WAKE_CABIN, 120, 359)) : 'nao';
+  let lims = six === 'sim' ? base.map((x) => ({ L: Math.min(x.L, 360), tags: x.tags }))
+    : six === 'talvez' ? base.flatMap((x) => [{ L: Math.min(x.L, 360), tags: [...x.tags, 'despertar'] }, x]) : base;
+  // Cl. 25.ª: PSV repartido — fora da base (l)), com no máx. 2 aterragens (c)), 1 depois do intervalo (i)), as partes
+  // até 10 h (a)) e o total até 20 h (b)): o máximo sobe 50 % do intervalo (f)). A escala não diz se foi planeado assim.
+  const g = gaps.find((x) => x.b.start - x.a.workEnd >= 180);
+  if (g && g.a.endsAtBase === false && n <= 2 && (g.b.sectors || 0) <= 1 && value <= 1200
+    && fl.reduce((a, x) => a + (x.workEnd - x.start), 0) <= 600) {
+    const ext = Math.floor((g.b.start - g.a.workEnd) / 2);
+    lims = lims.flatMap((x) => [x, { L: x.L + ext, tags: [...x.tags, 'repartido'] }]);
+  }
+  values.forEach((v) => lims.forEach((x) => rs.push({ value: v.v, limit: x.L, tags: [...v.tags, ...x.tags] })));
+  return mcVerdict(start0, rs, { flag, force, base: endF - start0 });
 };
 
 // P27 / C23 — o limite de um serviço de voo (médio curso). Devolve null se não se aplica.
-// Longo curso: com `ctx` ({ rot, fleet }) avalia P32 / C26; sem ele, fica { incerto, 'longo-curso' } (v1).
+// Longo curso: com `ctx` ({ rot, fleet, pre }) avalia P32 / C26; sem ele, fica { incerto, 'longo-curso' } (v1).
 export const fdpLimitFor = (s, crewType, ctx = null) => {
   if (!s || s.kind !== 'flight' || s.incomplete) return null;
   if (s.mc === false) {
     if (!ctx) return { status: 'incerto', reason: 'longo-curso' };
-    return crewType === 'pilot' ? lhPilotFdp(s, ctx.rot || null, ctx.fleet || null) : lhCabinFdp(s, ctx.rot || null);
+    return crewType === 'pilot' ? lhPilotFdp(s, ctx.rot || null, ctx.fleet || null, ctx.pre || null) : lhCabinFdp(s, ctx.rot || null, ctx.pre || null);
   }
   if (s.mc == null) return { status: 'incerto', reason: 'sem-aeroporto' };
-  const n = s.sectors || 0;
-  if (!n) return null;
-  const rep = clockOf(s.start);
-  let limit;
-  if (crewType === 'pilot') {
-    const row = P27_TABLE.find((r) => rep >= r[0] && rep <= r[1]);
-    limit = n <= 4 ? row[2] : row[3];
-    if (row[0] === 1080 && (n === 3 || n === 4)) limit = 615;                     // ** 3 e 4 aterragens
-    if (s.startsAtBase === false && (rep >= 1320 || rep <= 360)) limit = Math.min(limit, 360);   // Cl. 35.ª, n.º 3
-  } else {
-    if (n > 4) return { status: 'incerto', reason: 'sem-coluna' };
-    const row = C23_TABLE.find((r) => rep >= r[0] && rep <= r[1]);
-    limit = row[2];
-    if (row[0] === 1080 && n === 3) limit = 615;                                    // ** 3 aterragens planeadas
-    if (s.startsAtBase === false && rep >= 120 && rep < 360 && !(n === 1 && s.endsAtBase)) limit = Math.min(limit, 360);   // n.º 1 b)
-  }
-  const value = s.workEnd - s.start;
-  return { value, limit, latestOnBlock: s.start + limit - 30, status: value > limit ? 'excede' : 'dentro' };
+  return mcFdp(s, crewType, ctx || {});
 };
 
 // A próxima SAÍDA DE CALÇOS depois de um serviço de voo de médio curso que acaba NA BASE e o seguinte também
@@ -976,8 +1194,9 @@ export const nextOffBlockAfter = (s, crewType) => {
 };
 
 // A transição (pilotos Cl. 24.ª; cabine Cl. 32.ª) entre dois serviços seguidos e de onde a onde se mede.
+// O posicionamento por avião é "serviço de voo" (pilotos Cl. 8.ª, n.º 1 a); cabine Cl. 4.ª, n.º 28 e Cl. 32.ª, n.º 2 b) v)).
 const transitionOf = (prev, next, atBase) => {
-  const prevF = prev.kind === 'flight', nextF = next.kind === 'flight';
+  const prevF = flightish(prev), nextF = flightish(next);
   let trans = 0, blocks = false, floor = false;
   if (atBase) {
     if (prevF && nextF) { trans = 240; blocks = true; }
@@ -995,24 +1214,29 @@ const checkRest = (svcs, crewType) => {
   for (let i = 0; i + 1 < svcs.length; i++) {
     const prev = svcs[i], next = svcs[i + 1];
     if (prev.incomplete || next.incomplete) continue;
-    if (prev.date === next.date) continue;                   // 2 serviços no mesmo dia: fica para a regra europeia
+    // No mesmo dia só se avaliam dois períodos de serviço de voo com repouso possível entre eles (os com menos de 11 h
+    // são um só período: `fdpChainsOf`); solo/assistência + voo no mesmo dia são um período de trabalho.
+    if (prev.date === next.date && !(flightish(prev) && flightish(next) && next.start - prev.workEnd >= NO_REST)) continue;
+    if (isStandby(prev.kind) && next.start <= prev.end + 60) continue;   // a assistência de onde saiu o serviço
     if (prev.mc === false) continue;                         // depois de longo curso: P49 / C41
     if (crewType === 'cabin' && isStandby(prev.kind)) continue;   // o RUPT da cabine não fixa repouso depois de assistência
     const atBase = isFlightLike(prev.kind) ? prev.endsAtBase : true;
     if (atBase == null) { out.push({ date: next.date, status: 'incerto', reason: 'sem-base' }); continue; }
-    const prevF = prev.kind === 'flight';
+    const prevF = flightish(prev);
     const dur = prev.workEnd - prev.start;
     const wocl = prevF && touchesLisbon(prev, 120, 360) ? 120 : 0;   // pilotos Cl. 34.ª, n.º 2; cabine Cl. 29.ª, n.º 7
+    // Pilotos Cl. 34.ª, n.º 2: também o SIMULADOR. A escala não separa o simulador da formação em sala → só na leitura estrita.
+    const woclSim = crewType === 'pilot' && prev.kind === 'training' && !prev.eLearning && touchesLisbon(prev, 120, 360) ? 120 : 0;
     let rest, restStr;
     if (crewType === 'pilot') {
       if (isStandby(prev.kind)) rest = restStr = 720;                                   // Cl. 25.ª, n.º 6
       else if (atBase && prevF && isGround(next.kind)) { rest = Math.max(540, dur) + wocl; restStr = Math.max(720, dur) + wocl; }   // Cl. 34.ª, n.º 1 b) · Cl. 25.ª, n.º 2
-      else rest = restStr = Math.max(atBase ? 720 : 660, dur) + wocl;
+      else { rest = Math.max(atBase ? 720 : 660, dur) + wocl; restStr = rest + woclSim; }
     } else rest = restStr = Math.max(atBase ? 780 : 660, dur) + wocl;
     const { trans, floor, a, b } = transitionOf(prev, next, atBase);
     const value = b - a, limit = rest + trans, limitStr = restStr + trans;
     const status = value < limit ? 'excede' : value < limitStr || floor ? 'incerto' : 'dentro';
-    const reason = status !== 'incerto' ? null : value < limitStr ? 'leituras' : 'sem-transporte';
+    const reason = status !== 'incerto' ? null : value < limitStr ? (woclSim && value >= limitStr - woclSim ? 'simulador' : 'leituras') : 'sem-transporte';
     out.push({ date: next.date, after: prev.date, value, limit, ...(limitStr !== limit ? { limitStr } : {}), rest, ...(restStr !== rest ? { restStr } : {}),
       trans, atBase, earliest: a + limit, fromAt: a, toAt: b, where: lastAp(prev), status, ...(reason ? { reason } : {}) });
   }
@@ -1317,15 +1541,26 @@ const checkP37 = (rots) => {
 // depois de sair da zona da base, depois a da origem do voo; no médio curso a da base); cabine Cl. 4.ª, n.º 13 (a do
 // local onde o tripulante se encontra e descansa: a da partida ou a da chegada → duas leituras). `clocks(s)` = os
 // desvios possíveis em relação à hora da base. "Excede" só com os serviços que são noturnos em todas as leituras.
+// A noite N (índice = o dia em que começa às 23h00, até às 6h29 do dia seguinte) que um serviço toca, num relógio.
+const nightIdx = (s, sh) => {
+  const a = s.start + sh, b = s.workEnd + sh, out = [];
+  for (let d = Math.floor(a / DAY) - 1; d <= Math.floor(b / DAY); d++) if (Math.min(b, d * DAY + W.night[1]) > Math.max(a, d * DAY + W.night[0])) out.push(d);
+  return out;
+};
 const checkNights = (svcs, crewType, freeBlocks, clocks = () => [0]) => {
   const on = (s, w, pick) => clocks(s)[pick]((sh) => touches(s.start + sh, s.workEnd + sh, w[0], w[1]));
-  const len = nightsCore(svcs, crewType, freeBlocks, (s) => on(s, W.night, 'every'), (s) => on(s, W.critical, 'every'));
-  const str = nightsCore(svcs, crewType, freeBlocks, (s) => on(s, W.night, 'some'), (s) => on(s, W.critical, 'some'));
+  // Distância entre as noites de x e de y (1 = noites seguidas): leitura leve = em todos os relógios; estrita = em algum.
+  const dist = (pick) => (x, y) => {
+    const ds = [...new Set([...clocks(x), ...clocks(y)])].map((sh) => { const ix = nightIdx(x, sh), iy = nightIdx(y, sh); return ix.length && iy.length ? Math.min(...iy) - Math.max(...ix) : null; }).filter((v) => v != null);
+    return ds.length ? (pick === 'every' ? Math.max(...ds) : Math.min(...ds)) : Infinity;
+  };
+  const len = nightsCore(svcs, crewType, freeBlocks, (s) => on(s, W.night, 'every'), (s) => on(s, W.critical, 'every'), dist('every'));
+  const str = nightsCore(svcs, crewType, freeBlocks, (s) => on(s, W.night, 'some'), (s) => on(s, W.critical, 'some'), dist('some'));
   const key = (f) => `${f.date}|${f.reason}`;
   const have = new Set(len.map(key));
   return [...len, ...str.filter((f) => !have.has(key(f))).map((f) => ({ ...f, status: 'incerto', hora: 'local' }))];
 };
-const nightsCore = (svcs, crewType, freeBlocks, isNight, isCrit) => {
+const nightsCore = (svcs, crewType, freeBlocks, isNight, isCrit, nightDist) => {
   const seq = svcs.filter((s) => !s.incomplete && !(crewType === 'pilot' && s.kind === 'standby_home'));
   const out = [];
   const nights = [];
@@ -1333,7 +1568,7 @@ const nightsCore = (svcs, crewType, freeBlocks, isNight, isCrit) => {
   const between = (x, y) => freeBlocks.some((g) => g.start >= x.s.workEnd && g.end <= y.s.start);
   // Pelo próprio AE: outro serviço ou uma folga/descanso semanal pelo meio → NÃO são consecutivos
   // (cabine Cl. 27.ª, n.º 2; pilotos Cl. 22.ª, n.º 4); noites seguidas → são; o resto o AE não decide.
-  const rel = (x, y) => (y.i !== x.i + 1 || between(x, y) ? 'sep' : y.s.dn - x.s.dn <= 1 ? 'seg' : 'ind');
+  const rel = (x, y) => (y.i !== x.i + 1 || between(x, y) ? 'sep' : nightDist(x.s, y.s) <= 1 ? 'seg' : 'ind');
   const verdict = (rels) => (rels.every((r) => r === 'seg') ? 'excede' : rels.some((r) => r === 'sep') ? null : 'incerto');
   for (let k = 0; k + 1 < nights.length; k++) {
     const a = nights[k], b = nights[k + 1];
@@ -1480,8 +1715,14 @@ const checkC14 = (svcs, blocks, absent, todayDn, blocksStr = blocks) => {
     const y = +k.slice(0, 4), q = +k.slice(6);
     const qs = dayNum(`${y}-${String((q - 1) * 3 + 1).padStart(2, '0')}-01`);
     const qe = q === 4 ? dayNum(`${y + 1}-01-01`) : dayNum(`${y}-${String(q * 3 + 1).padStart(2, '0')}-01`);
-    const count = (bs) => { let n = 0; bs.forEach((g) => { const len = Math.min(qe * DAY, g.end) - Math.max(qs * DAY, g.start); if (len > 0) n += Math.floor(len / 2880); }); return n; };
-    const folgas = count(blocks), folgasStr = count(blocksStr);
+    // Cada bloco livre dá uma folga por cada 48 h completas, contadas do início do bloco. Uma folga que atravessa a
+    // mudança de trimestre conta num deles: o AE não diz em qual — onde acaba (E) ou onde começa (S) → as duas leituras.
+    const count = (bs, at) => {
+      let n = 0;
+      bs.forEach((g) => { for (let k = 1; g.start + 2880 * k <= g.end; k++) { const x = at === 'E' ? g.start + 2880 * k - 1 : g.start + 2880 * (k - 1); if (x >= qs * DAY && x < qe * DAY) n++; } });
+      return n;
+    };
+    const folgas = Math.max(count(blocks, 'E'), count(blocks, 'S')), folgasStr = Math.min(count(blocksStr, 'E'), count(blocksStr, 'S'));
     let abs = 0; for (let x = qs; x < qe; x++) if (absent.has(x)) abs++;
     const total = folgas + Math.floor(abs / 7), totalStr = folgasStr + Math.floor(abs / 7);
     // Avalia-se quando a escala cobre o trimestre todo — mesmo que ainda não tenha acabado: aí o resultado
@@ -1565,8 +1806,8 @@ const checkC23Rotations = (svcs) => {
     else if (cur) { cur.push(s); if (s.endsAtBase) {
       const days = cur[cur.length - 1].dn - cur[0].dn + 1;
       if (days >= 3) {
-        const avg = Math.round(cur.reduce((t, x) => t + (x.workEnd - x.start), 0) / cur.length);
-        out.push({ from: cur[0].date, to: cur[cur.length - 1].date, value: avg, limit: 720, status: avg > 720 ? 'excede' : 'dentro', reason: 'media-rotacao' });
+        const sum = cur.reduce((a, x) => a + (x.workEnd - x.start), 0);   // compara-se a soma (sem dividir nem arredondar)
+        out.push({ from: cur[0].date, to: cur[cur.length - 1].date, value: sum / cur.length, sum, n: cur.length, limit: 720, status: sum > 720 * cur.length ? 'excede' : 'dentro', reason: 'media-rotacao' });
       }
       cur = null;
     } }
@@ -1587,6 +1828,25 @@ const monthSeries = (byDay, n, t, limit, window) => {
   const points = [];
   for (let d = m0; d <= m1; d++) points.push({ date: isoOf(d), value: sumWin(byDay, d, n), future: d > t, today: d === t });
   return { window, limit, points };
+};
+
+// Reparte [a, b) pelos dias de calendário (Dia = das 0h00 às 24h00 locais da base: pilotos Cl. 6.ª, n.º 9; cabine
+// Cl. 4.ª, n.º 9), com peso w (A-132). O relógio do motor é o da base.
+const addSplit = (byDay, a, b, w = 1) => {
+  for (let d = Math.floor(a / DAY); d * DAY < b; d++) {
+    const m = Math.min(b, (d + 1) * DAY) - Math.max(a, d * DAY);
+    if (m > 0) byDay.set(d, (byDay.get(d) || 0) + m * w);
+  }
+};
+// O tempo de voo de um serviço, pelos dias: com as horas de cada perna (UTC) que somam o tempo de voo, perna a perna;
+// se os calços de saída e de chegada caem no mesmo dia, nesse dia; senão (sem as pernas), no dia em que começa.
+const addFlightTime = (byDay, s) => {
+  if (!s.flightMin) return;
+  if (Array.isArray(s.legs) && s.legs.length && s.legs.reduce((a, l) => a + (l.on - l.off), 0) === s.flightMin) { s.legs.forEach((l) => addSplit(byDay, l.off, l.on)); return; }
+  if (s.firstOff != null && s.end - s.firstOff === s.flightMin) { addSplit(byDay, s.firstOff, s.end); return; }   // 1 perna, ou sem paragens
+  const a = s.firstOff != null ? s.firstOff : s.start;
+  const d = Math.floor(a / DAY) === Math.floor((s.end - 1) / DAY) ? Math.floor(a / DAY) : s.dn;
+  byDay.set(d, (byDay.get(d) || 0) + s.flightMin);
 };
 
 // ── o ponto de entrada ──────────────────────────────────────────────────────────────────────────
@@ -1610,14 +1870,16 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
   const rots = rotationsOf(timed);
   const rotOf = new Map(); rots.forEach((r) => r.svcs.forEach((s) => rotOf.set(s, r)));
   const fleetOf = (s) => (typeof fleetAt === 'function' ? fleetAt(s.date) : fleetAt) || null;
+  const chains = fdpChainsOf(timed);                         // os períodos de serviço de voo (A-124, A-126)
   const fdpCache = new Map();
-  const fdpOf = (s) => { if (!fdpCache.has(s)) fdpCache.set(s, fdpLimitFor(s, ct, { rot: rotOf.get(s) || null, fleet: fleetOf(s) })); return fdpCache.get(s); };
-  const fdpFindings = (lc) => timed.filter((s) => (lc ? s.mc === false : s.mc !== false)).map((s) => { const r = fdpOf(s); return r ? { date: s.date, ...r } : null; }).filter(Boolean);
+  const ctxOf = (s) => (s.mc === false ? { rot: rotOf.get(s) || null, fleet: fleetOf(s), pre: positioningBefore(timed, s) } : { rot: rotOf.get((s.chain || [s]).find((x) => x.kind === 'flight')) || null, fleet: fleetOf(s), standby: standbyBefore(timed, s) });
+  const fdpOf = (s) => { if (!fdpCache.has(s)) fdpCache.set(s, fdpLimitFor(s, ct, ctxOf(s))); return fdpCache.get(s); };
+  const fdpFindings = (lc) => (lc ? timed.filter((s) => s.mc === false) : chains.filter((s) => s.mc !== false)).map((s) => { const r = fdpOf(s); return r ? { date: s.date, ...r } : null; }).filter(Boolean);
 
   if (ct === 'pilot') {
     push('P06', checkP06(timed));
     // P25 — tempo de voo
-    const fly = new Map(); timed.forEach((s) => { if (s.flightMin) fly.set(s.dn, (fly.get(s.dn) || 0) + s.flightMin); });
+    const fly = new Map(); timed.forEach((s) => addFlightTime(fly, s));
     const p25 = [rollingCheck(fly, 28, 5400, d0, d1, '28d'), calendarCheck(fly, quarterKey, 16200, 'trimestre'), rollingCheck(fly, 364, 51000, d0, d1, '364d')];
     push('P25', p25.flatMap((c) => c.exceed), p25.map((c) => c.worst).filter(Boolean), {
       current: [
@@ -1631,9 +1893,8 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
     const work = new Map();
     timed.forEach((s) => {
       if (s.incomplete) return;
-      const dur = s.workEnd - s.start;
       const w = s.kind === 'standby_home' ? 0.25 : s.kind === 'standby_airport' ? 0.5 : s.kind === 'reserve' ? 0 : 1;
-      work.set(s.dn, (work.get(s.dn) || 0) + dur * w);
+      addSplit(work, s.start, s.workEnd, w);
     });
     const p26 = [rollingCheck(work, 7, 2880, d0, d1, '7d'), rollingCheck(work, 28, 10800, d0, d1, '28d'), calendarCheck(work, quarterKey, 28800, 'trimestre'), rollingCheck(work, 364, 108000, d0, d1, '364d')];
     push('P26', p26.flatMap((c) => c.exceed), p26.map((c) => c.worst).filter(Boolean), {
@@ -1656,9 +1917,9 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
     pushIf('P37', checkP37(rots));
     pushIf('P38', checkP38(timed, rots, absentP));
     pushIf('P39', checkP39(timed));
-    push('P42', checkRest(timed, 'pilot'));
+    push('P42', checkRest(chains, 'pilot'));
     pushIf('P49', checkRestLH(timed, 'pilot'));
-    push('P53', checkNights(timed, 'pilot', weeklyRests(timed), (s) => [pilotLocalShift(s)]));
+    push('P53', checkNights(chains, 'pilot', weeklyRests(timed), (s) => [pilotLocalShift(s.chain ? s.chain[0] : s)]));
     push('P54', checkStandby(timed, 'pilot'));
   } else {
     const absent = absenceDays(events);
@@ -1667,16 +1928,16 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
     push('C11', checkC11(timed));
     push('C14', checkC14(timed, blocks, absent, todayDn, blocksStr));
     pushIf('C15', checkC15(timed, rotOf, absent, fleetOf, fdpOf));
-    push('C23', [...fdpFindings(false), ...checkC23Rotations(timed)]);
+    push('C23', [...fdpFindings(false), ...checkC23Rotations(chains)]);   // "dividido pelo número de períodos de serviço de voo"
     pushIf('C26', fdpFindings(true));
     // C34 — voo (mês, trimestre, ano civis) e serviço (7 dias, mês, trimestre, ano)
-    const fly = new Map(); timed.forEach((s) => { if (s.flightMin) fly.set(s.dn, (fly.get(s.dn) || 0) + s.flightMin); });
+    const fly = new Map(); timed.forEach((s) => addFlightTime(fly, s));
     const duty = new Map();
     timed.forEach((s) => {
       if (s.incomplete) return;
       const end = s.kind === 'positioning' ? s.end + 30 : s.workEnd;   // o posicionamento conta como PSV (Cl. 4.ª, n.º 28)
       const w = s.kind === 'standby_home' ? 0.25 : s.kind === 'reserve' ? 0 : 1;
-      duty.set(s.dn, (duty.get(s.dn) || 0) + (end - s.start) * w);
+      addSplit(duty, s.start, end, w);
     });
     const c34 = [
       calendarCheck(fly, monthKey, 5700, 'mes-voo'), calendarCheck(fly, quarterKey, 17100, 'trimestre-voo'), calendarCheck(fly, yearKey, 54000, 'ano-voo'),
@@ -1697,8 +1958,8 @@ export const evaluateTapLimits = ({ crewType = 'cabin', duties = {}, events = []
     });
     // cabine: a hora do local de partida e a do local de chegada (Cl. 4.ª, n.º 13); sem UTC, a da base
     const cabClocks = (s) => (s.bo == null || !isFlightLike(s.kind) ? [0] : [...new Set([shiftOf(s, s.airports[0], s.start), shiftOf(s, lastAp(s), s.start)].map((x) => (x == null ? 0 : x)))]);
-    push('C36', checkNights(timed, 'cabin', blocks, cabClocks));
-    push('C38', checkRest(timed, 'cabin'));
+    push('C36', checkNights(chains, 'cabin', blocks, cabClocks));
+    push('C38', checkRest(chains, 'cabin'));
     pushIf('C41', checkRestLH(timed, 'cabin'));
     push('C45', checkStandby(timed, 'cabin'));
   }
@@ -1714,9 +1975,13 @@ export const fdpForDuty = ({ duties = {}, date, idx = 0, crewType = 'cabin', bas
   const near = {};
   for (const k of Object.keys(duties || {})) { const x = dayNum(k); if (x != null && x >= dn - 15 && x <= dn + 15) near[k] = duties[k]; }
   const svcs = servicesOf(near, { baseAt, crewType: ct });
-  const s = svcs.find((x) => x.date === date && x.idx === idx);
-  if (!s) return null;
-  const rot = rotationsOf(svcs).find((r) => r.svcs.includes(s)) || null;
+  const raw = svcs.find((x) => x.date === date && x.idx === idx);
+  if (!raw) return null;
+  const rots = rotationsOf(svcs);
   const fleet = (typeof fleetAt === 'function' ? fleetAt(date) : fleetAt) || null;
-  return { svc: s, fdp: fdpLimitFor(s, ct, { rot, fleet }), next: nextOffBlockAfter(s, ct) };
+  const s = raw.mc === false ? raw : (fdpChainsOf(svcs).find((c) => c === raw || (c.chain && c.chain.includes(raw))) || raw);
+  const flight1 = (s.chain || [s]).find((x) => x.kind === 'flight') || s;
+  const rot = rots.find((r) => r.svcs.includes(flight1)) || null;
+  const ctx = s.mc === false ? { rot, fleet, pre: positioningBefore(svcs, s) } : { rot, fleet, standby: standbyBefore(svcs, s) };
+  return { svc: s, fdp: fdpLimitFor(s, ct, ctx), next: nextOffBlockAfter(s, ct) };
 };

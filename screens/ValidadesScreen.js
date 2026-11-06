@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, Animated, PanResponder, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PELE, PELE_FONT, GUTTER, BRAND } from '../data/constants';
+import { PELE, PELE_FONT, GUTTER, BRAND, SPACE } from '../data/constants';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import PeleSide from '../components/PeleSide';
@@ -13,19 +13,20 @@ import { confirmDiscard } from '../data/confirmDiscard';
 import { AppContext } from '../data/appContext';
 import {
   validityCatalog, validityStatus, validityLabel, sortValidities, isNoExpiryType,
-  fieldsForType, deriveExpiry, langRenewMonths, renewMonthsForType, medCodes, medCodeHint,
+  fieldsForType, computeExpiry, buildISODate, ruleForType, PROGRAMS, programLabel, medCodes, medCodeHint,
   INSTRUCTOR_KINDS, LANG_LEVELS,
 } from '../data/validities';
 
 // Ícone da pele por TIPO de documento (catálogo data/validities.js).
-const TYPE_IC = { medical: 'medical', licence: 'doc', cca: 'doc', typeRating: 'plane', ir: 'gauge', lang: 'book', sep: 'shield', crm: 'fam', dg: 'alert', asec: 'restricted', faid: 'heart', passport: 'passport', instructor: 'rank' };
+const TYPE_IC = { medical: 'medical', licence: 'doc', cca: 'doc', opc: 'check', lineCheck: 'plane', typeRating: 'plane', ir: 'gauge', lang: 'book', sep: 'shield', triennial: 'shield', crm: 'fam', dg: 'alert', asec: 'restricted', faid: 'heart', passport: 'passport', instructor: 'rank' };
 
 // Grupos do ecrã "Adicionar" (mockup validades-cartoes · ecrã 2). Filtram-se contra o catálogo
 // crew-aware — grupos vazios (ex.: Qualificações na cabine) não aparecem.
 const DOC_GROUPS = [
   { key: 'docs',  pt: 'Documentos',          en: 'Documents',          ids: ['medical', 'licence', 'cca', 'passport'] },
   { key: 'quals', pt: 'Qualificações',       en: 'Qualifications',     ids: ['typeRating', 'ir', 'lang', 'instructor'] },
-  { key: 'recur', pt: 'Formação recorrente', en: 'Recurrent training', ids: ['sep', 'crm', 'dg', 'asec', 'faid'] },
+  { key: 'checks', pt: 'Controlos do operador', en: 'Operator checks',  ids: ['opc', 'lineCheck'] },
+  { key: 'recur', pt: 'Formação recorrente', en: 'Recurrent training', ids: ['sep', 'triennial', 'crm', 'dg', 'asec', 'faid'] },
 ];
 
 // Leque da carteira (mockup validades-cartoes): slot 0 = frente (centro, ink, detalhe); os outros
@@ -41,7 +42,7 @@ const slotFor = (i) => SLOTS[Math.min(Math.max(i, 0), SLOTS.length - 1)];
 
 // "Validades & Documentos" (premium) — CARTEIRA (deck) do que expira + FORMULÁRIO RICO por tipo.
 export default function ValidadesScreen({ navigation }) {
-  const { validities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang, notify } = useContext(AppContext);
+  const { validities, rawValidities, addValidity, updateValidity, removeValidity, isPilot, instructorRated, lang, notify } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const insets = useSafeAreaInsets();
@@ -60,15 +61,20 @@ export default function ValidadesScreen({ navigation }) {
     if (editing && JSON.stringify(editing) !== baseSnap.current) { confirmDiscard(lang, () => openWith(blank(null))); return; }
     openWith(blank(null));
   };
-  const blank = (type) => ({ type, d: '', m: '', y: '', number: '', note: '', aircraft: '', nationality: '', level: null, instrKind: null, limitations: [] });
+  // O programa de formação do operador (pilotos: regra geral, ATQP ou EBT) — o último escolhido vem pré-preenchido.
+  const lastProgram = () => { const v = (validities || []).find((x) => x && x.program); return v ? v.program : null; };
+  const blank = (type) => ({ type, d: '', m: '', y: '', pd: '', pm: '', py: '', program: lastProgram(), number: '', note: '', aircraft: '', nationality: '', level: null, instrKind: null, limitations: [] });
   const openAdd = () => { select(); openWith(blank(null)); };   // abre no SELETOR de tipo (sem tipo escolhido)
   const openEdit = (item) => {
     select();
-    const ff2 = fieldsForType(item.type);
-    const src = (ff2.doneDate || ff2.level) ? item.doneDate : item.expiry;
+    const ff2 = fieldsForType(item.type, isPilot, item.program || null);
+    const src = ff2.done ? item.doneDate : item.expiry;
     const p = src ? src.split('-') : ['', '', ''];
+    const pp = item.prevExpiry ? item.prevExpiry.split('-') : ['', '', ''];
     openWith({
       id: item.id, type: item.type, d: p[2] || '', m: p[1] || '', y: p[0] || '',
+      pd: pp[2] || '', pm: pp[1] || '', py: pp[0] || '', program: item.program || null,
+      oldDone: item.doneDate || null, oldExpiry: item.expiry || null,
       number: item.number || '', note: item.note || '', aircraft: item.aircraft || '',
       nationality: item.nationality || '', level: item.level || null, instrKind: item.instrKind || null,
       limitations: item.limitations || [],
@@ -104,24 +110,38 @@ export default function ValidadesScreen({ navigation }) {
     return rows;
   };
 
-  const buildISO = (d, m, y) => {
-    const dd = +d, mm = +m, yy = +y;
-    if (!dd || !mm || !yy || yy < 2000 || yy > 2100 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
-    const iso = `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-    const chk = new Date(`${iso}T00:00:00`);
-    return isNaN(chk.getTime()) ? null : iso;
-  };
+  const buildISO = buildISODate;   // recusa 31/04, 30/02 e 29/02 de ano comum (A-288)
 
   // ── Estado derivado do formulário (por tipo) ──
-  const ff = editing ? fieldsForType(editing.type) : {};
+  // A validade COMO DIZ A LEI (data/validities.js): 'done' calcula-se da data feita; 'date' escreve-se; 'reference' não expira.
+  const ff = editing ? fieldsForType(editing.type, isPilot, editing.program || null) : {};
+  const rule = editing ? ruleForType(editing.type, isPilot, editing.program || null) : null;
+  const needsProg = !!ff.program && !editing?.program;
   const isRef = !!editing && (ff.reference || (ff.level && editing.level === 6));
-  const usesDone = ff.doneDate || (ff.level && editing?.level && editing.level !== 6);
+  const usesDone = !!ff.done;
   const formISO = editing ? buildISO(editing.d, editing.m, editing.y) : null;
-  const renewM = editing ? (ff.level ? langRenewMonths(editing.level) : renewMonthsForType(editing.type)) : null;
-  const derivedISO = usesDone && formISO && renewM ? deriveExpiry(formISO, renewM) : null;
+  const prevTyped = editing && (editing.pd || editing.pm || editing.py) ? buildISO(editing.pd, editing.pm, editing.py) : null;
+  const prevBad = !!editing && !!(editing.pd || editing.pm || editing.py) && !prevTyped;
+  const prevISO = ff.prev ? prevTyped : null;
+  // Renovação de um item já guardado (data feita mais tarde do que a guardada): SUGERE a validade guardada como anterior —
+  // só conta se o tripulante a escolher (uma data corrigida por engano não é uma renovação).
+  const prevSuggest = ff.prev && !prevTyped && editing?.id && editing.oldDone && editing.oldExpiry && formISO && formISO > editing.oldDone ? editing.oldExpiry : null;
+  const calc = usesDone && formISO ? computeExpiry({ type: editing.type, isPilot, program: editing.program || null, doneISO: formISO, prevExpiryISO: prevISO }) : null;
+  const derivedISO = calc ? calc.expiry : null;
   const finalExpiry = isRef ? null : (ff.date ? formISO : derivedISO);
   const needsLevel = ff.level && !editing?.level;
-  const canSave = !!editing && !needsLevel && (isRef || !!formISO);
+  const canSave = !!editing && !needsLevel && !needsProg && !prevBad && (isRef || !!formISO);
+  // A lei por baixo do campo: "N meses, a contar do fim do mês (secção)" ou a nota da regra.
+  const lawLine = (() => {
+    if (!rule || !rule.law) return null;
+    const secs = [...new Set(rule.law.map((q) => q.s))].join(' · ');
+    const nt = rule.note ? (lang === 'en' ? rule.note.en : rule.note.pt) : null;
+    if (rule.calc === 'done') {
+      const span = rule.years ? l(`${rule.years} anos, até ao mesmo dia`, `${rule.years} years, to the same day`) : l(`${rule.months} meses, a contar do fim do mês`, `${rule.months} months, counted from the end of the month`);
+      return `${span}${secs ? ` (${secs})` : ''}.${rule.window3 ? l(' Renovada nos 3 últimos meses da validade, conta a partir da anterior.', ' Renewed in the last 3 months of validity, it counts from the previous expiry.') : ''}${nt ? ` ${nt}` : ''}`;
+    }
+    return nt ? `${nt}${secs ? ` (${secs})` : ''}` : null;
+  })();
   const isPicking = !!editing && !editing.id && !editing.type;   // passo 1: escolher o tipo (mockup ecrã 2)
 
   const set = (patch) => setEditing((e) => ({ ...e, ...patch }));
@@ -136,6 +156,8 @@ export default function ValidadesScreen({ navigation }) {
     const up = (v) => { const x = (v || '').trim().toUpperCase(); return x || null; };
     const item = {
       type: editing.type, expiry: finalExpiry, doneDate: usesDone ? formISO : null,
+      program: ff.program ? (editing.program || null) : null,
+      prevExpiry: usesDone && ff.prev ? (prevISO || null) : null,
       number: ff.number ? clean(editing.number) : null,
       nationality: ff.nationality ? up(editing.nationality) : null,
       aircraft: ff.aircraft ? up(editing.aircraft) : null,
@@ -154,7 +176,7 @@ export default function ValidadesScreen({ navigation }) {
   // repor = addValidity com o MESMO id (o spread do item ganha ao id gerado — a carteira reordena).
   const deleteEditing = () => {
     if (!editing?.id) { setEditing(null); return; }
-    const captured = validities.find((v) => v.id === editing.id);
+    const captured = (rawValidities || validities).find((v) => v.id === editing.id);   // o item gravado, não a vista da lei
     warning();
     removeValidity(editing.id);
     setEditing(null);
@@ -251,7 +273,7 @@ export default function ValidadesScreen({ navigation }) {
   );
   const textField = (labelPt, labelEn, key, placeholder, extra = {}) => (
     <>
-      <Text style={[s.fLbl, { marginTop: 14 }]}>{l(labelPt, labelEn)} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
+      <Text style={[s.fLbl, s.fLblTop]}>{l(labelPt, labelEn)} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
       <TextInput style={s.noteInput} value={editing?.[key]} onChangeText={(v) => set({ [key]: v })} placeholder={placeholder} placeholderTextColor={PELE.grey} {...extra} />
     </>
   );
@@ -293,7 +315,7 @@ export default function ValidadesScreen({ navigation }) {
                   <TouchableOpacity activeOpacity={0.92} onPress={() => (isActive ? openEdit(it) : bringToFront(i))} style={{ flex: 1 }}>
                     <View style={s.chead}>
                       <Icon name={TYPE_IC[it.type] || 'doc'} size={15} color={isActive ? PELE.onInkFaint : '#B3B1A9'} />
-                      <Animated.Text style={[s.cheadTxt, { color: nameC }]} numberOfLines={1}>{validityLabel(it.type, isPilot, lang)}</Animated.Text>
+                      <Animated.Text style={[s.cheadTxt, { color: nameC }]} numberOfLines={1}>{validityLabel(it.type, isPilot, lang, it.program || null)}</Animated.Text>
                       <View style={[s.pill, { backgroundColor: pillBgC(st.band) }]}><Text style={[s.pillTxt, { color: bandTextColor(st.band) }]}>{statusShort(st)}</Text></View>
                     </View>
                     {/* Detalhe — REVELA-SE (cresce em altura + fade) quando o cartão fica à frente. HORIZONTAL: número à ESQUERDA, campos à DIREITA (cartão de crédito) */}
@@ -380,27 +402,35 @@ export default function ValidadesScreen({ navigation }) {
               ) : (
                 <>
 
+              {ff.program ? (
+                <>
+                  <Text style={[s.fLbl, s.fLblTop]}>{l('Programa do operador', 'Operator programme')}</Text>
+                  {chipRow(PROGRAMS.map((p) => ({ value: p, label: programLabel(p, lang) })), editing?.program, (p) => set({ program: p }), true)}
+                  <Text style={s.hint}>{l('ATQP: só com a prorrogação aprovada pela autoridade (ORO.FC.A.245 e)). EBT: programa aprovado (ORO.FC.231).', 'ATQP: only with the extension approved by the authority (ORO.FC.A.245(e)). EBT: approved programme (ORO.FC.231).')}</Text>
+                </>
+              ) : null}
+
               {ff.level ? (
                 <>
-                  <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Nível ICAO', 'ICAO level')}</Text>
+                  <Text style={[s.fLbl, s.fLblTop]}>{l('Nível ICAO', 'ICAO level')}</Text>
                   {chipRow(LANG_LEVELS.map((lv) => ({ value: lv, label: `${lv}${lv === 6 ? l(' · sem prazo', ' · no expiry') : ''}` })), editing?.level, (lv) => set({ level: lv }), true)}
                 </>
               ) : null}
 
               {ff.instrKind ? (
                 <>
-                  <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Tipo', 'Kind')} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
+                  <Text style={[s.fLbl, s.fLblTop]}>{l('Tipo', 'Kind')} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
                   {chipRow(INSTRUCTOR_KINDS, editing?.instrKind, (k) => set({ instrKind: editing?.instrKind === k ? null : k }), false)}
                 </>
               ) : null}
 
               {isRef ? (
-                <Text style={[s.fLbl, { marginTop: 14, color: PELE.grey, fontFamily: PELE_FONT.body }]}>{l('Não expira — guardado como referência.', 'No expiry — kept as a reference.')}</Text>
-              ) : needsLevel ? (
-                <Text style={[s.fLbl, { marginTop: 14, color: attempted ? PELE.red : PELE.grey, fontFamily: attempted ? PELE_FONT.bodyBold : PELE_FONT.body }]}>{l('Escolhe o nível acima.', 'Choose the level above.')}</Text>
+                <Text style={[s.fLbl, s.fLblTop, { color: PELE.grey, fontFamily: PELE_FONT.body }]}>{l('Não expira — guardado como referência.', 'No expiry — kept as a reference.')}</Text>
+              ) : needsLevel || needsProg ? (
+                <Text style={[s.fLbl, s.fLblTop, { color: attempted ? PELE.red : PELE.grey, fontFamily: attempted ? PELE_FONT.bodyBold : PELE_FONT.body }]}>{needsProg ? l('Escolhe o programa acima: o prazo depende dele.', 'Choose the programme above: the period depends on it.') : l('Escolhe o nível acima.', 'Choose the level above.')}</Text>
               ) : (
                 <>
-                  <Text style={[s.fLbl, { marginTop: 14 }]}>{usesDone ? l('Feito em', 'Done on') : l('Validade', 'Expiry')}</Text>
+                  <Text style={[s.fLbl, s.fLblTop]}>{usesDone ? l('Feito em', 'Done on') : l('Válido até', 'Valid until')}</Text>
                   <View style={s.dateRow}>
                     <TextInput style={[s.dateIn, attempted && !formISO && s.dateInErr]} value={editing?.d} onChangeText={(v) => set({ d: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('DD', 'DD')} placeholderTextColor={PELE.grey} keyboardType="number-pad" maxLength={2} />
                     <Text style={s.dateSep}>/</Text>
@@ -409,13 +439,32 @@ export default function ValidadesScreen({ navigation }) {
                     <TextInput style={[s.dateIn, s.dateInY, attempted && !formISO && s.dateInErr]} value={editing?.y} onChangeText={(v) => set({ y: v.replace(/\D/g, '').slice(0, 4) })} placeholder={l('AAAA', 'YYYY')} placeholderTextColor={PELE.grey} keyboardType="number-pad" maxLength={4} />
                   </View>
                   {attempted && !formISO ? <Text style={s.dateErr}>{l('Data inválida — confere dia, mês e ano.', 'Invalid date — check day, month and year.')}</Text> : null}
-                  {derivedISO ? <Text style={s.derived}>→ {l('válido até', 'valid until')} {fmtDate(derivedISO)}</Text> : null}
+                  {derivedISO ? <Text style={s.derived}>→ {l('válido até', 'valid until')} {fmtDate(derivedISO)}{calc && calc.from === 'prev' ? l(' (a partir da validade anterior)', ' (from the previous expiry)') : ''}</Text> : null}
+                  {ff.prev ? (
+                    <>
+                      <Text style={[s.fLbl, s.fLblTop]}>{l('Validade anterior', 'Previous expiry')} <Text style={s.fOpt}>{l('· se renovaste antes de expirar', '· if renewed before expiry')}</Text></Text>
+                      <View style={s.dateRow}>
+                        <TextInput style={[s.dateIn, prevBad && attempted && s.dateInErr]} value={editing?.pd} onChangeText={(v) => set({ pd: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('DD', 'DD')} placeholderTextColor={PELE.grey} keyboardType="number-pad" maxLength={2} />
+                        <Text style={s.dateSep}>/</Text>
+                        <TextInput style={[s.dateIn, prevBad && attempted && s.dateInErr]} value={editing?.pm} onChangeText={(v) => set({ pm: v.replace(/\D/g, '').slice(0, 2) })} placeholder={l('MM', 'MM')} placeholderTextColor={PELE.grey} keyboardType="number-pad" maxLength={2} />
+                        <Text style={s.dateSep}>/</Text>
+                        <TextInput style={[s.dateIn, s.dateInY, prevBad && attempted && s.dateInErr]} value={editing?.py} onChangeText={(v) => set({ py: v.replace(/\D/g, '').slice(0, 4) })} placeholder={l('AAAA', 'YYYY')} placeholderTextColor={PELE.grey} keyboardType="number-pad" maxLength={4} />
+                      </View>
+                      {prevBad && attempted ? <Text style={s.dateErr}>{l('Data inválida — confere dia, mês e ano.', 'Invalid date — check day, month and year.')}</Text> : null}
+                      {prevSuggest ? (
+                        <TouchableOpacity onPress={() => { select(); const p = prevSuggest.split('-'); set({ pd: p[2], pm: p[1], py: p[0] }); }} activeOpacity={0.8} accessibilityRole="button" hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}>
+                          <Text style={s.hint}>{l('É uma renovação? ', 'Is it a renewal? ')}<Text style={s.noteB}>{l(`Usar a validade anterior (${fmtDate(prevSuggest)})`, `Use the previous expiry (${fmtDate(prevSuggest)})`)}</Text></Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {lawLine ? <Text style={s.hint}>{lawLine}</Text> : null}
                 </>
               )}
 
               {ff.limitations ? (
                 <>
-                  <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Limitações', 'Limitations')} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
+                  <Text style={[s.fLbl, s.fLblTop]}>{l('Limitações', 'Limitations')} <Text style={s.fOpt}>{l('· opcional', '· optional')}</Text></Text>
                   <View style={s.chips}>
                     {medCodes(isPilot).map((c) => {
                       const on = (editing?.limitations || []).includes(c.code);
@@ -434,7 +483,7 @@ export default function ValidadesScreen({ navigation }) {
 
               {ff.aircraft ? (
                 <>
-                  <Text style={[s.fLbl, { marginTop: 14 }]}>{l('Avião', 'Aircraft')}</Text>
+                  <Text style={[s.fLbl, s.fLblTop]}>{l('Avião', 'Aircraft')}</Text>
                   <TextInput style={s.noteInput} value={editing?.aircraft} onChangeText={(v) => set({ aircraft: v })} placeholder={l('ex. A320', 'e.g. A320')} placeholderTextColor={PELE.grey} autoCapitalize="characters" maxLength={12} />
                 </>
               ) : null}
@@ -517,6 +566,7 @@ const s = StyleSheet.create({
   note: { fontSize: 11, fontFamily: PELE_FONT.body, color: PELE.grey, lineHeight: 17, marginTop: 18 },
   noteB: { fontFamily: PELE_FONT.bodyHeavy, color: PELE.ink },
   fLbl: { fontSize: 12.5, fontFamily: PELE_FONT.bodyBold, color: PELE.ink, marginBottom: 8 },
+  fLblTop: { marginTop: SPACE.md },
   fOpt: { fontFamily: PELE_FONT.body, color: PELE.grey },
   noteInput: { backgroundColor: PELE.soft, borderRadius: 10, borderWidth: 1, borderColor: PELE.line, paddingHorizontal: 12, paddingVertical: 11, color: PELE.ink, fontSize: 15, fontFamily: PELE_FONT.body },
   tgrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },

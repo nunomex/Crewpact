@@ -21,6 +21,14 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > (agora com todos os períodos do 210); o resto passa para ela no bloco 4. A revisão independente do bloco corrigiu também o
 > "Tenho descanso?" do Início (repouso depois de um repartido = o bloco inteiro; sem mínimo antes de um serviço que não é PSV).
 > Detalhe em `docs/decisoes.md`. Próximo: bloco 3.
+>
+> **Bloco 3 (limites TAP S11 e validades S12) feito a 2026-11-06:** S11 (A-122, A-124, A-125, A-129, A-130, A-131) e os riscos
+> da mesma área que o resumo não agrupou (A-123, A-126, A-127, A-128, A-132); S12 (A-253, A-278 a A-281, A-283 a A-285) e
+> também A-217, A-282, A-286, A-287 e A-288. Regra do Nuno para as validades: "não quero nada inventado, quero que seja como diz
+> a lei" — os prazos saem do texto oficial guardado em `fontes/eu/` (Reg. 965/2012, 1178/2011, 2015/1998, 1182/71), conferido
+> por teste. Ficou de fora: A-133 a A-141 (dúvidas de leitura) e o tempo de voo sem as horas de cada perna que passa da
+> meia-noite (resto do A-132). A revisão independente do bloco apanhou 13 erros (alguns introduzidos pela própria correção),
+> corrigidos no mesmo dia. Detalhe em `docs/decisoes.md`. Próximo: bloco 4 (importação).
 
 ## Como se fez
 

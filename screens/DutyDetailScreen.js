@@ -20,7 +20,7 @@ import HotelSheet from '../components/HotelSheet';
 import ProvaSheet from '../components/ProvaSheet';
 import { provaFor } from '../data/prova';
 import { legZulu } from '../data/zulu';
-import { fdpForDuty, docFor } from '../ae/tapLimits';
+import { fdpForDuty, docFor, dayNum } from '../ae/tapLimits';
 import { plainFor, fmtDur, fmtClock } from '../data/tapLimitsText';
 import { AE_DEEPLINKS } from '../data/library';
 
@@ -124,9 +124,8 @@ export default function DutyDetailScreen({ route, navigation }) {
   const tapAe = !!ae && /^tap/.test(String(ae.AE_ID || ''));
   // Com o mapa todo (o longo curso precisa da rotação para a aclimatização) e a frota de cada dia (Cl. 42.ª).
   const aeOne = tapAe && isFlight && date
-    ? fdpForDuty({ duties: { ...duties, [date]: { ...duty, extra: [] } }, date, crewType: ctD, baseAt: ctxAll.homeBaseAt, fleetAt: (x) => (crewAt(x) || {}).fleet || null })
+    ? fdpForDuty({ duties, date, crewType: ctD, baseAt: ctxAll.homeBaseAt, fleetAt: (x) => (crewAt(x) || {}).fleet || null })   // o período inteiro (bloco 3)
     : null;
-  const svcAe = aeOne ? aeOne.svc : null;
   const aeFdp = aeOne ? aeOne.fdp : null;
   const aeLc = !!(aeFdp && aeFdp.lc);
   const aeOk = !!(aeFdp && aeFdp.limit != null && !sbAccD);
@@ -348,12 +347,12 @@ export default function DutyDetailScreen({ route, navigation }) {
               // A hora-limite de calços (2026-11-03): o número que toda a concorrência mostra primeiro —
               // o tripulante pensa em horas do relógio. Mesma hora da apresentação; +1 = dia seguinte.
               aeStricter
-                ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`,
-                    node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (svcAe.dn * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
+                ? { k: l('Calços até às', 'On-blocks by'), v: `${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`,
+                    node: aeTagged(`${fmtClock(aeFdp.latestOnBlock)}${aeFdp.latestOnBlock - (dayNum(date) * 1440) >= 1440 ? ' (+1)' : ''}`), prova: aePsvProva }
                 : (!sbAccD && d.latestOnBlockStr) && { k: d.fdp.exact === false ? l('Calços até às (garantido)', 'On-blocks by (guaranteed)') : l('Calços até às', 'On-blocks by'), v: `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}`, prova: provaFor('psvMax', provaCtx) },
               aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
-              aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`,
-                node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`), prova: aeRestProva },
+              aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`,
+                node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > dayNum(date) ? ' (+1)' : ''}`), prova: aeRestProva },
               sbAccD && { k: l('PSV', 'FDP'), v: kind === 'standby_airport' ? l('não se aplica — standby (225)', 'not applicable — standby (225)')
                 : l('não se aplica — sem setores (ORO.FTL.105(12))', 'not applicable — no sectors (ORO.FTL.105(12))') },
               (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),

@@ -1,0 +1,323 @@
+Regulamento (UE) n.º 965/2012 (operações aéreas) — Anexo III, Parte-ORO
+CELEX 02012R0965 — versão consolidada de 2026-05-25 — língua: pt
+Descarregado a 2026-11-06 do serviço de publicações da UE (Cellar): http://publications.europa.eu/resource/celex/02012R0965-20260525
+EXTRATO LITERAL: só as secções abaixo, copiadas sem mudanças (tirámos só as marcas de alteração da EUR-Lex).
+Aviso da EUR-Lex: a versão consolidada é um instrumento de documentação e não tem efeito jurídico; fazem fé os textos do Jornal Oficial.
+
+=====[ORO.GEN.110]=====
+ORO.GEN.110
+Responsabilidades do operador
+a) O operador é responsável pela exploração da aeronave em conformidade com o anexo IV do Regulamento (CE) n.o 216/2008, conforme aplicável, os requisitos aplicáveis do presente anexo e o respetivo certificado de operador aéreo (COA), a autorização de operação especializada (SPO) ou a declaração;
+b) Todos os voos devem ser operados em conformidade com o manual de operações;
+c) O operador deve estabelecer e aplicar um sistema de controlo operacional de todos os voos operados ao abrigo do respetivo certificado
+ou autorização SPO ◄
+ou declaração; ◄
+d) O operador deve assegurar que as aeronaves dispõem dos equipamentos necessários e que as tripulações dispõem das qualificações requeridas para a área e o tipo de operações em causa;
+e) O operador deve garantir que todo o pessoal, direta ou indiretamente destacado para operações de voo e no solo, dispõe de formação adequada, capacidade comprovada para desempenhar as suas funções específicas e consciência das responsabilidades que lhe incumbem, bem como da relação existente entre o bom desempenho das suas funções e as operações no seu todo;
+f) O operador deve estabelecer procedimentos e instruções para a realização de operações seguras de cada tipo de aeronave, incluindo as obrigações e as responsabilidades do pessoal de terra e da tripulação de bordo no que respeita a todos os tipos de operações no solo e em voo. Esses procedimentos e instruções não devem obrigar a tripulação, durante as fases críticas do voo, a realizar quaisquer outras atividades que não as necessárias para a operação segura da aeronave. Devem ser também incluídos procedimentos e instruções relativos ao compartimento estéril da tripulação de voo;
+g) O operador deve garantir que todo o pessoal está sensibilizado para a necessidade de aplicar a legislação, regulamentação e procedimentos dos Estados onde são realizadas operações e que sejam pertinentes para o desempenho das suas funções;
+h) O operador deve estabelecer listas de verificação para cada tipo de aeronave, que devem ser utilizadas pelos membros da tripulação em todas as fases do voo sob condições normais, anormais ou de emergência, de modo a garantir o cumprimento dos procedimentos operacionais constantes do manual de operações. A criação e a utilização das listas de verificação devem respeitar os princípios inerentes aos fatores humanos e ter em conta a documentação pertinente mais recente publicada pelo fabricante da aeronave;
+i) O operador deve estabelecer procedimentos de planeamento de voo que garantam a segurança das operações de voo, tendo em conta o desempenho da aeronave, as restrições operacionais e as condições pertinentes expectáveis na rota a utilizar e nos aeródromos ou locais de operação em causa. Esses procedimentos devem constar do manual de operações;
+j) O operador deve estabelecer e manter programas de formação do pessoal sobre mercadorias perigosas, conforme previsto nas instruções técnicas. Esses programas de formação devem ser proporcionais às responsabilidades do pessoal. Os programas de formação de operadores de CAT, quer transportem mercadorias perigosas ou não, e de operadores que realizem operações que não as operações CAT referidas nas alíneas b), c) e d) do ponto ORO.GEN.005 que transportem mercadorias perigosas serão analisados e aprovados pela autoridade competente;
+k) Sem prejuízo do disposto na alínea j), os operadores que realizem operações comerciais com as aeronaves a seguir mencionadas devem certificar-se de que a tripulação de voo recebeu uma formação adequada sobre mercadorias perigosas ou instruções que lhes permitam reconhecer as mercadorias perigosas não declaradas introduzidas a bordo pelos passageiros ou como carga:
+1)
+Um avião monomotor a hélice com uma massa máxima certificada à descolagem (MCTOM) igual a 5 700 kg ou inferior e uma configuração operacional máxima de lugares de passageiros (MOPSC) de cinco lugares ou inferior com descolagem e aterragem no mesmo aeródromo ou local de operação, de acordo com as VFR durante o dia;
+2)
+um helicóptero a motor diferente dos complexos, monomotor, com uma MOPSC de cinco lugares ou inferior com descolagem e aterragem no mesmo aeródromo ou local de operação, de acordo com as VFR durante o dia.
+
+=====[ORO.FC.145]=====
+ORO.FC.145
+Formação, controlos e avaliação
+a)
+Toda a formação, controlos e avaliação requeridos nesta secção devem ser realizados em conformidade com os programas e planos de formação estabelecidos pelo operador no manual de operações.
+b)
+Ao estabelecer os programas e planos de formação, o operador deve incluir os elementos pertinentes definidos na parte obrigatória dos dados de adequação operacional estabelecidos em conformidade com o Regulamento (UE) n.o 748/2012.
+c)
+Tanto para as operações CAT com aviões e helicópteros como para as operações IAM com VCA, os programas de formação e de verificação, incluindo os conteúdos e meios para executar o programa, tais como dispositivos individuais de treino de simulação de voo (FSTD) e outras soluções de treino, devem ser aprovados pela autoridade competente.
+d)
+O FSTD utilizado para cumprir os requisitos da presente subparte deve ser qualificado em conformidade com o Regulamento (UE) n.o 1178/2011 e, na medida do possível, deve reproduzir a aeronave utilizada pelo operador. As diferenças entre os FSTD e as aeronaves devem ser descritas e tratadas numa sessão de informação ou ação de formação, conforme adequado.
+e)
+O operador deve instituir um sistema para monitorização adequada das alterações aos FSTD e garantir que essas alterações não afetam a adequação dos programas de formação.
+f)
+O operador deve monitorizar a validade de cada formação contínua e dos controlos.
+g)
+Os períodos de validade exigidos na presente subparte contam a partir do final do mês em que foi concluída a atualização, a formação ou o controlo.
+
+=====[ORO.FC.230]=====
+ORO.FC.230
+Formação contínua e testes
+a) Cada tripulante de voo deve concluir formação contínua e testes relevantes para o tipo ou variante e equipamento associado da aeronave em que operam.
+b)
+Controlo de proficiência do operador
+1)
+Cada membro da tripulação de voo será submetido a controlos de proficiência do operador, como parte de um complemento normal da tripulação de voo.
+2)
+Nos casos em que o tripulante de voo é designado para operações IFR, os controlos de proficiência do operador devem ser efetuados sem referência visual exterior, conforme adequado.
+3)
+Os controlos de proficiência do operador têm uma validade de 6 meses. No caso das operações VFR diurnas de aviões da classe de desempenho B durante períodos não superiores a oito meses consecutivos, é suficiente um controlo de proficiência do operador. O controlo de proficiência deve ser realizado antes de iniciar as operações CAT.
+c)
+Provas de voo de linha
+Cada tripulante de voo deve efetuar uma prova de voo de linha na aeronave. O período de validade da prova de voo de linha é de 12 meses.
+d)
+Formação sobre equipamento de segurança e de emergência e controlos
+Cada tripulante de voo deve concluir formação contínua e controlos sobre a localização e a utilização de todo o equipamento de segurança e de emergência a bordo da aeronave. Os controlos e a formação relativos ao equipamento de segurança e de emergência têm um período de validade de 12 meses;
+e)
+Formação em CRM
+1)
+Todas as fases adequadas da formação periódica devem incluir módulos de CRM;
+2)
+Os tripulantes de voo devem efetuar uma formação em CRM composta por módulos específicos. Os temas mais importantes da formação em CRM devem constar de sessões de formação por módulos distribuídos tão uniformemente quanto possível por cada período de três anos;
+f) Os tripulantes de voo devem receber formação em terra e em voo num FSTD ou numa aeronave, ou uma combinação da formação num FSTD e numa aeronave, no mínimo de 12 em 12 meses.
+
+=====[ORO.FC.231]=====
+ORO.FC.231
+Formação baseada em evidências
+a)
+PROGRAMA EBT
+1)
+O operador pode substituir os requisitos da secção ORO.FC.230 através do estabelecimento, da execução e da manutenção de um programa EBT adequado aprovado pela autoridade competente.
+O operador deve demonstrar a sua capacidade para apoiar a execução do programa EBT (incluindo um plano de execução) e realizar uma avaliação dos riscos para a segurança que demonstre a forma como é alcançado um nível equivalente de segurança.
+2)
+O programa EBT deve:
+i)
+corresponder à dimensão do operador e à natureza e complexidade das suas atividades, tendo em conta os perigos e riscos associados inerentes a essas atividades;
+ii)
+assegurar a competência dos pilotos através de uma avaliação e do desenvolvimento das competências dos pilotos necessárias para uma operação segura, eficaz e eficiente das aeronaves;
+iii)
+assegurar que cada piloto está exposto aos tópicos de avaliação e formação derivados de acordo com a secção ORO.FC.232;
+iv)
+incluir pelo menos seis módulos EBT distribuídos por um programa de 3 anos; cada módulo EBT consistirá numa fase de avaliação e numa fase de formação. O período de validade de um módulo EBT é de 12 meses;
+A)
+A fase de avaliação compreende um cenário (ou cenários) de voo orientado para a linha para avaliar todas as competências e identificar as necessidades individuais de formação.
+B)
+A fase de formação compreende:
+a)
+A fase de formação das manobras, compreendendo a formação para alcançar proficiência em determinadas manobras definidas;
+b)
+A fase de formação com base em cenários, incluindo um cenário (ou cenários) de voo orientado para a linha para avaliar todas as competências e identificar as necessidades individuais de formação.
+A fase de formação deve ser realizada em tempo útil após a fase de avaliação.
+3)
+O operador deve assegurar que cada piloto inscrito no programa EBT completa:
+i)
+Um mínimo de dois módulos EBT dentro do prazo de validade da qualificação de tipo, separados por um período não inferior a três meses. O módulo EBT é completado sempre que:
+A)
+O teor do programa EBT está concluído para esse módulo EBT (exposição do piloto aos tópicos de avaliação e formação); e
+B)
+Que tenha sido demonstrado um nível aceitável de desempenho em todas as competências observadas;
+ii)
+Avaliações de linha de competência; e
+iii)
+Formação em terra.
+4)
+O operador deve estabelecer um programa de estandardização e garantia de concordância do instrutor EBT a fim de assegurar que os instrutores envolvidos na EBT estão devidamente qualificados para desempenhar as suas funções.
+i)
+Todos os instrutores devem estar sujeitos a este programa;
+ii)
+O operador deve utilizar métodos e métricas adequados para avaliar a concordância;
+iii)
+O operador deve demonstrar que os instrutores têm suficiente concordância.
+5)
+O programa EBT pode incluir procedimentos de contingência para circunstâncias imprevistas que possam afetar a prossecução dos módulos EBT. O operador deve demonstrar a necessidade desses procedimentos. Os procedimentos devem assegurar que um piloto não prossiga as operações de linha se o desempenho observado foi inferior ao nível mínimo aceitável. Podem incluir:
+i)
+Um período de separação diferente entre módulos EBT; e
+ii)
+Uma ordem diferente das fases do módulo EBT.
+b)
+QUADRO DE COMPETÊNCIAS
+O operador deve utilizar um quadro de competências para todos os aspetos da avaliação e formação no âmbito do programa EBT. O quadro de competências deve:
+1)
+Ser inclusivo, exato e utilizável;
+2)
+Incluir comportamentos observáveis necessários às operações seguras, eficazes e eficientes;
+3)
+Incluir um conjunto definido de competências, suas descrições e seus comportamentos observáveis associados.
+c)
+DESEMPENHO DO SISTEMA DE FORMAÇÃO
+1)
+O desempenho do sistema EBT deve ser medido e avaliado através de um processo de retorno da informação a fim de:
+i)
+validar e afinar o programa EBT do operador;
+ii)
+constatar que o programa EBT do operador desenvolve competências de piloto.
+2)
+O processo de retorno da informação deve ser incluído no sistema de gestão do operador.
+3)
+O operador deve desenvolver procedimentos que regulem a proteção dos dados EBT.
+d)
+SISTEMA DE GRADUAÇÃO
+1)
+O operador utiliza um sistema de graduação para avaliar as competências do piloto. O sistema de graduação deve assegurar:
+i)
+Um nível de pormenor suficiente para permitir medições precisas e úteis do desempenho individual;
+ii)
+Um critério de desempenho e uma escala para cada competência, com um ponto na escala que determine o nível mínimo aceitável a atingir para a realização de operações de linha. O operador deve desenvolver procedimentos para resolver o baixo desempenho do piloto;
+iii)
+Integridade dos dados;
+iv)
+Segurança dos dados.
+2)
+O operador deve verificar periodicamente a exatidão do sistema de graduação face a um sistema referenciado por critérios.
+e)
+DISPOSITIVOS DE FORMAÇÃO ADEQUADOS E VOLUME DE HORAS PARA COMPLETAR O PROGRAMA EBT DO OPERADOR
+1)
+Cada módulo EBT deve ser conduzido num FSTD com um nível de qualificação adequado para assegurar a correta prossecução dos tópicos de avaliação e formação.
+2)
+O operador deve fornecer um volume suficiente de horas no dispositivo de formação adequado para que o piloto possa completar o programa EBT do operador. Os critérios para determinar o volume do programa EBT são os seguintes:
+i)
+O volume corresponde à dimensão e complexidade do programa EBT;
+ii)
+O volume é suficiente para completar o programa EBT;
+iii)
+O volume assegura um programa EBT eficaz, tendo em conta as recomendações formuladas pela OACI, a Agência e a autoridade competente;
+iv)
+O volume corresponde à tecnologia dos dispositivos de formação utilizados.
+f)
+EQUIVALÊNCIA DAS AVARIAS
+1)
+Cada piloto deve receber avaliação e formação sobre gestão das avarias do sistema da aeronave.
+2)
+As avarias do sistema da aeronave que causam dificuldades significativas a uma tripulação proficiente devem ser organizadas com base nas seguintes características:
+i)
+imediatismo;
+ii)
+complexidade;
+iii)
+degradação do controlo da aeronave;
+iv)
+perda de instrumentação;
+v)
+gestão das consequências.
+3)
+Cada piloto deve ser exposto a pelo menos uma avaria correspondente a cada uma das características com uma frequência determinada pelo quadro de tópicos de avaliação e formação.
+4)
+A proficiência demonstrada na gestão de uma avaria é considerada equivalente à proficiência demonstrada na gestão de outras avarias com as mesmas características.
+g)
+EQUIVALÊNCIA DE APROXIMAÇÕES RELEVANTES PARA AS OPERAÇÕES
+1)
+O operador deve assegurar que cada piloto recebe regularmente formação sobre os tipos de aproximação e os métodos de aproximação relevantes para as operações.
+2)
+Esta formação deve incluir aproximações que pressuponham uma dificuldade adicional para uma tripulação competente.
+3)
+Esta formação deve incluir aproximações que exijam aprovações específicas em conformidade com o anexo V (parte SPA) do presente regulamento.
+h)
+AVALIAÇÃO DE LINHA DE COMPETÊNCIA
+1)
+Cada piloto deve realizar periodicamente uma avaliação de linha da sua competência numa aeronave para demonstrar a realização segura, eficaz e eficiente de operações normais de linha descritas no manual de operações.
+2)
+O período de validade de uma avaliação de linha de competência é de 12 meses.
+3)
+O operador aprovado para EBT pode, com a aprovação da autoridade competente, prorrogar a validade da avaliação de linha de competência até:
+i)
+quer dois anos, mediante uma avaliação dos riscos;
+ii)
+quer três anos, mediante um processo de retorno da informação para monitorização das operações de linha, que identifica as ameaças às operações, minimiza os riscos dessas ameaças e aplica medidas de gestão do erro humano nas operações.
+4)
+Para a conclusão com êxito da avaliação de linha de competência, o piloto deve demonstrar um nível aceitável de desempenho em todas as competências observadas.
+i)
+FORMAÇÃO EM TERRA
+1)
+A cada 12 meses, todos os pilotos devem ser sujeitos a:
+i)
+Formação em terra de caráter técnico;
+ii)
+Avaliação e formação no local e utilização de todo o equipamento de segurança e de emergência a bordo da aeronave.
+2)
+O operador pode, com a aprovação da autoridade competente e mediante avaliação dos riscos, prorrogar o período de avaliação e formação no local e de utilização de todo o equipamento de segurança e de emergência a bordo da aeronave para 24 meses.
+
+=====[ORO.FC.A.245]=====
+ORO.FC.A.245
+Programa alternativo de formação e de qualificação
+a) Os operadores de aviões com experiência adequada podem substituir um ou mais dos seguintes requisitos em matéria de formação e de controlos da tripulação de voo por um programa alternativo de formação e qualificação (ATQP) aprovado pela autoridade competente:
+1)
+Definido na subsecção SPA.LVO.120 relativa à formação e qualificações da tripulação de voo;
+2)
+Definido na subsecção ORO.FC.220 sobre formação e controlos de conversão;
+3)
+Definido na subsecção ORO.FC.125 sobre formação em diferenças, familiarização e formação em equipamento e procedimentos;
+4)
+Definido na subsecção ORO.FC.205 relativa ao curso de comando;
+5)
+Definido na subsecção ORO.FC.230 relativa à formação contínua e aos controlos; e ainda
+6)
+Definido na subsecção ORO.FC.240 relativa à operação em mais de um tipo ou variante.
+b) O ATPQ deve incluir formação e controlos de modo a estabelecer e manter pelo menos um nível de proficiência equivalente ao alcançado se for cumprido o disposto nas secções ORO.FC.220 e ORO.FC.230. Previamente à aprovação do ATPQ pela autoridade competente, deve ser demonstrado o nível de proficiência da tripulação de voo em termos de formação e qualificações.
+c) O operador que apresenta um pedido de aprovação de um ATPQ deve facultar à autoridade competente um plano de execução, incluindo uma descrição do nível de proficiência a alcançar pela tripulação de voo em termos de formação e qualificações.
+d) Além dos controlos previstos nas secções ORO.FC.230 e FCL.060 do anexo I (Parte-FCL) do Regulamento (UE) n.o 1178/2011, os tripulantes de voo devem passar num teste orientado para os voos de linha (LOE) realizado num FSTD. O LOE tem um prazo de validade de 12 meses. O LOE está concluído quando estiverem preenchidas ambas as seguintes condições:
+1)
+O programa do LOE está concluído; e ainda
+2)
+O tripulante de voo demonstrou um nível de desempenho aceitável.
+e) Após dois anos de operações com um ATQP aprovado, o operador pode, mediante aprovação da autoridade competente, prorrogar a validade dos controlos previstos na subsecção ORO.FC.230 do seguinte modo:
+1)
+Controlo de proficiência do operador – 12 meses.
+2)
+Prova de voo de linha – 24 meses.
+3)
+Controlos relativos ao equipamento de emergência e de segurança – 24 meses.
+f) Os tripulantes de voo devem efetuar uma formação em CRM composta por módulos específicos. Os temas mais importantes da formação em CRM devem constar de sessões de formação por módulos distribuídos tão uniformemente quanto possível por cada período de três anos.
+g) O programa alternativo de formação e qualificação (ATQP) deve incluir 48 horas num FSTD para cada tripulante de voo, distribuídas uniformemente ao longo de um programa de 3 anos. O operador pode reduzir o número de horas de FSTD, que não deverá ser inferior a 36 horas, desde que demonstre que o nível de segurança alcançado é equivalente ao do programa que o ATQP pode substituir em conformidade com a alínea a).
+
+=====[ORO.CC.140]=====
+ORO.CC.140
+Formação periódica
+a) Os tripulantes de cabina devem completar uma formação periódica e submeter-se a controlos todos os anos;
+b) A formação periódica deve abranger as funções atribuídas a cada tripulante de cabina no âmbito dos procedimentos normais e de emergência e dos exercícios pertinentes para cada tipo e/ou variante de aeronave a operar;
+c) A formação específica a cada tipo de aeronave deve incluir os seguintes módulos:
+1)
+A formação periódica deve incluir a realização de exercícios práticos anuais por todos os tripulantes de cabina para simular o funcionamento de cada tipo ou variante de portas e saídas normais e de emergência para evacuação de passageiros.
+2)
+A formação periódica deve ainda incluir, a intervalos não superiores a três anos:
+i)
+o funcionamento e a abertura efetiva, por cada tripulante de cabina, num dispositivo de treino representativo ou na própria aeronave, de cada tipo ou variante de saídas normais e de emergência nos modos normal e de emergência,
+ii)
+o funcionamento efetivo, por cada tripulante de cabina, num dispositivo de treino representativo ou na própria aeronave, da porta de segurança da cabina de pilotagem, nos modos normal e de emergência, e do assento e do sistema de retenção, bem como a demonstração prática do funcionamento do equipamento do sistema de oxigénio pertinente, em caso de incapacidade do piloto,
+iii)
+uma demonstração do funcionamento de todas as outras saídas, incluindo as janelas da cabina de pilotagem, e
+iv)
+uma demonstração da utilização de barcos salva-vidas ou de mangas de evacuação, se instaladas;
+d) A formação específica ao operador deve incluir os seguintes módulos:
+1)
+A formação periódica deve incluir, todos os anos:
+i)
+para cada tripulante de cabina:
+A)
+localização e manuseamento de todos os equipamentos de segurança e de emergência instalados ou transportados a bordo, e
+B)
+colocação de coletes salva-vidas e utilização do equipamento de oxigénio portátil e de proteção respiratória (PBE),
+ii)
+acondicionamento de objetos no compartimento de passageiros,
+iii)
+procedimentos a aplicar em caso de contaminação da superfície da aeronave,
+iv)
+procedimentos de emergência,
+v)
+procedimentos de evacuação,
+vi)
+análise de incidentes e de acidentes,
+vii)
+gestão do pessoal de bordo,
+viii)
+aspetos da medicina aeronáutica e primeiros socorros, incluindo equipamentos conexos,
+ix)
+procedimentos de segurança;
+2)
+A formação periódica, que deve ser efetuada a intervalos não superiores a três anos, deve ainda incluir:
+i)
+a utilização de equipamento pirotécnico (real ou representativo),
+ii)
+a demonstração prática da utilização de listas de verificação da tripulação de voo,
+iii)
+formação prática e realista sobre o uso de equipamento de combate a incêndios, incluindo vestuário de proteção representativo do existente a bordo da aeronave,
+iv)
+para cada tripulante de cabina:
+A)
+extinção de um incêndio característico do que se pode produzir no interior de uma aeronave,
+B)
+aplicação e utilização de PBE num ambiente de simulação fechado e com fumo;
+e) A formação tem o seguinte período de validade:
+1)
+A validade da formação periódica anual é de 12 meses a contar do final do mês em que foi efetuado o controlo.
+2)
+Se a formação periódica e os controlos previstos na alínea a) forem efetuados nos três últimos meses do prazo de validade, o novo prazo de validade começa a contar a partir da data de termo inicial.
+3)
+No que respeita aos módulos de formação adicional trienal, conforme especificado nas alíneas c), ponto 2), e d), ponto 2), o prazo de validade é de 36 meses a contar do final do mês em que os controlos foram efetuados.

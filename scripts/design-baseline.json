@@ -3,7 +3,7 @@
  "total": {
   "tipoFora": 217,
   "tipoMenor11": 108,
-  "espacoFora": 432,
+  "espacoFora": 424,
   "raioFora": 57,
   "corSolta": 62,
   "ionicons": 10,
@@ -144,7 +144,7 @@
   "screens/ValidadesScreen.js": {
    "tipoFora": 11,
    "tipoMenor11": 3,
-   "espacoFora": 25,
+   "espacoFora": 17,
    "raioFora": 3,
    "corSolta": 12,
    "ionicons": 0,

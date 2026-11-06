@@ -1,0 +1,331 @@
+Regulamento (UE) n.º 1178/2011 (tripulações) — Anexo I Parte-FCL, Anexo IV Parte-MED, Anexo V Parte-CC, Anexo VI Parte-ARA
+CELEX 02011R1178 — versão consolidada de 2026-04-30 — língua: pt
+Descarregado a 2026-11-06 do serviço de publicações da UE (Cellar): http://publications.europa.eu/resource/celex/02011R1178-20260430
+EXTRATO LITERAL: só as secções abaixo, copiadas sem mudanças (tirámos só as marcas de alteração da EUR-Lex).
+Aviso da EUR-Lex: a versão consolidada é um instrumento de documentação e não tem efeito jurídico; fazem fé os textos do Jornal Oficial.
+
+=====[FCL.040]=====
+FCL.040
+Exercício dos privilégios das licenças
+O exercício dos privilégios conferidos por uma licença depende da validade das qualificações nela averbadas, se for o caso, e do certificado médico, consoante os privilégios exercidos.
+
+=====[FCL.055]=====
+FCL.055
+Proficiência linguística
+a)
+Geral. Os pilotos de aviões, helicópteros, aeronaves de descolagem vertical, aeróstatos e giroplanos que devem utilizar o radiotelefone não podem exercer os privilégios das suas licenças e qualificações sem terem um averbamento na sua licença de proficiência linguística em língua inglesa ou na língua utilizada para as radiocomunicações exigidas pelo voo. O averbamento deve indicar a língua, o nível de proficiência e a data de validade, e deve ser obtido em conformidade com um procedimento estabelecido por uma autoridade competente. O nível de proficiência mínimo aceitável é o nível operacional (nível 4) em conformidade com o apêndice 2 do presente anexo.
+b)
+O requerente de um averbamento de proficiência linguística deve demonstrar, em conformidade com o apêndice 2 do presente anexo, pelo menos um nível operacional, quer em termos de utilização de fraseologia quer de utilização da língua corrente, a um assessor certificado por uma autoridade competente ou a um órgão de certificação linguística aprovado por uma autoridade competente, consoante o caso. Para tal, o requerente tem de demonstrar aptidão para:
+1.
+Comunicar eficazmente tanto em situações não presenciais de forma exclusivamente vocal como em situações presenciais;
+2.
+Comunicar sobre temas correntes e profissionais com precisão e clareza;
+3.
+Utilizar estratégias de comunicação apropriadas para trocar mensagens e reconhecer e resolver mal-entendidos num contexto geral ou profissional;
+4.
+Resolver e responder com relativa facilidade aos desafios linguísticos apresentados por complicações ou situações imprevistas surgidas no contexto de uma situação de trabalho de rotina ou de tarefa de comunicação que lhe é normalmente familiar; e
+5.
+Utilizar um dialeto ou sotaque compreensível para a comunidade aeronáutica.
+c)
+Exceto no caso dos pilotos que tenham demonstrado possuir proficiência linguística de nível superior (nível 6), em conformidade com o apêndice 2 do presente anexo, o averbamento de proficiência linguística será reavaliado a cada:
+1.
+Quatro anos, se o nível demonstrado for um nível operacional (nível 4); ou
+2.
+Seis anos, se o nível demonstrado for avançado (nível 5).
+d)
+Requisitos específicos para titulares de uma qualificação de voo por instrumentos (IR). Em derrogação dos pontos supra, os titulares de uma IR devem ter demonstrado a sua aptidão para utilizar a língua inglesa ao nível de proficiência adequado tal como definido no apêndice 2 do presente anexo.
+e)
+A demonstração de proficiência linguística e a utilização da língua inglesa por parte dos titulares de uma IR será feita através de um método de avaliação estabelecido pela autoridade competente.
+
+=====[FCL.625]=====
+FCL.625
+IR — Validade, revalidação e renovação
+a) Validade
+A IR é válida por um ano.
+b) Revalidação
+1.
+Uma IR deve ser revalidada nos três meses imediatamente anteriores à data de expiração mediante cumprimento dos critérios de revalidação para a categoria de aeronave pertinente.
+2.
+Caso os requerentes optarem por cumprir os requisitos de revalidação antes do previsto no ponto 1, o novo período de validade tem início a partir da data da verificação de proficiência.
+3.
+Os requerentes que reprovem na secção pertinente de uma verificação de proficiência IR antes da data de expiração da IR não poderão usar os privilégios da IR enquanto não passarem na verificação de proficiência.
+4.
+Os requerentes de revalidação de uma IR devem receber integralmente os créditos para a verificação de proficiência exigida na presente subsecção ao concluírem a avaliação prática da EBT em conformidade com o apêndice 10 relativo às IR junto de um operador de EBT.
+c) Renovação
+Caso uma IR expire, para efeitos de renovação dos seus privilégios, os requerentes devem cumprir as seguintes condições:
+1)
+A fim de determinar se é necessária formação de refrescamento, para atingir o nível de proficiência necessário para passar o elemento do teste de perícia relativo a instrumentos em conformidade com o apêndice 9, o requerente deve ser submetido a uma avaliação junto de uma das seguintes organizações:
+i)
+uma ATO:
+ii)
+um operador EBT especificamente homologado para dispensar essa formação de refrescamento;
+2)
+Se a organização considerar que é necessário efetuar a avaliação em conformidade com o ponto 1, deverá realizar formação de refrescamento junto dessa organização;
+3)
+Após ter cumprido o disposto no ponto 1 e, se for caso disso, no ponto 2, o requerente deverá passar uma verificação de proficiência em conformidade com o apêndice 9 ou realizar uma avaliação prática da EBT, em conformidade com o apêndice 10, na categoria de aeronave pertinente. A avaliação prática da EBT pode ser combinada com a formação de refrescamento especificada no ponto 2;
+4)
+Deve ser titular da qualificação de tipo ou de classe pertinente, salvo especificação em contrário no presente anexo.
+d) Caso a IR não tenha sido revalidada ou renovada nos sete anos anteriores, os requerentes da IR terão de passar novamente o exame de conhecimentos teóricos e a prova de perícia da IR.
+e) Os titulares de uma IR válida numa licença de piloto emitida por um país terceiro em conformidade com o anexo 1 da Convenção de Chicago devem ser dispensados de cumprir os requisitos previstos na alínea c), pontos 1 e 2 e na alínea d), ao renovar os privilégios IR constantes das licenças emitidas em conformidade com o presente anexo.
+f) A verificação de proficiência referida na alínea c), ponto 3, pode ser combinada com uma verificação de proficiência realizada para efeitos de renovação da qualificação de tipo ou de classe pertinente.
+SECÇÃO 2
+Requisitos específicos para a categoria de avião
+
+=====[FCL.740]=====
+FCL.740
+Validade e renovação de qualificações de classe e de tipo
+a)
+Validade
+1)
+O período de validade de uma qualificação de classe e de tipo será de um ano, exceto para qualificações de classe monopiloto e monomotor, para as quais a validade será de dois anos, salvo especificação em contrário nos dados de adequação operacional (OSD). Caso os pilotos optem por cumprir os requisitos de revalidação antes do previsto nas secções FCL.740.A, FCL.740.H, FCL.740.PL e FCL.740.As, o novo período de validade tem início a partir da data da verificação de proficiência.
+2)
+Os requerentes da revalidação de uma qualificação de classe ou de tipo devem receber integralmente os créditos para a verificação de proficiência exigida na presente subsecção ao concluírem uma avaliação prática da EBT em conformidade com o apêndice 10 junto de um operador que tenha implementado a EBT para a qualificação de classe ou de tipo relevante.
+b)
+Renovação
+Para a renovação de uma qualificação de classe ou de tipo, os requerentes devem cumprir todos os seguintes requisitos:
+1)
+A fim de determinar se é necessária formação de refrescamento para atingir o nível de proficiência necessário para operar a aeronave em segurança, o requerente deve ser submetido a uma avaliação junto de uma das seguintes organizações:
+i)
+uma ATO:
+ii)
+numa DTO ou numa ATO, sempre que a qualificação caducada consista numa qualificação de classe de aviões SEP de não alta performance, numa qualificação de classe de TMG ou numa qualificação de tipo de monomotor para helicópteros referidos no anexo VIII, secção DTO.GEN.110, alínea a), ponto 2, alínea c);
+iii)
+numa DTO, numa ATO ou com um instrutor, no caso de a qualificação estar caducada há menos de três anos e de ser respeitante a uma classe de aviões SEP de não alta performance ou a uma qualificação de classe de TMG;
+iv)
+um operador de EBT especificamente homologado para dispensar essa formação de refrescamento;
+2)
+Se a organização ou o instrutor considerarem que é necessário efetuar a avaliação em conformidade com o ponto 1, deverão completar uma formação de refrescamento junto dessa organização ou com esse instrutor;
+3)
+Uma vez cumprido o disposto no ponto 1 e, se for caso disso, no ponto 2, o requerente deve passar uma verificação de proficiência em conformidade com o apêndice 9 ou realizar uma avaliação prática da EBT em conformidade com o apêndice 10. A avaliação prática da EBT pode ser combinada com a formação de refrescamento especificada no ponto 2.
+Em derrogação do disposto na alínea b), pontos 1, 2 e 3, os pilotos que sejam titulares de uma qualificação de voos de ensaio emitida em conformidade com a secção FCL.820 que tenham sido envolvidos no desenvolvimento, na certificação ou na produção de voos de ensaio para um tipo de aeronave e tenham completado quer 50 horas de tempo de voo total quer 10 horas de tempo de voo como PIC em voos de ensaio daquele tipo durante o ano anterior à data da sua candidatura, estão habilitados a requerer a revalidação ou a renovação da qualificação de tipo pertinente.
+Os requerentes estão isentos do requisito previsto na alínea b), pontos 1 e 2, se possuírem uma qualificação válida para a mesma classe ou tipo de aeronave com base numa licença de piloto emitida por um país terceiro em conformidade com o anexo 1 da Convenção de Chicago e se tiverem direito a exercer os privilégios dessa qualificação.
+c)
+Os pilotos que abandonem um programa EBT do operador após não terem conseguido demonstrar um nível de competência aceitável de acordo com esse programa EBT não devem exercer os privilégios dessa qualificação de tipo até cumprirem uma das seguintes condições:
+1)
+Ter concluído uma avaliação prática da EBT em conformidade com o apêndice 10;
+2)
+Ter passado uma verificação de proficiência em conformidade com a secção FCL.625, alínea c), ponto 3, ou com a secção FCL.740, alínea b), ponto 3, conforme aplicável. Nesse caso, não se aplica a secção FCL.625, alínea b), ponto 4, nem a secção FCL.740, alínea a), ponto 2.
+SECÇÃO 2
+Requisitos específicos para a categoria de aviões
+FCL.720.A
+Requisitos de experiência e pré-requisitos para a emissão de qualificações de tipo — aviões
+Salvo especificação em contrário nos dados de adequação operacional estabelecidos em conformidade com o Anexo I (Parte 21) do Regulamento (UE) n.o 748/2012 (DSO), os requerentes de uma qualificação de classe ou de tipo terão de cumprir os seguintes requisitos e pré-requisitos de experiência para a emissão da qualificação pertinente:
+a) Aviões monopiloto
+1) Aviões monopiloto multimotor
+Os requerentes da emissão de uma primeira qualificação de classe ou de tipo para um avião monopiloto multimotor devem ter realizado pelo menos 70 horas de voo como PIC em aviões.
+2) Aviões monopiloto não complexos e de alta performance
+Antes de iniciar treino de voo, os requerentes da emissão de uma qualificação de classe ou de tipo para um avião monopiloto classificado como avião de alta performance devem:
+i)
+ter pelo menos 200 horas de experiência total de voo, 70 das quais como PIC em aviões; bem como
+ii)
+cumprir um dos seguintes requisitos:
+A)
+ser titular de um certificado que comprove a conclusão satisfatória de um curso de conhecimentos teóricos adicionais efetuado numa ATO; ou
+B)
+ter concluído com aproveitamento os exames de conhecimentos teóricos para uma ATPL(A) em conformidade com o presente anexo (Parte FCL); ou
+C)
+para além de uma licença emitida em conformidade com o presente anexo (Parte FCL), ser titular de uma ATPL(A) ou de uma CPL(A)/IR com crédito de conhecimentos teóricos para uma ATPL(A), emitida em conformidade com o anexo 1 da Convenção de Chicago;
+3)
+Aviões monopiloto complexos e de alta performance
+Os requerentes de uma qualificação de tipo para um avião monopiloto complexo, classificado como avião de alta performance, devem, além de cumprir os requisitos estabelecidos no ponto 2, cumprir todos os seguintes requisitos:
+i)
+Ser ou ter sido titular de uma IR(A) monopiloto ou multimotor, consoante o caso, e como preceituado na subparte G;
+ii)
+Os requerentes de uma emissão de uma qualificação de primeira classe devem, antes de iniciar o curso de formação de qualificação de tipo, cumprir os requisitos da alínea b), ponto 5.
+b) Aviões multipiloto
+Os candidatos à emissão de uma qualificação de tipo de primeira classe para um avião multipiloto devem ser alunos pilotos que estejam a receber formação num curso de formação MPL ou devem, antes do início do curso de formação de qualificação de tipo, cumprir os seguintes requisitos:
+1)
+Ter pelo menos 70 horas de experiência de voo como PIC em aviões;
+2)
+Ser ou ter sido titular de uma IR(A) multimotor;
+3)
+Ter concluído com aproveitamento os exames de conhecimentos teóricos para uma ATPL(A) em conformidade com o presente anexo (Parte FCL);
+4)
+Exceto se o curso de qualificação de tipo for combinado com um curso MCC (cooperação em tripulação múltipla):
+i)
+ser titular de um certificado que comprove a conclusão satisfatória de um curso MCC em aviões; ou
+ii)
+ser titular de um certificado que comprove a conclusão satisfatória de MCC em helicópteros e ter mais de 100 horas de experiência de voo como pilotos em helicópteros multipiloto; ou
+iii)
+ter pelo menos 500 horas de voo como pilotos em helicópteros multipiloto; ou
+iv)
+ter completado pelo menos 500 horas de voo como pilotos em operações multipiloto em aviões monopiloto e multimotor, em transporte aéreo comercial, em conformidade com os requisitos aplicáveis às operações aéreas; bem como
+5)
+Ter concluído o curso de formação especificado na secção FCL.745.A, a menos que satisfaçam uma das seguintes condições:
+i)
+Ter concluído, nos três anos anteriores, a formação e a verificação em conformidade com as secções ORO.FC.220 e ORO.FC.230 do anexo III (parte ORO) do Regulamento (UE) n.o 965/2012;
+ii)
+Ter concluído a formação especificada na secção FCL.915, alínea e), ponto 1, subalínea ii).
+c)
+Não obstante o disposto na secção FCL.720.A, alínea b), aos requerentes que cumpram o disposto na secção B, ponto 6, alínea i), do apêndice 9, deve ser emitida uma qualificação de tipo com privilégios restritos a aviões multipiloto que permita aos titulares dessa qualificação atuar como copilotos de substituição em cruzeiro acima do nível de voo 200, desde que dois outros membros da tripulação possuam uma qualificação de tipo em conformidade com a secção FCL.720.A, alínea b).
+Para eliminar a restrição, os requerentes devem cumprir todos os seguintes requisitos:
+1)
+Submeter-se a uma avaliação numa ATO que deve determinar as suas necessidades de formação a fim de eliminar a restrição;
+2)
+Com base na avaliação especificada no ponto 1), completar, nessa ATO, uma formação que lhes permita atingir o nível de proficiência para operar a aeronave em segurança;
+3)
+Após a conclusão da formação especificada no ponto 2), realizar uma prova de perícia em conformidade com o apêndice 9;
+4)
+Após a conclusão da prova de perícia especificada no ponto 3), preencher uma das seguintes condições:
+i)
+cumprir o disposto na secção ORO.FC.220, alínea e), do anexo III (parte ORO) do Regulamento (UE) n.o 965/2012, desde que cumpram os requisitos de experiência especificados na secção FCL.730.A do presente anexo;
+ii)
+realizar treino de voo na aeronave, incluindo manobras de descolagem, aterragem e borrego.
+d)
+Quando assim especificado nos OSD (dados de adequação operacional), o exercício dos privilégios de uma qualificação de tipo pode estar inicialmente limitado a voos sob a supervisão de um instrutor. As horas de voo sob supervisão devem ser registadas na caderneta de voo do piloto ou num registo equivalente e devem ser assinadas pelo instrutor. A restrição será eliminada quando os pilotos demonstrarem que realizaram as horas de voo sob supervisão, requeridas pelos dados de adequação operacional.
+FCL.725.A
+Conhecimentos teóricos e instrução de voo para a emissão de qualificações de classe e de tipo — aviões
+Salvo especificação em contrário nos dados de adequação operacional estabelecidos em conformidade com o Anexo I (Parte 21) do Regulamento (UE) n.o 748/2012:
+a)
+Para aviões monopiloto multimotor:
+1)
+O curso de conhecimentos teóricos para a qualificação de classe monopiloto e multimotor deve incluir no mínimo 7 horas de instrução em operações com aviões multimotor; bem como
+2)
+O curso de treino de voo para a qualificação de classe ou de tipo monopiloto e multimotor deve incluir pelo menos 2 horas e 30 minutos de instrução de voo em duplo comando em condições normais de operação de um avião multimotor, e não menos de 3 horas e 30 minutos de instrução em duplo comando em procedimentos de falha de motor e técnicas de voo assimétrico.
+b)
+Aviões monopiloto-mar:
+1)
+O curso de formação para qualificações para aviões monopiloto-mar incluirá conhecimentos teóricos e instrução de voo; bem como
+2)
+O treino de voo para uma qualificação de classe ou tipo (mar) para aviões monopiloto-mar incluirá pelo menos 8 horas de instrução de voo em duplo comando se os requerentes forem titulares da versão «terra» da qualificação de classe ou de tipo pertinente, ou 10 horas se os requerentes não forem titulares de tal qualificação; bem como
+c)
+Para aviões monopiloto complexos de não alta performance, aviões monopiloto complexos de alta performance e aviões multipiloto, os cursos de formação devem incluir conhecimentos teóricos de UPRT e instrução de voo, relacionados com as especificidades da classe ou do tipo relevante. Para a instrução de voo, podem ser utilizados FSTD em conformidade com a secção A, ponto 18, do apêndice 9.
+FCL.730.A
+Requisitos específicos para pilotos que seguem um curso para qualificação de tipo sem tempo de voo (ZFTT — Zero Flight Time Type) — aviões
+a)
+Um piloto que segue instrução num curso ZFTT deve ter realizado, num avião multipiloto turbojacto, certificado segundo as normas CS-25 ou um código de aeronavegabilidade equivalente, ou num avião multipiloto turbopropulsor com uma massa máxima à descolagem certificada não inferior a 10 toneladas ou com uma configuração certificada de lugares de passageiro superior a 19, pelo menos:
+1)
+Se for utilizado um FFS de nível CG, C ou C intermédio durante o curso:
+i)
+no caso dos copilotos de substituição em cruzeiro, 1 500 horas de voo;
+ii)
+em todos os outros casos, 1 500 horas de voo ou 250 setores de rota;
+2)
+Se for utilizado um FFS de nível DG, C ou C durante o curso:
+i)
+no caso dos copilotos de substituição em cruzeiro, 750 horas de voo;
+ii)
+em todos os outros casos, 500 horas de voo ou 100 setores de rota.
+b)
+Quando um piloto passar de um avião turbopropulsor para um turbojacto ou de um avião turbojacto para um turbopropulsor, é exigida formação complementar em simulador.
+FCL.735.A
+Curso de formação em cooperação em tripulação múltipla — aviões
+a)
+O curso de formação MCC terá pelo menos:
+1.
+25 horas de instrução teórica e exercícios; e
+2.
+20 horas de formação prática MCC, ou 1cinco horas no caso de alunos pilotos a frequentarem um curso integrado ATP.
+Serão utilizados um FNPT II MCC ou um FFS. Quando a formação MCC for combinada com formação inicial de qualificação de tipo, a formação prática MCC pode ser reduzida até não menos do que 10 horas caso seja utilizado o mesmo FFS tanto para a formação MCC como para a formação de qualificação de tipo.
+b)
+O curso de formação MCC deve ser concluído num período de seis meses numa ATO;
+c)
+Excepto quando o curso MCC for combinado com o curso de qualificação de tipo, após a realização do curso de formação MCC o requerente receberá um certificado de conclusão;
+d)
+Um requerente que tenha realizado formação MCC para qualquer outra categoria de aeronave estará isento do requisito da alínea a), ponto 1.
+
+=====[FCL.740.A]=====
+FCL.740.A
+Revalidação de qualificações de classe e de tipo — aviões
+a)
+Revalidação das qualificações de classe e de tipo multimotor. Para revalidação das qualificações de classe e de tipo multimotor o requerente deve:
+1.
+Passar uma verificação de proficiência em conformidade com o apêndice 9 ou realizar uma avaliação prática da EBT em conformidade com o apêndice 10 na classe ou no tipo de avião pertinente ou num FSTD que represente essa classe ou tipo, nos 3 meses imediatamente anteriores à data de expiração da qualificação; e
+2.
+Realizar durante o período de validade da qualificação pelo menos:
+i)
+10 sectores de rota como piloto da classe ou do tipo de avião pertinente, ou
+ii)
+um sector de rota como piloto num avião ou num FFS da classe ou do tipo pertinente, acompanhado de um examinador. Este sector de rota pode ser voado durante a verificação de proficiência.
+3.
+Um piloto que trabalhe para um operador certificado de transporte aéreo comercial em conformidade com os requisitos de operação aérea aplicáveis e que tenha passado a verificação de proficiência do operador combinada com a verificação de proficiência para a revalidação da qualificação de classe ou de tipo estará isento de cumprir o requisito do ponto 2.
+4.
+A revalidação de uma BIR, ou de uma IR(A), caso se seja titular de tal qualificação, pode ser combinada com uma verificação de proficiência para a revalidação de uma qualificação de classe ou de tipo.
+
+=====[FCL.940]=====
+FCL.940
+Validade dos certificados de instrutor
+Com exceção do MI, e sem prejuízo do disposto na secção FCL.900, alínea b), ponto 1, e na secção FCL.915, alínea e), ponto 2, os certificados de instrutor serão válidos por um período de 3 anos.
+
+=====[FCL.1025]=====
+FCL.1025
+Validade, revalidação e renovação dos certificados de examinador
+a) Validade
+O certificado de examinador é válido por três anos.
+
+=====[MED.A.045]=====
+MED.A.045
+Validade, revalidação e renovação dos certificados médicos
+a)
+Validade
+1.
+Os certificados médicos de classe 1 são válidos por um período de 12 meses.
+2.
+Em derrogação do ponto 1, o período de validade dos certificados médicos de classe 1 deve ser de seis meses para os titulares de licenças que:
+i)
+estejam envolvidos em operações monopiloto de transporte aéreo comercial de passageiros e tenham completado 40 anos;
+ii)
+tenham completado 60 anos.
+3.
+Os certificados médicos de classe 2 são válidos por um período de:
+i)
+60 meses até o titular da licença completar 40 anos. Um certificado médico emitido antes de o titular da licença completar 40 anos deixa de ser válido depois de completados 42 anos;
+ii)
+24 meses para titulares de licenças entre os 40 e os 50 anos. Um certificado médico emitido antes de o titular da licença completar 50 anos deixa de ser válido depois de completados 51 anos;
+iii)
+12 meses para titulares de licenças com mais de 50 anos.
+4.
+Os certificados médicos para LAPL devem ser válidos por um período de:
+i)
+60 meses até o titular da licença completar 40 anos. Um certificado médico emitido antes de o titular da licença completar 40 anos deixa de ser válido depois de completados 42 anos;
+ii)
+24 meses para titulares de licenças com mais de 40 anos.
+5.
+O período de validade de um certificado médico, incluindo eventuais exames ou investigações especiais a ele associados, deve ser calculado a partir da data do exame médico aeronáutico, no caso da emissão inicial e da renovação, e da data de expiração do certificado médico anterior, no caso da revalidação.
+b)
+Revalidação
+Para a revalidação de um certificado médico, os exames e avaliações médicas aeronáuticas, consoante o caso, podem ser efetuados até 45 dias antes da data de expiração.
+c)
+Renovação
+1.
+Se o titular de um certificado médico não cumprir o disposto na alínea b), é necessário um exame e uma avaliação, consoante o caso, para a renovação.
+2.
+No caso dos certificados médicos de classe 1 e de classe 2:
+i)
+se o certificado médico tiver expirado há menos de dois anos, deve ser realizado um exame médico aeronáutico de rotina para efeitos de revalidação;
+ii)
+se o certificado médico tiver expirado há mais de dois anos, mas há menos de cinco, o CMA ou o EMA só deve realizar o exame médico aeronáutico de renovação depois de avaliar os registos médicos aeronáuticos do requerente;
+iii)
+se o certificado médico tiver expirado há mais de cinco anos, aplicam-se os requisitos de exame médico aeronáutico para a emissão inicial e a avaliação deve ser baseada nos requisitos para a revalidação.
+3.
+No caso dos certificados médicos para uma LAPL, o CMA, o EMA ou o MG deve avaliar a história clínica do requerente e realizar os exames e avaliações médicas aeronáuticas, consoante o caso, em conformidade com o disposto em MED.B.005 e MED.B.095.
+
+=====[MED.C.005]=====
+MED.C.005
+Avaliações aeromédicas
+a)
+Os tripulantes de cabina serão submetidos a avaliações aeromédicas para verificar a inexistência de qualquer doença física ou mental que lhes possa causar incapacidade ou inaptidão para desempenhar as funções e responsabilidades que lhes estão atribuídas;
+b)
+Cada tripulante de cabina será submetido a uma avaliação aeromédica antes de lhe serem atribuídas funções pela primeira vez numa aeronave e, subsequentemente, a intervalos máximos de 60 meses;
+c)
+As avaliações aeromédicas serão realizadas por um EMA, um CMA, ou por um MT se os requisitos de MED.E.040 se encontrarem satisfeitos.
+
+=====[CC.CCA.105]=====
+CC.CCA.105 Validade do certificado de tripulante de cabina
+O certificado de tripulante de cabina é emitido por um período ilimitado, deixando apenas de ser válido nos seguintes casos:
+a)
+Suspensão ou cancelamento pela autoridade competente; ou
+b)
+Se o seu titular não tiver exercido os privilégios que lhe estão associados nos 60 meses precedentes em pelo menos um tipo de aeronave.
+
+=====[ARA.FCL.215]=====
+ARA.FCL.215
+Prazo de validade
+a)
+Ao emitir ou renovar uma qualificação ou certificado, a autoridade competente ou, em caso de renovação, um examinador especificamente autorizado pela autoridade competente, prolonga a validade até ao final do mês em causa.
+b)
+Ao revalidar uma qualificação e um certificado de instrutor ou de examinador, a autoridade competente, ou um examinador especificamente autorizado pela autoridade competente, prolonga a validade da qualificação ou do certificado até ao final do mês em causa.
+c)
+A autoridade competente, ou um examinador especificamente autorizado para o efeito pela autoridade competente, apõe a data de validade na licença ou no certificado.
+d)
+A autoridade competente pode definir procedimentos para permitir que os privilégios sejam exercidos pelo titular da licença ou do certificado por um período máximo de 8 semanas após a aprovação no ou nos exames pertinentes, na pendência do seu averbamento na licença ou no certificado.

@@ -10,7 +10,7 @@ import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { simulateDuty, issueText } from '../data/simulation';
 import { routeDistancesNM } from '../data/perdiem';
-import { validityStatus, validityLabel } from '../data/validities';
+import { validityLabel, refOfDay, validitySummary } from '../data/validities';
 import { AppContext } from '../data/appContext';
 import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
 
@@ -125,15 +125,17 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
     items.push({ icon: 'wallet', q: l('Quanto recebes?', 'How much do you earn?'), a: `+${fmtEur(total)}`, tone: 'green', crewdep: true,
       adv: l(`Per-diem da rota${nsEur != null ? ' + pernoita' : ''} · ${isPilot ? 'piloto' : 'cabine'} ${catTxt}.`, `Route per diem${nsEur != null ? ' + night stop' : ''} · ${isPilot ? 'pilot' : 'cabin'} ${catTxt}.`) });
   }
-  if (validities && validities.length) {
-    const RANK = { expired: 0, expiring: 1, valid: 2, none: 3 };
-    const withSt = validities.map((v) => ({ ...v, st: validityStatus(v.expiry) }));
-    const worst = withSt.reduce((a, b) => ((RANK[a.st.band] ?? 3) <= (RANK[b.st.band] ?? 3) ? a : b));
-    const a = worst.st.band === 'expired' ? `${validityLabel(worst.type, isPilot, lang)} ${l('expirado', 'expired')}`
-      : worst.st.band === 'expiring' ? `${validityLabel(worst.type, isPilot, lang)} · ${worst.st.days} d`
-        : l('Tudo válido', 'All current');
-    items.push({ icon: 'shield', q: l('Validades em dia?', 'Documents current?'), a, tone: worst.st.band === 'expired' ? 'red' : worst.st.band === 'expiring' ? 'warn' : 'green', crewdep: true,
-      adv: l(`Documentos de ${isPilot ? 'piloto' : 'cabine'}.`, `${isPilot ? 'Pilot' : 'Cabin'} documents.`) });
+  // A-253 / A-280: as validades avaliam-se NO DIA DO SERVIÇO simulado (não hoje); as referências (licença, CCA) não contam.
+  const vsum = validitySummary(validities, refOfDay(duty.duty_date));
+  if (vsum) {
+    const { worst, missing } = vsum;
+    const name = validityLabel(worst.type, isPilot, lang, worst.program || null);
+    const a = worst.st.band === 'expired' ? `${name} ${l('expirado', 'expired')}`
+      : worst.st.band === 'expiring' ? `${name} · ${worst.st.days} d`
+        : missing ? (missing === 1 ? l('Falta 1 data de validade', '1 expiry date missing') : l(`Faltam ${missing} datas de validade`, `${missing} expiry dates missing`))
+          : l('O que registaste está válido', 'What you registered is current');
+    items.push({ icon: 'shield', q: l('Validades em dia?', 'Documents current?'), a, tone: worst.st.band === 'expired' ? 'red' : worst.st.band === 'expiring' || missing ? 'warn' : 'green', crewdep: true,
+      adv: l(`No dia do serviço${duty.duty_date ? ` (${duty.duty_date.split('-').reverse().join('/')})` : ''} · documentos de ${isPilot ? 'piloto' : 'cabine'} que registaste.`, `On the duty day${duty.duty_date ? ` (${duty.duty_date.split('-').reverse().join('/')})` : ''} · the ${isPilot ? 'pilot' : 'cabin'} documents you registered.`) });
   }
 
   const summary = `${isFlight ? (duty.route || l('Voo', 'Flight')) : l('Serviço', 'Duty')} · ${duty.sectors ? `${duty.sectors} ${l('setores', 'sectors')} · ` : ''}${l('apres.', 'rep.')} ${duty.report_time || '—'}${replacing ? l(' · no lugar do serviço guardado', ' · instead of the saved duty') : ''}`;
