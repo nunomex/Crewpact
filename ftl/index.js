@@ -34,6 +34,7 @@ import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAcc
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
+import { acclimLetter } from './rules/acclimatisationRules';
 import { airportOffsetMin, legZulu } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
@@ -308,14 +309,14 @@ const tzDiffOf = (duty = {}, base = null, date = null) => {
 //  • TEMPO DECORRIDO (105(12)): da apresentação aos últimos calços em Zulu — a hora de verão e os fusos não enganam.
 // Sem legs com horas, ou sem fusos conhecidos → { 0, 0 } (o relógio, como antes).
 const nrm = (x) => ((((x + 720) % 1440) + 1440) % 1440) - 720;
-const zuluTimingOf = (duty = {}, base = null, date = null) => {
+const zuluTimingOf = (duty = {}, base = null, date = null, refMode = 'auto') => {
   const legs = Array.isArray(duty.legs) ? duty.legs : [];
   const rep = parseHhmm(duty.report_time);
-  if (!legs.length || rep == null) return { bandShiftMin: 0, elapsedAdjMin: 0 };
+  if (!legs.length || rep == null) return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: null };
   const l0 = legs[0], lN = legs[legs.length - 1];
   const day = date || null;
   const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(day, l0, 'off') : l0.offZ);
-  if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0 };
+  if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: null };
   const digitsOff = nrm(off0 - offZ0);                          // o relógio das horas da escala (desvio UTC)
   const reportZ = ((offZ0 - durationMin(rep, off0)) % 1440 + 1440) % 1440;
   // Tempo decorrido: só quando o fim registado é a chegada do último setor (senão não se sabe o relógio do fim).
@@ -332,10 +333,46 @@ const zuluTimingOf = (duty = {}, base = null, date = null) => {
   const depOff = l0.dep ? airportOffsetMin(String(l0.dep).toUpperCase(), t) : null;
   const baseOff = b ? airportOffsetMin(b, t) : null;
   if (depOff != null) {
-    const refOff = (baseOff == null || Math.abs(depOff - baseOff) <= 120) ? depOff : baseOff;
+    // 'auto': ≤ 2 h da base → hora local; mais longe → a da base (estado B). 'dep'/'base' vêm do Quadro 1 (D/B).
+    const refOff = refMode === 'dep' ? depOff : refMode === 'base' && baseOff != null ? baseOff
+      : (baseOff == null || Math.abs(depOff - baseOff) <= 120) ? depOff : baseOff;
     bandShiftMin = nrm(refOff - digitsOff);
   }
-  return { bandShiftMin, elapsedAdjMin };
+  // O instante da apresentação (ms UTC): as horas da escala, no dia `day`, menos o desvio do seu relógio.
+  let reportMs = null;
+  if (day) { const [y, m, d] = day.split('-').map(Number); reportMs = Date.UTC(y, m - 1, d, Math.floor(rep / 60), rep % 60) - digitsOff * 60000; }
+  return { bandShiftMin, elapsedAdjMin, reportMs, depOff, baseOff };
+};
+
+// ORO.FTL.105(1) + Quadro 1: o estado de aclimatação de um serviço que começa a MAIS de 2 h da base. A referência é a
+// última apresentação dentro da faixa de 2 h da base (nos 6 dias antes: o Quadro 1 acaba nas 120 h); o tempo decorrido
+// conta-se daí. Sem nenhuma na escala mas com serviços anteriores → mais de 120 h → a coluna "≥ 120". Sem nenhum registo
+// anterior → não se sabe (unknown). Devolve { letter: 'in'|'B'|'D'|'X'|null, diffH, elapsedH, unknown }; null sem dados.
+// Limite assumido: a aclimatação de partida é a da base (rotações que saem da base e voltam a ela).
+const acclimOf = (duty, { base, date, duties }) => {
+  if (!duties || !date || !base) return null;
+  const me = zuluTimingOf(duty, base, date);
+  if (me.reportMs == null || me.depOff == null || me.baseOff == null) return null;
+  const diffH = Math.abs(me.depOff - me.baseOff) / 60;
+  if (diffH <= 2) return { letter: 'in', diffH };
+  let refMs = null;
+  const [y, m, d] = String(date).split('-').map(Number);
+  for (let k = 0; k <= 6; k++) {
+    const t = new Date(y, m - 1, d - k, 12);
+    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    const x = duties[iso];
+    if (!x || x.deleted) continue;
+    for (const s of [x, ...(Array.isArray(x.extra) ? x.extra : [])]) {
+      if (!s || !s.report_time) continue;
+      const z = zuluTimingOf(s, base, iso);
+      if (z.reportMs == null || z.reportMs >= me.reportMs || z.depOff == null || z.baseOff == null) continue;
+      if (Math.abs(z.depOff - z.baseOff) <= 120 && (refMs == null || z.reportMs > refMs)) refMs = z.reportMs;
+    }
+  }
+  if (refMs != null) { const elapsedH = (me.reportMs - refMs) / 3600000; return { letter: acclimLetter(diffH, elapsedH), diffH, elapsedH }; }
+  const anyEarlier = Object.keys(duties).some((iso) => iso < date && duties[iso] && !duties[iso].deleted);
+  if (anyEarlier) return { letter: acclimLetter(diffH, 1e6), diffH, elapsedH: null };
+  return { letter: null, diffH, unknown: true };
 };
 
 // O serviço é um PSV? ORO.FTL.105(12): o PSV "inclui um setor ou série de setores". Standby em casa, formação,
@@ -393,7 +430,11 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const der = splitFromLegs(duty.legs);
   const isFdp = isFdpDuty(duty);
   const tzDiffH = tzDiffOf(duty, base, date);   // CS FTL.1.235(b)(3)(ii): fuso do PSV face à base
-  const zt = zuluTimingOf(duty, base, date);    // ORO.FTL.105(2) hora de referência · 105(12) tempo decorrido
+  // Aclimatação (Quadro 1) — só com a escala à volta (ctx.duties): B → hora da base, D → hora local, X → Quadro 3.
+  const ac = acclimOf(duty, { base, date, duties: ctx.duties });
+  const refMode = ac && ac.letter === 'D' ? 'dep' : ac && ac.letter === 'B' ? 'base' : 'auto';
+  const stateEff = ac && ac.letter === 'X' ? 'unk' : state;
+  const zt = zuluTimingOf(duty, base, date, refMode);   // ORO.FTL.105(2) hora de referência · 105(12) tempo decorrido
   // Alojamento na pausa (CS FTL.1.220): 'none' | 'basic' | true (adequado) dito pelo tripulante; vazio ou o `false` dos
   // registos antigos = POR RESPONDER → o motor dá o intervalo (a lei manda: sem o facto, não há veredicto inventado).
   const acc = (duty.accommodation === true || duty.accommodation === 'suitable' || duty.accommodation === 'basic' || duty.accommodation === 'none')
@@ -406,7 +447,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     : (fcRep != null && repMin0 != null) ? (((fcRep - repMin0) % 1440) + 1440) % 1440
     : ctx.cabinGapMin;
   const args = {
-    state, report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, inBase: ib, postFlightMin: pf,
+    state: stateEff, report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, inBase: ib, postFlightMin: pf,
     splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: acc,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
     discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty), tzDiffH, cabinReportGapMin: cabinGap,
@@ -414,12 +455,21 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     bandShiftMin: zt.bandShiftMin, elapsedAdjMin: zt.elapsedAdjMin,
   };
   let d = computeDuty(args);
+  // Aclimatação por saber (o 1.º registo da escala, fora da faixa de 2 h): a lei depende do estado → intervalo entre os três.
+  if (ac && ac.unknown) {
+    const zB = zuluTimingOf(duty, base, date, 'base'), zD = zuluTimingOf(duty, base, date, 'dep');
+    d = widenDuty([
+      computeDuty({ ...args, state: 'acc', bandShiftMin: zB.bandShiftMin }),
+      computeDuty({ ...args, state: 'acc', bandShiftMin: zD.bandShiftMin }),
+      computeDuty({ ...args, state: 'unk' }),
+    ], 'acclimatisation');
+  }
   // Prolongamento sem repouso a bordo (ORO.FTL.205(d), auditoria A-256): o PSV excede o Quadro 2 mas cabe na tabela da
   // CS FTL.1.205(b) (hora, setores e o teto de setores pelo WOCL de 205(d)(3)), sem repouso a bordo nem repartido
   // (205(d)(4)) e sem discrição declarada. É LEGAL quando foi PLANEADO com antecedência (205(d)(3) — a escala publicada,
   // o `snap`, ou a marca `special.plannedExt`) e não passa de 2 em 7 dias (205(d)(1)). Para o decidir é preciso a
   // escala à volta (`ctx.duties` + `ctx.date`); sem ela (chamadas antigas) fica como antes: acima do máximo.
-  const ef = extFitOf(duty, d, { state, isFdp, sp, der });
+  const ef = extFitOf(duty, d, { state: stateEff, isFdp, sp, der });
   let extUsed = false, extRefused = null;
   if (ef.fits) {
     if (ctx.duties && ctx.date) {
@@ -430,12 +480,31 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     // Planeado mas recusado, ou sem a escala para decidir: o máximo fica o do Quadro 2 e o repouso a seguir sobe na mesma.
     if (extUsed && (extRefused !== null || !(ctx.duties && ctx.date))) d = computeDuty({ ...args, restExtended: true });
   }
-  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH };
+  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH, acclim: ac };
+};
+
+// Junta vários resultados do computeDuty (um por leitura possível de um facto que falta) num só: o máximo GARANTIDO é o
+// menor, o POSSÍVEL é o maior; "excede" só acima do possível, "incerto" entre os dois.
+const widenDuty = (variants, unknown) => {
+  const ok = variants.filter((v) => v && v.fdp && v.fdp.maxFdpMin != null);
+  if (!ok.length) return variants[0];
+  const lo = Math.min(...ok.map((v) => v.fdp.maxFdpMin));
+  const hi = Math.max(...ok.map((v) => (v.fdp.maxHiMin != null ? v.fdp.maxHiMin : v.fdp.maxFdpMin)));
+  const b = ok.find((v) => v.fdp.maxFdpMin === lo);
+  const actual = b.fdp.actualFdpMin;
+  const over = actual != null && actual > hi, uncertain = !over && actual != null && actual > lo;
+  const fdp = {
+    ...b.fdp, maxFdpMin: lo, maxFdpStr: minToHhmm(lo), maxHiMin: hi, maxHiStr: minToHhmm(hi), exact: lo === hi,
+    over, uncertain, excessMin: over ? actual - hi : 0, excessStr: over ? minToHhmm(actual - hi) : null,
+    unknowns: lo === hi ? [] : Array.from(new Set([...(b.fdp.unknowns || []), unknown])),
+  };
+  return { ...b, fdp, ...validateDuty({ fdp, reportMin: b.reportMin, endMin: b.endMin, sectors: b.sectors }) };
 };
 
 // O PSV cabe no prolongamento (ORO.FTL.205(d) + CS FTL.1.205(b))? Só com o máximo exato, acima do Quadro 2.
 const extFitOf = (duty, d, { state, isFdp, sp, der }) => {
-  if (!isFdp || sp.discretion || sp.augmented || !d.fdp.exact || !d.fdp.over) return { fits: false };
+  // 205(d) é "para tripulantes aclimatados": no estado X (Quadro 3) não há prolongamento.
+  if (state !== 'acc' || !isFdp || sp.discretion || sp.augmented || !d.fdp.exact || !d.fdp.over) return { fits: false };
   if ((duty.splitBreakH || der.splitBreakH || 0) >= SPLIT_MIN_BREAK_H) return { fits: false };   // 205(d)(4)
   const rep = parseHhmm(duty.report_time), end = parseHhmm(duty.block_on);
   if (rep == null || end == null) return { fits: false };
@@ -566,6 +635,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
       over: sbAcc ? false : (disc205 ? disc205.over : d.fdp.over),
       excess: sbAcc ? null : ((disc205 && disc205.used && !disc205.over) ? null : d.fdp.excessStr),
       extended: usedExtension, extRefused: d.extRefused || undefined, ts: Date.now(),
+      acclim: (d.acclim && d.acclim.letter !== 'in') ? (d.acclim.letter || 'unknown') : undefined,   // Quadro 1
       disc205f: disc205 ? { used: disc205.used, over: disc205.over, maxStr: disc205.maxStr, extStr: disc205.extStr } : undefined,
       standby: sbAcc || undefined,
     },
@@ -800,7 +870,8 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     };
     const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin, duties });
     if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
-    put(date, { ...entry, sig, ...(entry.psv && entry.psv.extended ? { nsig: nbrSig(duties, date) } : {}) });
+    // Depende dos dias antes (prolongamento: os 2 em 7; aclimatação: o Quadro 1) → guarda-se a assinatura deles.
+    put(date, { ...entry, sig, ...(entry.psv && (entry.psv.extended || entry.psv.acclim) ? { nsig: nbrSig(duties, date) } : {}) });
   }
   return next;
 };

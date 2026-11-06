@@ -891,6 +891,40 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('105(8): tardio pelo sign-off', computeRecovery({ [day(5)]: { report_time: '14:00', block_on: '22:45', signOff: '23:15', sectors: 2 }, [day(7)]: svc('05:30', '12:00') }, { base: 'LIS' }).duties[0].lateFinish, true);
 }
 
+// ─────────── ORO.FTL.105(1) + Quadro 1: aclimatação no longo curso (auditoria A-152/A-169) ───────────
+// Fora da faixa de 2 h, o estado sai do Quadro 1 pela diferença de fuso e pelo tempo decorrido desde a apresentação na
+// hora de referência: B → Quadro 2 na hora da base; D → Quadro 2 na hora local; X → Quadro 3 (estado desconhecido).
+// Rotação LIS → EWR no inverno (LIS UTC+0, EWR UTC−5: 5 h → linha "≤ 6"), apresentação em Lisboa a 10 jan às 10:00.
+{
+  const { ftlForDuty } = ftl;
+  const out = { report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  // Regresso de Newark às 14:00 da base (09:00 locais), 1 setor.
+  const back = { report_time: '14:00', block_on: '23:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '15:00', on: '23:00', offZ: '15:00', onZ: '23:00' }] };
+  const at = (date) => ftlForDuty(back, { base: 'LIS', date, duties: { '2026-01-10': out, [date]: back } });
+  // 11 jan: 28 h depois → coluna < 48 → B → faixa na hora da base (14:00 → 12:30).
+  eq('Quadro 1: < 48 h → B', at('2026-01-11').acclim.letter, 'B');
+  eq('Quadro 1: B → Quadro 2 na hora da base (12:30)', at('2026-01-11').fdp.maxFdpStr, '12:30');
+  // 12 jan: 52 h → coluna 48–71:59, linha ≤ 6 → X → Quadro 3 (1–2 setores: 11:00).
+  eq('Quadro 1: 52 h → X', at('2026-01-12').acclim.letter, 'X');
+  eq('Quadro 1: X → Quadro 3 (11:00)', at('2026-01-12').fdp.maxFdpStr, '11:00');
+  // 14 jan: 100 h → coluna 96–119:59 → D → faixa na hora LOCAL de Newark (09:00 → 13:00).
+  eq('Quadro 1: 100 h → D', at('2026-01-14').acclim.letter, 'D');
+  eq('Quadro 1: D → Quadro 2 na hora local (13:00)', at('2026-01-14').fdp.maxFdpStr, '13:00');
+  // Sem a escala à volta (chamadas antigas): fica como antes (hora da base).
+  eq('Sem a escala: como antes (12:30)', ftlForDuty(back, { base: 'LIS', date: '2026-01-12' }).fdp.maxFdpStr, '12:30');
+  // Sem a ida na escala (o 1.º registo): não se sabe o estado → intervalo de Quadro 3 a Quadro 2 local.
+  const unk = ftlForDuty(back, { base: 'LIS', date: '2026-01-12', duties: { '2026-01-12': back } });
+  eq('Sem a ida: aclimatação por saber → intervalo 11:00 a 13:00', JSON.stringify([unk.fdp.maxFdpStr, unk.fdp.maxHiStr, unk.fdp.exact]), JSON.stringify(['11:00', '13:00', false]));
+  eq('Sem a ida: o que falta', JSON.stringify(unk.fdp.unknowns), JSON.stringify(['acclimatisation']));
+  // Dentro da faixa de 2 h (Barcelona, +1 h) não há Quadro 1.
+  const bcn = { report_time: '15:15', block_on: '17:15', sectors: 1, legs: [{ dep: 'BCN', arr: 'LIS', off: '16:00', on: '17:15', offZ: '15:00', onZ: '16:15' }] };
+  // ORO.FTL.205(d) "para tripulantes aclimatados": no estado X não há prolongamento, mesmo planeado.
+  const backLong = { ...back, block_on: '01:30', legs: [{ dep: 'EWR', arr: 'LIS', off: '15:00', on: '01:30', offZ: '15:00', onZ: '01:30' }] };
+  backLong.snap = { report_time: '14:00', block_on: '01:30', sectors: 1, kind: 'flight' };
+  eq('205(d): no estado X não há prolongamento', ftlForDuty(backLong, { base: 'LIS', date: '2026-01-12', duties: { '2026-01-10': out, '2026-01-12': backLong } }).extUsed, false);
+  eq('≤ 2 h: aclimatado, sem Quadro 1', ftlForDuty(bcn, { base: 'LIS', date: '2026-07-10', duties: { '2026-07-10': bcn } }).acclim.letter, 'in');
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).
