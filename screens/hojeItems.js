@@ -161,13 +161,17 @@ export function buildTodayItems(ctx, lang) {
       const dd = `${x.date.slice(8, 10)}/${x.date.slice(5, 7)}`;
       const what = x.type === 'recovery168'
         ? l(`sem recuperação de 36 h (com 2 noites) até ${dd} — o máximo é 168 h entre recuperações`, `no 36 h recovery (with 2 nights) by ${dd} — at most 168 h between recoveries`)
+        : x.type === 'recoveryDays'
+          ? l(`em ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recuperação(ões) com 2 dias locais livres — a lei pede 2 por mês`, `in ${x.month.slice(5, 7)}/${x.month.slice(0, 4)}, ${x.count} recovery period(s) with 2 free local days — the law asks for 2 a month`)
+        : x.type === 'baseChange'
+          ? l(`antes do 1.º serviço na base nova (${dd}) a recuperação tem de ter 72 h com 3 noites locais`, `before the first duty at the new base (${dd}) the recovery must be 72 h with 3 local nights`)
         : x.type === 'recovery60'
           ? l(`a recuperação antes de ${dd} tem ${x.hours} h; depois de ${x.disruptive} serviços irregulares tinha de ter 60 h`, `the recovery before ${dd} is ${x.hours} h; after ${x.disruptive} disruptive duties it needed 60 h`)
           : l(`de tardio/noturno para matinal a ${dd} sem uma noite local (8 h entre 22:00 e 08:00)`, `late/night to early start on ${dd} without a local night (8 h between 22:00 and 08:00)`);
       answer = `${answer} · ${x.uncertain ? l('incerto: ', 'uncertain: ') : ''}${what}`;
       suggestion = x.uncertain
         ? l('Depende do tipo de horário irregular (matinal ou tardio) que a autoridade deu à tua companhia (ORO.FTL.105(8)). Confirma com a companhia.', 'It depends on the disruptive-schedule type (early or late) your company was given by the authority (ORO.FTL.105(8)). Confirm with the company.')
-        : l('ORO.FTL.235(d): recuperação de 36 h com 2 noites locais, no máximo 168 h entre elas; 60 h depois de 4 irregulares (CS FTL.1.235(a)). Confirma com a companhia.', 'ORO.FTL.235(d): 36 h recovery with 2 local nights, at most 168 h apart; 60 h after 4 disruptive duties (CS FTL.1.235(a)). Confirm with the company.');
+        : l('ORO.FTL.235(d): recuperação de 36 h com 2 noites locais, no máximo 168 h entre elas, e 2 dias locais duas vezes por mês; 60 h depois de 4 irregulares (CS FTL.1.235(a)); 72 h com 3 noites ao mudar de base (CS FTL.1.200(b)). Confirma com a companhia.', 'ORO.FTL.235(d): 36 h recovery with 2 local nights, at most 168 h apart, and 2 local days twice a month; 60 h after 4 disruptive duties (CS FTL.1.235(a)); 72 h with 3 nights on a change of base (CS FTL.1.200(b)). Confirm with the company.');
       if (rec.status === 'bad' || status === 'ok' || status === 'neutral') status = status === 'bad' ? 'bad' : rec.status;
     }
     items.push({ id: 'rest', q, status, answer, suggestion, raw: { ...rest, recovery: rec } });

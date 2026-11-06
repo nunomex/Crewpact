@@ -112,6 +112,33 @@ export const computeRecovery = (duties = {}, { postFlightMin = 0, base = null, b
     if (next.depAtBase === false) continue;   // fora da base, a regra não se aplica
     if (g.nights < 1) issues.push({ type: 'transitionNight', date: next.date });
   }
+  // 235(d): "deve aumentar para dois dias locais duas vezes por mês" (dia local = 24 h a partir das 00:00, 105(15)). Conta-se
+  // por mês civil as recuperações com 2 dias locais inteiros (pelo mês do 1.º dia); só nos meses que a escala cobre por
+  // inteiro (há serviços antes e depois do mês). Menos de 2 → aviso no último dia do mês.
+  const fullDays = (s, e) => {
+    let d = (s.getHours() === 0 && s.getMinutes() === 0) ? new Date(s.getFullYear(), s.getMonth(), s.getDate()) : new Date(s.getFullYear(), s.getMonth(), s.getDate() + 1);
+    let n = 0, first = null;
+    while (+new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) <= +e) { if (!first) first = d; n++; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); }
+    return { n, first };
+  };
+  const byMonth = {};
+  for (const g of recoveries) { const f = fullDays(g.start, g.end); if (f.n >= 2) { const ym = isoOf(f.first).slice(0, 7); byMonth[ym] = (byMonth[ym] || 0) + 1; } }
+  if (rows.length) {
+    const a = rows[0].start, z = rows[rows.length - 1].start;
+    for (let t = new Date(a.getFullYear(), a.getMonth() + 1, 1); +new Date(t.getFullYear(), t.getMonth() + 1, 1) <= +new Date(z.getFullYear(), z.getMonth(), 1); t = new Date(t.getFullYear(), t.getMonth() + 1, 1)) {
+      const ym = isoOf(t).slice(0, 7), count = byMonth[ym] || 0;
+      if (count < 2) issues.push({ type: 'recoveryDays', month: ym, count, date: isoOf(new Date(t.getFullYear(), t.getMonth() + 1, 0)) });
+    }
+  }
+  // CS FTL.1.200(b): na mudança de base, a recuperação antes do 1.º serviço na base nova tem 72 h com 3 noites locais.
+  if (typeof baseAt === 'function') {
+    for (let i = 1; i < rows.length; i++) {
+      const bPrev = baseOf(rows[i - 1].date), bCur = baseOf(rows[i].date);
+      if (!bPrev || !bCur || bPrev === bCur) continue;
+      const g = gaps.find((x) => x.i === i);
+      if (!(g && g.ms >= 72 * H && g.nights >= 3)) issues.push({ type: 'baseChange', date: rows[i].date, from: bPrev, to: bCur });
+    }
+  }
   return {
     duties: rows.map((r) => ({ date: r.date, start: r.start, end: r.end, night: r.night, earlyStart: r.earlyStart, lateFinish: r.lateFinish, disruptive: r.disruptive })),
     recoveries: recoveries.map((g) => ({ start: g.start, end: g.end, h: Math.floor(g.ms / H) })),

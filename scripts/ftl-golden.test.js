@@ -887,6 +887,22 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const dTr = { [day(5)]: svc('16:00', '01:30'), [day(7)]: svc('05:30', '12:00') };
   eq('CS 235(a)(1): tardio → matinal sem noite local → aviso', computeRecovery(dTr, { base: 'LIS' }).issues.some((x) => x.type === 'transitionNight' && x.date === day(7)), true);
   eq('CS 235(a)(1): tardio → entrada às 06:00 (não é matinal) → sem aviso', computeRecovery({ [day(5)]: svc('16:00', '01:30'), [day(7)]: svc('06:00', '12:00') }, { base: 'LIS' }).issues.some((x) => x.type === 'transitionNight'), false);
+  // ORO.FTL.235(d): "o período de repouso de recuperação prolongado recorrente deve aumentar para dois dias locais duas
+  // vezes por mês" (dia local = 24 h a partir das 00:00). Novembro todo a trabalhar com um só dia livre por semana: as
+  // recuperações (40 h, 2 noites) existem, mas nenhuma tem 2 dias locais → aviso no fim do mês.
+  const monthDuties = (free) => {
+    const m = {};
+    for (const iso of ['2026-10-30', '2026-10-31', '2026-12-01', '2026-12-02']) m[iso] = svc('06:00', '14:00');
+    for (let i = 1; i <= 30; i++) { const iso = `2026-11-${String(i).padStart(2, '0')}`; if (!free.includes(i)) m[iso] = svc('06:00', '14:00'); }
+    return m;
+  };
+  const rDays = computeRecovery(monthDuties([6, 13, 20, 27]));
+  eq('235(d): novembro sem recuperações de 2 dias locais → aviso', rDays.issues.some((x) => x.type === 'recoveryDays' && x.month === '2026-11' && x.count === 0), true);
+  eq('235(d): com 2 recuperações de 2 dias locais → sem aviso', computeRecovery(monthDuties([6, 7, 20, 21])).issues.some((x) => x.type === 'recoveryDays'), false);
+  // CS FTL.1.200(b): na mudança de base, a recuperação antes do 1.º serviço na base nova tem 72 h com 3 noites locais.
+  const baseAt = (iso) => (iso >= '2026-11-08' ? 'OPO' : 'LIS');
+  eq('CS FTL.1.200(b): 64 h antes do 1.º serviço no Porto → aviso', computeRecovery({ [day(5)]: svc('06:00', '14:00'), [day(8)]: svc('06:00', '12:00') }, { baseAt }).issues.some((x) => x.type === 'baseChange' && x.date === day(8)), true);
+  eq('CS FTL.1.200(b): 88 h com 4 noites → sem aviso', computeRecovery({ [day(5)]: svc('06:00', '14:00'), [day(9)]: svc('06:00', '12:00') }, { baseAt }).issues.some((x) => x.type === 'baseChange'), false);
   // O fim do serviço é o sign-off (A-151 (3)): calços 22:45, sign-off 23:15 → tardio.
   eq('105(8): tardio pelo sign-off', computeRecovery({ [day(5)]: { report_time: '14:00', block_on: '22:45', signOff: '23:15', sectors: 2 }, [day(7)]: svc('05:30', '12:00') }, { base: 'LIS' }).duties[0].lateFinish, true);
 }
