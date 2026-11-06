@@ -33,7 +33,7 @@ import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAcc
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
-import { airportOffsetMin } from '../data/zulu';
+import { airportOffsetMin, legZulu } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -65,7 +65,11 @@ export const computeDuty = ({
   accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
   postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
   longestSectorMin, tzDiffH = 0, restExtended = false, cabinReportGapMin, splitAdminMin,
+  bandShiftMin = 0, elapsedAdjMin = 0,
 }) => {
+  // bandShiftMin = minutos a somar à apresentação para ler a faixa do Quadro 2 na HORA DE REFERÊNCIA (ORO.FTL.105(2)),
+  // quando a apresentação vem noutro relógio (ex.: o da base). elapsedAdjMin = correção do PSV para tempo DECORRIDO
+  // (105(12)) quando os relógios não batem (hora de verão, fusos). Ambos vêm do ftlForDuty (Zulu das legs).
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
   const splitStartMin = parseHhmm(splitBreakStart);
@@ -93,14 +97,16 @@ export const computeDuty = ({
   if (!isPilot && cabinReportGapMin === null) unknowns.push('pilotReport');
 
   // Máximo (min) para uma hora de faixa `bandRep` e um lado ('lo' garantido | 'hi' possível) dos factos em falta.
-  const maxOf = (bandRep, side) => {
+  const maxOf = (bandRep0, side) => {
     const hi = side === 'hi';
+    const bandRep = bandRep0 == null ? null : (((bandRep0 + (bandShiftMin || 0)) % 1440) + 1440) % 1440;
     const adm = admUnknown ? (hi ? SPLIT_ADMIN_MIN : Infinity) : splitAdminMin;
     const b = computeFdp({ state, reportMin: bandRep, endMin, sectors, splitBreakH, splitBreakStartMin: splitStartMin, accommodation: hi ? accHi : accLo, extended, splitAdminMin: adm });
     let m = b.maxFdpMin, na = b.notAllowed, nar = b.notAllowedReason, modifier = null, augInfo = null, sbRedMin = 0;
     // Adiamento (CS 205(d)): o máximo pela hora mais limitativa (original vs adiada).
     if (delayedFrom != null && bandRep != null) {
-      const dr = computeDelayedReporting({ state, origMin: parseHhmm(delayedFrom), delayedMin: bandRep, sectors });
+      const o0 = parseHhmm(delayedFrom);
+      const dr = computeDelayedReporting({ state, origMin: o0 == null ? null : (((o0 + (bandShiftMin || 0)) % 1440) + 1440) % 1440, delayedMin: bandRep, sectors });
       if (dr.maxFdpMin != null) { m = dr.maxFdpMin; modifier = 'delayed'; }
     }
     // Repouso a bordo: piloto CS 205(c)(2)+(4); cabine = o PSV dos pilotos limitado pela classe e pelo repouso a bordo da
@@ -152,7 +158,7 @@ export const computeDuty = ({
   const maxMin = notAllowed ? null : lo;
   const maxHiMin = notAllowed ? null : hi;
   const exact = maxMin == null || maxHiMin == null || maxMin === maxHiMin;
-  const actual = base.actualFdpMin;
+  const actual = base.actualFdpMin != null ? base.actualFdpMin + (elapsedAdjMin || 0) : null;   // tempo decorrido (105(12))
   const over = !notAllowed && actual != null && maxHiMin != null && actual > maxHiMin;
   const uncertain = !notAllowed && !over && actual != null && maxMin != null && actual > maxMin;
   const excessMin = over ? actual - maxHiMin : 0;
@@ -166,6 +172,7 @@ export const computeDuty = ({
   }
   const fdp = {
     ...base,
+    actualFdpMin: actual, actualFdpStr: actual != null ? minToHhmm(actual) : null,
     maxFdpMin: maxMin, maxFdpStr: maxMin != null ? minToHhmm(maxMin) : null,
     maxHiMin, maxHiStr: maxHiMin != null ? minToHhmm(maxHiMin) : null,
     exact, uncertain, unknowns: exact ? [] : unknowns.filter((u) => u !== 'pilotReport' || gaps.length > 1),
@@ -176,7 +183,8 @@ export const computeDuty = ({
 
   // Hora-limite de calços = apresentação + PSV máximo GARANTIDO (ORO.FTL.105(19)): até aí está dentro em qualquer caso.
   // A discrição do comandante NÃO entra: é para imprevistos, nunca para planear (205 f).
-  const latestMin = (reportMin != null && fdp.maxFdpMin != null && !fdp.notAllowed) ? reportMin + fdp.maxFdpMin : null;
+  // No relógio da apresentação: se ele mudar pelo caminho (hora de verão), a hora de relógio desloca-se o mesmo.
+  const latestMin = (reportMin != null && fdp.maxFdpMin != null && !fdp.notAllowed) ? reportMin + fdp.maxFdpMin - (elapsedAdjMin || 0) : null;
 
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
   const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
@@ -291,6 +299,44 @@ const tzDiffOf = (duty = {}, base = null, date = null) => {
   return max / 60;
 };
 
+// Relógios do serviço a partir da Zulu das legs (a autoritativa do calendário, ou a do fuso de cada aeroporto):
+//  • a apresentação e a 1.ª saída de calços estão no MESMO relógio (o da escala) → a diferença é o pré-voo, e a
+//    apresentação em Zulu é a saída em Zulu menos esse pré-voo;
+//  • HORA DE REFERÊNCIA (ORO.FTL.105(2)): a hora local no ponto de apresentação, se o seu fuso está a ≤ 2 h do da
+//    aclimatação (a base); mais longe, a hora da base (estado B do Quadro 1 — a aclimatação no longo curso fica por fazer);
+//  • TEMPO DECORRIDO (105(12)): da apresentação aos últimos calços em Zulu — a hora de verão e os fusos não enganam.
+// Sem legs com horas, ou sem fusos conhecidos → { 0, 0 } (o relógio, como antes).
+const nrm = (x) => ((((x + 720) % 1440) + 1440) % 1440) - 720;
+const zuluTimingOf = (duty = {}, base = null, date = null) => {
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  const rep = parseHhmm(duty.report_time);
+  if (!legs.length || rep == null) return { bandShiftMin: 0, elapsedAdjMin: 0 };
+  const l0 = legs[0], lN = legs[legs.length - 1];
+  const day = date || null;
+  const off0 = parseHhmm(l0.off), offZ0 = parseHhmm(day ? legZulu(day, l0, 'off') : l0.offZ);
+  if (off0 == null || offZ0 == null) return { bandShiftMin: 0, elapsedAdjMin: 0 };
+  const digitsOff = nrm(off0 - offZ0);                          // o relógio das horas da escala (desvio UTC)
+  const reportZ = ((offZ0 - durationMin(rep, off0)) % 1440 + 1440) % 1440;
+  // Tempo decorrido: só quando o fim registado é a chegada do último setor (senão não se sabe o relógio do fim).
+  let elapsedAdjMin = 0;
+  const onN = parseHhmm(lN.on), onZN = parseHhmm(day ? legZulu(day, lN, 'on') : lN.onZ), end = parseHhmm(duty.block_on);
+  if (onN != null && onZN != null && end != null && end === onN) {
+    const adj = durationMin(reportZ, onZN) - durationMin(rep, end);
+    if (Math.abs(adj) <= 180) elapsedAdjMin = adj;
+  }
+  // Hora de referência.
+  let bandShiftMin = 0;
+  const b = String(base || '').trim().toUpperCase();
+  const t = day ? Date.parse(`${day}T12:00:00Z`) : Date.now();
+  const depOff = l0.dep ? airportOffsetMin(String(l0.dep).toUpperCase(), t) : null;
+  const baseOff = b ? airportOffsetMin(b, t) : null;
+  if (depOff != null) {
+    const refOff = (baseOff == null || Math.abs(depOff - baseOff) <= 120) ? depOff : baseOff;
+    bandShiftMin = nrm(refOff - digitsOff);
+  }
+  return { bandShiftMin, elapsedAdjMin };
+};
+
 // O serviço é um PSV? ORO.FTL.105(12): o PSV "inclui um setor ou série de setores". Standby em casa, formação,
 // escritório e posicionamento isolado NÃO são PSV (auditoria A-166/A-247): contam para o 210 e para o repouso, mas
 // a tabela do Quadro 2 não os julga. O standby de aeroporto SEM alojamento é "serviço no aeroporto" e o PSV conta
@@ -346,6 +392,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
   const der = splitFromLegs(duty.legs);
   const isFdp = isFdpDuty(duty);
   const tzDiffH = tzDiffOf(duty, base, date);   // CS FTL.1.235(b)(3)(ii): fuso do PSV face à base
+  const zt = zuluTimingOf(duty, base, date);    // ORO.FTL.105(2) hora de referência · 105(12) tempo decorrido
   // Alojamento na pausa (CS FTL.1.220): 'none' | 'basic' | true (adequado) dito pelo tripulante; vazio ou o `false` dos
   // registos antigos = POR RESPONDER → o motor dá o intervalo (a lei manda: sem o facto, não há veredicto inventado).
   const acc = (duty.accommodation === true || duty.accommodation === 'suitable' || duty.accommodation === 'basic' || duty.accommodation === 'none')
@@ -363,6 +410,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
     discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty), tzDiffH, cabinReportGapMin: cabinGap,
     splitAdminMin: ctx.splitAdminMin,   // CS 220(b): o tempo do OM — null = desconhecido (App), undefined = 30
+    bandShiftMin: zt.bandShiftMin, elapsedAdjMin: zt.elapsedAdjMin,
   };
   let d = computeDuty(args);
   // Prolongamento sem repouso a bordo (ORO.FTL.205(d), auditoria A-256): o PSV excede o Quadro 2 mas cabe na tabela da

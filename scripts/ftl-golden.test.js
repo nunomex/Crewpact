@@ -829,6 +829,32 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('205(d): sem a escala → excede (como antes)', dutyToFtlDay(planned).psv.over, true);
 }
 
+// ─────────── ORO.FTL.105(2) hora de referência e 105(12) tempo decorrido (auditoria A-152/A-170/A-171) ───────────
+{
+  const { ftlForDuty } = ftl;
+  // A-170: base LIS, verão (LIS UTC+1, BCN UTC+2). Apresentação em BCN às 15:15 da base (16:15 em BCN), 1 setor BCN→LIS.
+  // "Hora de referência = hora local no ponto de apresentação" (fuso a ≤ 2 h do da aclimatação) → faixa 1600–1629 = 11:30.
+  const bcn = { report_time: '15:15', block_on: '17:15', sectors: 1, legs: [{ dep: 'BCN', arr: 'LIS', off: '16:00', on: '17:15', offZ: '15:00', onZ: '16:15' }] };
+  const rb = ftlForDuty(bcn, { base: 'LIS', date: '2026-07-10' });
+  eq('105(2): apresentação em BCN lê-se na hora de BCN (11:30)', rb.fdp.maxFdpStr, '11:30');
+  eq('105(2): calços até às 02:45 (relógio da base)', rb.latestOnBlockStr, '02:45');
+  // O mesmo em LIS → a hora da base (15:15 → 12:00).
+  const lis = { report_time: '15:15', block_on: '17:15', sectors: 1, legs: [{ dep: 'LIS', arr: 'BCN', off: '16:00', on: '17:15', offZ: '15:00', onZ: '16:15' }] };
+  eq('105(2): apresentação na base → 12:00', ftlForDuty(lis, { base: 'LIS', date: '2026-07-10' }).fdp.maxFdpStr, '12:00');
+  // Posto à mão em BCN, horas locais do aeroporto (sem Zulu): a apresentação já é a de BCN → 16:15 → 11:30.
+  const man = { report_time: '16:15', block_on: '18:15', sectors: 1, legs: [{ dep: 'BCN', arr: 'LIS', off: '17:00', on: '18:15' }] };
+  eq('105(2): posto à mão em hora de BCN → 11:30', ftlForDuty(man, { base: 'LIS', date: '2026-07-10' }).fdp.maxFdpStr, '11:30');
+  // A-171: a noite de 24 para 25 out 2026 (LIS: as 02:00 passam a 01:00). Apresentação 21:00, calços 07:30 do dia 25.
+  // O PSV é tempo DECORRIDO (105(12)): 11:30, não 10:30 → máximo 11:00 (1700–0459) → excede 0:30; calços até às 07:00.
+  const dst = { report_time: '21:00', block_on: '07:30', sectors: 1, legs: [{ dep: 'LIS', arr: 'FNC', off: '22:00', on: '07:30', offZ: '21:00', onZ: '07:30' }] };
+  const rd = ftlForDuty(dst, { base: 'LIS', date: '2026-10-24' });
+  eq('105(12): hora de verão — PSV decorrido 11:30', rd.fdp.actualFdpStr, '11:30');
+  eq('105(12): hora de verão — excede 0:30', rd.fdp.excessStr, '00:30');
+  eq('105(12): hora de verão — calços até às 07:00', rd.latestOnBlockStr, '07:00');
+  // Sem legs nem Zulu: fica o relógio (não há como saber mais).
+  eq('Sem legs: o relógio', ftlForDuty({ report_time: '21:00', block_on: '07:30', sectors: 1 }, { base: 'LIS', date: '2026-10-24' }).fdp.actualFdpStr, '10:30');
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).
