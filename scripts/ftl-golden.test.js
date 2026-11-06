@@ -100,8 +100,14 @@ eq('FC c1 +1 → 16:00', computeFlightCrewFdp({ restClass: 'c1', additionalCrew:
 eq('FC c1 +2 → 17:00', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 2, sectors: 1 }).maxFdpMin, M('17:00'));
 eq('FC c2 +1 → 15:00', computeFlightCrewFdp({ restClass: 'c2', additionalCrew: 1, sectors: 1 }).maxFdpMin, M('15:00'));
 eq('FC c2 +2 → 16:00', computeFlightCrewFdp({ restClass: 'c2', additionalCrew: 2, sectors: 1 }).maxFdpMin, M('16:00'));
-eq('FC c3 +1 → 14:15', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 1, sectors: 1 }).maxFdpMin, M('14:15'));
-eq('FC c3 +2 → 15:15', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 2, sectors: 1 }).maxFdpMin, M('15:15'));
+// CS FTL.1.205(c)(2)(i)(A) e (ii)(A), p.6: classe 3 → 14 h (+1 piloto) e 15 h (+2). Auditoria A-142: a app tinha 14:15/15:15.
+eq('FC c3 +1 → 14:00', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 1, sectors: 1 }).maxFdpMin, M('14:00'));
+eq('FC c3 +2 → 15:00', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 2, sectors: 1 }).maxFdpMin, M('15:00'));
+// CS FTL.1.205(c)(4), p.7: +1 h com 1 setor de MAIS de 9 h de voo contínuo e no máximo 2 setores (A-149).
+eq('FC (c)(4) c1 +1, setor 9:40 → 17:00', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 1, sectors: 1, longestSectorMin: M('9:40') }).maxFdpMin, M('17:00'));
+eq('FC (c)(4) c3 +2, 2 setores, um de 10:00 → 16:00', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 2, sectors: 2, longestSectorMin: M('10:00') }).maxFdpMin, M('16:00'));
+eq('FC (c)(4) setor de 9:00 exatas não chega ("more than 9 hours")', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 1, sectors: 1, longestSectorMin: M('9:00') }).maxFdpMin, M('16:00'));
+eq('FC (c)(4) 3 setores → sem a hora a mais', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 1, sectors: 3, longestSectorMin: M('9:40') }).maxFdpMin, M('16:00'));
 eq('FC maxFdpStr c1 +2', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 2, sectors: 1 }).maxFdpStr, '17:00');
 eq('FC 4 setores proibido', computeFlightCrewFdp({ restClass: 'c1', additionalCrew: 2, sectors: 4 }).allowed, false);
 eq('FC ≤3 setores permitido', computeFlightCrewFdp({ restClass: 'c3', additionalCrew: 1, sectors: 3 }).allowed, true);
@@ -556,11 +562,30 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Aumentado piloto: over derivado do teto golden', dP.fdp.over, fcMax != null && M('14:00') > fcMax);
   eq('Sem aumento: o mesmo serviço estoura o básico', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2 }).fdp.over, true);
 
-  // (2) Repouso a bordo — CABINE (205c): teto por classe (c1→18:00, c2→17:00, c3→16:00).
-  const cabMax = computeInflightRest({ restClass: 'c2', sectors: 2, maxFdpMin: 0 }).classMaxMin;
+  // (2) Repouso a bordo — CABINE. O PSV só é prolongado pelo repouso a bordo dos PILOTOS (CS FTL.1.205(c)(2)
+  //     "extended due to in-flight rest for flight crew"); a tabela (c)(3) dá o repouso a bordo MÍNIMO da cabine
+  //     para esse PSV. Teto da cabine = o menor de: PSV da técnica (c)(2)+(c)(4) · a última linha permitida da
+  //     classe da cabine · a linha que o repouso a bordo da cabine permite (auditoria A-146/A-176/A-214).
+  //     Sem saber os pilotos nem o repouso → o mais restritivo: +1 piloto, classe 3 (14:00) e 1:30 (14:30).
   const dC = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c2' }, isPilot: false });
-  eq('Aumentado cabine: teto = classe (golden)', dC.fdp.maxFdpMin, cabMax);
+  eq('Aumentado cabine sem dados dos pilotos: 14:00 (o mais restritivo)', dC.fdp.maxFdpStr, '14:00');
   eq('Aumentado cabine: modifier', dC.fdp.modifier, 'augmented');
+  // Exemplo A-146: cabine TAP num A330, 1 setor de 9:40, 3 pilotos em classe 2, cabine em beliche (c1) com 4:00 de
+  // repouso → técnica 15:00 + 1:00 ((c)(4)) = 16:00; a classe 1 e as 4:00 chegariam a 18:00 → 16:00 (a app dava 18:00).
+  const cabA330 = { restClass: 'c1', additionalCrew: 1, fcRestClass: 'c2', cabinRestMin: 240 };
+  eq('Cabine A330: teto = PSV da técnica 16:00', computeDuty({ state: 'acc', report: '10:00', end: '02:00', sectors: 1, augmented: cabA330, longestSectorMin: M('9:40') }).fdp.maxFdpStr, '16:00');
+  eq('Cabine A330: 16:00 de PSV real → dentro', computeDuty({ state: 'acc', report: '10:00', end: '02:00', sectors: 1, augmented: cabA330, longestSectorMin: M('9:40') }).fdp.over, false);
+  eq('Cabine A330: 18:00 de PSV real → excede 2:00', computeDuty({ state: 'acc', report: '10:00', end: '04:00', sectors: 1, augmented: cabA330, longestSectorMin: M('9:40') }).fdp.excessStr, '02:00');
+  // O repouso a bordo da cabine manda quando é curto: classe 2 com 2:00 → a tabela (c)(3) permite até 15:00.
+  eq('Cabine c2 com 2:00 de repouso → 15:00', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c2', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 120 } }).fdp.maxFdpStr, '15:00');
+  // A classe da cabine manda quando a técnica vai mais longe: técnica c1 +2 = 17:00, cabine em classe 3 (máx 16:00).
+  eq('Cabine c3 com técnica a 17:00 → 16:00', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c3', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 180 } }).fdp.maxFdpStr, '16:00');
+  // Repouso a bordo abaixo de 90 min consecutivos (CS FTL.1.205(c)(1)(ii)) → não permitido.
+  eq('Cabine com 1:15 de repouso a bordo → não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 2, fcRestClass: 'c1', cabinRestMin: 75 } }).fdp.notAllowed, true);
+  // Piloto da auditoria A-142: 3 pilotos, classe 3, 10:00 → 00:10 = PSV 14:10 > 14:00 → excede 0:10, calços até às 00:00.
+  const dP3 = computeDuty({ state: 'acc', report: '10:00', end: '00:10', sectors: 1, augmented: { restClass: 'c3', additionalCrew: 1 }, isPilot: true });
+  eq('Piloto c3 +1: PSV 14:10 excede 0:10', dP3.fdp.excessStr, '00:10');
+  eq('Piloto c3 +1: calços até às 00:00', dP3.latestOnBlockStr, '00:00');
 
   // (3) Acima do teto de setores (205c1: ≤3) → não permitido (ambos os tipos).
   eq('Aumentado >3 setores: não permitido', computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 4, augmented: { restClass: 'c1' } }).fdp.notAllowed, true);
@@ -592,9 +617,11 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Adapter aumentado piloto: legal (over derivado)', eP.psv.over, fcMax != null && M('14:00') > fcMax);
   eq('Adapter SEM special: o mesmo serviço é ilegal', ftl.dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 2 }).psv.over, true);
 
-  // (8) Adapter — CABINE aumentada (classe c2 → teto 17:00, golden).
-  const eC = ftl.dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 2, special: { augmented: { restClass: 'c2' } } }, { isPilot: false });
-  eq('Adapter aumentado cabine: max = classe (golden)', eC.psv.max, computeInflightRest({ restClass: 'c2', sectors: 2, maxFdpMin: 0 }).classMaxStr);
+  // (8) Adapter — CABINE aumentada: o setor longo (CS FTL.1.205(c)(4)) sai do tempo de voo (1 setor) ou das legs.
+  const eC = ftl.dutyToFtlDay({ report_time: '10:00', block_on: '22:00', sectors: 1, flight_minutes: 580, special: { augmented: { restClass: 'c1', additionalCrew: 1, fcRestClass: 'c2', cabinRestMin: 240 } } }, { isPilot: false });
+  eq('Adapter aumentado cabine: max = técnica c2 +1 + setor longo = 16:00', eC.psv.max, '16:00');
+  const eCl = ftl.dutyToFtlDay({ report_time: '10:00', block_on: '22:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'GRU', off: '11:00', on: '20:40', offZ: '11:00', onZ: '20:40' }], special: { augmented: { restClass: 'c1', additionalCrew: 1 } } }, { isPilot: true });
+  eq('Adapter piloto c1 +1, setor de 9:40 nas legs → 17:00', eCl.psv.max, '17:00');
 
   // (9) Adapter — delayed reporting (205g) no serviço gravado.
   const eD = ftl.dutyToFtlDay({ report_time: '11:00', block_on: '20:00', sectors: 2, special: { delayedFrom: '06:00' } });
@@ -778,13 +805,14 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   // CREW-AWARE (o utilizador pediu explicitamente: piloto E cabine). O teto vem do computeDuty, que
   // distingue os dois no repouso a bordo (205 c): piloto por nº de tripulantes, cabine por classe de
   // instalação. MESMA classe de instalação (c1), MESMO serviço → tetos diferentes por tripulação:
-  // piloto (c1, +1 tripulante) = 16:00 ; cabine (c1) = 18:00. O veredicto ao vivo herda esse teto.
+  // piloto (c1, +1 tripulante) = 16:00 ; cabine (c1, sem saber os pilotos nem o repouso) = 14:00, o mais restritivo
+  // (auditoria A-146). O veredicto ao vivo herda esse teto.
   const dP = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1', additionalCrew: 1 }, isPilot: true });
   const dC = computeDuty({ state: 'acc', report: '06:00', end: '20:00', sectors: 2, augmented: { restClass: 'c1' }, isPilot: false });
   eq('Live crew: veredicto usa o teto do PILOTO (16:00)', ftl.liveFdpVerdict(dP, 0).maxStr, dP.fdp.maxFdpStr);
   eq('Live crew: teto do piloto = 16:00', dP.fdp.maxFdpStr, '16:00');
-  eq('Live crew: veredicto usa o teto da CABINE (18:00)', ftl.liveFdpVerdict(dC, 0).maxStr, dC.fdp.maxFdpStr);
-  eq('Live crew: teto da cabine = 18:00', dC.fdp.maxFdpStr, '18:00');
+  eq('Live crew: veredicto usa o teto da CABINE', ftl.liveFdpVerdict(dC, 0).maxStr, dC.fdp.maxFdpStr);
+  eq('Live crew: teto da cabine sem dados = 14:00', dC.fdp.maxFdpStr, '14:00');
   eq('Live crew: mesma classe c1, teto piloto ≠ cabine (205 c distingue)', dP.fdp.maxFdpStr !== dC.fdp.maxFdpStr, true);
 }
 

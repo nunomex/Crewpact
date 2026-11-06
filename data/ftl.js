@@ -165,15 +165,17 @@ export const INFLIGHT_REST = [
   { fdp: '18:00', c1: '3:50', c2: null, c3: null },
 ];
 
-// ─── ORO.FTL.205(c) · PSV máximo com tripulação TÉCNICA (pilotos) reforçada ───
+// ─── CS FTL.1.205(c)(2) · PSV máximo com tripulação TÉCNICA (pilotos) reforçada ───
 // PSV máximo (HH:MM) por classe de instalação de descanso × nº de pilotos EXTRA
 // além do mínimo de 2: `1` → 3 pilotos no total; `2` → 4 pilotos no total.
 // Difere da tabela de cabine (acima): aqui a tabela dá o PSV MÁXIMO permitido, não
-// o repouso mínimo. Fonte: ORO.FTL.205(c)(3) (Reg. (UE) 83/2014).
+// o repouso mínimo. Fonte: CS FTL.1.205(c)(2) (EASA, ED Decision 2014/002/R, pág. 6) —
+// ao abrigo do ORO.FTL.205(e). (c)(4), pág. 7: +1 h com 1 setor de mais de 9 h e ≤ 2 setores.
+// Corrigido na auditoria de 2026-11-06 (A-142): a classe 3 era 14:15/15:15; o texto dá 14 h/15 h.
 export const INFLIGHT_FDP_FC = {
   c1: { 1: '16:00', 2: '17:00' }, // Classe 1 — beliche (bunk)
   c2: { 1: '15:00', 2: '16:00' }, // Classe 2 — cama plana / assento-cama
-  c3: { 1: '14:15', 2: '15:15' }, // Classe 3 — assento reclinável
+  c3: { 1: '14:00', 2: '15:00' }, // Classe 3 — assento reclinável
 };
 
 // ─── CS FTL.1.235(b)(3)(i) · Noites locais de repouso na base por fusos ───────
@@ -554,14 +556,14 @@ export const FTL_ARTICLES = [
       pt: [
         'O PSV máximo diário pode ser prolongado por repouso a bordo, em conformidade com as especificações de certificação:',
         'O PSV com repouso a bordo é limitado a 3 setores e o repouso a bordo mínimo é de 90 minutos por tripulante.',
-        'Para a tripulação de cabina, o repouso a bordo mínimo depende do PSV máximo prolongado e da classe da instalação de descanso (1, 2 ou 3) — ver tabela. A classe 3 permite até 16:00, a classe 2 até 17:00 e a classe 1 até 18:00.',
+        'O PSV só é prolongado pelo repouso a bordo da tripulação técnica (pilotos extra e a classe do repouso deles). A tripulação de cabina segue esse PSV; a tabela dá o repouso a bordo mínimo de que cada tripulante de cabina precisa para ele, pela classe da sua instalação (1, 2 ou 3). A classe 3 não é permitida acima de 16:00 e a classe 2 acima de 17:00.',
         'Todo o tempo passado no espaço de repouso conta como PSV. O repouso no destino deve ser pelo menos igual ao serviço anterior, ou 14 horas, conforme o maior.',
         'O prolongamento por repouso a bordo não pode ser combinado com prolongamento sem repouso a bordo (205d) nem com serviço de voo repartido (220).',
       ],
       en: [
         'The maximum daily FDP may be extended due to in-flight rest, in accordance with the applicable certification specifications:',
         'FDP with in-flight rest is limited to 3 sectors and the minimum in-flight rest is 90 minutes for each crew member.',
-        'For cabin crew, the minimum in-flight rest depends on the maximum extended FDP and the rest facility class (1, 2 or 3) — see table. Class 3 allows up to 16:00, class 2 up to 17:00 and class 1 up to 18:00.',
+        'The FDP is only extended by the in-flight rest of the flight crew (additional pilots and their rest class). Cabin crew follow that FDP; the table gives the minimum in-flight rest each cabin crew member needs for it, by the class of their facility (1, 2 or 3). Class 3 is not allowed above 16:00 and class 2 above 17:00.',
         'All time spent in the rest facility counts as FDP. Minimum rest at destination is at least as long as the preceding duty period, or 14 hours, whichever is greater.',
         'Extension due to in-flight rest cannot be combined with extension without in-flight rest (205d) or with split duty (220).',
       ],

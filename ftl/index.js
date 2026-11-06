@@ -12,7 +12,7 @@
 import { computeFdp, computeFdpByBand } from './calculators/fdpCalculator';
 import { computeAcclimatisation } from './calculators/acclimatisationCalculator';
 import { computeDiscretion } from './calculators/discretionCalculator';
-import { computeInflightRest, computeFlightCrewFdp } from './calculators/inflightRestCalculator';
+import { computeInflightRest, computeFlightCrewFdp, computeCabinAugmentedFdp } from './calculators/inflightRestCalculator';
 import { computeStandby } from './calculators/standbyCalculator';
 import { computeReducedRest } from './calculators/reducedRestCalculator';
 import { computeTimeZoneRest } from './calculators/timeZoneRestCalculator';
@@ -30,7 +30,7 @@ import { validateLimits, computeDutyTime } from './validators/validateLimits';
 import { withinBand, fmtBandRange, bandRangeMins } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
-import { parseHhmm, minToHhmm } from './utils/time';
+import { parseHhmm, minToHhmm, durationMin } from './utils/time';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -49,13 +49,17 @@ export const ENGINE_VERSION = 1;
 // já golden (sem inventar valores): repouso a bordo / tripulação aumentada (205c), delayed
 // reporting (205g) e redução por standby anterior (225). `augmented`/`delayedFrom`/`preStandby`/
 // `isPilot` são opcionais → sem eles o comportamento é idêntico ao anterior (testes intactos).
-//   augmented   = { restClass:'c1'|'c2'|'c3', additionalCrew?:1|2 } (additionalCrew só piloto)
+//   augmented   = { restClass:'c1'|'c2'|'c3', additionalCrew?:1|2, fcRestClass?, cabinRestMin? }
+//                 piloto: restClass = a dos pilotos. Cabine: restClass = a da cabine; fcRestClass = a dos pilotos;
+//                 cabinRestMin = o repouso a bordo da cabine (sem eles → o mais restritivo, ver computeCabinAugmentedFdp).
+//   longestSectorMin = o maior setor (min) → CS FTL.1.205(c)(4)
 //   delayedFrom = hora original de apresentação 'HH:MM' (a `report` é a adiada)
 //   preStandby  = { type:'airport'|'other', standbyH, startMin? }
 export const computeDuty = ({
   state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null,
   accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
   postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
+  longestSectorMin = null,
 }) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
@@ -72,13 +76,17 @@ export const computeDuty = ({
   // Repouso a bordo / tripulação aumentada (205c): tabela aumentada (piloto por nº de tripulantes,
   // cabine por classe de instalação). SUBSTITUI o teto básico (é mais alto). Acima do teto de
   // setores (205c1) → não permitido.
+  // Piloto: CS FTL.1.205(c)(2)+(4). Cabine: o PSV da técnica, limitado pela classe e pelo repouso a bordo da
+  // própria cabine (tabela (c)(3)) — computeCabinAugmentedFdp (auditoria A-146/A-176/A-214).
+  let augInfo = null;
   if (augmented && augmented.restClass) {
     const aug = isPilot
-      ? computeFlightCrewFdp({ restClass: augmented.restClass, additionalCrew: augmented.additionalCrew, sectors })
-      : computeInflightRest({ maxFdpMin: base.baseMin, restClass: augmented.restClass, sectors });
-    const augMax = isPilot ? aug.maxFdpMin : aug.classMaxMin;
+      ? computeFlightCrewFdp({ restClass: augmented.restClass, additionalCrew: augmented.additionalCrew, sectors, longestSectorMin })
+      : computeCabinAugmentedFdp({ ...augmented, sectors, longestSectorMin });
+    augInfo = aug;
     if (aug.overSectors) { notAllowed = true; notAllowedReason = 'inflightSectors'; }
-    else if (augMax != null) { maxMin = augMax; modifier = 'augmented'; }
+    else if (!isPilot && aug.restTooShort) { notAllowed = true; notAllowedReason = 'inflightRest'; }
+    else if (aug.maxFdpMin != null) { maxMin = aug.maxFdpMin; modifier = 'augmented'; }
   }
   // Standby anterior (225): reduz o teto (>4h aeroporto / >6h casa) e tem LIMITES COMBINADOS
   // (CS FTL.1.225): standby + PSV ≤ 16h (aeroporto) · ≤ 18h acordado (casa) · standby ≤ 16h.
@@ -105,7 +113,7 @@ export const computeDuty = ({
       over, excessMin, excessStr: over ? minToHhmm(excessMin) : null,
       notAllowed, notAllowedReason,
     } : {}),
-    modifier, stdbyReductionMin, stdbyOver, stdbyOverKind,
+    modifier, stdbyReductionMin, stdbyOver, stdbyOverKind, aug: augInfo,
   };
 
   // Hora-limite de calços = apresentação + PSV máximo efetivo (o PSV acaba nos calços do último setor,
@@ -175,6 +183,22 @@ const splitFromLegs = (legs) => {
   return { splitBreakH: bestMin / 60, splitBreakStart: start };
 };
 
+// O MAIOR setor (min de voo, calços a calços) — para a hora a mais do CS FTL.1.205(c)(4). Prefere a Zulu das legs
+// (instantes, sem misturar fusos); sem Zulu, o relógio (com volta à meia-noite); sem legs e com 1 setor, o tempo de
+// voo do serviço. null = desconhecido (a hora a mais não se aplica: o lado seguro).
+export const longestSectorOf = (duty = {}) => {
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  let best = null;
+  for (const lg of legs) {
+    const off = parseHhmm(lg.offZ || lg.off), on = parseHhmm(lg.onZ || lg.on);
+    if (off == null || on == null) continue;
+    const m = durationMin(off, on);
+    if (best == null || m > best) best = m;
+  }
+  if (best == null && !legs.length && (duty.sectors || 0) <= 1 && duty.flight_minutes > 0) best = duty.flight_minutes;
+  return best;
+};
+
 // Base vs FORA da base (ORO.FTL.235): decide o repouso mínimo (12h base / 10h fora) e a fronteira
 // rest/split. Deriva do ÚLTIMO aeroporto REAL (legs > rota) vs a base do tripulante — NUNCA por
 // paridade (que é palpite → arriscaria subestimar o repouso). Devolve true (fora, fiável) /
@@ -221,6 +245,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
     state, report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase, postFlightMin: pf,
     splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: !!duty.accommodation,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
+    longestSectorMin: longestSectorOf(duty),
   });
   if (d.fdp.actualFdpMin == null) return null;
   const toH = (m) => +(m / 60).toFixed(1);

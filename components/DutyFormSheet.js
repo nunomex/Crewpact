@@ -7,7 +7,7 @@ import PrimaryButton from './PrimaryButton';
 import Icon from './Icon';
 import IconButton from './IconButton';
 import PeleSide from './PeleSide';
-import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND } from '../data/constants';
+import { RADIUS, GUTTER, PELE, PELE_FONT, BRAND, SPACE } from '../data/constants';
 import { prospectiveDuty, isNightStop } from '../data/rosterImport';
 import { detectLeg, aggregateLegs, normFlightNo, isCompleteFlightNo } from '../data/flightDetect';
 import { flightNoForeign } from '../data/rosterCodes';
@@ -137,7 +137,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const [advOpen, setAdvOpen] = useState(false);
   const [augOn, setAugOn] = useState(false);       // repouso a bordo / tripulação aumentada (205c)
   const [augClass, setAugClass] = useState('c1');  // classe da instalação (c1/c2/c3)
-  const [augCrew, setAugCrew] = useState(1);        // pilotos EXTRA (1→3 total, 2→4) — só piloto
+  const [augCrew, setAugCrew] = useState(1);        // pilotos EXTRA (1→3 total, 2→4) — piloto e cabine
+  // Só CABINE (auditoria A-146/A-214): o PSV da cabine segue o dos pilotos (CS FTL.1.205(c)(2)) → a classe do
+  // repouso DOS PILOTOS e o repouso a bordo da própria cabine (tabela (c)(3)). Vazio → o motor assume o mais restritivo.
+  const [augFcClass, setAugFcClass] = useState('c3');
+  const [augRest, setAugRest] = useState('');
   const [delOn, setDelOn] = useState(false);        // apresentação adiada (205g)
   const [delFrom, setDelFrom] = useState('');       // hora ORIGINAL (a apresentação do form é a adiada)
   const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
@@ -152,6 +156,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const syncSpecial = (sp) => {
     sp = sp || {};
     setAugOn(!!sp.augmented); setAugClass(sp.augmented?.restClass || 'c1'); setAugCrew(sp.augmented?.additionalCrew || 1);
+    setAugFcClass(sp.augmented?.fcRestClass || 'c3');
+    const cr = sp.augmented?.cabinRestMin;
+    setAugRest(cr != null ? `${Math.floor(cr / 60)}:${String(cr % 60).padStart(2, '0')}` : '');
     setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
     setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
     setDiscOn(!!sp.discretion);
@@ -196,7 +203,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, legInput]);
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
   // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
@@ -376,11 +383,14 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // de pilotos só conta para piloto). Alimenta a projeção FTL e o save.
   const special = useMemo(() => {
     if (!isFlight) return null;
-    const aug = augOn ? { restClass: augClass, additionalCrew: Number(augCrew) } : null;
+    const restM = isClock(augRest) ? (() => { const [h, m] = augRest.split(':').map(Number); return h * 60 + m; })() : null;
+    const aug = !augOn ? null : isPilot
+      ? { restClass: augClass, additionalCrew: Number(augCrew) }
+      : { restClass: augClass, additionalCrew: Number(augCrew), fcRestClass: augFcClass, cabinRestMin: restM };
     const del = (delOn && isClock(delFrom)) ? delFrom : null;
     const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
     return (aug || del || sb || discOn) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null } : null;
-  }, [isFlight, augOn, augClass, augCrew, delOn, delFrom, sbOn, sbType, sbH, discOn]);
+  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, delOn, delFrom, sbOn, sbType, sbH, discOn]);
 
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
@@ -791,26 +801,36 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
               <View style={s.advRow}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={s.advTit}>{l('Tripulação aumentada / repouso a bordo', 'Augmented crew / in-flight rest')}</Text>
-                  <Text style={s.advSub}>205(c)</Text>
+                  <Text style={s.advSub}>CS FTL.1.205(c)</Text>
                 </View>
                 <Switch value={augOn} onValueChange={(v) => { select(); layoutAnim(); setAugOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               {augOn ? (
                 <View style={s.advInset}>
-                  <Text style={s.advFieldLbl}>{l('Classe da instalação de repouso', 'Rest facility class')}</Text>
+                  <Text style={s.advFieldLbl}>{isPilot ? l('Classe da instalação de repouso', 'Rest facility class') : l('Classe da tua instalação de repouso', 'Your rest facility class')}</Text>
                   <SegRow s={s} value={augClass} onChange={setAugClass} options={[
                     { id: 'c1', label: l('Classe 1', 'Class 1') },
                     { id: 'c2', label: l('Classe 2', 'Class 2') },
                     { id: 'c3', label: l('Classe 3', 'Class 3') },
                   ]} />
-                  {isPilot ? (
+                  <Text style={[s.advFieldLbl, { marginTop: 11 }]}>{l('Pilotos extra', 'Additional pilots')}</Text>
+                  <SegRow s={s} value={String(augCrew)} onChange={(v) => setAugCrew(Number(v))} options={[
+                    { id: '1', label: l('+1 · 3 no total', '+1 · 3 total') },
+                    { id: '2', label: l('+2 · 4 no total', '+2 · 4 total') },
+                  ]} />
+                  {!isPilot ? (
                     <>
-                      <Text style={[s.advFieldLbl, { marginTop: 11 }]}>{l('Pilotos extra', 'Additional pilots')}</Text>
-                      <SegRow s={s} value={String(augCrew)} onChange={(v) => setAugCrew(Number(v))} options={[
-                        { id: '1', label: l('+1 · 3 no total', '+1 · 3 total') },
-                        { id: '2', label: l('+2 · 4 no total', '+2 · 4 total') },
+                      <Text style={[s.advFieldLbl, { marginTop: SPACE.md }]}>{l('Classe do repouso dos pilotos', 'Pilots\' rest facility class')}</Text>
+                      <SegRow s={s} value={augFcClass} onChange={setAugFcClass} options={[
+                        { id: 'c1', label: l('Classe 1', 'Class 1') },
+                        { id: 'c2', label: l('Classe 2', 'Class 2') },
+                        { id: 'c3', label: l('Classe 3', 'Class 3') },
                       ]} />
+                      <View style={{ marginTop: SPACE.md }}>
+                        <ClockField C={C} s={s} label={l('O teu repouso a bordo (h:mm)', 'Your in-flight rest (h:mm)')} value={augRest} onChange={setAugRest} />
+                      </View>
+                      <Text style={s.advHint}>{l('O teu PSV é o dos pilotos, limitado pela tua classe e pelo teu repouso a bordo (CS FTL.1.205(c)). Sem o teu repouso, a app assume o mínimo de 1:30.', 'Your FDP is the pilots\', limited by your class and your in-flight rest (CS FTL.1.205(c)). Without your rest, the app assumes the 1:30 minimum.')}</Text>
                     </>
                   ) : null}
                 </View>
