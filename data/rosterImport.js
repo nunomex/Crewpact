@@ -72,7 +72,7 @@ export const dutyFromActivity = (act, base = null) => {
 export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null) => {
   // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
   // `base` → repouso 12h/10h por localização real (ORO.FTL.235) e a fronteira rest/split.
-  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot, base }); // { psv, servico, voo, rest, parts } ou null
+  const ftl = dayFtlFromDuties([duty, ...((duty.extra && duty.extra.length) ? duty.extra : [])], { postFlightMin, isPilot, base, date: duty.duty_date || null }); // { psv, servico, voo, rest, parts } ou null
   if (!ftl) return { ok: null, fdpOver: false, servico28: 0, voo28: 0, issues: [] };
   const refDate = ref || (duty.duty_date ? new Date(duty.duty_date + 'T12:00:00') : new Date());
   const hypo = { ...dayLog, [duty.duty_date]: ftl }; // dayLog hipotético com a duty incluída
@@ -85,7 +85,7 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
   // O mesmo cálculo do dayLog (ftlForDuty). Limite COMBINADO do standby (CS FTL.1.225): standby + PSV REAL > 16 h
   // (aeroporto) / > 18 h acordado (casa) / standby > 16 h → aviso separado do PSV-over.
-  const d = ftlForDuty(duty, { postFlightMin, isPilot, base });
+  const d = ftlForDuty(duty, { postFlightMin, isPilot, base, date: duty.duty_date || null });
   if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
   if (ftl.psv && ftl.psv.sbOver) issues.push({ type: 'standby', kind: 'maxStandby' });   // standby em casa > 16 h (225(b)(1))
   const fatigue = d && d.isFdp ? fatigueFromDuty(d) : null;

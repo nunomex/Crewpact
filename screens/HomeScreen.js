@@ -10,7 +10,7 @@ import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { routeDistancesNM } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
-import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, restAfterDuty, liveFdpVerdict } from '../ftl';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -303,8 +303,8 @@ export default function HomeScreen({ navigation }) {
       over: r.status === 'excede', excess: r.value - r.limit };
   }, [duties, ae, base, isPilot, todayISO, crewFleet]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')
@@ -672,14 +672,12 @@ export default function HomeScreen({ navigation }) {
   const wxDest = useStationWx(wxDestStation);
 
   // ── REPOUSO ATÉ (pós-voo/pernoita): a MESMA regra do restBetweenDuties (ORO.FTL.235 a/b). ──
+  // A regra é a do motor (restAfterDuty): também as 14 h depois de repouso a bordo ou de fuso ≥ 4 h e as +2 h/+4 h
+  // depois de um PSV prolongado (auditoria A-145/A-150/A-169). Sem localização fiável, o estado diz onde se repousa.
   const restUntil = (todayEnded && !closeMulti && (homeState === 'posvoo' || homeState === 'pernoita')) ? (() => {
-    const so = hmToMin(todayEnded.signOff), on = hmToMin(todayEnded.block_on), rep = hmToMin(todayEnded.report_time);
-    const pf = ((todayEnded.kind || 'flight') === 'flight') ? (postFlightMin || 0) : 0;
-    const end = so != null ? so : (on != null ? (on + pf) % 1440 : null);
-    if (end == null) return null;
-    let prevDuty = rep != null ? end - rep : 0; while (prevDuty < 0) prevDuty += 1440;
-    const minRest = Math.max(homeState === 'posvoo' ? 720 : 600, prevDuty);
-    const u = end + minRest;
+    const ra = restAfterDuty(todayEnded, { inBase: homeState === 'posvoo', base: homeBaseAt(todayISO), postFlightMin: postFlightMin || 0, isPilot, date: todayISO });
+    if (!ra) return null;
+    const u = ra.endMin + (ra.extended ? ra.requiredPostOnlyMin : ra.requiredMin);   // sem saber o repouso antes: +4 h (o lado seguro)
     return { hm: minToHm(u), nextDay: u >= 1440 };
   })() : null;
   const restUntilHm = restUntil ? restUntil.hm : null;

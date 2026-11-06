@@ -18,7 +18,7 @@ export const FTL = { groups: [
     { v: '190', u: 'h', name: 'Serviço · 28 dias', art: 'ORO.FTL.210', f: 'Horas de serviço em 28 dias.' },
   ] },
   { name: 'Repouso & FDP', items: [
-    { v: '12', u: 'h', name: 'Repouso mínimo', art: 'ORO.FTL.235', f: 'Na base ≥12 h ou o serviço anterior; fora da base ≥10 h.', ex: 'Fora da base = 10 h.' },
+    { v: '12', u: 'h', name: 'Repouso mínimo', art: 'ORO.FTL.235', f: 'Na base ≥12 h, fora da base ≥10 h — ou o serviço anterior, se for maior; 14 h depois de repouso a bordo ou de fuso ≥4 h.', ex: 'Serviço de 13 h fora da base → 13 h de repouso.' },
     { v: '13', u: 'h', name: 'FDP básico', art: 'ORO.FTL.205', f: 'Período de serviço de voo máximo; reduz por setores e por hora WOCL.' },
   ] },
 ] };

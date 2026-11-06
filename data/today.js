@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, computeRest } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -59,33 +59,57 @@ export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
   };
 }
 
-// "Tenho descanso?" — repouso entre o FIM do serviço anterior e o REPORT do próximo, vs
-// o mínimo (ORO.FTL.235, na base = máx(12 h, duração do serviço anterior)). Consultivo.
-// status: 'ok' | 'bad' | 'neutral' (sem dados para calcular).
-export function restStatus(duties = {}, todayISO, ref = new Date()) {
-  const dt = (iso, hm) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setHours(h || 0, m || 0, 0, 0); return x; };
-  // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus). Antes era o 1.º com
-  // data ≥ hoje — na pernoita/pós-voo era o de HOJE, já acabado, e media-se o repouso ANTES dele.
+// "Tenho descanso?" — repouso entre o FIM do serviço anterior e o REPORT do próximo, vs o mínimo. Consultivo.
+// A regra é a do motor (restAfterDuty, auditoria A-144/A-160): o fim é o sign-off (ou calços + pós-voo, só voo); o
+// anterior é o ÚLTIMO serviço a acabar (primária + `extra`); o mínimo é o serviço ou 12 h (base) / 10 h (fora, pela
+// localização real), 14 h depois de repouso a bordo ou de fuso ≥ 4 h, e +2 h / +4 h depois de um PSV prolongado.
+// As durações contam-se em instantes (Date), não em relógios — a hora de verão não engana (A-171).
+// `ctx` = { postFlightMin, isPilot, base, baseAt(iso) }. status: 'ok' | 'bad' | 'neutral' (sem dados para calcular).
+export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
+  const { postFlightMin = 0, isPilot = false, base = null, baseAt = null } = ctx || {};
+  const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
+  const at = (iso, hm, addDays = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + addDays); x.setHours(h || 0, m || 0, 0, 0); return x; };
+  const hm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  // Todos os serviços (a reserva não é serviço para o 235 — CS FTL.1.230(b)), com início e fim em instantes.
+  const svcs = [];
+  for (const iso in duties) {
+    const d = duties[iso]; if (!d || d.deleted) continue;
+    for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+      if (!s || !s.report_time || s.kind === 'reserve') continue;
+      const start = at(iso, s.report_time);
+      const ra = restAfterDuty(s, { postFlightMin, isPilot, base: baseOf(iso), date: iso });
+      let end = null;
+      if (ra) { end = at(iso, hm(ra.endMin)); if (+end <= +start) end = at(iso, hm(ra.endMin), 1); }
+      svcs.push({ iso, s, start, end, ra });
+    }
+  }
+  // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus).
   const refMs = +ref;
   let next = null;
-  for (const iso in duties) {
-    const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso < todayISO) continue;
-    if (+dt(iso, d.report_time) <= refMs) continue;   // já começou (ou acabou) → não é o próximo
-    if (!next || iso < next.iso) next = { iso, d };
-  }
+  for (const v of svcs) { if (v.iso < todayISO || +v.start <= refMs) continue; if (!next || +v.start < +next.start) next = v; }
   if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
-  let prev = null; // serviço IMEDIATAMENTE anterior (adjacência importa p/ o repouso)
-  for (const iso in duties) { const d = duties[iso]; if (!d || d.deleted || !d.report_time || iso >= next.iso) continue; if (!prev || iso > prev.iso) prev = { iso, d }; }
+  // O ANTERIOR: o último a começar antes do próximo (a adjacência importa p/ o repouso).
+  const before = (t) => svcs.filter((v) => +v.start < +t).sort((a, b) => +b.start - +a.start);
+  const prev = before(next.start)[0] || null;
   if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
-  if (!prev.d.block_on) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
-  const prevReport = dt(prev.iso, prev.d.report_time);
-  let prevEnd = dt(prev.iso, prev.d.block_on);
-  if (prevEnd.getTime() <= prevReport.getTime()) prevEnd = new Date(prevEnd.getTime() + 86400000); // serviço virou a meia-noite
-  const nextReport = dt(next.iso, next.d.report_time);
-  const prevDutyMin = Math.round((prevEnd.getTime() - prevReport.getTime()) / 60000);
-  const actualMin = Math.round((nextReport.getTime() - prevEnd.getTime()) / 60000);
-  const { restMin: requiredMin, floorMin } = computeRest({ prevDutyMin, inBase: true });
-  return { id: 'rest', status: actualMin < requiredMin ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin, prevIso: prev.iso, nextIso: next.iso };
+  if (!prev.end) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
+  const prevDutyMin = Math.round((+prev.end - +prev.start) / 60000);
+  const actualMin = Math.round((+next.start - +prev.end) / 60000);
+  const { floorMin } = prev.ra;
+  let requiredMin = Math.max(prevDutyMin, floorMin);
+  // PSV anterior prolongado (205(d)(1)): +2 h se o repouso ANTES dele também teve as +2 h (opção i); senão +4 h (ii).
+  let extOption = null;
+  if (prev.ra.extended) {
+    const pp = before(prev.start)[0] || null;
+    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +pp.start) / 60000), pp.ra.floorMin) : null;
+    const preRest = pp && pp.end ? Math.round((+prev.start - +pp.end) / 60000) : null;
+    extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
+    requiredMin += extOption === 'i' ? 120 : 240;
+  }
+  return {
+    id: 'rest', status: actualMin < requiredMin ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin,
+    prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
+  };
 }
 
 // "Mudou a escala?" — alterações detetadas (Fase 4): contagens + as próprias listas.

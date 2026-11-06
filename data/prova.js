@@ -31,8 +31,8 @@ const UNIVERSAL = {
   repouso: {
     art: 'ORO.FTL.235', title: { pt: 'Repouso mínimo', en: 'Minimum rest' },
     resumo: {
-      pt: 'Antes do serviço seguinte, o repouso mínimo é de 12 horas na base (ou a duração do serviço anterior, se maior) e de 10 horas fora de base, garantida a oportunidade de 8 horas de sono.',
-      en: 'Before the next duty, minimum rest is 12 hours at home base (or the length of the preceding duty, if greater) and 10 hours away from base, with an 8-hour sleep opportunity.',
+      pt: 'Antes do serviço seguinte, o repouso mínimo é de 12 horas na base e de 10 horas fora da base, ou a duração do serviço anterior se for maior, nos dois casos; fora da base, com a oportunidade de 8 horas de sono. Sobe para 14 horas (ou o serviço anterior) depois de um PSV com repouso a bordo (CS FTL.1.205(c)(6)) ou, fora da base, com diferença de fuso de 4 horas ou mais (CS FTL.1.235(b)(3)(ii)); e mais 2 horas antes e depois (ou 4 horas só depois) de um PSV prolongado (ORO.FTL.205(d)(1)).',
+      en: 'Before the next duty, minimum rest is 12 hours at home base and 10 hours away from base, or the length of the preceding duty if greater, in both cases; away from base, with an 8-hour sleep opportunity. It rises to 14 hours (or the preceding duty) after an FDP with in-flight rest (CS FTL.1.205(c)(6)) or, away from base, with a time difference of 4 hours or more (CS FTL.1.235(b)(3)(ii)); and by 2 more hours before and after (or 4 hours after only) an extended FDP (ORO.FTL.205(d)(1)).',
     },
   },
   limites: {

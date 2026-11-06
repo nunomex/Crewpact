@@ -31,6 +31,7 @@ import { withinBand, fmtBandRange, bandRangeMins } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
+import { airportOffsetMin } from '../data/zulu';
 
 // Versão do MOTOR de cálculo FTL. Carimba cada registo diário derivado (dutyToFtlDay/
 // dayFtlFromDuties → dayLog), para que uma futura ERRATA (docs/ERRATA.md §E6) saiba com que
@@ -59,7 +60,7 @@ export const computeDuty = ({
   state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null,
   accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
   postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
-  longestSectorMin = null,
+  longestSectorMin = null, tzDiffH = 0, restExtended = false,
 }) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
@@ -123,10 +124,19 @@ export const computeDuty = ({
 
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
   const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
-  const rest = computeRest({ prevDutyMin: dutyPeriodMin || 0, inBase });
+  // Repouso mínimo a seguir (ORO.FTL.235 a/b): o serviço ou 12 h (base) / 10 h (fora); 14 h fora com fuso ≥ 4 h
+  // (CS 235(b)(3)(ii)) e depois de repouso a bordo (CS 205(c)(6)); +2 h (ou +4 h só depois) com prolongamento (205(d)(1)).
+  // `restExtended` = o PSV planeado cabe no prolongamento (tirado da escala) → o repouso também sobe.
+  const hadInflight = !!(augmented && augmented.restClass) || !!inFlightRest;
+  const rest = computeRest({ prevDutyMin: dutyPeriodMin || 0, inBase, tzDiffH, inflightRest: hadInflight, extended: !!extended || !!restExtended });
   const duty = validateDuty({ fdp, reportMin, endMin, sectors });
+  // Discrição do comandante (ORO.FTL.205(f)(1)(i)): sobre o máximo de 205(b)/(e) ou 220 — NUNCA sobre o prolongamento
+  // de 205(d) (auditoria A-157/A-292), e o prolongamento não combina com repouso a bordo (205(d)(4)) → +2 h.
+  const discBaseMin = extended
+    ? computeFdp({ state, reportMin, endMin, sectors, extended: false }).maxFdpMin
+    : fdp.maxFdpMin;
   const disc = discretion
-    ? computeDiscretion({ maxFdpMin: fdp.maxFdpMin, actualFdpMin: fdp.actualFdpMin, restMin: rest.restMin, inFlightRest: inFlightRest || !!augmented })
+    ? computeDiscretion({ maxFdpMin: discBaseMin, actualFdpMin: fdp.actualFdpMin, restMin: rest.restMin, inFlightRest: !extended && hadInflight })
     : null;
   return {
     reportMin, endMin, sectors, state, inBase,
@@ -199,6 +209,24 @@ export const longestSectorOf = (duty = {}) => {
   return best;
 };
 
+// Diferença de fuso (h) do serviço face à base (CS FTL.1.235(b)(3)(ii): "an FDP involves a 4-hour time difference
+// or more"): a maior entre o fuso da base e o de cada aeroporto das legs, na data do serviço (hora de verão). 0 sem
+// base, sem legs ou sem fusos conhecidos (o lado comum: 10/12 h).
+const tzDiffOf = (duty = {}, base = null, date = null) => {
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  const b = String(base || '').trim().toUpperCase();
+  if (!b || !legs.length) return 0;
+  const t = date ? Date.parse(`${date}T12:00:00Z`) : Date.now();
+  const ob = airportOffsetMin(b, t);
+  if (ob == null) return 0;
+  let max = 0;
+  for (const lg of legs) for (const ap of [lg.dep, lg.arr]) {
+    const o = ap ? airportOffsetMin(String(ap).toUpperCase(), t) : null;
+    if (o != null) max = Math.max(max, Math.abs(o - ob));
+  }
+  return max / 60;
+};
+
 // O serviço é um PSV? ORO.FTL.105(12): o PSV "inclui um setor ou série de setores". Standby em casa, formação,
 // escritório e posicionamento isolado NÃO são PSV (auditoria A-166/A-247): contam para o 210 e para o repouso, mas
 // a tabela do Quadro 2 não os julga. O standby de aeroporto SEM alojamento é "serviço no aeroporto" e o PSV conta
@@ -230,7 +258,7 @@ const endsAwayReliable = (duty, base) => {
 // números diferentes para o mesmo serviço). Devolve null sem apresentação. Junta ao resultado:
 //   isFdp (é PSV? ver isFdpDuty) · kind · pf (o pós-voo usado) · inBase (base/fora pela localização real).
 // `ctx` = { postFlightMin, isPilot, base, inBase, state }.
-export const ftlForDuty = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false } = {}) => {
+export const ftlForDuty = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null } = {}) => {
   if (!duty || !duty.report_time) return null;
   // Base vs fora pela localização REAL (ORO.FTL.235: 12h base / 10h fora). Local fiável manda;
   // desconhecido → o default `inBase` (conservador = na base).
@@ -251,21 +279,32 @@ export const ftlForDuty = (duty = {}, { state = 'acc', inBase = true, base = nul
   // Split duty (CS FTL.1.220): `splitBreakH` EXPLÍCITO (bloco combinado do dayFtlFromDuties, ou form)
   // ganha; senão DERIVA a maior pausa em terra ≥3h das próprias legs.
   const der = splitFromLegs(duty.legs);
-  const d = computeDuty({
+  const isFdp = isFdpDuty(duty);
+  const tzDiffH = tzDiffOf(duty, base, date);   // CS FTL.1.235(b)(3)(ii): fuso do PSV face à base
+  const args = {
     state, report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, inBase: ib, postFlightMin: pf,
     splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: duty.accommodation || false,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
-    discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty),
-  });
-  return { ...d, isFdp: isFdpDuty(duty), kind, pf, inBase: ib };
+    discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty), tzDiffH,
+  };
+  let d = computeDuty(args);
+  // Prolongamento PLANEADO (ORO.FTL.205(d)): o PSV excede o básico mas cabe no prolongado, numa faixa que o permite.
+  // Da escala não se distingue planeado de excesso; marca-se quando CABE no prolongamento (conta para os "2 em 7 dias")
+  // e o repouso a seguir sobe 2 h (205(d)(1)(i)). Não conta com discrição declarada nem fora de um PSV.
+  const repMin = parseHhmm(duty.report_time);
+  const extFdp = repMin != null ? computeFdp({ state, reportMin: repMin, sectors: duty.sectors || 0, extended: true }) : null;
+  const extUsed = isFdp && !sp.discretion && !!d.fdp.over && !!extFdp && !extFdp.notAllowed
+    && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
+  if (extUsed) d = computeDuty({ ...args, restExtended: true });
+  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, tzDiffH };
 };
 
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null } = {}) => {
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
   if (!duty.report_time || !duty.block_on) return null;
-  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot });
+  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date });
   inBase = d.inBase;
   const sp = duty.special || {};
   if (d.fdp.actualFdpMin == null) return null;
@@ -304,10 +343,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // report → a tabela aplica-se (comportamento anterior, conservador e fiel).
   const sbAcc = duty.kind === 'standby_airport' && !!duty.accommodation;
   const fdpDuty = isFdpDuty(duty);
-  const extFdp = computeFdp({ state, reportMin: repMin, sectors: duty.sectors || 0, extended: true });
-  // Prolongamento planeado (205(d)) não conta quando o excesso foi DISCRIÇÃO declarada nem fora de um PSV.
-  const usedExtension = fdpDuty && !sp.discretion && !!d.fdp.over && repMin != null && !extFdp.notAllowed
-    && d.fdp.actualFdpMin != null && d.fdp.actualFdpMin <= extFdp.maxFdpMin;
+  const usedExtension = !!d.extUsed;   // prolongamento planeado (205(d)) — decidido no ftlForDuty
   // Não é PSV → sem teto, sem "PSV realizado", sem hora-limite de calços. O standby fora do aeroporto tem no máximo
   // 16 h (CS FTL.1.225(b)(1)) → `sbOver`.
   const notFdpPsv = {
@@ -346,19 +382,36 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
 //   • 'continuous' (< 3h)          → demasiado perto: NÃO são 2 serviços (é o mesmo).
 // Devolve { gapMin, requiredMin, kind, legal, place, prevDutyMin } — alimenta o diálogo de
 // colisão (2 serviços vs split) e o aviso da folha do dia. Determinístico; null sem horas.
-export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0 } = {}) => {
-  if (!prev || !next) return null;
+// Repouso mínimo DEPOIS de um serviço (ORO.FTL.235 + CS 235(b)(3)(ii) + CS 205(c)(6) + ORO.FTL.205(d)(1)) — a regra
+// ÚNICA do "Tenho descanso?", do "Repouso até" do Início e do intervalo entre serviços do mesmo dia (auditoria
+// A-144/A-160: mediam desde os calços, sem o pós-voo, e com 12 h fixas). O fim do serviço é o sign-off; sem ele,
+// calços + pós-voo (só voo — um não-voo acaba no fim registado). Devolve null sem fim.
+//   { endMin (relógio), dutyMin, inBase, floorMin, requiredMin (com prolongamento: +2 h, opção (i)),
+//     requiredPostOnlyMin (+4 h, opção (ii)), extended, reason }
+export const restAfterDuty = (prev, { inBase = true, base = null, postFlightMin = 0, isPilot = false, date = null } = {}) => {
+  if (!prev) return null;
   const repPrev = parseHhmm(prev.report_time);
   const onPrev = parseHhmm(prev.block_on), soPrev = parseHhmm(prev.signOff);
-  const repNext = parseHhmm(next.report_time);
-  // Débrief SÓ se o serviço ANTERIOR for voo (235c) — um escritório acaba no fim registado.
   const pfPrev = ((prev.kind || 'flight') === 'flight') ? (postFlightMin || 0) : 0;
-  let endPrev = soPrev != null ? soPrev : (onPrev != null ? (onPrev + pfPrev) % 1440 : null);
-  if (endPrev == null || repNext == null) return null;
+  const endMin = soPrev != null ? soPrev : (onPrev != null ? (onPrev + pfPrev) % 1440 : null);
+  if (endMin == null) return null;
+  let dutyMin = repPrev != null ? endMin - repPrev : 0; while (dutyMin < 0) dutyMin += 1440;
+  const pr = repPrev != null ? ftlForDuty(prev, { inBase, base, postFlightMin, isPilot, date }) : null;
+  const ib = pr ? pr.inBase : inBase;
+  const aug = prev.special && prev.special.augmented;
+  const r = computeRest({ prevDutyMin: dutyMin, inBase: ib, tzDiffH: pr ? pr.tzDiffH : 0, inflightRest: !!(aug && aug.restClass), extended: !!(pr && pr.extUsed) });
+  return { endMin, dutyMin, inBase: ib, floorMin: r.floorMin, requiredMin: r.restMin, requiredPostOnlyMin: r.restPostOnlyMin, extended: r.extended, reason: r.reason };
+};
+
+export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0 } = {}) => {
+  if (!prev || !next) return null;
+  const repNext = parseHhmm(next.report_time);
+  const ra = restAfterDuty(prev, { inBase, postFlightMin });
+  if (!ra || repNext == null) return null;
+  const endPrev = ra.endMin, prevDutyMin = ra.dutyMin;
   let gapMin = repNext - endPrev; while (gapMin < 0) gapMin += 1440;          // next reporta depois do fim de prev
-  let prevDutyMin = repPrev != null ? endPrev - repPrev : 0; while (prevDutyMin < 0) prevDutyMin += 1440;
-  const place = inBase ? 'base' : 'away';
-  const minRest = Math.max(inBase ? 720 : 600, prevDutyMin);                  // 12h base / 10h fora, nunca < serviço anterior
+  const place = ra.inBase ? 'base' : 'away';
+  const minRest = ra.requiredMin;                                             // a regra única (restAfterDuty)
   let kind, legal;
   if (gapMin >= minRest) { kind = 'rest'; legal = true; }
   else if (gapMin >= 180) { kind = 'split'; legal = true; }                   // ≥3h → split duty (1 FDP)
@@ -494,7 +547,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
       legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: typeof baseAt === 'function' ? baseAt(date) : base });
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: typeof baseAt === 'function' ? baseAt(date) : base, date });
     if (!entry) continue;                              // sem report/block_on → não deriva
     if (!changed) { next = { ...dayLog }; changed = true; }
     next[date] = entry;

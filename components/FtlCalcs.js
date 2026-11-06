@@ -314,7 +314,7 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
       )}
       {ext && extUsage && (
         <Text style={extUsage.wouldExceed ? cs.warnNote : cs.note}>
-          {t('ftl.extUsage', lang)} {extUsage.count}/{extUsage.limit}{extUsage.wouldExceed ? ` · ${t('ftl.extUsageOver', lang)}` : ''}
+          {t('ftl.extUsage', lang)} {extUsage.count}/{extUsage.limit}{extUsage.worstFrom ? ` (${extUsage.worstFrom.slice(8)}/${extUsage.worstFrom.slice(5, 7)}–${extUsage.worstTo.slice(8)}/${extUsage.worstTo.slice(5, 7)})` : ''}{extUsage.wouldExceed ? ` · ${t('ftl.extUsageOver', lang)}` : ''}
         </Text>
       )}
       {!ext && <Stepper label={t('ftl.split', lang)} value={brk} setValue={setBrk} min={0} max={8} />}
@@ -378,6 +378,11 @@ export function DutyCalc({ lang, onRegister, dayLog, refISO, initReport, initSec
             <Text style={cs.dutyLbl}>{l('Repouso (235)', 'Rest (235)')}</Text>
             <Text style={cs.dutyVal}>{l('mín.', 'min.')} {restDisp}</Text>
           </View>
+          {ext && restDisp ? (
+            // ORO.FTL.205(d)(1): (i) +2 h antes E depois, ou (ii) +4 h só depois (auditoria A-293).
+            <Text style={cs.note}>{l(`Com prolongamento: ${rest.restStr} se o repouso antes também teve +2 h; senão ${rest.restPostOnlyStr} (ORO.FTL.205(d)(1)).`,
+              `With extension: ${rest.restStr} if the rest before also had +2 h; otherwise ${rest.restPostOnlyStr} (ORO.FTL.205(d)(1)).`)}</Text>
+          ) : null}
         </View>
       )}
 

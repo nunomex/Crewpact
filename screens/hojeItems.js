@@ -125,7 +125,7 @@ export function buildTodayItems(ctx, lang) {
   }
 
   // 3b · Tenho descanso?
-  const rest = restStatus(duties, todayISO);
+  const rest = restStatus(duties, todayISO, new Date(), { postFlightMin: ctx.postFlightMin || 0, isPilot, baseAt: ctx.baseAt || null });
   {
     const q = l('Tenho descanso?', 'Do I have rest?');
     let answer, suggestion = null;

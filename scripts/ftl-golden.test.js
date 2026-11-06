@@ -428,9 +428,55 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Ext-infer: banda 06:00 não permite extensão → não', dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 1 }).psv.extended, false);
   // Frequência na janela de 7 dias que termina na referência.
   const noExt = dutyToFtlDay({ report_time: '07:00', block_on: '19:30', sectors: 1 });
-  eq('Ext-freq: 1 prolongamento → novo não excede', computeExtensionUsage({ '2026-06-05': extDuty }, '2026-06-05').count, 1);
-  eq('Ext-freq: 2 prolongamentos → novo excederia', computeExtensionUsage({ '2026-06-03': extDuty, '2026-06-05': extDuty }, '2026-06-05').wouldExceed, true);
+  // O próprio dia não conta: o serviço novo (simulado) substitui-o.
+  eq('Ext-freq: o próprio dia não conta', computeExtensionUsage({ '2026-06-05': extDuty }, '2026-06-05').count, 0);
+  eq('Ext-freq: 2 prolongamentos antes → novo excederia', computeExtensionUsage({ '2026-06-01': extDuty, '2026-06-03': extDuty }, '2026-06-05').wouldExceed, true);
+  eq('Ext-freq: 1 antes + o próprio dia → não excede', computeExtensionUsage({ '2026-06-03': extDuty, '2026-06-05': extDuty }, '2026-06-05').wouldExceed, false);
   eq('Ext-freq: 0 prolongamentos → não excede', computeExtensionUsage({ '2026-06-05': noExt }, '2026-06-05').wouldExceed, false);
+  // ORO.FTL.205(d)(1) "em cada período de 7 dias consecutivos": também as janelas PARA A FRENTE (auditoria A-155).
+  // Prolongamentos já escalados a 12 e 13 nov; um novo a 10 nov → a janela de 10 a 16 teria 3.
+  const fwd = computeExtensionUsage({ '2026-11-12': extDuty, '2026-11-13': extDuty }, '2026-11-10');
+  eq('Ext-freq: janela para a frente (10–16 nov) → excederia', fwd.wouldExceed, true);
+  eq('Ext-freq: a pior janela tem 2', fwd.count, 2);
+  eq('Ext-freq: 7 dias depois já não conta (17 nov)', computeExtensionUsage({ '2026-11-17': extDuty, '2026-11-18': extDuty }, '2026-11-10').wouldExceed, false);
+}
+
+// ─────────── Auditoria 2026-11-06 · bloco 1 · REPOUSO (S8, S10; A-145, A-150, A-157, A-169, A-289, A-290, A-292, A-293) ───────────
+{
+  const { dutyToFtlDay } = ftl;
+  // ORO.FTL.235(b): fora da base, o serviço anterior OU 10 h, o maior (A-289: serviço de 13 h fora → 13:00, nunca "10 h").
+  eq('235(b): fora da base, serviço de 13 h → 13:00', computeRest({ prevDutyMin: M('13:00'), inBase: false }).restMin, M('13:00'));
+  // CS FTL.1.205(c)(6): depois de um PSV com repouso a bordo, no destino, o serviço anterior OU 14 h (A-290).
+  eq('205(c)(6): repouso a bordo, serviço de 12:30 → 14:00', computeRest({ prevDutyMin: M('12:30'), inBase: false, inflightRest: true }).restMin, M('14:00'));
+  eq('205(c)(6): repouso a bordo, serviço de 16:30 → 16:30', computeRest({ prevDutyMin: M('16:30'), inBase: false, inflightRest: true }).restMin, M('16:30'));
+  const dAug = computeDuty({ state: 'acc', report: '10:00', end: '22:30', sectors: 1, inBase: false, augmented: { restClass: 'c1', additionalCrew: 1 }, isPilot: true });
+  eq('205(c)(6): computeDuty com repouso a bordo → mínimo 14:00', dAug.rest.restStr, '14:00');
+  // ORO.FTL.205(d)(1): com prolongamento, (i) +2 h ao repouso antes E depois, ou (ii) +4 h ao repouso depois (A-145).
+  // 08:00 → 22:00 (2 setores, prolongado a 14:00) + 30 min de pós-voo = 14:30 de serviço, na base.
+  const dExt = computeDuty({ state: 'acc', report: '08:00', end: '22:00', sectors: 2, extended: true, postFlightMin: 30 });
+  eq('205(d)(1)(i): repouso depois = 14:30 + 2:00 = 16:30', dExt.rest.restStr, '16:30');
+  eq('205(d)(1)(ii): só depois = 14:30 + 4:00 = 18:30', dExt.rest.restPostOnlyStr, '18:30');
+  eq('Sem prolongamento: 14:30', computeDuty({ state: 'acc', report: '08:00', end: '22:00', sectors: 2, postFlightMin: 30 }).rest.restStr, '14:30');
+  // A-293: 07:00 → 20:30 na base, prolongado → 13:30 + 2:00 = 15:30 (ou 17:30 só depois).
+  const d293 = computeDuty({ state: 'acc', report: '07:00', end: '20:30', sectors: 2, extended: true });
+  eq('A-293: 15:30', d293.rest.restStr, '15:30');
+  eq('A-293: 17:30 (opção ii)', d293.rest.restPostOnlyStr, '17:30');
+  // ORO.FTL.205(f)(1)(i): a discrição aplica-se ao máximo de (b), (e) ou 220 — SEM o prolongamento de (d) (A-157/A-292).
+  // 07:00, 2 setores: Quadro 2 = 13:00; com prolongamento 14:00; discrição = 13:00 + 2:00 = 15:00 (a app dava 16:00).
+  const dDisc = computeDuty({ state: 'acc', report: '07:00', end: '22:30', sectors: 2, extended: true, discretion: true });
+  eq('205(f) por cima de 205(d): máximo com discrição = 15:00', dDisc.discretion.maxStr, '15:00');
+  eq('205(f) por cima de 205(d): 15:30 excede', dDisc.discretion.over, true);
+  // O prolongamento planeado tirado da escala (psv.extended) também sobe o repouso registado (+2 h).
+  const eExt = dutyToFtlDay({ report_time: '07:00', block_on: '20:30', sectors: 1, flight_minutes: 600 });
+  eq('Escala: PSV prolongado (13:30) → repouso registado 15,5 h', eExt.rest.base, 15.5);
+  // CS FTL.1.235(b)(3)(ii): fora da base, PSV com diferença de fuso de 4 h ou mais → o serviço OU 14 h (A-150/A-169).
+  // LIS → EWR em julho (UTC+1 → UTC−4: 5 h), 9:30 de serviço → 14:00 (a app dava 10:00).
+  const ewr = dutyToFtlDay({ report_time: '09:00', block_on: '18:30', sectors: 1, flight_minutes: 510,
+    legs: [{ dep: 'LIS', arr: 'EWR', off: '10:00', on: '18:30', offZ: '09:00', onZ: '17:30' }] }, { base: 'LIS', date: '2026-07-10' });
+  eq('Fuso ≥ 4 h fora da base → repouso 14 h', ewr.rest.away, 14);
+  const fnc = dutyToFtlDay({ report_time: '09:00', block_on: '18:30', sectors: 1, flight_minutes: 90,
+    legs: [{ dep: 'LIS', arr: 'FNC', off: '10:00', on: '11:30' }] }, { base: 'LIS', date: '2026-07-10' });
+  eq('Mesmo fuso (FNC) → 10 h ou o serviço (9:30) → 10 h', fnc.rest.away, 10);
 }
 
 // ─────────── 235(b)(3)(ii) — repouso fora-base com fuso ≥ 4 h (piso 14 h) ───────────

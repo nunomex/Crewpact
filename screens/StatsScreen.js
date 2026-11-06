@@ -123,8 +123,8 @@ export default function StatsScreen({ navigation }) {
   })();
   const st = useMemo(
     () => isYear
-      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents })
-      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents }),
+      ? yearStats(duties, { year, ae, aeAt, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt })
+      : monthStats(duties, { ym, ae, category: crewCategory, contract: crewContract || '12/12', crewHistory, fleet: crewFleet, postFlightMin, events: aeEvents, baseAt: homeBaseAt }),
     [isYear, duties, year, ym, ae, aeNow, companyHistory, crewCategory, crewContract, crewHistory, crewFleet, postFlightMin, aeEvents], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -612,7 +612,7 @@ export default function StatsScreen({ navigation }) {
         </View>
         <View style={s.body3}>
           <View style={s.bcell}><Text style={s.bnum}>{st.minRestH != null ? st.minRestH.toLocaleString(locale, { maximumFractionDigits: 1 }) : '—'}<Text style={s.bnumU}>{st.minRestH != null ? 'h' : ''}</Text></Text><Text style={s.blab}>{l('Menor repouso entre serviços', 'Shortest rest between duties')}</Text></View>
-          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.reducedRests || 0}</Text><Text style={s.blab}>{l('Repousos abaixo de 11 h', 'Rests below 11 h')}</Text></View>
+          <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.reducedRests || 0}</Text><Text style={s.blab}>{l('Repousos abaixo do mínimo', 'Rests below the minimum')}</Text></View>
           <View style={[s.bcell, s.bcellB]}><Text style={s.bnum}>{st.longestStreak}<Text style={s.bnumU}>d</Text></Text><Text style={s.blab}>{l('Sequência máx. de serviço', 'Longest duty streak')}</Text></View>
         </View>
         {/* ── Radiação cósmica (v2 do mockup: linha achatada, SEM barra — número + âncora;
@@ -643,7 +643,7 @@ export default function StatsScreen({ navigation }) {
             ) : null}
           </View>
         ) : null}
-        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Repousos entre 10 h e 11 h são legais fora de base (ORO.FTL.235) — sem quebra do mínimo.', ' Rests between 10 h and 11 h are legal away from base (ORO.FTL.235) — no breach of the minimum.') : ''}</Text>
+        <Text style={s.bnote}><Text style={s.bnoteB}>{st.offDays}</Text> {l('dias de folga e', 'days off and')} <Text style={s.bnoteB}>{st.nightStops}</Text> {l('paragens noturnas', 'night stops')} {isYear ? l('no ano', 'this year') : l('no mês', 'this month')}.{st.reducedRests ? l(' Abaixo do mínimo = menos do que o serviço anterior ou 12 h na base / 10 h fora (ORO.FTL.235). A app estima: confirma com a companhia.', ' Below the minimum = less than the preceding duty or 12 h at base / 10 h away (ORO.FTL.235). The app estimates: confirm with the company.') : ''}</Text>
       </PeleSheet>
 
       <YearShareCard visible={shareOpen} onClose={() => setShareOpen(false)} st={isYear ? st : null} year={year} companyName={company?.name} />
