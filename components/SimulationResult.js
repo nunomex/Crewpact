@@ -23,7 +23,7 @@ const clk = (s) => { const m = /^(\d{1,2}):([0-5]\d)$/.exec(String(s || '')); re
 // + as CONSCIENTES DO PERFIL (per-diem por tipo/categoria/contrato; validades por piloto/cabine).
 // Pele nova (2026-07-10): página paper + Barlow; crew-aware marcado a AMARELO-soft (a marca).
 export default function SimulationResult({ visible, duty, onEdit, onClose }) {
-  const { lang, dayLog, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, cabinGapMin, base: baseNow, validities } = useContext(AppContext);
+  const { lang, dayLog, ae: aeNow, aeAt, homeBaseAt, crewAt, crewContract, crewFleet, postFlightMin, isPilot, cabinGapMin, splitAdminMin, base: baseNow, validities } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -43,9 +43,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const pf = !isFlight ? 0 : (soM != null && onM != null) ? (soM >= onM ? soM - onM : soM + 1440 - onM) : (postFlightMin || 0);
 
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
-  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base, { cabinGapMin });
+  const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base, { cabinGapMin, splitAdminMin });
   const sp = duty.special || {};
-  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base, date: duty.duty_date || null, cabinGapMin });   // o mesmo cálculo do dayLog
+  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin });   // o mesmo cálculo do dayLog
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;

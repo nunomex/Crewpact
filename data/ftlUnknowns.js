@@ -3,6 +3,7 @@
 const LBL = {
   accommodation: { pt: 'o alojamento na pausa em terra (CS FTL.1.220)', en: 'the accommodation during the ground break (CS FTL.1.220)' },
   augmented: { pt: 'os pilotos extra, a classe do repouso deles e o teu repouso a bordo (CS FTL.1.205(c))', en: 'the additional pilots, their rest class and your in-flight rest (CS FTL.1.205(c))' },
+  splitAdmin: { pt: 'o tempo de pré-voo, pós-voo e deslocação que o Manual de Operações desconta da pausa (CS FTL.1.220(b))', en: 'the pre/post-flight and travelling time the Operations Manual deducts from the break (CS FTL.1.220(b))' },
   longSector: { pt: 'a duração do setor mais longo (CS FTL.1.205(c)(4))', en: 'the length of the longest sector (CS FTL.1.205(c)(4))' },
   pilotReport: { pt: 'a hora de apresentação dos pilotos (ORO.FTL.205(c))', en: 'the pilots\' reporting time (ORO.FTL.205(c))' },
 };

@@ -778,6 +778,15 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eqj('220: sem alojamento dito ("none") → excede 1:00', [sp('none').psv.over, sp('none').psv.excess], [true, '01:00']);
   eqj('220: com alojamento → exato 14:45, dentro', [sp('basic').psv.max, sp('basic').psv.over, !!sp('basic').psv.uncertain], ['14:45', false, false]);
   eq('220: registo antigo (false) = por responder', sp(false).psv.uncertain, true);
+  // CS FTL.1.220(b) + GM1: a pausa desconta o pré-voo, o pós-voo e a deslocação que o OPERADOR fixa no Manual de
+  // Operações (mínimo 30 min). Sem esse valor (splitAdminMin null): garantido sem extensão, possível com os 30 min.
+  const spOm = (adm) => dayFtlFromDuties([{ report_time: '06:00', block_on: '20:00', sectors: 2, legs, accommodation: 'basic' }], { splitAdminMin: adm });
+  eqj('220(b): sem o tempo do OM → 13:00 a 14:45', [spOm(null).psv.max, spOm(null).psv.maxHi], ['13:00', '14:45']);
+  eqj('220(b): sem o tempo do OM, o que falta', spOm(null).psv.unknowns, ['splitAdmin']);
+  // OM com 45 min de pré e 30 de pós-voo (75 min): 4:00 − 1:15 = 2:45 < 3 h → já não é repartido → 13:00, excede 1:00.
+  eqj('220(b): OM 75 min → pausa líquida 2:45 → sem extensão, excede 1:00', [spOm(75).psv.max, spOm(75).psv.over, spOm(75).psv.excess], ['13:00', true, '01:00']);
+  // OM com 30 min → 14:45 exato.
+  eqj('220(b): OM 30 min → 14:45', [spOm(30).psv.max, spOm(30).psv.exact], ['14:45', true]);
 }
 
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────

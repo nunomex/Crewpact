@@ -59,10 +59,11 @@ export const SPLIT_BASIC_CAP_MIN = 360;   // CS 220(e)(2): a parte acima de 6 h 
 //   • alojamento não adequado → a parte acima de 6 h e a que invade o WOCL não contam ((e)(2)); sem a hora de
 //     início, só até 6 h (A-153). O WOCL conta-se com a volta da meia-noite (A-147/A-163);
 //   • alojamento adequado → conta a pausa líquida toda ((d)).
-export const splitCountedBreakMin = (breakMin, breakStartMin = null, accommodation = false) => {
+//   `adminMin` = o pré-voo + pós-voo + deslocação do Manual de Operações (220(b) e GM1); nunca menos de 30 min.
+export const splitCountedBreakMin = (breakMin, breakStartMin = null, accommodation = false, adminMin = SPLIT_ADMIN_MIN) => {
   const acc = splitAccLevel(accommodation);
   if (acc === 'none') return 0;
-  const net = breakMin - SPLIT_ADMIN_MIN;                  // 220(b): exclui 30 min de admin/deslocação
+  const net = breakMin - Math.max(SPLIT_ADMIN_MIN, adminMin == null ? SPLIT_ADMIN_MIN : adminMin);   // 220(b)
   if (net < SPLIT_MIN_BREAK_H * 60) return 0;              // 220(a): pausa líquida ≥ 3 h
   if (acc === 'suitable') return net;
   const capped = Math.min(net, SPLIT_BASIC_CAP_MIN);       // exclui a parte > 6 h

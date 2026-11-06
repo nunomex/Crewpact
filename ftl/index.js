@@ -29,7 +29,7 @@ import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime } from './validators/validateLimits';
 import { entryMin } from './calculators/cumulativeCalculator';
-import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel } from './rules/fdpRules';
+import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel, SPLIT_ADMIN_MIN } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
@@ -64,7 +64,7 @@ export const computeDuty = ({
   state = 'acc', report, end = null, sectors = 1, splitBreakH = 0, splitBreakStart = null,
   accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
   postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
-  longestSectorMin, tzDiffH = 0, restExtended = false, cabinReportGapMin,
+  longestSectorMin, tzDiffH = 0, restExtended = false, cabinReportGapMin, splitAdminMin,
 }) => {
   const reportMin = parseHhmm(report);
   const endMin = parseHhmm(end);
@@ -84,6 +84,10 @@ export const computeDuty = ({
   const sectorUnknown = !!aug && longestSectorMin === null && (sectors | 0) <= 2;
   const unknowns = [];
   if (accUnknown && splitBreakH > 0) unknowns.push('accommodation');
+  // CS FTL.1.220(b): o desconto da pausa é o do Manual de Operações. Sem ele (null): garantido sem extensão (um desconto
+  // que pode ser tão grande quanto o OM disser), possível com o mínimo de 30 min. undefined = 30 (calculadoras).
+  const admUnknown = splitAdminMin === null;
+  if (admUnknown && splitBreakH > 0) unknowns.push('splitAdmin');
   if (cabAugUnknown) unknowns.push('augmented');
   if (sectorUnknown) unknowns.push('longSector');
   if (!isPilot && cabinReportGapMin === null) unknowns.push('pilotReport');
@@ -91,7 +95,8 @@ export const computeDuty = ({
   // Máximo (min) para uma hora de faixa `bandRep` e um lado ('lo' garantido | 'hi' possível) dos factos em falta.
   const maxOf = (bandRep, side) => {
     const hi = side === 'hi';
-    const b = computeFdp({ state, reportMin: bandRep, endMin, sectors, splitBreakH, splitBreakStartMin: splitStartMin, accommodation: hi ? accHi : accLo, extended });
+    const adm = admUnknown ? (hi ? SPLIT_ADMIN_MIN : Infinity) : splitAdminMin;
+    const b = computeFdp({ state, reportMin: bandRep, endMin, sectors, splitBreakH, splitBreakStartMin: splitStartMin, accommodation: hi ? accHi : accLo, extended, splitAdminMin: adm });
     let m = b.maxFdpMin, na = b.notAllowed, nar = b.notAllowedReason, modifier = null, augInfo = null, sbRedMin = 0;
     // Adiamento (CS 205(d)): o máximo pela hora mais limitativa (original vs adiada).
     if (delayedFrom != null && bandRep != null) {
@@ -140,7 +145,7 @@ export const computeDuty = ({
     if (rl.m == null && rh.m != null) { lo = 0; loR = loR || rh; }   // garantido nenhum, possível algum
     if (h != null && (hi == null || h > hi)) { hi = h; hiR = rh; }
   }
-  const base = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, splitBreakStartMin: splitStartMin, accommodation: accLo, extended });
+  const base = computeFdp({ state, reportMin, endMin, sectors, splitBreakH, splitBreakStartMin: splitStartMin, accommodation: accLo, extended, splitAdminMin: admUnknown ? Infinity : splitAdminMin });
   const ref = loR || hiR || naR || { na: base.notAllowed, nar: base.notAllowedReason, modifier: null, augInfo: null, sbRedMin: 0 };
   const notAllowed = !anyAllowed && (reportMin != null) && (ref.na || hi == null);
   const notAllowedReason = notAllowed ? (ref.nar || base.notAllowedReason) : null;
@@ -357,6 +362,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     splitBreakH: duty.splitBreakH || der.splitBreakH, splitBreakStart: duty.splitBreakStart || der.splitBreakStart, accommodation: acc,
     augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot,
     discretion: !!sp.discretion, longestSectorMin: longestSectorOf(duty), tzDiffH, cabinReportGapMin: cabinGap,
+    splitAdminMin: ctx.splitAdminMin,   // CS 220(b): o tempo do OM — null = desconhecido (App), undefined = 30
   };
   let d = computeDuty(args);
   // Prolongamento PLANEADO (ORO.FTL.205(d)): o PSV excede o básico mas cabe no prolongado, numa faixa que o permite.
@@ -389,7 +395,7 @@ const noReportEntry = (duty = {}, { postFlightMin = 0 } = {}) => {
   };
 };
 
-export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin } = {}) => {
+export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = null, postFlightMin = null, isPilot = false, date = null, cabinGapMin, splitAdminMin } = {}) => {
   // Reserva (ORO.FTL.230): é DISPONIBILIDADE, não serviço — 0 h FTL até ser convertida num
   // serviço (que é então registado à parte). Nunca contribui para os acumulados de 28 d.
   if (duty.kind === 'reserve') return null;
@@ -398,7 +404,7 @@ export const dutyToFtlDay = (duty = {}, { state = 'acc', inBase = true, base = n
   // fica por calcular (auditoria A-161: o dia inteiro, voo incluído, saía dos 210).
   if (!duty.report_time) return noReportEntry(duty, { postFlightMin });
   if (!duty.block_on) return null;
-  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin });
+  const d = ftlForDuty(duty, { state, inBase, base, postFlightMin, isPilot, date, cabinGapMin, splitAdminMin });
   inBase = d.inBase;
   const sp = duty.special || {};
   if (d.fdp.actualFdpMin == null) return null;
@@ -651,8 +657,8 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
 const djb2 = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; return h.toString(36); };
 const DUTY_SIG_FIELDS = ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'kind', 'signOff', 'special', 'legs', 'route', 'accommodation', 'splitBreakH', 'splitBreakStart'];
 const pickSig = (s) => (s ? DUTY_SIG_FIELDS.map((k) => (s[k] === undefined ? null : s[k])) : null);
-export const dayLogSig = (d, { postFlightMin = 0, isPilot = false, base = null, cabinGapMin } = {}) =>
-  djb2(JSON.stringify([ENGINE_VERSION, postFlightMin || 0, !!isPilot, base || null, cabinGapMin === undefined ? 'na' : cabinGapMin, pickSig(d), (d && Array.isArray(d.extra)) ? d.extra.map(pickSig) : null]));
+export const dayLogSig = (d, { postFlightMin = 0, isPilot = false, base = null, cabinGapMin, splitAdminMin } = {}) =>
+  djb2(JSON.stringify([ENGINE_VERSION, postFlightMin || 0, !!isPilot, base || null, cabinGapMin === undefined ? 'na' : cabinGapMin, splitAdminMin === undefined ? 'na' : splitAdminMin, pickSig(d), (d && Array.isArray(d.extra)) ? d.extra.map(pickSig) : null]));
 
 // Mantém as entradas FTL DERIVADAS (src:'duty') do `dayLog` em dia com as duties (escala):
 //  • preenche os dias em FALTA (dispositivo novo / após reinstalar: as duties vêm do servidor, o dayLog é local);
@@ -663,7 +669,7 @@ export const dayLogSig = (d, { postFlightMin = 0, isPilot = false, base = null, 
 // Idempotente: devolve a MESMA referência se nada mudar (não dispara re-render).
 // `baseAt(date)` (linha do tempo do contrato, 2026-11-03) = a base EM VIGOR nesse dia — uma
 // transferência não muda o "na base / fora" (12 h / 10 h, ORO.FTL.235) dos dias antigos.
-export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin } = {}) => {
+export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin } = {}) => {
   let next = dayLog, changed = false;
   const put = (date, entry) => { if (!changed) { next = { ...dayLog }; changed = true; } if (entry) next[date] = entry; else delete next[date]; };
   for (const date in duties) {
@@ -672,7 +678,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
     const cur = dayLog[date];
     if (cur && cur.src !== 'duty') continue;          // manual → nunca se toca
     const baseD = typeof baseAt === 'function' ? baseAt(date) : base;
-    const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin });
+    const sig = dayLogSig(d, { postFlightMin, isPilot, base: baseD, cabinGapMin, splitAdminMin });
     if (cur && cur.sig === sig) continue;              // já em dia
     // Um dia pode ter N períodos de serviço (210 conta por serviço): primária + `extra`.
     const primary = {
@@ -680,7 +686,7 @@ export const reconcileDayLog = (duties = {}, dayLog = {}, { postFlightMin = 0, i
       sectors: d.sectors, flight_minutes: d.flight_minutes, kind: d.kind, signOff: d.signOff, special: d.special,
       legs: d.legs, route: d.route, accommodation: d.accommodation,   // legs/rota p/ split+base/fora; alojamento p/ 220 d/e
     };
-    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin });
+    const entry = dayFtlFromDuties([primary, ...((d.extra && d.extra.length) ? d.extra : [])], { postFlightMin, isPilot, base: baseD, date, cabinGapMin, splitAdminMin });
     if (!entry) { if (cur) put(date, null); continue; }   // já não há nada para contar → sai a derivada antiga
     put(date, { ...entry, sig });
   }

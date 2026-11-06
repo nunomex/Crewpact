@@ -279,7 +279,7 @@ export default function OnboardingScreen() {
     setCalendarId(selCal.id); if (setCalendarName) setCalendarName(selCal.title || null);
     try {
       const pilotD = draft.crewType === 'pilot';   // ORO.FTL.205(c): a cabine sem a hora dos pilotos → desconhecida (null)
-      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, baseAt: homeBaseAt, aeEvents, isPilot: pilotD, cabinGapMin: pilotD ? undefined : null });
+      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, baseAt: homeBaseAt, aeEvents, isPilot: pilotD, cabinGapMin: pilotD ? undefined : null, splitAdminMin: null });
       setRRes(r);
       swap(() => setRStep('review'));
     } finally { setRBusy(false); }

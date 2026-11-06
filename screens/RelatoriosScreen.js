@@ -51,7 +51,7 @@ const MONS = {
 };
 
 export default function RelatoriosScreen({ navigation }) {
-  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, aeAt, crewAt, crewCategory, crewHistory, companyHistory, baseHistory, airlines, bases, serviceStart, base, postFlightMin, homeBaseAt, cabinGapMin } = useContext(AppContext);
+  const { lang, duties, dayLog, user, company, notify, rosterLog, isPilot, ae, aeAt, crewAt, crewCategory, crewHistory, companyHistory, baseHistory, airlines, bases, serviceStart, base, postFlightMin, homeBaseAt, cabinGapMin, splitAdminMin } = useContext(AppContext);
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const lg = lang === 'en' ? 'en' : 'pt';
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -202,7 +202,7 @@ export default function RelatoriosScreen({ navigation }) {
           const model = buildRecordModel({
             duties: dutiesInPeriod, dayLog,
             // Serviço até ao sign-off/pós-voo e o repouso que houve até ao serviço seguinte, mesmo fora do período (A-168).
-            postFlightMin: postFlightMin || 0, isPilot, cabinGapMin, baseAt: homeBaseAt, allDuties: duties,
+            postFlightMin: postFlightMin || 0, isPilot, cabinGapMin, splitAdminMin, baseAt: homeBaseAt, allDuties: duties,
             name: recForm.name, crewId: recForm.crewId,
             operator: company?.name || '', email: user?.email || '',
             generatedAt: new Date().toLocaleString(locale),

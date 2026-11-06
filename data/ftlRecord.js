@@ -49,7 +49,7 @@ const WIN = {
 // (PSV/serviço/repouso) — fonte única de verdade.
 export const buildRecordModel = ({
   duties = {}, dayLog = {}, name = '', crewId = '', operator = '', email = '', generatedAt = null,
-  postFlightMin = 0, isPilot = false, baseAt = null, allDuties = null, cabinGapMin,
+  postFlightMin = 0, isPilot = false, baseAt = null, allDuties = null, cabinGapMin, splitAdminMin,
 } = {}) => {
   // Uma linha por PERÍODO DE SERVIÇO (não por dia): a EASA conta serviços (ORO.FTL.245/210),
   // por isso um dia com 2 serviços rende 2 linhas. Serviços do dia = primária + `extra`,
@@ -83,7 +83,7 @@ export const buildRecordModel = ({
     return m >= 0 ? hm(m) : '—';
   };
   const svcRow = (date, d, idx, nSvc) => {
-    const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin }) : null;
+    const r = d.report_time ? ftlForDuty(d, { postFlightMin, isPilot, base: baseOf(date), date, cabinGapMin, splitAdminMin }) : null;
     const fdpOk = !!(r && r.isFdp && d.block_on);
     const over = fdpOk && !!(r.discretion ? r.discretion.over : r.fdp.over);
     const uncertain = fdpOk && !over && !!(r.discretion ? r.discretion.uncertain : r.fdp.uncertain);

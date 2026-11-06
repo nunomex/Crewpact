@@ -120,7 +120,7 @@ function SegRow({ options, value, onChange, s }) {
 // cascata das secções + transição suave ao trocar de tipo (LayoutAnimation). Mantém
 // 1 duty/dia (loadFor), a projeção FTL prospetiva e o per-diem AE ao vivo.
 export default function DutyFormSheet({ visible, onClose, date, onSaved, candidate, onCandidate, simulate = false, onSimulate, append = false, editExtra = null }) {
-  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, cabinGapMin, instructorRated } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, addDutyService, updateDutyService, aeAt, homeBaseAt, caps, company, crewCategory, crewFleet, postFlightMin, crewAt, notify, isPilot, cabinGapMin, splitAdminMin, instructorRated } = useContext(AppContext);
   const insets = useSafeAreaInsets();   // insets reais da app — o SafeAreaView não funciona dentro do Modal
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
   const l = (pt, en) => (lang === 'en' ? en : pt);
@@ -410,7 +410,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
       legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
-    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin });   // + base → 12h/10h por localização real (235) + 205(c)
+    }, dayLog, null, postFlightMin, isPilot, base, { cabinGapMin, splitAdminMin });   // + base → 12h/10h por localização real (235) + 205(c)
   }, [isFlight, form, dayLog, postFlightMin, isPilot, special, accOn, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.

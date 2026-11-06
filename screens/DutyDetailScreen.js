@@ -109,7 +109,7 @@ export default function DutyDetailScreen({ route, navigation }) {
   // base/fora pela localização real e a tripulação DESSE dia. `pf` (acima) fica para a linha do débrief.
   // ORO.FTL.205(c): a cabine (dessa data) leva a apresentação dos pilotos — do serviço, ou desconhecida.
   const gapD = isPilotD ? undefined : (ctxAll.cabinGapMin !== undefined ? ctxAll.cabinGapMin : null);
-  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD });
+  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
   const fat = (d && hasEnd && d.isFdp) ? fatigueFromDuty(d) : null;
   // Não é PSV (standby em casa, formação, escritório, standby de aeroporto com alojamento) → nunca "excede" o Quadro 2.
   const over = !(d && d.isFdp) ? false : !!(d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
@@ -460,7 +460,7 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
             <Panel rows={duty.extra.map((sv, i) => {
-              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD });
+              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD, date, cabinGapMin: gapD, splitAdminMin: ctxAll.splitAdminMin });
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
               const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
               return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };

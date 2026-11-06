@@ -40,7 +40,7 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -63,7 +63,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
   const load = async () => {
     setLoading(true); setDenied(false);
-    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin });
+    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin });
     let next = r.cands;
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!r.ok) setDenied(true);
@@ -98,7 +98,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       const text = await pdf.extractText(uri);
       try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
       const r = parseEasyjetRoster(text, company?.slug);
-      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin }));
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin }));
       setPasteDiag(r.diag);
       // Guarda SUAVE (não bloqueia): reconheci poucos serviços → provável PDF de outra
       // companhia OU perfil errado. Avisa e deixa o utilizador decidir (§1/§2).

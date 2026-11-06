@@ -280,7 +280,7 @@ export default function HomeScreen({ navigation }) {
   };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, cabinGapMin, splitAdminMin, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -526,7 +526,7 @@ export default function HomeScreen({ navigation }) {
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
       // Serviço REGISTADO: o MESMO cálculo do dayLog (ftlForDuty: pós-voo, casos especiais, base/fora, split).
       // Um serviço que não é PSV (standby em casa, formação, escritório) não tem PSV máximo (ORO.FTL.105(12)).
-      const d = ftlForDuty(reg, { postFlightMin, isPilot, base: flight.dateISO ? homeBaseAt(flight.dateISO) : base, date: flight.dateISO || null, cabinGapMin });
+      const d = ftlForDuty(reg, { postFlightMin, isPilot, base: flight.dateISO ? homeBaseAt(flight.dateISO) : base, date: flight.dateISO || null, cabinGapMin, splitAdminMin });
       if (d && d.isFdp) { ndPsvMax = d.fdp.maxFdpStr; ndPsvHi = d.fdp.exact === false ? d.fdp.maxHiStr : null; ndPsvActual = d.fdp.actualFdpStr; ndSectors = reg.sectors || null; ndDuty = d; }
     } else if (flight.report) {
       // Só com apresentação REAL do calendário — não inventa dep − 1 h.
@@ -727,7 +727,7 @@ export default function HomeScreen({ navigation }) {
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
   const closeD = (todayEnded && !closeMulti) ? (() => {
     try {
-      const r = ftlForDuty(todayEnded, { postFlightMin, isPilot, base: homeBaseAt(todayISO), date: todayISO, cabinGapMin });
+      const r = ftlForDuty(todayEnded, { postFlightMin, isPilot, base: homeBaseAt(todayISO), date: todayISO, cabinGapMin, splitAdminMin });
       return r && r.isFdp ? r : null;   // escritório/formação/standby em casa não são PSV (ORO.FTL.105(12))
     } catch { return null; }
   })() : null;

@@ -16,7 +16,7 @@ export const computeFdpByBand = ({ state = 'acc', bandIdx = 0, sectors = 1, spli
 // `extended` (205d) usa a tabela de prolongamento sem repouso a bordo (só 'acc'); não combina
 // com split (205d4). `notAllowed` = prolongamento não permitido (hora/setores). `notAllowedReason`
 // = 'time' (hora fora da tabela) | 'sectors' (acima do teto por sobreposição ao WOCL, 205d3).
-export const computeFdp = ({ state = 'acc', reportMin = null, endMin = null, sectors = 1, splitBreakH = 0, splitBreakStartMin = null, accommodation = false, extended = false }) => {
+export const computeFdp = ({ state = 'acc', reportMin = null, endMin = null, sectors = 1, splitBreakH = 0, splitBreakStartMin = null, accommodation = false, extended = false, splitAdminMin }) => {
   if (reportMin == null) {
     return { baseMin: null, extMin: 0, maxFdpMin: null, maxFdpStr: null, actualFdpMin: null, actualFdpStr: null, over: false, excessMin: 0, excessStr: null, band: bandLabel(state, reportMin), extended, notAllowed: false, notAllowedReason: null, extSectorCap: null };
   }
@@ -29,7 +29,7 @@ export const computeFdp = ({ state = 'acc', reportMin = null, endMin = null, sec
     else { baseMin = m; maxFdpMin = m; }
   } else {
     baseMin = baseMaxFdpMin(state, reportMin, sectors);
-    extMin = state === 'acc' ? splitExtensionFromCountedMin(splitCountedBreakMin(splitBreakH * 60, splitBreakStartMin, accommodation)) : 0;
+    extMin = state === 'acc' ? splitExtensionFromCountedMin(splitCountedBreakMin(splitBreakH * 60, splitBreakStartMin, accommodation, splitAdminMin)) : 0;
     maxFdpMin = baseMin + extMin;
   }
   const actualFdpMin = endMin != null ? durationMin(reportMin, endMin) : null;
