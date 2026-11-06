@@ -22,6 +22,7 @@ import { computeExtensionUsage } from './calculators/extensionUsageCalculator';
 import { computeRest } from './calculators/restCalculator';
 import { classifyDisruptive } from './calculators/disruptiveCalculator';
 import { computeRestSequence } from './calculators/sequenceCalculator';
+import { computeRecovery, localNightsIn } from './calculators/recoveryCalculator';
 import { computeFatigue } from './calculators/fatigueCalculator';
 import { computeFlightTime } from './calculators/flightTimeCalculator';
 import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
@@ -822,7 +823,7 @@ export {
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
   computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
-  computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence,
+  computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence, computeRecovery, localNightsIn,
   computeFatigue,
   withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel,
   DUTY_WINDOWS, FLIGHT_WINDOWS, QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,

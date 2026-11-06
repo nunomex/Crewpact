@@ -23,7 +23,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { restStatus, legalStatus, restUntilAfter } = require(path.resolve('data/today.js'));
+const { restStatus, legalStatus, restUntilAfter, recoveryStatus } = require(path.resolve('data/today.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -127,6 +127,17 @@ eq('Repouso até: prolongamento com repouso antes longo → +2 h (15:30)', restU
 eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
   '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
 }, '2026-11-10').requiredMin, 1050);
+
+// Recuperação no "Tenho descanso?": 4 entradas às 06:30 entre duas recuperações e a seguinte com 41 h. No tipo TARDIO a
+// entrada matinal é 05:00–06:59 → 4 irregulares → a recuperação tinha de ter 60 h (CS FTL.1.235(a)(2)); no MATINAL
+// (easyJet) é 05:00–05:59 → nenhum → sem aviso. Sem saber o tipo da companhia → incerto.
+{
+  const dd = { '2026-11-01': { report_time: '06:00', block_on: '12:00', sectors: 2 }, '2026-11-09': { report_time: '06:00', block_on: '12:00', sectors: 2 } };
+  for (let i = 4; i <= 7; i++) dd[`2026-11-0${i}`] = { report_time: '06:30', block_on: '13:00', sectors: 2 };
+  eq('recuperação: easyJet (matinal) → sem aviso', recoveryStatus(dd, '2026-11-05', { companySlug: 'easyjet' }).status, 'ok');
+  const unk = recoveryStatus(dd, '2026-11-05', { companySlug: 'tap' });
+  eq('recuperação: tipo desconhecido → incerto', [unk.status, (unk.issues[0] || {}).type, (unk.issues[0] || {}).uncertain], ['warn', 'recovery60', true]);
+}
 
 // "A lei é que manda": falta um facto → o "Dentro dos limites?" diz incerto (nem "sim" nem "não"), com o que falta.
 {

@@ -304,8 +304,8 @@ export default function HomeScreen({ navigation }) {
       over: r.status === 'excede', excess: r.value - r.limit };
   }, [duties, ae, base, isPilot, todayISO, crewFleet]);
   const todayItems = useMemo(
-    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt }, lang),
-    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, lang],
+    () => buildTodayItems({ ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, baseAt: homeBaseAt, companySlug: company && company.slug }, lang),
+    [ftlSnap, dayLog, duties, rosterChanges, ae, crewCategory, crewContract, crewFleet, aeEvents, validities, isPilot, todayISO, aeToday, postFlightMin, homeBaseAt, company, lang],
   );
   const questionItems = todayItems.filter((it) =>
     (it.id === 'legal' && it.status !== 'neutral')
@@ -698,7 +698,8 @@ export default function HomeScreen({ navigation }) {
     const rI = (todayItems || []).find((it) => it.id === 'rest');
     const r = rI && rI.raw; if (!r || r.status === 'neutral') return { restOk: null };
     const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-    return { restOk: r.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
+    // "Verificado" só com a pergunta inteira a verde — também a recuperação (ORO.FTL.235(d)).
+    return { restOk: rI.status === 'ok', restHave: r.actualMin != null ? hm(r.actualMin) : null, restNeed: r.requiredMin != null ? hm(r.requiredMin) : null };
   })();
   // Último dia de férias (amanhã já não está marcado como férias) → a frase muda para o regresso (golden test:statevoice).
   const vacLast = homeState === 'ferias' && !(aeEvents || []).some((e) => e && e.type === 'vacDays' && e.date === isoAdd(todayISO, 1));

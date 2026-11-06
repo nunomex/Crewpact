@@ -855,6 +855,42 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('Sem legs: o relógio', ftlForDuty({ report_time: '21:00', block_on: '07:30', sectors: 1 }, { base: 'LIS', date: '2026-10-24' }).fdp.actualFdpStr, '10:30');
 }
 
+// ─────────── ORO.FTL.235(d) + CS FTL.1.235(a): repouso de recuperação (auditoria A-151) ───────────
+// 36 h com 2 noites locais (noite local = 8 h entre as 22:00 e as 08:00, ORO.FTL.105(16)); no máximo 168 h entre o fim de
+// uma recuperação e o início da seguinte; 60 h depois de 4 ou mais noturnos/matinais/tardios; e, na base, a passagem de
+// tardio/noturno para matinal com 1 noite local no repouso.
+{
+  const { computeRecovery } = ftl;
+  const day = (d) => `2026-11-${String(d).padStart(2, '0')}`;
+  const svc = (report, end) => ({ report_time: report, block_on: end, sectors: 2, kind: 'flight' });
+  // (1) Fim às 08:00 de seg (2) e início às 20:00 de ter (3): 36 h com UMA noite local → não é recuperação.
+  const r1 = computeRecovery({ [day(1)]: svc('22:00', '08:00'), [day(3)]: svc('20:00', '23:00') });
+  eq('235(d): 36 h com 1 noite não é recuperação', r1.recoveries.length, 0);
+  // Fim às 08:00 de seg e início às 20:00 de qua: 60 h, 2 noites → é.
+  eq('235(d): 60 h com 2 noites é recuperação', computeRecovery({ [day(1)]: svc('22:00', '08:00'), [day(4)]: svc('20:00', '23:00') }).recoveries.length, 1);
+  // (2) Noite local = 8 h entre 22:00 e 08:00: o repouso das 23:30 às 07:30 conta como noite.
+  eq('105(16): 23:30 → 07:30 é uma noite local', ftl.localNightsIn(new Date(2026, 10, 5, 23, 30), new Date(2026, 10, 6, 7, 30)), 1);
+  eq('105(16): 00:30 → 07:30 (7 h) não é', ftl.localNightsIn(new Date(2026, 10, 6, 0, 30), new Date(2026, 10, 6, 7, 30)), 0);
+  // (3) 168 h: recuperação a acabar a 2 nov às 06:00; depois serviços todos os dias sem 36 h livres → o 1.º serviço que
+  // acaba depois de 9 nov 06:00 (168 h) está fora — a recuperação seguinte devia ter começado antes.
+  const d168 = { [day(1)]: svc('06:00', '12:00') }; for (let i = 4; i <= 12; i++) d168[day(i)] = svc('06:00', '14:00');
+  // 1 nov 12:00 → 4 nov 06:00 = 66 h com 2 noites: recuperação. Acaba a 4 nov 06:00 → 168 h = 11 nov 06:00.
+  const r168 = computeRecovery(d168);
+  eq('235(d): mais de 168 h sem recuperação → aviso', r168.issues.some((x) => x.type === 'recovery168' && x.date === day(11)), true);
+  // (4) 60 h: 4 entradas matinais (05:30) entre duas recuperações e a seguinte com só 41 h (2 noites) → aviso.
+  const d60 = { [day(1)]: svc('06:00', '12:00') };
+  for (let i = 4; i <= 7; i++) d60[day(i)] = svc('05:30', '13:00');
+  d60[day(9)] = svc('06:00', '12:00');   // 7 nov 13:00 → 9 nov 06:00 = 41 h, noites de 7 e 8 (22:00–06:00 = 8 h) → recuperação de 41 h
+  const r60 = computeRecovery(d60);
+  eq('CS 235(a)(2): 4 matinais → a recuperação seguinte (41 h) devia ter 60 h', r60.issues.some((x) => x.type === 'recovery60' && x.date === day(9)), true);
+  // (5) Tardio → matinal na base sem noite local: acaba à 01:30 de 6 nov, entra às 05:30 de 7 nov (28 h, nenhuma noite de 8 h).
+  const dTr = { [day(5)]: svc('16:00', '01:30'), [day(7)]: svc('05:30', '12:00') };
+  eq('CS 235(a)(1): tardio → matinal sem noite local → aviso', computeRecovery(dTr, { base: 'LIS' }).issues.some((x) => x.type === 'transitionNight' && x.date === day(7)), true);
+  eq('CS 235(a)(1): tardio → entrada às 06:00 (não é matinal) → sem aviso', computeRecovery({ [day(5)]: svc('16:00', '01:30'), [day(7)]: svc('06:00', '12:00') }, { base: 'LIS' }).issues.some((x) => x.type === 'transitionNight'), false);
+  // O fim do serviço é o sign-off (A-151 (3)): calços 22:45, sign-off 23:15 → tardio.
+  eq('105(8): tardio pelo sign-off', computeRecovery({ [day(5)]: { report_time: '14:00', block_on: '22:45', signOff: '23:15', sectors: 2 }, [day(7)]: svc('05:30', '12:00') }, { base: 'LIS' }).duties[0].lateFinish, true);
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).

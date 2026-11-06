@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, restAfterDuty } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -136,6 +136,28 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
   if (!mine) return null;
   const { requiredMin } = requirementAfter(svcs, mine, null);
   return { untilMs: +mine.end + requiredMin * 60000, requiredMin, endMs: +mine.end };
+}
+
+// Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)) — os avisos de [hoje − 1, hoje + 14]. O tipo de horário irregular
+// (matinal ou tardio, ORO.FTL.105(8)) é atribuído pela autoridade a cada operador: a easyJet Europe (AOC austríaco) é
+// MATINAL; para as outras companhias a app não o sabe → avaliam-se os dois e um aviso que só um dá fica INCERTO.
+export function recoveryStatus(duties = {}, todayISO, ctx = {}) {
+  const { postFlightMin = 0, base = null, baseAt = null, companySlug = null } = ctx || {};
+  const known = /easyjet|ezy/i.test(String(companySlug || '')) ? 'early' : null;
+  const run = (type) => computeRecovery(duties, { postFlightMin, base, baseAt, type }).issues;
+  const key = (x) => `${x.type}|${x.date}`;
+  let issues;
+  if (known) issues = run(known);
+  else {
+    const e = run('early'), l = run('late');
+    const lk = new Set(l.map(key)), ek = new Set(e.map(key));
+    issues = [...e.map((x) => ({ ...x, uncertain: !lk.has(key(x)) })), ...l.filter((x) => !ek.has(key(x))).map((x) => ({ ...x, uncertain: true }))];
+  }
+  const add = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n, 12); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+  const lo = add(todayISO, -1), hi = add(todayISO, 14);
+  const near = issues.filter((x) => x.date >= lo && x.date <= hi).sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (!near.length) return { id: 'recovery', status: 'ok', issues: [] };
+  return { id: 'recovery', status: near.some((x) => !x.uncertain) ? 'bad' : 'warn', issues: near };
 }
 
 // "Mudou a escala?" — alterações detetadas (Fase 4): contagens + as próprias listas.
