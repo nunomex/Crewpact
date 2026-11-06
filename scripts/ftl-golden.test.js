@@ -137,11 +137,15 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
 
 // ─────────────────────────────── Standby (CS FTL.1.225) ────────────────────────────────────
 {
-  const ap = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('13:00'), fdpH: 10 });
+  const ap = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('13:00'), actualFdpMin: M('10:00') });
   eq('SB aeroporto: reduz >4h', ap.reductionMin, M('02:00'));
   eq('SB aeroporto: 100% serviço', ap.dutyCountMin, M('06:00'));
   eq('SB aeroporto: combinado 16h', ap.combinedMaxMin, M('16:00'));
-  eq('SB aeroporto: PSV reduzido', ap.reducedMaxFdpMin, M('11:00'));
+  // CS FTL.1.225(a)(2): o máximo é o MENOR entre (i) o Quadro 2 menos o standby acima de 4 h e (ii) 16 h − standby.
+  // 6 h de standby, 13:00 → min(11:00, 10:00) = 10:00 (auditoria A-143/A-164; a app dava 11:00).
+  eq('SB aeroporto: PSV reduzido = min(13:00 − 2:00, 16:00 − 6:00) = 10:00', ap.reducedMaxFdpMin, M('10:00'));
+  eq('SB aeroporto 4h: min(13:00, 12:00) = 12:00', computeStandby({ type: 'airport', standbyH: 4, maxFdpMin: M('13:00') }).reducedMaxFdpMin, M('12:00'));
+  eq('SB aeroporto 2h: min(13:00, 14:00) = 13:00', computeStandby({ type: 'airport', standbyH: 2, maxFdpMin: M('13:00') }).reducedMaxFdpMin, M('13:00'));
   eq('SB aeroporto ≤4h sem redução', computeStandby({ type: 'airport', standbyH: 3, maxFdpMin: M('13:00') }).reductionMin, 0);
 
   const ot = computeStandby({ type: 'other', standbyH: 8, maxFdpMin: M('13:00') });
@@ -152,10 +156,13 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
   // (b)(9): standby iniciado entre 23:00–07:00 → a parte na janela não conta p/ a redução.
   eq('SB outro 23:30 (noturno) → janela não conta', computeStandby({ type: 'other', standbyH: 10, startMin: M('23:30'), maxFdpMin: M('13:00') }).reductionMin, 0);
   eq('SB outro 10:00 (fora da janela) → conta tudo', computeStandby({ type: 'other', standbyH: 10, startMin: M('10:00'), maxFdpMin: M('13:00') }).reductionMin, M('04:00'));
-  // Combinado standby+PSV (aeroporto ≤16h) e "acordado" (outro >18h) — agora com flag.
-  eq('SB aeroporto 6h + PSV 11h = 17h > 16h → combinedOver', computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('11:00') }).combinedOver, true);
-  eq('SB aeroporto 4h + PSV 11h = 15h ≤ 16h → não', computeStandby({ type: 'airport', standbyH: 4, maxFdpMin: M('11:00') }).combinedOver, false);
-  eq('SB outro 8h + PSV 13h = 21h > 18h → awakeOver', computeStandby({ type: 'other', standbyH: 8, maxFdpMin: M('13:00') }).awakeOver, true);
+  // Combinado standby+PSV (aeroporto ≤16h) e "acordado" (outro >18h): com o PSV REAL do serviço (A-164/A-246).
+  eq('SB aeroporto 6h + PSV real 11h = 17h > 16h → combinedOver', computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('13:00'), actualFdpMin: M('11:00') }).combinedOver, true);
+  eq('SB aeroporto 6h + PSV real 8h = 14h → não (a app dizia "acima de 16 h")', computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: M('13:00'), actualFdpMin: M('8:00') }).combinedOver, false);
+  eq('SB aeroporto 4h + PSV real 11h = 15h ≤ 16h → não', computeStandby({ type: 'airport', standbyH: 4, maxFdpMin: M('13:00'), actualFdpMin: M('11:00') }).combinedOver, false);
+  eq('SB outro 8h + PSV real 13h = 21h > 18h → awakeOver', computeStandby({ type: 'other', standbyH: 8, maxFdpMin: M('13:00'), actualFdpMin: M('13:00') }).awakeOver, true);
+  // A-246: 6 h de standby em casa + PSV de 4 h = 10 h → dentro (a app somava o PSV MÁXIMO: 6 + 13 = 19 h → "excede").
+  eq('SB outro 6h + PSV real 4h = 10h → não', computeStandby({ type: 'other', standbyH: 6, maxFdpMin: M('13:00'), actualFdpMin: M('4:00') }).awakeOver, false);
   eq('SB outro 4h + PSV 10h = 14h ≤ 18h → não', computeStandby({ type: 'other', standbyH: 4, maxFdpMin: M('10:00') }).awakeOver, false);
 }
 
@@ -346,6 +353,68 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const noAcc = dutyToFtlDay({ ...sb, block_on: '22:30' });   // 08:00→22:30 = 14:30 > teto (13:00 @08:00, 0-2 set)
   eq('225: SEM alojamento 14h30 → over (é PSV desde o report)', noAcc.psv.over, true);
   eq('225: SEM alojamento conta 100% na mesma (14.5h)', noAcc.servico, 14.5);
+}
+
+// ─────────── Auditoria 2026-11-06 · bloco 1 · STANDBY (S3 e alarmes falsos A-166/A-167/A-234/A-246/A-247) ───────────
+{
+  const { dutyToFtlDay, dayFtlFromDuties } = ftl;
+  // S3 (A-143): standby de aeroporto de 6 h, apresentação às 12:00, 2 setores (Quadro 2: 13:00).
+  // CS FTL.1.225(a)(2): máximo = min(13:00 − 2:00, 16:00 − 6:00) = 10:00 → calços até às 22:00 (a app dava 11:00 e 23:00).
+  const s3 = computeDuty({ state: 'acc', report: '12:00', end: '22:30', sectors: 2, preStandby: { type: 'airport', standbyH: 6 } });
+  eq('S3: máximo 10:00', s3.fdp.maxFdpStr, '10:00');
+  eq('S3: calços até às 22:00', s3.latestOnBlockStr, '22:00');
+  eq('S3: PSV real de 10:30 → excede 0:30', s3.fdp.excessStr, '00:30');
+  // A-164: apresentação às 11:00 → calços até às 21:00.
+  eq('A-164: calços até às 21:00', computeDuty({ state: 'acc', report: '11:00', end: '15:00', sectors: 2, preStandby: { type: 'airport', standbyH: 6 } }).latestOnBlockStr, '21:00');
+  // Com 6 h de standby e PSV real de 8:00 (14 h no total, dentro) não há aviso "acima de 16 h".
+  eq('A-164: 6 h + PSV 8:00 → sem aviso combinado', computeDuty({ state: 'acc', report: '12:00', end: '20:00', sectors: 2, preStandby: { type: 'airport', standbyH: 6 } }).fdp.stdbyOver, false);
+  // A-246: 6 h em casa + PSV 11:00→15:00 (4 h) = 10 h acordado → sem aviso "18 h acordado".
+  eq('A-246: 6 h casa + PSV 4 h → sem aviso', computeDuty({ state: 'acc', report: '11:00', end: '15:00', sectors: 2, preStandby: { type: 'other', standbyH: 6 } }).fdp.stdbyOver, false);
+
+  // A-166/A-247: standby em casa, formação, escritório e posicionamento isolado NÃO são PSV (ORO.FTL.105(12):
+  // o PSV "inclui um setor ou série de setores"). Contam para o 210 (casa a 25 %) e para o repouso; sem teto do Quadro 2.
+  const hsby = dutyToFtlDay({ report_time: '06:00', block_on: '20:00', sectors: 0, kind: 'standby_home' });
+  eq('Não-PSV: standby em casa 14 h → não excede', hsby.psv.over, false);
+  eq('Não-PSV: standby em casa sem PSV máximo', hsby.psv.max, null);
+  eq('Não-PSV: standby em casa sem "PSV realizado"', hsby.psv.result, null);
+  eq('Não-PSV: standby em casa conta 25 % (3,5 h)', hsby.servico, 3.5);
+  eq('Não-PSV: formação 14 h → não excede', dutyToFtlDay({ report_time: '07:00', block_on: '21:00', sectors: 0, kind: 'training' }).psv.over, false);
+  eq('Não-PSV: escritório 13:30 → não excede', dutyToFtlDay({ report_time: '07:00', block_on: '20:30', sectors: 0, kind: 'office' }).psv.over, false);
+  eq('Não-PSV: posicionamento isolado 13:30 → não excede', dutyToFtlDay({ report_time: '05:00', block_on: '18:30', sectors: 1, kind: 'positioning' }).psv.over, false);
+  eq('Não-PSV: sem hora-limite de calços', dutyToFtlDay({ report_time: '07:00', block_on: '21:00', sectors: 0, kind: 'training' }).psv.latest, null);
+  // CS FTL.1.225(b)(1): o standby fora do aeroporto tem no máximo 16 h.
+  eq('Standby em casa de 17 h → acima das 16 h', dutyToFtlDay({ report_time: '06:00', block_on: '23:00', sectors: 0, kind: 'standby_home' }).psv.sbOver, true);
+  eq('Standby em casa de 16 h → dentro', !!dutyToFtlDay({ report_time: '06:00', block_on: '22:00', sectors: 0, kind: 'standby_home' }).psv.sbOver, false);
+
+  // A-234: standby em casa 05:00–11:00 e voo com apresentação às 11:00 até às 20:30. O standby acaba na apresentação
+  // (CS FTL.1.225(b)(5)) e não entra no PSV: PSV 9:30 (desde as 11:00), não 15:30 desde as 05:00. A janela 05:00–07:00
+  // não conta para a redução ((b)(9)): 4 h contam, abaixo das 6 h → máximo 13:00 (11:00, 2 setores) → dentro.
+  // Serviço 210: 25 % × 6 h + 9:30 = 11:00 (a app dava 15:30, "ilegal").
+  const sbFl = dayFtlFromDuties([
+    { report_time: '05:00', block_on: '11:00', sectors: 0, kind: 'standby_home' },
+    { report_time: '11:00', block_on: '20:30', sectors: 2, kind: 'flight', flight_minutes: 420 },
+  ]);
+  eq('A-234: PSV desde a apresentação do voo (9:30)', sbFl.psv.result, '09:30');
+  eq('A-234: máximo 13:00 (sem redução)', sbFl.psv.max, '13:00');
+  eq('A-234: dentro', sbFl.psv.over, false);
+  eq('A-234: serviço 210 = 25 % do standby + voo = 11,0 h', sbFl.servico, 11);
+  // A-167: standby em casa 05:00–13:00, apresentação às 13:30, calços às 20:00 (2 setores, Quadro 2 às 13:30 = 12:45).
+  // Conta 07:00–13:30 = 6:30 ((b)(9)); a redução é o que passa das 6 h = 0:30 → máximo 12:15. PSV 6:30 → dentro.
+  const sbFl2 = dayFtlFromDuties([
+    { report_time: '05:00', block_on: '13:00', sectors: 0, kind: 'standby_home' },
+    { report_time: '13:30', block_on: '20:00', sectors: 2, kind: 'flight' },
+  ]);
+  eq('A-167: PSV 6:30', sbFl2.psv.result, '06:30');
+  eq('A-167: máximo 12:15', sbFl2.psv.max, '12:15');
+  eq('A-167: dentro', sbFl2.psv.over, false);
+  // Standby de aeroporto 06:00–10:00 e voo às 10:00: o standby conta 100 % e o teto combinado aplica-se.
+  const apFl = dayFtlFromDuties([
+    { report_time: '06:00', block_on: '10:00', sectors: 0, kind: 'standby_airport', accommodation: true },
+    { report_time: '10:00', block_on: '19:00', sectors: 2, kind: 'flight' },
+  ]);
+  eq('Aeroporto→voo: PSV desde as 10:00 (9:00)', apFl.psv.result, '09:00');
+  eq('Aeroporto→voo: máximo min(13:00, 16:00 − 4:00) = 12:00', apFl.psv.max, '12:00');
+  eq('Aeroporto→voo: serviço 210 = 4 h + 9 h = 13 h', apFl.servico, 13);
 }
 
 // ─────────── 205(d)(1) — prolongamento inferido + frequência (máx 2/7d) ───────────
@@ -640,7 +709,7 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 
   // (11) Limite COMBINADO do standby (CS FTL.1.225): standby + PSV > 16h (aeroporto) → stdbyOver.
   const baseC = computeFdp({ state: 'acc', reportMin: M('06:00'), endMin: M('18:00'), sectors: 1 });
-  const sbC = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: baseC.maxFdpMin });
+  const sbC = computeStandby({ type: 'airport', standbyH: 6, maxFdpMin: baseC.maxFdpMin, actualFdpMin: baseC.actualFdpMin });
   const dCombined = computeDuty({ state: 'acc', report: '06:00', end: '18:00', sectors: 1, preStandby: { type: 'airport', standbyH: 6 } });
   eq('Standby combinado: = calculador golden', dCombined.fdp.stdbyOver, sbC.combinedOver);
   eq('Standby combinado: aeroporto 6h + PSV > 16h → true', dCombined.fdp.stdbyOver, true);

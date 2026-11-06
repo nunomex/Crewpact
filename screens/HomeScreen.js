@@ -10,7 +10,7 @@ import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { routeDistancesNM } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
-import { computeDutyTime, computeFlightTime, computeDuty, liveFdpVerdict } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -280,7 +280,7 @@ export default function HomeScreen({ navigation }) {
   };
   const isFocused = useIsFocused();
   const { width: winW } = useWindowDimensions();
-  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
+  const { user, lang, ftlSnap, dayLog, duties, company, calendarId, ae, crewCategory, crewContract, crewFleet, crewHistory, isPilot, rosterChanges, aeEvents, validities, markLiveSync, base, homeBaseAt, hotels, postFlightMin, vacationDaysYear, openSimulation, openExtra, setHomeNight, serviceStart, rosterLog, notify } = useContext(AppContext);
   // O COMANDANTE (easyJet CPT · TAP CTE): a discrição do 205(f) é dele — para o FO e a cabine é informação (auditoria
   // do tripulante, 2026-11-04).
   const isCommander = !!isPilot && ['CPT', 'CTE'].includes(String(crewCategory || '').toUpperCase());
@@ -524,10 +524,10 @@ export default function HomeScreen({ navigation }) {
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: flight.sectors, isPilot });
       ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndSectors = flight.sectors; ndDuty = d;
     } else if (reg && !reg.deleted && reg.report_time && reg.block_on) {
-      // Serviço REGISTADO: crew-aware (isPilot) + casos especiais gravados (205 c/f/g, standby).
-      const sp = reg.special || {};
-      const d = computeDuty({ state: 'acc', report: reg.report_time, end: reg.block_on, sectors: reg.sectors || 0, isPilot, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null });
-      ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndSectors = reg.sectors || null; ndDuty = d;
+      // Serviço REGISTADO: o MESMO cálculo do dayLog (ftlForDuty: pós-voo, casos especiais, base/fora, split).
+      // Um serviço que não é PSV (standby em casa, formação, escritório) não tem PSV máximo (ORO.FTL.105(12)).
+      const d = ftlForDuty(reg, { postFlightMin, isPilot, base: flight.dateISO ? homeBaseAt(flight.dateISO) : base });
+      if (d && d.isFdp) { ndPsvMax = d.fdp.maxFdpStr; ndPsvActual = d.fdp.actualFdpStr; ndSectors = reg.sectors || null; ndDuty = d; }
     } else if (flight.report) {
       // Só com apresentação REAL do calendário — não inventa dep − 1 h.
       const d = computeDuty({ state: 'acc', report: flight.report, end: flight.arrTime, sectors: 1, isPilot });
@@ -729,8 +729,8 @@ export default function HomeScreen({ navigation }) {
   // ── PÓS-VOO: o balanço do dia fechado (motor computeDuty, o MESMO dos golden) ──
   const closeD = (todayEnded && !closeMulti) ? (() => {
     try {
-      const sp = todayEnded.special || {};
-      return computeDuty({ state: 'acc', report: todayEnded.report_time, end: todayEnded.block_on, sectors: todayEnded.sectors || 0, isPilot, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null });
+      const r = ftlForDuty(todayEnded, { postFlightMin, isPilot, base: homeBaseAt(todayISO) });
+      return r && r.isFdp ? r : null;   // escritório/formação/standby em casa não são PSV (ORO.FTL.105(12))
     } catch { return null; }
   })() : null;
   const closeBlock = (todayEnded && !closeMulti && todayEnded.flight_minutes)

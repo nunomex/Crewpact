@@ -11,7 +11,7 @@ import useTabBarSpace from '../hooks/useTabBarSpace';
 import { t } from '../data/i18n';
 import { select, warning, success } from '../data/haptics';
 import { AppContext, isoDay, toZulu } from '../data/appContext';
-import { computeDuty, fatigueFromDuty } from '../ftl';
+import { ftlForDuty, fatigueFromDuty } from '../ftl';
 import { sectorDistanceNM } from '../data/airports';
 import { roleEurFor } from '../data/perdiem';
 import { nightStopStation, hotelMapsUrl, hotelTelUrl } from '../data/hotels';
@@ -104,14 +104,14 @@ export default function DutyDetailScreen({ route, navigation }) {
   const pf = !isFlight ? 0 : (duty.signOff && duty.block_on)
     ? (() => { const on = clkMin(duty.block_on), so = clkMin(duty.signOff); return (on == null || so == null) ? (ctxAll.postFlightMin || 0) : (so >= on ? so - on : so + 1440 - on); })()
     : (ctxAll.postFlightMin || 0);
+  // O MESMO cálculo do dayLog e do Início (ftlForDuty, auditoria A-175): pós-voo, casos especiais, split das legs,
+  // base/fora pela localização real e a tripulação DESSE dia. `pf` (acima) fica para a linha do débrief.
+  const d = ftlForDuty(duty, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD });
+  const fat = (d && hasEnd && d.isFdp) ? fatigueFromDuty(d) : null;
+  // Não é PSV (standby em casa, formação, escritório, standby de aeroporto com alojamento) → nunca "excede" o Quadro 2.
+  const over = !(d && d.isFdp) ? false : !!(d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
   const spD = duty.special || {};
-  const d = duty.report_time
-    ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf,
-        isPilot: ctxAll.isPilot, augmented: spD.augmented || null, delayedFrom: spD.delayedFrom || null, preStandby: spD.preStandby || null, discretion: !!spD.discretion })
-    : null;
-  const fat = (d && hasEnd) ? fatigueFromDuty(d) : null;
-  const sbAccD = kind === 'standby_airport' && !!duty.accommodation;
-  const over = sbAccD ? false : !!(d && d.fdp && (d.discretion ? d.discretion.over : d.fdp.over));
+  const sbAccD = !!d && !d.isFdp;   // não é PSV → sem teto, sem calços, "Duração" em vez de "FDP realizado"
 
   // ── LIMITES DO ACORDO (esboço design/limites-ae.html, ecrã 4, aprovado 2026-11-03) — só nos dias na TAP ──
   // Vale o limite MAIS APERTADO entre o AE e a regra europeia (D1), com as duas fontes. O limite do AE
@@ -351,7 +351,8 @@ export default function DutyDetailScreen({ route, navigation }) {
               aeOver && { k: l('Excesso (acordo)', 'Excess (agreement)'), v: fmtDur(aeFdp.value - aeFdp.limit), color: PELE.red },
               aeNext && { k: l('Próxima saída de calços', 'Next off-blocks'), v: `${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`,
                 node: aeTagged(`${fmtClock(aeNext.at)}${Math.floor(aeNext.at / 1440) > svcAe.dn ? ' (+1)' : ''}`), prova: aeRestProva },
-              sbAccD && { k: l('PSV', 'FDP'), v: l('não se aplica — standby (225)', 'not applicable — standby (225)') },
+              sbAccD && { k: l('PSV', 'FDP'), v: kind === 'standby_airport' ? l('não se aplica — standby (225)', 'not applicable — standby (225)')
+                : l('não se aplica — sem setores (ORO.FTL.105(12))', 'not applicable — no sectors (ORO.FTL.105(12))') },
               (spD.discretion && d.discretion) && { k: l('Discrição 205(f)', 'Discretion 205(f)'),
                 v: d.discretion.over
                   ? l(`ACIMA da margem (máx c/ discrição ${d.discretion.maxStr})`, `BEYOND the margin (max w/ discretion ${d.discretion.maxStr})`)
@@ -454,9 +455,9 @@ export default function DutyDetailScreen({ route, navigation }) {
           <>
             <Sec icon="ellipsis">{l('Outros serviços neste dia', 'Other services this day')}</Sec>
             <Panel rows={duty.extra.map((sv, i) => {
-              const rr = sv.report_time ? computeDuty({ state: 'acc', report: sv.report_time, end: sv.block_on || null, sectors: sv.sectors || 0, postFlightMin: (!sv.kind || sv.kind === 'flight') ? (ctxAll.postFlightMin || 0) : 0 }) : null;
+              const rr = ftlForDuty(sv, { postFlightMin: ctxAll.postFlightMin || 0, isPilot: isPilotD, base: baseD });
               const lbl = (!sv.kind || sv.kind === 'flight') ? (sv.route || l('Voo', 'Flight')) : t('duties.kind.' + sv.kind, lang);
-              const psv = (rr && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;
+              const psv = (rr && rr.isFdp && rr.fdp.actualFdpStr) ? rr.fdp.actualFdpStr : null;   // só PSV de quem tem setores
               return { k: `${i + 2}. ${lbl}`, v: `${sv.report_time || '—'} → ${sv.block_on || '—'}${psv ? `  ·  PSV ${psv}` : ''}` };
             })} />
             <Text style={s.foot}>{l('Os serviços do dia somam nos 28 dias (210). Vê o repouso entre eles na folha do dia.', 'The day’s services sum over 28 days (210). See the rest between them in the day detail.')}</Text>

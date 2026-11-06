@@ -9,7 +9,7 @@ import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { prospectiveDuty } from '../data/rosterImport';
-import { computeDuty } from '../ftl';
+import { ftlForDuty } from '../ftl';
 import { routeDistancesNM } from '../data/perdiem';
 import { validityStatus, validityLabel } from '../data/validities';
 import { AppContext } from '../data/appContext';
@@ -44,7 +44,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // Prospetivo (legal · fadiga · acumulados 28 d, com este serviço incluído) + motor FTL (PSV · repouso).
   const prosp = prospectiveDuty(duty, dayLog, null, postFlightMin || 0, isPilot, base);
   const sp = duty.special || {};
-  const d = duty.report_time ? computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on || null, sectors: duty.sectors || 0, postFlightMin: pf, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot }) : null;
+  const d = ftlForDuty(duty, { postFlightMin: postFlightMin || 0, isPilot, base });   // o mesmo cálculo do dayLog
 
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;
@@ -90,8 +90,9 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   const wordTxt = verdict === 'bad' ? l('Excede', 'Over') : verdict === 'ok' ? l('Dentro', 'Within') : l('E se…', 'What if…');
   const wordColor = verdict === 'bad' ? P.red : verdict === 'ok' ? P.ok : P.grey;
   const reasons = verdict === 'bad' ? prosp.issues.map(issueTxt).filter(Boolean) : [];
-  const psvRatio = (d && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
-  const latest = d && d.latestOnBlockStr ? `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}` : null;
+  // Só um PSV (com setores) tem rácio e hora-limite de calços (ORO.FTL.105(12); auditoria A-247).
+  const psvRatio = (d && d.isFdp && d.fdp.actualFdpStr && d.fdp.maxFdpStr) ? `${d.fdp.actualFdpStr} / ${d.fdp.maxFdpStr}` : null;
+  const latest = d && d.isFdp && d.latestOnBlockStr ? `${d.latestOnBlockStr}${d.latestOnBlockNextDay ? ' (+1)' : ''}` : null;
   // Kick em texto plano (para o VoiceOver ler o herói como UMA frase). Com "Dentro", a frase completa-o.
   const kickPlain = verdict === 'bad' ? reasons.join(' · ')
     : verdict === 'ok' ? (psvRatio

@@ -1,7 +1,7 @@
 // Importação de escala: atividade do calendário (getDutiesInRange) → linha de `duty`
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
-import { dayFtlFromDuties, computeDutyTime, computeFlightTime, computeDuty, fatigueFromDuty } from '../ftl';
+import { dayFtlFromDuties, computeDutyTime, computeFlightTime, ftlForDuty, fatigueFromDuty } from '../ftl';
 import { classify } from './rosterDiff';
 import { airportCoord } from './airports';
 
@@ -83,12 +83,12 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   if (duty28 && duty28.over) issues.push({ type: 'duty28', done: duty28.done, limit: duty28.limit });
   if (flight28 && flight28.over) issues.push({ type: 'flight28', done: flight28.done, limit: flight28.limit });
   // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
-  const sp = duty.special || {};
-  const d = computeDuty({ state: 'acc', report: duty.report_time, end: duty.block_on, sectors: duty.sectors || 0, inBase: true, augmented: sp.augmented || null, delayedFrom: sp.delayedFrom || null, preStandby: sp.preStandby || null, isPilot });
-  // Limite COMBINADO do standby (CS FTL.1.225): standby + PSV > 16h (aeroporto) / > 18h acordado
-  // (casa) / standby > 16h → ilegal, separado do PSV-over.
-  if (d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
-  const fatigue = fatigueFromDuty(d);
+  // O mesmo cálculo do dayLog (ftlForDuty). Limite COMBINADO do standby (CS FTL.1.225): standby + PSV REAL > 16 h
+  // (aeroporto) / > 18 h acordado (casa) / standby > 16 h → aviso separado do PSV-over.
+  const d = ftlForDuty(duty, { postFlightMin, isPilot, base });
+  if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
+  if (ftl.psv && ftl.psv.sbOver) issues.push({ type: 'standby', kind: 'maxStandby' });   // standby em casa > 16 h (225(b)(1))
+  const fatigue = d && d.isFdp ? fatigueFromDuty(d) : null;
   return {
     ok: issues.length === 0,
     fdpOver: ftl.psv.over,

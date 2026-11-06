@@ -69,6 +69,10 @@ export function buildTodayItems(ctx, lang) {
       answer = l('Não — PSV excede o máximo', 'No — FDP over the max') + (legal.excess ? ` (+${legal.excess})` : '');
       suggestion = l('Reduzir o serviço ou, se aplicável, recorrer a prolongamento (máx 2 em 7 dias). Confirma sempre com a companhia.',
         'Shorten the duty or, if applicable, use an extension (max 2 in 7 days). Always confirm with the company.');
+    } else if (legal.kind === 'standbyOver') {
+      answer = l('Não — standby acima de 16 h', 'No — standby over 16 h');
+      suggestion = l('O standby fora do aeroporto tem no máximo 16 h (CS FTL.1.225(b)(1)). Confirma com a companhia.',
+        'Standby other than airport standby is at most 16 h (CS FTL.1.225(b)(1)). Confirm with the company.');
     } else if (legal.kind === 'limitOver') {
       answer = l('Não — ', 'No — ') + catLabel(legal.cat, lang) + ' ' + l('acima do limite', 'over the limit');
       suggestion = l('Limite cumulativo ultrapassado — não aceites mais serviço nesta janela. Confirma com a companhia.',
@@ -196,7 +200,7 @@ export function buildTodayItems(ctx, lang) {
     switch (it.id) {
       case 'legal':     return r.psv && r.psv.latest && r.kind === 'legal'
         ? { topic: l('Calços até', 'On-blocks by'), short: `${r.psv.latest}${r.psv.latestNextDay ? '+1' : ''}` }
-        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : r.kind === 'limitOver' ? l('Excede', 'Over') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
+        : { topic: l('Limites', 'Limits'), short: r.kind === 'psvOver' ? (r.excess ? `+${r.excess}` : l('Excede', 'Over')) : (r.kind === 'limitOver' || r.kind === 'standbyOver') ? l('Excede', 'Over') : r.kind === 'noData' ? '—' : l('Dentro', 'Within') };
       case 'headroom':  return { topic: l('Margem', 'Margin'), short: r.kind === 'noData' ? '—' : it.status === 'bad' ? l('Excede', 'Over') : `${Math.round(r.headroom)}h` };
       case 'next':      return { topic: l('Próximo', 'Next'), short: r.none ? '—' : dateLbl(r.iso, todayISO, lang) };
       case 'rest':      return { topic: l('Descanso', 'Rest'), short: it.status === 'neutral' ? '—' : hhmm(r.actualMin) };
