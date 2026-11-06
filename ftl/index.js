@@ -28,7 +28,7 @@ import { validateDuty } from './validators/validateDuty';
 import { validateRest } from './validators/validateRest';
 import { validateLimits, computeDutyTime } from './validators/validateLimits';
 import { entryMin } from './calculators/cumulativeCalculator';
-import { withinBand, fmtBandRange, bandRangeMins } from './rules/fdpRules';
+import { withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel } from './rules/fdpRules';
 import { DUTY_WINDOWS, FLIGHT_WINDOWS } from './rules/flightTimeRules';
 import { QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED } from './constants/tables';
 import { parseHhmm, minToHhmm, durationMin } from './utils/time';
@@ -549,7 +549,7 @@ export const dayFtlFromDuties = (list = [], opts = {}) => {
       flight_minutes: blk.reduce((s, p) => s + (Number(p.duty.flight_minutes) || 0), 0),
       kind: 'flight', special: first.special || null, splitBreakH, splitBreakStart,
       route: last.route || null,                    // fim do FDP combinado = onde o ÚLTIMO serviço aterra (base/fora)
-      accommodation: !!first.accommodation,          // alojamento na pausa (opt-in) → conta a pausa toda (220 d/e)
+      accommodation: first.accommodation || false,   // alojamento na pausa (opt-in): 'basic' | true (adequado) — 220 d/e
     };
     return dutyToFtlDay(combined, opts) || blk[0].entry;
   };
@@ -634,7 +634,7 @@ export {
   computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
   computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence,
   computeFatigue,
-  withinBand, fmtBandRange, bandRangeMins,
+  withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel,
   DUTY_WINDOWS, FLIGHT_WINDOWS, QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,
 };
 export * from './utils/time';

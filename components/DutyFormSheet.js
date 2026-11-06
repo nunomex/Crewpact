@@ -199,7 +199,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const isNew = !candidate && (editExtra == null) && (append || !(duties[iso] && !duties[iso].deleted));
     setPhase(isNew ? 'type' : 'form'); setStep(0);
     syncSpecial(candidate ? candidate.special : (editExtra != null ? exObj?.special : (append ? null : duties[iso]?.special)));
-    const acc = !!(candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation)));
+    const accRaw = candidate ? candidate.accommodation : (editExtra != null ? exObj?.accommodation : (append ? false : duties[iso]?.accommodation));
+    const acc = accRaw === 'basic' ? 'basic' : !!accRaw;   // false | 'basic' | true (adequado) — CS FTL.1.220(d)(e)
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -216,7 +217,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const goDate = (delta) => {
     const jump = () => {
       const iso = addDays(form.date, delta);
-      setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(!!duties[iso]?.accommodation); setLegInput('');
+      setForm(loadFor(iso)); syncSpecial(duties[iso]?.special); setAccOn(duties[iso]?.accommodation === 'basic' ? 'basic' : !!duties[iso]?.accommodation); setLegInput('');
       setAttemptedSave(false); setFlightErr(false); setDetectMsg(null);
       needBaseline.current = true;
     };
@@ -688,7 +689,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Alojamento disponibilizado', 'Accommodation provided')}</Text>
                   <Text style={s.advSub}>ORO.FTL.225(e)</Text>
                 </View>
-                <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
+                <Switch value={!!accOn} onValueChange={(v) => { select(); setAccOn(v); }}
                   trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
               <Text style={s.routeHint}>{accOn
@@ -875,14 +876,22 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                   <Text style={s.advTit}>{l('Alojamento na pausa (split)', 'Accommodation during break (split)')}</Text>
                   <Text style={s.advSub}>220(d)(e)</Text>
                 </View>
-                <Switch value={accOn} onValueChange={(v) => { select(); setAccOn(v); }}
-                  trackColor={{ true: C.ink, false: C.line }} thumbColor="#fff" ios_backgroundColor={C.line} />
               </View>
-              {accOn ? (
-                <View style={s.advInset}>
-                  <Text style={s.advHint}>{l('Só conta se houver uma pausa em terra ≥3h neste serviço. Com alojamento adequado, a pausa toda estende o PSV (inclui >6h/WOCL); sem, só até 6h.', 'Only applies if there is a ground break ≥3h in this duty. With suitable accommodation the whole break extends the FDP (incl. >6h/WOCL); without, only up to 6h.')}</Text>
-                </View>
-              ) : null}
+              {/* CS FTL.1.220(d)(e): sem alojamento não há extensão; com alojamento não adequado, só até 6 h e fora do
+                  WOCL; com alojamento adequado (quarto), a pausa toda. Por omissão: nenhum (auditoria A-257). */}
+              <View style={s.advInset}>
+                <SegRow s={s} value={accOn === true ? 'suitable' : accOn === 'basic' ? 'basic' : 'none'}
+                  onChange={(v) => { select(); setAccOn(v === 'suitable' ? true : v === 'basic' ? 'basic' : false); }} options={[
+                    { id: 'none', label: l('Nenhum', 'None') },
+                    { id: 'basic', label: l('Sala', 'Lounge') },
+                    { id: 'suitable', label: l('Quarto', 'Room') },
+                  ]} />
+                <Text style={s.advHint}>{accOn === true
+                  ? l('Alojamento adequado (quarto): a pausa toda estende o PSV, também a parte acima de 6 h e a do WOCL.', 'Suitable accommodation (room): the whole break extends the FDP, including over 6 h and in the WOCL.')
+                  : accOn === 'basic'
+                    ? l('Alojamento que não é um quarto: só conta até 6 h de pausa, fora das 02:00–05:59.', 'Accommodation that is not a room: only up to 6 h of break counts, outside 02:00–05:59.')
+                    : l('Sem alojamento, a pausa em terra não estende o PSV. Marca o alojamento se o houve (pausa ≥ 3 h).', 'Without accommodation the ground break does not extend the FDP. Mark it if there was one (break ≥ 3 h).')}</Text>
+              </View>
               <View style={[s.advRow, s.advDivider]}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={s.advTit}>{l('Discrição do comandante usada', "Commander's discretion used")}</Text>

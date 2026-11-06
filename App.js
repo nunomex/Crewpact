@@ -365,7 +365,7 @@ export default function App() {
           nightStop: !!fields.nightStop,      // paragem nocturna (abono AE, Art. 39)
           // Alojamento na pausa do split-duty (opt-in, CS FTL.1.220 d/e): conta a pausa toda (>6h/WOCL)
           // para a extensão. Preserva-se na edição que não lhe toca (como snap/legs). Persiste em roster_meta.
-          accommodation: ('accommodation' in fields) ? !!fields.accommodation : (ex?.accommodation ?? false),
+          accommodation: ('accommodation' in fields) ? (fields.accommodation || false) : (ex?.accommodation ?? false),   // false | 'basic' | true (220 d/e)
           // ORIGEM imutável + SNAPSHOT (Fase 4) + LEGS (nº de voo p/ "ao vivo"): só mudam
           // se vierem nos fields (import); a edição manual NÃO lhes toca → uma importada
           // editada continua 'calendar' e mantém os números de voo.
@@ -425,7 +425,7 @@ export default function App() {
     report_time: f.report_time || null, block_off: f.block_off || null, block_on: f.block_on || null,
     sectors: f.sectors || 0, flight_minutes: f.flight_minutes || 0, route: f.route || null,
     kind: f.kind || 'flight', nightStop: !!f.nightStop, signOff: f.signOff || null,
-    legs: f.legs || null, special: f.special || null, accommodation: !!f.accommodation,
+    legs: f.legs || null, special: f.special || null, accommodation: f.accommodation || false,
     role: f.role || null, dayOffWorked: f.dayOffWorked || null, officeType: f.officeType || null, eLearning: !!f.eLearning, source,
   });
   // A primária na forma de duty-irmã (p/ recalcular o dia com dayFtlFromDuties).

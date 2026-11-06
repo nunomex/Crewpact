@@ -26,7 +26,7 @@ const cleanDuties = (duties = {}) => {
       dayOffWorked: d.dayOffWorked || null,        // folga publicada trabalhada (ddo/wfly)
       officeType: d.officeType || null,            // dia de escritório OFC4/OFC8 (Anexo I.14)
       eLearning: !!d.eLearning,                    // formação e-learning (sem pagamento variável)
-      accommodation: !!d.accommodation,            // alojamento (split 220 d/e · standby 225(e))
+      accommodation: d.accommodation || false,     // alojamento (split 220 d/e · standby 225(e))
       source: d.source || 'manual',
     };
   }

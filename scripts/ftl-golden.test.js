@@ -193,7 +193,22 @@ eq('TZ <4h não aplicável', computeTimeZoneRest({ diffH: 3, elapsedH: 30 }).app
 // CS FTL.1.220(b): a pausa exclui 30 min (pré/pós-voo+deslocação) antes do +50%.
 eq('Split 4h alojamento → líquida 3:30 → +1:45', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 4, splitBreakStartMin: M('10:00'), accommodation: true }), M('14:45'));
 eq('Split 3h → líquida 2:30 (<3h) → sem extensão', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 3, splitBreakStartMin: M('10:00'), accommodation: true }), M('13:00'));
-eq('Split sem alojamento: teto 6h domina', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 8, splitBreakStartMin: M('10:00'), accommodation: false }), M('16:00'));
+// CS FTL.1.220(e): com alojamento que não é "adequado", a parte acima de 6 h e a do WOCL não contam.
+eq('Split com alojamento (não adequado): teto 6h domina', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 8, splitBreakStartMin: M('10:00'), accommodation: 'basic' }), M('16:00'));
+// CS FTL.1.220(e)(1) "accommodation is provided": SEM alojamento nenhum não há extensão (auditoria A-257/A-175 —
+// a app estendia qualquer pausa de 3 h ou mais). É o lado seguro até o tripulante marcar o alojamento.
+eq('Split SEM alojamento → sem extensão', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 8, splitBreakStartMin: M('10:00'), accommodation: false }), M('13:00'));
+eq('Split sem indicação → sem extensão', fdpMax({ state: 'acc', reportMin: M('06:00'), sectors: 1, splitBreakH: 4, splitBreakStartMin: M('10:00') }), M('13:00'));
+// A-147/A-163: pausa que atravessa a meia-noite — a parte no WOCL (02:00–05:59) não conta.
+// 23:00 → 04:30 (5:30 brutas, 5:00 líquidas): sai 02:00–04:00 → contam 3:00 → +1:30; 18:00, 2 setores → 11:00 + 1:30.
+eq('A-147: pausa 23:00–04:30 → teto 12:30 (a app dava 13:30)', fdpMax({ state: 'acc', reportMin: M('18:00'), sectors: 2, splitBreakH: 5.5, splitBreakStartMin: M('23:00'), accommodation: 'basic' }), M('12:30'));
+eq('A-163: splitCountedBreakMin(330, 23:00) = 180', ftl.splitCountedBreakMin(330, M('23:00'), 'basic'), 180);
+eq('A-163: splitCountedBreakMin(360, 22:30) = 210', ftl.splitCountedBreakMin(360, M('22:30'), 'basic'), 210);
+eq('Pausa à 01:00: 5:00 líquidas, 4:00 no WOCL → conta 1:00', ftl.splitCountedBreakMin(330, M('01:00'), 'basic'), 60);
+// A-153: sem hora de início da pausa, com alojamento não adequado, só até 6 h.
+eq('A-153: sem hora, 8 h de pausa → 6 h contam', ftl.splitCountedBreakMin(480, null, 'basic'), 360);
+// Alojamento adequado (true ou 'suitable') → a pausa toda conta, também a do WOCL.
+eq('Adequado: 23:00–04:30 conta tudo (5:00)', ftl.splitCountedBreakMin(330, M('23:00'), 'suitable'), 300);
 
 // ─────────────────────────────── Limites cumulativos (ORO.FTL.210) ─────────────────────────
 {
@@ -869,16 +884,19 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const { dayFtlFromDuties } = ftl;
   // 2 serviços na base, 10h de intervalo (< 12h mín 235, ≥ 3h) → SPLIT DUTY: NÃO são 2 FDP — é 1 FDP
   // 06:00→23:00 = 17h ("the break itself is fully considered as FDP", ORO.FTL.220). Máx = base(06:00·2
-  // setores)=13:00 + extensão 50% (pausa 10h, sem alojamento → conta 6h → +3:00) = 16:00 → ILEGAL +01:00.
-  const splitBad = dayFtlFromDuties([
-    { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180 },
+  // setores)=13:00 + extensão 50% (pausa 10h, alojamento não adequado → conta 6h → +3:00) = 16:00 → ILEGAL +01:00.
+  // Sem alojamento marcado não há extensão (CS 220(e)(1), auditoria A-257) → máx 13:00 → excede 4:00.
+  const splitPair = (acc) => [
+    { report_time: '06:00', block_on: '10:00', sectors: 1, flight_minutes: 180, accommodation: acc },
     { report_time: '20:00', block_on: '23:00', sectors: 1, flight_minutes: 120 },
-  ]);
+  ];
+  const splitBad = dayFtlFromDuties(splitPair('basic'));
   eq('Split ilegal: 1 FDP combinado = 17:00', splitBad.psv.result, '17:00');
   eq('Split ilegal: máx 16:00 (base 13:00 + ext 3:00)', splitBad.psv.max, '16:00');
   eq('Split ilegal: excede → over', splitBad.psv.over, true);
   eq('Split ilegal: excesso +01:00', splitBad.psv.excess, '01:00');
   eq('Split ilegal: serviço (210) conta a pausa → 17h', splitBad.servico, 17);
+  eq('Split sem alojamento: máx 13:00, excede 4:00', dayFtlFromDuties(splitPair(false)).psv.excess, '04:00');
   eq('Split ilegal: voo = 5h (a pausa não é voo)', splitBad.voo, 5);
   eq('Split ilegal: flag split exposto', splitBad.split, true);
   // Split que CABE: 2 serviços curtos com pausa de 3h30 → FDP combinado 09:00→14:30 = 5h30 << máx → legal.
@@ -903,11 +921,13 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const { dayFtlFromDuties } = ftl;
   // 1 atividade = 1 duty com 2 setores e pausa em terra de 4h (on-block 08:00 → off-block 12:00). O
   // motor DERIVA o split das próprias legs (não precisa de campo persistido à parte). Span 06:00→20:00
-  // = 14h; base(06:00·2)=13:00 + extensão (pausa 4h, sem alojamento → líquida 3h30 → +1:45) = 14:45.
-  const legDuty = { report_time: '06:00', block_on: '20:00', sectors: 2, legs: [{ off: '06:00', on: '08:00' }, { off: '12:00', on: '20:00' }] };
+  // = 14h; base(06:00·2)=13:00 + extensão (pausa 4h, com alojamento → líquida 3h30 → +1:45) = 14:45.
+  // Sem alojamento marcado → sem extensão (A-175: o Início dizia "dentro" e o Detalhe "excede" no mesmo serviço).
+  const legDuty = { report_time: '06:00', block_on: '20:00', sectors: 2, accommodation: 'basic', legs: [{ off: '06:00', on: '08:00' }, { off: '12:00', on: '20:00' }] };
   const legDay = dayFtlFromDuties([legDuty]);
   eq('Split das legs: máx estende para 14:45', legDay.psv.max, '14:45');
   eq('Split das legs: 14:00 ≤ 14:45 → LEGAL', legDay.psv.over, false);
+  eq('Split das legs sem alojamento: 13:00 → excede', dayFtlFromDuties([{ ...legDuty, accommodation: false }]).psv.over, true);
   // A MESMA duty SEM legs (sem info da pausa) → falso-ilegal 14:00 > 13:00 → prova que a derivação é o que salva.
   eq('Sem legs → falso-ilegal (14:00 > 13:00)', dayFtlFromDuties([{ report_time: '06:00', block_on: '20:00', sectors: 2 }]).psv.over, true);
   // Turnaround CURTO (<3h): pausa 2h (08:00→10:00) → NÃO é split, sem extensão (máx = base).
@@ -929,14 +949,16 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   const svc2 = { report_time: '20:30', block_on: '23:00', sectors: 1, flight_minutes: 120, legs: [{ dep: 'OPO', arr: 'LIS' }] };
   eq('Fora: pausa 10h30 ≥ 10h → REST, não split', dayFtlFromDuties([svc1, svc2], { base: 'LIS' }).split, false);
   eq('Sem base: 10h30 < 12h → split (conservador)', dayFtlFromDuties([{ ...svc1, legs: null }, { ...svc2, legs: null }], {}).split, true);
-  // ALOJAMENTO (opt-in): split de 8h. Sem alojamento a pausa contável limita-se a 6h; COM alojamento
-  // conta toda (220 d/e). FDP combinado 06:00→22:30 = 16h30. Sem: máx 16:00 (over). Com: máx 16:45 (legal).
+  // ALOJAMENTO (opt-in): split de 8h. Com alojamento NÃO adequado a pausa contável limita-se a 6h; com alojamento
+  // ADEQUADO conta toda (220 d/e). FDP combinado 06:00→22:30 = 16h30. Não adequado: máx 16:00 (over). Adequado: máx
+  // 16:45 (legal). Sem alojamento nenhum: sem extensão (13:00).
   const mk = (acc) => [
     { report_time: '06:00', block_on: '08:00', sectors: 1, flight_minutes: 120, accommodation: acc },
     { report_time: '16:00', block_on: '22:30', sectors: 1, flight_minutes: 300 },
   ];
-  eq('Split 8h SEM alojamento: máx 16:00', dayFtlFromDuties(mk(false), {}).psv.max, '16:00');
-  eq('Split 8h SEM alojamento: 16:30 > 16:00 → over', dayFtlFromDuties(mk(false), {}).psv.over, true);
+  eq('Split 8h alojamento não adequado: máx 16:00', dayFtlFromDuties(mk('basic'), {}).psv.max, '16:00');
+  eq('Split 8h alojamento não adequado: 16:30 > 16:00 → over', dayFtlFromDuties(mk('basic'), {}).psv.over, true);
+  eq('Split 8h SEM alojamento: sem extensão (13:00)', dayFtlFromDuties(mk(false), {}).psv.max, '13:00');
   eq('Split 8h COM alojamento: máx 16:45 (pausa toda conta)', dayFtlFromDuties(mk(true), {}).psv.max, '16:45');
   eq('Split 8h COM alojamento: 16:30 ≤ 16:45 → legal', dayFtlFromDuties(mk(true), {}).psv.over, false);
 }
