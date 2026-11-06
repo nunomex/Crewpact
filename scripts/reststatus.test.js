@@ -142,6 +142,27 @@ eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
   eq('recuperação: tipo desconhecido → incerto', [unk.status, (unk.issues[0] || {}).type, (unk.issues[0] || {}).uncertain], ['warn', 'recovery60', true]);
 }
 
+// CS FTL.1.235(b)(3)(i): na base, depois de uma rotação com 4 h de fuso ou mais, o repouso mínimo é em NOITES LOCAIS (tabela
+// pela diferença máxima e pelo tempo desde a apresentação para o 1.º PSV da rotação). LIS→EWR (−5 h, inverno): sai a 10 jan
+// às 10:00, volta a 13 jan às 07:00 → 69 h → linha ≤ 6, coluna 48–71:59 → 2 noites. E (b)(4): entre uma rotação para oeste e
+// outra para leste (DXB, +4 h), 3 noites locais na base.
+{
+  const out = { report_time: '10:00', block_on: '19:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'EWR', off: '11:00', on: '19:00', offZ: '11:00', onZ: '19:00' }] };
+  const back = { report_time: '23:00', block_on: '07:00', sectors: 1, legs: [{ dep: 'EWR', arr: 'LIS', off: '00:00', on: '07:00', offZ: '00:00', onZ: '07:00' }] };
+  const local = (rep, end) => ({ report_time: rep, block_on: end, sectors: 2, legs: [{ dep: 'LIS', arr: 'OPO', off: rep, on: end }] });
+  const T3 = '2026-01-13';
+  const r1 = restStatus({ '2026-01-10': out, '2026-01-12': back, '2026-01-14': local('06:00', '10:00') }, T3, at(T3, '12:00'), { base: 'LIS' });
+  eq('235(b)(3)(i): 1 noite depois de 69 h a −5 h → curto (pede 2)', [r1.status, r1.nightsRequired, r1.nightsActual], ['bad', 2, 1]);
+  const r2 = restStatus({ '2026-01-10': out, '2026-01-12': back, '2026-01-15': local('06:00', '10:00') }, T3, at(T3, '12:00'), { base: 'LIS' });
+  eq('235(b)(3)(i): 2 noites → ✓', [r2.status, r2.nightsRequired, r2.nightsActual], ['ok', 2, 2]);
+  const dxb = (rep) => ({ report_time: rep, block_on: '16:00', sectors: 1, legs: [{ dep: 'LIS', arr: 'DXB', off: '09:00', on: '16:00', offZ: '09:00', onZ: '16:00' }] });
+  const dxbBack = { report_time: '02:00', block_on: '10:00', sectors: 1, legs: [{ dep: 'DXB', arr: 'LIS', off: '03:00', on: '10:00', offZ: '03:00', onZ: '10:00' }] };
+  const r3 = restStatus({ '2026-01-10': out, '2026-01-12': back, '2026-01-15': dxb('08:00'), '2026-01-17': dxbBack }, T3, at(T3, '12:00'), { base: 'LIS' });
+  eq('235(b)(4): oeste → leste com 2 noites → curto (pede 3)', [r3.status, r3.nightsRequired], ['bad', 3]);
+  const r4 = restStatus({ '2026-01-10': out, '2026-01-12': back, '2026-01-16': dxb('08:00'), '2026-01-18': dxbBack }, T3, at(T3, '12:00'), { base: 'LIS' });
+  eq('235(b)(4): 3 noites → ✓', [r4.status, r4.nightsActual], ['ok', 3]);
+}
+
 // "A lei é que manda": falta um facto → o "Dentro dos limites?" diz incerto (nem "sim" nem "não"), com o que falta.
 {
   const lg = legalStatus({ psv: { result: '14:00', max: '13:00', maxHi: '14:45', uncertain: true, unknowns: ['accommodation'] } }, {});

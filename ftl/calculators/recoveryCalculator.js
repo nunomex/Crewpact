@@ -41,6 +41,19 @@ export const localNightsIn = (start, end) => {
   return n;
 };
 
+// O instante em que se completa a n-ésima noite local depois de `start` (8 h dentro de 22:00–08:00). null se n ≤ 0.
+export const nthLocalNightEnd = (start, n) => {
+  if (!start || !(n > 0)) return null;
+  let count = 0;
+  for (let k = -1; k < 60; k++) {
+    const ws = new Date(start.getFullYear(), start.getMonth(), start.getDate() + k, 22, 0);
+    const we = new Date(start.getFullYear(), start.getMonth(), start.getDate() + k + 1, 8, 0);
+    const s = Math.max(+ws, +start);
+    if (+we - s >= LOCAL_NIGHT_MIN * 60000) { count++; if (count === n) return new Date(s + LOCAL_NIGHT_MIN * 60000); }
+  }
+  return null;
+};
+
 // input: duties { 'YYYY-MM-DD': duty (+ extra) }; ctx { postFlightMin, base, baseAt(iso), type: 'early'|'late' }.
 // Devolve { duties: [{date, start, end, night, earlyStart, lateFinish, disruptive}], recoveries: [{start, end, h}],
 //           issues: [{ type: 'recovery168'|'recovery60'|'transitionNight', date, ... }] }.

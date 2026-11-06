@@ -22,7 +22,7 @@ import { computeExtensionUsage } from './calculators/extensionUsageCalculator';
 import { computeRest } from './calculators/restCalculator';
 import { classifyDisruptive } from './calculators/disruptiveCalculator';
 import { computeRestSequence } from './calculators/sequenceCalculator';
-import { computeRecovery, localNightsIn } from './calculators/recoveryCalculator';
+import { computeRecovery, localNightsIn, nthLocalNightEnd } from './calculators/recoveryCalculator';
 import { computeFatigue } from './calculators/fatigueCalculator';
 import { computeFlightTime } from './calculators/flightTimeCalculator';
 import { isNightDuty, overlapsWOCL } from './calculators/woclCalculator';
@@ -286,6 +286,21 @@ export const longestSectorOf = (duty = {}) => {
 // Diferença de fuso (h) do serviço face à base (CS FTL.1.235(b)(3)(ii): "an FDP involves a 4-hour time difference
 // or more"): a maior entre o fuso da base e o de cada aeroporto das legs, na data do serviço (hora de verão). 0 sem
 // base, sem legs ou sem fusos conhecidos (o lado comum: 10/12 h).
+// O mesmo, com SINAL: positivo = para leste da base, negativo = para oeste (CS FTL.1.235(b)(4): rotações alternadas).
+const tzSignedOf = (duty = {}, base = null, date = null) => {
+  const legs = Array.isArray(duty.legs) ? duty.legs : [];
+  const b = String(base || '').trim().toUpperCase();
+  if (!b || !legs.length) return 0;
+  const t = date ? Date.parse(`${date}T12:00:00Z`) : Date.now();
+  const ob = airportOffsetMin(b, t);
+  if (ob == null) return 0;
+  let best = 0;
+  for (const lg of legs) for (const ap of [lg.dep, lg.arr]) {
+    const o = ap ? airportOffsetMin(String(ap).toUpperCase(), t) : null;
+    if (o != null && Math.abs(o - ob) > Math.abs(best)) best = o - ob;
+  }
+  return best / 60;
+};
 const tzDiffOf = (duty = {}, base = null, date = null) => {
   const legs = Array.isArray(duty.legs) ? duty.legs : [];
   const b = String(base || '').trim().toUpperCase();
@@ -480,7 +495,7 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     // Planeado mas recusado, ou sem a escala para decidir: o máximo fica o do Quadro 2 e o repouso a seguir sobe na mesma.
     if (extUsed && (extRefused !== null || !(ctx.duties && ctx.date))) d = computeDuty({ ...args, restExtended: true });
   }
-  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH, acclim: ac };
+  return { ...d, isFdp, kind, pf, inBase: ib, extUsed, extRefused, tzDiffH, tzSignedH: tzSignedOf(duty, base, date), acclim: ac };
 };
 
 // Junta vários resultados do computeDuty (um por leitura possível de um facto que falta) num só: o máximo GARANTIDO é o
@@ -672,7 +687,7 @@ export const restAfterDuty = (prev, { inBase = true, base = null, postFlightMin 
   const ib = pr ? pr.inBase : inBase;
   const aug = prev.special && prev.special.augmented;
   const r = computeRest({ prevDutyMin: dutyMin, inBase: ib, tzDiffH: pr ? pr.tzDiffH : 0, inflightRest: !!(aug && aug.restClass), extended: !!(pr && pr.extUsed) });
-  return { endMin, dutyMin, inBase: ib, floorMin: r.floorMin, requiredMin: r.restMin, requiredPostOnlyMin: r.restPostOnlyMin, extended: r.extended, reason: r.reason };
+  return { endMin, dutyMin, inBase: ib, floorMin: r.floorMin, requiredMin: r.restMin, requiredPostOnlyMin: r.restPostOnlyMin, extended: r.extended, reason: r.reason, tzSignedH: pr ? pr.tzSignedH : 0 };
 };
 
 export const restBetweenDuties = (prev, next, { inBase = true, postFlightMin = 0 } = {}) => {
@@ -894,7 +909,7 @@ export {
   validateDuty, validateRest, isNightDuty, overlapsWOCL,
   computeAcclimatisation, computeDiscretion,
   computeInflightRest, computeFlightCrewFdp, computeStandby, computeReducedRest, computeTimeZoneRest,
-  computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence, computeRecovery, localNightsIn,
+  computeDelayedReporting, computeExtensionUsage, classifyDisruptive, computeRestSequence, computeRecovery, localNightsIn, nthLocalNightEnd,
   computeFatigue,
   withinBand, fmtBandRange, bandRangeMins, splitCountedBreakMin, splitAccLevel,
   DUTY_WINDOWS, FLIGHT_WINDOWS, QUADRO1_DIFF, QUADRO1_ELAPSED, TZ_REST_DIFF, TZ_REST_ELAPSED,

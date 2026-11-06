@@ -3,7 +3,7 @@
 // DECOMPOSIÇÃO do cálculo), SEM texto de UI nem idioma — a HojeScreen/HojeDetail é que
 // formata. Sem LLM: tudo sai dos motores golden-tested, por isso as sugestões e o
 // "como cheguei aqui" são factuais (a regra que deteta a condição é a que faz a conta).
-import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery } from '../ftl';
+import { computeDutyTime, computeFlightTime, restAfterDuty, computeRecovery, computeTimeZoneRest, localNightsIn, nthLocalNightEnd } from '../ftl';
 import { monthlyAe, aeMonthTotal } from './perdiem';
 import { eventCounts } from './aeEvents';
 
@@ -108,6 +108,32 @@ const requirementAfter = (svcs, prev, next = null) => {
   return { prevDutyMin, floorMin, requiredMin, extOption };
 };
 
+// CS FTL.1.235(b)(3)(i) e (4): de volta à base depois de uma ROTAÇÃO (serviços com repouso fora da base) com 4 h de fuso ou
+// mais, o repouso mínimo é em NOITES LOCAIS (tabela pela maior diferença e pelo tempo desde a apresentação para o 1.º PSV
+// da rotação até ao regresso — GM1 CS FTL.1.235(b)(3)); e entre uma rotação para oeste e outra para leste (ou o inverso),
+// pelo menos 3 noites locais na base. Devolve as noites exigidas (0 = a regra não se aplica).
+const rotationNights = (svcs, prev, next = null) => {
+  if (!prev || !prev.ra || !prev.ra.inBase) return 0;
+  const idx = svcs.indexOf(prev);
+  let j = idx;
+  while (j > 0 && svcs[j - 1].ra && svcs[j - 1].ra.inBase === false) j--;
+  const rot = svcs.slice(j, idx + 1);
+  const dir = (arr) => { let best = 0; for (const v of arr) { const t = (v.ra && v.ra.tzSignedH) || 0; if (Math.abs(t) > Math.abs(best)) best = t; } return best; };
+  let req = 0;
+  const a = rot.length > 1 ? dir(rot) : 0;
+  if (Math.abs(a) >= 4 && prev.end) {
+    const elapsedH = (+prev.end - +rot[0].start) / 3600000;
+    req = computeTimeZoneRest({ diffH: Math.abs(a), elapsedH }).nights || 0;
+  }
+  if (next) {
+    const nrot = [next];
+    for (let k = svcs.indexOf(next); k >= 0 && k + 1 < svcs.length && svcs[k].ra && svcs[k].ra.inBase === false; k++) nrot.push(svcs[k + 1]);
+    const b = nrot.length > 1 ? dir(nrot) : 0;
+    if (Math.abs(a) >= 4 && Math.abs(b) >= 4 && Math.sign(a) !== Math.sign(b)) req = Math.max(req, 3);
+  }
+  return req;
+};
+
 export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   const svcs = restServices(duties, ctx);
   // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus).
@@ -121,9 +147,13 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
   if (!prev.end) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
   const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, prev, next);
+  const nightsRequired = rotationNights(svcs, prev, next);
+  const nightsActual = nightsRequired ? localNightsIn(prev.end, next.start) : null;
+  const short = actualMin < requiredMin || (nightsRequired > 0 && nightsActual < nightsRequired);
   return {
-    id: 'rest', status: actualMin < requiredMin ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin,
+    id: 'rest', status: short ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin,
     prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
+    nightsRequired: nightsRequired || null, nightsActual,
   };
 }
 
@@ -135,7 +165,11 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
   const mine = svcs.filter((v) => v.iso === iso).sort((a, b) => +b.end - +a.end)[0];
   if (!mine) return null;
   const { requiredMin } = requirementAfter(svcs, mine, null);
-  return { untilMs: +mine.end + requiredMin * 60000, requiredMin, endMs: +mine.end };
+  // Noites locais na base depois de uma rotação com fuso (CS 235(b)(3)(i)): o repouso só acaba quando as tiver.
+  const nights = rotationNights(svcs, mine, null);
+  const nightEnd = nights ? nthLocalNightEnd(mine.end, nights) : null;
+  const untilMs = Math.max(+mine.end + requiredMin * 60000, nightEnd ? +nightEnd : 0);
+  return { untilMs, requiredMin, endMs: +mine.end, nightsRequired: nights || null };
 }
 
 // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)) — os avisos de [hoje − 1, hoje + 14]. O tipo de horário irregular

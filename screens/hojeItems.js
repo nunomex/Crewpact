@@ -143,6 +143,10 @@ export function buildTodayItems(ctx, lang) {
     let answer, suggestion = null;
     if (rest.status === 'neutral') {
       answer = l('Sem dados suficientes', 'Not enough data');
+    } else if (rest.status === 'bad' && rest.nightsRequired && rest.nightsActual < rest.nightsRequired && rest.actualMin >= rest.requiredMin) {
+      // CS FTL.1.235(b)(3)(i)/(4): depois de uma rotação com fuso, contam as NOITES LOCAIS na base, não só as horas.
+      answer = `${l('Não', 'No')} · ${rest.nightsActual} ${l('de', 'of')} ${rest.nightsRequired} ${l('noites locais na base', 'local nights at home base')}`;
+      suggestion = l('Depois de uma rotação com 4 h de fuso ou mais, o repouso na base conta-se em noites locais (8 h entre 22:00 e 08:00) — CS FTL.1.235(b)(3). Confirma com a companhia.', 'After a rotation with a 4 h time difference or more, rest at home base is counted in local nights (8 h between 22:00 and 08:00) — CS FTL.1.235(b)(3). Confirm with the company.');
     } else if (rest.status === 'bad') {
       answer = `${l('Não', 'No')} · ${hhmm(rest.actualMin)} (${l('mín', 'min')} ${hhmm(rest.requiredMin)})`;
       suggestion = l('Repouso abaixo do mínimo — deve estender e o PSV seguinte reduz. Confirma com a companhia.', 'Rest below the minimum — it must extend and the next FDP reduces. Confirm with the company.');
