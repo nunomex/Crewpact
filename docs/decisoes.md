@@ -37,6 +37,38 @@ leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos par
 
 ---
 
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 3, os pendentes (o Nuno: "tenta corrigir isto")
+
+`npm test` verde (limites TAP 568); pacote iOS gerado sem erros.
+- **Jornal Oficial (era para o advogado):** as 37 citações das validades, em pt e en, foram conferidas no PRÓPRIO ato publicado
+  no JO de onde vem cada secção (a marca ▼/► da versão consolidada diz qual) — todas lá estão. Tabela em `fontes/README.md`.
+- **Hora de referência da cabine no médio curso (era para o advogado):** o AE resolve-a — a Cl. 4.ª, n.º 14 define "Hora de
+  referência" para todo o acordo ("Hora do local a que o tripulante de cabine está aclimatizado"). O quadro passa a uma só
+  leitura: na base, a da base; depois de descanso num local a ≤ 2 h, a desse local (Cl. 23.ª, n.º 3 a) i)).
+- **Assistência no aeroporto, pilotos (era para o advogado):** o texto resolve-o — o n.º 7 da Cl. 19.ª abre com "contam para os
+  limites de serviço de voo" e a alínea a) diz "para todos os limites"; a b) tira a de casa "dos restantes limites". O n.º 5 diz
+  de onde se conta e que linha do quadro. A app mantém os 50 % somados (citações e convenção na regra P27). Fica só a
+  confirmação do advogado.
+- **Tempo de voo sem as horas de cada perna, a passar da meia-noite:** a parte de cada dia fica num intervalo e os limites de voo
+  (P25, P28, C34) dão "incerto" quando só o máximo passa (motivo `meia-noite`).
+- **A-133** resolvido pelo texto: a Cl. 6.ª, n.º 53 define a zona horária como a faixa de 15° "geralmente coincidente com o
+  fuso horário" — as zonas centradas que a app já usava (uma só contagem). A tabela geotime do ROV (Cl. 43.ª, n.º 5) não é pública. **A-134** um dia livre de 24 h não é folga semanal: mais de 5 dias entre duas folgas
+  de 48 h → incerto. **A-135** RAD de 12 h com 36 a 39 h livres (o transporte) na leitura estrita. **A-136** já estava (bloco 1).
+  **A-137** regra nova **P28** (pilotos: 75 h A320 / 80 h A330 de block por mês no planeamento, Cl. 15.ª, n.º 9; desde 1 ago
+  2023). **A-138** folga de 48 h no regresso depois de um PSV de 4 aterragens que acabou fora — "incerto" (o AE não diz se é o
+  PSV do regresso ou qualquer da rotação; o mesmo para o longo curso do n.º 13 b) e o n.º 14). **A-139** período crítico dos
+  pilotos no longo curso pela Cl. 6.ª, n.º 21 (`pilotCritShifts`). **A-140** assistência em casa no trimestre a 25 % e a 100 %
+  (incerto). **A-141** 5.º dia com assistência: chegada até às 20h00, entre as 18h00 e as 20h00 incerto.
+- As regras P27, C23, C11, C15, C34, P32 e P53 ganharam as citações (conferidas na página do BTE) e as convenções das leituras.
+- **Revisão independente — 5 erros, corrigidos:** o ecrã das horas mostrava o voo da meia-noite todo num dia (agora o
+  intervalo, "Incerto · pode chegar a X"); o P28 contava voos saídos de assistências, que não são do planeamento (Cl. 15.ª, n.º 3);
+  férias/doença pelo meio davam falso "folga-24h"; a assistência ativada contava duas vezes (acaba na apresentação: pilotos
+  Cl. 19.ª, n.º 4; cabine Cl. 17.ª, n.º 5 a)); o A-138 dava "excede" por uma só leitura. **Riscos que ficam:** a tabela geotime
+  do ROV; o mês do P28 (mês de calendário pela Cl. 11.ª, n.º 1); o 5.º dia com assistência pode ser "dentro" se a alínea a)
+  valer para o voo da assistência; o P38 também corre em rotações de médio curso (já era assim).
+
+---
+
 ## 2026-11-06 (noite) — AUDITORIA, BLOCO 3: limites TAP e validades "como diz a lei" (Opus 5.5)
 
 Golden primeiro (`scripts/ae-tap-limits.test.js` 526, `scripts/validities.test.js` 211), escrito a partir de `fontes/`;
@@ -93,10 +125,7 @@ Golden primeiro (`scripts/ae-tap-limits.test.js` 526, `scripts/validities.test.j
   advogado; R3 cabine, a meia-noite do "Dia" na hora local do tripulante (a app usa a da base); R4 a fronteira das 22h00/6h00 da
   Cl. 35.ª, n.º 3 (já era assim).
 
-**Pendente:** o tempo de voo de um voo que passa da meia-noite SEM as horas de cada perna ainda conta no dia em que começa
-(resto do A-132: devia ser "incerto"); A-133 a A-141 (dúvidas de leitura → Nuno/advogado). **Para o advogado:** conferir no
-Jornal Oficial as secções de `fontes/eu/` (a EUR-Lex diz que o consolidado não tem efeito jurídico) e a leitura da Cl. 23.ª,
-n.º 3 (cabine) no médio curso.
+**Pendentes fechados no mesmo dia** — ver a entrada "BLOCO 3, os pendentes" acima.
 **Ver no iPhone:** formulário das validades (programa do operador, validade anterior, a linha da lei, data escrita); validades
 antigas que ficam "sem data"; "Validades em dia?" da Simulação num serviço futuro; limites TAP com DH antes do voo, dois voos
 no mesmo dia e assistência antes do voo (Início, detalhe, Limites do acordo).

@@ -342,7 +342,7 @@ const EWRLIS = (rep, off, on) => FZ(rep, [['EWR', 'LIS', off, on]]);
   // Regresso de GRU: 2 zonas da base (Lisboa −1, GRU −3) → aclimatizado pela alínea c); 16h45 local → 11h45.
   const r = run('pilot', { '2026-01-12': LISGRU(), '2026-01-14': GRULIS() }, { fleetAt: () => 'NB' });
   const g = fdp(r, 'P32', '2026-01-14');
-  eq('P32 GRU→LIS: aclimatizado (alínea c)), 16h45 local → 11h45; TSV 11h15 → dentro', g && [g.readings.map((x) => x.accl), g.limit, g.value, g.status], [[true], 705, 675, 'dentro']);
+  eq('P32 GRU→LIS: aclimatizado (alínea c); zonas da Cl. 6.ª, n.º 53), 16h45 local → 11h45; TSV 11h15 → dentro', g && [g.readings.map((x) => x.accl), g.limit, g.value, g.status], [[true], 705, 675, 'dentro']);
   // EWR (4 zonas): estadia de 27h30 → não aclimatizado; 18h00 local → 10h00; TSV 10h50 → excede no narrow-body.
   const e = fdp(run('pilot', { '2026-01-12': LISEWR(), '2026-01-13': EWRLIS('23:00', '00:00', '09:20') }, { fleetAt: () => 'NB' }), 'P32', '2026-01-13');
   eq('P32 EWR→LIS ao fim de 27h30: não aclimatizado, 10h00; TSV 10h50 → excede', e && [e.readings.map((x) => x.accl), e.limit, e.value, e.status], [[false], 600, 650, 'excede']);
@@ -685,7 +685,7 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
     '2026-01-13': FZ('13:30', [['ZRH', 'LIS', '14:30', '17:30'], ['LIS', 'OPO', '19:00', '20:00'], ['OPO', 'LIS', '23:00', '01:00']]),
   });
   const f2 = fdpOn(zrh, 'C23', '2026-01-13');
-  eq('A-123 ZRH 14h30 locais (13h30 em Lisboa), PSV 12 h: 12h15 na hora da base, 11h30 na de referência → incerto', f2 && [f2.value, f2.status, f2.reason, f2.limit, f2.limitMax], [720, 'incerto', 'hora-referencia', 690, 735]);
+  eq('A-123 ZRH 14h30 locais (13h30 em Lisboa), PSV 12 h: a hora de referência é a de ZRH (Cl. 4.ª, n.º 14; Cl. 23.ª, n.º 3 a) i)) → 11h30 → excede', f2 && [f2.value, f2.limit, f2.status], [720, 690, 'excede']);
 }
 
 // A-124 — o posicionamento que antecede o voo, sem repouso, entra no período de serviço de voo (pilotos Cl. 16.ª,
@@ -783,7 +783,106 @@ const fdpOn = (res, id, date) => rule(res, id).findings.find((f) => f.date === d
   // E10 — sem as pernas UTC, um voo de uma perna que passa da meia-noite reparte-se pelos dias.
   const mar = Object.fromEntries(days('2026-03-01', 23).map((d) => [d, F('08:00', '08:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 240 })]));
   mar['2026-03-31'] = F('22:00', '22:30', '03:00', 1, 'LIS-FNC', { flight_minutes: 270 });
+  // Revisão dos pendentes: (1) o ecrã com as mesmas contas; (2) P28 sem os voos das assistências no planeamento; (3) férias
+  // pelo meio partem os 5 dias; (4) a assistência ativada acaba na apresentação.
+  {
+    const p25m = Object.fromEntries(days('2026-03-10', 21).map((d) => [d, F('08:00', '08:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 234 })]));
+    p25m['2026-03-04'] = F('08:00', '08:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 234 });
+    p25m['2026-03-31'] = F('20:30', '21:00', '03:30', 2, 'LIS-FNC-LIS', { flight_minutes: 300 });
+    const r25 = rule(run('pilot', p25m, { today: '2026-03-31' }), 'P25');
+    const c = r25.current[0];
+    eq('ecrã P25 28 dias a 31 mar: o voo da meia-noite dá um intervalo (não o voo todo no dia 31)', [c.value <= 5400, c.valueMax > c.value, r25.status !== 'excede'], [true, true, true]);
+    const sbm = Object.fromEntries(days('2026-05-01', 18).map((d) => [d, F('08:00', '08:30', '13:30', 2, 'LIS-OPO-LIS', { flight_minutes: 246 })]));
+    sbm['2026-05-25'] = { ...S('standby_airport', '06:00', '10:00'), extra: [F('07:00', '07:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 246 })] };
+    const p28s = rule(run('pilot', sbm, { fleetAt: () => 'NB' }), 'P28').findings.find((x) => x.period === '2026-05');
+    eq('P28: 73h48 planeadas + 4h06 de um voo da assistência → incerto (não excede)', p28s && [p28s.status, p28s.reason], ['incerto', 'assistencia-planeamento']);
+    const v = {};
+    days('2026-04-06', 3).forEach((d) => { v[d] = F('08:00', '08:30', '15:30', 2, 'LIS-OPO-LIS'); });
+    days('2026-04-16', 5).forEach((d) => { v[d] = F('08:00', '08:30', '15:30', 2, 'LIS-OPO-LIS'); });
+    const ev = days('2026-04-09', 7).map((d) => ({ type: 'vacDays', date: d }));
+    ok('C11: 3 dias, 7 de férias, 5 dias → sem "folga-24h"', !rule(run('cabin', v, { events: ev }), 'C11').findings.some((x) => x.reason === 'folga-24h'));
+    const q = {};
+    const wd = days('2026-04-01', 91).filter((d) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return w >= 1 && w <= 5; }).slice(0, 59);
+    wd.forEach((d) => { q[d] = S('office', '09:00', '17:00'); });
+    const sat = days('2026-04-01', 91).find((d) => new Date(d + 'T12:00:00Z').getUTCDay() === 6);
+    q[sat] = { ...S('standby_home', '06:00', '14:00'), extra: [F('08:00', '08:30', '12:00', 2, 'LIS-OPO-LIS')] };
+    ok('C34 trimestre: a assistência ativada acaba na apresentação (não conta duas vezes) → sem incerto', !rule(run('cabin', q), 'C34').findings.some((x) => x.window === 'trimestre-servico'));
+  }
   ok('E10 C34 março: 92 h + 1h30 do voo de 31 mar = 93h30 → dentro (não 96h30)', !rule(run('cabin', mar), 'C34').findings.some((x) => x.window === 'mes-voo' && x.period === '2026-03'));
+}
+
+// ── Pendentes do bloco 3 (2026-11-06): A-133 a A-141 e o tempo de voo sem pernas ──────────────────
+{
+  // Tempo de voo sem as horas de cada perna, a passar da meia-noite: a parte de cada dia não se sabe → "incerto" se mudar o resultado.
+  const mar = Object.fromEntries(days('2026-03-01', 23).map((d) => [d, F('08:00', '08:30', '12:30', 2, 'LIS-OPO-LIS', { flight_minutes: 243 })]));
+  mar['2026-03-31'] = F('20:30', '21:00', '03:30', 2, 'LIS-FNC-LIS', { flight_minutes: 300 });
+  const m = rule(run('cabin', mar), 'C34').findings.find((x) => x.window === 'mes-voo' && x.period === '2026-03');
+  eq('voo de 31 mar sem pernas: março entre 94h39 e 96h09 → incerto (o AE dá 95 h)', m && [m.status, m.reason], ['incerto', 'meia-noite']);
+
+  // A-133 — zonas geográficas: a Cl. 6.ª, n.º 53 define-as como as faixas de 15° do fuso ("geralmente coincidente com o fuso
+  // horário"): LIS na zona −1, GIG na −3 → 2 zonas → aclimatizado (Cl. 43.ª, n.º 2 c)). A variação de longitude não é a zona.
+  const gig = run('pilot', {
+    '2026-01-12': FZ('22:00', [['LIS', 'GIG', '23:15', '08:45']]),
+    '2026-01-13': FZ('20:30', [['GIG', 'LIS', '21:30', '06:45']]),
+  }, { fleetAt: () => 'NB' });
+  const g = fdp(gig, 'P32', '2026-01-13');
+  eq('A-133 GIG-LIS às 17h30 locais, TSV 10h45: aclimatizado → 11h45 → dentro', g && [g.limit, g.status], [705, 'dentro']);
+
+  // A-134 — 5 dias, 1 dia livre (24 h), 5 dias: um dia livre não é folga semanal (48 h) → incerto.
+  const c11 = {};
+  [...days('2026-04-06', 5), ...days('2026-04-12', 5)].forEach((d) => { c11[d] = F('08:00', '08:30', '15:30', 2, 'LIS-OPO-LIS'); });
+  const f11 = rule(run('cabin', c11), 'C11').findings.find((x) => x.reason === 'folga-24h');
+  eq('A-134 10 dias de trabalho entre duas folgas de 48 h, com um dia livre pelo meio → incerto', f11 && [f11.status, f11.value], ['incerto', 10]);
+
+  // A-135 — RAD de 12 h: a estadia exclui o transporte (até 3 h): 37 h livres podem ser menos de 36 h de estadia.
+  const rad = run('cabin', {
+    '2026-01-12': FZ('22:00', [['LIS', 'GIG', '23:00', '08:40']]),
+    '2026-01-14': FZ('22:10', [['GIG', 'LIS', '23:10', '08:50']]),
+    '2026-01-18': F('07:00', '07:30', '12:00', 2, 'LIS-OPO-LIS'),
+  });
+  const r15 = rule(rad, 'C15').findings.find((x) => x.date === '2026-01-14');
+  eq('A-135 block 9h40, 37 h livres: com RAD de 12 h a folga pede 60 h; 53 h → incerto', r15 && [r15.status, r15.limit, r15.limitStr], ['incerto', 2880, 3600]);
+
+  // A-137 — pilotos: no planeamento mensal, 75 h de block (A320) ou 80 h (A330) por mês (Cl. 15.ª, n.º 9).
+  const blockMonth = (min) => Object.fromEntries(days('2026-05-01', 19).map((d) => [d, F('08:00', '08:30', '13:30', 2, 'LIS-OPO-LIS', { flight_minutes: min })]));
+  const p28 = (min, fleet) => rule(run('pilot', blockMonth(min), { fleetAt: () => fleet }), 'P28').findings.find((x) => x.period === '2026-05');
+  eq('A-137 A320 com 19 × 4h06 = 77h54 → excede (75 h)', (p28(246, 'NB') || {}).status, 'excede');
+  eq('A-137 A330 com 77h54 → dentro (80 h)', (p28(246, 'WB') || {}).status, 'dentro');
+  eq('A-137 frota desconhecida com 77h54 → incerto', (p28(246, null) || {}).status, 'incerto');
+
+  // A-138 — PSV de 4 aterragens que acaba fora: a folga de 48 h é no regresso à base.
+  const c15 = run('cabin', {
+    '2026-04-06': F('06:00', '06:30', '15:00', 4, 'LIS-OPO-LIS-FAO-FNC'),
+    '2026-04-07': F('09:00', '09:45', '11:30', 1, 'FNC-LIS'),
+    '2026-04-08': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS'),
+  });
+  const f15 = rule(c15, 'C15').findings.find((x) => x.date === '2026-04-07');
+  eq('A-138 4 aterragens no dia 6 (acaba no FNC), regresso no dia 7 (1 aterragem), voo no dia 8: o AE não diz se é só o PSV do regresso ou qualquer da rotação → incerto', f15 && [f15.status, f15.reason, f15.doubt], ['incerto', 'quatro-aterragens', 'rotacao']);
+  const c15b = run('cabin', { '2026-04-06': F('06:00', '06:30', '15:00', 4, 'LIS-OPO-LIS-FAO-LIS'), '2026-04-07': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS') });
+  eq('o próprio PSV com 4 aterragens acaba na base, voo no dia seguinte → excede', (rule(c15b, 'C15').findings.find((x) => x.date === '2026-04-06') || {}).status, 'excede');
+
+  // A-139 — o período crítico dos pilotos no longo curso (Cl. 6.ª, n.º 21): na faixa de 3 zonas, hora da base; além dela,
+  // a base nas primeiras 48 h e depois a hora local. Entre as duas contagens das zonas, as duas leituras.
+  const lad = servicesOf({ '2026-01-12': FZ('10:00', [['LIS', 'LAD', '11:00', '19:30']]), '2026-01-16': FZ('05:15', [['LAD', 'LIS', '06:15', '14:45']]) }, { baseAt: 'LIS', crewType: 'pilot' });
+  L.rotationsOf(lad);
+  const back = lad.find((x) => x.date === '2026-01-16');
+  eq('A-139 LIS-LAD (2 zonas), regresso depois de 48 h: crítico na hora da base e na local (duas leituras)', L.pilotCritShifts(back).length, 2);
+  eq('A-139 médio curso: só a hora da base', L.pilotCritShifts(servicesOf({ '2026-01-12': F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS') }, { baseAt: 'LIS', crewType: 'pilot' })[0]), [0]);
+
+  // A-140 — cabine: a assistência em casa a 25 % só nos limites "semanais, mensais e anuais" (Cl. 17.ª, n.º 11 c)): no trimestre, também a 100 %.
+  const q = {};
+  const wd = days('2026-04-01', 91).filter((d) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return w >= 1 && w <= 5; }).slice(0, 59);
+  wd.forEach((d) => { q[d] = S('office', '09:00', '17:00'); });
+  days('2026-04-01', 91).filter((d) => new Date(d + 'T12:00:00Z').getUTCDay() === 6).slice(0, 4).forEach((d) => { q[d] = S('standby_home', '06:00', '14:00'); });
+  const f34 = rule(run('cabin', q), 'C34').findings.find((x) => x.window === 'trimestre-servico');
+  eq('A-140 472 h de solo + 32 h de assistência em casa: 480 h a 25 %, 504 h a 100 % → incerto', f34 && [f34.status, f34.reason], ['incerto', 'assistencia-trimestre']);
+
+  // A-141 — 5.º dia com assistência: a alínea b) deixa a chegada até às 20h00; a a) diz término até às 18h00 → incerto.
+  const c5 = {};
+  days('2026-04-06', 4).forEach((d) => { c5[d] = F('08:00', '08:30', '14:00', 2, 'LIS-OPO-LIS'); });
+  c5['2026-04-10'] = { ...S('standby_airport', '08:00', '12:00'), extra: [F('12:00', '12:30', '19:00', 2, 'LIS-OPO-LIS')] };
+  const f5 = rule(run('cabin', c5), 'C11').findings.filter((x) => x.date === '2026-04-10');
+  eq('A-141 5.º dia com assistência, calços às 19h00: não excede pelas 18h00; incerto', [f5.some((x) => x.reason === 'quinto-dia-18h' && x.status === 'excede'), (f5.find((x) => x.reason === 'quinto-dia-assistencia') || {}).status], [false, 'incerto']);
 }
 
 console.log(`\nlimites de escala TAP — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);

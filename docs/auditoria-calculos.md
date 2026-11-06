@@ -26,8 +26,8 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > da mesma área que o resumo não agrupou (A-123, A-126, A-127, A-128, A-132); S12 (A-253, A-278 a A-281, A-283 a A-285) e
 > também A-217, A-282, A-286, A-287 e A-288. Regra do Nuno para as validades: "não quero nada inventado, quero que seja como diz
 > a lei" — os prazos saem do texto oficial guardado em `fontes/eu/` (Reg. 965/2012, 1178/2011, 2015/1998, 1182/71), conferido
-> por teste. Ficou de fora: A-133 a A-141 (dúvidas de leitura) e o tempo de voo sem as horas de cada perna que passa da
-> meia-noite (resto do A-132). A revisão independente do bloco apanhou 13 erros (alguns introduzidos pela própria correção),
+> por teste. No mesmo dia ficaram feitos também A-133 a A-141 e o tempo de voo sem as horas de cada perna que passa da meia-noite
+> (resto do A-132); as citações das validades foram conferidas nos atos do Jornal Oficial. A revisão independente do bloco apanhou 13 erros (alguns introduzidos pela própria correção),
 > corrigidos no mesmo dia. Detalhe em `docs/decisoes.md`. Próximo: bloco 4 (importação).
 
 ## Como se fez

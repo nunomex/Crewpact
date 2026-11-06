@@ -98,17 +98,19 @@ export default function AeLimitSheet({ visible, onClose, ruleId, result, crewTyp
       {hours ? (
         <>
           <Text style={s.big} allowFontScaling={false}>{fmtHours(main.value, lang)}<Text style={s.bigOf}>  {l('de', 'of')} {fmtHours(main.limit, lang)} · {windowLabel(main, lang)}</Text></Text>
-          <Text style={[s.kick, main.value > main.limit ? s.red : s.okT]}>
+          <Text style={[s.kick, main.value > main.limit ? s.red : main.valueMax != null && main.valueMax > main.limit ? s.greyT : s.okT]}>
             {main.value > main.limit
               ? l(`Excede · passou ${fmtHours(main.value - main.limit, lang)}`, `Exceeds · over by ${fmtHours(main.value - main.limit, lang)}`)
-              : l(`Dentro · faltam ${fmtHours(main.limit - main.value, lang)}`, `Within · ${fmtHours(main.limit - main.value, lang)} left`)}
+              : main.valueMax != null && main.valueMax > main.limit
+                ? l(`Incerto · pode chegar a ${fmtHours(main.valueMax, lang)} (voo a passar da meia-noite)`, `Uncertain · may reach ${fmtHours(main.valueMax, lang)} (flight past midnight)`)
+                : l(`Dentro · faltam ${fmtHours(main.limit - main.value, lang)}`, `Within · ${fmtHours(main.limit - main.value, lang)} left`)}
           </Text>
           <LimitChart series={r.series} lang={lang} />
           <View style={s.rows}>
             {r.current.slice(1).map((c) => (
               <View key={c.window} style={s.rowL}>
                 <Text style={s.rowK}>{windowLabel(c, lang)}</Text>
-                <Text style={[s.rowV, c.value > c.limit && s.red]}>{fmtHours(c.value, lang)} {l('de', 'of')} {fmtHours(c.limit, lang)}</Text>
+                <Text style={[s.rowV, c.value > c.limit ? s.red : c.valueMax != null && c.valueMax > c.limit ? s.greyT : null]}>{fmtHours(c.value, lang)}{c.valueMax != null ? `–${fmtHours(c.valueMax, lang)}` : ''} {l('de', 'of')} {fmtHours(c.limit, lang)}</Text>
               </View>
             ))}
             {easa.map((e) => (

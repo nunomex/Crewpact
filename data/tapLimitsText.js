@@ -16,7 +16,6 @@ export const isProblem = (f) => f && (f.status === 'excede' || (f.status === 'in
 // Médio curso: o que fica em aberto quando o resultado é "incerto" (auditoria dos cálculos, bloco 3).
 const MC_DOUBT = {
   despertar: (l) => l('Fora da base, se a hora de despertar cair na madrugada o AE só permite 6 h. O despertar depende do tempo de transporte do ROV, que a escala não mostra.', 'Away from base, if the wake-up time falls in the early morning the CLA only allows 6 h. Wake-up depends on the ROV transport time, which the roster does not show.'),
-  'hora-referencia': (l) => l('O quadro está na "hora de referência": a do local onde descansaste (Cl. 23.ª, n.º 3) ou a da base. O AE não diz se o n.º 3 vale no médio curso.', 'The table is in "reference time": where you rested (Cl. 23, no. 3) or base time. The CLA does not say whether no. 3 applies to medium haul.'),
   'sem-espera': (l) => l('O posicionamento antes conta como serviço de voo; o AE não diz se a espera até à apresentação para o voo também conta.', 'The positioning before counts as flight duty; the CLA does not say whether the wait until reporting for the flight also counts.'),
   'assistencia-ativacao': (l) => l('Depois de assistência nas instalações, o limite vem da hora a que foste nomeado (Cl. 17.ª, n.º 12 d)), que a escala não mostra.', 'After standby at the premises, the limit comes from the time you were called (Cl. 17, no. 12 d)), which the roster does not show.'),
   'assistencia-6h': (l) => l('Depois de mais de 6 h de assistência em casa o máximo desce; com descanso a bordo ou split duty, só a partir da 8.ª hora (Cl. 17.ª, n.º 11 f)).', 'After more than 6 h of home standby the maximum drops; with crew rest on board or a split duty, only from the 8th hour (Cl. 17, no. 11 f)).'),
@@ -84,6 +83,7 @@ const PLAIN = {
   P06: ['Em cada 7 dias seguidos, um descanso semanal de 36 h com duas noites locais, a começar até às 12h00 do 6.º dia.', 'Every 7 consecutive days, a 36 h weekly rest with two local nights, starting by 12:00 on day 6.'],
   P22: ['Depois de uma rotação de longo curso, dias de folga seguidos: dias de ocupação + períodos críticos (2h00–6h00) tocados + cada 45° de longitude, a dividir por 2 e arredondado para cima; no mínimo 2. A folga começa na hora certa seguinte ao repouso e à transição.', 'After a long-haul rotation, consecutive days off: days away + critical periods (02:00–06:00) touched + each 45° of longitude, divided by 2 and rounded up; at least 2. Days off start on the next full hour after rest and transition.'],
   P25: ['No máximo 90 h de voo em 4 semanas, 270 h por trimestre e 850 h em 52 semanas.', 'At most 90 h of flight time in 4 weeks, 270 h per quarter and 850 h in 52 weeks.'],
+  P28: ['No planeamento mensal publicado, no máximo 75 h de block por mês na frota A320 e 80 h na frota A330 (sem o simulador de instrutor ou verificador).', 'In the published monthly roster, at most 75 block hours per month on the A320 fleet and 80 h on the A330 fleet (excluding instructor or checker simulator time).'],
   P26: ['No máximo 48 h de trabalho em 7 dias, 180 h em 28 dias, 480 h por trimestre e 1800 h por ano. As assistências contam a 50 % nas instalações da TAP e a 25 % em casa.', 'At most 48 h of work in 7 days, 180 h in 28 days, 480 h per quarter and 1800 h per year. Standbys count 50 % at TAP premises and 25 % at home.'],
   P27: ['O tempo de serviço de voo de médio curso tem um máximo pela hora de apresentação e pelas aterragens, e conta até 30 min depois dos calços.', 'Medium-haul flight duty time has a maximum by report time and landings, and runs to 30 min after on-blocks.'],
   P32: ['No longo curso, o máximo depende da hora local de apresentação, das aterragens e de o piloto estar aclimatizado (na base, depois de 36 h com duas noites na mesma zona, ou sem passar de 2 zonas da base). Com tripulação reforçada, num wide-body, pode subir até 5 h.', 'On long haul, the maximum depends on local report time, landings and whether the pilot is acclimatised (at base, after 36 h with two nights in the same zone, or never more than 2 zones from base). With an augmented crew on a wide-body it can rise by up to 5 h.'],
@@ -96,7 +96,7 @@ const PLAIN = {
   P49: ['Depois de um longo curso, o repouso mínimo leva mais 3 h por TSV acima de 10h15, por apresentação entre as 18h00 e as 8h00, por chegada entre as 22h00 e as 14h00, mais 12 h por block acima de 10 h, e mais as horas de diferença acima de 2. Com 3 zonas ou mais, pelo menos 14 h; com 6 ou mais, 24 h com uma noite local.', 'After a long-haul duty, minimum rest adds 3 h for FDT over 10:15, for report between 18:00 and 08:00, for arrival between 22:00 and 14:00, 12 h for block over 10 h, plus the hours of difference above 2. With 3 zones or more, at least 14 h; with 6 or more, 24 h with a local night.'],
   P53: ['No máximo 2 serviços noturnos seguidos e 3 em 7 dias; com 3, tem de haver um descanso semanal pelo meio. De 2 seguidos, só um pode tocar as 2h00–6h00.', 'At most 2 consecutive night duties and 3 in 7 days; with 3, a weekly rest must lie between them. Of 2 consecutive, only one may touch 02:00–06:00.'],
   P54: ['Uma assistência por dia: até 10 h (12 h se incluir as 23h00–7h00), 4 h no aeroporto, sem começar entre as 0h00 e as 5h59; 12 h entre assistências em casa e 16 h no aeroporto.', 'One standby a day: up to 10 h (12 h if it includes 23:00–07:00), 4 h at the airport, not starting 00:00–05:59; 12 h between home standbys and 16 h at the airport.'],
-  C11: ['Folga semanal de 48 h na base; entre duas folgas, no máximo 5 dias seguidos de trabalho. No 5.º dia, o voo acaba até às 18h00.', 'A 48 h weekly day off at base; between two, at most 5 consecutive working days. On day 5, the flight ends by 18:00.'],
+  C11: ['Folga semanal de 48 h na base; entre duas folgas, no máximo 5 dias seguidos de trabalho. No 5.º dia, o voo acaba até às 18h00 (com assistência, chega até às 20h00).', 'A 48 h weekly day off at base; between two, at most 5 consecutive working days. On day 5, the flight ends by 18:00.'],
   C14: ['Até ao fim de cada trimestre, 13 folgas semanais. Cada 7 dias de férias ou ausência contam como uma. Depois de um voo, a folga começa na hora certa seguinte ao repouso e à transição.', 'By the end of each quarter, 13 weekly days off. Every 7 days of leave or absence count as one. After a flight, the day off starts on the next full hour after rest and transition.'],
   C15: ['No regresso à base depois de um longo curso (ou de 4 aterragens), uma folga de 48 h; 96 h se o PSV tiver mais de 6 h de diferença. O RAD junta 12 h ou 24 h, conforme a estadia e o block.', 'Back at base after long haul (or 4 landings), a 48 h day off; 96 h if the FDP spans more than 6 h of time difference. RAD adds 12 h or 24 h, depending on the stay and the block.'],
   C23: ['O período de serviço de voo de médio curso tem um máximo pela hora de apresentação, de 1 a 4 aterragens, e conta até 30 min depois dos calços.', 'The medium-haul flight duty period has a maximum by report time, for 1 to 4 landings, and runs to 30 min after on-blocks.'],
@@ -138,12 +138,26 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       const [v33, l33] = VL(f.value, f.limit);
       return { say: l(`${v33} de acréscimos com reforço em 4 semanas (máx. ${l33})`, `${v33} of augmented-crew increases in 4 weeks (max. ${l33})`), det: span };
     }
-    case 'P25': case 'P26': case 'C34': {
-      const kind = id === 'P25' ? 'voo' : id === 'P26' ? 'trabalho' : (KIND_OF_WINDOW[f.window] === 'voo' ? 'voo' : 'servico');
+    case 'P25': case 'P26': case 'C34': case 'P28': {
+      const kind = id === 'P25' || id === 'P28' ? 'voo' : id === 'P26' ? 'trabalho' : (KIND_OF_WINDOW[f.window] === 'voo' ? 'voo' : 'servico');
       const what = { voo: l('de voo', 'of flight time'), trabalho: l('de trabalho', 'of work'), servico: l('de serviço', 'of duty') }[kind];
       const span = f.period ? periodLabel(f.period, lang) : f.window === '364d' ? l('52 semanas', '52 weeks') : f.window.startsWith('7d') ? l('7 dias', '7 days') : l('28 dias', '28 days');
       const where = f.period ? l(`em ${span}`, `in ${span}`) : l(`em ${span}`, `in ${span}`);
-      const [vH, lH] = VL(f.value, f.limit);
+      const [vH, lH0] = VL(f.value, f.limit);
+      const lH = f.limitMax != null && f.status === 'excede' ? l(`${H(f.limit)} ou ${H(f.limitMax)}`, `${H(f.limit)} or ${H(f.limitMax)}`) : lH0;
+      // Leituras (auditoria, bloco 3): o voo que passa da meia-noite sem as pernas; a frota; a assistência em casa no trimestre.
+      if (f.status === 'incerto' && (f.reason === 'meia-noite' || f.reason === 'assistencia-trimestre' || f.reason === 'frota' || f.reason === 'assistencia-planeamento')) {
+        const range = f.valueMax != null ? l(`Entre ${fmtDur(f.value)} e ${fmtDur(f.valueMax)}`, `Between ${fmtDur(f.value)} and ${fmtDur(f.valueMax)}`) : vH;
+        const lim = f.limitMax != null ? l(`${fmtDur(f.limit)} ou ${fmtDur(f.limitMax)}`, `${fmtDur(f.limit)} or ${fmtDur(f.limitMax)}`) : fmtDur(f.limit);
+        const det = {
+          'meia-noite': l('Um voo passa da meia-noite e a escala não tem as horas de cada perna: não se sabe quanto cai em cada dia.', 'A flight crosses midnight and the roster has no times for each leg: it is not known how much falls on each day.'),
+          'assistencia-trimestre': l('A assistência em casa conta a 25 % nos limites semanais, mensais e anuais (Cl. 17.ª, n.º 11 c)); para o trimestre o AE não diz.', 'Home standby counts at 25 % for weekly, monthly and annual limits (Cl. 17, no. 11 c)); the CLA says nothing for the quarter.'),
+          frota: l('Sem a frota do mês não se sabe se o limite é 75 h (A320) ou 80 h (A330).', 'Without the month\'s fleet it is not known whether the limit is 75 h (A320) or 80 h (A330).'),
+          'assistencia-planeamento': l('Há voos que saíram de assistências: não eram do planeamento mensal publicado (Cl. 15.ª, n.º 3).', 'Some flights came from standbys: they were not in the published monthly roster (Cl. 15, no. 3).'),
+        }[f.reason];
+        const span = f.from ? l(` De ${day(f.from)} a ${day(f.to)}.`, ` From ${day(f.from)} to ${day(f.to)}.`) : '';
+        return { say: l(`${range} ${what} ${where} (máx. ${lim})`, `${range} ${what} ${where} (max. ${lim})`), det: det + span };
+      }
       return { say: l(`${vH} ${what} ${where} (máx. ${lH})`, `${vH} ${what} ${where} (max. ${lH})`),
         det: f.from ? l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`) : '' };
     }
@@ -268,6 +282,8 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
       const why = f.reason === 'quatro-aterragens' ? l(' depois de 4 aterragens', ' after 4 landings') : '';
       const det = l(`${what}${rad}${why}, a contar das ${fmtClock(f.folgaStart)} de ${day(dayOfAbs(f.folgaStart))}.`, `${what}${rad}${why}, from ${fmtClock(f.folgaStart)} on ${day(dayOfAbs(f.folgaStart))}.`);
       if (f.status === 'excede') return { say: l(`Folga curta depois do serviço de ${day(f.date)}: ${fmtHours(f.value, lang)} livres (o AE pede ${fmtHours(f.limit, lang)})`, `Short day off after ${day(f.date)}: ${fmtHours(f.value, lang)} free (the CLA requires ${fmtHours(f.limit, lang)})`), det };
+      if (f.status === 'incerto' && f.doubt === 'rotacao') return { say: l(`Folga depois do serviço de ${day(f.date)}: ${fmtHours(f.value, lang)} livres (o AE pode pedir ${fmtHours(f.limit, lang)})`, `Day off after ${day(f.date)}: ${fmtHours(f.value, lang)} free (the CLA may require ${fmtHours(f.limit, lang)})`),
+        det: l(`${det} O AE pede-a "no regresso à base, após um período de serviço de voo" de 4 aterragens ou de longo curso: este, ou um da rotação? Não diz.`, `${det} The CLA requires it "on return to base, after a flight duty period" with 4 landings or long haul: this one, or any in the rotation? It does not say.`) };
       if (f.status === 'incerto') return { say: l(`Folga depois do serviço de ${day(f.date)}: chega numa leitura do AE e não na outra`, `Day off after ${day(f.date)}: enough in one reading of the CLA, not in the other`), det };
       return { say: l(`Folga depois do serviço de ${day(f.date)}: ${fmtHours(f.value, lang)} livres`, `Day off after ${day(f.date)}: ${fmtHours(f.value, lang)} free`), det };
     }
@@ -309,6 +325,10 @@ export const describe = (id, f, lang = 'pt', crewType = 'pilot') => {
         case 'mais-de-cinco': return { say: unc ? l(`${f.value} dias seguidos com uma rotação de longo curso: o AE ressalva estas rotações`, `${f.value} consecutive days with a long-haul rotation: the CLA exempts these rotations`) : l(`${f.value} dias seguidos de trabalho (máx. 5)`, `${f.value} consecutive working days (max. 5)`), det: l(`De ${day(f.from)} a ${day(f.to)}.`, `From ${day(f.from)} to ${day(f.to)}.`) };
         case 'quinto-dia-18h': return { say: l('No 5.º dia, o serviço de voo acaba depois das 18h00', 'On day 5, the flight duty ends after 18:00'), det: l(`${day(f.date)} · acaba às ${fmtClock(f.value)} (calços + 30 min).`, `${day(f.date)} · ends at ${fmtClock(f.value)} (on-blocks + 30 min).`) };
         case 'quinto-dia-lc-ida-volta': return { say: l('Longo curso de ida e volta no 5.º dia', 'Long-haul out-and-back on day 5'), det: day(f.date) };
+        case 'folga-24h': return { say: l(`${f.value} dias de trabalho entre duas folgas semanais de 48 h (máx. 5)`, `${f.value} working days between two 48 h weekly days off (max. 5)`),
+          det: l(`De ${day(f.from)} a ${day(f.to)}. Pelo meio há só dias livres de 24 h: o AE diz "entre 2 períodos de folga semanal" (48 h, Cl. 4.ª, n.º 12) e conta "dias consecutivos".`, `From ${day(f.from)} to ${day(f.to)}. In between there are only 24 h free days: the CLA says "between 2 weekly rest periods" (48 h, Cl. 4, no. 12) and counts "consecutive days".`) };
+        case 'quinto-dia-assistencia': return { say: l('No 5.º dia, o voo da assistência acaba depois das 18h00', 'On day 5, the standby flight ends after 18:00'),
+          det: l(`${day(f.date)} · acaba às ${fmtClock(f.value)}. Com assistência, a alínea b) deixa chegar até às 20h00; a a) diz término até às 18h00 (Cl. 20.ª, n.º 4).`, `${day(f.date)} · ends at ${fmtClock(f.value)}. With standby, point b) allows arrival up to 20:00; point a) says end by 18:00 (Cl. 20, no. 4).`) };
         case 'quinto-dia-assistencia-20h': return { say: l('No 5.º dia, o voo da assistência chega depois das 20h00', 'On day 5, the standby flight arrives after 20:00'), det: l(`${day(f.date)} · chega às ${fmtClock(f.value)}.`, `${day(f.date)} · arrives at ${fmtClock(f.value)}.`) };
         default: return { say: ruleTitle(id, lang), det: '' };
       }

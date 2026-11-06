@@ -55,7 +55,28 @@ Os prazos das validades (`data/validities.js`) saem daqui. Cada prazo guarda a c
   A versão consolidada mais recente de cada regulamento saiu da consulta SPARQL do Cellar (`cdm:resource_legal_id_celex`).
 - **São extratos literais:** o HTML passou a texto (um bloco por linha) e guardaram-se só as secções da tabela, sem mudar
   uma palavra; tiraram-se só as marcas de alteração da EUR-Lex. Cada secção começa por `=====[secção]=====`.
-- **Aviso da EUR-Lex:** as versões consolidadas "não têm efeito jurídico"; fazem fé os textos do Jornal Oficial. Para o
-  advogado: conferir no JO as secções citadas (ver `docs/decisoes.md`).
+- **Aviso da EUR-Lex:** as versões consolidadas "não têm efeito jurídico"; fazem fé os textos do Jornal Oficial. Por isso
+  cada citação foi conferida no **próprio ato publicado no JO** (6 de novembro de 2026): a versão consolidada marca cada bloco
+  com o ato que o introduziu (▼B = o regulamento original, ▼Mn = a n-ésima alteração); descarregou-se esse ato do Cellar e
+  confirmou-se a frase, palavra por palavra, em português e em inglês. **As 37 citações, nas duas línguas, estão nos atos:**
+
+  | Secções citadas | Ato do Jornal Oficial (marca) | CELEX |
+  |---|---|---|
+  | ORO.FC.145 g), ORO.FC.230, ORO.FC.A.245 e) | Reg. de Execução (UE) 2021/2237, de 15 dez 2021 (M21), JO L 450 | 32021R2237 |
+  | ORO.FC.231 | Reg. de Execução (UE) 2020/2036, de 9 dez 2020 (M18), JO L 416 | 32020R2036 |
+  | ORO.GEN.110 j) | Reg. (UE) 2017/363, de 1 mar 2017 (M10), JO L 55 | 32017R0363 |
+  | ORO.CC.140 | Reg. (UE) n.º 965/2012, original (B), JO L 296 de 25.10.2012 | 32012R0965 |
+  | FCL.040, FCL.055 c), FCL.625, FCL.940 | Reg. de Execução (UE) 2019/1747, de 15 out 2019 (M11), JO L 268 | 32019R1747 |
+  | FCL.055 a) | Reg. de Execução (UE) 2025/134, de 28 jan 2025 (M22) | 32025R0134 |
+  | FCL.740 a) 1) | Reg. de Execução (UE) 2020/2193, de 16 dez 2020 (M14), JO L 434 | 32020R2193 |
+  | ARA.FCL.215 c), CC.CCA.105 | Reg. (UE) n.º 290/2012, de 30 mar 2012 (M1), JO L 100 | 32012R0290 |
+  | MED.A.045 | Reg. de Execução (UE) 2019/27, de 19 dez 2018 (M9), JO L 8 | 32019R0027 |
+  | MED.C.005 | Reg. (UE) n.º 1178/2011, original (B) | 32011R1178 |
+  | 11.4.3 (segurança) | Reg. de Execução (UE) 2015/1998, original (B) | 32015R1998 |
+  | Art. 3.º (prazos) | Reg. (CEE, Euratom) n.º 1182/71, original | 31971R1182 |
+
+  Nota: no ato 2021/2237, a linha "Controlos relativos ao equipamento de emergência e de segurança – 24 meses." acaba com o
+  «» de fecho da alteração; o texto é o mesmo. Uma alteração posterior a um destes atos que mude estas frases apareceria na
+  versão consolidada com outra marca: ao atualizar os extratos, repetir a conferência.
 - **O que não está aqui:** as Instruções Técnicas da ICAO (prazo da formação em mercadorias perigosas, para onde remete a
   ORO.GEN.110 j)) não são públicas — a app pede a data do certificado.
