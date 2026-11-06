@@ -407,7 +407,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         // Formação sem o tipo: há formação que não paga A nem B (Cl. 10.ª, n.º 2, d)) → certo 0 (ou o B da estadia, se o dia
         // já o era), possível o A (revisão independente do bloco 6).
         const isA = ks.some((x) => x.kind === 'standby_airport' || (x.kind === 'training' && x.trainingType === 'sim'));
-        const isB = ks.some((x) => x.kind === 'training' && (x.eLearning || x.trainingType === 'ground'));
+        // B também: inspeções médicas e atos médicos a mando da empresa (Cl. 9.ª, n.º 1, b), iii)) — escritório marcado 'medical'.
+        const isB = ks.some((x) => (x.kind === 'training' && (x.eLearning || x.trainingType === 'ground')) || (x.kind === 'office' && x.officeType === 'medical'));
         const maybeA = ks.some((x) => x.kind === 'training' && !x.eLearning && !x.trainingType);
         if (isA) { flights.push({ dists: [0], longHaul: false }); stays.delete(g.date); continue; }
         const b = ae.perDiemB ? ae.perDiemB(category, g.date) : null;
@@ -420,6 +421,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         // Cabine (Cl. 8.ª): assistência no aeroporto não acionada = 2 × o complemento (n.º 2); em casa, formação presencial,
         // deslocação às instalações (escritório) = 1 ×; e-learning não é deslocação (fica de fora). Prevalece o valor superior
         // (n.º 3): num dia de estadia (AC2) soma-se só o que passar da AC2.
+        // (g) medicina do trabalho e f) testes = escritório marcado 'medical': também 1 ×.)
         const mult = Math.max(0, ...ks.map((x) => (x.kind === 'standby_airport' ? 2 : (x.kind === 'standby_home' || x.kind === 'office' || (x.kind === 'training' && !x.eLearning)) ? 1 : 0)));
         const each = ae.extraord(g.date, category);
         if (!mult || each == null) continue;
@@ -429,6 +431,36 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       }
     }
     nightStops = stays.size;
+    // Cabine: e-learning (Cl. 13.ª) e DHC fora de C/CL (Cl. 12.ª, n.º 4) do mês ANTERIOR, pagos neste.
+    if (ae.ELEARN_EUR_H && ym) {
+      const prevYm = ymShift(ym, -1);
+      const yr = prevYm.slice(0, 4);
+      let h0 = 0, h1 = 0;
+      for (const date of Object.keys(duties || {})) {
+        const d = duties[date];
+        if (!d || d.deleted || !date.startsWith(yr) || date.slice(0, 7) > prevYm) continue;
+        for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+          if (!s || s.kind !== 'training' || !s.eLearning) continue;
+          const r = clockMin(s.report_time), e = clockMin(s.block_on);
+          if (r == null || e == null) continue;   // sem horas não se sabe quantas (fica de fora)
+          const h = ((e >= r ? e - r : e + 1440 - r)) / 60;
+          if (date.slice(0, 7) === prevYm) h1 += h; else h0 += h;
+        }
+      }
+      const paidH = Math.min(ae.ELEARN_MAX_H, h0 + h1) - Math.min(ae.ELEARN_MAX_H, h0);
+      if (paidH > 0) complEur += r2(paidH * ae.ELEARN_EUR_H);
+      const ac1Prev = ae.perDiem(category, [1], 1, undefined, prevYm);
+      let econ = 0;
+      for (const date of Object.keys(duties || {})) {
+        const d = duties[date];
+        if (!d || d.deleted || date.slice(0, 7) !== prevYm) continue;
+        for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+          if (!s || !s.dhcEconomy) continue;
+          econ += s.kind === 'positioning' ? 1 : dhRuns(s).length;
+        }
+      }
+      if (econ && ac1Prev != null) complEur += r2(econ * ac1Prev * ae.DHC_ECON_PCT);
+    }
     // Adicional de chefia (Cl. 11.ª): 8 % das AC1 + AC2 do mês ANTERIOR, ao supervisor de cabine.
     const prev = ym ? ymShift(ym, -1) : null;
     const catPrev = prev && Array.isArray(history) && history.length ? (resolveCrew(history, prev).category || category) : category;   // o direito nasce no mês das ajudas
@@ -525,7 +557,9 @@ export const serviceMoney = (ae, category, svc, { date, fleet, daySvcs = null } 
     }
     if (dayHasFlight) return out;
     if (ae.GROUND_PER_DIEM) {
-      if (kind === 'standby_airport' || (kind === 'training' && svc.trainingType === 'sim')) {
+      if (kind === 'office' && svc.officeType === 'medical') {
+        out.other = { lbl: { pt: 'Per diem B — ato médico (Cl. 9.ª)', en: 'Per diem B — medical (Cl. 9)' }, eur: ae.perDiemB(category, date) };
+      } else if (kind === 'standby_airport' || (kind === 'training' && svc.trainingType === 'sim')) {
         out.other = { lbl: { pt: 'Per diem A (Cl. 9.ª)', en: 'Per diem A (Cl. 9)' }, eur: ae.perDiem(category, [0], 1, fleet, date, { longHaul: false }) };
       } else if (kind === 'training') {
         const maybeA = !svc.eLearning && !svc.trainingType;   // sem o tipo: 0 certo, até ao A (Cl. 10.ª, n.º 2, d))

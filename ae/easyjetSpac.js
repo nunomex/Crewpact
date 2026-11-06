@@ -6,7 +6,7 @@
 // É uma ESTIMATIVA DE APOIO ao piloto; NÃO substitui o processamento salarial
 // oficial da companhia. Categorias: CPT, SFO, FO, SO.
 
-import { pickTable, ymParts, admissionShare, beforeStart } from './tables';
+import { pickTable, ymParts, admissionShare, beforeStart, suspensionShare } from './tables';
 
 export const AE_ID = 'easyjet-spac';
 export const AE_LABEL = 'Easyjet · SPAC (pilotos)';
@@ -311,7 +311,7 @@ export const airportStandby = (cat, { called = false, over4h = false, index = 1,
 //  · O bónus de performance (Art. 46.º) é discricionário: não entra.
 const BENEFITS_PRORATA = ['PPY 9/12', 'PPY 8/12', '14-14', '21-7', '7-7'];
 const SUB_NOTE = { pt: 'Sem a média das prestações variáveis (o acordo não diz que rubricas nem que período).', en: 'Without the average of variable pay (the agreement does not say which items or period).' };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, lifestyle = false } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, lifestyle = false, events = [] } = {}) => {
   const p = ymParts(ym), T = tableAt(ym);
   if (!p || !T || T.BASE_ANNUAL[cat] == null || beforeStart(serviceStart, ym)) return [];
   const f = contractFactor(contract);
@@ -322,7 +322,12 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   const add = (id, eur, extra = {}) => { if (eur > 0) out.push({ id, eur: r2(eur), ...extra }); };
   if (p.m === 6 && !(admY && s.m > 6)) add('ferias', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º' });
   if (p.m === 12 && admY && s.m > 6) add('ferias', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º, n.º 2' });
-  if (p.m === 11) add('natal', sub * admissionShare(serviceStart, p.y), { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º' });
+  if (p.m === 11) {
+    // Baixa de mais de um mês no ano: o Natal fica proporcional (CT art. 263.º, n.º 2, c), e 296.º) — certo e máximo.
+    const sh = suspensionShare(events, p.y);
+    const v = sub * admissionShare(serviceStart, p.y);
+    add('natal', sh ? v * sh.min : v, { incomplete: true, note: SUB_NOTE, cite: 'Art. 36.º', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
+  }
   if (p.m === 4) add('benefits', (T.BENEFITS_ANNUAL[cat] || 0) * (BENEFITS_PRORATA.includes(contract) ? f : 1), { cite: 'Art. 45.º' });
   if (s && p.m === s.m && p.y > s.y) {
     const pct = loyaltyPct(cat, p.y - s.y);

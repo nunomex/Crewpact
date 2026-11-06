@@ -54,7 +54,7 @@ const dhTailOnOf = (legs) => {
 };
 const formSignOff = (d) => { const so = (d && d.signOff) || ''; return so && so === dhTailOnOf(d && d.legs) ? '' : so; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
-const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false, trainingType: null };
+const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false, trainingType: null, dhcEconomy: false };
 // Aeronave do 1.º leg (auto-fill por deteção). Vive em `legs[0].aircraft`.
 const legAircraft = (d) => (d && Array.isArray(d.legs) && d.legs[0] && d.legs[0].aircraft) || '';
 // Legs com horas por setor para o form. Migração de duties ANTIGAS (só block_off/on, sem off/on
@@ -225,13 +225,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: formSignOff(d), role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning, trainingType: d.trainingType || null }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: formSignOff(d), role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning, trainingType: d.trainingType || null, dhcEconomy: !!d.dhcEconomy }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: formSignOff(c), role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning, trainingType: c.trainingType || null });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: formSignOff(c), role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning, trainingType: c.trainingType || null, dhcEconomy: !!c.dhcEconomy });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
-  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: formSignOff(svc), role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning, trainingType: svc.trainingType || null });
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: formSignOff(svc), role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning, trainingType: svc.trainingType || null, dhcEconomy: !!svc.dhcEconomy });
   // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
   // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
@@ -567,6 +567,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       eLearning: form.kind === 'training' ? !!form.eLearning : false,
       // TAP pilotos (Cl. 9.ª): simulador como aluno = per diem A; refrescamento = B. Sem o tipo, a app conta o B (certo).
       trainingType: form.kind === 'training' && !form.eLearning ? (form.trainingType || null) : null,
+      // TAP cabine (Cl. 12.ª, n.º 4): DHC sem ser em C/CL → 20 % da AC1 no mês seguinte. Só posicionamento ou voo com DH.
+      dhcEconomy: (form.kind === 'positioning' || (isFlight && sectorRows.some((lg) => lg.dh))) ? !!form.dhcEconomy : false,
     };
     if (simulate) {
       // Simulação: NÃO grava nada — devolve o serviço hipotético para o ecrã de resultado.
@@ -835,6 +837,29 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <Text style={s.routeHint}>{form.eLearning
             ? l('E-learning — sem pagamento variável (Art. 43).', 'E-learning — no variable pay (Art. 43).')
             : l('Formação em terra/simulador — 3 setores nominais ao formando (Art. 43).', 'Ground/sim training — 3 nominal sectors to the trainee (Art. 43).')}</Text>
+        </View>
+      ) : null}
+      {form.kind === 'office' && ae && ae.PER_DIEM_BY_DAY ? (
+        <View style={{ marginTop: SPACE.lg }}>
+          <Text style={s.lbl}>{l('O que foi', 'What it was')}</Text>
+          <SegRow s={s} value={form.officeType === 'medical' ? 'medical' : 'office'} onChange={(v) => { select(); setForm((f) => ({ ...f, officeType: v === 'medical' ? 'medical' : null })); }}
+            options={[
+              { id: 'office', label: l('Instalações da empresa', 'Company premises') },
+              { id: 'medical', label: l('Ato médico', 'Medical') },
+            ]} />
+          <Text style={s.routeHint}>{form.officeType === 'medical'
+            ? (ae.GROUND_PER_DIEM ? l('Inspeção médica ou ato médico a mando da empresa — per diem B (Cl. 9.ª, n.º 1, b), iii)).', 'Medical check ordered by the company — per diem B (Cl. 9(1)(b)(iii)).') : l('Medicina do trabalho ou teste exigido — complemento (Cl. 8.ª, n.º 1, f) e g)).', 'Occupational health or required test — supplement (Cl. 8(1)(f)(g)).'))
+            : (ae.GROUND_PER_DIEM ? l('Sem per diem (Cl. 9.ª).', 'No per diem (Cl. 9).') : l('Deslocação às instalações por ordem da empresa — complemento (Cl. 8.ª, n.º 1, d)).', 'Trip to company premises when ordered — supplement (Cl. 8(1)(d)).'))}</Text>
+        </View>
+      ) : null}
+      {(form.kind === 'positioning' || (isFlight && sectorRows.some((lg) => lg.dh))) && ae && ae.ELEARN_EUR_H ? (
+        <View style={[s.nsRow, { marginTop: SPACE.md }]}>
+          <View style={{ flex: 1, paddingRight: SPACE.md }}>
+            <Text style={s.lbl}>{l('DHC em económica', 'DHC in economy')}</Text>
+            <Text style={s.nsHint}>{l('Liga se não viajaste em C/CL — 20 % da AC1, pago no mês seguinte (Cl. 12.ª, n.º 4).', 'Turn on if you did not travel in C/CL — 20% of AC1, paid the next month (Cl. 12(4)).')}</Text>
+          </View>
+          <Switch value={!!form.dhcEconomy} onValueChange={(v) => { select(); setForm((f) => ({ ...f, dhcEconomy: v })); }}
+            trackColor={{ true: C.ink, false: C.line }} thumbColor={PELE.paper} ios_backgroundColor={C.line} />
         </View>
       ) : null}
       {form.kind === 'training' && !form.role && ae && ae.GROUND_PER_DIEM ? (

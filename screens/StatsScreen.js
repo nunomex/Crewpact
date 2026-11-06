@@ -211,7 +211,7 @@ export default function StatsScreen({ navigation }) {
     // Subsídios e prestações que caem no período (bloco 6): Natal, férias, prestação de abril, permanência, retenção.
     (A.annual > 0) && { k: 'subs', nm: l('Subsídios', 'Allowances'), ic: 'wallet', val: A.annual, sub: [
       ...new Set((A.annualItems || []).map((it) => annualLabel(it, lang))),
-    ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') },
+    ].join(' · ') + ((A.annualItems || []).some((it) => it.incomplete) ? l(' — sem a média das variáveis, que o acordo não define', ' — without the variable-pay average, which the agreement does not define') : '') + ((A.annualItems || []).some((it) => it.suspension) ? l(' · Natal proporcional: baixa de mais de um mês (CT arts. 263.º e 296.º)', ' · Christmas pro rata: sick leave over a month (Labour Code arts. 263 and 296)') : '') },
     (extrasSum !== 0) && { k: 'extras', nm: l('Extras', 'Extras'), ic: 'plus', val: extrasSum, sub: l('escala (papéis · OFC) + eventos (DDO · doença; nos dias de baixa a base sai, CT art. 255.º)', 'roster (roles · OFC) + events (DDO · sick; on sick days the base is not paid, Labour Code art. 255)') },
   ].filter(Boolean);
 

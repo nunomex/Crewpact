@@ -88,7 +88,7 @@ cada frase no texto e calcula com ela.
 
 | Ficheiro | Documento | Para quê |
 |---|---|---|
-| `pt/codigo-trabalho-2009.txt` | Código do Trabalho (Lei n.º 7/2009, DR 1.ª série n.º 30, 12-02-2009), arts. 249.º, 255.º e 271.º — redação original | a falta por doença "determina a perda de retribuição" (art. 255.º, n.º 2, a)): nos dias de baixa a base sai |
+| `pt/codigo-trabalho-2009.txt` | Código do Trabalho (Lei n.º 7/2009, DR 1.ª série n.º 30, 12-02-2009), arts. 249.º, 255.º, 263.º, 271.º e 296.º — redação original | a falta por doença "determina a perda de retribuição" (art. 255.º, n.º 2, a)): nos dias de baixa a base sai; a doença de mais de um mês suspende o contrato (296.º) e o Natal fica proporcional (263.º, n.º 2, c)) |
 | `pt/rmmg.txt` | DL 107/2023 (2024: € 820), DL 112/2024 (2025: € 870,00), DL 139/2025 (2026: € 920,00) | a base do tripulante de cabine do 1.º ano da easyJet ("Salário mínimo nacional (SMN)", Anexo I.1) |
 | `pt/ipc-2024-11.txt` | DREM, "Preços em foco — novembro de 2024" (11-12-2024), com o valor nacional do INE: 2,3 % | a indexação dos pilotos easyJet desde 1-fev-2025 (Anexo I.1/I.2) |
 

@@ -1150,7 +1150,7 @@ export default function HomeScreen({ navigation }) {
             monthAe.nightStops ? { k: l('Pernoitas', 'Night stops'), v: eur(monthAe.nightStops) } : null,
             monthAe.positioning ? { k: monthAe.positioningMax > monthAe.positioning ? l(`Posicionamento (até ${eur(monthAe.positioningMax)})`, `Positioning (up to ${eur(monthAe.positioningMax)})`) : l('Posicionamento', 'Positioning'), v: eur(monthAe.positioning) } : null,
             // Subsídios e prestações que caem neste mês (bloco 6): cada um na sua linha.
-            ...(monthAe.annualItems || []).map((it) => ({ k: annualLabel(it, lang), v: eur(it.eur) })),
+            ...(monthAe.annualItems || []).map((it) => ({ k: annualLabel(it, lang), v: it.max > it.eur ? `${eur(it.eur)} ${l('a', 'to')} ${eur(it.max)}` : eur(it.eur) })),
             // Extras = extras + eventos + abono para falhas (o MESMO agrupamento dos Números) — as parcelas
             // têm de SOMAR o total: base + per-diem + pernoitas + extras.
             ((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)) ? { k: 'Extras', v: eur((monthAe.extras || 0) + (monthAe.events || 0) + (monthAe.cash || 0)), onPress: extrasItem ? () => openItem(extrasItem) : undefined } : null,

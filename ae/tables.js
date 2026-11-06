@@ -45,6 +45,30 @@ export const admissionShare = (serviceStart, year, toMonth = 12) => {
   if (!s || s.y !== year) return 1;
   return Math.max(0, toMonth - s.m + 1) / 12;
 };
+// Natal numa baixa longa (Código do Trabalho, fontes/pt): a doença suspende o contrato quando "se prolongue por mais de um mês"
+// (art. 296.º, n.º 1; ou antes, quando for previsível — n.º 3) e o Natal "é proporcional ao tempo de serviço prestado no ano
+// civil" em caso de suspensão (art. 263.º, n.º 2, c)). Os episódios saem dos eventos `sickDays` (dias seguidos). Devolve null
+// (nenhum episódio de mais de um mês no ano) ou { min, max }: a fração do ano trabalhada contando a suspensão desde o 1.º dia
+// (min, o certo) ou só depois do 1.º mês (max) — a app não sabe quando a suspensão se tornou previsível.
+const isoNext = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10); };
+const plusMonth = (iso) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(Date.UTC(y, m, d)); if (t.getUTCDate() !== d) t.setUTCDate(0); return t.toISOString().slice(0, 10); };
+export const suspensionShare = (events, year) => {
+  const ds = [...new Set((events || []).filter((e) => e && e.type === 'sickDays' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.date))).map((e) => String(e.date)))].sort();
+  if (!ds.length) return null;
+  const runs = []; let cur = null;
+  for (const d of ds) { if (cur && isoNext(cur[cur.length - 1]) === d) cur.push(d); else { cur = [d]; runs.push(cur); } }
+  const Y = String(year);
+  let all = 0, after = 0;
+  for (const r of runs) {
+    const limit = plusMonth(r[0]);               // a partir daqui o impedimento já passou de um mês
+    if (r[r.length - 1] < limit) continue;       // um mês ou menos: não suspende (n.º 1)
+    all += r.filter((d) => d.startsWith(Y)).length;
+    after += r.filter((d) => d.startsWith(Y) && d >= limit).length;
+  }
+  if (!all) return null;
+  const n = ((+year % 4 === 0 && +year % 100 !== 0) || +year % 400 === 0) ? 366 : 365;
+  return { min: (n - all) / n, max: (n - after) / n };
+};
 // Antes da entrada na companhia? (o mês `ym` é anterior ao da data de entrada)
 export const beforeStart = (serviceStart, ym) => {
   const s = ymParts(serviceStart), p = ymParts(ym);

@@ -12,7 +12,7 @@
 // de haver "C/C", o supervisor passa a S/C 1..S/C 7. Per-diem e pernoita = "ajudas de
 // custo complementares" POR DIA DE CALENDÁRIO (cl. 7.ª), não por setor.
 
-import { pickTable, ymParts, ymShift, vacationPayYm, admissionShare, beforeStart } from './tables';
+import { pickTable, ymParts, ymShift, vacationPayYm, admissionShare, beforeStart, suspensionShare } from './tables';
 
 export const AE_ID = 'tap-snpvac';
 export const AE_LABEL = 'TAP · SNPVAC (cabine)';
@@ -194,7 +194,11 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
   const out = [];
   if (p.m === 12) {
     const b = monthlyBase(cat, { contract, index, ym, serviceStart, largada, history });
-    if (b != null) out.push({ id: 'natal', eur: r2(b * admissionShare(serviceStart, p.y)), cite: 'Cl. 17.ª' });
+    // Baixa de mais de um mês no ano: proporcional ao tempo de serviço (CT art. 263.º, n.º 2, c), e 296.º — a Cl. 17.ª só fala da
+    // admissão e da cessação; a lei completa-a) — certo e máximo.
+    const sh = suspensionShare(events, p.y);
+    const v = b == null ? null : b * admissionShare(serviceStart, p.y);
+    if (v != null) out.push({ id: 'natal', eur: r2(sh ? v * sh.min : v), cite: 'Cl. 17.ª', ...(sh ? { max: r2(v * sh.max), suspension: true } : {}) });
   }
   for (const year of [p.y, p.y + 1]) {
     if (vacationPayYm(events, year) !== ym) continue;
@@ -219,6 +223,14 @@ export const EXTRAORD_FROM_ROSTER = true;
 // Adicional de chefia (Cl. 11.ª): 8 % das AC1 + AC2 do mês, "atribuído no mês seguinte", ao supervisor de cabine (e ao chefe de
 // cabine até 31-12-2025).
 export const isChefia = (cat) => /^SC/.test(String(cat || ''));
+// E-learning (Cl. 13.ª, n.º 2, e), v)): "145,00 € (...) referente a 8 horas de formação e-learning" e "As demais horas (...), até ao
+// limite de 24 horas/ano, (...) 18,125 €/hora", ambos "juntamente com o vencimento do mês seguinte" → 18,125 €/h até 24 h por
+// ano (8 × 18,125 = 145). Se o limite de 24 h conta as 8 primeiras é leitura da app (a que não paga a mais) — advogado.
+export const ELEARN_EUR_H = 18.125;
+export const ELEARN_MAX_H = 24;
+// DHC fora de C/CL (Cl. 12.ª, n.º 4): "20 % do valor da ajuda de custo complementar 1, a ser atribuído no vencimento do mês
+// seguinte" — por deslocação em DHC marcada `dhcEconomy` (a app não sabe a classe; o tripulante marca).
+export const DHC_ECON_PCT = 0.2;
 
 // Estimativa mensal de apoio (€): base + AC1 dos voos + AC2 das pernoitas.
 export const computeAeMonth = ({ category = 'CAB3', contract = '12/12', duties = [], nightStops = 0, extraSectors = 0, index = 1, ym, serviceStart = null, largada = null, history = null } = {}) => {

@@ -90,22 +90,34 @@ A-209, A-215, A-225, A-235 em parte, A-239, A-259, A-274).
   entrada (`fromEntry`; os Números avisam); faltavam dependências (Início e Números ficavam com valores antigos ao mudar a
   data de entrada); a TAP mostrava "N paragens" ao lado do € das estadias. Também: a chefia pela categoria do mês das ajudas; o
   complemento registado à mão num dia de e-learning volta a contar.
-- **Decisão pendente do Nuno:** um campo "data da largada" no Perfil para a TAP (as anuidades e a senioridade contam dela) —
-  sessão de design, Mobbin primeiro. Até lá conta-se da entrada, com o aviso.
+- **Data da largada (TAP) — FEITO no mesmo dia** (o Nuno: "sim, quero"; `2a195bc`): linha "Largada" no Perfil, a mesma página da
+  antiguidade (roda de mês e ano; não pode ser antes da entrada), gravada nos metadados e na exportação RGPD; o motor conta as
+  anuidades e a senioridade dela. Sem ela conta da entrada e os Números pedem-na (ponto âmbar na linha).
+- **Depois, também no mesmo dia** (o Nuno: "vê se consegues corrigir"):
+  - **Natal numa baixa longa — deixou de ser dúvida:** o Código do Trabalho (PDF oficial do DR, arts. 263.º e 296.º juntos a
+    `fontes/pt/`) diz que a doença de mais de um mês suspende o contrato e o Natal fica "proporcional ao tempo de serviço
+    prestado no ano civil". Nos 4 acordos (`suspensionShare` em `ae/tables.js`): certo = a suspensão desde o 1.º dia; máximo =
+    só depois do 1.º mês (n.º 3: suspende antes "no momento em que seja previsível" — a app não sabe quando). Os Números e o
+    Início mostram o intervalo.
+  - **TAP, rubricas que faltavam:** e-learning da cabine (Cl. 13.ª: 18,125 €/h até 24 h/ano, no mês seguinte; se as 24 h
+    contam as 8 primeiras é dúvida); DHC fora de C/CL (Cl. 12.ª/4: 20 % da AC1 no mês seguinte — interruptor "DHC em
+    económica" no posicionamento e no voo com DH); ato médico (escritório marcado "Ato médico": pilotos per diem B, Cl. 9.ª/1
+    b) iii); cabine o complemento, Cl. 8.ª/1 f) e g)). Golden 238.
+  - **A retenção do PPY 9/12 fica para o advogado:** o texto do Art. 25.º/21 a) é igual ao do 8/12 ("pagos proporcionalmente
+    para os que se encontrem em regime de tempo parcial ou em regime de 7/7"); se "tempo parcial" incluísse o próprio PPY, o
+    valor de base nunca se aplicaria. A app paga-a inteira — é leitura, não se corrige sem inventar.
 - **Goldens antigos acertados à lei:** TAP pilotos (a base sem antiguidade = só o VB; VS para todos; assistência no aeroporto
   paga A), estatísticas (subsídio de Natal no fecho e no ano; a TAP do ano da mudança com Natal 8/12), doença do mês inteiro
   passou para outubro (em novembro entra o subsídio de Natal).
-- **Pendências (para o advogado):** o corte do subsídio de Natal numa baixa longa (CT art. 263.º, não está em `fontes/pt`); a
-  divisão junho/janeiro das férias da cabine no ano da contratação; as férias dos pilotos contratados depois de junho em
+- **Pendências (para o advogado):** a divisão junho/janeiro das férias da cabine no ano da contratação; as férias dos pilotos contratados depois de junho em
   dezembro; o CMP na linha do chefe no Anexo I.18; a Cl. 68.ª/1 da cabine (DDO ou IDO?); a 1.ª anuidade técnica da TAP com a
   entrada em janeiro (a app conta o 1 de janeiro do ano a seguir ao ano completo); o 5/4 nas férias; da revisão: o valor das
   anuidades técnicas da função antiga (a app usa o VB da categoria de então, na tabela atual); a retenção do PPY 9/12 inteira ou
   proporcional (Art. 25.º/21 a)); o subsídio de férias da TAP no ano de admissão ("ajustado à totalidade dos dias de férias");
   as noites dos pilotos easyJet de estadia e depois de um posicionamento (Art. 39.º "entre serviços de voo").
 - **Pendências (produto/código):** a média das variáveis nos subsídios easyJet (que rubricas e que período); o subsídio de
-  idioma (campo no Perfil); a saída da companhia (subsídios proporcionais no ano da cessação); TAP: a e-learning da cabine
-  (145 € por 8 h, Cl. 13.ª), os atos médicos (não há tipo de serviço), a AC2 por cancelamento tardio, os 20 % do DHC fora de
-  C/CL (a app não sabe a classe), a prestação complementar dos pilotos (Cl. 10.ª) e o exercício efetivo do VE (o recibo diz as
+  idioma (campo no Perfil); a saída da companhia (subsídios proporcionais no ano da cessação); TAP: a AC2 por cancelamento
+  tardio, a prestação complementar dos pilotos (Cl. 10.ª) e o exercício efetivo do VE (o recibo diz as
   anuidades: campo no Perfil, com Mobbin); WFLY + DDO no mesmo serviço (Cl. 67.ª/5: o modelo guarda um por dia); a formação
   fora da base da cabine na importação (o toggle à mão existe); a formação inicial (Art. 39.º/44.º, Cl. 57.ª/2) a app não
   sabe.

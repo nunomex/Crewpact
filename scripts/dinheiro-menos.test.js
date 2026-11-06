@@ -208,6 +208,50 @@ has('TAP pilotos Cl. 8.ª/1 (Natal = RB)', TAPP, 'O piloto tem direito, anualmen
   eq('TAP: com a largada, conta da largada', tapP.seniority('OP3', { ym: '2024-07', serviceStart: '2018-01-01', largada: '2018-06-01' }).anos, 6);
 }
 
+// ═══ L1 · Natal numa baixa longa (Código do Trabalho, pedido do Nuno 2026-11-06) ═══════════════════════════════════════
+// Art. 296.º, n.º 1: a doença suspende o contrato quando "se prolongue por mais de um mês" (n.º 3: ou antes, quando for
+// previsível — a app não sabe quando); art. 263.º, n.º 2, c): o Natal "é proporcional ao tempo de serviço prestado no ano civil
+// (...) Em caso de suspensão de contrato de trabalho por facto respeitante ao trabalhador". A TAP pilotos di-lo também (Cl. 8.ª,
+// n.º 2). O certo conta a suspensão desde o 1.º dia; o máximo, só depois do 1.º mês.
+const CT = src('pt/codigo-trabalho-2009.txt');
+has('CT art. 263.º/2 c)', CT, 'c) Em caso de suspensão de contrato de trabalho por facto respeitante ao trabalhador');
+has('CT art. 296.º/1', CT, 'que não lhe seja imputável e se prolongue por mais de um mês, nomeadamente doença');
+has('TAP pilotos Cl. 8.ª/2 (suspensão)', TAPP, 'bem como no da suspensão do mesmo, este subsídio será pago na proporção do tempo de trabalho prestado');
+{
+  // FO 12/12, baixa de 1-mar a 30-abr-2026 (61 dias, mais de um mês): Natal 3 489,16 × 304/365 = 2 906,04 € certo; × 335/365 =
+  // 3 202,38 € no máximo (suspenso só de 1 a 30 de abril).
+  const sick = days('2026-03-01', 61, 'sickDays');
+  const n = item(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: sick }), 'natal');
+  eq('FO: Natal com suspensão (certo e máximo)', [n.eur, n.max], [2906.04, 3202.38]);
+  eq('FO: baixa de 30 dias não suspende', eur(pil.annualItems('FO', { ym: '2026-11', index: pil.indexFactor('2026-11'), events: days('2026-03-01', 30, 'sickDays') }), 'natal'), 3489.16);
+  const nc = item(cab.annualItems('FA', { ym: '2026-11', events: sick }), 'natal');
+  eq('FA: Natal com suspensão (certo e máximo)', [nc.eur, nc.max], [1121.53, 1235.89]);
+}
+
+// ═══ TAP: rubricas que faltavam (pedido do Nuno 2026-11-06) ════════════════════════════════════════════════════════════
+has('TAP cabine Cl. 13.ª/2 e) v) (e-learning 145 € por 8 h)', TAPC, 'o montante 145,00 € (cento e quarenta e cinco euros), referente a 8 horas de formação e-learning');
+has('TAP cabine Cl. 13.ª/2 e) v) a) (18,125 €/h até 24 h/ano)', TAPC, 'até ao limite de 24 horas/ano, serão abonadas pelo valor de 18,125 €/hora');
+has('TAP cabine Cl. 12.ª/4 (DHC fora de C/CL)', TAPC, 'e não viaje em C/CL, terá direito a um abono adicional correspondente a 20 % do valor da ajuda de custo complementar 1');
+has('TAP pilotos Cl. 9.ª/1 b) iii) (inspeções médicas = B)', TAPP, 'Deslocações para realização de inspeções médicas obrigatórias ou outros atos médicos a mando da em- presa');
+has('TAP cabine Cl. 8.ª/1 g) (medicina do trabalho)', TAPC, 'g) Realização da medicina do trabalho');
+{
+  // E-learning: 8 h em março → 145,00 € em abril; mais 20 h em abril → só 16 até às 24 h do ano → 16 × 18,125 = 290,00 € em maio.
+  const el = { '2026-03-10': { kind: 'training', eLearning: true, report_time: '09:00', block_on: '17:00' },
+    '2026-04-14': { kind: 'training', eLearning: true, report_time: '08:00', block_on: '18:00', extra: [{ kind: 'training', eLearning: true, report_time: '19:00', block_on: '23:00' }] },
+    '2026-04-20': { kind: 'training', eLearning: true, report_time: '09:00', block_on: '15:00' } };
+  const T = (ym, d = el) => monthlyAe(d, 'CAB3', '12/12', tapC, { ym });
+  eq('TAP cabine: e-learning de março pago em abril', T('2026-04').extras, 145);
+  eq('TAP cabine: e-learning de abril até às 24 h, em maio', T('2026-05').extras, 290);
+  eq('TAP cabine: e-learning não paga no próprio mês', T('2026-03').extras, 0);
+  // DHC fora de C/CL: 20 % da AC1 (150 € em 2026) no mês seguinte.
+  const dhc = { '2026-03-12': { kind: 'positioning', route: 'LIS-FNC', dhcEconomy: true } };
+  eq('TAP cabine: DHC em económica = 20 % da AC1 no mês seguinte', T('2026-04', dhc).extras, 30);
+  eq('TAP cabine: DHC em C/CL = nada', T('2026-04', { '2026-03-12': { kind: 'positioning', route: 'LIS-FNC' } }).extras, 0);
+  // Ato médico: pilotos = per diem B; cabine = o complemento (como a deslocação às instalações).
+  eq('TAP piloto: inspeção médica = B', monthlyAe({ '2026-06-08': { kind: 'office', officeType: 'medical', report_time: '09:00', block_on: '11:00' } }, 'OP3', '12/12', tapP, { ym: '2026-06', fleet: 'NB' }).perDiem, 135);
+  eq('TAP cabine: medicina do trabalho = complemento', T('2026-03', { '2026-03-09': { kind: 'office', officeType: 'medical', report_time: '09:00', block_on: '11:00' } }).extras, 40);
+}
+
 // ═══ L2 · Posicionamento ═══════════════════════════════════════════════════════════════════════════════════════════════
 has('Cl. 57.ª/1 (duração da viagem)', CAB, 'Os pagamentos realizados por posicionamento variam em função da duração da viagem');
 has('Cl. 57.ª/2 (qualquer meio de transporte)', CAB, 'O tripulante de cabine receberá o pagamento do posicionamento em exercício de funções, independente- mente do meio de transporte');

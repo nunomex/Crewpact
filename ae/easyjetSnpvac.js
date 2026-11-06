@@ -6,7 +6,7 @@
 // Módulo PURO (sem React Native) — testável por golden. Estimativa de apoio;
 // NÃO substitui o processamento salarial oficial. Categorias: FA1, FA, CMP, CM.
 
-import { pickTable, ymParts, admissionShare, beforeStart } from './tables';
+import { pickTable, ymParts, admissionShare, beforeStart, suspensionShare } from './tables';
 
 export const AE_ID = 'easyjet-snpvac';
 export const AE_LABEL = 'Easyjet · SNPVAC (cabine)';
@@ -381,18 +381,30 @@ export const computeAeMonth = ({ category = 'FA', contract = '12/12', duties = [
 // de retribuição base recebidos nos últimos 12 (doze) meses" (Cl. 48.ª, n.º 9) → a média do ano (o fator do contrato).
 // A parte CERTA é o 1/14 da base. A média do variável (o acordo não diz que rubricas entram no CPV) e o 1/14 do subsídio de
 // idioma (a app não sabe as línguas) ficam de fora e o item diz isso (`incomplete`) — nunca um número inventado.
+// Natal numa baixa de mais de um mês: proporcional ao tempo de serviço (CT art. 263.º, n.º 2, c); 296.º) — certo e máximo.
+const SUSP_NOTE = { pt: 'Proporcional ao tempo de serviço: houve uma baixa de mais de um mês (Código do Trabalho, arts. 263.º e 296.º).', en: 'Pro rata to time worked: there was sick leave of more than a month (Labour Code, arts. 263 and 296).' };
+const applySuspension = (out, events, year) => {
+  const sh = suspensionShare(events, year);
+  const it = out.find((x) => x.id === 'natal');
+  if (!sh || !it) return;
+  const full = it.eur;
+  it.eur = r2(full * sh.min); it.max = r2(full * sh.max); it.suspension = true; it.suspNote = SUSP_NOTE;
+};
 const SUB_NOTE = {
   ferias: { pt: 'Sem a média do pagamento variável (o acordo não diz que rubricas entram) nem o 1/14 do subsídio de idioma.', en: 'Without the average variable pay (the agreement does not list what counts) or 1/14 of the language allowance.' },
   natal: { pt: 'Sem o 1/14 do subsídio de idioma, se o tiveres.', en: 'Without 1/14 of the language allowance, if you get it.' },
 };
-export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null } = {}) => {
+export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, events = [] } = {}) => {
   const p = ymParts(ym);
   if (!p || beforeStart(serviceStart, ym)) return [];
   const sub = (refYm) => { const a = annualBase(cat, tableAt(refYm), refYm); return a == null ? null : (a * contractFactor(contract) * index) / SALARY_INSTALMENTS; };
   const out = [];
   const push = (id, v, share) => { if (v != null && share > 0) out.push({ id, eur: r2(v * share), incomplete: true, note: SUB_NOTE[id], cite: 'Cl. 51.ª' }); };
   const s = ymParts(serviceStart);
-  if (p.m === 11) push('natal', sub(ym), admissionShare(serviceStart, p.y, 12));
+  if (p.m === 11) {
+    push('natal', sub(ym), admissionShare(serviceStart, p.y, 12));
+    applySuspension(out, events, p.y);   // baixa de mais de um mês (CT art. 263.º, n.º 2, c), e 296.º)
+  }
   if (p.m === 6) push('ferias', sub(ym), (s && s.y === p.y) ? Math.max(0, 7 - s.m) / 12 : 1);
   // Janeiro: "os restantes meses" do ano da contratação (julho a dezembro, ou desde a entrada se foi depois de junho).
   if (p.m === 1 && s && s.y === p.y - 1) push('ferias', sub(`${p.y - 1}-12`), (13 - Math.max(7, s.m)) / 12);
