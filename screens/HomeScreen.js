@@ -10,7 +10,8 @@ import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
 import { routeDistancesNM } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
-import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, restAfterDuty, liveFdpVerdict } from '../ftl';
+import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
+import { restUntilAfter } from '../data/today';
 import Skeleton from '../components/Skeleton';
 import useTabBarSpace from '../hooks/useTabBarSpace';
 import useEnter from '../hooks/useEnter';
@@ -675,10 +676,12 @@ export default function HomeScreen({ navigation }) {
   // A regra é a do motor (restAfterDuty): também as 14 h depois de repouso a bordo ou de fuso ≥ 4 h e as +2 h/+4 h
   // depois de um PSV prolongado (auditoria A-145/A-150/A-169). Sem localização fiável, o estado diz onde se repousa.
   const restUntil = (todayEnded && !closeMulti && (homeState === 'posvoo' || homeState === 'pernoita')) ? (() => {
-    const ra = restAfterDuty(todayEnded, { inBase: homeState === 'posvoo', base: homeBaseAt(todayISO), postFlightMin: postFlightMin || 0, isPilot, date: todayISO });
-    if (!ra) return null;
-    const u = ra.endMin + (ra.extended ? ra.requiredPostOnlyMin : ra.requiredMin);   // sem saber o repouso antes: +4 h (o lado seguro)
-    return { hm: minToHm(u), nextDay: u >= 1440 };
+    // A MESMA regra da pílula do repouso (restUntilAfter = restStatus): +2 h ou +4 h depois de um prolongamento.
+    const ru = restUntilAfter(duties || {}, todayISO, { inBase: homeState === 'posvoo', baseAt: homeBaseAt, postFlightMin: postFlightMin || 0, isPilot });
+    if (!ru) return null;
+    const u = new Date(ru.untilMs);
+    const uIso = `${u.getFullYear()}-${String(u.getMonth() + 1).padStart(2, '0')}-${String(u.getDate()).padStart(2, '0')}`;
+    return { hm: `${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`, nextDay: uIso > todayISO };
   })() : null;
   const restUntilHm = restUntil ? restUntil.hm : null;
 

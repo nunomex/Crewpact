@@ -23,7 +23,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { restStatus, legalStatus } = require(path.resolve('data/today.js'));
+const { restStatus, legalStatus, restUntilAfter } = require(path.resolve('data/today.js'));
 
 let ok = 0, fail = 0;
 const eq = (label, got, exp) => {
@@ -118,6 +118,15 @@ eq('205(d)(2): dois prolongamentos seguidos → +4 h', pick(restStatus({
   '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
   '2026-11-11': { report_time: '14:00', block_on: '03:30', sectors: 1 },
 }, T2, at(T2, '21:00'))).requiredMin, 1050);
+
+// "Repouso até" (Início): a MESMA regra da pílula — depois de um prolongamento, +2 h ou +4 h pelo repouso anterior.
+eq('Repouso até: prolongamento com repouso antes longo → +2 h (15:30)', restUntilAfter({
+  '2026-11-09': { report_time: '06:00', block_on: '10:00' },
+  '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
+}, '2026-11-10').requiredMin, 930);
+eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
+  '2026-11-10': { report_time: '07:00', block_on: '20:30', sectors: 1 },
+}, '2026-11-10').requiredMin, 1050);
 
 // "A lei é que manda": falta um facto → o "Dentro dos limites?" diz incerto (nem "sim" nem "não"), com o que falta.
 {

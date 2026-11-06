@@ -68,53 +68,74 @@ export function nextDutyStatus(duties = {}, todayISO, _now = Date.now()) {
 // localização real), 14 h depois de repouso a bordo ou de fuso ≥ 4 h, e +2 h / +4 h depois de um PSV prolongado.
 // As durações contam-se em instantes (Date), não em relógios — a hora de verão não engana (A-171).
 // `ctx` = { postFlightMin, isPilot, base, baseAt(iso) }. status: 'ok' | 'bad' | 'neutral' (sem dados para calcular).
-export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
+// Os serviços da escala com início e fim em INSTANTES (Date), e o mínimo depois de cada um (restAfterDuty). A reserva
+// não é serviço para o 235 (CS FTL.1.230(b)).
+const restServices = (duties = {}, ctx = {}) => {
   const { postFlightMin = 0, isPilot = false, base = null, baseAt = null } = ctx || {};
   const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
   const at = (iso, hm, addDays = 0) => { const [h, m] = String(hm).split(':').map(Number); const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + addDays); x.setHours(h || 0, m || 0, 0, 0); return x; };
   const hm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-  // Todos os serviços (a reserva não é serviço para o 235 — CS FTL.1.230(b)), com início e fim em instantes.
   const svcs = [];
   for (const iso in duties) {
     const d = duties[iso]; if (!d || d.deleted) continue;
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
       if (!s || !s.report_time || s.kind === 'reserve') continue;
       const start = at(iso, s.report_time);
-      const ra = restAfterDuty(s, { postFlightMin, isPilot, base: baseOf(iso), date: iso });
+      const ra = restAfterDuty(s, { postFlightMin, isPilot, base: baseOf(iso), date: iso, inBase: ctx && ctx.inBase === false ? false : true });
       let end = null;
       if (ra) { end = at(iso, hm(ra.endMin)); if (+end <= +start) end = at(iso, hm(ra.endMin), 1); }
       svcs.push({ iso, s, start, end, ra });
     }
   }
+  return svcs;
+};
+const before = (svcs, t) => svcs.filter((v) => +v.start < +t).sort((a, b) => +b.start - +a.start);
+
+// O mínimo DEPOIS de `prev` (ORO.FTL.235 + 205(d)): o serviço ou o piso; se `prev` foi prolongado, +2 h quando o repouso
+// ANTES dele também teve as +2 h (opção i), senão +4 h (ii); +4 h também quando o seguinte é prolongado (205(d)(2)).
+const requirementAfter = (svcs, prev, next = null) => {
+  const prevDutyMin = Math.round((+prev.end - +prev.start) / 60000);
+  const { floorMin } = prev.ra;
+  let requiredMin = Math.max(prevDutyMin, floorMin), extOption = null;
+  if (prev.ra.extended) {
+    const pp = before(svcs, prev.start)[0] || null;
+    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +pp.start) / 60000), pp.ra.floorMin) : null;
+    const preRest = pp && pp.end ? Math.round((+prev.start - +pp.end) / 60000) : null;
+    extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
+    if (next && next.ra && next.ra.extended) extOption = 'consecutive';
+    requiredMin += extOption === 'i' ? 120 : 240;
+  }
+  return { prevDutyMin, floorMin, requiredMin, extOption };
+};
+
+export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
+  const svcs = restServices(duties, ctx);
   // O PRÓXIMO é o 1.º serviço cujo REPORT ainda não passou (2026-11-04, golden test:reststatus).
   const refMs = +ref;
   let next = null;
   for (const v of svcs) { if (v.iso < todayISO || +v.start <= refMs) continue; if (!next || +v.start < +next.start) next = v; }
   if (!next) return { id: 'rest', status: 'neutral', kind: 'noNext' };
   // O ANTERIOR: o último a começar antes do próximo (a adjacência importa p/ o repouso).
-  const before = (t) => svcs.filter((v) => +v.start < +t).sort((a, b) => +b.start - +a.start);
-  const prev = before(next.start)[0] || null;
+  const prev = before(svcs, next.start)[0] || null;
   if (!prev) return { id: 'rest', status: 'neutral', kind: 'noPrev', nextIso: next.iso };
   if (!prev.end) return { id: 'rest', status: 'neutral', kind: 'noPrevEnd', prevIso: prev.iso, nextIso: next.iso };
-  const prevDutyMin = Math.round((+prev.end - +prev.start) / 60000);
   const actualMin = Math.round((+next.start - +prev.end) / 60000);
-  const { floorMin } = prev.ra;
-  let requiredMin = Math.max(prevDutyMin, floorMin);
-  // PSV anterior prolongado (205(d)(1)): +2 h se o repouso ANTES dele também teve as +2 h (opção i); senão +4 h (ii).
-  let extOption = null;
-  if (prev.ra.extended) {
-    const pp = before(prev.start)[0] || null;
-    const ppNeed = pp && pp.end ? Math.max(Math.round((+pp.end - +pp.start) / 60000), pp.ra.floorMin) : null;
-    const preRest = pp && pp.end ? Math.round((+prev.start - +pp.end) / 60000) : null;
-    extOption = (ppNeed != null && preRest != null && preRest >= ppNeed + 120) ? 'i' : 'ii';
-    // 205(d)(2): o seguinte também é prolongado → os +2 h depois deste e os +2 h antes dele somam-se (consecutivos).
-    if (next.ra && next.ra.extended) extOption = 'consecutive';
-    requiredMin += extOption === 'i' ? 120 : 240;
-  }
+  const { prevDutyMin, floorMin, requiredMin, extOption } = requirementAfter(svcs, prev, next);
   return {
     id: 'rest', status: actualMin < requiredMin ? 'bad' : 'ok', actualMin, requiredMin, floorMin, prevDutyMin,
     prevIso: prev.iso, nextIso: next.iso, place: prev.ra.inBase ? 'base' : 'away', reason: prev.ra.reason, extOption,
   };
+}
+
+// "Repouso até": o fim do último serviço de `iso` + o mínimo a seguir — a MESMA regra do restStatus (a pílula e esta
+// frase nunca podem discordar). Sem o serviço seguinte conhecido, um prolongamento conta como opção (i) ou (ii) pelo
+// repouso anterior. null sem dados.
+export function restUntilAfter(duties = {}, iso, ctx = {}) {
+  const svcs = restServices(duties, ctx).filter((v) => v.end);
+  const mine = svcs.filter((v) => v.iso === iso).sort((a, b) => +b.end - +a.end)[0];
+  if (!mine) return null;
+  const { requiredMin } = requirementAfter(svcs, mine, null);
+  return { untilMs: +mine.end + requiredMin * 60000, requiredMin, endMs: +mine.end };
 }
 
 // "Mudou a escala?" — alterações detetadas (Fase 4): contagens + as próprias listas.
