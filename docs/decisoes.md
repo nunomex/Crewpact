@@ -19,11 +19,43 @@ verificadores cada); agrupados, cerca de 70 problemas.
 3. Limites TAP (S11) e validades (S12) · 4. Importação (S6 do lado do import: A-220–A-228, M12, L12) · 5. Dinheiro a mais (M1–M11,
    primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
    8. Dúvidas → advogado.
-**Decisões tuas pendentes do bloco 1:** (a) o PSV que cabe no prolongamento continua a aparecer como "excede" (A-256, dúvida:
-da escala não se distingue prolongamento planeado de excesso; ficou o lado seguro); (b) os valores por omissão escolhidos
-(o mais restritivo, ver abaixo) — se quiseres outros, diz.
+**Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
+com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
+**Factos do Manual de Operações por saber** (até lá a app dá "incerto" perto do limite): (1) a cabine e os pilotos
+apresentam-se à mesma hora? (easyJet, TAP — ORO.FTL.205(c)); (2) o pré-voo + pós-voo + deslocação que o OM desconta da
+pausa do repartido (CS FTL.1.220(b)); (3) o pós-voo das companhias que não são easyJet (hoje "assumido 30 min", que não
+é a lei); (4) o tipo de horário irregular da TAP e das outras (matinal ou tardio, ORO.FTL.105(8)).
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (fim) — "A LEI É QUE MANDA": sem valores inventados (Opus 5.5)
+
+O Nuno recusou os valores por omissão "pelo lado seguro" do bloco 1. 7 commits (`1f36af7` … `2cf8776`), golden primeiro,
+`npm test` verde (29 suites). ENGINE_VERSION = 3.
+- **Intervalo e "incerto":** o motor dá o PSV máximo GARANTIDO e o POSSÍVEL quando falta um facto; "excede" só acima do
+  possível. Factos: alojamento na pausa, dados da cabine com repouso a bordo, setor mais longo, apresentação dos pilotos,
+  desconto do OM no repartido. Início, Detalhe, Simulação, formulário, importação, voo ao vivo e 245 dizem o que falta.
+- **Cabine com repouso a bordo:** pilotos extra, classe deles e o seu repouso — obrigatórios no formulário.
+- **ORO.FTL.205(c):** o PSV máximo da cabine baseia-se na apresentação dos pilotos (+ a diferença, até 1 h). Campo novo
+  "Apresentação dos pilotos"; sem ele, 0 a 60 min → intervalo.
+- **Repartido:** alojamento "por responder" por omissão (os registos antigos também), com as definições do 105(3)/(4);
+  desconto da pausa = o do OM (desconhecido → sem extensão garantida).
+- **205(d) prolongamento planeado (A-256):** a escala publicada (snap) é o plano → "dentro, com prolongamento" quando cabe
+  na tabela, sem repouso a bordo nem repartido, e até 2 em 7 dias; +4 h de repouso entre dois seguidos (205(d)(2));
+  marca "planeado pela companhia" para os serviços à mão. "Repouso até" do Início com a mesma regra da pílula.
+- **105(2) hora de referência + 105(12) tempo decorrido:** pela Zulu das legs — a faixa lê-se na hora do aeroporto de
+  apresentação (≤ 2 h da base); o PSV conta-se em tempo decorrido (hora de verão).
+- **235(d) recuperação:** 36 h com 2 noites locais, ≤ 168 h, 60 h depois de 4 irregulares, tardio→matinal com noite
+  local; no "Tenho descanso?". Tipo matinal/tardio desconhecido (≠ easyJet) → incerto.
+
+**Falta (próximo passo):** aclimatação no longo curso (Quadro 1 → B/D/X, Quadro 3) e as noites locais na base depois de
+rotações com fuso (CS 235(b)(3)(i)/(4)); os 2 dias locais duas vezes por mês e as 72 h depois de mudar de base (235(d)/(e));
+a 2.ª notificação do adiamento (CS 205(d)(1)(ii)). Para o advogado: as duas leituras da CS 220(d)/(e); o serviço que passa a
+meia-noite nas janelas de 7 dias (dias civis ou 168 h).
+**Por ver no iPhone (além da lista do bloco 1):** "Incerto" no Início/Detalhe/Simulação; os campos novos (pilotos,
+apresentação dos pilotos, alojamento por responder, prolongamento planeado); "dentro, com prolongamento".
 
 ---
 
