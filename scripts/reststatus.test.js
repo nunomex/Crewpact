@@ -130,12 +130,15 @@ eq('Repouso até: sem saber o repouso antes → +4 h (17:30)', restUntilAfter({
 
 // Recuperação no "Tenho descanso?": 4 entradas às 06:30 entre duas recuperações e a seguinte com 41 h. No tipo TARDIO a
 // entrada matinal é 05:00–06:59 → 4 irregulares → a recuperação tinha de ter 60 h (CS FTL.1.235(a)(2)); no MATINAL
-// (easyJet) é 05:00–05:59 → nenhum → sem aviso. Sem saber o tipo da companhia → incerto.
+// é 05:00–05:59 → nenhum → sem aviso. Sem fonte oficial do tipo da companhia → incerto.
 {
   const dd = { '2026-11-01': { report_time: '06:00', block_on: '12:00', sectors: 2 }, '2026-11-09': { report_time: '06:00', block_on: '12:00', sectors: 2 } };
   for (let i = 4; i <= 7; i++) dd[`2026-11-0${i}`] = { report_time: '06:30', block_on: '13:00', sectors: 2 };
-  eq('recuperação: easyJet (matinal) → sem aviso', recoveryStatus(dd, '2026-11-05', { companySlug: 'easyjet' }).status, 'ok');
-  const unk = recoveryStatus(dd, '2026-11-05', { companySlug: 'tap' });
+  // Com o tipo fixado por fonte oficial (ARO.OPS.230): matinal → nenhum irregular → sem aviso.
+  eq('recuperação: tipo matinal (fonte oficial) → sem aviso', recoveryStatus(dd, '2026-11-05', { disruptiveType: 'early' }).status, 'ok');
+  eq('recuperação: tipo tardio (fonte oficial) → aviso', recoveryStatus(dd, '2026-11-05', { disruptiveType: 'late' }).status, 'bad');
+  // Sem fonte oficial (hoje, todas as companhias, também a easyJet) → os dois tipos → incerto.
+  const unk = recoveryStatus(dd, '2026-11-05', { companySlug: 'easyjet' });
   eq('recuperação: tipo desconhecido → incerto', [unk.status, (unk.issues[0] || {}).type, (unk.issues[0] || {}).uncertain], ['warn', 'recovery60', true]);
 }
 

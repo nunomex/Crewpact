@@ -139,11 +139,13 @@ export function restUntilAfter(duties = {}, iso, ctx = {}) {
 }
 
 // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)) — os avisos de [hoje − 1, hoje + 14]. O tipo de horário irregular
-// (matinal ou tardio, ORO.FTL.105(8)) é atribuído pela autoridade a cada operador: a easyJet Europe (AOC austríaco) é
-// MATINAL; para as outras companhias a app não o sabe → avaliam-se os dois e um aviso que só um dá fica INCERTO.
+// (matinal ou tardio, ORO.FTL.105(8)) é a AUTORIDADE de cada Estado que o fixa para os seus operadores (ARO.OPS.230).
+// Pesquisa de 2026-11-06: nenhuma fonte oficial encontrada para a ANAC (TAP, Hi Fly), a Austro Control (easyJet Europe)
+// nem a IAA (Ryanair) — só uma tabela secundária. Por isso `disruptiveType` só vem preenchido com uma fonte oficial;
+// sem ela avaliam-se os dois tipos e um aviso que só um dá fica INCERTO ("a lei é que manda").
 export function recoveryStatus(duties = {}, todayISO, ctx = {}) {
-  const { postFlightMin = 0, base = null, baseAt = null, companySlug = null } = ctx || {};
-  const known = /easyjet|ezy/i.test(String(companySlug || '')) ? 'early' : null;
+  const { postFlightMin = 0, base = null, baseAt = null, disruptiveType = null } = ctx || {};
+  const known = disruptiveType === 'early' || disruptiveType === 'late' ? disruptiveType : null;
   const run = (type) => computeRecovery(duties, { postFlightMin, base, baseAt, type }).issues;
   const key = (x) => `${x.type}|${x.date}`;
   let issues;

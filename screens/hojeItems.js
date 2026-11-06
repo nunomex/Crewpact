@@ -150,7 +150,7 @@ export function buildTodayItems(ctx, lang) {
       answer = `${l('Sim', 'Yes')} · ${hhmm(rest.actualMin)} ${l('antes do report', 'before report')}`;
     }
     // Repouso de recuperação (ORO.FTL.235(d), CS FTL.1.235(a)): o aviso mais próximo entra nesta mesma pergunta.
-    const rec = recoveryStatus(duties, todayISO, { postFlightMin: ctx.postFlightMin || 0, baseAt: ctx.baseAt || null, companySlug: ctx.companySlug || null });
+    const rec = recoveryStatus(duties, todayISO, { postFlightMin: ctx.postFlightMin || 0, baseAt: ctx.baseAt || null, disruptiveType: ctx.disruptiveType || null });
     let status = rest.status;
     if (rec.issues.length) {
       const x = rec.issues[0];

@@ -8,8 +8,8 @@ import { isNightDuty } from './woclCalculator';
 //  · Serviço noturno: sobrepõe 02:00–04:59 (105(9)) — igual nos dois tipos.
 //  · MATINAL (early): entrada 05:00–05:59 · largada 23:00–01:59.
 //  · TARDIO  (late):  entrada 05:00–06:59 · largada 00:00–01:59.
-// easyJet Europe = AOC austríaco (Austro Control) → MATINAL. (Áustria/Alemanha/Itália = matinal;
-// França/Espanha/Bélgica/Reino Unido = tardio.) Default = matinal (conservador: nunca subclassifica).
+// easyJet Europe = AOC austríaco (Austro Control): MATINAL segundo uma tabela SECUNDÁRIA (sem fonte oficial em 2026-11-06;
+// a app não o assume — ver recoveryStatus). Itália = matinal (ENAC, oficial). Default = matinal (só para o índice de fadiga).
 export const DISRUPTIVE_BANDS = {
   early: {
     earlyStart: { start: 300, end: 360 },                  // 05:00–05:59

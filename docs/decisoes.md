@@ -21,10 +21,16 @@ verificadores cada); agrupados, cerca de 70 problemas.
    8. Dúvidas → advogado.
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
-**Factos do Manual de Operações por saber** (até lá a app dá "incerto" perto do limite): (1) a cabine e os pilotos
-apresentam-se à mesma hora? (easyJet, TAP — ORO.FTL.205(c)); (2) o pré-voo + pós-voo + deslocação que o OM desconta da
-pausa do repartido (CS FTL.1.220(b)); (3) o pós-voo das companhias que não são easyJet (hoje "assumido 30 min", que não
-é a lei); (4) o tipo de horário irregular da TAP e das outras (matinal ou tardio, ORO.FTL.105(8)).
+**Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite):
+(1) Apresentação cabine vs pilotos (ORO.FTL.205(c)): só no Manual de Operações (EASA FAQ 47585: "defined by the operator
+in the Operations manual"); não é público. AE TAP pilotos Cl. 18.ª dá só o MÍNIMO dos pilotos (60/75/60 min, BTE 29/2023 p. 297).
+(2) Desconto da pausa do repartido (CS FTL.1.220(b)): só no OM; mínimo 30 min (EASA FAQ 47627). AE TAP cabine Cl. 4.ª n.º 16
+diz o que se exclui, sem minutos; AE TAP pilotos Cl. 15.ª n.º 8: repartido só com autorização do SPAC.
+(3) Pós-voo: TAP = 30 min pelo AE (FEITO, `38340d2`); easyJet = 30 (OM, confirmado pelo Nuno; a Cl. 67.ª da cabine usa
+"calços mais 30 minutos"); Ryanair e Hi Fly: nada público → perguntar na configuração (decisão do Nuno).
+(4) Tipo matinal/tardio (ARO.OPS.230: decide a autoridade): sem fonte oficial para ANAC, Austro Control nem IAA; só uma
+tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha publicada). Transport Malta OAN 03/15 bloqueia
+leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
 
