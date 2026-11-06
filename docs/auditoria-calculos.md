@@ -1,7 +1,13 @@
 # Auditoria dos cálculos — FTL e acordos de empresa, piloto e cabine
 
 **Feita a 4–6 de novembro de 2026.** Pedido do Nuno: "é crucial todos os cálculos e contas estarem certos, no tripulante de
-cabine como no de piloto". Nada foi corrigido ainda: este documento é a lista do que está errado e da ordem para corrigir.
+cabine como no de piloto". Este documento é a lista do que está errado e da ordem para corrigir.
+
+> **Estado das correções.** **Bloco 1 (motor FTL) feito a 2026-11-06:** S1, S2, S3, S4, S5, S8, S9, S10, S13, o lado do motor
+> do S6, e os alarmes falsos A-149, A-166, A-167, A-234, A-246 e A-247; também A-136, A-155, A-157, A-174, A-175, A-180, A-260,
+> A-262, A-264, A-265, A-271, A-289 a A-293. Ficou de fora: A-256 (dúvida, para o Nuno) e os riscos A-151, A-152, A-154, A-156,
+> A-158, A-170, A-171, A-173, A-178 e A-179, além da parte do A-150/A-169 sobre o estado de aclimatação e as noites na base.
+> O detalhe e o que falta ver no iPhone estão em `docs/decisoes.md` (2026-11-06). Próximo: bloco 2 (Simulação).
 
 ## Como se fez
 

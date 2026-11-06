@@ -12,14 +12,56 @@ ponto de situação consolidado a partir de 2 de novembro de 2026.
 cabine como no de piloto". Relatório em **`docs/auditoria-calculos.md`** (ler primeiro), detalhe em
 `docs/auditoria-calculos-achados.md` (A-001…A-300). 300 achados: **143 erros, 100 riscos e 43 dúvidas confirmados** (2
 verificadores cada); agrupados, cerca de 70 problemas.
+**Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-1. **Segurança, motor FTL** (S1–S10, S13): repouso a bordo classe 3 dos pilotos, teto da cabine, standby + 16 h, repouso desde os
-   calços, acumulados arredondados, serviços sem apresentação fora dos 210, prolongamento, split duty, registo 245. **Opus 5.5 Extra.**
-2. Simulação (S7) · 3. Limites TAP (S11) e validades (S12) · 4. Importação (S6, M12, L12) · 5. Dinheiro a mais (M1–M11, primeiro
-   a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
+2. **Simulação (S7)** — já usa o `ftlForDuty` (o mesmo cálculo do dayLog); falta o repouso antes, a recuperação (36 h/168 h),
+   o dia somado em vez de substituído, os 4 setores em noites seguidas, todas as janelas do 210 e os limites da TAP. **Opus 5.5 Extra.**
+3. Limites TAP (S11) e validades (S12) · 4. Importação (S6 do lado do import: A-220–A-228, M12, L12) · 5. Dinheiro a mais (M1–M11,
+   primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
    8. Dúvidas → advogado.
+**Decisões tuas pendentes do bloco 1:** (a) o PSV que cabe no prolongamento continua a aparecer como "excede" (A-256, dúvida:
+da escala não se distingue prolongamento planeado de excesso; ficou o lado seguro); (b) os valores por omissão escolhidos
+(o mais restritivo, ver abaixo) — se quiseres outros, diz.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 — AUDITORIA, BLOCO 1: motor FTL corrigido (Opus 5.5)
+
+Golden primeiro em todas as partes, escrito a partir de `fontes/ftl/`; 8 commits (`993bd2d` … `af4736a`); `npm test` verde
+(29 suites). `ENGINE_VERSION` = 2: as entradas antigas do dayLog recalculam-se sozinhas ao abrir a app.
+- **Repouso a bordo (S1, S2, A-149):** pilotos classe 3 a 14:00/15:00 (eram 14:15/15:15); +1 h com 1 setor de mais de 9 h
+  e ≤ 2 setores (CS 205(c)(4)); cabine = o menor entre o PSV dos pilotos, a classe da cabine e o seu repouso a bordo.
+  Formulário: a cabine indica pilotos extra, classe dos pilotos e o seu repouso. **Sem esses dados: o mais restritivo**
+  (+1 piloto, classe 3, 1:30 → 14:00) — os registos antigos de cabine com repouso a bordo baixam para 14:00.
+- **Standby (S3, A-166/167/234/246/247):** aeroporto = min(Quadro 2 − standby acima de 4 h, 16 h − standby); avisos com o
+  PSV real; standby em casa, formação, escritório e posicionamento isolado já não são julgados pelo Quadro 2 (o standby em
+  casa acima de 16 h tem aviso próprio); standby colado a um voo passa a `preStandby` do voo (PSV desde o report do voo).
+- **Um só cálculo por serviço:** `ftlForDuty` (motor) — Início, Detalhe, importação, Simulação e registo 245 usam-no (A-175).
+- **Repouso (S4, S8, S10):** `restAfterDuty` = a regra única ("Tenho descanso?", "Repouso até", intervalo entre serviços):
+  desde o sign-off ou calços + pós-voo, o último serviço do dia, base/fora pela localização, em instantes; 14 h depois de
+  repouso a bordo e fora da base com fuso ≥ 4 h (fuso tirado das legs); +2 h (ou +4 h sem saber o repouso antes) depois de
+  PSV prolongado; os "2 em 7 dias" olham também para a frente; a discrição aplica-se sem o prolongamento de 205(d).
+  Números: "repousos abaixo do mínimo" (acabou o limiar de 11 h e a frase "sem quebra do mínimo"). Prova e Biblioteca corrigidas.
+- **Acumulados (S5, S6 no motor, A-174):** dayLog em minutos (`servicoMin`/`vooMin`), janelas somadas ao minuto, "faltam"
+  nunca arredonda para cima, excesso em h:mm (também nos limites TAP, A-136), % das 900 h sem teto no texto. Voo sem report
+  conta o voo e o serviço estimado. O dayLog recalcula-se quando mudam o motor, o pós-voo, a base ou o serviço.
+- **Repartido (S9):** WOCL com a volta da meia-noite; sem hora, só até 6 h; alojamento em 3 níveis (Nenhum · Sala · Quarto).
+  **Por omissão: nenhum → sem extensão** (CS 220(e)(1)). Os registos antigos "com alojamento" contam como quarto.
+- **Registo 245 e carreira (S13):** Serviço até ao sign-off, Repouso = o que houve até ao serviço seguinte, sem PSV nos
+  não-voos; carreira só com o que já aconteceu, serviço pesado como no FTL, horas do herói para baixo.
+- **Teste novo `test:ftl-fontes`** (179 asserções): lê os `.txt` oficiais e confere cada número do motor (Quadros 1–4,
+  prolongamento, repouso a bordo, fusos, 210, definições, 205/220/225/235). Com a classe 3 antiga falha (provado).
+
+**Não feito no bloco 1** (ficam no relatório): estado de aclimatação e Quadro 3 no longo curso, hora de referência
+(A-152/A-170), noites locais na base depois de rotações (235(b)(3)(i)), aviso das 36 h/168 h (A-151), segunda notificação do
+adiamento (A-154), diferença de report cabine/pilotos (A-156/A-178), pré-voo do OM no repartido (A-158), PSV em relógio na
+hora de verão (A-171, só o repouso passou a instantes), janelas pelo dia do report (A-173), correção manual com fusos (A-179).
+
+**Por ver no iPhone:** formulário da cabine (pilotos e repouso a bordo) e o alojamento em 3 níveis; Início (Tenho descanso?,
+Repouso até, PSV de um dia de escritório/standby); Detalhe ("não se aplica — sem setores"); Números (abaixo do mínimo,
+faltam h:mm, % das 900 h); PDF 245 (Serviço/Repouso) e Processo de carreira; recálculo do dayLog na 1.ª abertura.
 
 ---
 
