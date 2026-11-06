@@ -67,10 +67,19 @@ export const postFlightDefaultFor = (company) => {
   if (/easyjet|ezy/.test(s)) return 30;   // OM easyJet (confirmado pelo founder, 2026-07-11)
   return null;                            // outras: acrescentar AQUI quando houver fonte (OM)
 };
+// Pelo ACORDO DE EMPRESA (texto oficial em fontes/): TAP — o serviço de voo acaba "trinta minutos" depois da imobilização
+// definitiva da aeronave (AE TAP × SPAC, BTE 29/2023, Cl. 6.ª, n.º 40, p. 291 · AE TAP × SNPVAC, BTE 7/2024, Cl. 4.ª, n.º 44, p. 329).
+export const postFlightAeFor = (company) => {
+  const s = [company && company.slug, company && company.name].filter(Boolean).join(' ').toLowerCase();
+  if (/\btap\b/.test(s)) return 30;
+  return null;
+};
 export const resolvePostFlight = (userMin, company) => {
   if (userMin != null) return { min: userMin, source: 'user' };
   const om = postFlightDefaultFor(company);
   if (om != null) return { min: om, source: 'om' };
+  const ae = postFlightAeFor(company);
+  if (ae != null) return { min: ae, source: 'ae' };
   return { min: ASSUMED_POST_FLIGHT_MIN, source: 'assumed' };
 };
 

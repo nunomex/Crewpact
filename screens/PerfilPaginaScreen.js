@@ -274,7 +274,8 @@ export default function PerfilPaginaScreen({ route, navigation }) {
 
   // ── Serviço pós-voo — escolha rápida (à Flighty), com a fonte à vista ──
   if (kind === 'posvoo') {
-    const om = postFlightSource === 'om';
+    const om = postFlightSource === 'om' || postFlightSource === 'ae';   // vem de um texto da companhia: não se muda aqui
+    const fromAe = postFlightSource === 'ae';
     return (
       <Pagina {...back} title={l('Serviço pós-voo', 'Post-flight duty')}
         lead={l('O tempo de serviço depois dos calços: relatórios, desembarque, briefing final. Conta para o repouso e para os limites de 7, 14 e 28 dias. Não conta para o PSV.', 'Duty time after on-blocks: reports, disembarkation, final briefing. It counts towards rest and the 7, 14 and 28-day limits. It does not count towards the FDP.')}>
@@ -297,10 +298,12 @@ export default function PerfilPaginaScreen({ route, navigation }) {
         <View style={s.src}>
           {postFlightSource === 'assumed' ? <View style={[s.dot, { backgroundColor: PELE.warn }]} /> : null}
           <Text style={s.srcTxt}>
-            {om ? <Text style={P.strong}>{l('Do Manual de Operações. ', 'From the Operations Manual. ')}</Text>
+            {fromAe ? <Text style={P.strong}>{l('Do acordo de empresa. ', 'From the company agreement. ')}</Text>
+              : om ? <Text style={P.strong}>{l('Do Manual de Operações. ', 'From the Operations Manual. ')}</Text>
               : postFlightSource === 'assumed' ? <Text style={P.strong}>{l('Assumido. ', 'Assumed. ')}</Text>
                 : <Text style={P.strong}>{l('Definido por ti. ', 'Set by you. ')}</Text>}
-            {om ? l('A tua companhia publica este valor; por isso não se muda aqui.', 'Your airline publishes this value, so it is not changed here.')
+            {fromAe ? l('O acordo diz que o serviço de voo acaba 30 minutos depois da imobilização do avião (TAP: pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 44).', 'The agreement says the flight duty ends 30 minutes after the aircraft comes to a stop (TAP: pilots Cl. 6, no. 40; cabin Cl. 4, no. 44).')
+              : om ? l('A tua companhia publica este valor; por isso não se muda aqui.', 'Your airline publishes this value, so it is not changed here.')
               : l('A tua companhia define este tempo no Manual de Operações. Se souberes o valor, escolhe-o: passa a ser teu.', 'Your airline sets this time in its Operations Manual. If you know it, pick it: it becomes yours.')}
           </Text>
         </View>

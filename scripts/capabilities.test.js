@@ -22,7 +22,7 @@ Module._extensions['.js'] = function (m, filename) {
   m._compile(transform(fs.readFileSync(filename, 'utf8'), filename), filename);
 };
 
-const { capabilitiesFor, isLongHaulCompany } = require(path.resolve('data/capabilities.js'));
+const { capabilitiesFor, isLongHaulCompany, resolvePostFlight } = require(path.resolve('data/capabilities.js'));
 
 let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => {
@@ -121,6 +121,13 @@ eq('longHaul: TAP + NB → false', isLongHaulCompany({ slug: 'tap', name: 'TAP A
 eq('longHaul: easyJet + WB → false (só TAP/Hi Fly)', isLongHaulCompany({ slug: 'easyjet', name: 'easyJet' }, 'WB'), false);
 eq('longHaul: na matriz (Hi Fly)', capabilitiesFor({ company: { slug: 'hifly', name: 'Hi Fly', rule_type: 'FTL' } }).longHaul, true);
 eq('longHaul: na matriz (easyJet) → false', capabilitiesFor({ company: { slug: 'easyjet', rule_type: 'AE' } }).longHaul, false);
+
+// Pós-voo (ORO.FTL.210(c): o operador fixa-o). O teu valor > o OM da companhia > o acordo de empresa > assumido.
+// TAP: o AE diz que o serviço de voo acaba 30 min depois da imobilização (pilotos Cl. 6.ª, n.º 40; cabine Cl. 4.ª, n.º 44).
+eq('pós-voo: TAP pelo acordo de empresa', JSON.stringify(resolvePostFlight(null, { slug: 'tap', name: 'TAP Air Portugal' })), JSON.stringify({ min: 30, source: 'ae' }));
+eq('pós-voo: easyJet pelo OM', resolvePostFlight(null, { slug: 'easyjet' }).source, 'om');
+eq('pós-voo: o teu valor manda', JSON.stringify(resolvePostFlight(45, { slug: 'tap' })), JSON.stringify({ min: 45, source: 'user' }));
+eq('pós-voo: sem fonte → assumido', resolvePostFlight(null, { slug: 'ryanair' }).source, 'assumed');
 
 console.log(`\nCapabilities — ${pass} passou, ${fail} falhou (${pass + fail} asserções)`);
 if (fail) { console.log('\n' + fails.join('\n')); process.exit(1); }
