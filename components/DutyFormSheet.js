@@ -90,7 +90,7 @@ const kindInfoOf = (ae, isPilot, cat, date, l, fmt) => {
     positioning: l('DHC — AC1 no dia (Cl. 7.ª)', 'DHC — AC1 for the day (Cl. 7)'),
     standby_airport: l('Complemento × 2 se não fores chamado (Cl. 8.ª, n.º 2)', 'Supplement × 2 if not called (Cl. 8(2))'),
     standby_home: l('Complemento extraordinário (Cl. 8.ª, n.º 1, b))', 'Extra supplement (Cl. 8(1)(b))'),
-    training: l('Complemento na formação presencial (Cl. 8.ª, n.º 1, h)) · e-learning à parte', 'Supplement for classroom training (Cl. 8(1)(h)) · e-learning apart'),
+    training: l('Presencial: complemento (Cl. 8.ª, n.º 1, h)) · e-learning: 18,125 €/h no mês seguinte, até 24 h/ano (Cl. 13.ª) — não pagam os cursos de qualificação ou conversão nem as ações só informativas', 'Classroom: supplement (Cl. 8(1)(h)) · e-learning: €18.125/h the next month, up to 24 h/year (Cl. 13) — qualification or conversion courses and information-only sessions are not paid'),
     office: l('Complemento — deslocação às instalações (Cl. 8.ª, n.º 1, d))', 'Supplement — trip to company premises (Cl. 8(1)(d))'),
   };
   if (ae.POSITIONING_BY_TABLE) {   // cabine easyJet

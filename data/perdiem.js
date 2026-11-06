@@ -392,7 +392,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
     }
   }
   // ── TAP: tudo por dia de calendário (Cl. 7.ª/8.ª cabine · Cl. 9.ª pilotos; bloco 6, L5) ──
-  let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0;
+  let groundEur = 0, groundMaxDelta = 0, complEur = 0, chefia = 0, extrasMaxDelta = 0;
   if (byDay) {
     const td = tapCalendarDays(duties, ym || '');
     td.flightDays.forEach((f) => flights.push(ae.GROUND_PER_DIEM ? { dists: f.dists, longHaul: f.longHaul } : f.dists));
@@ -449,6 +449,8 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       }
       const paidH = Math.min(ae.ELEARN_MAX_H, h0 + h1) - Math.min(ae.ELEARN_MAX_H, h0);
       if (paidH > 0) complEur += r2(paidH * ae.ELEARN_EUR_H);
+      const upH = ae.ELEARN_MAX_H_UP ? Math.min(ae.ELEARN_MAX_H_UP, h0 + h1) - Math.min(ae.ELEARN_MAX_H_UP, h0) : paidH;
+      if (upH > paidH) extrasMaxDelta += r2((upH - paidH) * ae.ELEARN_EUR_H);
       const ac1Prev = ae.perDiem(category, [1], 1, undefined, prevYm);
       let econ = 0;
       for (const date of Object.keys(duties || {})) {
@@ -479,6 +481,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
   if (groundEur) { bump('perDiem', groundEur); month.variable = r2((month.variable || 0) + groundEur); }
   if (complEur || chefia) { bump('extras', r2(complEur + chefia)); month.variable = r2((month.variable || 0) + complEur + chefia); }
   month.chefia = chefia;
+  month.extrasMax = extrasMaxDelta > 0 ? r2((month.extras || 0) + extrasMaxDelta) : null;   // e-learning da TAP: o máximo
   month.perDiemMax = groundMaxDelta > 0 ? r2(month.perDiem + groundMaxDelta) : null;
   posMin = r2(posMin); posMax = r2(posMax);
   month.positioning = posMin; month.positioningMax = posMax; month.positioningCount = posCount;

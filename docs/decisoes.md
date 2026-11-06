@@ -103,9 +103,13 @@ A-209, A-215, A-225, A-235 em parte, A-239, A-259, A-274).
     contam as 8 primeiras é dúvida); DHC fora de C/CL (Cl. 12.ª/4: 20 % da AC1 no mês seguinte — interruptor "DHC em
     económica" no posicionamento e no voo com DH); ato médico (escritório marcado "Ato médico": pilotos per diem B, Cl. 9.ª/1
     b) iii); cabine o complemento, Cl. 8.ª/1 f) e g)). Golden 238.
-  - **A retenção do PPY 9/12 fica para o advogado:** o texto do Art. 25.º/21 a) é igual ao do 8/12 ("pagos proporcionalmente
-    para os que se encontrem em regime de tempo parcial ou em regime de 7/7"); se "tempo parcial" incluísse o próprio PPY, o
-    valor de base nunca se aplicaria. A app paga-a inteira — é leitura, não se corrige sem inventar.
+  - **Retenção do PPY e limite do e-learning — lidos no acordo inteiro, ficam como INTERVALO** (o Nuno: "descobrir na lei"):
+    o acordo chama ao PPY "contrato de trabalho a tempo parcial" (Art. 25.º; Art. 66.º "Outras modalidades de trabalho a tempo
+    parcial"), e a retenção paga-se "proporcionalmente para os que se encontrem em regime de tempo parcial" → certo = proporcional
+    ao PPY (FO 8/12: 4 000 €), máximo = inteiro (6 000 €). E-learning (RUPT Cl. 38.ª, n.º 5, a), igual à Cl. 13.ª): "As demais
+    horas (...) até ao limite de 24 horas por ano" → certo 24 h no total, máximo 8 + 24 h; e o n.º 5, b) e c): não pagam os
+    cursos de qualificação ou conversão nem as ações só informativas. O texto não decide nenhuma das duas: continuam no pacote
+    do advogado, mas a app já não escolhe uma leitura (golden 243).
 - **Goldens antigos acertados à lei:** TAP pilotos (a base sem antiguidade = só o VB; VS para todos; assistência no aeroporto
   paga A), estatísticas (subsídio de Natal no fecho e no ano; a TAP do ano da mudança com Natal 8/12), doença do mês inteiro
   passou para outubro (em novembro entra o subsídio de Natal).

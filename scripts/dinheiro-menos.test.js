@@ -241,7 +241,12 @@ has('TAP cabine Cl. 8.ª/1 g) (medicina do trabalho)', TAPC, 'g) Realização da
     '2026-04-20': { kind: 'training', eLearning: true, report_time: '09:00', block_on: '15:00' } };
   const T = (ym, d = el) => monthlyAe(d, 'CAB3', '12/12', tapC, { ym });
   eq('TAP cabine: e-learning de março pago em abril', T('2026-04').extras, 145);
+  // "As demais horas de formação e-learning, até ao limite de 24 horas por ano" (Cl. 13.ª e RUPT Cl. 38.ª, n.º 5, a)): o limite
+  // pode ser das "demais" (até 8 + 24 = 32 h) ou do total (24 h) — o texto não decide → certo 24 h no total, máximo 32 h.
+  has('TAP cabine RUPT Cl. 38.ª/5 a)', TAPC, 'As demais horas de formação e-learning, até ao limite de 24 horas por ano');
+  has('TAP cabine RUPT Cl. 38.ª/5 b) (cursos de qualificação)', TAPC, 'será sempre paga com exceção das integrantes de cursos de qualificação ou conversão');
   eq('TAP cabine: e-learning de abril até às 24 h, em maio', T('2026-05').extras, 290);
+  eq('TAP cabine: e-learning de abril, máximo com 8 + 24 h', T('2026-05').extrasMax, 362.5);
   eq('TAP cabine: e-learning não paga no próprio mês', T('2026-03').extras, 0);
   // DHC fora de C/CL: 20 % da AC1 (150 € em 2026) no mês seguinte.
   const dhc = { '2026-03-12': { kind: 'positioning', route: 'LIS-FNC', dhcEconomy: true } };
@@ -433,9 +438,16 @@ has('Art. 66.º/1 (prestação proporcional)', PIL, 'base anual, férias, dias d
   eq('CPT PPY 8/12 10.º aniversário: proporcional', eur(A('CPT', '2026-03', { contract: 'PPY 8/12' }), 'loyalty'), 12480.6);
   eq('SFO 3.º aniversário: 5 %', eur(A('SFO', '2026-05', { serviceStart: '2023-05-01' }), 'loyalty'), 3529.35);
   eq('FO: sem prémio de permanência', item(A('FO', '2026-03'), 'loyalty'), null);
-  // Retenção (só PPY, não estilo de vida): co-piloto 6 000,00 € em maio; comandante 12 000,00 €.
-  eq('FO PPY 8/12 maio: retenção 6 000', eur(A('FO', '2026-05', { contract: 'PPY 8/12', serviceStart: '2020-01-01' }), 'retention'), 6000);
-  eq('CPT PPY 9/12 maio: retenção 12 000', eur(A('CPT', '2026-05', { contract: 'PPY 9/12', serviceStart: '2020-01-01' }), 'retention'), 12000);
+  // Retenção (só PPY, não estilo de vida): co-piloto 6 000,00 €, comandante 12 000,00 €, "pagos proporcionalmente para os que se
+  // encontrem em regime de tempo parcial" — e o próprio acordo chama ao PPY "contrato de trabalho a tempo parcial" (Art. 25.º,
+  // título; Art. 66.º "Outras modalidades de trabalho a tempo parcial"). As duas leituras cabem no texto → certo = proporcional
+  // ao PPY, máximo = inteiro (pedido do Nuno 2026-11-06: "descobrir na lei"; o texto não decide).
+  has('Art. 25.º (PPY 9/12 = tempo parcial)', PIL, 'Modalidade de contrato de trabalho a tempo parcial PPY 9/12');
+  has('Art. 66.º ("Outras modalidades")', PIL, 'Outras modalidades de trabalho a tempo parcial');
+  const rt8 = item(A('FO', '2026-05', { contract: 'PPY 8/12', serviceStart: '2020-01-01' }), 'retention');
+  eq('FO PPY 8/12 maio: retenção 4 000 certos, até 6 000', [rt8.eur, rt8.max], [4000, 6000]);
+  const rt9 = item(A('CPT', '2026-05', { contract: 'PPY 9/12', serviceStart: '2020-01-01' }), 'retention');
+  eq('CPT PPY 9/12 maio: retenção 9 000 certos, até 12 000', [rt9.eur, rt9.max], [9000, 12000]);
   eq('FO PPY estilo de vida: sem retenção', item(A('FO', '2026-05', { contract: 'PPY 8/12', lifestyle: true, serviceStart: '2020-01-01' }), 'retention'), null);
   eq('FO 12/12: sem retenção', item(A('FO', '2026-05', { serviceStart: '2020-01-01' }), 'retention'), null);
   eq('FO PPY maio de 2023: ainda não havia', item(A('FO', '2023-05', { contract: 'PPY 8/12', serviceStart: '2020-01-01' }), 'retention'), null);

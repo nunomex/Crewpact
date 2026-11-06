@@ -227,7 +227,9 @@ export const isChefia = (cat) => /^SC/.test(String(cat || ''));
 // limite de 24 horas/ano, (...) 18,125 €/hora", ambos "juntamente com o vencimento do mês seguinte" → 18,125 €/h até 24 h por
 // ano (8 × 18,125 = 145). Se o limite de 24 h conta as 8 primeiras é leitura da app (a que não paga a mais) — advogado.
 export const ELEARN_EUR_H = 18.125;
-export const ELEARN_MAX_H = 24;
+export const ELEARN_MAX_H = 24;      // o certo: 24 h no total
+export const ELEARN_MAX_H_UP = 32;   // o máximo: 8 + 24 "demais horas" — o texto não decide qual (RUPT Cl. 38.ª, n.º 5, a))
+// Não pagam (RUPT Cl. 38.ª, n.º 5, b) e c)): as de cursos de qualificação ou conversão e as ações só informativas.
 // DHC fora de C/CL (Cl. 12.ª, n.º 4): "20 % do valor da ajuda de custo complementar 1, a ser atribuído no vencimento do mês
 // seguinte" — por deslocação em DHC marcada `dhcEconomy` (a app não sabe a classe; o tripulante marca).
 export const DHC_ECON_PCT = 0.2;

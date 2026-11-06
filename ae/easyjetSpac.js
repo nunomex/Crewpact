@@ -310,6 +310,7 @@ export const airportStandby = (cat, { called = false, over4h = false, index = 1,
 //    de maio, iniciando-se em maio de 2024", com contrato "a 31 de agosto do ano anterior ao do pagamento" (alínea c)).
 //  · O bónus de performance (Art. 46.º) é discricionário: não entra.
 const BENEFITS_PRORATA = ['PPY 9/12', 'PPY 8/12', '14-14', '21-7', '7-7'];
+const RET_NOTE = { pt: 'Entre o valor proporcional ao PPY e o inteiro: o acordo manda pagar "proporcionalmente" a quem está "em regime de tempo parcial" e chama tempo parcial ao próprio PPY.', en: 'Between the PPY pro-rata amount and the full one: the agreement prorates it for "part-time" and calls the PPY itself part-time.' };
 const SUB_NOTE = { pt: 'Sem a média das prestações variáveis (o acordo não diz que rubricas nem que período).', en: 'Without the average of variable pay (the agreement does not say which items or period).' };
 export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceStart = null, lifestyle = false, events = [] } = {}) => {
   const p = ymParts(ym), T = tableAt(ym);
@@ -334,7 +335,11 @@ export const annualItems = (cat, { ym, contract = '12/12', index = 1, serviceSta
     if (pct) add('loyalty', pct * T.BASE_ANNUAL[cat] * index * f, { years: p.y - s.y, cite: 'Art. 47.º' });
   }
   if (p.m === 5 && p.y >= 2024 && isSeasonalContract(contract) && !lifestyle && s && (s.y * 12 + s.m) <= ((p.y - 1) * 12 + 8)) {
-    add('retention', T.RETENTION_EUR[cat] || 0, { cite: 'Art. 24.º, n.º 20' });
+    // "pagos proporcionalmente para os que se encontrem em regime de tempo parcial" — e o PPY é, ele próprio, "contrato de trabalho
+    // a tempo parcial" (Art. 25.º; Art. 66.º "Outras modalidades"). O texto não decide se a proporção é do PPY → certo =
+    // proporcional ao contrato, máximo = inteiro (pacote do advogado). Período de atividade prolongado (alínea d)): a app não sabe.
+    const full = T.RETENTION_EUR[cat] || 0;
+    add('retention', full * f, { cite: 'Art. 24.º, n.º 20', max: r2(full), note: RET_NOTE });
   }
   return out;
 };
