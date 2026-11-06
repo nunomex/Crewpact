@@ -12,6 +12,21 @@ export const routeDistancesNM = (route) => {
   return out;
 };
 
+// Distâncias (NM) dos setores VOADOS de um serviço. O per-diem é "em serviço de voo (setor)" (SNPVAC Cl. 52.ª, n.º 1; SPAC
+// Art. 37.º, n.º 3: "baseado no número e tipo de setores voados") — um posicionamento (perna `dh`) não é setor (ORO.FTL.215(a)).
+// A `route` leva o DH (é a localização: onde se dorme); com pernas `dh`, as distâncias saem das pernas operadas, cada uma da sua
+// partida à sua chegada (revisão do bloco 4, E2). Sem pernas `dh`: a rota, como sempre. O pagamento do posicionamento (Art. 44.º
+// pilotos, Anexo I.18 cabine) é outra rubrica (bloco 6 da auditoria, L2).
+export const sectorDistancesNM = (svc) => {
+  const legs = svc && Array.isArray(svc.legs) ? svc.legs : [];
+  if (legs.some((l) => l && l.dh)) {
+    const op = legs.filter((l) => l && !l.dh);
+    if (!op.length) return [];
+    return op.map((l) => (l.dep && l.arr ? sectorDistanceNM(l.dep, l.arr) : null));
+  }
+  return routeDistancesNM(svc && svc.route);
+};
+
 // Per diem estimado de um conjunto de duties para uma categoria, opcionalmente
 // filtrado por mês (ym = "YYYY-MM"). duties = mapa { date: { route, deleted? } }.
 // `ae` = módulo do Acordo de Empresa (expõe perDiem). Uma duty sem rota completa
@@ -38,7 +53,7 @@ export const monthlyPerDiem = (duties = {}, category, ae, { ym = null, index = 1
       // SÓ VOO: um POSICIONAMENTO também pode ter rota (repouso 235 por local real),
       // mas não tem abono (Art. 37/Cl. 52 = setor VOADO; posicionamento paga só a pernoita).
       if ((s.kind || 'flight') !== 'flight') continue;
-      const dists = routeDistancesNM(s.route);
+      const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       // `fleet` (TAP: WB/NB → coluna A); `date` = tabela do AE em vigor NESSE dia (linha do tempo).
       total += ae.perDiem(category, dists, index, fleet, date);
@@ -69,7 +84,7 @@ export const monthlyPerDiemByBand = (duties = {}, category, ae, { ym = null, ind
     for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {   // primária + extra (multi-serviço)
       if (!s) continue;
       if ((s.kind || 'flight') !== 'flight') continue;   // só setor VOADO tem per-diem (ver monthlyPerDiem)
-      const dists = routeDistancesNM(s.route);
+      const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }
       for (const dist of dists) {
         const band = bands.find((b) => Number(dist) <= b.maxNM) || bands[bands.length - 1];
@@ -156,11 +171,11 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
       if (kind === 'standby_airport') {
         // ADTY FINO (Anexo I.5 piloto / Art. 58 cabine) em € via o módulo do AE — as matrizes
         // diferem (piloto em setores NOMINAIS, cabine em setores MÉDIOS): chamado = há VOO no
-        // mesmo dia; ≥4h pela duração real (sem horas → assume ≥4h, o caso comum). AEs sem o
+        // mesmo dia; ≥4h pela duração real (sem horas → o garantido, < 4 h: auditoria A-220 — nunca presumir as 4 h). AEs sem o
         // item (ex. TAP) → 0: não se inventa prestação que o acordo não tem.
         if (ae.airportStandby) {
           const dm = svcDurMin(s);
-          adtyEur += ae.airportStandby(category, { called: dayHasFlight, over4h: dm == null ? true : dm >= 240, index, ym: date });
+          adtyEur += ae.airportStandby(category, { called: dayHasFlight, over4h: dm != null && dm >= 240, index, ym: date });   // sem horas → o garantido (< 4 h), A-220
           adtyDays++;
         }
         continue;
@@ -189,7 +204,7 @@ export const monthlyAe = (duties = {}, category, contract = '12/12', ae, { ym = 
         adtyEur += ae.airportStandby(category, { called: true, over4h: Number(ps.standbyH) >= 4, index, ym: date });
         adtyDays++;
       }
-      const dists = routeDistancesNM(s.route);
+      const dists = sectorDistancesNM(s);
       if (!dists.length || dists.some((x) => x == null)) { missing++; continue; }  // rota incompleta
       flights.push(dists);
       withRoute++;

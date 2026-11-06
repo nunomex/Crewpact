@@ -186,8 +186,37 @@ export function restStatus(duties = {}, todayISO, ref = new Date(), ctx = {}) {
 //   { status: 'ok'|'bad'|'unc'|'na', actualMin, requiredMin, floorMin, prevDutyMin, prevIso, nextIso, place, reason,
 //     extOption, nightsRequired, nightsActual } ('unc' = o serviço anterior não tem fim conhecido; 'na' = o seguinte não é
 //   PSV, a lei não fixa mínimo); `need` = o mínimo a seguir ao bloco (como o "Repouso até"): { requiredMin, nightsRequired }.
+// Serviços SEM apresentação (o calendário nem sempre a traz): ficam fora da linha do repouso (não se sabe quando começaram),
+// mas o fim — e os calços de saída — são conhecidos. { iso, off, end, fdp, floorLowMin, dutyLowMin }: o piso mais baixo possível
+// (10 h: fora da base, ORO.FTL.235(b), e na base com alojamento adequado, 235(a)(2)) e o serviço mínimo (dos calços ao fim).
+const estServices = (duties = {}, ctx = {}) => {
+  const { postFlightMin = 0, from = null, to = null } = ctx || {};
+  const at = (iso, min, add = 0) => { const x = new Date(iso + 'T00:00:00'); x.setDate(x.getDate() + add); x.setHours(0, min, 0, 0); return x; };
+  const hm2 = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+  const out = [];
+  for (const iso in duties) {
+    const d = duties[iso]; if (!d || d.deleted) continue;
+    if ((from && iso < from) || (to && iso > to)) continue;
+    for (const s of [d, ...(Array.isArray(d.extra) ? d.extra : [])]) {
+      if (!s || s.report_time || s.kind === 'reserve') continue;
+      const offM = hm2(s.block_off != null ? s.block_off : (Array.isArray(s.legs) && s.legs.length ? s.legs[0].off : null));
+      const onM = hm2(s.block_on), soM = hm2(s.signOff);
+      if (offM == null || onM == null) continue;
+      const fl = (s.kind || 'flight') === 'flight';
+      let endM = soM != null ? soM : onM + (fl ? (postFlightMin || 0) : 0);
+      while (endM < offM) endM += 1440;
+      out.push({ iso, s, off: at(iso, offM), end: at(iso, endM), fdp: isFdpDuty(s), floorLowMin: 600, dutyLowMin: endM - offM });
+    }
+  }
+  return out;
+};
+
+// A linha do repouso de uma escala (para quem pergunta por muitos dias da MESMA escala — a importação calcula-a uma vez e passa-a
+// em `ctx.svcs`/`ctx.est` ao restAround).
+export const restTimeline = (duties = {}, ctx = {}) => ({ svcs: restServices(duties, ctx), est: estServices(duties, ctx) });
+
 export function restAround(duties = {}, pick, ctx = {}) {
-  const svcs = restServices(duties, ctx);
+  const svcs = (ctx && ctx.svcs) || restServices(duties, ctx);
   const me = svcs.find((v) => pick(v.s, v.iso));
   if (!me) return null;
   const blk = svcs.filter((v) => v.blk === me.blk);
@@ -210,7 +239,33 @@ export function restAround(duties = {}, pick, ctx = {}) {
     const { requiredMin } = requirementAfter(svcs, last, null);
     need = { requiredMin, nightsRequired: rotationNights(svcs, last, null) || null };
   }
-  return { before: prev ? pair(prev, first) : null, after: next ? pair(last, next) : null, need };
+  let beforeR = prev ? pair(prev, first) : null, afterR = next ? pair(last, next) : null;
+  // Um serviço SEM apresentação entre este e o vizinho (bloco 4): o repouso fica incerto — ou curto, se nem o mínimo mais
+  // baixo possível cabe. Antes: o repouso real é conhecido (do fim dele à apresentação), o mínimo é o serviço dele (≥ o que se
+  // vê) ou o piso. Depois: a apresentação dele vem antes dos calços, logo o repouso é no máximo até aos calços.
+  const est = (ctx && ctx.est) || estServices(duties, ctx);
+  const eb = est.filter((e) => +e.end <= +first.start && (!prev || +e.end > +(prev.end || prev.start))).sort((a, b) => +b.end - +a.end)[0];
+  if (eb) {
+    const base = { prevIso: eb.iso, nextIso: first.iso, estIso: eb.iso };
+    const actualMin = Math.round((+first.start - +eb.end) / 60000);
+    if (!blockHasFdp(svcs, first)) beforeR = { ...base, status: 'na', kind: 'notFdp', actualMin, requiredMin: null };
+    else {
+      const lowMin = Math.max(eb.floorLowMin, eb.dutyLowMin);
+      beforeR = actualMin < lowMin ? { ...base, status: 'bad', actualMin, requiredMin: lowMin } : { ...base, status: 'unc', kind: 'noReport', actualMin };
+    }
+  }
+  const lastEnd = last.end || last.start;
+  const ea = est.filter((e) => +e.off >= +lastEnd && (!next || +e.off < +next.start)).sort((a, b) => +a.off - +b.off)[0];
+  if (ea && last.end) {
+    const base = { prevIso: last.iso, nextIso: ea.iso, estIso: ea.iso };
+    const maxMin = Math.round((+ea.off - +last.end) / 60000);
+    if (!ea.fdp) afterR = { ...base, status: 'na', kind: 'notFdp', actualMin: maxMin, requiredMin: null };
+    else {
+      const { requiredMin } = requirementAfter(svcs, last, null);
+      afterR = maxMin < requiredMin ? { ...base, status: 'bad', actualMin: maxMin, requiredMin } : { ...base, status: 'unc', kind: 'noReport', actualMin: maxMin };
+    }
+  }
+  return { before: beforeR, after: afterR, need };
 }
 
 // "Repouso até": o fim do último serviço de `iso` + o mínimo a seguir — a MESMA regra do restStatus (a pílula e esta

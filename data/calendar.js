@@ -5,7 +5,7 @@
 // Heurísticas pensadas para escalas easyJet e TAP — ver ./calendarParse.
 import * as Calendar from 'expo-calendar/legacy'; // SDK 57: API antiga (getEventsAsync etc.) vive em /legacy; a nova é orientada a objetos
 import { codesFor } from './rosterCodes';
-import { classify, mapFlight, mapNonFlight, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent, sickDatesFromEvent } from './calendarParse';
+import { classifyEvent, mapFlight, mapNonFlightDays, buildDuties, isAllDayNoTime, eventText, isoLocal, RE_ROUTE, RE_TIMES, vacationDatesFromEvent, sickDatesFromEvent } from './calendarParse';
 
 // Verifica a permissão SEM pedir (não dispara o prompt do sistema). As leituras de fundo
 // usam isto → nunca interrompem o utilizador. O prompt só acontece no botão "Ligar".
@@ -71,13 +71,14 @@ export async function getFlightsInRange(start, end, company, calendarId = null) 
   return { ok: true, flights };
 }
 
-// Atividades no intervalo [start, end] (pernas de voo agrupadas por setores).
-export async function getDutiesInRange(start, end, company, calendarId = null) {
+// Atividades no intervalo [start, end] (pernas de voo agrupadas por setores). `opts.baseOf(dia)` = a base nesse dia: o
+// repouso mínimo que separa dois serviços é de 12 h na base / 10 h fora (ORO.FTL.235) — ver buildDuties.
+export async function getDutiesInRange(start, end, company, calendarId = null, opts = {}) {
   const { ok, events } = await fetchEvents(start, end, calendarId);
   if (!ok) return { ok: false, duties: [] };
   const codes = codesFor(company);
   const legs = events.map((ev) => mapFlight(ev, codes)).filter(Boolean);
-  return { ok: true, duties: buildDuties(legs) };
+  return { ok: true, duties: buildDuties(legs, opts) };
 }
 
 // Duties SEM-VOO (standby/posicionamento/terra/formação) no intervalo [start, end].
@@ -91,7 +92,8 @@ export async function getNonFlightInRange(start, end, company, calendarId = null
   const vacations = [...new Set(events.flatMap((ev) => vacationDatesFromEvent(ev, codes)))].sort();
   // Dias SICK → sugeridos como episódio de doença (Art. 48), a par das férias.
   const sicks = [...new Set(events.flatMap((ev) => sickDatesFromEvent(ev, codes)))].sort();
-  return { ok: true, items: events.map((ev) => mapNonFlight(ev, codes)).filter(Boolean), vacations, sicks };
+  // Um não-voo de vários dias num só evento dá um serviço por dia (auditoria A-229).
+  return { ok: true, items: events.flatMap((ev) => mapNonFlightDays(ev, codes)), vacations, sicks };
 }
 
 // Diagnóstico: TODOS os eventos no intervalo + como o parser os classifica. Para o utilizador
@@ -108,7 +110,7 @@ export async function diagnoseEvents(start, end, company, calendarId = null) {
     return {
       title: (ev.title || '').trim() || '(sem título)',
       dateISO: isoLocal(new Date(ev.startDate)),
-      kind: allDayIgnored ? 'other' : classify(text, codes),   // all-day sem horas → ignorado
+      kind: allDayIgnored ? 'other' : classifyEvent(ev, codes),   // all-day sem horas → ignorado · o título decide (A-238)
       allDay: !!ev.allDay,
       route: (r && r[1] !== r[2]) ? `${r[1]}-${r[2]}` : null,
       flightNo: codes.flightNo.test(text),

@@ -22,6 +22,7 @@ export const validateLimits = (dayLog = {}, ref = new Date()) => {
 //   • ano civil (900 h de voo): o ano de `date`, inteiro;
 //   • 12 meses consecutivos (1 000 h): os que acabam entre `date` e `date` + 12 meses (o máximo está num dia com registo).
 // Devolve, por janela, o período mais carregado que contém o dia (o 1.º, se houver empate), com `from`/`to` (ISO).
+const ROWS12 = new WeakMap();
 export const limitsAround = (dayLog = {}, date) => {
   const D = new Date(String(date) + 'T12:00:00');
   if (isNaN(D)) return [];
@@ -34,9 +35,31 @@ export const limitsAround = (dayLog = {}, date) => {
     }
     return out;
   };
-  const daysWin = (w, key) => best(w, key, Array.from({ length: w.days }, (_, k) => shift(k)),
-    (ref) => sumWindowDaysMin(dayLog, key, w.days, ref),
-    (ref) => { const f = new Date(ref); f.setDate(f.getDate() - (w.days - 1)); return { from: isoDay(f), to: isoDay(ref) }; });
+  // Os períodos de N dias que contêm o dia: acabam entre `date` e `date` + N − 1. Somas por deslizamento sobre os 2N − 1 dias à
+  // volta (um ciclo por período; a importação pergunta por centenas de dias).
+  const daysWin = (w, key) => {
+    const N = w.days;
+    const isos = Array.from({ length: 2 * N - 1 }, (_, k) => isoDay(shift(k - (N - 1))));
+    const ents = isos.map((iso) => dayLog[iso]);
+    const vals = ents.map((e) => entryMin(e, key));
+    let sum = vals.slice(0, N).reduce((a, b) => a + b, 0), bestK = 0, bestSum = sum;
+    for (let k = 1; k < N; k++) { sum += vals[k + N - 1] - vals[k - 1]; if (sum > bestSum) { bestSum = sum; bestK = k; } }
+    const out = { ...windowResult(w, key, bestSum), from: isos[bestK], to: isos[bestK + N - 1] };
+    // Serviços sem apresentação (bloco 4): o serviço deles é um MÍNIMO; com o MÁXIMO possível (servicoMaxMin) um período que
+    // não passa pode passar → "incerto" (nem "dentro" nem "excede" inventados). Só o serviço — o tempo de voo é exato.
+    if (key !== 'servico' || out.over) return out;
+    const est = ents.map((e) => (e && typeof e.servicoMaxMin === 'number' ? 1 : 0));
+    if (!est.some(Boolean)) return out;
+    const mxv = ents.map((e, k) => (est[k] ? e.servicoMaxMin : vals[k]));
+    let mx = mxv.slice(0, N).reduce((a, b) => a + b, 0), ne = est.slice(0, N).reduce((a, b) => a + b, 0);
+    let worst = ne ? { mx, ne, k: 0 } : null;
+    for (let k = 1; k < N; k++) {
+      mx += mxv[k + N - 1] - mxv[k - 1]; ne += est[k + N - 1] - est[k - 1];
+      if (ne && (!worst || mx > worst.mx)) worst = { mx, ne, k };
+    }
+    if (worst && worst.mx > out.limitMin) return { ...out, uncertain: true, doneMaxMin: worst.mx, estDays: worst.ne, maxFrom: isos[worst.k], maxTo: isos[worst.k + N - 1] };
+    return out;
+  };
   const out = DUTY_WINDOWS.map((w) => daysWin(w, 'servico'));
   for (const w of FLIGHT_WINDOWS) {
     if (w.kind === 'calendarYear') {
@@ -45,8 +68,15 @@ export const limitsAround = (dayLog = {}, date) => {
     } else if (w.kind === 'months12') {
       // A mesma soma do sumMonthsMin ((ref − 12 meses, ref]), com somas acumuladas: o registo de um ano inteiro somava-se
       // uma vez por cada dia com registo à frente.
-      const rows = Object.keys(dayLog).sort().map((k) => ({ t: +new Date(k + 'T00:00:00'), m: entryMin(dayLog[k], 'voo') }));
-      const P = [0]; rows.forEach((r) => P.push(P[P.length - 1] + r.m));
+      // As linhas e as somas acumuladas guardam-se por dayLog (a importação pergunta por centenas de dias da mesma escala).
+      let cached = ROWS12.get(dayLog);
+      if (!cached) {
+        const rows0 = Object.keys(dayLog).sort().map((k) => ({ t: +new Date(k + 'T00:00:00'), m: entryMin(dayLog[k], 'voo') }));
+        const P0 = [0]; rows0.forEach((r) => P0.push(P0[P0.length - 1] + r.m));
+        cached = { rows: rows0, P: P0 };
+        ROWS12.set(dayLog, cached);
+      }
+      const { rows, P } = cached;
       const firstAbove = (x) => { let lo = 0, hi = rows.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (rows[mid].t > x) hi = mid; else lo = mid + 1; } return lo; };
       const sum12 = (ref) => { const st = new Date(ref); st.setMonth(st.getMonth() - 12); return P[firstAbove(+ref)] - P[firstAbove(+st)]; };
       const end = new Date(D); end.setMonth(end.getMonth() + 12);

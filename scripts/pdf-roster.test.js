@@ -179,9 +179,13 @@ ok('merge: extra do CALENDÁRIO ausente da leitura é descartado', importSaveFie
 const multiCand = sameDay[0];
 const mf = importSaveFields(multiCand, 'calendar');
 ok('merge: 2 atividades → extra do calendário (tagged)', Array.isArray(mf.extra) && mf.extra.length === 1 && mf.extra[0].source === 'calendar');
-// (e) 2 atividades + 1 manual guardado → AMBOS coexistem.
-const mf2 = importSaveFields(multiCand, 'calendar', manualExtra);
-ok('merge: calendário (leitura) + manual (guardado) coexistem', mf2.extra.length === 2 && mf2.extra.some((e) => e.source === 'calendar') && mf2.extra.some((e) => e.source === 'manual'));
+// (e) 2 atividades + 1 manual guardado DIFERENTE → AMBOS coexistem; se o manual é o MESMO serviço que a leitura passou a
+// trazer (a mesma apresentação), fica só o lido (auditoria A-232: ficava a dobrar — 210 e per-diem a mais).
+const otherManual = [{ report_time: '22:00', block_on: '23:30', route: 'LGW-LGW', kind: 'office', source: 'manual' }];
+const mf2 = importSaveFields(multiCand, 'calendar', otherManual);
+ok('merge: calendário (leitura) + manual diferente (guardado) coexistem', mf2.extra.length === 2 && mf2.extra.some((e) => e.source === 'calendar') && mf2.extra.some((e) => e.source === 'manual'));
+const mf3 = importSaveFields(multiCand, 'calendar', manualExtra);
+ok('merge: o manual igual ao serviço lido não fica a dobrar (A-232)', mf3.extra.length === 1 && mf3.extra[0].source === 'calendar');
 ok('merge: source da primária propaga no commit', importSaveFields(singleCand, 'calendar').source === 'calendar');
 
 // ── Multi-serviço na AUTO-DETEÇÃO (buildIncoming) + snap + re-classify ────────

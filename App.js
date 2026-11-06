@@ -1000,6 +1000,9 @@ export default function App() {
   // permissão de calendário → não faz nada. NÃO altera nada (o utilizador revê/aplica).
   // Devolve o diff ({changed,added,removed,counts,...}) para quem chama (ex.: botão Sincronizar
   // dar feedback "em dia" vs "X mudanças"); null quando não leu (sem calendário/sem leitura/erro).
+  // A base em vigor de cada dia, lida na hora (uma ref: pô-la nas dependências relia o calendário a cada render).
+  const homeBaseAtRef = useRef(homeBaseAt);
+  homeBaseAtRef.current = homeBaseAt;
   const checkRosterChanges = useCallback(async () => {
     if (!calendarId) return null;   // só deteta se houver calendário LIGADO (sem prompt; sem leitura "às cegas")
     try {
@@ -1009,7 +1012,7 @@ export default function App() {
       // aqui deixava a deteção CEGA para o resto do mês corrente (onde vive o RDP no-dia).
       const start = new Date(); start.setHours(0, 0, 0, 0);
       const end = new Date(start.getFullYear(), start.getMonth() + 2, 1);
-      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId), getNonFlightInRange(start, end, co, calendarId)]);
+      const [fl, nf] = await Promise.all([getDutiesInRange(start, end, co, calendarId, { baseOf: (iso) => homeBaseAtRef.current(iso) }), getNonFlightInRange(start, end, co, calendarId)]);   // a mesma regra de agrupamento do import (ORO.FTL.235)
       if (!fl.ok && !nf.ok) return null;   // sem leitura válida → não marca cancelamentos
       const incoming = buildIncoming({ activities: fl.duties || [], nonflights: nf.items || [] });
       const window = { start: isoDay(start), end: isoDay(end) };

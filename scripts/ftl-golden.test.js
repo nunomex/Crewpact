@@ -577,11 +577,16 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
 // um aeroporto desconhecido fica "a corrigir" (FORA do import até ser corrigido).
 {
   const { candidateKind } = require(path.resolve('data/rosterImport.js'));
-  eq('Candidato: voo com rota conhecida = pronto', candidateKind({ kind: 'flight', duty: { route: 'LIS-OPO-LIS' } }).kind, 'ready');
-  eq('Candidato: voo sem rota = a corrigir', candidateKind({ kind: 'flight', duty: { route: null } }).kind, 'fix');
-  eq('Candidato: aeroporto desconhecido = a corrigir', candidateKind({ kind: 'flight', duty: { route: 'LIS-ZZZ' } }).kind, 'fix');
-  eq('Candidato: aeroporto desconhecido identificado', candidateKind({ kind: 'flight', duty: { route: 'LIS-ZZZ' } }).badAp, 'ZZZ');
-  eq('Candidato: não-voo = informativo (entra, sem per-diem)', candidateKind({ kind: 'standby_airport', duty: {} }).kind, 'info');
+  // Bloco 4 (A-220/A-237): o serviço tem as horas de que a lei precisa — um voo sem as horas das pernas, ou um não-voo sem
+  // início ou fim, também fica a corrigir (antes entrava "pronto" e saía dos 210).
+  const T = { report_time: '06:00', block_off: '07:00', block_on: '10:00' };
+  eq('Candidato: voo com rota conhecida = pronto', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-OPO-LIS' } }).kind, 'ready');
+  eq('Candidato: voo sem rota = a corrigir', candidateKind({ kind: 'flight', duty: { ...T, route: null } }).kind, 'fix');
+  eq('Candidato: aeroporto desconhecido = a corrigir', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-ZZZ' } }).kind, 'fix');
+  eq('Candidato: aeroporto desconhecido identificado', candidateKind({ kind: 'flight', duty: { ...T, route: 'LIS-ZZZ' } }).badAp, 'ZZZ');
+  eq('Candidato: voo sem as horas das pernas = a corrigir', candidateKind({ kind: 'flight', duty: { report_time: '06:00', block_on: null, route: 'LIS-OPO-LIS' } }).reason, 'times');
+  eq('Candidato: não-voo = informativo (entra, sem per-diem)', candidateKind({ kind: 'standby_airport', duty: { report_time: '06:00', block_on: '10:00' } }).kind, 'info');
+  eq('Candidato: não-voo sem fim = a corrigir', candidateKind({ kind: 'standby_airport', duty: { report_time: '06:00', block_on: null } }).reason, 'end');
   eq('Candidato: cancelado = removido', candidateKind({ action: 'delete', kind: 'flight', duty: { route: 'LIS-OPO' } }).kind, 'removed');
 }
 

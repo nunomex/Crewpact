@@ -57,6 +57,23 @@ export const eventCounts = (events = [], ym, duties = null, sickFirst3 = true) =
   return counts;
 };
 
+// Os dias de doença a REGISTAR a partir dos dias lidos da escala (o import sugere-os, auditoria A-229/A-236). Pilotos
+// (`sickFirst3` true, Art. 48.º): o episódio inteiro — o eventCounts paga os dias 1 a 3 de cada um. Cabine (false, Cl. 61.ª:
+// "após os 3 (três) dias de ausência iniciais"): o tripulante regista só os dias PAGOS → tiram-se os 3 primeiros de cada
+// episódio (dias consecutivos). Ordenado, sem repetidos.
+export const paidSickDays = (dates = [], { sickFirst3 = true } = {}) => {
+  const days = [...new Set((dates || []).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d))))].sort();
+  if (sickFirst3) return days;
+  const out = [];
+  let run = 0, prev = null;
+  for (const d of days) {
+    run = prev && nextISO(prev) === d ? run + 1 : 1;
+    if (run > 3) out.push(d);
+    prev = d;
+  }
+  return out;
+};
+
 // Dias ISO consecutivos [from..to] (inclusive) — para registar BLOCOS por-dia (férias 1-7+,
 // doença) como UM evento por dia: o modelo não muda (eventos individuais, apagáveis um a um)
 // e a doença por episódio recebe exatamente os dias consecutivos que o Art. 48 espera.

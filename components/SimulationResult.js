@@ -9,7 +9,7 @@ import PeleSide from './PeleSide';
 import PrimaryButton from './PrimaryButton';
 import GhostButton from './GhostButton';
 import { simulateDuty, issueText } from '../data/simulation';
-import { routeDistancesNM } from '../data/perdiem';
+import { sectorDistancesNM } from '../data/perdiem';
 import { validityLabel, refOfDay, validitySummary } from '../data/validities';
 import { AppContext } from '../data/appContext';
 import { DutyCalc, InflightRestCalc, StandbyCalc, PositioningCalc, DelayedReportingCalc } from './FtlCalcs';
@@ -46,7 +46,7 @@ export default function SimulationResult({ visible, duty, onEdit, onClose }) {
   // Per-diem do serviço (AE) — crew-aware: tarifa por tipo/categoria/contrato/frota.
   let perDiem = null, nsEur = null;
   if (ae && cat && isFlight && duty.route) {
-    const dists = routeDistancesNM(duty.route);
+    const dists = sectorDistancesNM(duty);
     if (dists.length && !dists.some((x) => x == null)) perDiem = ae.perDiem(cat, dists, 1, crewAt(duty.duty_date).fleet || crewFleet);
   }
   if (duty.nightStop && ae && ae.nightStop && cat) nsEur = ae.nightStop(cat);

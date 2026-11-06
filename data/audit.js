@@ -14,7 +14,7 @@
 // Gate: só com AE modelado + categoria. Golden: npm run test:audit.
 
 import { nightStopStation } from './hotels';
-import { routeDistancesNM } from './perdiem';
+import { sectorDistancesNM } from './perdiem';
 import { disruptionCandidates } from './disruption';
 
 const r2 = (n) => +(+n || 0).toFixed(2);
@@ -49,7 +49,7 @@ export const monthAudit = (duties = {}, { ym, ae = null, cat = null, fleet = nul
       if (!s || (s.kind || 'flight') !== 'flight') continue;
       const sectors = Number(s.sectors) || 0;
       if (sectors <= 0) continue;
-      const dists = s.route ? routeDistancesNM(s.route) : [];
+      const dists = s.route ? sectorDistancesNM(s) : [];
       const incomplete = !dists || !dists.length || dists.some((x) => x == null);
       if (!incomplete) continue;
       routeDates.push(date);

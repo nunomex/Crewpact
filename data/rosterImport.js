@@ -1,23 +1,47 @@
 // Importação de escala: atividade do calendário (getDutiesInRange) → linha de `duty`
 // (tabela `duties`), e validação prospetiva (legalidade do PSV + impacto nos
 // acumulados 210). Módulo PURO (sem expo-calendar) — testável por golden.
-import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty } from '../ftl';
+import { dayFtlFromDuties, limitsAround, ftlForDuty, fatigueFromDuty, reconcileDayLog } from '../ftl';
 import { classify } from './rosterDiff';
 import { airportCoord } from './airports';
+import { simulateDuty, SIM_RULES } from './simulation';
+import { recoveryIssues, restTimeline } from './today';
+
+const NONFLIGHT = new Set(['standby_airport', 'standby_home', 'positioning', 'office', 'training']);
+
+// O que falta a um serviço importado para o motor o poder contar (auditoria A-220/A-229/A-237): um não-voo sem início ou sem
+// fim; um voo sem as horas das pernas (o PDF não deixou casar as rotas com as horas). Um voo sem APRESENTAÇÃO entra (o tempo de
+// voo conta sempre, ORO.FTL.105(13); o serviço fica estimado e o PSV incerto). null = nada em falta.
+export const missingOf = (s) => {
+  if (!s) return null;
+  const kind = s.kind || 'flight';
+  if (kind === 'reserve') return null;
+  if (NONFLIGHT.has(kind) && !(kind === 'positioning' && s.route)) {
+    if (!s.report_time) return 'start';
+    if (!s.block_on) return 'end';
+    return null;
+  }
+  if (!s.block_on) return 'times';
+  return null;
+};
 
 // Estado de um candidato do import (à prova de falha), SEM dinheiro — partilhado pela folha "Confirmar
 // import" e pelo 7.º passo da configuração (2026-11-03), para as duas nunca divergirem:
 //   removed = cancelado (ausência no feed)   ·   info  = não-voo (entra, sem per-diem)
-//   fix     = voo sem rota ou com aeroporto desconhecido → FICA DE FORA até ser corrigido
+//   fix     = FICA DE FORA até ser corrigido: voo sem rota ou com aeroporto desconhecido (reason 'route'), ou um serviço do dia
+//             sem horas que a lei precisa — não-voo sem início/fim ('start'/'end'), voo sem as horas das pernas ('times')
 //   ready   = voo com rota reconhecida → entra (e conta para o per-diem)
 export const routeAirports = (route) => String(route || '').split(/[^A-Za-z]+/).map((x) => x.toUpperCase()).filter(Boolean);
 export const candidateKind = (c) => {
-  if (c.action === 'delete') return { kind: 'removed', badAp: null };
-  if (c.kind !== 'flight') return { kind: 'info', badAp: null };
-  const aps = routeAirports(c.duty && c.duty.route);
-  if (aps.length < 2) return { kind: 'fix', badAp: null };
+  if (c.action === 'delete') return { kind: 'removed', badAp: null, reason: null };
+  const d = c.duty || {};
+  const svcs = [{ ...d, kind: c.kind || d.kind }, ...(Array.isArray(d.extra) ? d.extra : [])];
+  for (const s of svcs) { const m = missingOf(s); if (m) return { kind: 'fix', badAp: null, reason: m }; }
+  if ((c.kind || d.kind) !== 'flight') return { kind: 'info', badAp: null, reason: null };
+  const aps = routeAirports(d.route);
+  if (aps.length < 2) return { kind: 'fix', badAp: null, reason: 'route' };
   const bad = aps.find((a) => airportCoord(a) == null);
-  return bad ? { kind: 'fix', badAp: bad } : { kind: 'ready', badAp: null };
+  return bad ? { kind: 'fix', badAp: bad, reason: 'route' } : { kind: 'ready', badAp: null, reason: null };
 };
 
 // Pernoita = NOITE FORA DA BASE (Art. 39 pilotos / Art. 56 cabine): uma duty de VOO acaba
@@ -36,42 +60,55 @@ export const isNightStop = (route, base, sectors) => {
 const isoOfDate = (t) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 const svcFields = (d) => ({ report_time: d.report_time || null, block_off: d.block_off || null, block_on: d.block_on || null, sectors: d.sectors || 0, flight_minutes: d.flight_minutes || 0, route: d.route || null, kind: d.kind || 'flight', nightStop: !!d.nightStop, signOff: d.signOff || null, legs: d.legs || null, special: d.special || null, ...(d.eLearning ? { eLearning: true } : {}), ...(d.officeType ? { officeType: d.officeType } : {}) });
 
-// Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport }] }
-// → { duty_date, report_time, block_off, block_on, sectors, flight_minutes, route }.
-// `route` = cadeia de aeroportos "LIS-OPO-LIS" (null se algum for desconhecido) —
-// alimenta o per diem do AE (distância de grande círculo por setor).
+// Atividade { dateISO, sectors, legs:[{ flightNo, report, depTime, arrTime, startDate, endDate, depAirport, arrAirport, dh? }] }
+// → { duty_date, kind, report_time, block_off, block_on, sectors, flight_minutes, route, signOff, legs }.
+// POSICIONAMENTO (pernas `dh`, auditoria A-224/A-225/A-263): ORO.FTL.215 — antes de operar conta como PSV mas NÃO como setor;
+// o tempo todo conta como serviço. 105(12): o PSV acaba no fim do último setor em que o tripulante desempenha funções; 105(13):
+// tempo de voo é o das pernas operadas. Por isso: setores e tempo de voo só das pernas operadas; `block_on` = calços do último
+// setor operado; um DH DEPOIS dele estende o SERVIÇO até à sua chegada (`signOff`, o fim do período de serviço). Só DH →
+// serviço 'positioning'. `route` = cadeia de aeroportos perna a perna, com o DH (a localização: onde se dorme, a pernoita); se
+// as pernas não encadeiam, null (a corrigir — o per-diem não se calcula sobre um setor que não existe, A-226).
 export const dutyFromActivity = (act, base = null) => {
   if (!act || !Array.isArray(act.legs) || !act.legs.length) return null;
-  const first = act.legs[0], last = act.legs[act.legs.length - 1];
-  const flightMin = act.legs.reduce((s, l) => {
-    const d = (l.endDate && l.startDate) ? Math.round((new Date(l.endDate) - new Date(l.startDate)) / 60000) : 0;
-    return s + Math.max(0, d);
-  }, 0);
-  // Cadeia de aeroportos: dep da 1.ª perna + arr de cada perna (setores contíguos).
-  const codes = [first.depAirport, ...act.legs.map((l) => l.arrAirport)];
-  const route = codes.length >= 2 && codes.every((c) => c && c !== '—') ? codes.join('-') : null;
-  const sectors = act.sectors || act.legs.length;
+  const legs = act.legs;
+  const first = legs[0];
+  const op = legs.filter((l) => !l.dh);
+  const lastOp = op.length ? op[op.length - 1] : null;
+  const legMin = (l) => ((l.endDate && l.startDate) ? Math.max(0, Math.round((new Date(l.endDate) - new Date(l.startDate)) / 60000)) : 0);
+  const flightMin = op.reduce((s, l) => s + legMin(l), 0);
+  let chain = [first.depAirport];
+  for (const l of legs) {
+    if (l.depAirport !== chain[chain.length - 1]) { chain = null; break; }
+    chain.push(l.arrAirport);
+  }
+  const route = chain && chain.length >= 2 && chain.every((c) => c && c !== '—') ? chain.join('-') : null;
+  const kind = op.length ? 'flight' : 'positioning';
+  const sectors = op.length;
+  const timesOk = !act.needsFix && legs.every((l) => l.depTime && l.arrTime);
+  const lastLeg = legs[legs.length - 1];
+  const dhAfter = lastOp && lastLeg !== lastOp && lastLeg.dh;
   return {
     duty_date: act.dateISO,
+    kind,
     report_time: first.report || null,   // apresentação REAL do evento (null → o user preenche; nunca dep − 1 h)
-    block_off: first.depTime || null,     // 1.º off-block
-    block_on: last.arrTime || null,       // último on-block
+    block_off: timesOk ? (first.depTime || null) : null,                  // 1.º off-block (o DH antes também: o serviço já começou)
+    block_on: timesOk ? ((lastOp || lastLeg).arrTime || null) : null,     // calços do último setor OPERADO
+    ...(timesOk && dhAfter && lastLeg.arrTime ? { signOff: lastLeg.arrTime } : {}),   // DH depois: o serviço acaba à chegada (215(b))
     sectors,
-    flight_minutes: flightMin,
+    flight_minutes: timesOk ? flightMin : 0,
     route,
-    // Pernoita = NOITE FORA DA BASE (Art. 39/56): a duty acaba num aeroporto ≠ base. Sem
-    // base/rota → recurso pela paridade dos setores (ver isNightStop, topo do módulo).
-    nightStop: isNightStop(route, base, sectors),
+    // Pernoita = NOITE FORA DA BASE (Art. 39/56): o serviço de voo acaba num aeroporto ≠ base. Sem base/rota → recurso pela
+    // paridade dos setores. Um posicionamento sozinho não marca pernoita (a do piloto é dúvida — Art. 39.º "entre serviços de
+    // voo" —, a da cabine fica para o bloco do dinheiro, L13).
+    nightStop: kind === 'flight' ? isNightStop(route, base, sectors) : false,
     // Legs com nº de voo (p/ o reconcile "ao vivo"). Forma leve e serializável (JSON):
-    // só o essencial por leg — flightNo + aeroportos + horas planeadas.
-    legs: act.legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: l.depTime || null, on: l.arrTime || null, offZ: l.depTimeZ || null, onZ: l.arrTimeZ || null })),
+    // só o essencial por leg — flightNo + aeroportos + horas planeadas (+ `dh` no posicionamento).
+    legs: legs.map((l) => ({ flightNo: l.flightNo || null, dep: l.depAirport, arr: l.arrAirport, off: timesOk ? (l.depTime || null) : null, on: timesOk ? (l.arrTime || null) : null, offZ: timesOk ? (l.depTimeZ || null) : null, onZ: timesOk ? (l.arrTimeZ || null) : null, ...(l.dh ? { dh: true } : {}) })),
   };
 };
 
-// Validação prospetiva LEVE do import (estado ok/aviso de cada candidato): legalidade do PSV + se, ao incluí-la no dia, algum
-// período do ORO.FTL.210 que contém o dia passa o limite (todos: 7/14/28 dias de serviço, 28 dias, ano e 12 meses de voo, para
-// trás e para a frente — auditoria A-165). dayLog = store FTL atual. A pergunta completa da Simulação ("posso aceitar?", com o
-// repouso antes e depois, a recuperação e as noites seguidas) vive em data/simulation.js; o import passa para ela no bloco 4.
+// Validação prospetiva LEVE (legalidade do PSV + os períodos do ORO.FTL.210 que contêm o dia). A importação usa agora a
+// verificação completa da Simulação (simulateDuty, em buildImportCandidates); esta fica para quem só precisa do leve.
 export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0, isPilot = false, base = null, { cabinGapMin, splitAdminMin, duties = null } = {}) => {
   // Um dia pode ter N períodos de serviço (210 conta por serviço): inclui os `extra` do candidato.
   // `base` → repouso 12h/10h por localização real (ORO.FTL.235) e a fronteira rest/split.
@@ -87,9 +124,6 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
   // "A lei é que manda": sem um facto de que a lei precisa, nem "dentro" nem "excede" — incerto, com o que falta.
   else if (ftl.psv.uncertain) issues.push({ type: 'fdpUncertain', unknowns: ftl.psv.unknowns || [] });
   for (const w of wins) if (w.over) issues.push({ type: 'limit', key: w.key, id: w.id, doneMin: w.doneMin, limitMin: w.limitMin, overMin: w.overMin, from: w.from, to: w.to });
-  // Índice de risco de fadiga (consultivo) desta duty — com o teto do PSV corrigido (casos especiais).
-  // O mesmo cálculo do dayLog (ftlForDuty). Limite COMBINADO do standby (CS FTL.1.225): standby + PSV REAL > 16 h
-  // (aeroporto) / > 18 h acordado (casa) / standby > 16 h → aviso separado do PSV-over.
   const d = ftlForDuty(duty, { postFlightMin, isPilot, base, date: duty.duty_date || null, cabinGapMin, splitAdminMin, duties });
   if (d && d.isFdp && d.fdp && d.fdp.stdbyOver) issues.push({ type: 'standby', kind: d.fdp.stdbyOverKind });
   if (ftl.psv && ftl.psv.sbOver) issues.push({ type: 'standby', kind: 'maxStandby' });   // standby em casa > 16 h (225(b)(1))
@@ -105,18 +139,20 @@ export const prospectiveDuty = (duty, dayLog = {}, ref = null, postFlightMin = 0
 };
 
 // ── Importação de escala (Fase 2) ─────────────────────────────────────────────
-// Duty SEM-VOO do calendário { dateISO, start, end, kind } → linha de duty. O kind
-// já vem do item (rosterCodes, por companhia). Sem rota/setores/voo.
+// Duty SEM-VOO do calendário/PDF { dateISO, start, end, kind } → linha de duty. O kind
+// já vem do item (rosterCodes, por companhia). Sem setores/voo. `end` null (o PDF não o trouxe) → `block_on` null → o
+// candidato fica a corrigir (missingOf), nunca pronto e fora dos 210 (A-220).
 export const dutyFromNonFlight = (it) => {
   if (!it || !it.dateISO) return null;
   return {
     duty_date: it.dateISO,
+    kind: it.kind || null,
     report_time: it.start || null,
     block_off: null,
     block_on: it.end || null,
     sectors: 0,
     flight_minutes: 0,
-    route: null,
+    route: it.route || null,
     // Sinais de €€ do AE lidos do calendário/PDF (e-learning paga 0 · OFC8 paga 3 NS).
     ...(it.eLearning ? { eLearning: true } : {}),
     ...(it.officeType ? { officeType: it.officeType } : {}),
@@ -128,6 +164,42 @@ export const dutyFromNonFlight = (it) => {
 //  tem a sua própria janela explícita no App.js. Um helper partilhado com semânticas
 //  divergentes já causou uma regressão hoje — não voltar a criá-lo.)
 
+// O serviço do dia a que falta uma hora passa para a frente (primário): é esse que a folha abre para corrigir. A ordem dos
+// serviços do dia não muda as contas (o motor ordena-os pela apresentação).
+export const promoteMissing = (duty, kind) => {
+  if (!duty || !Array.isArray(duty.extra) || !duty.extra.length) return { duty, kind };
+  if (missingOf({ ...duty, kind })) return { duty, kind };
+  const i = duty.extra.findIndex((e) => missingOf(e));
+  if (i < 0) return { duty, kind };
+  const ex = duty.extra[i];
+  const prim = svcFields({ ...duty, kind });
+  const extra = duty.extra.slice(); extra[i] = prim;
+  const next = { duty_date: duty.duty_date, ...svcFields(ex), extra };
+  return { duty: next, kind: ex.kind || 'flight' };
+};
+
+// A versão da LEITURA da escala que gravou o snap (revisão do bloco 4, E7): 2 = o agrupamento pelo repouso mínimo, o DH como
+// perna. Um snap sem versão foi gravado por uma leitura anterior — a mesma escala pode ter ficado agrupada de outra maneira.
+export const READER_VERSION = 2;
+// O snap (a escala publicada, base do 3-vias e o plano do ORO.FTL.205(d)) — o mesmo no gravar e na verificação (E4: sem ele,
+// um prolongamento planeado na escala era julgado "excede"). Leva o fim do DH lido (`signOff`, E6) e a versão da leitura.
+const snapOfCandidate = (c) => {
+  const d = c.duty || {};
+  const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind || d.kind || 'flight', officeType: d.officeType || null, eLearning: !!d.eLearning, signOff: d.signOff || null, v: READER_VERSION };
+  if ((d.extra || []).length) snap.extra = (d.extra || []).map(({ source: _s, ...f }) => f);
+  return snap;
+};
+
+// O DIA tal como ficará gravado se o candidato for aplicado (para a verificação cumulativa).
+const dayOfCandidate = (c) => {
+  const d = c.duty || {};
+  const out = { kind: c.kind || d.kind || 'flight' };
+  for (const k of ['report_time', 'block_off', 'block_on', 'sectors', 'flight_minutes', 'route', 'nightStop', 'signOff', 'legs', 'special', 'eLearning', 'officeType']) if (d[k] !== undefined) out[k] = d[k];
+  out.snap = snapOfCandidate(c);
+  out.extra = Array.isArray(d.extra) && d.extra.length ? d.extra : null;
+  return out;
+};
+
 // Candidatos de importação: atividades (voos) + duties SEM-VOO do calendário.
 // Cada candidato: { duty (com kind), kind, status: 'ok'|'warn'|'exists', exists,
 // prospect, selected }. Default SEGURO: um dia que já tenha duty → status 'exists'
@@ -135,7 +207,10 @@ export const dutyFromNonFlight = (it) => {
 // (com confirmação na UI). Ordenado por data. Módulo PURO.
 // `baseAt(date)` (linha do tempo do contrato, 2026-11-03): a leitura vai 12 meses para trás — cada
 // serviço usa a base EM VIGOR no seu dia (pernoita e repouso 12 h/10 h). Sem ela, vale `base`.
-export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin } = {}) => {
+// VERIFICAÇÃO (auditoria A-254, bloco 4): cada candidato passa pela MESMA verificação da Simulação (simulateDuty — PSV,
+// repouso antes e depois, recuperação, noites seguidas, todos os períodos do 210), numa escala que já tem os OUTROS
+// candidatos desta leitura (na 1.ª leitura não há nada guardado, e 24 dias seguidos davam 0 avisos) e com o pós-voo do perfil.
+export const buildImportCandidates = ({ activities = [], nonflights = [], duties = {}, dayLog = {}, window = null, base = null, baseAt = null, isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0 } = {}) => {
   const bAt = (date) => (typeof baseAt === 'function' ? baseAt(date) : base);
   const out = [];
   const inDates = new Set();
@@ -146,32 +221,71 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
     const date = duty.duty_date;
     inDates.add(date);
     // 2.º+ atividade do MESMO dia nesta leitura → a EASA conta por serviço (210): EMPILHA como
-    // `extra` no candidato primário (não sobrepõe). O prospect reprojeta-se com o dia completo.
+    // `extra` no candidato primário (não sobrepõe).
     const prev = byDate.get(date);
     if (prev) {
       prev.duty.extra = [...(prev.duty.extra || []), svcFields(duty)];
-      prev.prospect = prospectiveDuty(prev.duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin, duties });
       prev.multi = (prev.duty.extra.length + 1);
-      // Re-classifica o DIA COMPLETO (primária + extra) face ao guardado: um serviço a mais/menos
-      // face ao guardado é uma mudança (o classify agora é multi-serviço). Novo dia → só legalidade.
-      if (prev.exists) { const cls = classify(duties[date], prev.duty); prev.status = cls.status; prev.diff = cls.fields; }
-      else if (prev.prospect && prev.prospect.ok === false && prev.status === 'ok') prev.status = 'warn';
       return null;   // já está em `out`; não cria novo candidato
     }
-    const ex = duties[date];
-    const exists = !!(ex && !ex.deleted);
-    const prospect = prospectiveDuty(duty, dayLog, null, 0, isPilot, bAt(date), { cabinGapMin, splitAdminMin, duties });
-    // EXISTE → classify a 3 vias (changed/conflict/same); NOVO → ok/warn (legalidade).
-    let status = 'ok', diff = [];
-    if (exists) { const cls = classify(ex, duty); status = cls.status; diff = cls.fields; }
-    else status = (prospect && prospect.ok === false) ? 'warn' : 'ok';
-    // Default SEGURO: só os NOVOS vêm marcados; alterado/conflito por marcar.
-    const cand = { duty, kind, status, exists, diff, prospect, selected: !exists, action: 'save' };
+    const cand = { duty, kind, status: 'ok', exists: false, diff: [], prospect: null, selected: true, action: 'save' };
     byDate.set(date, cand);
     return cand;
   };
-  for (const act of activities) { const c = make(dutyFromActivity(act, bAt(act && act.dateISO)), 'flight'); if (c) out.push(c); }
+  for (const act of activities) { const d = dutyFromActivity(act, bAt(act && act.dateISO)); const c = make(d, d ? d.kind : 'flight'); if (c) out.push(c); }
   for (const nf of nonflights) { const c = make(dutyFromNonFlight(nf), nf.kind); if (c) out.push(c); }
+  // O serviço a que falta uma hora vai para a frente; EXISTE → classify a 3 vias (changed/conflict/same).
+  for (const c of out) {
+    const p = promoteMissing(c.duty, c.kind);
+    c.duty = p.duty; c.kind = p.kind; c.duty.kind = p.kind;
+    const ex = duties[c.duty.duty_date];
+    c.exists = !!(ex && !ex.deleted);
+    if (c.exists) { const cls = classify(ex, c.duty); c.status = cls.status; c.diff = cls.fields; c.selected = false; }
+  }
+  // Verificação cumulativa: a escala com tudo o que esta leitura aplica (o que não está igual nem a corrigir).
+  const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin };
+  const applies = out.filter((c) => c.status !== 'same' && candidateKind(c).kind !== 'fix');
+  if (applies.length) {
+    const cum = { ...duties };
+    for (const c of applies) cum[c.duty.duty_date] = dayOfCandidate(c);
+    // Todos entram juntos: verifica-se cada DIA na escala completa (scope 'day'), com o dayLog e os avisos de recuperação dela
+    // calculados uma só vez (uma leitura de 12 meses tem centenas de candidatos).
+    const cumLog = reconcileDayLog(cum, dayLog, rc);
+    const recovery = recoveryIssues(cum, { postFlightMin, base, baseAt, disruptiveType: null });
+    const restLine = restTimeline(cum, { postFlightMin, isPilot, base, baseAt });
+    for (const c of applies) {
+      const date = c.duty.duty_date;
+      const sim = { duty_date: date, ...dayOfCandidate(c) };
+      sim.extra = sim.extra || [];
+      c.prospect = simulateDuty(sim, { duties: cum, dayLog: cumLog, ...rc, mode: 'replace', scope: 'day', hypoLog: cumLog, recovery, restLine });
+    }
+    // Os avisos que esta leitura CRIA num dia que ela não aplica (um dia guardado, ou lido igual): passam para o candidato mais
+    // perto (revisão do bloco 4, E5 — ex.: o serviço novo tira a recuperação e o "mais de 168 h" cai num dia já guardado; ou o
+    // 3.º prolongamento em 7 dias passa a ser o de um dia guardado). Compara-se com a escala guardada.
+    const applied = applies.map((c) => c.duty.duty_date).sort();
+    const appliedSet = new Set(applied);
+    const rkey = (x) => `${x.type}|${x.date || ''}|${x.month || ''}`;
+    const baseRec = new Set(recoveryIssues(duties, { postFlightMin, base, baseAt, disruptiveType: null }).map(rkey));
+    const baseLog = reconcileDayLog(duties, dayLog, rc);
+    const orphans = recovery.filter((x) => x.date && !appliedSet.has(x.date) && !baseRec.has(rkey(x)))
+      .map((x) => { const { type: kind, ...y } = x; return { ...y, level: x.uncertain ? 'unc' : 'bad', type: 'recovery', kind, rule: SIM_RULES[kind] || 'ORO.FTL.235' }; });
+    for (const k of Object.keys(cumLog)) {
+      if (appliedSet.has(k) || !cumLog[k] || !cumLog[k].psv || !cumLog[k].psv.over) continue;
+      if (baseLog[k] && baseLog[k].psv && baseLog[k].psv.over) continue;
+      orphans.push({ level: 'bad', type: 'fdpOther', date: k, rule: SIM_RULES.fdpOther });
+    }
+    const dayNum = (iso) => Math.round(+new Date(`${iso}T12:00:00`) / 86400000);
+    for (const o of orphans) {
+      let best = null;
+      for (const d of applied) if (!best || Math.abs(dayNum(d) - dayNum(o.date)) < Math.abs(dayNum(best) - dayNum(o.date))) best = d;
+      const c = best && applies.find((x) => x.duty.duty_date === best);
+      if (!c || !c.prospect) continue;
+      c.prospect.issues.push(o);
+      c.prospect.verdict = c.prospect.issues.some((i) => i.level === 'bad') ? 'bad' : c.prospect.issues.some((i) => i.level === 'unc') ? 'unc' : 'ok';
+      c.prospect.ok = c.prospect.verdict === 'ok';
+    }
+    for (const c of applies) if (!c.exists && c.prospect && c.prospect.verdict === 'bad') c.status = 'warn';
+  }
   // CANCELADOS (Fase 4): duties source=calendar, dentro da janela, que sumiram do calendário.
   // AUSÊNCIA é sinal FRACO (pode ser atraso/glitch do feed) e apagar é IRREVERSÍVEL (sem tombstone)
   // → vêm POR MARCAR (selected: false). O utilizador opta-in serviço-a-serviço (toca para apagar).
@@ -186,38 +300,69 @@ export const buildImportCandidates = ({ activities = [], nonflights = [], duties
       out.push({ duty: { ...d, duty_date: date, kind }, kind, status: 'removed', exists: true, diff: [], selected: false, action: 'delete' });
     }
   }
-  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, same: 5 };
+  const PRIO = { removed: 0, conflict: 1, changed: 2, warn: 3, ok: 4, refresh: 5, same: 6 };
   out.sort((a, b) => ((PRIO[a.status] ?? 9) - (PRIO[b.status] ?? 9)) || (a.duty.duty_date < b.duty.duty_date ? -1 : a.duty.duty_date > b.duty.duty_date ? 1 : 0));
   return out;
 };
 
+// O mesmo serviço? (para casar um serviço lido com o guardado ao reimportar): a mesma apresentação; sem ela, a mesma saída e
+// a mesma rota.
+const sameSvc = (a, b) => {
+  if (!a || !b) return false;
+  if (a.report_time && b.report_time) return a.report_time === b.report_time;
+  return !!a.block_off && a.block_off === b.block_off && (a.route || null) === (b.route || null);
+};
+const timesSame = (a, b) => !!a && !!b && (a.report_time || null) === (b.report_time || null) && (a.block_off || null) === (b.block_off || null) && (a.block_on || null) === (b.block_on || null);
+
 // Campos para o saveDuty a partir de um candidato de import (commit do RosterImportSheet).
+// `existing` = o DIA guardado (duties[date]) — ou, nas chamadas antigas, só o seu `extra` (array).
 // MERGE por-SERVIÇO de `extra` (proveniência por-serviço):
-//   • os serviços-irmãos DESTA leitura são do calendário/PDF (tag `source`);
-//   • os teus extras MANUAIS (source:'manual') do dia SOBREVIVEM (não morrem por o calendário não
-//     os trazer — são teus, deliberados);
+//   • os serviços-irmãos DESTA leitura são do calendário/PDF (tag `source`); cada um guarda o que o tripulante registou no
+//     serviço guardado igual — papel, folga trabalhada, casos especiais e, se as horas não mudaram, o sign-off (A-233);
+//   • os teus extras MANUAIS (source:'manual') do dia SOBREVIVEM — menos o que a leitura passou a trazer (A-232);
 //   • um extra do CALENDÁRIO guardado que a leitura já não traz é DESCARTADO (o dia foi relido em
 //     positivo → a leitura é autoritativa para os serviços-do-calendário desse dia).
-// `existingExtra` = o `extra` guardado do dia (duties[date].extra). Se nada resultar → extra:null.
-export const importSaveFields = (c, source = 'calendar', existingExtra = null) => {
+// O serviço principal: o sign-off guardado só fica se as horas não mudaram (A-231: um sign-off antes dos novos calços contava
+// como do dia seguinte); o fim de um DH lido da escala vai como sign-off. E-learning e OFC vão SEMPRE (A-230: sem a chave, o
+// valor antigo ficava).
+export const importSaveFields = (c, source = 'calendar', existing = null) => {
   const d = c.duty;
-  const readExtra = (d.extra || []).map((e) => ({ ...e, source }));                  // do calendário/PDF (esta leitura)
-  const keptManual = (existingExtra || []).filter((e) => e && e.source === 'manual'); // os teus à mão sobrevivem
+  const stored = existing && !Array.isArray(existing) && !existing.deleted ? existing : null;
+  const existingExtra = Array.isArray(existing) ? existing : (stored && Array.isArray(stored.extra) ? stored.extra : []);
+  const readExtra = (d.extra || []).map((e) => {
+    const was = existingExtra.find((x) => x && x.source !== 'manual' && sameSvc(x, e));
+    const keep = was ? {
+      ...(was.role ? { role: was.role } : {}), ...(was.dayOffWorked ? { dayOffWorked: was.dayOffWorked } : {}),
+      ...(was.special && !e.special ? { special: was.special } : {}), ...(was.signOff && !e.signOff && timesSame(was, e) ? { signOff: was.signOff } : {}),
+    } : {};
+    return { ...e, ...keep, source };
+  });
+  const readSvcs = [d, ...(d.extra || [])];
+  const keptManual = existingExtra.filter((e) => e && e.source === 'manual' && !readSvcs.some((r) => sameSvc(r, e)));   // os teus à mão sobrevivem
   const extra = [...readExtra, ...keptManual];
   // snap = base do 3-vias. Capta o DIA como veio do calendário (primária + serviços-irmãos DESTA
   // leitura, sem `source`) → o classify multi-serviço distingue "calendário mudou" de "tu editaste"
   // também nos extras. Single-serviço → sem snap.extra (idêntico ao legado).
-  const snap = { report_time: d.report_time, block_off: d.block_off, block_on: d.block_on, route: d.route, sectors: d.sectors, kind: c.kind };
-  if (readExtra.length) snap.extra = readExtra.map(({ source: _s, ...f }) => f);
+  const snap = snapOfCandidate(c);
+  // Sign-off do serviço principal: o lido (fim do DH) > o guardado, se foi o tripulante que o escreveu e as horas não mudaram
+  // (sem a chave, o saveDuty mantém-no) > nenhum. Um sign-off guardado igual ao `snap.signOff` veio da escala (o fim de um DH):
+  // se o DH saiu da escala, sai com ele (revisão do bloco 4, E6).
+  let signOff = {};
+  if (d.signOff) signOff = { signOff: d.signOff };
+  else if (stored) {
+    const so = stored.signOff || null;
+    const fromReader = !!so && !!stored.snap && ('signOff' in stored.snap) && so === stored.snap.signOff;
+    signOff = (so && !fromReader && timesSame(stored, d)) ? {} : { signOff: null };
+  }
   return {
     report_time: d.report_time, block_off: d.block_off, block_on: d.block_on,
     sectors: d.sectors, flight_minutes: d.flight_minutes, route: d.route,
     kind: c.kind, nightStop: !!d.nightStop, source, snap, legs: d.legs || null,
     extra: extra.length ? extra : null,
-    // Sinais de €€ do AE (auditoria 2026-07-11): sem eles o motor sobre/subpagava
-    // (CBT importado pagava 3 NS de formação; OFC8 pagava só OFC4).
-    ...(d.eLearning ? { eLearning: true } : {}),
-    ...(d.officeType ? { officeType: d.officeType } : {}),
+    ...signOff,
+    // Sinais de €€ do AE (auditoria 2026-07-11 e A-230): sempre, para nunca ficar o do serviço antigo.
+    eLearning: !!d.eLearning,
+    officeType: d.officeType || null,
   };
 };
 
@@ -236,7 +381,7 @@ export const buildIncoming = ({ activities = [], nonflights = [] } = {}) => {
     byDate.set(d.duty_date, d);
     out.push(d);
   };
-  for (const act of activities) add(dutyFromActivity(act), 'flight');
+  for (const act of activities) { const d = dutyFromActivity(act); add(d, d ? d.kind : 'flight'); }
   for (const nf of nonflights) add(dutyFromNonFlight(nf), nf.kind);
   return out;
 };

@@ -33,6 +33,7 @@ import { readCalendarRoster, countUpcomingDuties, importWindow } from '../data/r
 import { candidateKind, importSaveFields } from '../data/rosterImport';
 import { isRosterPending } from '../data/rosterCodes';
 import { getAe } from '../ae';
+import { resolvePostFlight } from '../data/capabilities';
 import { startEmployment, companyStartYm } from '../data/crewHistory';
 import { tx } from '../data/i18n';
 import { select, success } from '../data/haptics';
@@ -279,7 +280,7 @@ export default function OnboardingScreen() {
     setCalendarId(selCal.id); if (setCalendarName) setCalendarName(selCal.title || null);
     try {
       const pilotD = draft.crewType === 'pilot';   // ORO.FTL.205(c): a cabine sem a hora dos pilotos → desconhecida (null)
-      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, baseAt: homeBaseAt, aeEvents, isPilot: pilotD, cabinGapMin: pilotD ? undefined : null, splitAdminMin: null });
+      const r = await readCalendarRoster({ companySlug: coSlug, calendarId: selCal.id, duties, dayLog, base: draft.base || null, baseAt: homeBaseAt, aeEvents, isPilot: pilotD, cabinGapMin: pilotD ? undefined : null, splitAdminMin: null, postFlightMin: resolvePostFlight(profile?.postFlightMin ?? null, D.selAirline).min, sickFirst3: !ae || ae.SICK_FIRST3 !== false });
       setRRes(r);
       swap(() => setRStep('review'));
     } finally { setRBusy(false); }
@@ -297,7 +298,7 @@ export default function OnboardingScreen() {
   const found = quick.length + fixN + vacN + sickN > 0;
   const saveRoster = () => {
     if (!quick.length) return;
-    for (const c of quick) saveDuty(c.duty.duty_date, importSaveFields(c, 'calendar', duties[c.duty.duty_date]?.extra));
+    for (const c of quick) saveDuty(c.duty.duty_date, importSaveFields(c, 'calendar', duties[c.duty.duty_date]));
     if (addAeEvents && vacN) addAeEvents(rRes.vacDates.map((d) => ({ date: d, type: 'vacDays' })));
     if (addAeEvents && sickN) addAeEvents(rRes.sickDates.map((d) => ({ date: d, type: 'sickDays' })));
     complete();

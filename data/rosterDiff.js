@@ -19,14 +19,25 @@ export const DIFF_FIELDS = [
   { key: 'block_off',   label: { pt: 'Off-block', en: 'Off-block' } },
   { key: 'block_on',    label: { pt: 'On-block', en: 'On-block' } },
   { key: 'sectors',     label: { pt: 'Setores', en: 'Sectors' } },
+  // Mudam o € do AE sem mudar as horas (auditoria A-230): OFC8 → OFC (3 → 1,5 NS), CBT → SEP (e-learning 0 → 3 NS).
+  { key: 'officeType',  label: { pt: 'Escritório', en: 'Office' } },
+  { key: 'eLearning',   label: { pt: 'E-learning', en: 'E-learning' } },
 ];
 
 const val = (d, k) => {
   if (!d) return null;
   const v = d[k];
-  if (v == null || v === '') return null;
+  if (v == null || v === '' || v === false) return null;
   if (k === 'sectors') return Number(v) || 0;
   return String(v).trim().toUpperCase();
+};
+// Um snap gravado antes de levar o OFC e o e-learning (A-230) não os tem: valem os do serviço guardado (não é uma mudança).
+const LATE_SNAP_KEYS = ['officeType', 'eLearning'];
+const withLateKeys = (snap, stored) => {
+  if (!snap || !stored) return snap;
+  const add = {};
+  for (const k of LATE_SNAP_KEYS) if (!(k in snap) && stored[k] !== undefined) add[k] = stored[k];
+  return Object.keys(add).length ? { ...snap, ...add } : snap;
 };
 
 // Serviços de um DIA (primária + `extra`), ORDENADOS por report (depois off-block), para uma
@@ -74,13 +85,33 @@ export const diffDuty = (before, after) => {
   return out;
 };
 
+// As horas dos acontecimentos de um dia (cada perna: saída e chegada; um não-voo sem pernas: início e fim), ordenadas. Iguais
+// = os mesmos voos e serviços, mesmo que agrupados de outra maneira.
+const eventTimes = (d) => {
+  const out = [];
+  for (const s of [d, ...(d && Array.isArray(d.extra) ? d.extra : [])]) {
+    if (!s) continue;
+    const legs = Array.isArray(s.legs) ? s.legs.filter((l) => l && (l.off || l.on)) : [];
+    if (legs.length) for (const l of legs) out.push(String(l.off || ''), String(l.on || ''));
+    else out.push(String(s.report_time || ''), String(s.block_on || ''));
+  }
+  return out.sort().join(',');
+};
+
 // Classifica um dia que EXISTE guardado, face ao que veio do calendário (incoming).
 // Usa o snapshot (base) para separar "calendário mudou" de "tu editaste".
+// `refresh` (revisão do bloco 4, E7): o snap foi gravado por uma LEITURA ANTERIOR (sem `v`) e os acontecimentos do dia são os
+// mesmos — a leitura nova só os agrupa ou lê de outra maneira (um repartido que era 2 serviços, o DH que era setor). Não é uma
+// alteração da escala: aplica-se para os dados ficarem certos, mas não conta como mudança nem vai para o arquivo do SNC/RDP
+// (SNPVAC Cl. 66.ª: o SNC é "uma alteração de escala").
 export const classify = (stored, incoming) => {
-  const snap = stored && stored.snap ? stored.snap : null;
+  const snap = stored && stored.snap ? withLateKeys(stored.snap, stored) : null;
+  const oldReader = !!(stored && stored.snap && !(Number(stored.snap.v) >= 2));
   const base = snap || stored;                 // sem snapshot (manual/legado) → usa o guardado
   const calFields = diffDuty(base, incoming);  // o calendário mudou face à base?
   const userEdited = snap ? diffDuty(snap, stored).length > 0 : false; // tu mexeste face à base?
+  // O OFC e o e-learning lêem-se do código como antes: mudarem é a escala a mudar, não a leitura (A-230).
+  if (calFields.length && oldReader && eventTimes(stored) === eventTimes(incoming) && !calFields.some((f) => f.key === 'officeType' || f.key === 'eLearning')) return { status: 'refresh', fields: calFields };
   if (calFields.length && userEdited) return { status: 'conflict', fields: diffDuty(stored, incoming) };
   if (calFields.length) return { status: 'changed', fields: calFields };
   return { status: 'same', fields: [] };

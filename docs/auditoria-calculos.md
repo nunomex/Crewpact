@@ -29,6 +29,15 @@ cabine como no de piloto". Este documento é a lista do que está errado e da or
 > por teste. No mesmo dia ficaram feitos também A-133 a A-141 e o tempo de voo sem as horas de cada perna que passa da meia-noite
 > (resto do A-132); as citações das validades foram conferidas nos atos do Jornal Oficial. A revisão independente do bloco apanhou 13 erros (alguns introduzidos pela própria correção),
 > corrigidos no mesmo dia. Detalhe em `docs/decisoes.md`. Próximo: bloco 4 (importação).
+>
+> **Bloco 4 (importação da escala: S6, M12, L12 e o DH) feito a 2026-11-06:** A-220 a A-234, A-236 a A-238, A-254 e A-263. As
+> pernas agrupam-se pelo repouso mínimo (não pelas 6 h); o DH é uma perna que não é setor nem tempo de voo; o que não tem as
+> horas de que a lei precisa fica a corrigir; reimportar não deixa dados velhos nem duplica; eventos de vários dias contam
+> cada dia (a cabine só regista os dias de doença pagos); cada candidato passa pela verificação da Simulação, com os outros
+> da mesma leitura. A revisão independente apanhou 7 erros (o agrupamento juntava serviços com um repouso curto, o DH no
+> per-diem e no formulário, o prolongamento planeado, avisos em dias guardados, o sign-off de um DH, mudanças falsas nos dados
+> antigos), corrigidos no mesmo dia. Ficam para os blocos seguintes A-235 (L13), A-239 (L10), A-240 e A-241 (dúvidas) e, fora
+> dos blocos, A-249 a A-251 (formulário manual). Detalhe em `docs/decisoes.md`. Próximo: bloco 5 (dinheiro a mais).
 
 ## Como se fez
 

@@ -305,6 +305,8 @@ eq('routeDistances rota vazia', routeDistancesNM(null).length, 0);
   eq('ADTY mês: não-chamado ≥4h = 2 NS', monthlyAe({ '2026-06-10': sb('08:00', '20:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 77.52);
   // Não-chamado <4h (08:00→11:00) → 1 setor nominal (38.76) — antes pagava 2 achatados.
   eq('ADTY mês: não-chamado <4h = 1 NS', monthlyAe({ '2026-06-10': sb('08:00', '11:00') }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 38.76);
+  // Sem hora de fim (auditoria A-220): não se sabe se passou das 4 h → o GARANTIDO, 1 NS (antes presumia ≥ 4 h e pagava 2).
+  eq('ADTY mês: sem hora de fim = 1 NS (o garantido)', monthlyAe({ '2026-06-10': sb('08:00', null) }, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 38.76);
   // CHAMADO <4h (standby 2h + VOO no mesmo dia) → 0 (fica só o per-diem do voo).
   const called = { '2026-06-10': { ...sb('06:00', '08:00'), extra: [{ report_time: '09:00', block_on: '13:00', kind: 'flight', route: 'LIS-OPO-LIS' }] } };
   eq('ADTY mês: chamado <4h = 0', monthlyAe(called, 'FO', '12/12', ae, { ym: '2026-06' }).extras, 0);

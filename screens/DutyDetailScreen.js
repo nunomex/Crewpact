@@ -184,7 +184,7 @@ export default function DutyDetailScreen({ route, navigation }) {
       const r = m(duty.report_time), e = m(duty.block_on);
       const dm = (r != null && e != null) ? (e >= r ? e - r : e + 1440 - r) : null;
       const called = [duty, ...(Array.isArray(duty.extra) ? duty.extra : [])].some((x) => x && (x.kind || 'flight') === 'flight');
-      const eur = ae.airportStandby(catD, { called, over4h: dm == null ? true : dm >= 240, ym: date });
+      const eur = ae.airportStandby(catD, { called, over4h: dm != null && dm >= 240, ym: date });   // sem horas → o garantido (< 4 h), A-220
       return eur > 0 ? { lbl: 'ADTY (Anexo I.5)', eur } : null;
     }
     return null;
@@ -209,7 +209,7 @@ export default function DutyDetailScreen({ route, navigation }) {
 
   // ── Herói (mockup): fantasma = FDP realizado (ou duty hours); kick = nº de voo · setores · pernoita ──
   const heroGhost = (d && hasEnd && d.fdp && d.fdp.actualFdpStr) || (d && d.dutyPeriodStr) || '';
-  const nSec = legs.length || (duty.sectors || 0);
+  const nSec = (legs.some((lg) => lg && lg.dh) ? legs.filter((lg) => lg && !lg.dh).length : legs.length) || (duty.sectors || 0);   // o DH não é setor (215(a))
   const secLbl = nSec ? `${nSec} ${nSec === 1 ? l('setor', 'sector') : l('setores', 'sectors')}` : null;
   const kickParts = [
     (firstLeg && firstLeg.flightNo) ? firstLeg.flightNo : null,
@@ -313,7 +313,7 @@ export default function DutyDetailScreen({ route, navigation }) {
             <Panel rows={legs.map((lg) => {
               const zo = legZulu(date, lg, 'off'), zn = legZulu(date, lg, 'on');
               return {
-                k: `${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
+                k: `${lg.dh ? 'DH · ' : ''}${lg.flightNo ? `${lg.flightNo} · ` : ''}${lg.dep || '?'}→${lg.arr || '?'}`,
                 node: (
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={s.rowV}>{`${lg.off || '—'} → ${lg.on || '—'}`}</Text>

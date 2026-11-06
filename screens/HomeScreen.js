@@ -8,7 +8,7 @@ import NotificationsBell from '../components/NotificationsBell';
 import FlightShareCard from '../components/FlightShareCard';
 import { getUpcomingFlight } from '../data/calendar';
 import { catLabel } from '../data/extras';
-import { routeDistancesNM } from '../data/perdiem';
+import { sectorDistancesNM } from '../data/perdiem';
 import { isLongHaulCompany } from '../data/capabilities';
 import { computeDutyTime, computeFlightTime, computeDuty, ftlForDuty, liveFdpVerdict } from '../ftl';
 import { restUntilAfter } from '../data/today';
@@ -452,7 +452,10 @@ export default function HomeScreen({ navigation }) {
   })();
   // O voo seguido: o do setor ativo (sem número nesse setor → não se segue nada, nunca o de outro setor).
   const flightNo = !flight ? null : activeSector ? (legNo(activeSector.leg) || null) : (flight.flightNo ? legNo({ flightNo: flight.flightNo }) : null);
-  const trackingLast = !activeSector || activeSector.idx === activeSector.total - 1;
+  // O PSV acaba nos calços do último setor OPERADO (ORO.FTL.105(12)): um DH depois dele não conta para o veredicto ao vivo.
+  const lastOpIdx = sectorLegs.reduce((k, lg, i) => (lg && !lg.dh ? i : k), -1);
+  const trackingDhTail = !!(activeSector && activeSector.leg && activeSector.leg.dh && activeSector.idx > lastOpIdx);
+  const trackingLast = !activeSector || activeSector.idx === (lastOpIdx >= 0 ? lastOpIdx : activeSector.total - 1);
   const depTs = (flight && flight.startDate) ? +new Date(flight.startDate) : null;
   const endTs = (flight && flight.endDate) ? +new Date(flight.endDate) : (depTs ? depTs + 3 * 3600e3 : null);
   const inFlightWindow = !!depTs && Date.now() >= depTs - 4 * 3600e3 && Date.now() <= (endTs || depTs) + 3600e3;
@@ -537,14 +540,15 @@ export default function HomeScreen({ navigation }) {
   }
   // Voo ao vivo: recalcula o PSV com o ATRASO REAL à chegada e dá o veredicto (105/205).
   const ndArrDelay = flightStatus ? arrDelayMin(flightStatus) : 0;
-  const liveVerdict = (ndArrDelay > 0 && ndDuty)
+  const liveVerdict = (ndArrDelay > 0 && ndDuty && !trackingDhTail)
     // Só é facto (não projeção) quando o setor seguido é o ÚLTIMO e já aterrou: o PSV acaba nos calços do último.
     ? liveFdpVerdict(ndDuty, ndArrDelay, { projected: !(trackingLast && flightStatus.arr && flightStatus.arr.actual) })
     : null;
   // O REGISTO guardado está atrás da chegada REAL? (aviso de sincronizar a escala eCrew).
   const ndReg = flight ? (flight.svc || null) : null;
-  const ndOnLeg = (ndReg && Array.isArray(ndReg.legs) && ndReg.legs.length)
-    ? ndReg.legs[ndReg.legs.length - 1]
+  const ndOpLegs = (ndReg && Array.isArray(ndReg.legs)) ? (ndReg.legs.some((lg) => lg && !lg.dh) ? ndReg.legs.filter((lg) => lg && !lg.dh) : ndReg.legs) : [];   // o último setor OPERADO (o DH não)
+  const ndOnLeg = ndOpLegs.length
+    ? ndOpLegs[ndOpLegs.length - 1]
     : (flight && flight.arrTime ? { on: flight.arrTime, arr: (flightStatus && flightStatus.arr && flightStatus.arr.iata) || null } : null);
   const ndStoredOnZ = (flight && ndOnLeg && ndOnLeg.on) ? legZulu(flight.dateISO, ndOnLeg, 'on') : null;
   // Só com o ÚLTIMO setor seguido: o registo compara-se com os calços do último (é o que o App também limpa).
@@ -561,7 +565,7 @@ export default function HomeScreen({ navigation }) {
   // Per-diem do DIA (todos os setores da rota).
   let dayPerDiem = null;
   if (flight && ae && crewCategory && flight.route) {
-    const dists = routeDistancesNM(flight.route);
+    const dists = sectorDistancesNM(flight);
     if (dists.length && !dists.some((x) => x == null)) dayPerDiem = ae.perDiem(crewCategory, dists, 1, crewFleet);
   }
   const loadingFlight = !flight && syncing && !syncDone && calOk;
@@ -739,7 +743,7 @@ export default function HomeScreen({ navigation }) {
     ? `${Math.floor(todayEnded.flight_minutes / 60)}:${String(todayEnded.flight_minutes % 60).padStart(2, '0')}` : null;
   let pdToday = null;
   if (todayEnded && !closeMulti && ae && crewCategory && todayEnded.route) {
-    const dists = routeDistancesNM(todayEnded.route);
+    const dists = sectorDistancesNM(todayEnded);
     if (dists.length && !dists.some((x) => x == null)) pdToday = ae.perDiem(crewCategory, dists, 1, crewFleet);
   }
   // Acordar sugerido (véspera): report − 75 min (estimativa: vestir + caminho).

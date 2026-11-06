@@ -15,10 +15,12 @@ verificadores cada); agrupados, cerca de 70 problemas.
 **Bloco 1 (motor FTL) FEITO a 2026-11-06** — ver a entrada abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 2 (Simulação) FEITO a 2026-11-06** — ver a entrada "BLOCO 2" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **Bloco 3 (limites TAP e validades) FEITO a 2026-11-06** — ver a entrada "BLOCO 3" abaixo. Falta vê-lo no iPhone (lista na entrada).
+**Bloco 4 (importação da escala) FEITO a 2026-11-06** — ver a entrada "BLOCO 4" abaixo. Falta vê-lo no iPhone (lista na entrada).
 **A seguir, pela ordem do relatório** (golden-first a partir do texto oficial em `fontes/`; um bloco por sessão):
-4. **Importação** — **Opus 5.5 Extra, sessão nova.** (S6 do lado do import: A-220–A-228, M12, L12; e passar o `buildImportCandidates` para o `simulateDuty`) · 5. Dinheiro a mais (M1–M11,
-   primeiro a doença da cabine) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento, VE/VS da TAP) · 7. Textos e citações ·
-   8. Dúvidas → advogado.
+5. **Dinheiro a mais (M1–M11)** — **Opus 5.5 Alto, sessão nova.** Primeiro a doença da cabine (M1: o import já só sugere os
+   dias pagos; falta o registo manual em bloco) · 6. Dinheiro a menos (L1–L13: subsídios, posicionamento — Art. 44.º e Anexo
+   I.18 —, VE/VS da TAP, e L10/L13 do import: A-239, A-235) · 7. Textos e citações · 8. Dúvidas → advogado (A-240, A-241).
+   Fora dos blocos: A-249 a A-251 (formulário manual: ordem das pernas e fusos no "Detetar").
 **Regra do Nuno (2026-11-06): "a lei é que manda", sempre.** Sem um facto de que a lei precisa → perguntar, ou "incerto"
 com o que falta. Nunca um valor inventado, nem "o mais restritivo". Ver a entrada "A LEI É QUE MANDA" abaixo.
 **Factos por saber — pesquisa na internet de 2026-11-06** (até lá a app dá "incerto" perto do limite). A lista para
@@ -34,6 +36,75 @@ tabela secundária (Áustria/Irlanda/Malta = matinal; Portugal = sem escolha pub
 leitura automática. A easyJet deixou de ser assumida matinal: os dois tipos para todos, até haver documento oficial.
 **Depois disso:** o esboço `design/inicio-v6.html` e o modo escuro (adiados pela auditoria).
 **Por ver no iPhone (de antes):** a disrupção e o aviso de RDP; uma conta de CABINE.
+
+---
+
+## 2026-11-06 (noite) — AUDITORIA, BLOCO 4: a importação da escala (Opus 5.5)
+
+Golden primeiro (`scripts/import.test.js`, 106, a 31.ª suite, `npm run test:import`), escrito a partir de `fontes/`;
+`npm test` verde (31 suites); pacote iOS gerado sem erros. Achados fechados: S6 do lado da importação (A-220, A-221, A-222,
+A-227, A-228), M12 (A-230, A-231, A-232), L12 (A-223, A-229, A-236), o DH (A-224, A-225, A-226, A-263) e ainda A-233, A-234
+(pela importação), A-237, A-238 e A-254; a importação passa a usar o `simulateDuty`. ENGINE_VERSION 4.
+- **Nenhum serviço sai dos acumulados (ORO.FTL.210):**
+  - pernas do mesmo serviço: o limiar de 6 h morreu. Duas pernas são o mesmo serviço só quando o intervalo CERTAMENTE não é
+    um repouso: menos de 10 h, o mínimo mais baixo que a lei admite (fora da base, ORO.FTL.235(b), e na base com alojamento
+    adequado, 235(a)(2)) — o repartido de 7 h é um PSV ("O intervalo em terra deve contar todo como PSV", 220(b)). 10 h ou mais
+    é um repouso, mesmo mais curto do que o serviço anterior (aí é um repouso CURTO, que a verificação aponta); e nunca um
+    serviço de 24 h ou mais. Calendário e PDF usam a mesma regra (`buildDuties`);
+  - evento de dia inteiro com horas no texto: as horas do texto (era a meia-noite: 24 h de voo, 0 h de assistência);
+  - não-voo sem hora de fim (PDF) ou formação de vários dias num só evento: **a corrigir**, nunca "pronto" e fora dos 210.
+    Um voo sem as horas das pernas também (o PDF não deixou casar rotas e horas);
+  - dia com standby, formação ou escritório e voos: ficam os dois. O standby que acaba é a apresentação do voo (CS FTL.1.225(b)(5));
+    o ADTY sem horas é serviço no aeroporto e o PSV conta desde a sua apresentação (225(d));
+  - PDF: a apresentação é só a hora antes da 1.ª perna (nunca o Debrief, o bloco ou o atraso); as horas casam com a rota da
+    mesma linha; perna "CNX" não é setor; um noturno partido em duas datas é um serviço (sem a pernoita inventada).
+- **Posicionamento (DH) = perna `dh`** (calendário e PDF): fora dos setores e do tempo de voo; antes de operar é PSV (215(a));
+  depois do último setor o PSV acaba nos calços desse setor (105(12)) e o serviço vai até à chegada do DH (`signOff`, 215(b));
+  conta na rota (onde se dorme: a pernoita fica certa) mas não no per-diem (as distâncias saem só das pernas operadas,
+  `sectorDistancesNM`: o per-diem é "em serviço de voo (setor)"); um DH sozinho é um serviço de posicionamento. A rota é feita
+  perna a perna: pernas que não encadeiam ficam a corrigir (A-226). O motor ignora as pernas `dh` no setor mais longo, na
+  pausa do repartido e no fim do PSV; o formulário guarda-as (setores, voo e calços só das operadas; o sign-off deriva da
+  chegada do DH); o Detalhe e o "ao vivo" do Início também.
+- **Reimportar:** o sign-off antigo sai quando as horas mudam; e-learning e OFC vão sempre e o 3-vias vê a mudança só do código
+  (os snaps antigos não dão mudanças falsas); o manual igual ao lido não fica a dobrar; o extra guarda o papel, a folga
+  trabalhada, os casos especiais e (com as mesmas horas) o sign-off.
+- **Férias e doença:** cada dia do evento, com ou sem horas; o PDF também as sugere. A doença da **cabine** só sugere os dias
+  pagos (do 4.º dia de cada episódio, Cl. 61.ª: "após os 3 (três) dias de ausência iniciais"); os pilotos o episódio (Art. 48.º).
+  Isto fecha o lado da importação do M1; o registo manual em bloco fica para o bloco 5.
+- **ADTY sem hora de fim:** paga o garantido (< 4 h). Antes presumia ≥ 4 h (A-220).
+- **Verificação de cada candidato = a da Simulação** (`simulateDuty`, modo `scope: 'day'`): numa escala com TODOS os candidatos
+  da leitura (24 dias seguidos davam 0 avisos na 1.ª leitura) e com o pós-voo do perfil. A linha mostra o 1.º aviso ("⚠ serviço
+  64:00 em 7 dias (máx. 60 h)"). Os avisos que a leitura cria num dia que ela não aplica (ex.: o "mais de 168 h" num dia já
+  guardado) passam para o candidato mais perto. 280 candidatos (12 meses) em 0,67 s no PC (era 4,2 s antes de calcular a escala
+  uma vez).
+- **Serviços sem apresentação:** o serviço deles é um MÍNIMO (calços a calços + pós-voo) e o máximo começa à meia-noite do dia.
+  Um período do 210 só excede quando o mínimo passa; quando só o máximo passa, **incerto** ("falta a hora de apresentação de N
+  serviços"). O PSV desses serviços é incerto ("falta a hora de apresentação"); o repouso a seguir/antes de um deles é incerto,
+  ou curto se nem o mínimo mais baixo cabe (pendente do bloco 2).
+- **Dados gravados pela leitura anterior** (snap sem versão; o snap novo leva `v: 2` e o fim do DH): com os mesmos voos e
+  serviços, agrupados de outra maneira, o dia fica **"refresh"** — aplica-se (os dados ficam certos), mas não conta como mudança
+  nem vai para o arquivo do SNC/RDP. O OFC e o e-learning a mudar são sempre mudança.
+- **Revisão independente (2.º agente, só com o código e as fontes) — 7 erros confirmados, corrigidos no mesmo dia:** E1 o
+  agrupamento juntava dois serviços separados por um repouso curto (e o serviço junto dava a volta ao relógio: PSV 03:25,
+  "dentro"); E2 o DH entrava no per-diem da cabine como setor; E3 editar um serviço com DH transformava-o em setor; E4 um
+  prolongamento planeado dava "excede" na importação (faltava o snap); E5 os avisos que caem num dia guardado perdiam-se; E6 o
+  sign-off de um DH que saiu da escala ficava; E7 os dados da leitura anterior davam mudanças falsas que viravam SNC/RDP. E
+  também os riscos R1 (PDF: fim de standby depois da saída), R2 (PDF: perna cancelada que parte o dia) e R9 (o DH no Detalhe e
+  no "ao vivo"). **Riscos que ficam:** R3 um DH marcado só nas notas, com o nº de voo no título, conta como voo (sem amostra
+  real); R5 um serviço sem apresentação no mesmo PSV repartido (só com dados manuais ou antigos); R6 o "incerto" não aparece na
+  folha (só o "⚠ excede") e o Início/Números ignoram o máximo dos serviços sem apresentação; R7 o ADTY sem fim paga o garantido
+  sem dizer "incerto"; R8 um candidato corrigido na folha não volta a ser verificado com os outros; R10/R11 papéis num serviço
+  que mudou de lugar ou de hora; R12 pernoita pela paridade num candidato sem rota; a radiação reparte a dose pelo DH; os
+  limites da TAP com pernas `dh` (a TAP está bloqueada na importação).
+- **Fica de fora (outros blocos):** pagar o posicionamento (L2, bloco 6), a pernoita em posicionamento e formação (L13, A-235),
+  o € do Confirmar import sem o IPC (L10, A-239), as dúvidas A-240 (ADTY de 4h00 na cabine) e A-241 (MTG/GND), e o formulário
+  manual (A-249 a A-251: ordem das pernas e fusos no "Detetar").
+
+**Ver no iPhone:** Confirmar import com o calendário sintético do guião (pausa de 7 h num repartido, DH antes e depois do voo,
+HSBY + voo, evento de dia inteiro com horas, formação de 3 dias → 3 linhas "a corrigir", aviso "⚠" num dia que excede, um
+repouso curto entre dois dias); o tempo de leitura de 12 meses; a linha da doença na cabine ("só os dias pagos, do 4.º dia");
+reimportar depois de mudar as horas de um voo com sign-off; a 1.ª sincronização depois desta versão (dias "relidos com a regra
+nova", sem SNC); editar um serviço com DH no formulário (a linha "DH ·", o sign-off derivado).
 
 ---
 

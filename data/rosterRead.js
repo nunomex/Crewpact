@@ -4,6 +4,7 @@
 import { getDutiesInRange, getNonFlightInRange } from './calendar';
 import { buildImportCandidates } from './rosterImport';
 import { isoDay } from './appContext';
+import { paidSickDays } from './aeEvents';
 
 // JANELA ÚNICA (2026-07-10, doutrina do Nuno — a Apple não pergunta o que pode saber): os ÚLTIMOS 12
 // MESES (a janela FTL mais longa — 1000 h/12 meses — precisa deles; o € do ano e o 245 também) até ao
@@ -21,23 +22,30 @@ export const importWindow = () => {
 // Candidatos do import + férias e doença detetadas (só os dias que ainda não têm evento).
 // { ok:false } = sem permissão ou calendário inexistente.
 // `baseAt(dia)` = a base em vigor nesse dia (linha do tempo do contrato) — a leitura vai 12 meses atrás.
-export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [], isPilot = false, cabinGapMin, splitAdminMin }) {
+// `postFlightMin` = o pós-voo do perfil (a verificação de cada candidato usa-o, A-254). `sickFirst3` = o modelo da doença do
+// acordo (pilotos easyJet: o episódio; cabine: só os dias pagos, Cl. 61.ª — paidSickDays).
+export const baseOfFor = (base, baseAt) => (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
+export async function readCalendarRoster({ companySlug, calendarId, duties = {}, dayLog = {}, base = null, baseAt = null, aeEvents = [], isPilot = false, cabinGapMin, splitAdminMin, postFlightMin = 0, sickFirst3 = true }) {
   const { start, end, fwdStart } = importWindow();
   const [fl, nf] = await Promise.all([
-    getDutiesInRange(start, end, companySlug, calendarId),
+    getDutiesInRange(start, end, companySlug, calendarId, { baseOf: baseOfFor(base, baseAt) }),
     getNonFlightInRange(start, end, companySlug, calendarId),
   ]);
   if (!fl.ok && !nf.ok) return { ok: false, cands: [], vacDates: [], sickDates: [] };
   const window = { start: isoDay(fwdStart), end: isoDay(end) };
-  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin, splitAdminMin });
+  const cands = buildImportCandidates({ activities: fl.duties || [], nonflights: nf.items || [], duties, dayLog, window, base, baseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin });
+  return { ok: true, cands, ...absenceSuggestions(nf.vacations, nf.sicks, aeEvents, sickFirst3) };
+}
+
+// Férias e doença lidas da escala (calendário ou PDF) → os dias a SUGERIR (só os que ainda não têm evento). A doença passa
+// pelo modelo do acordo: na cabine só os dias pagos (do 4.º dia de cada episódio, Cl. 61.ª).
+export const absenceSuggestions = (vacations = [], sicks = [], aeEvents = [], sickFirst3 = true) => {
   const has = (type, d) => (aeEvents || []).some((e) => e && e.type === type && e.date === d);
   return {
-    ok: true,
-    cands,
-    vacDates: (nf.vacations || []).filter((d) => !has('vacDays', d)),
-    sickDates: (nf.sicks || []).filter((d) => !has('sickDays', d)),
+    vacDates: [...new Set(vacations || [])].sort().filter((d) => !has('vacDays', d)),
+    sickDates: paidSickDays(sicks || [], { sickFirst3 }).filter((d) => !has('sickDays', d)),
   };
-}
+};
 
 // Quantos serviços tem um calendário daqui até ao fim do mês seguinte — para marcar o "sugerido"
 // ao escolher o calendário da escala (7.º passo da configuração).

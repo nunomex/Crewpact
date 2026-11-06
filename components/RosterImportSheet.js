@@ -4,14 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PELE, PELE_FONT, BRAND } from '../data/constants';
 import { diagnoseEvents } from '../data/calendar';
-import { importWindow, readCalendarRoster } from '../data/rosterRead';
-import { buildImportCandidates, importSaveFields, candidateKind, routeAirports } from '../data/rosterImport';
+import { importWindow, readCalendarRoster, absenceSuggestions, baseOfFor } from '../data/rosterRead';
+import { buildImportCandidates, importSaveFields, candidateKind, promoteMissing } from '../data/rosterImport';
+import { issueText } from '../data/simulation';
 import { parseEasyjetRoster, rosterLooksForeign } from '../data/pdfRoster';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';   // SDK 54: deleteAsync vive no /legacy
 // expo-pdf-text-extract é NATIVO (não existe em Expo Go) → require LAZY dentro de pickPdf,
 // para o arranque da app NÃO rebentar em Expo Go (só se avalia ao escolher um PDF).
-import { airportCoord, sectorDistanceNM } from '../data/airports';
+import { airportCoord } from '../data/airports';
+import { sectorDistancesNM } from '../data/perdiem';
 import DutyFormSheet from './DutyFormSheet';
 import Eyebrow from './Eyebrow';
 import SheetHeader from './SheetHeader';
@@ -40,7 +42,9 @@ const demoCands = () => {
 // "Confirmar import" à prova de falha (resumo li/prontas/a-corrigir + per-diem; corrigir
 // inline) → grava o que está pronto. Página inteira (Modal slide-up), estilo página de duty.
 export default function RosterImportSheet({ visible, onClose, onConnect, initialSource, onDone }) {
-  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  const { lang, duties, dayLog, saveDuty, removeDuty, company, calendarId, isPilot, cabinGapMin, splitAdminMin, postFlightMin, ae, aeAt, crewAt, crewCategory, crewFleet, base, homeBaseAt, aeEvents, addAeEvents, addRosterLog } = useContext(AppContext);
+  // Doença: pilotos registam o episódio (Art. 48.º); a cabine só os dias pagos (do 4.º, Cl. 61.ª) — paidSickDays.
+  const sickFirst3 = !ae || ae.SICK_FIRST3 !== false;
   const insets = useSafeAreaInsets();
   const l = (pt, en) => (lang === 'en' ? en : pt);
   const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -63,7 +67,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
 
   const load = async () => {
     setLoading(true); setDenied(false);
-    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin });
+    const r = await readCalendarRoster({ companySlug: company?.slug, calendarId, duties, dayLog, base, baseAt: homeBaseAt, aeEvents, isPilot, cabinGapMin, splitAdminMin, postFlightMin, sickFirst3 });
     let next = r.cands;
     if (DEMO_EXAMPLES && next.length === 0) next = demoCands();   // TEMP: exemplos se vazio
     else if (!r.ok) setDenied(true);
@@ -79,7 +83,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   useEffect(() => { if (!visible) { setPasteDiag(null); } }, [visible]);
 
   // Trocar de fonte limpa o preview (não misturar resultados de calendário e colado).
-  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); };
+  const switchSource = (id) => { if (id === source) return; select(); setSource(id); setCands([]); setDiag(null); setPasteDiag(null); setVacDates([]); setSickDates([]); };
 
   // PDF por UPLOAD de ficheiro: escolher → extrair texto ON-DEVICE (nativo PDFKit/PDFBox) →
   // APAGAR já a cópia local (RGPD: nada sai do telemóvel) → mesmos candidatos do calendário.
@@ -97,9 +101,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
       setLoading(true);
       const text = await pdf.extractText(uri);
       try { await FileSystem.deleteAsync(uri, { idempotent: true }); } catch { /* a cópia local apaga-se à mesma ao fechar */ }
-      const r = parseEasyjetRoster(text, company?.slug);
-      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin }));
+      const r = parseEasyjetRoster(text, company?.slug, { baseOf: baseOfFor(base, homeBaseAt) });
+      setCands(buildImportCandidates({ activities: r.activities, nonflights: r.nonflights, duties, dayLog, base, baseAt: homeBaseAt, isPilot, cabinGapMin, splitAdminMin, postFlightMin }));
       setPasteDiag(r.diag);
+      // Férias e doença do PDF também são sugeridas (auditoria A-236), como no calendário.
+      const ab = absenceSuggestions(r.vacDates, r.sickDates, aeEvents, sickFirst3);
+      setVacDates(ab.vacDates); setVacSel(true); setSickDates(ab.sickDates); setSickSel(true);
       // Guarda SUAVE (não bloqueia): reconheci poucos serviços → provável PDF de outra
       // companhia OU perfil errado. Avisa e deixa o utilizador decidir (§1/§2).
       if (rosterLooksForeign(r.diag)) {
@@ -145,15 +152,14 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   //   removed = cancelado
   const fmtEur0n = (n) => { const [i, d] = Number(n || 0).toFixed(2).split('.'); const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' '); return lang === 'en' ? `€${g}.${d}` : `${g},${d} €`; };
   const candInfo = (c) => {
-    const { kind, badAp } = candidateKind(c);   // a MESMA regra do 7.º passo da configuração
-    if (kind !== 'ready') return { kind, perDiem: null, badAp, nsEur: null };
-    const aps = routeAirports(c.duty.route);
+    const { kind, badAp, reason } = candidateKind(c);   // a MESMA regra do 7.º passo da configuração
+    if (kind !== 'ready') return { kind, perDiem: null, badAp, nsEur: null, reason };
     let perDiem = null;
     // O acordo, a categoria e a tabela DESSE dia (linha do tempo do contrato): a leitura vai 12 meses atrás.
     const dt = c.duty.duty_date;
     const aeD = dt ? aeAt(dt) : ae;
     const catD = dt ? crewAt(dt).category : crewCategory;
-    if (aeD && catD) { const ds = []; for (let i = 0; i + 1 < aps.length; i++) { const nm = sectorDistanceNM(aps[i], aps[i + 1]); if (nm != null) ds.push(nm); } if (ds.length) perDiem = aeD.perDiem(catD, ds, 1, dt ? crewAt(dt).fleet : crewFleet, dt); }
+    if (aeD && catD) { const ds = sectorDistancesNM(c.duty).filter((nm) => nm != null); if (ds.length) perDiem = aeD.perDiem(catD, ds, 1, dt ? crewAt(dt).fleet : crewFleet, dt); }   // só os setores voados (o DH não, E2)
     // Pernoita (Art. 39) À PARTE do per-diem: setores ímpares → c.duty.nightStop. index=1 como o per-diem.
     const nsEur = (c.duty.nightStop && aeD && aeD.nightStop && catD) ? aeD.nightStop(catD, 1, dt) : null;
     return { kind: 'ready', perDiem, badAp: null, nsEur };
@@ -183,9 +189,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
   // Opt-in dos CANCELADOS (ausência = sinal fraco, apagar é irreversível): toca para marcar/desmarcar apagar.
   const toggle = (cand) => setCands((cs) => cs.map((c) => (c.duty.duty_date === cand.duty.duty_date && c.kind === cand.kind ? { ...c, selected: !c.selected } : c)));
   const applyCorrection = (corrected) => {
-    setCands((cs) => cs.map((c) => (correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind
-      ? { ...c, duty: { ...c.duty, ...corrected }, kind: corrected.kind || c.kind }
-      : c)));
+    setCands((cs) => cs.map((c) => {
+      if (!(correcting && c.duty.duty_date === correcting.duty.duty_date && c.kind === correcting.kind)) return c;
+      // Se outro serviço do dia ainda tem horas em falta, passa ele para a frente (é esse que se corrige a seguir).
+      const p = promoteMissing({ ...c.duty, ...corrected }, corrected.kind || c.kind);
+      return { ...c, duty: { ...p.duty, kind: p.kind }, kind: p.kind };
+    }));
     setCorrecting(null);
   };
   const fmtDay = (iso) => { const d = new Date(`${iso}T00:00:00`); if (isNaN(d)) return iso; const x = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); return x.charAt(0).toUpperCase() + x.slice(1); };
@@ -229,13 +238,13 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
         // Cancelado: só apaga se TU o marcaste (ausência é sinal fraco). Não-marcado → fica como está.
         if (c.action === 'delete') { if (c.selected) removeDuty(c.duty.duty_date); continue; }
         // Merge por-serviço: extras manuais do dia sobrevivem; os do calendário vêm da leitura.
-        saveDuty(c.duty.duty_date, importSaveFields(c, src, duties[c.duty.duty_date]?.extra));
+        saveDuty(c.duty.duty_date, importSaveFields(c, src, duties[c.duty.duty_date]));   // o dia guardado: sign-off, papéis e manuais (A-231 a A-233)
         if (c.status === 'warn') warn++;
       }
-      // FÉRIAS e DOENÇA sugeridas (calendário): registo deliberado — só com o toggle ligado.
-      const vacAdded = (src === 'calendar' && vacSel && vacDates.length && addAeEvents) ? vacDates.length : 0;
+      // FÉRIAS e DOENÇA sugeridas (calendário ou PDF): registo deliberado — só com o toggle ligado.
+      const vacAdded = (vacSel && vacDates.length && addAeEvents) ? vacDates.length : 0;
       if (vacAdded) addAeEvents(vacDates.map((d) => ({ date: d, type: 'vacDays' })));
-      const sickAdded = (src === 'calendar' && sickSel && sickDates.length && addAeEvents) ? sickDates.length : 0;
+      const sickAdded = (sickSel && sickDates.length && addAeEvents) ? sickDates.length : 0;
       if (sickAdded) addAeEvents(sickDates.map((d) => ({ date: d, type: 'sickDays' })));
       success();
       const saved = saves.length;
@@ -325,7 +334,7 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
               </View>
               {/* FÉRIAS detetadas (LVE/ANL/VAC) → sugerir como EVENTOS (o € e o saldo 22
                   nascem de registo). Toggle à vista — desligar = não regista nada. */}
-              {source === 'calendar' && vacDates.length ? (
+              {vacDates.length ? (
                 <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setVacSel((v) => !v)}
                   accessibilityRole="checkbox" accessibilityState={{ checked: vacSel }}>
                   <View style={[s.vacTick, vacSel && s.vacTickOn]}>{vacSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
@@ -336,13 +345,13 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                 </TouchableOpacity>
               ) : null}
               {/* DOENÇA (SICK) — a par das férias: sugerida como episódio Art. 48; gravar é teu. */}
-              {source === 'calendar' && sickDates.length ? (
+              {sickDates.length ? (
                 <TouchableOpacity style={s.vacRow} activeOpacity={0.75} onPress={() => setSickSel((v) => !v)}
                   accessibilityRole="checkbox" accessibilityState={{ checked: sickSel }}>
                   <View style={[s.vacTick, sickSel && s.vacTickOn]}>{sickSel ? <Ionicons name="checkmark" size={13} color={PELE.ink} /> : null}</View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.vacT}>{l(`Doença no calendário: ${sickDates.length} dia(s)`, `Sick days in the calendar: ${sickDates.length} day(s)`)}</Text>
-                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {l('registar como episódio de doença (Art. 48)', 'log as a sick episode (Art. 48)')}</Text>
+                    <Text style={s.vacS} numberOfLines={1}>{`${sickDates[0]} → ${sickDates[sickDates.length - 1]}`} · {sickFirst3 ? l('registar como episódio de doença', 'log as a sick episode') : l('só os dias pagos, do 4.º dia (Cl. 61.ª)', 'paid days only, from day 4 (Cl. 61)')}</Text>
                   </View>
                 </TouchableOpacity>
               ) : null}
@@ -363,8 +372,16 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                   : info.kind === 'removed' ? { name: 'close', bg: PELE.redSoft, fg: PELE.red }
                   : { name: 'time-outline', bg: PELE.warnSoft, fg: PELE.warn };
                 const issue = info.kind === 'fix'
-                  ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`) : l('Sem rota — corrige para somar', 'No route — fix to count'))
+                  ? (info.badAp ? l(`Aeroporto "${info.badAp}" não reconhecido`, `Airport "${info.badAp}" not recognised`)
+                    : info.reason === 'end' ? l('Sem hora de fim — corrige para contar', 'No end time — fix to count')
+                    : info.reason === 'start' ? l('Sem hora de início — corrige para contar', 'No start time — fix to count')
+                    : info.reason === 'times' ? l('Horas das pernas por confirmar — corrige', 'Leg times to confirm — fix')
+                    : l('Sem rota — corrige para somar', 'No route — fix to count'))
+                  : c.status === 'refresh' ? l('Relido com a regra nova da importação — a escala não mudou', 'Re-read with the new import rule — the roster did not change')
+                  : (c.prospect && c.prospect.verdict === 'bad')
+                    ? (() => { const it = c.prospect.issues.find((x) => x.level === 'bad'); return it ? `⚠ ${issueText(it, lang, c.duty.duty_date)}` : null; })()
                   : info.kind === 'info' ? l('Sem rota — não conta para per-diem', 'No route — no per-diem') : null;
+                const issueWarn = info.kind === 'fix' || !!(c.prospect && c.prospect.verdict === 'bad');
                 const tappable = info.kind === 'fix' || info.kind === 'removed';
                 return (
                   <TouchableOpacity key={c.duty.duty_date + c.kind} onPress={() => (info.kind === 'fix' ? correct(c) : info.kind === 'removed' ? toggle(c) : null)} activeOpacity={tappable ? 0.7 : 1} style={[s.crow, info.kind === 'fix' && s.crowFix, info.kind === 'removed' && c.selected && s.crowDel]}>
@@ -378,12 +395,12 @@ export default function RosterImportSheet({ visible, onClose, onConnect, initial
                       </View>
                       {(c.status === 'changed' || c.status === 'conflict') && c.diff?.length
                         ? <Text style={s.cDiff} numberOfLines={2}>{(c.status === 'conflict' ? '✎ ' : '') + diffLine(c)}</Text>
-                        : issue ? <Text style={[s.cMeta, info.kind === 'fix' && s.cIssue]} numberOfLines={1}>{issue}</Text>
+                        : issue ? <Text style={[s.cMeta, issueWarn && s.cIssue]} numberOfLines={issueWarn ? 2 : 1}>{issue}</Text>
                           : c.status === 'removed' ? <Text style={s.cMeta} numberOfLines={2}>{l('Deixou de aparecer — pode ser atraso do feed. Toca para apagar.', 'Stopped appearing — may be a feed delay. Tap to delete.')}</Text>
                             : metaFor(c) ? <Text style={s.cMeta} numberOfLines={1}>{metaFor(c)}</Text> : null}
                       {/* off/on de CADA setor (lido do PDF/calendário) — só leitura */}
                       {c.kind === 'flight' && Array.isArray(c.duty.legs) && c.duty.legs.length ? (
-                        <Text style={s.cLegs} numberOfLines={2}>{c.duty.legs.map((lg) => `${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}-${lg.on || '—'}`).join('   ·   ')}</Text>
+                        <Text style={s.cLegs} numberOfLines={2}>{c.duty.legs.map((lg) => `${lg.dh ? 'DH ' : ''}${lg.dep || '?'}→${lg.arr || '?'} ${lg.off || '—'}-${lg.on || '—'}`).join('   ·   ')}</Text>
                       ) : null}
                     </View>
                     {info.kind === 'fix' ? (

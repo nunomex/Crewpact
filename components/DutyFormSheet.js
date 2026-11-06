@@ -41,9 +41,18 @@ const legsForSectors = (route, sectors, prev = []) => {
   const n = Math.max(0, Number(sectors) || 0);
   return Array.from({ length: n }, (_, i) => {
     const p = (prev && prev[i]) || {};
-    return { flightNo: p.flightNo || null, dep: aps[i] || p.dep || null, arr: aps[i + 1] || p.arr || null, off: p.off || '', on: p.on || '', aircraft: p.aircraft || null, offZ: p.offZ || null, onZ: p.onZ || null };
+    return { flightNo: p.flightNo || null, dep: aps[i] || p.dep || null, arr: aps[i + 1] || p.arr || null, off: p.off || '', on: p.on || '', aircraft: p.aircraft || null, offZ: p.offZ || null, onZ: p.onZ || null, ...(p.dh ? { dh: true } : {}) };
   });
 };
+// Posicionamento (DH) depois do último setor operado (bloco 4 da auditoria): o serviço acaba à chegada dele (ORO.FTL.215(b)) —
+// é o sign-off DERIVADO. Ao abrir o formulário, um sign-off igual a essa chegada fica vazio (deriva-se ao gravar, e acompanha
+// se as horas do DH mudarem); um sign-off diferente é do tripulante e manda.
+const dhTailOnOf = (legs) => {
+  const ls = Array.isArray(legs) ? legs : [];
+  const last = ls[ls.length - 1];
+  return last && last.dh && ls.some((l) => l && !l.dh) ? (last.on || null) : null;
+};
+const formSignOff = (d) => { const so = (d && d.signOff) || ''; return so && so === dhTailOnOf(d && d.legs) ? '' : so; };
 const addDays = (iso, delta) => isoDay(new Date(new Date(`${iso}T00:00:00`).getTime() + delta * 86400000));
 const EMPTY = { date: '', report: '', off: '', on: '', sectors: 0, flight: '', route: '', kind: 'flight', nightStop: false, legs: [], aircraft: '', signOff: '', role: null, dayOffWorked: null, officeType: null, eLearning: false };
 // Aeronave do 1.º leg (auto-fill por deteção). Vive em `legs[0].aircraft`.
@@ -177,13 +186,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const loadFor = (iso) => {
     const d = duties[iso];
     return (d && !d.deleted)
-      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: d.signOff || '', role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning }
+      ? { date: iso, report: d.report_time || '', off: d.block_off || '', on: d.block_on || '', sectors: d.sectors || 0, flight: minToHhmm(d.flight_minutes), route: d.route || '', kind: d.kind || 'flight', nightStop: !!d.nightStop, legs: seedLegs(d), aircraft: legAircraft(d), signOff: formSignOff(d), role: d.role || (d.instructor ? 'instr' : null), dayOffWorked: d.dayOffWorked || null, officeType: d.officeType || null, eLearning: !!d.eLearning }
       : { ...EMPTY, date: iso };
   };
   // Modo CANDIDATO (correção no import): pré-preenche com o que o parsing já leu.
-  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: c.signOff || '', role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning });
+  const formFromCand = (c) => ({ date: c.duty_date, report: c.report_time || '', off: c.block_off || '', on: c.block_on || '', sectors: c.sectors || 0, flight: minToHhmm(c.flight_minutes), route: c.route || '', kind: c.kind || 'flight', nightStop: !!c.nightStop, legs: seedLegs(c), aircraft: legAircraft(c), signOff: formSignOff(c), role: c.role || (c.instructor ? 'instr' : null), dayOffWorked: c.dayOffWorked || null, officeType: c.officeType || null, eLearning: !!c.eLearning });
   // Modo EDITAR EXTRA: pré-preenche com o serviço-irmão (forma de `extra`) no índice dado.
-  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: svc.signOff || '', role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning });
+  const formFromExtra = (svc, iso) => ({ date: iso, report: svc.report_time || '', off: svc.block_off || '', on: svc.block_on || '', sectors: svc.sectors || 0, flight: minToHhmm(svc.flight_minutes), route: svc.route || '', kind: svc.kind || 'flight', nightStop: !!svc.nightStop, legs: seedLegs(svc), aircraft: legAircraft(svc), signOff: formSignOff(svc), role: svc.role || (svc.instructor ? 'instr' : null), dayOffWorked: svc.dayOffWorked || null, officeType: svc.officeType || null, eLearning: !!svc.eLearning });
   // ── Dirty-check (Nielsen #5 / HIG: confirmar o dismiss com dados por gravar). A baseline é
   // capturada pelo MESMO liveSnap que faz a comparação (efeito sem deps + flag), depois de o
   // load assentar — uma só serialização, zero risco de as duas formas divergirem com o tempo.
@@ -347,14 +356,18 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // sectorRows = vista materializada dos legs alinhada à rota/nº de setores (dep/arr da rota,
   // off/on dos legs). A edição escreve em `form.legs` (setSectorTime).
   const sectorRows = isFlight ? legsForSectors(form.route, Math.max(Number(form.sectors) || 0, (form.legs || []).length), form.legs) : [];
-  const blockMin = sectorRows.reduce((sum, lg) => sum + (legBlockMin(lg) || 0), 0);   // Block hours = Σ (on − off)
+  // Só as linhas OPERADAS são setores e tempo de voo; o PSV acaba nos calços do último setor operado (ORO.FTL.215(a),
+  // 105(12)/(13)). Um DH depois dele estende o serviço até à sua chegada (dhTailOn → sign-off derivado).
+  const opRows = sectorRows.filter((lg) => !lg.dh);
+  const blockMin = opRows.reduce((sum, lg) => sum + (legBlockMin(lg) || 0), 0);   // Block hours = Σ (on − off) dos setores operados
   const firstOff = sectorRows[0] ? (sectorRows[0].off || null) : null;
-  const lastOn = sectorRows.length ? (sectorRows[sectorRows.length - 1].on || null) : null;
+  const lastOn = opRows.length ? (opRows[opRows.length - 1].on || null) : (sectorRows.length ? (sectorRows[sectorRows.length - 1].on || null) : null);
+  const dhTailOn = dhTailOnOf(sectorRows);
   // Duty hours = apresentação → FIM. Fim = sign-off REAL; senão último on-block + débrief do perfil
   // (ORO.FTL.235c). NÃO-VOO: o "Fim" (form.on) É o fim do serviço — o sign-off é conceito de voo
   // (a UI dele nem existe fora do voo; um valor escondido não pode mandar no cálculo).
   const dutyEnd = isFlight
-    ? (clkMin(form.signOff) != null ? clkMin(form.signOff) : (clkMin(lastOn) != null ? clkMin(lastOn) + (postFlightMin || 0) : null))
+    ? (clkMin(form.signOff) != null ? clkMin(form.signOff) : clkMin(dhTailOn) != null ? clkMin(dhTailOn) : (clkMin(lastOn) != null ? clkMin(lastOn) + (postFlightMin || 0) : null))
     : clkMin(form.on);
   const dutyMin = (() => { const r = clkMin(form.report); if (r == null || dutyEnd == null) return null; const e = dutyEnd % 1440; return e >= r ? e - r : e + 1440 - r; })();
 
@@ -415,9 +428,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     const svc = {
       duty_date: form.date, report_time: form.report, kind: 'flight',
       block_off: firstOff, block_on: lastOn,
-      sectors: sectorRows.length, flight_minutes: blockMin, signOff: form.signOff || null,
+      sectors: opRows.length, flight_minutes: blockMin, signOff: form.signOff || dhTailOn || null,
       route: form.route || null, accommodation: accOn,   // base/fora (rota) + alojamento na pausa (220 d/e)
-      legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null })) : null,   // split das pausas em terra + localização
+      legs: sectorRows.length ? sectorRows.map((lg) => ({ off: lg.off || null, on: lg.on || null, dep: lg.dep || null, arr: lg.arr || null, ...(lg.dh ? { dh: true } : {}) })) : null,   // split das pausas em terra + localização
       special,   // casos especiais FTL (205c/205g/225) → teto do PSV corrigido
       ...(candidate ? { extra: Array.isArray(candidate.extra) ? candidate.extra : [] } : {}),
     };
@@ -441,12 +454,12 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   // Preview do teto do PSV (base → efetivo) para o disclosure. Usa o motor já testado.
   const psvPreview = useMemo(() => {
     if (!isFlight || !isClock(form.report) || !special) return null;
-    const common = { state: 'acc', report: form.report, end: lastOn || null, sectors: sectorRows.length };
+    const common = { state: 'acc', report: form.report, end: lastOn || null, sectors: opRows.length };
     const base = computeDuty(common);
     if (base.fdp.maxFdpStr == null) return null;
     const eff = computeDuty({ ...common, augmented: special.augmented, delayedFrom: special.delayedFrom, preStandby: special.preStandby, isPilot });
     return { base: base.fdp.maxFdpStr, eff: eff.fdp.notAllowed ? null : eff.fdp.maxFdpStr, notAllowed: !!eff.fdp.notAllowed };
-  }, [isFlight, form.report, lastOn, sectorRows.length, special, isPilot]);
+  }, [isFlight, form.report, lastOn, opRows.length, special, isPilot]);
 
   // Per-diem AE deste voo (preview ao vivo por baixo da Rota).
   const routePd = useMemo(() => {
@@ -489,19 +502,20 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           off: lg.off || null, on: lg.on || null,
           offZ: lg.offZ || null, onZ: lg.onZ || null,   // Zulu autoritativa do calendário (preserva ao editar)
           aircraft: i === 0 ? (ac || lg.aircraft || null) : (lg.aircraft || null),
+          ...(lg.dh ? { dh: true } : {}),   // posicionamento: não é setor (215(a))
         }))
       : null;
     const fields = {
       report_time: form.report,
       block_off: isFlight ? firstOff : null,
       block_on: isFlight ? lastOn : (form.on || null),
-      sectors: isFlight ? sectorRows.length : 0,
+      sectors: isFlight ? opRows.length : 0,
       flight_minutes: isFlight ? blockMin : 0,
       // Rota também no POSICIONAMENTO: onde acabas decide o repouso 12h/10h (ORO.FTL.235
       // por localização real — o motor lê `route` no endsAwayReliable).
       route: (isFlight || form.kind === 'positioning') ? (form.route.trim() || null) : null,
       kind: form.kind || 'flight', nightStop: hasNs,
-      signOff: isFlight ? (form.signOff || null) : null,   // fim REAL (Duty hours/210/repouso) — só voo; não-voo: o Fim é o fim (um sign-off escondido não pode viajar no save)
+      signOff: isFlight ? (form.signOff || dhTailOn || null) : null,   // fim REAL (ou a chegada do DH depois do último setor, 215(b)) (Duty hours/210/repouso) — só voo; não-voo: o Fim é o fim (um sign-off escondido não pode viajar no save)
       legs,
       special: isFlight ? special : null,   // casos especiais FTL (205c/205g/225) → roster_meta
       // Alojamento: voo = pausa do split (220 d/e) · standby aeroporto = ORO.FTL.225(e)
@@ -659,7 +673,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           <View style={{ marginTop: 16 }}>
             <Text style={s.lbl}>{l('Horas por setor (block)', 'Times per sector (block)')}</Text>
             {sectorRows.length ? sectorRows.map((lg, i) => {
-              const lab = (lg.dep && lg.arr) ? `${lg.dep}→${lg.arr}` : l(`Setor ${i + 1}`, `Sector ${i + 1}`);
+              const lab = `${lg.dh ? 'DH · ' : ''}${(lg.dep && lg.arr) ? `${lg.dep}→${lg.arr}` : l(`Setor ${i + 1}`, `Sector ${i + 1}`)}`;
               const offBad = showErr('sectors') && clkMin(lg.off) == null;
               const onBad = showErr('sectors') && clkMin(lg.on) == null;
               const zo = lg.offZ || airportZulu(form.date, lg.off, lg.dep);
@@ -685,7 +699,9 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
           </View>
           <View style={{ marginTop: 16 }}>
             <ClockField C={C} s={s} error={badClock(form.signOff)} errText={fmtErr} label={l('Fim de serviço (sign-off)', 'Sign-off (end of duty)')} value={form.signOff} onChange={(v) => setForm((f) => ({ ...f, signOff: v }))} />
-            <Text style={s.routeHint}>{postFlightMin
+            <Text style={s.routeHint}>{dhTailOn
+              ? l(`Opcional · hora real de fim. Vazio → chegada do DH às ${dhTailOn} (o serviço acaba aí).`, `Optional · real end time. Empty → DH arrival at ${dhTailOn} (the duty ends there).`)
+              : postFlightMin
               ? l(`Opcional · hora real de fim. Vazio → último on-block + ${postFlightMin}′ de débrief (perfil).`, `Optional · real end time. Empty → last on-block + ${postFlightMin}′ debrief (profile).`)
               : l('Opcional · hora real de fim (depois do débrief). Define o débrief no Perfil.', 'Optional · real end time (after debrief). Set the debrief in Profile.')}</Text>
           </View>

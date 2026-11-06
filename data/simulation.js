@@ -89,9 +89,13 @@ const RECOVERY_MS = 36 * 3600000;
 
 export const simulateDuty = (sim, ctx = {}) => {
   const { duties = {}, dayLog = {}, postFlightMin = 0, isPilot = false, base = null, baseAt = null, cabinGapMin, splitAdminMin, disruptiveType = null, tap = null, mode = 'replace' } = ctx || {};
+  // `scope: 'day'` (a importação, bloco 4): a escala `duties` JÁ tem todos os serviços da leitura e verifica-se o DIA nela — os
+  // avisos que caem no dia (não os que "este serviço cria", que aparecem no dia de cada um). Pode trazer já calculados o dayLog
+  // da escala (`hypoLog`) e os avisos de recuperação (`recovery`): calculam-se uma vez por leitura, não uma por candidato.
+  const { scope = 'sim', hypoLog: hypoLogIn = null, recovery: recoveryIn = null, restLine = null } = ctx || {};
   const empty = { verdict: 'none', ok: null, issues: [], psv: null, day: null, windows: [], tightest: {}, servico28: 0, voo28: 0, rest: { before: null, after: null, need: null }, fatigue: null, ae: null };
   const date = sim && sim.duty_date;
-  if (!date || !sim.report_time) return empty;
+  if (!date) return empty;
   const baseOf = (iso) => (typeof baseAt === 'function' ? baseAt(iso) : base);
   const hd = hypoDay(sim, duties[date], mode);
   const hypo = { ...duties, [date]: hd };
@@ -108,7 +112,10 @@ export const simulateDuty = (sim, ctx = {}) => {
   const block = (day.blocks || []).find((b) => b.members.some((m) => m && m[SIM])) || null;
   // Sem bloco do simulado (sem fim, ou um standby que passou a ser o `preStandby` do voo a seguir): o herói só mostra o PSV do
   // dia quando o simulado é o único serviço — nunca o PSV de OUTRO serviço como se fosse o dele.
-  const psvSim = block ? block.psv : (list.length === 1 ? day.psv : null);
+  const psvSim = block ? block.psv : (list.length === 1 && me.report_time ? day.psv : null);
+  // Sem a hora de apresentação (o calendário nem sempre a traz) o PSV não se calcula: incerto, com o que falta. O resto (o tempo
+  // de voo, o serviço estimado nos 210) verifica-se na mesma (bloco 4: a importação usa esta verificação).
+  if (list.some((s) => s && !s.report_time && isFdpDuty(s))) add('unc', { type: 'noReport', date, rule: R.fdp });
   if (psvSim && psvSim.over) add('bad', { type: 'fdp', excess: psvSim.excess || null, rule: R.fdp });
   else if (psvSim && psvSim.uncertain) add('unc', { type: 'fdpUncertain', unknowns: psvSim.unknowns || [], rule: R.fdp });
   if (day.psv && day.psv !== psvSim && day.psv.over) add('bad', { type: 'fdpOther', date, rule: R.fdp });   // outro serviço do dia
@@ -119,20 +126,28 @@ export const simulateDuty = (sim, ctx = {}) => {
 
   // ── Os outros dias que o simulado muda (dayLog com e sem ele, os mesmos cálculos do Início) ──
   const rc = { postFlightMin, isPilot, base, baseAt, cabinGapMin, splitAdminMin };
-  const baseLog = reconcileDayLog(duties, dayLog, rc);
-  const logNoDay = { ...dayLog }; delete logNoDay[date];
-  const hypoLog = reconcileDayLog(hypo, logNoDay, rc);
-  for (const k of Object.keys(hypoLog).sort()) {
-    if (k === date) continue;
-    const h = hypoLog[k], b = baseLog[k];
-    if (h === b || !h || !h.psv || !h.psv.over || (b && b.psv && b.psv.over)) continue;
-    add('bad', { type: 'fdpOther', date: k, rule: R.fdpOther });
+  let hypoLog = hypoLogIn;
+  if (!hypoLog) {
+    const logNoDay = { ...dayLog }; delete logNoDay[date];
+    hypoLog = reconcileDayLog(hypo, logNoDay, rc);
+  }
+  if (scope !== 'day') {
+    const baseLog = reconcileDayLog(duties, dayLog, rc);
+    for (const k of Object.keys(hypoLog).sort()) {
+      if (k === date) continue;
+      const h = hypoLog[k], b = baseLog[k];
+      if (h === b || !h || !h.psv || !h.psv.over || (b && b.psv && b.psv.over)) continue;
+      add('bad', { type: 'fdpOther', date: k, rule: R.fdpOther });
+    }
   }
 
   // ── Repouso antes e depois ──
   // Janela de 15 dias para cada lado: chega para o serviço anterior e o seguinte, o prolongamento antes do anterior e uma rotação
   // fora da base (CS 235(b)(3)) — e poupa o cálculo de um ano de escala a cada tecla do formulário.
-  const ra = restAround(hypo, (s) => !!(s && s[SIM]), { postFlightMin, isPilot, base, baseAt, from: addDays(date, -15), to: addDays(date, 15) }) || { before: null, after: null, need: null };
+  // Com a linha do repouso já calculada (a importação, `scope: 'day'`): o serviço é o principal do dia nessa escala.
+  const ra = (scope === 'day' && restLine
+    ? restAround(duties, (s, iso) => iso === date && s === duties[date], { postFlightMin, isPilot, base, baseAt, svcs: restLine.svcs, est: restLine.est })
+    : restAround(hypo, (s) => !!(s && s[SIM]), { postFlightMin, isPilot, base, baseAt, from: addDays(date, -15), to: addDays(date, 15) })) || { before: null, after: null, need: null };
   for (const [type, r] of [['restBefore', ra.before], ['restAfter', ra.after]]) {
     if (!r || (r.status !== 'bad' && r.status !== 'unc')) continue;
     add(r.status, { type, ...r, rule: r.nightsRequired && r.actualMin >= r.requiredMin ? R.rotationNights : R[type] });
@@ -144,9 +159,10 @@ export const simulateDuty = (sim, ctx = {}) => {
   // Só os dias à volta (±62 dias: o 168 h, o 60 h e os dois meses civis à volta do dia para os "2 dias locais 2× por mês"). O
   // que a janela corta nas pontas aparece igual com e sem o simulado, e cai no filtro dos avisos novos.
   const near = (dd) => { const lo = addDays(date, -62), hi = addDays(date, 62), o = {}; for (const k in dd) if (k >= lo && k <= hi) o[k] = dd[k]; return o; };
-  const baseKeys = new Set(recoveryIssues(near(duties), rcx).map(rkey));
-  for (const x of recoveryIssues(near(hypo), rcx)) {
-    if (baseKeys.has(rkey(x)) && x.date !== date) continue;
+  const dayScope = scope === 'day';
+  const baseKeys = dayScope ? null : new Set(recoveryIssues(near(duties), rcx).map(rkey));
+  for (const x of (dayScope && recoveryIn ? recoveryIn : recoveryIssues(near(hypo), rcx))) {
+    if (dayScope ? x.date !== date : (baseKeys.has(rkey(x)) && x.date !== date)) continue;
     const { type: kind, ...y } = x;
     add(x.uncertain ? 'unc' : 'bad', { type: 'recovery', kind, ...y, rule: R[kind] || 'ORO.FTL.235' });
   }
@@ -157,7 +173,10 @@ export const simulateDuty = (sim, ctx = {}) => {
   //   • separados por um repouso de recuperação (36 h com 2 noites locais, ORO.FTL.235(d)) → já não são seguidos;
   //   • com noites livres pelo meio mas sem recuperação → o texto não decide → INCERTO ("a lei é que manda": nem "excede" nem
   //     "dentro" inventados).
-  const fdps = fdpsBetween(hypo, addDays(date, -4), addDays(date, 4), { postFlightMin, isPilot, cabinGapMin, splitAdminMin }, baseOf);
+  // Só se o próprio serviço for noturno é que se olha para os vizinhos (poupa o cálculo de 9 dias a cada serviço de dia).
+  const fdpOpts = { postFlightMin, isPilot, cabinGapMin, splitAdminMin };
+  const own = fdpsBetween(hypo, date, date, fdpOpts, baseOf);
+  const fdps = own.some((f) => f.sim && f.night) ? fdpsBetween(hypo, addDays(date, -4), addDays(date, 4), fdpOpts, baseOf) : own;
   const si = fdps.findIndex((f) => f.sim);
   if (si >= 0 && fdps[si].night) {
     const seen = new Map();
@@ -182,6 +201,8 @@ export const simulateDuty = (sim, ctx = {}) => {
   const windows = limitsAround(hypoLog, date);
   for (const w of windows) {
     if (w.over) add('bad', { type: 'limit', key: w.key, id: w.id, days: w.days || null, doneMin: w.doneMin, limitMin: w.limitMin, overMin: w.overMin, from: w.from, to: w.to, rule: R.limit });
+    // Com serviços sem apresentação no período, o serviço é um mínimo: excede se o mínimo passa; se só o máximo passa, incerto.
+    else if (w.uncertain) add('unc', { type: 'limitUnc', key: w.key, id: w.id, doneMin: w.doneMin, doneMaxMin: w.doneMaxMin, limitMin: w.limitMin, estDays: w.estDays, from: w.maxFrom, to: w.maxTo, rule: R.limit });
   }
   const tightest = {};
   for (const w of windows) if (!tightest[w.key] || w.ratio > tightest[w.key].ratio) tightest[w.key] = w;
@@ -263,10 +284,12 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
     case 'fdp': return it.excess ? l(`PSV excede o máximo em ${it.excess}`, `FDP over the max by ${it.excess}`) : l('PSV excede o máximo', 'FDP over the max');
     case 'fdpOther': return it.date === simDate ? l('o outro serviço do dia excede o PSV', 'the other duty that day is over the FDP') : l(`o PSV de ${ddmm(it.date)} passa a exceder`, `the FDP on ${ddmm(it.date)} goes over`);
     case 'fdpUncertain': return l(`falta saber ${unknownsText(it.unknowns, 'pt')}`, `missing ${unknownsText(it.unknowns, 'en')}`);
+    case 'noReport': return l('falta a hora de apresentação: o PSV não se calcula', 'missing the report time: the FDP cannot be computed');
     case 'standby': return it.kind === 'maxStandby' ? l('standby acima de 16 h', 'standby over 16 h') : it.kind === 'awake' ? l('standby + PSV acima de 18 h acordado', 'standby + FDP over 18 h awake') : l('standby + PSV acima de 16 h', 'standby + FDP over 16 h');
     case 'restBefore':
     case 'restAfter': {
       const who = it.type === 'restBefore' ? l('repouso antes', 'rest before') : l(`repouso antes de ${ddmm(it.nextIso)}`, `rest before ${ddmm(it.nextIso)}`);
+      if (it.status === 'unc' && it.kind === 'noReport') return l(`falta a hora de apresentação do serviço de ${ddmm(it.estIso)}`, `missing the report time of the duty on ${ddmm(it.estIso)}`);
       if (it.status === 'unc') return l(`falta o fim do serviço de ${ddmm(it.prevIso)}`, `missing the end of the duty on ${ddmm(it.prevIso)}`);
       if (it.actualMin < it.requiredMin) return `${who} ${hm(it.actualMin)} ${l('de', 'of')} ${hm(it.requiredMin)}`;
       return l(`${who}: ${it.nightsActual} de ${it.nightsRequired} noites locais`, `${who}: ${it.nightsActual} of ${it.nightsRequired} local nights`);
@@ -288,6 +311,13 @@ export const issueText = (it, lang = 'pt', simDate = null) => {
       const t = (LIMIT_TXT[it.key] || {})[it.id];
       const what = it.key === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');
       return t ? l(`${what} ${hm(it.doneMin)} ${t[0]} (máx. ${t[2] === 1000 ? '1 000' : t[2]} h)`, `${what} ${hm(it.doneMin)} ${t[1]} (max ${t[2] === 1000 ? '1,000' : t[2]} h)`) : `${what} ${hm(it.doneMin)}`;
+    }
+    case 'limitUnc': {
+      const t = (LIMIT_TXT[it.key] || {})[it.id];
+      const what = it.key === 'voo' ? l('voo', 'flight') : l('serviço', 'duty');
+      const n = it.estDays || 0;
+      return t ? l(`${what} ${hm(it.doneMin)} a ${hm(it.doneMaxMin)} ${t[0]} (máx. ${t[2]} h): falta a hora de apresentação de ${n === 1 ? '1 serviço' : `${n} serviços`}`,
+        `${what} ${hm(it.doneMin)} to ${hm(it.doneMaxMin)} ${t[1]} (max ${t[2]} h): missing the report time of ${n === 1 ? '1 duty' : `${n} duties`}`) : what;
     }
     case 'aeFdp': return it.status === 'bad'
       ? (it.excessMin ? l(`excede o limite do acordo em ${hm(it.excessMin)}`, `over the agreement limit by ${hm(it.excessMin)}`) : l('excede o limite do acordo', 'over the agreement limit'))
