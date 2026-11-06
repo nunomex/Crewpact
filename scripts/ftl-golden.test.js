@@ -941,6 +941,26 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
   eq('≤ 2 h: aclimatado, sem Quadro 1', ftlForDuty(bcn, { base: 'LIS', date: '2026-07-10', duties: { '2026-07-10': bcn } }).acclim.letter, 'in');
 }
 
+// ─────────── CS FTL.1.205(d)(1)(ii): adiamento com 2.ª notificação (auditoria A-154) ───────────
+// "If the reporting time is further amended, the FDP starts counting 1 hour after the second notification or at the original
+// delayed reporting time if this is earlier." Original 06:00; 1.º aviso adia para as 09:00; 2.º aviso às 07:30 adia para as
+// 11:00 → o PSV conta desde as 08:30 (07:30 + 1 h, antes das 09:00). 2 setores, máximo 13:00 → calços até às 21:30.
+{
+  const { ftlForDuty } = ftl;
+  const two = { report_time: '11:00', block_on: '22:00', sectors: 2, special: { delayedFrom: '06:00', delayed1: '09:00', notice2: '07:30' } };
+  const r = ftlForDuty(two, {});
+  eq('205(d)(1)(ii): o PSV conta desde as 08:30 → 13:30', r.fdp.actualFdpStr, '13:30');
+  eq('205(d)(1)(ii): máximo 13:00 → excede 0:30', r.fdp.excessStr, '00:30');
+  eq('205(d)(1)(ii): calços até às 21:30', r.latestOnBlockStr, '21:30');
+  // O texto não diz se o máximo se calcula com a 1.ª ou a 2.ª hora adiada: com 06:00 → 14:00 → 16:00 as leituras dão 12:30
+  // (06:00 vs 14:00) e 11:30 (06:00 vs 16:00) → intervalo, "incerto" no meio. 2.º aviso às 12:00 → conta desde as 13:00.
+  const amb = ftlForDuty({ report_time: '16:00', block_on: '01:00', sectors: 2, special: { delayedFrom: '06:00', delayed1: '14:00', notice2: '12:00' } }, {});
+  eq('205(d)(1)(ii): duas leituras → 11:30 a 12:30', JSON.stringify([amb.fdp.maxFdpStr, amb.fdp.maxHiStr]), JSON.stringify(['11:30', '12:30']));
+  eq('205(d)(1)(ii): o que falta', JSON.stringify(amb.fdp.unknowns), JSON.stringify(['delayRule']));
+  // Sem a 2.ª notificação: como antes (conta desde a hora adiada).
+  eq('Uma só notificação: conta desde a hora adiada', ftlForDuty({ report_time: '11:00', block_on: '22:00', sectors: 2, special: { delayedFrom: '06:00' } }, {}).fdp.actualFdpStr, '11:00');
+}
+
 // ─────────── Casos especiais → teto do PSV (computeDuty, Fase 1) ───────────
 // O motor deve usar EXATAMENTE o valor do calculador golden (sem inventar) — cross-check.
 // Cobre os DOIS tipos de tripulação: piloto (tabela por nº de pilotos) e cabine (por classe).

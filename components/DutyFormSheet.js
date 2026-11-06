@@ -147,6 +147,8 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
   const [fcRep, setFcRep] = useState('');
   const [delOn, setDelOn] = useState(false);        // apresentação adiada (205g)
   const [delFrom, setDelFrom] = useState('');       // hora ORIGINAL (a apresentação do form é a adiada)
+  const [del1, setDel1] = useState('');             // CS FTL.1.205(d)(1)(ii): a 1.ª hora adiada, se houve 2.ª alteração
+  const [notice2, setNotice2] = useState('');       // … e a hora do 2.º aviso
   const [sbOn, setSbOn] = useState(false);          // standby antes deste serviço (225)
   const [sbType, setSbType] = useState('airport');  // 'airport' | 'other' (casa/hotel)
   const [sbH, setSbH] = useState(6);                // horas de standby
@@ -164,7 +166,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setFcRep(sp.fcReport || '');
     const cr = sp.augmented?.cabinRestMin;
     setAugRest(cr != null ? `${Math.floor(cr / 60)}:${String(cr % 60).padStart(2, '0')}` : '');
-    setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || '');
+    setDelOn(sp.delayedFrom != null); setDelFrom(sp.delayedFrom || ''); setDel1(sp.delayed1 || ''); setNotice2(sp.notice2 || '');
     setSbOn(!!sp.preStandby); setSbType(sp.preStandby?.type || 'airport'); setSbH(sp.preStandby?.standbyH || 6);
     setDiscOn(!!sp.discretion);
     setExtOn(!!sp.plannedExt);
@@ -211,7 +213,7 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
     setAccOn(acc); if (acc) setAdvOpen(true);
     needBaseline.current = true;   // baseline captura-se no commit SEGUINTE, já com o estado novo
   }, [visible, date, candidate, append, editExtra]); // eslint-disable-line react-hooks/exhaustive-deps
-  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, accOn, discOn, extOn, legInput]);
+  const liveSnap = () => JSON.stringify([form, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, del1, notice2, sbOn, sbType, sbH, accOn, discOn, extOn, legInput]);
   const isDirty = () => liveSnap() !== initialSnap.current;
   // Fechar (X / back Android / gesto): com alterações por guardar, confirma antes de as perder.
   // Keyboard.dismiss ANTES do fecho: o iOS 26 abortava (SIGABRT em UIKeyboardSceneDelegate)
@@ -398,10 +400,11 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
       ? { restClass: augClass, additionalCrew: Number(augCrew) }
       : { restClass: augClass, additionalCrew: Number(augCrew), fcRestClass: augFcClass, cabinRestMin: restM };
     const del = (delOn && isClock(delFrom)) ? delFrom : null;
+    const second = !!(del && isClock(del1) && isClock(notice2));   // 2.ª alteração (205(d)(1)(ii)): as duas horas
     const sb = (sbOn && Number(sbH) > 0) ? { type: sbType, standbyH: Number(sbH) } : null;
     const fcReport = (!isPilot && isClock(fcRep)) ? fcRep : null;
-    return (aug || del || sb || discOn || fcReport || extOn) ? { augmented: aug, delayedFrom: del, preStandby: sb, discretion: discOn || null, fcReport, plannedExt: extOn || null } : null;
-  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, sbOn, sbType, sbH, discOn, extOn]);
+    return (aug || del || sb || discOn || fcReport || extOn) ? { augmented: aug, delayedFrom: del, delayed1: second ? del1 : null, notice2: second ? notice2 : null, preStandby: sb, discretion: discOn || null, fcReport, plannedExt: extOn || null } : null;
+  }, [isFlight, isPilot, augOn, augClass, augCrew, augFcClass, augRest, fcRep, delOn, delFrom, del1, notice2, sbOn, sbType, sbH, discOn, extOn]);
 
   const prospect = useMemo(() => {
     if (!isFlight || !isClock(form.report)) return null;   // projeção FTL assim que há apresentação válida
@@ -868,6 +871,13 @@ export default function DutyFormSheet({ visible, onClose, date, onSaved, candida
                 <View style={s.advInset}>
                   <ClockField C={C} s={s} label={l('Hora original da apresentação', 'Original reporting time')} value={delFrom} onChange={setDelFrom} />
                   <Text style={s.advHint}>{l('A apresentação (acima) é a ADIADA. O PSV máx recalcula pela hora mais limitativa.', 'The report (above) is the DELAYED one. Max FDP recalculates by the more limiting time.')}</Text>
+                  <View style={{ marginTop: SPACE.md }}>
+                    <ClockField C={C} s={s} label={l('Se houve 2.ª alteração: a 1.ª hora adiada', 'If changed twice: the first delayed time')} value={del1} onChange={setDel1} />
+                  </View>
+                  <View style={{ marginTop: SPACE.md }}>
+                    <ClockField C={C} s={s} label={l('… e a hora do 2.º aviso', '… and the time of the second notice')} value={notice2} onChange={setNotice2} />
+                  </View>
+                  <Text style={s.advHint}>{l('CS FTL.1.205(d)(1)(ii): com uma 2.ª alteração, o PSV conta 1 h depois do 2.º aviso ou à 1.ª hora adiada, a mais cedo.', 'CS FTL.1.205(d)(1)(ii): after a second change, the FDP counts from 1 h after the second notice or from the first delayed time, whichever is earlier.')}</Text>
                 </View>
               ) : null}
               <View style={[s.advRow, s.advDivider]}>

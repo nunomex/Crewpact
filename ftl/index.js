@@ -67,8 +67,10 @@ export const computeDuty = ({
   accommodation = false, inBase = true, extended = false, discretion = false, inFlightRest = false,
   postFlightMin = 0, augmented = null, delayedFrom = null, preStandby = null, isPilot = false,
   longestSectorMin, tzDiffH = 0, restExtended = false, cabinReportGapMin, splitAdminMin,
-  bandShiftMin = 0, elapsedAdjMin = 0,
+  bandShiftMin = 0, elapsedAdjMin = 0, startEarlierMin = 0, delayedAtMin,
 }) => {
+  // startEarlierMin = o PSV começa X min ANTES da apresentação registada (CS FTL.1.205(d)(1)(ii): 2.ª notificação de um
+  // adiamento). delayedAtMin = a hora adiada a usar no máximo (CS 205(d)(1)(iii)/(iv)) quando não é a apresentação.
   // bandShiftMin = minutos a somar à apresentação para ler a faixa do Quadro 2 na HORA DE REFERÊNCIA (ORO.FTL.105(2)),
   // quando a apresentação vem noutro relógio (ex.: o da base). elapsedAdjMin = correção do PSV para tempo DECORRIDO
   // (105(12)) quando os relógios não batem (hora de verão, fusos). Ambos vêm do ftlForDuty (Zulu das legs).
@@ -108,7 +110,8 @@ export const computeDuty = ({
     // Adiamento (CS 205(d)): o máximo pela hora mais limitativa (original vs adiada).
     if (delayedFrom != null && bandRep != null) {
       const o0 = parseHhmm(delayedFrom);
-      const dr = computeDelayedReporting({ state, origMin: o0 == null ? null : (((o0 + (bandShiftMin || 0)) % 1440) + 1440) % 1440, delayedMin: bandRep, sectors });
+      const dAt = delayedAtMin != null ? (((delayedAtMin + (bandShiftMin || 0)) % 1440) + 1440) % 1440 : bandRep;
+      const dr = computeDelayedReporting({ state, origMin: o0 == null ? null : (((o0 + (bandShiftMin || 0)) % 1440) + 1440) % 1440, delayedMin: dAt, sectors });
       if (dr.maxFdpMin != null) { m = dr.maxFdpMin; modifier = 'delayed'; }
     }
     // Repouso a bordo: piloto CS 205(c)(2)+(4); cabine = o PSV dos pilotos limitado pela classe e pelo repouso a bordo da
@@ -160,7 +163,7 @@ export const computeDuty = ({
   const maxMin = notAllowed ? null : lo;
   const maxHiMin = notAllowed ? null : hi;
   const exact = maxMin == null || maxHiMin == null || maxMin === maxHiMin;
-  const actual = base.actualFdpMin != null ? base.actualFdpMin + (elapsedAdjMin || 0) : null;   // tempo decorrido (105(12))
+  const actual = base.actualFdpMin != null ? base.actualFdpMin + (elapsedAdjMin || 0) + (startEarlierMin || 0) : null;   // tempo decorrido (105(12))
   const over = !notAllowed && actual != null && maxHiMin != null && actual > maxHiMin;
   const uncertain = !notAllowed && !over && actual != null && maxMin != null && actual > maxMin;
   const excessMin = over ? actual - maxHiMin : 0;
@@ -186,7 +189,7 @@ export const computeDuty = ({
   // Hora-limite de calços = apresentação + PSV máximo GARANTIDO (ORO.FTL.105(19)): até aí está dentro em qualquer caso.
   // A discrição do comandante NÃO entra: é para imprevistos, nunca para planear (205 f).
   // No relógio da apresentação: se ele mudar pelo caminho (hora de verão), a hora de relógio desloca-se o mesmo.
-  const latestMin = (reportMin != null && fdp.maxFdpMin != null && !fdp.notAllowed) ? reportMin + fdp.maxFdpMin - (elapsedAdjMin || 0) : null;
+  const latestMin = (reportMin != null && fdp.maxFdpMin != null && !fdp.notAllowed) ? reportMin - (startEarlierMin || 0) + fdp.maxFdpMin - (elapsedAdjMin || 0) : null;
 
   // Período de serviço = PSV + serviço pós-voo (a base do repouso e do acumulado).
   const dutyPeriodMin = fdp.actualFdpMin != null ? fdp.actualFdpMin + (postFlightMin || 0) : null;
@@ -469,7 +472,18 @@ export const ftlForDuty = (duty = {}, ctx = {}) => {
     splitAdminMin: ctx.splitAdminMin,   // CS 220(b): o tempo do OM — null = desconhecido (App), undefined = 30
     bandShiftMin: zt.bandShiftMin, elapsedAdjMin: zt.elapsedAdjMin,
   };
+  // CS FTL.1.205(d)(1)(ii): adiamento com 2.ª notificação → o PSV conta 1 h depois do 2.º aviso ou à 1.ª hora adiada, a mais
+  // cedo. O texto não diz que hora adiada entra no máximo ((iii)/(iv)): as duas leituras → intervalo se diferirem.
+  const d1 = parseHhmm(sp.delayed1), n2 = parseHhmm(sp.notice2), rep2 = parseHhmm(duty.report_time);
+  if (sp.delayedFrom != null && d1 != null && n2 != null && rep2 != null) {
+    const before = (x) => { const b = durationMin(x, rep2); return b > 720 ? 0 : b; };   // quanto antes da apresentação final
+    args.startEarlierMin = Math.max(before((n2 + 60) % 1440), before(d1));
+  }
   let d = computeDuty(args);
+  if (args.startEarlierMin != null && d1 != null) {
+    const dB = computeDuty({ ...args, delayedAtMin: d1 });
+    if (dB.fdp.maxFdpMin !== d.fdp.maxFdpMin) d = widenDuty([d, dB], 'delayRule');
+  }
   // Aclimatação por saber (o 1.º registo da escala, fora da faixa de 2 h): a lei depende do estado → intervalo entre os três.
   if (ac && ac.unknown) {
     const zB = zuluTimingOf(duty, base, date, 'base'), zD = zuluTimingOf(duty, base, date, 'dep');
