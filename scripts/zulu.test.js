@@ -26,6 +26,23 @@ let pass = 0, fail = 0; const fails = [];
 const eq = (name, got, want) => { if (got === want) { pass++; } else { fail++; fails.push(`✗ ${name}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`); } };
 const eqj = (n, g, w) => eq(n, JSON.stringify(g), JSON.stringify(w));
 
+// A hora repetida na noite da mudança de hora (25/10/2026, Lisboa: 01:00–01:59 duas vezes), em pernas sem Zulu do calendário: a
+// cadeia escolhe a ocorrência que dá uma duração de voo possível para a distância entre os aeroportos; se as duas forem possíveis,
+// a conservadora (partida mais cedo, chegada mais tarde). Antes resolvia-se sempre para a 2.ª.
+if (INTL_TZ_OK) {
+  const { legsChainMs } = require(path.resolve('data/zulu.js'));
+  const Z = (d, h, m) => Date.UTC(2026, 9, d, h, m);
+  // LIS 00:30 (23:30Z) → FAO 01:20: 00:20Z (50 min) ou 01:20Z (1h50) — Lisboa–Faro (~240 km) não leva 1h50 → 00:20Z.
+  const a = legsChainMs('2026-10-25', [{ dep: 'LIS', arr: 'FAO', off: '00:30', on: '01:20' }], '00:00');
+  eqj('Hora repetida: chegada às 01:20 → a 1.ª (50 min de voo)', [a[0].offMs, a[0].onMs], [Z(24, 23, 30), Z(25, 0, 20)]);
+  // Apresentação 01:10, partida 01:50, chegada 02:40 (já hora de inverno): só a 2.ª ocorrência da partida dá 50 min → 01:50Z.
+  const b = legsChainMs('2026-10-25', [{ dep: 'LIS', arr: 'FAO', off: '01:50', on: '02:40' }], '01:10');
+  eqj('Hora repetida: partida às 01:50 → a 2.ª (50 min de voo)', [b[0].offMs, b[0].onMs], [Z(25, 1, 50), Z(25, 2, 40)]);
+  // Dubai 20:00 (16:00Z) → Lisboa 01:30: 8h30 ou 9h30, as duas possíveis para ~5900 km → a conservadora (a mais tarde).
+  const c = legsChainMs('2026-10-24', [{ dep: 'DXB', arr: 'LIS', off: '20:00', on: '01:30' }], '18:30');
+  eqj('Hora repetida: as duas possíveis → a chegada mais tarde', [c[0].offMs, c[0].onMs], [Z(24, 16, 0), Z(25, 1, 30)]);
+}
+
 // 2.ª revisão (2026-11-08): o tz-lookup põe o Bahrein no fuso de Teerão (+3:30) — corrige-se à mão; e o desvio de um aeroporto
 // guarda-se por quarto de hora (por hora errava 30 min na mudança de hora da Terra Nova, −3:30 → −2:30 às 05:30Z de 8/3/2026).
 if (INTL_TZ_OK) {
@@ -33,6 +50,47 @@ if (INTL_TZ_OK) {
   eq('2.ª revisão: BAH +3:00', airportOffsetMin('BAH', Date.UTC(2026, 0, 10, 12)), 180);
   eq('2.ª revisão: YYT 20 min antes da mudança de hora', airportOffsetMin('YYT', Date.UTC(2026, 2, 8, 5, 10)), -210);
   eq('2.ª revisão: YYT 15 min depois', airportOffsetMin('YYT', Date.UTC(2026, 2, 8, 5, 45)), -150);
+}
+
+// O fuso de CADA aeroporto do catálogo contra a tabela oficial da IANA (fontes/iana/zone.tab, zone1970.tab e backward — tzdb,
+// domínio público, descarregadas a 2026-11-08): é um fuso do país do aeroporto, ou tem as mesmas horas que um deles (2025–2027).
+// O tz-lookup (pelas coordenadas) erra perto de fronteiras e no mar: 49 aeroportos (Pago Pago com um dia inteiro de diferença,
+// Holguín, Díli, Bahrein, Trail…) → data/tzOverride.js.
+if (INTL_TZ_OK) {
+  const airports = require(path.resolve('data/airports.json'));
+  const z2c = new Map(), c2z = new Map();
+  for (const f of ['zone.tab', 'zone1970.tab']) for (const ln of fs.readFileSync(path.resolve('fontes/iana', f), 'utf8').split('\n')) {
+    if (!ln || ln[0] === '#') continue;
+    const [cc, , z] = ln.split('\t');
+    for (const c of cc.split(',')) { (z2c.get(z) || z2c.set(z, new Set()).get(z)).add(c); (c2z.get(c) || c2z.set(c, new Set()).get(c)).add(z); }
+  }
+  const link = new Map();
+  for (const ln of fs.readFileSync(path.resolve('fontes/iana/backward'), 'utf8').split('\n')) { const m = /^Link\s+(\S+)\s+(\S+)/.exec(ln); if (m) link.set(m[2], m[1]); }
+  const countriesOf = (z) => { const s = new Set(z2c.get(z) || []); const c = link.get(z); if (c) for (const x of (z2c.get(c) || [])) s.add(x); return s; };
+  const dtf = new Map();
+  const offAt = (tz, ms) => {
+    let f = dtf.get(tz);
+    if (!f) { f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); dtf.set(tz, f); }
+    const p = {}; for (const x of f.formatToParts(new Date(ms))) p[x.type] = x.value;
+    return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - ms) / 60000);
+  };
+  const samples = []; for (let t = Date.UTC(2025, 0, 1); t < Date.UTC(2028, 0, 1); t += 6 * 3600000) samples.push(t);
+  const sameHours = (a, b) => samples.every((t) => offAt(a, t) === offAt(b, t));
+  // Exceções conscientes: Hyder (Alasca) vive na hora do Pacífico, como Stewart (BC), do outro lado da fronteira; o Kosovo não tem
+  // fuso próprio na IANA (usa o de Belgrado).
+  const EXCEPT = new Set(['WHD']);
+  const CC_ALIAS = { XK: 'RS' };
+  const bad = [];
+  for (const [iata, v] of Object.entries(airports)) {
+    if (EXCEPT.has(iata)) continue;
+    const cc = CC_ALIAS[v[5]] || v[5];
+    const tz = airportTz(iata);
+    if (!tz || countriesOf(tz).has(cc)) continue;
+    const zones = c2z.get(cc);
+    if (zones && [...zones].some((z) => sameHours(tz, z))) continue;
+    bad.push(`${iata} ${cc} ${tz}`);
+  }
+  eqj('Fusos: todos os aeroportos do catálogo num fuso do seu país (IANA)', bad, []);
 }
 
 eq('Intl/timeZone disponível (Node)', INTL_TZ_OK, true);

@@ -8,6 +8,7 @@
 // ecrãs caem no fallback do fuso do DISPOSITIVO (toZulu) — sem crashar.
 import tzlookup from 'tz-lookup';
 import { airportCoord } from './airports';
+import { TZ_OVERRIDE } from './tzOverride';
 
 // Auto-deteção do suporte a Intl/timeZone. 00:00Z de julho em Londres = 01:00 (UTC+1, DST).
 export const INTL_TZ_OK = (() => {
@@ -46,9 +47,8 @@ const tzOffsetMin = (tz, atUTC) => {
 
 // Fuso IANA de um aeroporto (IATA/ICAO) pelas coordenadas. null se desconhecido. Guardado por código.
 const TZ_CACHE = new Map();
-// O tz-lookup erra perto de algumas fronteiras: os aeroportos conhecidos com o fuso errado (2.ª revisão de 2026-11-08: o Bahrein
-// caía no fuso de Teerão, +3:30 em vez de +3:00).
-const TZ_OVERRIDE = { BAH: 'Asia/Bahrain', OBBI: 'Asia/Bahrain' };
+// O tz-lookup erra perto de fronteiras e no mar: os aeroportos com o fuso errado vêm de data/tzOverride.js (conferido contra a
+// IANA pelo teste; 2026-11-08: o Bahrein caía no fuso de Teerão, Pago Pago no de Apia — um dia inteiro —, Holguín no das Baamas).
 export const airportTz = (code) => {
   const ov = code ? TZ_OVERRIDE[String(code).toUpperCase()] : null;
   if (ov) return ov;
@@ -79,6 +79,26 @@ export const airportOffsetMin = (code, utcMs) => {
 // null quando não dá (sem Intl, aeroporto desconhecido, ou hora inválida) → o chamador
 // faz fallback (toZulu do dispositivo).
 // O INSTANTE (ms UTC) da hora local "HH:MM" no aeroporto `code`, no dia `dateISO`. null quando não dá.
+// Os instantes possíveis de uma hora local num aeroporto (ordenados): um, normalmente; dois na hora repetida da noite em que a
+// hora atrasa; nenhum na hora que não existe quando adianta (aí fica o do airportUtcMs). [] sem fuso ou hora inválida.
+export const airportUtcCands = (dateISO, hhmm, code) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  if (!INTL_TZ_OK || !dateISO || !m) return [];
+  const tz = airportTz(code);
+  if (!tz) return [];
+  const [Y, Mo, D] = dateISO.split('-').map(Number);
+  const wall = Date.UTC(Y, Mo - 1, D, +m[1], +m[2]);
+  // O mesmo desvio um dia antes e um dia depois → não há mudança de hora pelo meio → um só instante (o caso de quase sempre).
+  const oA = tzOffsetMin(tz, new Date(wall - 86400000)), oB = tzOffsetMin(tz, new Date(wall + 86400000));
+  if (oA === oB) return [wall - oA * 60000];
+  const out = [];
+  for (const probe of [wall - 86400000, wall + 86400000]) {
+    const u = wall - tzOffsetMin(tz, new Date(probe)) * 60000;
+    if (wall - tzOffsetMin(tz, new Date(u)) * 60000 === u && !out.includes(u)) out.push(u);
+  }
+  if (!out.length) { const u = airportUtcMs(dateISO, hhmm, code); if (u != null) out.push(u); }
+  return out.sort((a, b) => a - b);
+};
 export const airportUtcMs = (dateISO, hhmm, code) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
   if (!INTL_TZ_OK || !dateISO || !m) return null;
@@ -130,10 +150,21 @@ export const legDay = (dateISO, leg, which, ref = null) => {
 // chamador usa legZulu, que cai no relógio do dispositivo).
 const shiftIso = (iso, n) => { const t = new Date(`${iso}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
 const zMs = (iso, hhmm) => { const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ''); if (!m) return null; const [Y, Mo, D] = iso.split('-').map(Number); return Date.UTC(Y, Mo - 1, D, +m[1], +m[2]); };
-const candMs = (iso, n, leg, which) => {
+// Os instantes possíveis da hora de uma perna no dia D+n (dois só na hora repetida da noite em que a hora atrasa).
+const candsMs = (iso, n, leg, which) => {
   const day = shiftIso(iso, n);
-  if (leg[which + 'Z']) return zMs(day, leg[which + 'Z']);
-  return airportUtcMs(day, leg[which], which === 'off' ? leg.dep : leg.arr);
+  if (leg[which + 'Z']) { const z = zMs(day, leg[which + 'Z']); return z != null ? [z] : []; }
+  return airportUtcCands(day, leg[which], which === 'off' ? leg.dep : leg.arr);
+};
+// Que durações de voo são possíveis entre dois aeroportos: de distância/960 km/h + 10 min a distância/600 km/h + 60 min. Só
+// decide a hora repetida (as duas leituras distam 1 h); num posicionamento (pode ser por terra) ou sem coordenadas, tudo serve.
+const plausibleSector = (leg, min) => {
+  if (!leg || leg.dh) return true;
+  const a = airportCoord(leg.dep), b = airportCoord(leg.arr);
+  if (!a || !b) return true;
+  const R = Math.PI / 180, h = Math.sin((b.lat - a.lat) * R / 2) ** 2 + Math.cos(a.lat * R) * Math.cos(b.lat * R) * Math.sin((b.lon - a.lon) * R / 2) ** 2;
+  const km = 12742 * Math.asin(Math.sqrt(h));
+  return min >= km / 16 + 10 && min <= km / 10 + 60;
 };
 const MAX_SECTOR_MS = 22 * 3600000;
 // Folga para trás: uma partida pode estar marcada uns minutos antes da chegada anterior (chegada atrasada, partida com a hora
@@ -143,7 +174,8 @@ const BACK_SLACK_MS = 3 * 3600000;
 // da própria perna (off local − offZ, entre −12 h e +14 h) — o relógio da escala é o da 1.ª partida. null se não dá.
 export const chainReportMs = (dateISO, legs = [], reportHhmm = null) => {
   if (!dateISO || !reportHhmm || !Array.isArray(legs) || !legs[0]) return null;
-  let prev = airportUtcMs(dateISO, reportHhmm, legs[0].dep);
+  // Na hora repetida, a mais cedo (é só o ponto de partida da cadeia: a partida escolhe-se a seguir).
+  let prev = airportUtcCands(dateISO, reportHhmm, legs[0].dep)[0] ?? null;
   if (prev == null && legs[0].off && legs[0].offZ) {
     const a = /^(\d{1,2}):(\d{2})$/.exec(legs[0].off), z = /^(\d{1,2}):(\d{2})$/.exec(legs[0].offZ), r = zMs(dateISO, reportHhmm);
     if (a && z && r != null) {
@@ -158,17 +190,34 @@ export const chainReportMs = (dateISO, legs = [], reportHhmm = null) => {
 export const legsChainMs = (dateISO, legs = [], reportHhmm = null) => {
   if (!dateISO || !Array.isArray(legs) || !legs.length) return [];
   let prev = chainReportMs(dateISO, legs, reportHhmm);
+  // As partidas possíveis: as do 1.º dia (D−1 a D+2) que tem alguma que não vem antes do momento anterior (com a folga); as
+  // chegadas possíveis de cada partida: as do 1.º dia com alguma entre 0 e 22 h depois. Fora da hora repetida há uma de cada.
+  const offsOf = (leg) => {
+    if (!(leg.off || leg.offZ)) return [];
+    if (prev == null) return candsMs(dateISO, 0, leg, 'off');
+    for (let n = -1; n <= 2; n++) { const cs = candsMs(dateISO, n, leg, 'off').filter((c) => c >= prev - BACK_SLACK_MS); if (cs.length) return cs; }
+    return [];
+  };
+  const onsOf = (leg, offMs) => {
+    if (!(leg.on || leg.onZ)) return [];
+    for (let n = -1; n <= 3; n++) { const cs = candsMs(dateISO, n, leg, 'on').filter((c) => c > offMs && c - offMs <= MAX_SECTOR_MS); if (cs.length) return cs; }
+    return [];
+  };
   return legs.map((leg) => {
     if (!leg) return { offMs: null, onMs: null };
-    let offMs = null;
-    if (leg.off || leg.offZ) {
-      if (prev == null) offMs = candMs(dateISO, 0, leg, 'off');
-      else for (let n = -1; n <= 2 && offMs == null; n++) { const c = candMs(dateISO, n, leg, 'off'); if (c != null && c >= prev - BACK_SLACK_MS) offMs = c; }
+    // Na hora repetida (duas leituras): a que dá uma duração de voo possível para a distância; depois a partida que não vem antes
+    // do momento anterior; e, se ainda houver duas, a conservadora — partida mais cedo, chegada mais tarde (mais voo, mais serviço).
+    // Chave por ordem: [voo impossível?, partida antes do momento anterior?, partida, −chegada] — a menor ganha.
+    const better = (k, b) => { for (let i = 0; i < k.length; i++) if (k[i] !== b[i]) return k[i] < b[i]; return false; };
+    let best = null;
+    for (const off of offsOf(leg)) {
+      const ons = onsOf(leg, off);
+      for (const on of (ons.length ? ons : [null])) {
+        const k = [on != null && plausibleSector(leg, (on - off) / 60000) ? 0 : 1, prev == null || off >= prev ? 0 : 1, off, on != null ? -on : 0];
+        if (!best || better(k, best.k)) best = { k, off, on };
+      }
     }
-    let onMs = null;
-    if ((leg.on || leg.onZ) && offMs != null) {
-      for (let n = -1; n <= 3 && onMs == null; n++) { const c = candMs(dateISO, n, leg, 'on'); if (c != null && c > offMs && c - offMs <= MAX_SECTOR_MS) onMs = c; }
-    }
+    const offMs = best ? best.off : null, onMs = best ? best.on : null;
     if (onMs != null) prev = onMs; else if (offMs != null) prev = offMs;
     return { offMs, onMs };
   });

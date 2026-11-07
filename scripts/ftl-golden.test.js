@@ -1061,6 +1061,18 @@ eq('Noturno 07:00–09:00 não', isNightDuty(M('07:00'), M('09:00')), false);
     '2026-07-07': fl('20:00', '23:20', 'LIS-BCN', '21:00'), '2026-07-10': svc('06:00', '12:00'),
   };
   eq('105(8): em faixa, a chegada a Barcelona conta (conservador) e só o tipo fica em dúvida', r60(recoveryIssues(esc4, C)), J([['2026-07-10', 4, true, 'type']]));
+  // Um serviço em terra SEM pernas fora da base lê-se pelo Quadro 1 como os voos: situa-se no aeroporto da última chegada (GRU) e
+  // as horas da escala são as de lá. Assistência em GRU a 7/7, 20:30–22:45 locais, 35 h depois da apresentação em Lisboa → B →
+  // 00:30–02:45 de Lisboa → NOTURNO (pela hora local não era). 2 matinais + o LIS→GRU tardio + esta = 4 → faltam as 60 h.
+  const sbG = { kind: 'standby_airport', report_time: '20:30', block_on: '22:45', sectors: 0 };
+  const esc5 = {
+    '2026-07-01': svc('06:00', '12:00'),
+    '2026-07-04': svc('05:30', '13:00'), '2026-07-05': svc('05:30', '13:00'),
+    '2026-07-06': fl('13:00', '20:00', 'LIS-GRU', '14:00'), '2026-07-07': sbG,
+    '2026-07-09': fl('14:00', '05:00', 'GRU-LIS', '15:00'),
+  };
+  eq('105(8): assistência em GRU sem pernas → hora de Lisboa (B), +4 h', J(ftl.nightClockOf(sbG, { base: 'LIS', date: '2026-07-07', duties: esc5 }).shifts), J([240]));
+  eq('105(8): a assistência noturna pela hora de Lisboa é o 4.º irregular → 60 h em falta', r60(recoveryIssues(esc5, C)), J([['2026-07-09', 4, false, null]]));
 }
 
 // ─────────── ORO.FTL.105(1) + Quadro 1: aclimatação no longo curso (auditoria A-152/A-169) ───────────

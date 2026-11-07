@@ -46,11 +46,7 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
   de situação · `docs/05-verificacao.md`).
 
 ### 2. Acertos de código por fazer
-- **Cálculos:** na recuperação, um serviço em terra sem pernas fora da base (assistência em GRU) ainda se classifica na hora
-  local, não na da aclimatação; na noite da mudança de hora (outubro) o `legsChainMs` resolve as horas repetidas 01:00–01:59
-  sempre para a 2.ª (pernas sem Zulu do calendário; dá mais avisos, não menos); o tz-lookup errou o Bahrein (corrigido à mão) —
-  conferir os outros aeroportos contra uma lista de fusos (2026-11-08 Três acertos); mês da admissão a meio do mês (o
-  `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
+- **Cálculos:** mês da admissão a meio do mês (o `serviceStart` guarda só o mês) (BLOCO 5 · 8); valor "agora" do voo do mês da cabine TAP só pela hora da partida; máximo da
   assistência a 100 % no trimestre (2026-11-08 Os 4).
 - **TAP:** dias de estadia perdidos com outro serviço depois do voo no mesmo dia; horas da escala na hora do destino; doença
   (Cl. 20.ª) sem eventos; AC2 por cancelamento tardio; prestação complementar dos pilotos (Cl. 10.ª) (BLOCO 5 · BLOCO 6).
@@ -96,6 +92,26 @@ um valor inventado. A auditoria dos cálculos (blocos 1 a 8b, 300 achados) está
 - Face ID real, PDF por ficheiro, voo ao vivo nativo, compras (RevenueCat), login Apple e Google, widgets, Live Activities, alarme
   (AlarmKit), hotel pelo Apple Maps, passkeys; Android; iPhone pequeno e grande; beta com 2–3 tripulantes no TestFlight;
   declaração de dados nas lojas; Supabase/Resend pagos e limites (e-mails por hora, DMARC).
+---
+
+## 2026-11-08 — Os três que ficavam: terra fora da base, hora repetida e os fusos de todos os aeroportos (Opus 5.5) — o Nuno: "corrige isto"
+
+- **Serviço em terra sem pernas fora da base** (assistência em GRU): o `nightClockOf` situa-o como o Quadro 1 já fazia — pela
+  rota, ou pelo aeroporto da última chegada antes dele — e lê-o pela aclimatação como os voos (B → hora da base). Golden: uma
+  assistência em GRU às 20:30 locais, 35 h depois da apresentação em Lisboa, é noturna pela hora de Lisboa → 4.º irregular.
+- **A hora repetida da noite em que a hora atrasa** (pernas sem Zulu do calendário): a cadeia escolhe a ocorrência que dá uma
+  duração de voo possível para a distância entre os aeroportos (distância/960 km/h + 10 min a distância/600 km/h + 60 min);
+  se as duas servem, a conservadora (partida mais cedo, chegada mais tarde); num posicionamento (pode ser por terra) não se
+  julga a duração. Antes resolvia-se sempre para a 2.ª — também na partida, onde a 2.ª dá um voo de 1h50 num Lisboa–Faro.
+  Fora dessa noite nada muda: 20 000 cadeias aleatórias iguais às de antes.
+- **Os fusos de TODOS os aeroportos** (5458) contra a tabela oficial da IANA (`fontes/iana/`, tzdb, 2026-11-08): o tz-lookup
+  errava 49 — Pago Pago (um dia inteiro: Apia em vez de Pago Pago), Holguín e Moa (hora das Baamas), Díli (−1 h), Bahrein, Eilat,
+  Taba, Kastelorizo, Lampedusa, Saint-Pierre e Miquelon, quatro em Venezuela, Trail (BC, que passou a hora de verão permanente),
+  Yukon… → `data/tzOverride.js` (48; Hyder fica com a hora do Pacífico, que é a que usa). O teste do zulu tranca o catálogo
+  todo: cada aeroporto num fuso do seu país, ou com as mesmas horas que um deles.
+- **Testes:** zulu (+ a verificação dos 5458), ftl-golden, Simulação 102; 34 suites verdes; export iOS ✓; recuperação de um ano
+  46 ms. ENGINE_VERSION continua 10 (ainda não saiu do PC). **Nada visto no iPhone.**
+
 ---
 
 ## 2026-11-08 — Três acertos de cálculo e a recuperação no fuso de aclimatação (Opus 5.5) — o Nuno: "sim" · "vê bem se consegues corrigir"

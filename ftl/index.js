@@ -50,8 +50,10 @@ import { airportOffsetMin, airportUtcMs, legZulu, legsChainMs, chainReportMs } f
 // v7 (2026-11-07): aviso das 18 h acordado sem dupla redução; standby com adiamento sem as 8 h do repartido.
 // v8 (2026-11-07): os instantes das pernas pela cadeia do serviço (legsChainMs) — o tempo decorrido sem o limite das 24 h.
 // v9 (2026-11-07): aeroporto da 1.ª partida sem fuso conhecido → a apresentação pela Zulu do calendário (chainReportMs).
-// v10 (2026-11-08): aclimatação — um serviço dos 6 dias antes sem pernas com horas situa-se pela rota (ou na base, se for em
-// terra); sem forma de o situar e se a letra do Quadro 1 mudasse com ele → por saber (antes saltava-se e dava D).
+// v10 (2026-11-08): aclimatação — um serviço dos 6 dias antes sem pernas com horas situa-se pela rota (ou pela última chegada,
+// se for em terra); sem forma de o situar e se a letra do Quadro 1 mudasse com ele → por saber (antes saltava-se e dava D);
+// fusos dos aeroportos conferidos contra a IANA (data/tzOverride.js); a hora repetida da noite em que a hora atrasa pela
+// duração de voo possível (data/zulu.js).
 export const ENGINE_VERSION = 10;
 
 // Uma atividade (manual ou da escala) → PSV + repouso + legalidade num só objeto.
@@ -454,16 +456,26 @@ const lastArrivalBefore = (duties, iso, s) => {
   }
   return null;
 };
-const placeOf = (s, base, iso, duties) => {
-  const z = zuluTimingOf(s, base, iso);
-  if (z.reportMs != null && z.depOff != null && z.baseOff != null) return { ms: z.reportMs, inBand: Math.abs(z.depOff - z.baseOff) <= 120 };
+// Um serviço sem pernas com horas, situado: pela 1.ª perna ou pela rota, ou (em terra) pelo aeroporto da última chegada; as
+// horas da escala são as de lá (o calendário dá os serviços em terra na hora do telemóvel, que é a do sítio). Devolve a mesma
+// forma do zuluTimingOf, ou null se não se situa.
+const placeLegless = (s, base, iso, duties) => {
   const b = String(base || '').trim().toUpperCase();
   const ap0 = (Array.isArray(s.legs) && s.legs[0] && s.legs[0].dep) || String(s.route || '').split(/[^A-Za-z]+/).filter(Boolean)[0]
     || (GROUND_KINDS.has(s.kind || 'flight') ? lastArrivalBefore(duties, iso, s) : null);
   const ap = ap0 ? String(ap0).trim().toUpperCase() : null;
-  const ms = ap ? airportUtcMs(iso, s.report_time, ap) : null;
-  const dOff = ms != null ? airportOffsetMin(ap, ms) : null, bOff = ms != null ? airportOffsetMin(b, ms) : null;
-  if (ms != null && dOff != null && bOff != null) return { ms, inBand: Math.abs(dOff - bOff) <= 120 };
+  const ms = ap && iso ? airportUtcMs(iso, s.report_time, ap) : null;
+  const dOff = ms != null ? airportOffsetMin(ap, ms) : null;
+  if (ms == null || dOff == null) return null;
+  const bOff = b ? airportOffsetMin(b, ms) : null;
+  return { bandShiftMin: 0, elapsedAdjMin: 0, reportMs: ms, depOff: dOff, baseOff: bOff, digitsOff: dOff, placed: ap };
+};
+const placeOf = (s, base, iso, duties) => {
+  const z = zuluTimingOf(s, base, iso);
+  if (z.reportMs != null && z.depOff != null && z.baseOff != null) return { ms: z.reportMs, inBand: Math.abs(z.depOff - z.baseOff) <= 120 };
+  const b = String(base || '').trim().toUpperCase();
+  const pl = placeLegless(s, base, iso, duties);
+  if (pl && pl.baseOff != null) return { ms: pl.reportMs, inBand: Math.abs(pl.depOff - pl.baseOff) <= 120 };
   const rep = parseHhmm(s.report_time);
   const [y, m, d] = String(iso).split('-').map(Number);
   const approx = airportUtcMs(iso, s.report_time, b);
@@ -513,7 +525,10 @@ const acclimOf = (duty, { base, date, duties }, me0 = null) => {
 // Um só zuluTimingOf por serviço: a recuperação chama-o para a escala toda.
 export const nightClockOf = (duty, { base = null, date = null, duties = null } = {}) => {
   if (!duty || !duty.report_time) return { shifts: [0], either: true, elapsedAdjMin: 0, reportMs: null, acclim: null };
-  const z = zuluTimingOf(duty, base, date);
+  let z = zuluTimingOf(duty, base, date);
+  // Sem pernas com horas (um serviço em terra, um voo só com rota): situa-se e lê-se pelo Quadro 1 como os voos — uma assistência
+  // em GRU no estado B é na hora de Lisboa, não na de lá.
+  if (z.reportMs == null && date) { const pl = placeLegless(duty, base, date, duties); if (pl) z = pl; }
   const ac = acclimOf(duty, { base, date, duties }, z);
   const letter = ac ? (ac.unknown ? 'unknown' : ac.letter) : null;
   const legs = Array.isArray(duty.legs) ? duty.legs : [];
